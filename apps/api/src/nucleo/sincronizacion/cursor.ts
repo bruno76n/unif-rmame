@@ -125,7 +125,8 @@ export function leerCursorDeFoto(llave: Buffer, opaco: string): CursorDeFoto | u
 const yaCalculados = new WeakMap<readonly TablaQueBaja[], Map<string, number>>();
 
 /**
- * La versión del esquema de sincronización de un tipo de aparato: sale de sus tablas, su orden, sus columnas,
+ * La versión del esquema de sincronización de un tipo de aparato: sale de sus tablas, su orden, sus columnas
+ * (y el SQL de sus campos calculados),
  * el SQL de su filtro y los parámetros que lo deciden, así que cambia sola cuando un módulo cambia lo que
  * baja (también solo el filtro), y el cursor viejo pide la foto.
  * El filtro se escribe con dos aparatos de ese tipo (con ubicación y sin ella, por si el filtro escoge en el
@@ -151,6 +152,9 @@ export function esquemaDe(tablas: readonly TablaQueBaja[], tipo: string): number
 			tabla.tabla,
 			tabla.orden,
 			[...tabla.columnas].sort(),
+			Object.entries(tabla.calculadas ?? {})
+				.sort(([uno], [otro]) => uno.localeCompare(otro))
+				.map(([nombre, valor]) => [nombre, dialecto.sqlToQuery(valor).sql]),
 			aparatosDeMuestra.map((aparato) => dialecto.sqlToQuery(tabla.filtro(aparato)).sql),
 			[...(tabla.parametros ?? [])].sort(),
 		]),

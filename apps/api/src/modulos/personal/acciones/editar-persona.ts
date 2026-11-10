@@ -4,7 +4,7 @@
  *
  * El pago por día, solo con «ven sueldos y tarifas»: sin el permiso no viaja y se conserva, y no se puede
  * pasar de por pieza a por tiempo o mixta ni al revés (eso cambia el sueldo). No se pasa a tienda a alguien
- * con cuenta. Salir del Taller con PIN vivo lo anula (con el PIN del taller, en la parte 3).
+ * con cuenta. Salir del Taller con PIN vivo lo anula, en la misma transacción.
  */
 
 import { editarPersona } from "@uniformame/compartido/contratos/personal/personas";
@@ -21,6 +21,7 @@ import {
 	tieneCuenta,
 	veSueldos,
 } from "../dominio/personas.ts";
+import { anularPin } from "../internas/pin.ts";
 import { personas } from "../tablas.ts";
 
 /**
@@ -57,6 +58,15 @@ export const accionEditarPersona = implementarAccion(editarPersona, async (conte
 	await tomarVersion(contexto, personas, personaId, version, async () => ({ persona_id: personaId }));
 	await transaccion.update(personas).set(columnasDeLaFicha(ficha, pagoDia)).where(eq(personas.id, personaId));
 	const despues = await leerPersona(transaccion, personaId);
+	// Salir del Taller anula el PIN vivo (si no tenía, no hace nada).
+	const pin =
+		antes.area === "taller" && despues.area !== "taller"
+			? await anularPin(contexto, {
+					persona_id: personaId,
+					motivo: "cambio_area",
+					anulado_por: contexto.quien.tipo === "cuenta" ? contexto.quien.usuarioId : null,
+				})
+			: { anulado: false };
 	const cambio = loQueCambio(fichaParaBitacora(antes), fichaParaBitacora(despues));
 	const tocaElPago = "forma_pago" in cambio.despues || "pago_dia_centavos" in cambio.despues;
 	contexto.bitacora({
@@ -80,7 +90,7 @@ export const accionEditarPersona = implementarAccion(editarPersona, async (conte
 	});
 	return {
 		resultado: {
-			mensaje: `${despues.nombre} actualizada`,
+			mensaje: `${despues.nombre} actualizada${pin.anulado ? ". Su PIN ya no entra" : ""}`,
 			version: await versionActual(transaccion, personas, personaId),
 		},
 		entidad: { nombre: "personas", id: personaId },

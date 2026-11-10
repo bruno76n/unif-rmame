@@ -287,12 +287,24 @@ async function leerRenglones(
 	limite: number,
 ) {
 	const { rows } = await base.execute(sql`
-		SELECT t.id::text AS id, t.xid_escritura::text AS xid, (${tabla.filtro(aparato)}) AS cumple, to_jsonb(t) AS fila
+		SELECT t.id::text AS id, t.xid_escritura::text AS xid, (${tabla.filtro(aparato)}) AS cumple,
+			to_jsonb(t) || ${conCalculadas(tabla)} AS fila
 		FROM ${sql.identifier(tabla.tabla)} t
 		WHERE ${donde}
 		ORDER BY ${orden}
 		LIMIT ${limite}`);
 	return z.array(renglonLeido).parse(rows);
+}
+
+/**
+ * Los campos calculados de una tabla, como un objeto JSON que se une al renglón (vacío si no tiene).
+ * @param tabla La tabla.
+ */
+function conCalculadas(tabla: TablaQueBaja): SQL {
+	const calculadas = Object.entries(tabla.calculadas ?? {});
+	if (calculadas.length === 0) return sql`'{}'::jsonb`;
+	const pares = calculadas.map(([nombre, valor]) => sql`${nombre}::text, ${valor}`);
+	return sql`jsonb_build_object(${sql.join(pares, sql`, `)})`;
 }
 
 /**
@@ -302,7 +314,8 @@ async function leerRenglones(
  */
 function comoBaja(tabla: TablaQueBaja, renglon: z.infer<typeof renglonLeido>): CambioQueBaja {
 	if (renglon.cumple !== true) return { tabla: tabla.tabla, op: "quitar", id: renglon.id, datos: null };
-	const datos = Object.fromEntries(tabla.columnas.map((columna) => [columna, renglon.fila[columna] ?? null]));
+	const columnas = [...tabla.columnas, ...Object.keys(tabla.calculadas ?? {})];
+	const datos = Object.fromEntries(columnas.map((columna) => [columna, renglon.fila[columna] ?? null]));
 	return { tabla: tabla.tabla, op: "cambio", id: renglon.id, datos };
 }
 

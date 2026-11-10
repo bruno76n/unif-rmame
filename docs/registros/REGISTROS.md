@@ -177,5 +177,8 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 10 nov 2026 | 7 | Si sin el permiso se puede pasar a por pieza o desde por pieza (decisión 421) | Sí · no: cambia el sueldo | No: `403 sin_permiso_fino` | No |
 | 10 nov 2026 | 7 | Las personas de la muestra y de las cuentas de prueba (decisión 422) | Con la acción de alta · directo en la base, con los ids de las cuentas | Directo en la base | No |
 | 10 nov 2026 | 7 | Qué pasa con la persona de un comando de aparato (decisión 423) | Rechazar · apartar la que no existe y avisar de la vieja | Apartar la que no existe y avisar de la vieja | No |
+| 10 nov 2026 | 7 | Cómo bajan las iniciales de la persona (decisión 424) | Una columna · la tablet · un campo calculado de la bajada | Un campo calculado en SQL: nada guardado dos veces | No |
+| 10 nov 2026 | 7 | Cómo anota la bitácora el PIN anulado en la baja (decisión 425) | Un campo `pin` · `acceso_quitado` | `acceso_quitado`: `pin` parece secreto y la bitácora lo rechaza | No |
+| 10 nov 2026 | 7 | Cuándo se quita la persona de la tablet al anular su PIN (decisión 426) | En la misma ventana · en la siguiente | En la misma: sin la persona nadie la escoge | No |
 | 10 nov 2026 | 5 | La pantalla del Google de desarrollo | Una propia para escoger cuenta · la de desarrollo de oidc-provider, que pide el correo | La de oidc-provider; `pnpm local` escribe los correos de la muestra al arrancar | No |
 

@@ -6,6 +6,7 @@
 /** Qué departamentos leen cada tabla de `personal`, para los avisos en vivo. */
 export const lectoresDePersonal: Record<string, readonly string[]> = {
 	personas: ["personal", "admin"],
+	pines: ["personal"],
 };
 
 /** Los campos de sueldo: solo los ve quien tiene «ven sueldos y tarifas». */

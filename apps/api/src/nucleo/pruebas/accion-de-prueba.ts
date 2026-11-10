@@ -4,7 +4,7 @@
  */
 
 import { Temporal } from "temporal-polyfill";
-import { crearContexto } from "../acciones/corredor.ts";
+import { crearContexto, guardarEventosConAdmin } from "../acciones/corredor.ts";
 import type { Almacen } from "../almacen.ts";
 import type { Base } from "../base/conexion.ts";
 import { enTransaccion } from "../base/transacciones.ts";
@@ -16,27 +16,29 @@ import { quienesDePrueba } from "./cuentas-de-prueba.ts";
  * @param base La base de la prueba.
  * @param registro Lo que registraron los módulos (sus internas y lecturas).
  * @param hacer Lo que se prueba.
- * @param opciones La hora (por omisión, la de ahora), quién (por omisión, la dueña) y el almacén.
+ * @param opciones La hora (por omisión, la de ahora), quién (por omisión, la dueña), el almacén y si guarda los
+ * eventos que juntó (como el corredor al terminar), para probar lo que pasa al procesarlos.
  */
 export function enAccionDePrueba<T>(
 	base: Base,
 	registro: RegistroDeModulos,
 	hacer: (contexto: ContextoDeAccion) => Promise<T>,
-	opciones: { ahora?: Temporal.Instant; quien?: QuienEscribe; almacen?: Almacen } = {},
+	opciones: { ahora?: Temporal.Instant; quien?: QuienEscribe; almacen?: Almacen; guardarEventos?: boolean } = {},
 ): Promise<T> {
 	const quien = opciones.quien ?? quienesDePrueba.duena;
 	if (quien === undefined) throw new Error("falta la dueña de prueba");
-	return enTransaccion(base, (transaccion) =>
-		hacer(
-			crearContexto(
-				registro,
-				transaccion,
-				quien,
-				"prueba.accion",
-				opciones.ahora ?? Temporal.Now.instant(),
-				undefined,
-				opciones.almacen,
-			).contexto,
-		),
-	);
+	return enTransaccion(base, async (transaccion) => {
+		const { contexto, eventos } = crearContexto(
+			registro,
+			transaccion,
+			quien,
+			"prueba.accion",
+			opciones.ahora ?? Temporal.Now.instant(),
+			undefined,
+			opciones.almacen,
+		);
+		const resultado = await hacer(contexto);
+		if (opciones.guardarEventos === true) await guardarEventosConAdmin(contexto, eventos);
+		return resultado;
+	});
 }

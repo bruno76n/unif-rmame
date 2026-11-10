@@ -3,8 +3,8 @@
  * Fase 7 · docs/modulos/personal/personas.md («`personal.entra_al_sistema`», regla 4)
  *
  * «Baja {fecha}» si está dada de baja; «Cuenta de Google · {puesto}» si tiene una cuenta activa; «Sistema
- * de su tienda» en una tienda; en el Taller, «PIN del taller» o «Sin PIN» (el PIN llega en la parte 3); en la
- * oficina o Aduana y bodega sin cuenta, «Sin cuenta» (decisión 419).
+ * de su tienda» en una tienda; en el Taller, «PIN del taller» si tiene un PIN vivo o «Sin PIN»; en la oficina o
+ * Aduana y bodega sin cuenta, «Sin cuenta» (decisión 419).
  */
 
 import { zonaDelNegocio } from "@uniformame/compartido/calculos/fechas";
@@ -15,7 +15,7 @@ import type { Base } from "../../../nucleo/base/conexion.ts";
 import type { Transaccion } from "../../../nucleo/base/transacciones.ts";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
 import { usuarios } from "../../admin/tablas.ts";
-import { personas } from "../tablas.ts";
+import { personas, pines } from "../tablas.ts";
 
 /** Lo que recibe. */
 const pedido = z.object({ persona_ids: z.array(z.uuid()) });
@@ -38,9 +38,11 @@ export async function porDondeEntran(
 			puesto: personas.puesto,
 			bajaEn: personas.bajaEn,
 			cuenta: usuarios.id,
+			pin: pines.id,
 		})
 		.from(personas)
 		.leftJoin(usuarios, and(eq(usuarios.personaId, personas.id), eq(usuarios.estado, "activa")))
+		.leftJoin(pines, and(eq(pines.personaId, personas.id), inArray(pines.estado, ["activo", "bloqueado"])))
 		.where(inArray(personas.id, [...personaIds]));
 	return new Map(
 		leidas.map((persona) => {
@@ -50,7 +52,7 @@ export async function porDondeEntran(
 			}
 			if (persona.cuenta !== null) return [persona.id, `Cuenta de Google · ${persona.puesto}`];
 			if (persona.area === "tienda") return [persona.id, "Sistema de su tienda"];
-			if (persona.area === "taller") return [persona.id, "Sin PIN"];
+			if (persona.area === "taller") return [persona.id, persona.pin === null ? "Sin PIN" : "PIN del taller"];
 			return [persona.id, "Sin cuenta"];
 		}),
 	);

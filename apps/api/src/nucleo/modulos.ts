@@ -318,6 +318,11 @@ export interface TablaQueBaja {
 	orden: number;
 	/** Las columnas que bajan, además de `id`. */
 	columnas: readonly string[];
+	/**
+	 * Los campos que calcula el servidor y bajan con las columnas (las iniciales de la persona), por nombre, en
+	 * SQL sobre la tabla con el alias `t`.
+	 */
+	calculadas?: Readonly<Record<string, SQL>>;
 	/** El filtro del aparato, en SQL sobre la tabla con el alias `t`. */
 	filtro: (aparato: AparatoQueBaja) => SQL;
 	/** Los parámetros que deciden su filtro: si cambia uno, se pide la foto a esos aparatos. */

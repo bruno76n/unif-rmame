@@ -1,12 +1,24 @@
 /**
- * Las tablas de `personal`: las personas (E-).
+ * Las tablas de `personal`: las personas (E-) y su PIN del taller.
  * Fase 7 · docs/modulos/personal/personas.md («La tabla `personas`»)
  *
- * Una persona no necesita cuenta. Baja a la tablet (si tiene PIN del Taller), así que lleva `xid_escritura`.
+ * Una persona no necesita cuenta. Baja a la tablet (si tiene PIN del Taller), así que lleva `xid_escritura`;
+ * su PIN también (solo su hash), con todos sus estados.
  */
 
 import { sql } from "drizzle-orm";
-import { type AnyPgColumn, bigint, check, date, index, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import {
+	type AnyPgColumn,
+	bigint,
+	check,
+	date,
+	index,
+	pgTable,
+	smallint,
+	text,
+	uniqueIndex,
+	uuid,
+} from "drizzle-orm/pg-core";
 import { columnasComunes, columnaXidEscritura, momento } from "../../nucleo/base/columnas.ts";
 import { usuarios } from "../admin/tablas.ts";
 import { ubicaciones } from "../inventario/tablas.ts";
@@ -51,5 +63,45 @@ export const personas = pgTable(
 			sql`(${tabla.formaPago} = 'pieza' and ${tabla.pagoDiaCentavos} is null) or (${tabla.formaPago} <> 'pieza' and ${tabla.pagoDiaCentavos} between 1 and 9999900)`,
 		),
 		check("personas_baja", sql`${tabla.bajaEn} is null or char_length(${tabla.motivoBaja}) between 5 and 80`),
+	],
+);
+
+/** El PIN de 4 cifras con que una persona del Taller entra a la tablet: aquí solo su hash Argon2id. */
+export const pines = pgTable(
+	"pines",
+	{
+		id: uuid("id").primaryKey(),
+		personaId: uuid("persona_id")
+			.notNull()
+			.references(() => personas.id),
+		ubicacionId: uuid("ubicacion_id")
+			.notNull()
+			.references((): AnyPgColumn => ubicaciones.id),
+		pinHash: text("pin_hash").notNull(),
+		estado: text("estado").notNull().default("activo"),
+		intentosFallidos: smallint("intentos_fallidos").notNull().default(0),
+		bloqueadoEn: momento("bloqueado_en"),
+		desbloqueadoEn: momento("desbloqueado_en"),
+		desbloqueadoPor: uuid("desbloqueado_por").references((): AnyPgColumn => usuarios.id),
+		anuladoEn: momento("anulado_en"),
+		anuladoPor: uuid("anulado_por").references((): AnyPgColumn => usuarios.id),
+		motivoAnulacion: text("motivo_anulacion"),
+		...columnasComunes(),
+		...columnaXidEscritura(),
+	},
+	(tabla) => [
+		uniqueIndex("pines_uno_vivo")
+			.on(tabla.personaId, tabla.ubicacionId)
+			.where(sql`${tabla.estado} in ('activo', 'bloqueado')`),
+		index("pines_xid_escritura").on(tabla.xidEscritura),
+		check("pines_estado", sql`${tabla.estado} in ('activo', 'bloqueado', 'anulado')`),
+		check(
+			"pines_anulacion",
+			sql`(${tabla.estado} = 'anulado') = (${tabla.anuladoEn} is not null and ${tabla.motivoAnulacion} is not null)`,
+		),
+		check(
+			"pines_motivo",
+			sql`${tabla.motivoAnulacion} is null or ${tabla.motivoAnulacion} in ('restablecido', 'baja_persona', 'cuenta_google', 'cambio_area')`,
+		),
 	],
 );
