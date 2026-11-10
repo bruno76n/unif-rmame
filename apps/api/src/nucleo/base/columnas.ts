@@ -16,7 +16,7 @@ import { type AnyPgColumn, bigint, customType, text, timestamp, uuid } from "dri
 import { dispositivos, usuarios } from "../../modulos/admin/tablas.ts";
 
 /** Un momento: `timestamptz`. */
-function momento(nombre: string) {
+export function momento(nombre: string) {
 	return timestamp(nombre, { withTimezone: true, mode: "string" });
 }
 

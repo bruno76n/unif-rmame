@@ -280,3 +280,24 @@ export const cerrarLote = definirAccion({
 	salida: z.object({}),
 	permiso: { departamento: "ventas" },
 });
+
+/** Patronaje (aquí, Ventas) pide a Dirección aprobar un desarrollo de prueba: el tipo que su módulo aún no tiene. */
+export const pedirAprobacion = definirAccion({
+	nombre: "prueba.pedir_aprobacion",
+	descripcion: "Pide a Dirección aprobar un desarrollo de prueba",
+	entrada: z.object({
+		desarrollo_id: z.uuid().describe("El desarrollo"),
+		resumen: z.string().min(1).describe("Qué se pide"),
+	}),
+	salida: z.object({ autorizacion_id: z.uuid(), folio: z.string() }),
+	permiso: { departamento: "ventas" },
+});
+
+/** El desarrollo de prueba se cancela, y con él su autorización que espera. */
+export const cancelarDesarrollo = definirAccion({
+	nombre: "prueba.cancelar_desarrollo",
+	descripcion: "Cancela un desarrollo de prueba y la autorización que espera",
+	entrada: z.object({ desarrollo_id: z.uuid().describe("El desarrollo") }),
+	salida: z.object({}),
+	permiso: { departamento: "ventas" },
+});

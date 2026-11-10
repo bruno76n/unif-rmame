@@ -168,5 +168,10 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 10 nov 2026 | 6 | Qué entra en la versión del esquema (decisión 411) | Tablas, orden y columnas · también el filtro y sus parámetros | También el filtro y sus parámetros | No |
 | 10 nov 2026 | 6 | Cuándo revisa la tablet sus llaves foráneas (decisión 412) | Al terminar cada ventana · cuando queda al día | Cuando queda al día | No |
 | 10 nov 2026 | 6 | Qué guarda un apartado que se vuelve a apartar por otro motivo (decisión 413) | Nada · el motivo nuevo y lo que espera | El motivo nuevo y lo que espera | No |
+| 10 nov 2026 | 7 | Dónde se registra el efecto de cada tipo de autorización (decisión 414) | Una tabla en Dirección · cada módulo en su `index.ts` | Cada módulo, en `efectosDeAutorizacion` | No |
+| 10 nov 2026 | 7 | Cómo se asegura un solo renglón de bitácora al decidir (decisión 415) | Confiar en cada efecto · un contexto que no deja escribirla | Un contexto que no deja escribirla | No |
+| 10 nov 2026 | 7 | Qué responde la dueña que decide desde la pantalla equivocada (decisión 416) | `403` · `422 no_se_decide_aqui` | `422 no_se_decide_aqui` | No |
+| 10 nov 2026 | 7 | Cuándo nace la consulta de la pantalla de Autorizaciones (decisión 417) | Fase 19 · fase 7 | Fase 7 | No |
+| 10 nov 2026 | 7 | Una cuenta de prueba de Dirección (decisión 418) | Sesión de verdad en cada prueba · en la base plantilla | En la base plantilla | No |
 | 10 nov 2026 | 5 | La pantalla del Google de desarrollo | Una propia para escoger cuenta · la de desarrollo de oidc-provider, que pide el correo | La de oidc-provider; `pnpm local` escribe los correos de la muestra al arrancar | No |
 

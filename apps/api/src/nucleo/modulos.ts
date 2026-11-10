@@ -351,6 +351,11 @@ export interface Modulo {
 	camposDeSueldo: readonly string[];
 	/** De su `bajada.ts`: lo que baja a cada tipo de aparato. */
 	bajada: readonly TablaQueBaja[];
+	/**
+	 * Por tipo de autorización que es suya, el nombre corto de la interna que aplica la decisión
+	 * (`alta_usuario: "aplicar_decision_alta_usuario"`). Dirección la llama al decidir, en la misma transacción.
+	 */
+	efectosDeAutorizacion: Readonly<Record<string, string>>;
 }
 
 /**
@@ -414,6 +419,7 @@ export function definirModulo(modulo: Pick<Modulo, "nombre"> & Partial<Modulo>):
 		enVivo: {},
 		camposDeSueldo: [],
 		bajada: [],
+		efectosDeAutorizacion: {},
 		...modulo,
 	};
 }
@@ -441,6 +447,8 @@ export interface RegistroDeModulos {
 	camposDeSueldo: ReadonlySet<string>;
 	/** Por tipo de aparato, las tablas que le bajan, en el orden de dependencias. */
 	bajada: ReadonlyMap<string, readonly TablaQueBaja[]>;
+	/** Por tipo de autorización, el nombre completo de la interna que aplica su decisión. */
+	efectosDeAutorizacion: ReadonlyMap<string, string>;
 }
 
 /**
@@ -461,6 +469,28 @@ function juntarBajada(modulos: readonly Modulo[]): ReadonlyMap<string, readonly 
 		tablas.sort((una, otra) => una.orden - otra.orden || (una.tabla < otra.tabla ? -1 : 1));
 	}
 	return porTipo;
+}
+
+/**
+ * Junta el efecto de cada tipo de autorización: la interna de su módulo que aplica la decisión.
+ * @param modulos Los módulos.
+ * @param internas Las internas ya registradas.
+ * @throws Error si un tipo tiene dos efectos o su interna no existe.
+ */
+function juntarEfectos(
+	modulos: readonly Modulo[],
+	internas: ReadonlyMap<string, Interna>,
+): ReadonlyMap<string, string> {
+	const efectos = new Map<string, string>();
+	for (const modulo of modulos) {
+		for (const [tipo, interna] of Object.entries(modulo.efectosDeAutorizacion)) {
+			const nombre = `${modulo.nombre}.${interna}`;
+			if (efectos.has(tipo)) throw new Error(`la autorización ${tipo} tiene dos efectos`);
+			if (!internas.has(nombre)) throw new Error(`el efecto ${nombre} de la autorización ${tipo} no existe`);
+			efectos.set(tipo, nombre);
+		}
+	}
+	return efectos;
 }
 
 /** Dice si lo que exportó un `index.ts` tiene la forma de un módulo. */
@@ -529,6 +559,7 @@ export function registrarModulos(modulos: readonly Modulo[]): RegistroDeModulos 
 		enVivo,
 		camposDeSueldo: new Set(modulos.flatMap((modulo) => modulo.camposDeSueldo)),
 		bajada: juntarBajada(modulos),
+		efectosDeAutorizacion: juntarEfectos(modulos, internas),
 	};
 }
 

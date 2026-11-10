@@ -37,6 +37,7 @@ import {
 	columnaXid8,
 	columnaXidEscritura,
 } from "../../nucleo/base/columnas.ts";
+import { autorizaciones } from "../direccion/tablas.ts";
 import { ubicaciones } from "../inventario/tablas.ts";
 
 /** Un momento: `timestamptz`. */
@@ -601,8 +602,7 @@ export const usuarios = pgTable(
 		esDuena: boolean("es_duena").notNull().default(false),
 		esSoporte: boolean("es_soporte").notNull().default(false),
 		nombre: text("nombre"),
-		/** @llavePendiente autorizaciones.id */
-		autorizacionId: uuid("autorizacion_id"),
+		autorizacionId: uuid("autorizacion_id").references((): AnyPgColumn => autorizaciones.id),
 		activadaEn: momento("activada_en"),
 		activadaPor: uuid("activada_por").references((): AnyPgColumn => usuarios.id),
 		confirmadoConGoogleEn: momento("confirmado_con_google_en"),

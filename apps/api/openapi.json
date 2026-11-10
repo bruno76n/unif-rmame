@@ -2856,6 +2856,470 @@
         }
       }
     },
+    "/v1/acciones/direccion.decidir_autorizacion": {
+      "post": {
+        "tags": [
+          "direccion"
+        ],
+        "description": "Autoriza o rechaza una autorización, una sola vez; el módulo de origen aplica su efecto\n\nPermiso: departamento direccion; «Confirmar con Google» (decidir_autorizacion).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "clave_idempotencia": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "description": "La hace el cliente al apretar el botón y la reusa en cada reintento"
+                  },
+                  "datos": {
+                    "type": "object",
+                    "properties": {
+                      "autorizacion_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "description": "La autorización"
+                      },
+                      "decision": {
+                        "type": "string",
+                        "enum": [
+                          "autorizar",
+                          "rechazar"
+                        ],
+                        "description": "Qué decide"
+                      },
+                      "motivo": {
+                        "description": "Al rechazar, de 5 a 90 letras: le llega a quien lo pidió",
+                        "type": "string",
+                        "minLength": 5,
+                        "maxLength": 90
+                      },
+                      "desde": {
+                        "type": "string",
+                        "enum": [
+                          "direccion",
+                          "bodega",
+                          "admin"
+                        ],
+                        "description": "El departamento de la pantalla desde donde se decide"
+                      }
+                    },
+                    "required": [
+                      "autorizacion_id",
+                      "decision",
+                      "desde"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "version": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991,
+                    "description": "La versión que se leyó"
+                  }
+                },
+                "required": [
+                  "clave_idempotencia",
+                  "datos",
+                  "version"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "estado": {
+                          "type": "string",
+                          "enum": [
+                            "autorizada",
+                            "rechazada"
+                          ],
+                          "description": "Cómo quedó"
+                        },
+                        "folio": {
+                          "type": "string",
+                          "description": "Su folio AU-"
+                        },
+                        "datos": {
+                          "description": "Lo que regresó el efecto del módulo de origen (por ejemplo, el NC-)",
+                          "type": "object",
+                          "additionalProperties": {}
+                        },
+                        "mensaje": {
+                          "type": "string",
+                          "description": "El aviso verde que muestra la pantalla"
+                        },
+                        "version": {
+                          "description": "La versión nueva de lo que cambió, si la acción editó algo",
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "estado",
+                        "folio",
+                        "mensaje"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "avisos": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Mensajes que no bloquean"
+                    },
+                    "secreto_entregado": {
+                      "description": "La respuesta repetida de una acción que entregó un secreto: el secreto ya no viene",
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "avisos"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/direccion.autorizaciones": {
+      "get": {
+        "tags": [
+          "direccion"
+        ],
+        "description": "Las autorizaciones que esperan, con sus filtros por tipo, y las resueltas\n\nPermiso: departamento direccion.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ajuste_inventario",
+                "recepcion_de_mas",
+                "nota_credito",
+                "pago_fuera_de_lo_normal",
+                "aprobar_desarrollo",
+                "alta_usuario"
+              ]
+            },
+            "in": "query",
+            "name": "tipo",
+            "required": false,
+            "description": "Solo las que esperan de ese tipo"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "cursor_resueltas",
+            "required": false,
+            "description": "El cursor de la página anterior de las resueltas"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "filtros": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "tipo": {
+                                "nullable": true,
+                                "type": "string",
+                                "enum": [
+                                  "ajuste_inventario",
+                                  "recepcion_de_mas",
+                                  "nota_credito",
+                                  "pago_fuera_de_lo_normal",
+                                  "aprobar_desarrollo",
+                                  "alta_usuario"
+                                ]
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "cuantas": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "tipo",
+                              "nombre",
+                              "cuantas"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "«Todas» y cada tipo con algo pendiente, con su conteo"
+                        },
+                        "por_autorizar": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "folio": {
+                                "type": "string"
+                              },
+                              "tipo": {
+                                "type": "string",
+                                "enum": [
+                                  "ajuste_inventario",
+                                  "recepcion_de_mas",
+                                  "nota_credito",
+                                  "pago_fuera_de_lo_normal",
+                                  "aprobar_desarrollo",
+                                  "alta_usuario"
+                                ]
+                              },
+                              "departamento": {
+                                "type": "string",
+                                "description": "El departamento que la pide"
+                              },
+                              "pedida_en": {
+                                "type": "string",
+                                "description": "Cuándo se pidió"
+                              },
+                              "dias_esperando": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "resumen": {
+                                "type": "string",
+                                "description": "Qué se pide, ya armado"
+                              },
+                              "detalle": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "importe_centavos": {
+                                "nullable": true,
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "importe_facturado_centavos": {
+                                "nullable": true,
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "cantidad": {
+                                "nullable": true,
+                                "description": "Lo recibido de más, en texto con tres decimales",
+                                "type": "string"
+                              },
+                              "unidad": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "pedida_por": {
+                                "nullable": true,
+                                "description": "«Lo pidió {persona}»",
+                                "type": "string"
+                              },
+                              "pedida_por_ti": {
+                                "type": "boolean",
+                                "description": "«Pedida por ti»: la pidió la cuenta que ve"
+                              },
+                              "puede_decidir": {
+                                "type": "boolean"
+                              },
+                              "no_puede_porque": {
+                                "nullable": true,
+                                "description": "Por qué no la puede decidir quien ve",
+                                "type": "string"
+                              },
+                              "documento_id": {
+                                "nullable": true,
+                                "description": "El documento al que apunta",
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "version": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "folio",
+                              "tipo",
+                              "departamento",
+                              "pedida_en",
+                              "dias_esperando",
+                              "resumen",
+                              "detalle",
+                              "cantidad",
+                              "unidad",
+                              "pedida_por",
+                              "pedida_por_ti",
+                              "puede_decidir",
+                              "no_puede_porque",
+                              "documento_id",
+                              "version"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "De la más vieja a la más nueva"
+                        },
+                        "resueltas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "folio": {
+                                "type": "string"
+                              },
+                              "tipo": {
+                                "type": "string",
+                                "enum": [
+                                  "ajuste_inventario",
+                                  "recepcion_de_mas",
+                                  "nota_credito",
+                                  "pago_fuera_de_lo_normal",
+                                  "aprobar_desarrollo",
+                                  "alta_usuario"
+                                ]
+                              },
+                              "resuelta_en": {
+                                "type": "string"
+                              },
+                              "resumen": {
+                                "type": "string"
+                              },
+                              "detalle": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "resultado": {
+                                "type": "string",
+                                "enum": [
+                                  "autorizada",
+                                  "rechazada",
+                                  "cancelada"
+                                ]
+                              },
+                              "motivo": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "misma_persona": {
+                                "type": "boolean",
+                                "description": "Pedida y autorizada por la misma persona"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "folio",
+                              "tipo",
+                              "resuelta_en",
+                              "resumen",
+                              "detalle",
+                              "resultado",
+                              "motivo",
+                              "misma_persona"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "La más reciente arriba"
+                        },
+                        "cursor_resueltas": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "hay_mas_resueltas": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "filtros",
+                        "por_autorizar",
+                        "resueltas",
+                        "cursor_resueltas",
+                        "hay_mas_resueltas"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/archivos/subida": {
       "post": {
         "tags": [
