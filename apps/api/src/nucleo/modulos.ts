@@ -198,10 +198,15 @@ export interface ContextoDeRuta extends ContextoDeConsulta {
 	enTransaccion: <T>(hacer: (contexto: ContextoDeAccion) => Promise<T>) => Promise<T>;
 	/** El almacén de archivos (R2). */
 	almacen: Almacen | undefined;
+	/** Lo que registraron los módulos (sus tipos de etiqueta, por ejemplo). */
+	registro: RegistroDeModulos;
 }
 
-/** Lo que regresa una ruta fija: un cuerpo JSON con su estado, o una redirección. */
-export type RespuestaDeRuta = { estado: number; cuerpo: unknown } | { redirigir: string };
+/** Lo que regresa una ruta fija: un cuerpo JSON con su estado, un contenido con su tipo, o una redirección. */
+export type RespuestaDeRuta =
+	| { estado: number; cuerpo: unknown }
+	| { contenido: string | Uint8Array; tipo: string }
+	| { redirigir: string };
 
 /**
  * Una ruta fija que no es acción ni consulta (`POST /v1/archivos/subida`): la registra su módulo y el
@@ -220,6 +225,37 @@ export interface RutaFija {
 		peticion: { cuerpo: unknown; parametros: unknown; busqueda: unknown },
 	) => Promise<RespuestaDeRuta>;
 }
+
+/**
+ * Un tipo de etiqueta o de hoja que registra su módulo: quién lo puede pedir y cómo se dibuja (con los
+ * datos ya recortados según quien lo pide). Los del negocio llegan en la fase 20.
+ */
+export interface TipoDeEtiqueta {
+	/** `prenda`, `rollo`, `bulto`, `lote`… */
+	tipo: string;
+	/** Los departamentos que lo pueden pedir; la dueña, todos. */
+	departamentos: readonly string[];
+	/** Un permiso fino que pide además (las guías piden `imprime_guias`). */
+	permisoFino?: string;
+	/** Dibuja lo de esos ids: ZPL en texto o PDF en bytes. */
+	dibujar: (
+		contexto: ContextoDeConsulta,
+		pedido: { ids: readonly string[]; formato: "zpl" | "pdf"; copias: number },
+	) => Promise<string | Uint8Array>;
+}
+
+/** A quién va un aviso en vivo: a una sesión, a un aparato o a todas las sesiones de una cuenta. */
+export type DestinoEnVivo = { sesionId: string } | { dispositivoId: string } | { usuarioId: string };
+
+/** Un aviso en vivo que nace de un evento: su nombre (`impresion`), sus datos y a quién va. */
+export interface EnvioEnVivo {
+	para: DestinoEnVivo;
+	nombre: string;
+	datos: Record<string, unknown>;
+}
+
+/** Lo que manda en vivo un tipo de evento, aparte de `cambios`. */
+export type EnVivo = (evento: { id: string; tipo: string; datos: unknown }) => readonly EnvioEnVivo[];
 
 /** Un evento ya guardado en la bandeja, como lo ve quien lo atiende. */
 export interface EventoGuardado {
@@ -254,6 +290,10 @@ export interface Modulo {
 	alEvento: Readonly<Record<string, AlEvento>>;
 	/** Sus rutas fijas. */
 	rutas: readonly RutaFija[];
+	/** Sus tipos de etiqueta y de hoja. */
+	tiposDeEtiqueta: readonly TipoDeEtiqueta[];
+	/** Por tipo de evento, lo que manda en vivo además de `cambios`. */
+	enVivo: Readonly<Record<string, EnVivo>>;
 }
 
 /**
@@ -313,6 +353,8 @@ export function definirModulo(modulo: Pick<Modulo, "nombre"> & Partial<Modulo>):
 		lectores: {},
 		alEvento: {},
 		rutas: [],
+		tiposDeEtiqueta: [],
+		enVivo: {},
 		...modulo,
 	};
 }
@@ -332,6 +374,10 @@ export interface RegistroDeModulos {
 	alEvento: ReadonlyMap<string, readonly AlEvento[]>;
 	/** Las rutas fijas de todos los módulos. */
 	rutas: readonly RutaFija[];
+	/** Los tipos de etiqueta y de hoja, por tipo. */
+	tiposDeEtiqueta: ReadonlyMap<string, TipoDeEtiqueta>;
+	/** Por tipo de evento, lo que mandan en vivo los módulos. */
+	enVivo: ReadonlyMap<string, readonly EnVivo[]>;
 }
 
 /** Dice si lo que exportó un `index.ts` tiene la forma de un módulo. */
@@ -354,6 +400,8 @@ export function registrarModulos(modulos: readonly Modulo[]): RegistroDeModulos 
 	const trabajos = new Map<string, Trabajo>();
 	const lectores = new Map<string, readonly string[]>();
 	const alEvento = new Map<string, AlEvento[]>();
+	const tiposDeEtiqueta = new Map<string, TipoDeEtiqueta>();
+	const enVivo = new Map<string, EnVivo[]>();
 	const agregar = <T>(mapa: Map<string, T>, modulo: string, nombre: string, valor: T) => {
 		if (!nombre.startsWith(`${modulo}.`)) throw new Error(`${nombre} no es del módulo ${modulo}`);
 		if (mapa.has(nombre)) throw new Error(`${nombre} está registrado dos veces`);
@@ -370,6 +418,12 @@ export function registrarModulos(modulos: readonly Modulo[]): RegistroDeModulos 
 		for (const [tabla, departamentos] of Object.entries(modulo.lectores)) lectores.set(tabla, departamentos);
 		for (const [tipo, hacer] of Object.entries(modulo.alEvento))
 			alEvento.set(tipo, [...(alEvento.get(tipo) ?? []), hacer]);
+		for (const [tipo, mandar] of Object.entries(modulo.enVivo)) enVivo.set(tipo, [...(enVivo.get(tipo) ?? []), mandar]);
+		for (const etiqueta of modulo.tiposDeEtiqueta) {
+			if (tiposDeEtiqueta.has(etiqueta.tipo))
+				throw new Error(`el tipo de etiqueta ${etiqueta.tipo} está registrado dos veces`);
+			tiposDeEtiqueta.set(etiqueta.tipo, etiqueta);
+		}
 	}
 	return {
 		modulos,
@@ -388,6 +442,8 @@ export function registrarModulos(modulos: readonly Modulo[]): RegistroDeModulos 
 			}
 			return modulo.rutas;
 		}),
+		tiposDeEtiqueta,
+		enVivo,
 	};
 }
 

@@ -3,7 +3,8 @@
  * versiones mínimas de cada app, cuánto se guardan los eventos y cada cuánto se apunta una consulta sensible.
  * Fase 4 · docs/modulos/admin/configuracion.md («Parámetros»), docs/cimientos/API.md,
  * docs/cimientos/EVENTOS-Y-TRABAJOS.md («Parámetros»), docs/modulos/admin/bitacora.md,
- * docs/modulos/admin/avisos.md y docs/modulos/admin/archivos.md («Parámetros»)
+ * docs/modulos/admin/avisos.md, docs/modulos/admin/archivos.md y docs/modulos/admin/impresion.md
+ * («Parámetros»)
  */
 
 import { type DefinicionDeParametro, semillaDeParametros } from "../../nucleo/parametros.ts";
@@ -113,6 +114,27 @@ export const parametrosDeAdmin: readonly DefinicionDeParametro[] = [
 		inicial: 5,
 		minimo: 1,
 		orden: 960,
+	},
+	{
+		clave: "admin.copias_max_impresion",
+		seccion: "tecnico",
+		nombre: "Copias máximas de un trabajo de impresión",
+		explicacion: "Las copias que puede llevar un trabajo de impresión",
+		tipo: "entero",
+		inicial: 100,
+		minimo: 1,
+		orden: 970,
+	},
+	{
+		clave: "admin.minutos_puente_sin_contacto",
+		seccion: "tecnico",
+		nombre: "Minutos sin contacto del puente",
+		explicacion: "Sin señales del puente en ese tiempo, la impresora no está conectada",
+		tipo: "entero",
+		unidad: "min",
+		inicial: 5,
+		minimo: 1,
+		orden: 980,
 	},
 	{
 		clave: "admin.dias_guardar_eventos",

@@ -178,3 +178,17 @@ export const adjuntar = definirAccion({
 	salida: z.object({}),
 	permiso: { departamento: "ventas" },
 });
+
+/** Imprime etiquetas de prueba en la impresora de una ubicación, con `admin.mandar_a_imprimir`. */
+export const imprimir = definirAccion({
+	nombre: "prueba.imprimir",
+	descripcion: "Imprime etiquetas de prueba de unas notas",
+	entrada: z.object({
+		ubicacion_id: z.uuid().describe("La ubicación de la impresora"),
+		ids: z.array(z.uuid()).describe("Las notas"),
+		copias: z.number().int().describe("Las copias"),
+	}),
+	salida: z.object({ trabajo_id: z.uuid().describe("El trabajo") }),
+	permiso: { departamento: "ventas" },
+	errores: [{ codigo: "impresora_sin_puente", mensaje: "La impresora no está conectada. Usa el PDF." }],
+});

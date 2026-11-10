@@ -25,6 +25,7 @@ import {
 	editarSinVersion,
 	fechar,
 	ficha,
+	imprimir,
 	listarNotas,
 	provocar,
 	trampa,
@@ -64,6 +65,17 @@ export default definirModulo({
 	nombre: "prueba",
 	lectores: { prueba_notas: ["ventas"] },
 	semillas: semillasDePrueba,
+	// La etiqueta de prueba: la piden Ventas o un puente con su trabajo; dice las notas y las copias.
+	tiposDeEtiqueta: [
+		{
+			tipo: "prueba",
+			departamentos: ["ventas"],
+			dibujar: async (_contexto, pedido) =>
+				pedido.formato === "zpl"
+					? `^XA^FD${pedido.ids.join(",")}^FS^PQ${pedido.copias}^XZ`
+					: new TextEncoder().encode(`%PDF-prueba ${pedido.ids.join(",")}`),
+		},
+	],
 	trabajos: [
 		{
 			nombre: "prueba.resumen",
@@ -144,6 +156,13 @@ export default definirModulo({
 			});
 			contexto.bitacora({ descripcion: "Adjuntó un comprobante", entidad: "prueba_notas", entidadId: datos.nota_id });
 			return { resultado: { mensaje: "Comprobante adjunto" } };
+		}),
+		implementarAccion(imprimir, async (contexto, datos) => {
+			const { trabajo_id } = (await contexto.interna("admin.mandar_a_imprimir", { ...datos, tipo: "prueba" })) as {
+				trabajo_id: string;
+			};
+			contexto.bitacora({ descripcion: `Mandó a imprimir ${datos.ids.length} etiquetas` });
+			return { resultado: { mensaje: "Etiquetas mandadas", trabajo_id } };
 		}),
 		implementarAccion(confirmar, async (contexto) => {
 			contexto.bitacora({ descripcion: "Confirmó" });

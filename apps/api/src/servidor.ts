@@ -289,6 +289,7 @@ export async function crearServidor(dependencias: DependenciasDelServidor) {
 					ahora,
 					diaDeNegocio: diaDeNegocio(ahora),
 					almacen: dependencias.almacen,
+					registro,
 					apuntarConsultaSensible: (renglon) => apuntarConsultaSensible(quien, ruta.nombre, ahora, renglon),
 					enTransaccion: (hacer) =>
 						enTransaccion(base, (transaccion) =>
@@ -305,6 +306,11 @@ export async function crearServidor(dependencias: DependenciasDelServidor) {
 				});
 				respuesta.header("cache-control", "no-store");
 				if ("redirigir" in resultado) return respuesta.redirect(resultado.redirigir, 302);
+				if ("contenido" in resultado) {
+					return respuesta
+						.type(resultado.tipo)
+						.send(typeof resultado.contenido === "string" ? resultado.contenido : Buffer.from(resultado.contenido));
+				}
 				return respuesta.code(resultado.estado).send(resultado.cuerpo);
 			},
 		});

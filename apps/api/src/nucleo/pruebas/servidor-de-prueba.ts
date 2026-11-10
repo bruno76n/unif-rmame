@@ -78,6 +78,18 @@ export const quienesDePrueba: Record<string, QuienLlama> = {
 		permisosFinos: [],
 		confirmadoConGoogleEn: undefined,
 	},
+	puente: {
+		tipo: "aparato",
+		dispositivoId: "01936f2e-0000-7000-8000-000000000031",
+		tipoDeAparato: "puente",
+		personaId: undefined,
+	},
+	otro_puente: {
+		tipo: "aparato",
+		dispositivoId: "01936f2e-0000-7000-8000-000000000032",
+		tipoDeAparato: "puente",
+		personaId: undefined,
+	},
 	tablet: {
 		tipo: "aparato",
 		dispositivoId: "01936f2e-0000-7000-8000-000000000021",
@@ -130,12 +142,21 @@ export function cuentasDePruebaPorRegla(regla: string): string[] {
 }
 
 /**
- * El registro con las dos lecturas de cuentas que dará `usuarios` en la fase 5: las cuentas de una regla
- * y el correo de una cuenta (`{nombre}@alameda.invalid`).
+ * El registro con las lecturas que darán `usuarios` (fase 5) y `dispositivos` (fase 6): las cuentas de una
+ * regla, el correo de una cuenta (`{nombre}@alameda.invalid`) y los datos de un aparato.
  * @param registro Lo que registraron los módulos.
+ * @param aparatos Los aparatos de prueba.
  */
-export function conCuentasDePrueba(registro: RegistroDeModulos): RegistroDeModulos {
+export function conCuentasDePrueba(
+	registro: RegistroDeModulos,
+	aparatos: ReadonlyMap<string, AparatoDePrueba> = aparatosDePrueba(),
+): RegistroDeModulos {
 	const lecturas = new Map(registro.lecturas);
+	lecturas.set("admin.datos_de_aparato", async (_contexto, datos) => {
+		const id =
+			typeof datos === "object" && datos !== null && "dispositivo_id" in datos ? String(datos.dispositivo_id) : "";
+		return aparatos.get(id);
+	});
 	lecturas.set("admin.cuentas_por_regla", async (_contexto, datos) => {
 		const regla = typeof datos === "object" && datos !== null && "regla" in datos ? String(datos.regla) : "";
 		return cuentasDePruebaPorRegla(regla);
@@ -151,6 +172,55 @@ export function conCuentasDePrueba(registro: RegistroDeModulos): RegistroDeModul
 	return { ...registro, lecturas };
 }
 
+/** Los datos de un aparato como los dará `dispositivos` en la fase 6. */
+export interface AparatoDePrueba {
+	tipo: string;
+	revocado: boolean;
+	nombre: string;
+	ultimo_contacto_en: string | null;
+	version_app: string | null;
+}
+
+/**
+ * Los aparatos de prueba, por su id: los dos puentes, conectados ahora con la versión 1.0.0. La prueba
+ * los cambia para ver un puente callado, viejo o revocado.
+ */
+export function aparatosDePrueba(): Map<string, AparatoDePrueba> {
+	const ahora = new Date().toISOString();
+	return new Map([
+		[
+			"01936f2e-0000-7000-8000-000000000031",
+			{
+				tipo: "puente_impresion",
+				revocado: false,
+				nombre: "Puente de Aduana",
+				ultimo_contacto_en: ahora,
+				version_app: "1.0.0",
+			},
+		],
+		[
+			"01936f2e-0000-7000-8000-000000000032",
+			{
+				tipo: "puente_impresion",
+				revocado: false,
+				nombre: "Puente del Taller",
+				ultimo_contacto_en: ahora,
+				version_app: "1.0.0",
+			},
+		],
+		[
+			"01936f2e-0000-7000-8000-000000000021",
+			{
+				tipo: "tablet_taller",
+				revocado: false,
+				nombre: "Tablet del taller",
+				ultimo_contacto_en: ahora,
+				version_app: "1.0.0",
+			},
+		],
+	]);
+}
+
 /** Lo que guarda el servidor de prueba para que las pruebas lo revisen. */
 export interface ServidorDePrueba {
 	app: Awaited<ReturnType<typeof crearServidor>>;
@@ -161,6 +231,8 @@ export interface ServidorDePrueba {
 	registro: string[];
 	/** Lo que registraron los módulos de la API y los de prueba. */
 	modulos: RegistroDeModulos;
+	/** Los aparatos de prueba, que la prueba puede cambiar. */
+	aparatos: Map<string, AparatoDePrueba>;
 	/** La versión mínima del parámetro, que la prueba puede cambiar. */
 	parametros: { versionMinima: string };
 	/**
@@ -220,7 +292,8 @@ export async function crearServidorDePrueba(
 	const modulosDePrueba = await cargarModulos(join(import.meta.dirname, "modulos"));
 	const base = opciones.otraInstanciaDe?.base ?? (await crearBaseConTablasDePrueba(modulosDePrueba.semillas));
 	const deLaApi = await cargarModulos(join(import.meta.dirname, "../../modulos"));
-	const registro = conCuentasDePrueba(registrarModulos([...deLaApi.modulos, ...modulosDePrueba.modulos]));
+	const aparatos = aparatosDePrueba();
+	const registro = conCuentasDePrueba(registrarModulos([...deLaApi.modulos, ...modulosDePrueba.modulos]), aparatos);
 	const pedidos: ServidorDePrueba["pedidos"] = { bitacora: [], eventos: [] };
 	const lineas: string[] = [];
 	const parametros = { versionMinima: "1.0.0" };
@@ -276,6 +349,7 @@ export async function crearServidorDePrueba(
 		pedidos,
 		registro: lineas,
 		modulos: registro,
+		aparatos,
 		parametros,
 		fallas,
 		cerrar: async () => {

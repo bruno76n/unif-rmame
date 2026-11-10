@@ -462,3 +462,48 @@ export const archivos = pgTable(
 		check("archivos_proposito", sql.raw(`proposito in (${propositosDeArchivo.map((p) => `'${p}'`).join(", ")})`)),
 	],
 );
+
+/** Cada impresora de etiquetas: de una ubicación, con su programa puente. */
+export const impresoras = pgTable("impresoras", {
+	id: uuid("id").primaryKey(),
+	nombre: text("nombre").notNull(),
+	modelo: text("modelo").notNull(),
+	ubicacionId: uuid("ubicacion_id")
+		.notNull()
+		.references(() => ubicaciones.id),
+	/** @llavePendiente dispositivos.id */
+	dispositivoId: uuid("dispositivo_id"),
+	...bajaSinReactivar(),
+	...columnasComunes(),
+});
+
+/** Cada trabajo de impresión: de `por_imprimir` a `mandado` y a `impreso` o `fallo`. */
+export const trabajosImpresion = pgTable(
+	"trabajos_impresion",
+	{
+		id: uuid("id").primaryKey(),
+		impresoraId: uuid("impresora_id")
+			.notNull()
+			.references(() => impresoras.id),
+		tipo: text("tipo").notNull(),
+		ids: uuid("ids").array().notNull(),
+		copias: smallint("copias").notNull(),
+		estado: text("estado").notNull(),
+		mandadoEn: momento("mandado_en"),
+		terminadoEn: momento("terminado_en"),
+		error: text("error"),
+		/** @llavePendiente usuarios.id */
+		pedidoPor: uuid("pedido_por"),
+		/** @llavePendiente sesiones.id */
+		sesionId: uuid("sesion_id"),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		index("trabajos_impresion_por_imprimir")
+			.on(tabla.impresoraId, tabla.creadoEn)
+			.where(sql`${tabla.estado} = 'por_imprimir'`),
+		check("trabajos_impresion_estado", sql`${tabla.estado} in ('por_imprimir', 'mandado', 'impreso', 'fallo')`),
+		check("trabajos_impresion_error", sql`${tabla.estado} <> 'fallo' or ${tabla.error} is not null`),
+		check("trabajos_impresion_copias", sql`${tabla.copias} >= 1`),
+	],
+);

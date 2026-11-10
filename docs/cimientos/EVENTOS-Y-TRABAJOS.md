@@ -182,6 +182,7 @@ Este archivo es dueño del mecanismo; cada evento lo produce el archivo de su te
   - El reparto de cada evento también corre lo que los módulos declaran en `alEvento` para ese tipo, con un contexto del sistema (`sistema.procesar_eventos`): ahí nacen los avisos a personas.
   - `trabajo_fallido` a soporte sale con `admin.crear_aviso`.
   - Los avisos en vivo también escuchan `ua_avisos` y mandan `aviso` a las sesiones de su cuenta.
+  - **Parte 6:** además de `cambios`, cada evento manda lo que declaran los módulos en `enVivo` para su tipo, a una sesión, a un aparato o a una cuenta. Es el caso de `impresion` al puente e `impresion_terminada` a la sesión que pidió imprimir.
   - `nucleo/correo.ts` da el envío de los correos al contexto de cada trabajo.
 - **Depurar eventos** (`modulos/admin/trabajos/depurar-eventos.ts`, parte 2):
   - Es el trabajo `admin.depurar_eventos`. Lee `admin.dias_guardar_eventos` y llama a `soltar_particiones_de_eventos(corte)`, que corre con los permisos del dueño.

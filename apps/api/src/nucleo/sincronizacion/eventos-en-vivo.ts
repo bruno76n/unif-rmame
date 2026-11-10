@@ -15,7 +15,7 @@ import type pg from "pg";
 import { avisos, eventos } from "../../modulos/admin/tablas.ts";
 import type { AparatoQueLlama, QuienLlama } from "../acceso/quien.ts";
 import type { Base } from "../base/conexion.ts";
-import type { RegistroDeModulos } from "../modulos.ts";
+import type { DestinoEnVivo, RegistroDeModulos } from "../modulos.ts";
 
 /** El canal de `LISTEN`/`NOTIFY` de los eventos. */
 export const canalDeEventos = "ua_eventos";
@@ -58,8 +58,11 @@ export interface SalidaDeEventos {
 /** Una conexión abierta, con lo que le toca. */
 interface Conexion {
 	salida: SalidaDeEventos;
-	/** La cuenta de la sesión, para sus avisos; un aparato no tiene. */
+	/** La cuenta y la sesión, para sus avisos; un aparato no tiene. */
 	usuarioId: string | undefined;
+	sesionId: string | undefined;
+	/** El aparato, si es uno. */
+	dispositivoId: string | undefined;
 	/** De las tablas de un evento, las que le tocan (vacío si ninguna). */
 	tablasQueLeTocan: (tablas: readonly string[], ubicacionIds: readonly string[]) => string[];
 }
@@ -107,10 +110,19 @@ export function crearAvisosEnVivo(dependencias: DependenciasDeLosAvisosEnVivo) {
 	let escucha: pg.PoolClient | undefined;
 	let latido: NodeJS.Timeout | undefined;
 
-	/** Lee el evento que avisó el worker y manda `cambios` a quien le toca. */
+	/** Dice si un aviso en vivo va a esta conexión. */
+	function vaA(conexion: Conexion, para: DestinoEnVivo): boolean {
+		if ("sesionId" in para) return conexion.sesionId === para.sesionId;
+		if ("dispositivoId" in para) return conexion.dispositivoId === para.dispositivoId;
+		return conexion.usuarioId === para.usuarioId;
+	}
+
+	/** Lee el evento que avisó el worker y manda `cambios` a quien le toca, y lo que declaren los módulos. */
 	async function repartir(eventoId: string): Promise<void> {
 		const [evento] = await dependencias.base
 			.select({
+				tipo: eventos.tipo,
+				datos: eventos.datos,
 				tablas: eventos.tablas,
 				ubicacionIds: eventos.ubicacionIds,
 				entidad: eventos.entidad,
@@ -119,7 +131,13 @@ export function crearAvisosEnVivo(dependencias: DependenciasDeLosAvisosEnVivo) {
 			.from(eventos)
 			.where(eq(eventos.id, eventoId));
 		if (evento === undefined) return;
+		const envios = (dependencias.registro.enVivo.get(evento.tipo) ?? []).flatMap((mandar) =>
+			mandar({ id: eventoId, tipo: evento.tipo, datos: evento.datos }),
+		);
 		for (const conexion of abiertas) {
+			for (const envio of envios) {
+				if (vaA(conexion, envio.para)) conexion.salida.escribir(formatoDeEvento(envio.nombre, envio.datos));
+			}
 			const tablas = conexion.tablasQueLeTocan(evento.tablas, evento.ubicacionIds);
 			if (tablas.length === 0) continue;
 			conexion.salida.escribir(
@@ -183,6 +201,8 @@ export function crearAvisosEnVivo(dependencias: DependenciasDeLosAvisosEnVivo) {
 			const conexion: Conexion = {
 				salida,
 				usuarioId: quien.tipo === "cuenta" ? quien.usuarioId : undefined,
+				sesionId: quien.tipo === "cuenta" ? quien.sesionId : undefined,
+				dispositivoId: quien.tipo === "aparato" ? quien.dispositivoId : undefined,
 				tablasQueLeTocan: filtroDe(quien, dependencias.registro.lectores, alcance),
 			};
 			salida.escribir(`retry: ${esperaParaReconectar}\n\n`);

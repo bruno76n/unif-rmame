@@ -148,4 +148,33 @@ Los dos van en la sección `tecnico`.
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 4.*
+**Fase 4, parte 6.**
+
+- **Las tablas** `impresoras` y `trabajos_impresion` están en `apps/api/src/modulos/admin/tablas.ts` (migración `0008_impresion.sql`), con su disparador común y los CHECK del estado, del error con `fallo` y de las copias.
+- **El puente.** Si es un puente, si está conectado y su versión salen de la lectura `admin.datos_de_aparato` (`dominio/impresion.ts`). La da `dispositivos` en la fase 6; aquí la pone el servidor de prueba con los datos que pone cada prueba (decisión 364). Un puente está conectado si:
+  - es `puente_impresion` sin revocar;
+  - dio señales en los últimos `admin.minutos_puente_sin_contacto`;
+  - su versión no es menor que la mínima.
+- **`admin.mandar_a_imprimir`** (`internas/mandar-a-imprimir.ts`):
+  - toma la impresora vigente de la ubicación (o la que se dice) y revisa las copias;
+  - responde `impresora_sin_puente` con el nombre de la ubicación;
+  - escribe el trabajo `por_imprimir` con quién lo pidió y su sesión;
+  - guarda `impresion.pedida`.
+- **`admin.guardar_impresora`** (`acciones/guardar-impresora.ts`):
+  - da de alta sin `impresora_id`; cambia o da de baja con él, y entonces pide la `version`, que va en los datos (decisión 365);
+  - revisa el puente (`puente_no_valido`, `puente_ocupado`) y el motivo de la baja con `general.largo_minimo_motivo`.
+- **`admin.trabajos_impresion`** (`acciones/trabajos-impresion.ts`) entrega al puente los trabajos `por_imprimir` de su impresora, en orden, con la ruta de su ZPL, y los pasa a `mandado`. `rotar_llave` llega con la fase 6.
+- **`admin.confirmar_impresion`** (`acciones/confirmar-impresion.ts`):
+  - solo sobre trabajos de una impresora del puente que llama;
+  - un trabajo terminado contesta lo mismo sin cambiar;
+  - guarda `impresion.terminada` con el texto para quien pidió.
+- **Las dos acciones del puente** van sin bitácora (`sinBitacora`). Sus contratos están en `contratos/admin/impresion.ts`.
+- **En vivo** (`modulos/admin/en-vivo.ts`): `impresion.pedida` manda `impresion` al aparato del puente, e `impresion.terminada` manda `impresion_terminada` a la sesión que pidió. Es lo que un módulo declara en `enVivo` (decisión 366).
+- **`GET /v1/etiquetas/{tipo}/{id}`** (`rutas/etiquetas.ts`, ruta fija):
+  - busca el tipo entre los que registran los módulos (`tiposDeEtiqueta`: departamentos, permiso fino y su dibujo; decisión 367);
+  - deja pedirla a un departamento del tipo o al puente que tiene un trabajo pendiente con esos ids;
+  - regresa ZPL o PDF.
+- **Las pruebas:**
+  - `internas/mandar-a-imprimir.prueba.ts` (sin impresora, sin puente, puente callado, viejo o revocado, las copias y `guardar_impresora`);
+  - `acciones/confirmar-impresion.prueba.ts` (de `por_imprimir` a `mandado` y a `impreso` o `fallo`, confirmar dos veces, otro puente, la etiqueta para el puente y para Ventas, y lo que se manda en vivo).
+  - El tipo de prueba es `prueba`, con la acción `prueba.imprimir`.
