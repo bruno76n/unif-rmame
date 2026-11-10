@@ -63,4 +63,41 @@ describe("una edición con versión vieja recibe 409 con la versión actual y su
 		});
 		expect(respuesta.estado).toBe(404);
 	});
+
+	it("una nota que la cuenta no puede ver responde 404 al editarla, no 409, y sus datos no viajan", async () => {
+		const creada = await mandarAccion(
+			servidor,
+			"prueba.crear_nota",
+			{ datos: { texto: "privada de la dueña", monto_centavos: 1 } },
+			"duena",
+		);
+		const id = String((creada.cuerpo.resultado as { id: string }).id);
+		const deVentas = await mandarAccion(servidor, "prueba.editar_nota", { datos: { id, texto: "otra" }, version: 0 });
+		expect(deVentas.estado).toBe(404);
+		expect(JSON.stringify(deVentas.cuerpo)).not.toContain("privada");
+	});
+
+	it("el 409 lleva los datos recortados según la cuenta: el monto solo para quien lo puede ver", async () => {
+		const { id, version } = await crearYLeer("con monto");
+		await mandarAccion(servidor, "prueba.editar_nota", { datos: { id, texto: "cambiada" }, version });
+		const deVentas = await mandarAccion(servidor, "prueba.editar_nota", { datos: { id, texto: "x" }, version });
+		expect(deVentas.estado).toBe(409);
+		expect(deVentas.cuerpo.datos).not.toHaveProperty("monto_centavos");
+		const deLaDuena = await mandarAccion(
+			servidor,
+			"prueba.editar_nota",
+			{ datos: { id, texto: "x" }, version },
+			"duena",
+		);
+		expect(deLaDuena.cuerpo.datos).toMatchObject({ monto_centavos: 1 });
+	});
+
+	it("una acción que edita y no toma su versión no se guarda", async () => {
+		const { id } = await crearYLeer("antes de editar");
+		const respuesta = await mandarAccion(servidor, "prueba.editar_sin_version", { datos: { id }, version: 0 });
+		expect(respuesta.estado).toBe(500);
+		const { rows } = await servidor.base.dueno.query("SELECT texto FROM prueba_notas WHERE id = $1", [id]);
+		// La acción cambiaba el texto a «sin versión»: el corredor la deshizo y quedó el de antes.
+		expect(rows[0]?.texto).toBe("antes de editar");
+	});
 });

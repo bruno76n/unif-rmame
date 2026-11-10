@@ -4,6 +4,7 @@
  */
 
 import { definirAccion, definirConsulta, paginaDe, parametrosDePagina } from "@uniformame/compartido/contratos/definir";
+import { Temporal } from "temporal-polyfill";
 import { z } from "zod";
 
 /** Crea una nota; con `con_pin`, entrega un PIN que es secreto; con `fallar`, falla en ese paso. */
@@ -15,7 +16,7 @@ export const crearNota = definirAccion({
 		monto_centavos: z.number().int().nonnegative().describe("Un monto, en centavos"),
 		con_pin: z.boolean().optional().describe("Si entrega un PIN"),
 		fallar: z
-			.enum(["despues_de_la_interna", "con_regla", "con_error"])
+			.enum(["despues_de_la_interna", "con_regla", "con_choque_una_vez", "campo_de_mas", "secreto_en_aviso"])
 			.optional()
 			.describe("Dónde falla, para las pruebas"),
 	}),
@@ -99,8 +100,52 @@ export const provocar = definirAccion({
 	nombre: "prueba.provocar",
 	descripcion: "Lanza un error de la tabla",
 	entrada: z.object({
-		error: z.enum(["demasiados_intentos", "no_disponible", "interno"]).describe("El error que lanza"),
+		error: z.enum(["demasiados_intentos", "no_disponible", "interno", "base"]).describe("El error que lanza"),
+		valor: z.string().optional().describe("Un valor que lleva la consulta que falla en la base"),
 	}),
 	salida: z.object({}),
+	permiso: { departamento: "ventas" },
+});
+
+/** Edita sin tomar su versión: el corredor no la deja guardar. */
+export const editarSinVersion = definirAccion({
+	nombre: "prueba.editar_sin_version",
+	descripcion: "Una acción que edita y se olvida de tomar su versión",
+	entrada: z.object({ id: z.uuid().describe("La nota") }),
+	salida: z.object({}),
+	permiso: { departamento: "ventas" },
+	edita: true,
+});
+
+/** Pide el permiso fino `ven_montos`. */
+export const verMontos = definirAccion({
+	nombre: "prueba.ver_montos",
+	descripcion: "Una acción con permiso fino",
+	entrada: z.object({}),
+	salida: z.object({}),
+	permiso: { departamento: "ventas", permisoFino: "ven_montos" },
+});
+
+/** Una consulta que hace trampa: manda el monto y dice que lo recortó. */
+export const trampa = definirConsulta({
+	nombre: "prueba.trampa",
+	descripcion: "Una consulta que manda lo que dice que recortó",
+	entrada: z.object({}),
+	salida: z.object({ monto_centavos: z.number().int().optional().describe("Un monto") }),
+	permiso: { departamento: "ventas" },
+	recortables: ["monto_centavos"],
+});
+
+/** Recibe un día de negocio que el contrato transforma en `Temporal.PlainDate`, como lo harán los módulos. */
+export const fechar = definirAccion({
+	nombre: "prueba.fechar",
+	descripcion: "Una acción con una fecha que el contrato transforma",
+	entrada: z.object({
+		dia: z.iso
+			.date()
+			.transform((texto) => Temporal.PlainDate.from(texto))
+			.describe("Un día de negocio"),
+	}),
+	salida: z.object({ dia_siguiente: z.string().describe("El día siguiente") }),
 	permiso: { departamento: "ventas" },
 });

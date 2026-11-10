@@ -10,7 +10,7 @@
 import { randomUUID } from "node:crypto";
 import { type NombreDeError, type RespuestaDeError, tablaDeErrores } from "@uniformame/compartido/contratos/protocolo";
 import type { FastifyBaseLogger } from "fastify";
-import { hasZodFastifySchemaValidationErrors } from "fastify-type-provider-zod";
+import { codigoDePostgres } from "../base/transacciones.ts";
 
 /** Lo de más que puede llevar una respuesta de error, según su tabla. */
 type ExtraDeError = Omit<RespuestaDeError, "ok" | "error" | "codigo" | "mensaje">;
@@ -69,13 +69,20 @@ export function conflictoDeVersion(version: number, datos: unknown): ErrorDeApi 
 }
 
 /**
- * Convierte la ruta de un error de Zod (`/datos/motivo`) en el nombre del campo (`motivo`).
- * @param ruta La ruta JSON del error.
+ * Lo que queda de un error en el registro técnico: su nombre, su mensaje y su pila, y de un error de la
+ * base, la consulta y el código de Postgres, nunca los valores de la consulta (`params`) ni el `detail`,
+ * que traen lo que mandó quien llamó.
+ * @param error Lo que se lanzó.
  */
-function campoDe(ruta: string): string {
-	const partes = ruta.split("/").filter((parte) => parte !== "");
-	const sinSobre = partes[0] === "datos" ? partes.slice(1) : partes;
-	return sinSobre.length === 0 ? partes.join(".") || "datos" : sinSobre.join(".");
+export function errorParaElRegistro(error: unknown): Record<string, unknown> {
+	if (!(error instanceof Error)) return { tipo: typeof error };
+	const codigoDeLaBase = codigoDePostgres(error);
+	if ("query" in error && typeof error.query === "string") {
+		// Un error de Drizzle: su mensaje y su pila llevan los valores de la consulta.
+		return { nombre: error.name, consulta: error.query, codigo: codigoDeLaBase };
+	}
+	if (codigoDeLaBase !== undefined) return { nombre: error.name, codigo: codigoDeLaBase };
+	return { nombre: error.name, mensaje: error.message, pila: error.stack };
 }
 
 /** Lee una propiedad de un error cualquiera, sin suponer su forma. */
@@ -94,26 +101,15 @@ export function responderError(
 	registro: FastifyBaseLogger,
 ): { estado: number; cuerpo: RespuestaDeError } {
 	if (error instanceof ErrorDeApi) return { estado: error.estado, cuerpo: error.cuerpo() };
-	if (hasZodFastifySchemaValidationErrors(error)) {
-		const campos: Record<string, string> = {};
-		for (const problema of error.validation) {
-			// Un objeto con campos de más dice cuáles; los demás, en qué campo están.
-			const llaves = problema.params.keys;
-			const nombres = Array.isArray(llaves)
-				? llaves.map((llave) => campoDe(`${problema.instancePath}/${llave}`))
-				: [campoDe(problema.instancePath)];
-			for (const nombre of nombres) campos[nombre] ??= problema.message ?? "";
-		}
-		return { estado: 400, cuerpo: { ...new ErrorDeApi("validacion").cuerpo(), campos } };
-	}
 	const codigo = propiedad(error, "code");
 	if (codigo === "FST_ERR_CTP_BODY_TOO_LARGE")
 		return { estado: 413, cuerpo: new ErrorDeApi("demasiado_grande").cuerpo() };
-	// Un cuerpo que no es JSON o viene vacío es un error de forma, como cualquier otro.
-	if (propiedad(error, "statusCode") === 400) {
+	// Un cuerpo que no es JSON, vacío o de un tipo que no se acepta es un error de forma, como cualquier otro.
+	const estado = propiedad(error, "statusCode");
+	if (typeof estado === "number" && estado >= 400 && estado < 500) {
 		return { estado: 400, cuerpo: { ...new ErrorDeApi("validacion").cuerpo(), campos: {} } };
 	}
 	const referencia = randomUUID();
-	registro.error({ err: error, referencia }, "error interno");
+	registro.error({ error: errorParaElRegistro(error), referencia }, "error interno");
 	return { estado: 500, cuerpo: new ErrorDeApi("error_interno", null, undefined, { referencia }).cuerpo() };
 }

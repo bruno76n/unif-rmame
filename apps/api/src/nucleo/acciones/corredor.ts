@@ -12,6 +12,7 @@ import { diaDeNegocio } from "@uniformame/compartido/calculos/fechas";
 import { mensajeDeClaveUsada } from "@uniformame/compartido/contratos/protocolo";
 import type { Temporal } from "temporal-polyfill";
 import { v7 as uuidv7 } from "uuid";
+import { z } from "zod";
 import type { QuienLlama } from "../acceso/quien.ts";
 import type { Base } from "../base/conexion.ts";
 import { enTransaccion, type Transaccion } from "../base/transacciones.ts";
@@ -57,9 +58,15 @@ function crearContexto(
 	quien: QuienLlama,
 	ahora: Temporal.Instant,
 	comandoId: string,
-): { contexto: ContextoDeAccion; renglones: RenglonDeBitacora[]; eventos: Evento[] } {
+): {
+	contexto: ContextoDeAccion;
+	renglones: RenglonDeBitacora[];
+	eventos: Evento[];
+	estado: { versionTomada: boolean };
+} {
 	const renglones: RenglonDeBitacora[] = [];
 	const eventos: Evento[] = [];
+	const estado = { versionTomada: false };
 	const contexto: ContextoDeAccion = {
 		transaccion,
 		quien,
@@ -82,8 +89,11 @@ function crearContexto(
 		bitacora: (renglon) => {
 			renglones.push(renglon);
 		},
+		marcarVersionTomada: () => {
+			estado.versionTomada = true;
+		},
 	};
-	return { contexto, renglones, eventos };
+	return { contexto, renglones, eventos, estado };
 }
 
 /**
@@ -114,17 +124,29 @@ export async function correrAccion(
 			cargaHash,
 		});
 		if (!apartada.nueva) {
-			if (apartada.cargaHash !== cargaHash) throw errorDeRegla("clave_usada", mensajeDeClaveUsada);
+			// La misma clave con otro contenido, o de otra cuenta de la web, no recibe la respuesta guardada.
+			const otraCuenta = quien.tipo === "cuenta" && apartada.usuarioId !== quien.usuarioId;
+			if (apartada.cargaHash !== cargaHash || otraCuenta) throw errorDeRegla("clave_usada", mensajeDeClaveUsada);
 			return leerRespuestaGuardada(apartada.respuesta);
 		}
 		// Paso 7: la acción hace lo suyo.
-		const { contexto, renglones, eventos } = crearContexto(dependencias.registro, transaccion, quien, ahora, comandoId);
+		const { contexto, renglones, eventos, estado } = crearContexto(
+			dependencias.registro,
+			transaccion,
+			quien,
+			ahora,
+			comandoId,
+		);
 		const salida = await accion.ejecutar(contexto, cuerpo.datos, cuerpo.version);
+		// Una acción que edita tiene que haber tomado la versión que se leyó: si no, la versión no serviría.
+		if (contrato.edita && !estado.versionTomada) throw new Error(`${contrato.nombre} edita pero no tomó su versión`);
+		// La salida se revisa aquí, dentro de la transacción: un campo fuera del contrato no se guarda.
+		const resultado = z.parse(contrato.resultado, salida.resultado);
 		// Paso 8: la bitácora y los eventos, una sola vez por acción.
 		await dependencias.servicios.escribirBitacora(transaccion, renglones, comandoId);
 		await dependencias.servicios.guardarEventos(transaccion, eventos, comandoId);
 		// Paso 9: la respuesta se guarda sin secretos.
-		const respuesta: RespuestaDeAccion = { ok: true, resultado: salida.resultado, avisos: salida.avisos ?? [] };
+		const respuesta: RespuestaDeAccion = { ok: true, resultado, avisos: salida.avisos ?? [] };
 		await guardarRespuesta(transaccion, comandoId, sinSecretos(respuesta, contrato.secretos), salida.entidad);
 		// Paso 10: confirma al salir de enTransaccion.
 		return respuesta;

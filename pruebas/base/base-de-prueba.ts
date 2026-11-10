@@ -47,6 +47,9 @@ export async function crearBaseDePrueba(): Promise<BaseDePrueba> {
 	}
 	const app = new pg.Pool(conexion(compartida, "app", nombre));
 	const dueno = new pg.Pool(conexion(compartida, "dueno", nombre));
+	// Al borrar la base con FORCE, Postgres corta las conexiones que quedaron sin usar (57P01) y el grupo
+	// lo avisa con un evento «error»: sin quién lo escuche, Vitest lo cuenta como error no atrapado.
+	for (const grupo of [app, dueno]) grupo.on("error", () => undefined);
 	return {
 		nombre,
 		app,

@@ -11,7 +11,6 @@ import { join } from "node:path";
 import type { Permiso } from "@uniformame/compartido/contratos/definir";
 import { type BaseDePrueba, crearBaseDePrueba } from "@uniformame/pruebas/base";
 import { generateDrizzleJson, generateMigration } from "drizzle-kit/api";
-import pino from "pino";
 import { Temporal } from "temporal-polyfill";
 import { crearServidor, type ServiciosDelServidor } from "../../servidor.ts";
 import type { QuienLlama } from "../acceso/quien.ts";
@@ -95,8 +94,11 @@ export interface ServidorDePrueba {
 	registro: string[];
 	/** La versión mínima del parámetro, que la prueba puede cambiar. */
 	parametros: { versionMinima: string };
-	/** Para que una prueba haga fallar la bitácora. */
-	fallas: { bitacora: boolean };
+	/**
+	 * Para que una prueba haga fallar la bitácora: siempre (`bitacora`), o una sola vez para la acción cuyo
+	 * renglón nombra uno de estos textos (`bitacoraUnaVez`), como una falla pasajera.
+	 */
+	fallas: { bitacora: boolean; bitacoraUnaVez: Set<string> };
 	cerrar: () => Promise<void>;
 }
 
@@ -123,7 +125,7 @@ export async function crearServidorDePrueba(
 	const pedidos: ServidorDePrueba["pedidos"] = { bitacora: [], eventos: [] };
 	const lineas: string[] = [];
 	const parametros = { versionMinima: "1.0.0" };
-	const fallas = { bitacora: false };
+	const fallas = { bitacora: false, bitacoraUnaVez: new Set<string>() };
 	const servicios: ServiciosDelServidor = {
 		identificar: async (peticion) => {
 			const valor = peticion.headers["x-prueba-quien"];
@@ -133,19 +135,25 @@ export async function crearServidorDePrueba(
 		versionMinimaDelParametro: async () => parametros.versionMinima,
 		escribirBitacora: async (_transaccion, renglones) => {
 			if (fallas.bitacora) throw new Error("falla de prueba en la bitácora");
+			for (const texto of fallas.bitacoraUnaVez) {
+				if (renglones.some((renglon) => renglon.descripcion.includes(texto))) {
+					fallas.bitacoraUnaVez.delete(texto);
+					throw new Error("falla pasajera de prueba en la bitácora");
+				}
+			}
 			pedidos.bitacora.push([...renglones]);
 		},
 		guardarEventos: async (_transaccion, eventos) => {
 			pedidos.eventos.push([...eventos]);
 		},
 	};
-	const registroTecnico = pino({ level: "info" }, { write: (linea: string) => lineas.push(linea) });
+	const destinoDelRegistro = { write: (linea: string) => lineas.push(linea) };
 	const app = await crearServidor({
 		entorno: { ENTORNO: opciones.entorno ?? "pruebas", ...dominios },
 		base: crearBase(base.app),
 		registro,
 		servicios,
-		registroTecnico,
+		destinoDelRegistro,
 	});
 	await app.ready();
 	return {

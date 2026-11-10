@@ -70,6 +70,17 @@ export interface ContratoDeConsulta<
 	recortables: readonly string[];
 }
 
+/** Las palabras que delatan un secreto en el nombre de un campo de la salida. */
+const nombresDeSecreto = /(^|_)(secreto|pin|token|llave|contrasena)(_|$)/;
+
+/**
+ * Dice si el nombre de un campo parece de un secreto.
+ * @param campo El nombre del campo.
+ */
+export function pareceSecreto(campo: string): boolean {
+	return nombresDeSecreto.test(campo);
+}
+
 /** Un nombre de acción o de consulta: `modulo.nombre`, en snake_case. */
 type NombreDeContrato = `${string}.${string}`;
 
@@ -99,11 +110,10 @@ export function definirAccion<
 			throw new Error(`${contrato.nombre}: el secreto ${secreto} tiene que ser un campo opcional de la salida`);
 		}
 	}
-	// Un secreto se entrega una vez: en la respuesta repetida ya no viene, así que su campo es opcional.
-	for (const secreto of contrato.secretos ?? []) {
-		const campo = contrato.salida.shape[secreto];
-		if (campo === undefined || !z.safeParse(campo, undefined).success) {
-			throw new Error(`${contrato.nombre}: el secreto ${secreto} tiene que ser un campo opcional de la salida`);
+	// Un campo con nombre de secreto que no está declarado se guardaría para los reintentos: no se deja.
+	for (const campo of Object.keys(contrato.salida.shape)) {
+		if (pareceSecreto(campo) && !(contrato.secretos ?? []).includes(campo)) {
+			throw new Error(`${contrato.nombre}: el campo ${campo} parece un secreto; decláralo en secretos`);
 		}
 	}
 	const resultado = z

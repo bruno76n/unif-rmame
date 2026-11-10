@@ -131,4 +131,29 @@ describe("cada error de la tabla de la API sale con su forma y su mensaje; un 50
 			mensaje: tablaDeErrores.conflicto_version.mensaje,
 		});
 	});
+
+	it("un cuerpo de un tipo que no se acepta sale como 400 de forma, no como 500", async () => {
+		const respuesta = await servidor.app.inject({
+			method: "POST",
+			url: "/v1/acciones/prueba.crear_nota",
+			headers: { ...encabezadosDeLaWeb(), "content-type": "application/xml" },
+			payload: "<nota/>",
+		});
+		expect(respuesta.statusCode).toBe(400);
+		expect(respuesta.json()).toMatchObject({ error: "validacion" });
+	});
+
+	it("el registro técnico de un error de la base no trae los valores de la consulta, y de cada petición guarda la ruta sin sus parámetros", async () => {
+		const respuesta = await accion("prueba.provocar", { error: "base", valor: "SECRETO-DE-LA-BASE" });
+		expect(respuesta.statusCode).toBe(500);
+		await servidor.app.inject({
+			method: "GET",
+			url: "/v1/consultas/prueba.notas?cursor=RFC-XAXX010101000",
+			headers: encabezadosDeLaWeb(),
+		});
+		const registro = servidor.registro.join("\n");
+		expect(registro).toContain(respuesta.json().referencia);
+		expect(registro).not.toContain("SECRETO-DE-LA-BASE");
+		expect(registro).not.toContain("RFC-XAXX010101000");
+	});
 });

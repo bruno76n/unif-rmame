@@ -16,13 +16,9 @@ import type { Permiso } from "@uniformame/compartido/contratos/definir";
 import { cuerpoDeAccion, respuestaDeAccion, respuestaDeConsulta } from "@uniformame/compartido/contratos/protocolo";
 import { type App, compararVersiones, versionMinima } from "@uniformame/compartido/contratos/versiones";
 import { sql } from "drizzle-orm";
-import Fastify, { type FastifyBaseLogger, type FastifyRequest } from "fastify";
-import {
-	jsonSchemaTransform,
-	serializerCompiler,
-	validatorCompiler,
-	type ZodTypeProvider,
-} from "fastify-type-provider-zod";
+import Fastify, { type FastifyRequest } from "fastify";
+import { jsonSchemaTransform, serializerCompiler, type ZodTypeProvider } from "fastify-type-provider-zod";
+import pino, { type DestinationStream } from "pino";
 import { Temporal } from "temporal-polyfill";
 import { z } from "zod";
 import { appDe, type QuienLlama } from "./nucleo/acceso/quien.ts";
@@ -30,6 +26,7 @@ import { type CuerpoDeAccion, correrAccion, type ServiciosDelCorredor } from "./
 import type { Base } from "./nucleo/base/conexion.ts";
 import type { Entorno } from "./nucleo/entorno.ts";
 import { ErrorDeApi, responderError } from "./nucleo/http/errores.ts";
+import { validarSinTransformar } from "./nucleo/http/validacion.ts";
 import type { RegistroDeModulos } from "./nucleo/modulos.ts";
 
 declare module "fastify" {
@@ -44,6 +41,26 @@ z.config(z.locales.es());
 
 /** El tamaño máximo del cuerpo de una petición (ver docs/cimientos/SEGURIDAD.md, «Los límites»). */
 const tamanoMaximoDelCuerpo = 1024 * 1024;
+
+/**
+ * El registro técnico (pino): de cada petición, su método y su ruta sin los parámetros (`?…`), que pueden
+ * traer un nombre o un RFC; nunca los encabezados ni el cuerpo (ver docs/cimientos/SEGURIDAD.md).
+ * @param destino A dónde escribe; por omisión, la salida estándar.
+ */
+function crearRegistroTecnico(destino: DestinationStream | undefined) {
+	const opciones = {
+		level: "info",
+		serializers: {
+			req: (peticion: { method?: string; url?: string }) => ({
+				metodo: peticion.method,
+				ruta: (peticion.url ?? "").split("?")[0],
+			}),
+			res: (respuesta: { statusCode?: number }) => ({ estado: respuesta.statusCode }),
+		},
+		redact: ["req.headers.authorization", "req.headers.cookie", "headers.authorization", "headers.cookie"],
+	};
+	return destino === undefined ? pino(opciones) : pino(opciones, destino);
+}
 
 /** Lo que el servidor pide a los módulos que todavía no llegan: quién llama, el permiso y la versión del parámetro. */
 export interface ServiciosDelServidor extends ServiciosDelCorredor {
@@ -61,8 +78,8 @@ export interface DependenciasDelServidor {
 	base: Base;
 	registro: RegistroDeModulos;
 	servicios: ServiciosDelServidor;
-	/** El registro técnico (pino); las pruebas pasan uno que guarda lo que escribe. */
-	registroTecnico?: FastifyBaseLogger;
+	/** A dónde escribe el registro técnico; por omisión, la salida estándar. Las pruebas pasan uno que guarda lo que escribe. */
+	destinoDelRegistro?: DestinationStream;
 	/** De dónde sale «ahora»; las pruebas la fijan. */
 	reloj?: () => Temporal.Instant;
 }
@@ -77,11 +94,9 @@ export async function crearServidor(dependencias: DependenciasDelServidor) {
 	const reloj = dependencias.reloj ?? (() => Temporal.Now.instant());
 	const app = Fastify({
 		bodyLimit: tamanoMaximoDelCuerpo,
-		...(dependencias.registroTecnico === undefined
-			? { logger: true }
-			: { loggerInstance: dependencias.registroTecnico }),
+		loggerInstance: crearRegistroTecnico(dependencias.destinoDelRegistro),
 	}).withTypeProvider<ZodTypeProvider>();
-	app.setValidatorCompiler(validatorCompiler);
+	app.setValidatorCompiler(validarSinTransformar);
 	app.setSerializerCompiler(serializerCompiler);
 	app.decorateRequest("quien", undefined);
 
@@ -114,7 +129,7 @@ export async function crearServidor(dependencias: DependenciasDelServidor) {
 	});
 	app.setNotFoundHandler((_peticion, respuesta) => {
 		const error = new ErrorDeApi("no_existe");
-		return respuesta.code(error.estado).send(error.cuerpo());
+		return respuesta.code(error.estado).header("cache-control", "no-store").send(error.cuerpo());
 	});
 
 	/** Pasos 1 y 2: quién llama y la versión de su app. */
@@ -152,7 +167,7 @@ export async function crearServidor(dependencias: DependenciasDelServidor) {
 			method: "POST",
 			url: `/v1/acciones/${contrato.nombre}`,
 			schema: {
-				description: contrato.descripcion,
+				description: describir(contrato.descripcion, contrato.permiso, []),
 				tags: [contrato.nombre.split(".")[0] ?? ""],
 				body: cuerpoDeAccion(contrato),
 				response: { 200: respuestaDeAccion(contrato) },
@@ -176,7 +191,7 @@ export async function crearServidor(dependencias: DependenciasDelServidor) {
 			method: "GET",
 			url: `/v1/consultas/${contrato.nombre}`,
 			schema: {
-				description: contrato.descripcion,
+				description: describir(contrato.descripcion, contrato.permiso, contrato.recortables),
 				tags: [contrato.nombre.split(".")[0] ?? ""],
 				querystring: contrato.entrada,
 				response: { 200: respuestaDeConsulta(contrato) },
@@ -190,7 +205,9 @@ export async function crearServidor(dependencias: DependenciasDelServidor) {
 					{ base, quien: quienDe(peticion), ahora, diaDeNegocio: diaDeNegocio(ahora) },
 					peticion.query,
 				);
-				return { ok: true as const, resultado: leido.resultado, recortado: leido.recortado ?? [] };
+				const recortado = leido.recortado ?? [];
+				revisarRecorte(contrato.nombre, contrato.recortables, leido.resultado, recortado);
+				return { ok: true as const, resultado: leido.resultado, recortado };
 			},
 		});
 	}
@@ -228,4 +245,45 @@ function cuerpoValidado(cuerpo: unknown): CuerpoDeAccion {
 		datos: "datos" in cuerpo ? cuerpo.datos : undefined,
 		version,
 	};
+}
+
+/**
+ * La descripción de una acción o consulta en la documentación: qué hace, quién puede llamarla y qué se
+ * le puede recortar (ver docs/cimientos/ACCESO-Y-PERMISOS.md, «La matriz de permisos»).
+ */
+function describir(descripcion: string, permiso: Permiso, recortables: readonly string[]): string {
+	const partes = [
+		permiso.departamento === undefined ? undefined : `departamento ${permiso.departamento}`,
+		permiso.permisoFino === undefined ? undefined : `permiso fino ${permiso.permisoFino}`,
+		permiso.soloDuena === true ? "solo la dueña" : undefined,
+		permiso.confirmarConGoogle === undefined ? undefined : `«Confirmar con Google» (${permiso.confirmarConGoogle})`,
+		permiso.aparatos === undefined ? undefined : `aparatos: ${permiso.aparatos.join(", ")}`,
+	].filter((parte) => parte !== undefined);
+	const quien = `Permiso: ${partes.length === 0 ? "cualquier cuenta con sesión" : partes.join("; ")}.`;
+	const recorte = recortables.length === 0 ? "" : ` Se puede recortar: ${recortables.join(", ")}.`;
+	return `${descripcion}\n\n${quien}${recorte}`;
+}
+
+/** Dice si un valor trae una llave con ese nombre, en cualquier nivel. */
+function traeLlave(valor: unknown, llave: string): boolean {
+	if (Array.isArray(valor)) return valor.some((elemento) => traeLlave(elemento, llave));
+	if (typeof valor !== "object" || valor === null) return false;
+	return Object.entries(valor).some(([nombre, adentro]) => nombre === llave || traeLlave(adentro, llave));
+}
+
+/**
+ * Lo que una cuenta no debe ver no viaja: cada campo de `recortado` tiene que estar entre los que el
+ * contrato deja recortar, y no puede venir en el resultado.
+ * @throws Error si no se cumple: es un error del programa y sale como `500`, sin el dato.
+ */
+function revisarRecorte(
+	nombre: string,
+	recortables: readonly string[],
+	resultado: unknown,
+	recortado: readonly string[],
+): void {
+	for (const campo of recortado) {
+		if (!recortables.includes(campo)) throw new Error(`${nombre} recortó ${campo}, que su contrato no deja recortar`);
+		if (traeLlave(resultado, campo)) throw new Error(`${nombre} dice que recortó ${campo} pero lo manda`);
+	}
 }

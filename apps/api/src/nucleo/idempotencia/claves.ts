@@ -37,7 +37,9 @@ export function huellaDeCarga(accion: string, datos: unknown, version: number | 
 }
 
 /** Lo que pasó al apartar la clave. */
-export type ClaveApartada = { nueva: true } | { nueva: false; cargaHash: string; respuesta: unknown };
+export type ClaveApartada =
+	| { nueva: true }
+	| { nueva: false; cargaHash: string; respuesta: unknown; usuarioId: string | null };
 
 /**
  * Aparta la clave de una acción en su transacción.
@@ -69,11 +71,15 @@ export async function apartarClave(
 		.returning({ id: comandosRecibidos.id });
 	if (apartada.length > 0) return { nueva: true };
 	const [anterior] = await transaccion
-		.select({ cargaHash: comandosRecibidos.cargaHash, respuesta: comandosRecibidos.respuesta })
+		.select({
+			cargaHash: comandosRecibidos.cargaHash,
+			respuesta: comandosRecibidos.respuesta,
+			usuarioId: comandosRecibidos.usuarioId,
+		})
 		.from(comandosRecibidos)
 		.where(eq(comandosRecibidos.claveIdempotencia, comando.clave));
 	if (anterior === undefined) throw new Error("la clave quedó apartada pero no se encontró");
-	return { nueva: false, cargaHash: anterior.cargaHash, respuesta: anterior.respuesta };
+	return { nueva: false, ...anterior };
 }
 
 /**
@@ -103,8 +109,10 @@ export async function guardarRespuesta(
 /**
  * Quita los secretos del resultado para guardarlo.
  * @param respuesta La respuesta completa.
- * @param secretos Los campos del resultado que son secretos.
+ * @param secretos Los campos del resultado que son secretos (siempre de primer nivel: ver la regla de contratos).
  * @returns La respuesta que se guarda: sin esos campos y, si quitó alguno, con `secreto_entregado: true`.
+ * @throws Error si el valor de un secreto aparece en otra parte de la respuesta (un aviso, el mensaje):
+ * es un error del programa y la acción no se guarda.
  */
 export function sinSecretos(
 	respuesta: { ok: true; resultado: Record<string, unknown>; avisos: string[] },
@@ -113,6 +121,15 @@ export function sinSecretos(
 	const { resultado } = respuesta;
 	if (secretos.length === 0) return respuesta;
 	const limpio = Object.fromEntries(Object.entries(resultado).filter(([llave]) => !secretos.includes(llave)));
-	const quito = Object.keys(limpio).length < Object.keys(resultado).length;
-	return { ...respuesta, resultado: limpio, ...(quito ? { secreto_entregado: true } : {}) };
+	const quitados = Object.entries(resultado)
+		.filter(([llave]) => secretos.includes(llave))
+		.map(([, valor]) => valor);
+	const guardada = { ...respuesta, resultado: limpio, ...(quitados.length > 0 ? { secreto_entregado: true } : {}) };
+	const texto = JSON.stringify(guardada);
+	for (const valor of quitados) {
+		if (valor !== undefined && valor !== null && texto.includes(String(valor))) {
+			throw new Error("un secreto aparece fuera de su campo en la respuesta");
+		}
+	}
+	return guardada;
 }

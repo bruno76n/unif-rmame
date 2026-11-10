@@ -60,4 +60,45 @@ describe("una respuesta con un secreto se repite sin el secreto y con secreto_en
 			}),
 		).toThrow("opcional");
 	});
+
+	it("una acción que regresa un campo fuera de su contrato sale con 500 y no guarda nada: ni la nota ni su clave", async () => {
+		const clave = nuevaClave();
+		const respuesta = await mandarAccion(servidor, "prueba.crear_nota", {
+			clave,
+			datos: { texto: "de más", monto_centavos: 1, fallar: "campo_de_mas" },
+		});
+		expect(respuesta.estado).toBe(500);
+		const { rows } = await servidor.base.dueno.query(
+			"SELECT count(*)::int AS n FROM comandos_recibidos WHERE clave_idempotencia = $1",
+			[clave],
+		);
+		expect(rows[0]?.n).toBe(0);
+		expect(JSON.stringify(respuesta.cuerpo)).not.toContain("SECRETO-DE-MAS");
+	});
+
+	it("un secreto que aparece en un aviso no se guarda: la acción sale con 500 y no deja nada", async () => {
+		const clave = nuevaClave();
+		const respuesta = await mandarAccion(servidor, "prueba.crear_nota", {
+			clave,
+			datos: { texto: "aviso", monto_centavos: 1, con_pin: true, fallar: "secreto_en_aviso" },
+		});
+		expect(respuesta.estado).toBe(500);
+		const { rows } = await servidor.base.dueno.query(
+			"SELECT count(*)::int AS n FROM comandos_recibidos WHERE clave_idempotencia = $1",
+			[clave],
+		);
+		expect(rows[0]?.n).toBe(0);
+	});
+
+	it("un contrato no deja una salida con nombre de secreto sin declararla", () => {
+		expect(() =>
+			definirAccion({
+				nombre: "prueba.mal2",
+				descripcion: "mal",
+				entrada: z.object({}),
+				salida: z.object({ llave_secreta: z.string().optional() }),
+				permiso: {},
+			}),
+		).toThrow("parece un secreto");
+	});
 });

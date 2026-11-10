@@ -14,6 +14,9 @@ Lo que falta decidir o investigar, y en qué fase se resuelve. Lo del negocio ya
 - **Que cada tabla de negocio lleve su disparador** (fase 6, con la sincronización): nada revisa que una tabla con `version` tenga el disparador `columnas_comunes`, ni que una con `xid_escritura` lo lleve con `baja_a_aparatos`; sin eso, la app podría poner `xid_escritura` a mano. Una revisión en `scripts/migraciones.ts` o una prueba sobre el catálogo de la base.
 - **La app puede cambiar sus propios valores de sesión** (fase 22): `uniformame_app` puede hacer `SET idle_in_transaction_session_timeout = 0` o `ALTER ROLE … SET`. El límite de un minuto es el valor por omisión, no una garantía.
 - **`enTransaccionDeshecha` arma su propio Drizzle** (fase 3): si `crearBase` recibe opciones (un `schema`), la ayuda de pruebas tiene que usar las mismas.
+- **Un `\u0000` en la entrada o en la respuesta** (fase 22): Postgres no lo guarda en `text` ni en `jsonb`, y sale `500` en lugar de `400`. Rechazarlo en la validación del protocolo.
+- **El tipo del cliente no pide `version` cuando el contrato edita** (fase 19, con las pantallas): `definirAccion` tendría que conservar `edita` como literal para que el cliente lo exija; hoy el servidor responde `400`.
+- **La prueba al azar de la idempotencia corre 150 series contra Postgres** (fase 21, con la temporada simulada): la regla de pruebas pide miles; con la base real cada serie cuesta, y la temporada simulada es donde se corren muchas más.
 - **Un commit de solo registros no corre `docs:revisar`** (fase 22): el encabezado de la bitácora o de `REGISTROS.md` se puede romper ahí y solo lo ve la siguiente revisión completa. Se decide al revisar la seguridad completa si el gancho también revisa esos dos encabezados.
 - **La red del entorno «Unifórmame»** (antes de la fase 2): Claude Code lo creó con red limitada (`nodejs.org` y los registros de paquetes); la [forma de trabajo](../trabajo/FORMA-DE-TRABAJO.md#el-entorno-de-la-nube) pide «Trusted», que también deja pasar las documentaciones oficiales y Docker Hub. Bruno lo cambia en Settings → Environments y abre las sesiones que siguen en ese entorno.
 
@@ -73,4 +76,7 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 10 nov 2026 | 3 | La API sin CSP (decisión 339) | CSP estricta · sin CSP en la API | Sin CSP: la API no sirve páginas, salvo la documentación local | No |
 | 10 nov 2026 | 3 | El `Origin` de los aparatos (decisión 340) | Pedirlo siempre · aceptarlo ausente o el de la tablet | El segundo: un aparato que no es navegador no lo manda | No |
 | 10 nov 2026 | 3 | Dónde va `secreto_entregado` (decisión 341) | Dentro del resultado · junto a `ok` | Junto a `ok`: el resultado sigue cumpliendo su contrato | No |
+| 10 nov 2026 | 3 | Adelantar el recorte vigilado, el registro técnico limpio y el permiso en la documentación (decisión 342) | Dejarlos a las fases 5 y 22 · hacerlos ya | Ya: son baratos y cierran fugas reales | No |
+| 10 nov 2026 | 3 | `tomarVersion` con lo que la cuenta ve y la exigencia del corredor (decisión 343) | Dejarlo a cada acción · que el núcleo lo exija | Que el núcleo lo exija: no depende de que alguien se acuerde | No |
+| 10 nov 2026 | 3 | La huella y la clave de otra cuenta (decisión 344) | Huella sobre lo transformado · sobre lo que llegó | Sobre lo que llegó: siempre es JSON plano | No |
 

@@ -14,10 +14,13 @@ describe("openapi.json coincide con los contratos; /v1/documentacion existe en l
 		expect(await generarOpenapi()).toBe(readFileSync(archivoDeOpenapi, "utf8"));
 	});
 
-	it("cada acción y consulta sale en el documento con su descripción y sus campos descritos en español", async () => {
+	it("cada acción y consulta sale en el documento con su descripción, su permiso, lo que se recorta y sus campos descritos en español", async () => {
 		const documento = JSON.parse(await generarOpenapi(join(import.meta.dirname, "../pruebas/modulos")));
 		const crear = documento.paths["/v1/acciones/prueba.crear_nota"].post;
-		expect(crear.description).toBe("Crea una nota de prueba");
+		expect(crear.description).toBe("Crea una nota de prueba\n\nPermiso: departamento ventas.");
+		expect(documento.paths["/v1/consultas/prueba.notas"].get.description).toContain(
+			"Se puede recortar: monto_centavos.",
+		);
 		const datos = crear.requestBody.content["application/json"].schema.properties.datos;
 		expect(datos.properties.texto.description).toBe("El texto de la nota");
 		expect(documento.paths["/v1/consultas/prueba.notas"].get).toBeDefined();

@@ -4,14 +4,45 @@
  * Fase 3 · docs/fases/03-api-protocolo-e-idempotencia.md («Cómo se construye»)
  */
 
-import { asc, eq, gt } from "drizzle-orm";
+import { asc, eq, gt, sql } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
 import { tomarVersion, versionActual } from "../../../acciones/pisadas.ts";
 import { leerCursor, paginar, recortar } from "../../../http/consultas.ts";
 import { ErrorDeApi, errorDeRegla, noExiste } from "../../../http/errores.ts";
-import { definirModulo, implementarAccion, implementarConsulta } from "../../../modulos.ts";
-import { agregarRenglon, confirmar, crearNota, editarNota, listarNotas, provocar, verNota } from "./contratos.ts";
+import { type ContextoDeAccion, definirModulo, implementarAccion, implementarConsulta } from "../../../modulos.ts";
+import {
+	agregarRenglon,
+	confirmar,
+	crearNota,
+	editarNota,
+	editarSinVersion,
+	fechar,
+	listarNotas,
+	provocar,
+	trampa,
+	verMontos,
+	verNota,
+} from "./contratos.ts";
 import { conteos, notas, renglones } from "./tablas.ts";
+
+/** Los textos que ya chocaron una vez (`fallar: "con_choque_una_vez"`). */
+const chocados = new Set<string>();
+
+/**
+ * Lo que la cuenta ve de una nota, como lo daría su consulta: las «privadas» solo la dueña, y el monto
+ * solo quien tiene `ven_montos`. `undefined` si no la puede ver o no existe.
+ */
+async function notaVisible(contexto: ContextoDeAccion, id: string): Promise<Record<string, unknown> | undefined> {
+	const [nota] = await contexto.transaccion
+		.select({ texto: notas.texto, monto_centavos: notas.montoCentavos })
+		.from(notas)
+		.where(eq(notas.id, id));
+	const { quien } = contexto;
+	const esDuena = quien.tipo === "cuenta" && quien.esDuena;
+	if (nota === undefined || (nota.texto.startsWith("privada") && !esDuena)) return undefined;
+	const veMontos = quien.tipo === "cuenta" && (quien.esDuena || quien.permisosFinos.includes("ven_montos"));
+	return recortar(nota, veMontos ? [] : ["monto_centavos"]).objeto;
+}
 
 export default definirModulo({
 	nombre: "prueba",
@@ -22,21 +53,27 @@ export default definirModulo({
 			await contexto.transaccion.insert(notas).values({ id, texto: datos.texto, montoCentavos: datos.monto_centavos });
 			await contexto.interna("prueba.contar", { notaId: id });
 			if (datos.fallar === "despues_de_la_interna") throw new Error("falla de prueba después de la interna");
+			// Choca una vez por texto, como lo haría Postgres con dos transacciones, y a la segunda pasa.
+			if (datos.fallar === "con_choque_una_vez" && !chocados.has(datos.texto)) {
+				chocados.add(datos.texto);
+				await contexto.transaccion.execute(
+					sql`DO $$ BEGIN RAISE EXCEPTION 'choque de prueba' USING ERRCODE = '40001'; END $$`,
+				);
+			}
 			contexto.bitacora({ descripcion: `Creó la nota ${datos.texto}`, entidad: "prueba_notas", entidadId: id });
 			contexto.guardarEvento({ nombre: "nota.creada", datos: { nota_id: id }, tablas: ["prueba_notas"] });
+			const pin = datos.con_pin === true ? { pin: "4821" } : {};
+			// Formas de equivocarse que el corredor tiene que atrapar antes de guardar.
+			const deMas = datos.fallar === "campo_de_mas" ? { pin_temporal: "SECRETO-DE-MAS" } : {};
+			const avisos = datos.fallar === "secreto_en_aviso" && "pin" in pin ? [`Tu PIN es ${pin.pin}`] : [];
 			return {
-				resultado: { mensaje: `Nota ${datos.texto} creada`, id, ...(datos.con_pin === true ? { pin: "4821" } : {}) },
+				resultado: { mensaje: `Nota ${datos.texto} creada`, id, ...pin, ...deMas },
+				avisos,
 				entidad: { nombre: "prueba_notas", id },
 			};
 		}),
 		implementarAccion(editarNota, async (contexto, datos, version) => {
-			await tomarVersion(contexto.transaccion, notas, datos.id, version, async () => {
-				const [actual] = await contexto.transaccion
-					.select({ texto: notas.texto })
-					.from(notas)
-					.where(eq(notas.id, datos.id));
-				return actual;
-			});
+			await tomarVersion(contexto, notas, datos.id, version, () => notaVisible(contexto, datos.id));
 			await contexto.transaccion.update(notas).set({ texto: datos.texto }).where(eq(notas.id, datos.id));
 			contexto.bitacora({
 				descripcion: `Cambió la nota a ${datos.texto}`,
@@ -48,7 +85,7 @@ export default definirModulo({
 			};
 		}),
 		implementarAccion(agregarRenglon, async (contexto, datos, version) => {
-			await tomarVersion(contexto.transaccion, notas, datos.nota_id, version, async () => ({ nota_id: datos.nota_id }));
+			await tomarVersion(contexto, notas, datos.nota_id, version, () => notaVisible(contexto, datos.nota_id));
 			await contexto.transaccion
 				.insert(renglones)
 				.values({ id: uuidv7(), notaId: datos.nota_id, cantidad: datos.cantidad });
@@ -61,18 +98,31 @@ export default definirModulo({
 			};
 		}),
 		implementarAccion(confirmar, async () => ({ resultado: { mensaje: "Confirmado" } })),
+		implementarAccion(editarSinVersion, async (contexto, datos) => {
+			await contexto.transaccion.update(notas).set({ texto: "sin versión" }).where(eq(notas.id, datos.id));
+			return { resultado: { mensaje: "Guardada sin versión" } };
+		}),
+		implementarAccion(verMontos, async () => ({ resultado: { mensaje: "Montos" } })),
+		implementarAccion(fechar, async (_contexto, datos) => ({
+			resultado: { mensaje: "Fechado", dia_siguiente: datos.dia.add({ days: 1 }).toString() },
+		})),
 		implementarAccion(provocar, async (_contexto, datos) => {
 			if (datos.error === "demasiados_intentos") {
 				throw new ErrorDeApi("demasiados_intentos", null, "Demasiados intentos. Vuelve a intentar a las 10:35.", {
 					reintentar_en: "2026-11-10T16:35:00Z",
 				});
 			}
+			if (datos.error === "base") await _contexto.transaccion.execute(sql`SELECT ${datos.valor ?? ""}::integer`);
 			if (datos.error === "no_disponible")
 				throw new ErrorDeApi("no_disponible", null, undefined, { reintentar_en: "2026-11-10T17:00:00Z" });
 			throw new Error("la causa secreta: SELECT * FROM comandos_recibidos");
 		}),
 	],
 	consultas: [
+		implementarConsulta(trampa, async () => ({
+			resultado: { monto_centavos: 125_000 },
+			recortado: ["monto_centavos"],
+		})),
 		implementarConsulta(listarNotas, async (contexto, parametros) => {
 			const limite = parametros.limite ?? 2;
 			const desde = leerCursor(parametros.cursor);

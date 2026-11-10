@@ -81,4 +81,10 @@ describe("una consulta pagina con cursor, no regresa un campo recortado y lo dic
 			codigo: "sin_departamento",
 		});
 	});
+
+	it("el servidor no deja viajar un campo que la consulta dice que recortó: sale 500 sin el dato", async () => {
+		const respuesta = await consultar("/v1/consultas/prueba.trampa");
+		expect(respuesta.estado).toBe(500);
+		expect(JSON.stringify(respuesta.cuerpo)).not.toContain("125000");
+	});
 });

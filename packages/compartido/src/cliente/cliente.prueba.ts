@@ -189,4 +189,41 @@ describe("el cliente solo compila con nombres y datos que existen en los contrat
 		);
 		expect(llamadas).toHaveLength(1);
 	});
+
+	it("si la conexión se corta mientras llega el cuerpo, o el balanceador da 502 o 504, reintenta con la misma clave", async () => {
+		const cortada = new Response(
+			new ReadableStream({
+				start(control) {
+					control.error(new TypeError("se cortó la conexión"));
+				},
+			}),
+			{ status: 200 },
+		);
+		const { cliente, llamadas } = clienteCon([cortada, respuesta(502, {}), respuesta(504, {}), correcta.clone()]);
+		await cliente.accion("ventas.confirmar_pedido", { datos: { pedido_id: pedidoId }, version: 41 });
+		expect(llamadas).toHaveLength(4);
+		expect(new Set(llamadas.map(claveDe)).size).toBe(1);
+	});
+
+	it("los errores llevan la clave de la intención, para que la pantalla la reuse si la persona vuelve a intentar", async () => {
+		const sinRed = clienteCon(Array.from({ length: 10 }, () => new TypeError("sin red")));
+		const error = await sinRed.cliente
+			.accion("ventas.confirmar_pedido", { datos: { pedido_id: pedidoId } })
+			.catch((e: unknown) => e);
+		if (!(error instanceof ErrorSinRed) || error.clave === undefined)
+			throw new Error("se esperaba ErrorSinRed con su clave");
+		expect(error.clave).toBe(claveDe(sinRed.llamadas[0] ?? { init: {} }));
+		const otraVez = clienteCon([correcta.clone()]);
+		await otraVez.cliente.accion("ventas.confirmar_pedido", { datos: { pedido_id: pedidoId } }, error.clave);
+		expect(claveDe(otraVez.llamadas[0] ?? { init: {} })).toBe(error.clave);
+	});
+
+	it("una respuesta de error que no es JSON (de un balanceador) termina en ErrorSinRed, no en un error de lectura", async () => {
+		const { cliente } = clienteCon(
+			Array.from({ length: 6 }, () => new Response("<html>Bad Gateway</html>", { status: 500 })),
+		);
+		await expect(cliente.accion("ventas.confirmar_pedido", { datos: { pedido_id: pedidoId } })).rejects.toBeInstanceOf(
+			ErrorSinRed,
+		);
+	});
 });

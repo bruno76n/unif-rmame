@@ -37,7 +37,7 @@ export async function generarOpenapi(carpetaDeModulos = join(import.meta.dirname
 			escribirBitacora: sinUsar,
 			guardarEventos: sinUsar,
 		},
-		registroTecnico: (await import("pino")).default({ level: "silent" }),
+		destinoDelRegistro: { write: () => undefined },
 	});
 	await app.ready();
 	const documento = `${JSON.stringify(app.swagger(), null, 2)}\n`;

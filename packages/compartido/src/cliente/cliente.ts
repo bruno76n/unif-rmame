@@ -4,7 +4,7 @@
  *
  * Sale de los contratos: un nombre o un dato que no existe no compila. La clave de idempotencia nace
  * cuando la persona aprieta el botón y se reusa en cada reintento de esa intención. Reintenta solo sin
- * red, sin respuesta, con `500` o con `503`, con espera creciente; ante `401 reautenticar` pide
+ * red, sin respuesta, con `500`, `502`, `503` o `504` (o si la respuesta se corta), con espera creciente; ante `401 reautenticar` pide
  * «Confirmar con Google» y repite una vez; ante `426` pide actualizar; ante `409` entrega los datos
  * nuevos a la pantalla. Nunca inventa mensajes: el error trae el de la API.
  */
@@ -18,15 +18,19 @@ import { type RespuestaDeError, respuestaDeError } from "../contratos/protocolo.
 export class ErrorDeLaApi extends Error {
 	readonly respuesta: RespuestaDeError;
 	readonly estado: number;
+	/** La clave de la intención, si fue una acción: la pantalla la reusa si la persona vuelve a intentar. */
+	readonly clave: string | undefined;
 
 	/**
 	 * @param estado El estado HTTP.
 	 * @param respuesta El cuerpo del error, como lo mandó la API.
+	 * @param clave La clave de la intención, si fue una acción.
 	 */
-	constructor(estado: number, respuesta: RespuestaDeError) {
+	constructor(estado: number, respuesta: RespuestaDeError, clave?: string) {
 		super(respuesta.mensaje);
 		this.estado = estado;
 		this.respuesta = respuesta;
+		this.clave = clave;
 	}
 }
 
@@ -43,8 +47,21 @@ export class ErrorDeConflicto extends ErrorDeLaApi {
 	}
 }
 
-/** No hubo red ni respuesta después de todos los reintentos. */
-export class ErrorSinRed extends Error {}
+/**
+ * No hubo red ni respuesta legible después de todos los reintentos. Lleva la clave de la intención: si la
+ * persona vuelve a intentar, la pantalla la pasa otra vez, porque la primera pudo haberse aplicado.
+ */
+export class ErrorSinRed extends Error {
+	readonly clave: string | undefined;
+
+	/**
+	 * @param clave La clave de la intención, si fue una acción.
+	 */
+	constructor(clave?: string) {
+		super("No hay conexión con el sistema.");
+		this.clave = clave;
+	}
+}
 
 /** Cómo se arma el cliente. */
 export interface OpcionesDelCliente {
@@ -80,9 +97,9 @@ export interface Consultado<Resultado> {
 	recortado: string[];
 }
 
-/** Dice si un estado se reintenta con la misma clave: sin respuesta útil del servidor. */
+/** Dice si un estado se reintenta con la misma clave: el servidor o su balanceador no dieron respuesta útil. */
 function seReintenta(estado: number): boolean {
-	return estado === 500 || estado === 503;
+	return estado === 500 || estado === 502 || estado === 503 || estado === 504;
 }
 
 /**
@@ -104,38 +121,43 @@ export function crearCliente<
 	 * @returns El cuerpo de la respuesta correcta.
 	 * @throws `ErrorDeLaApi` (o `ErrorDeConflicto`) con lo que contestó la API, o `ErrorSinRed`.
 	 */
-	async function pedir(url: string, init: RequestInit): Promise<unknown> {
+	async function pedir(url: string, init: RequestInit, clave?: string): Promise<unknown> {
 		let yaReautentico = false;
 		for (let intento = 0; ; intento++) {
-			let respuesta: Response;
+			let estado: number;
+			let cuerpo: unknown;
 			try {
-				respuesta = await llamar(url, {
+				const respuesta = await llamar(url, {
 					...init,
 					...(opciones.credenciales === undefined ? {} : { credentials: opciones.credenciales }),
 					headers: { "x-app-version": opciones.versionApp, ...(opciones.encabezados?.() ?? {}), ...init.headers },
 				});
+				estado = respuesta.status;
+				// El cuerpo se lee aquí: si la conexión se corta a la mitad, cuenta como falta de red.
+				cuerpo = await respuesta.json();
 			} catch {
 				if (intento < reintentos) {
 					await esperar(2 ** intento * 500);
 					continue;
 				}
-				throw new ErrorSinRed("No hay conexión con el sistema.");
+				throw new ErrorSinRed(clave);
 			}
-			if (respuesta.ok) return respuesta.json();
-			if (seReintenta(respuesta.status) && intento < reintentos) {
+			if (estado >= 200 && estado < 300) return cuerpo;
+			if (seReintenta(estado) && intento < reintentos) {
 				await esperar(2 ** intento * 500);
 				continue;
 			}
-			const error = respuestaDeError.parse(await respuesta.json());
-			if (error.error === "reautenticar" && !yaReautentico) {
-				await opciones.alReautenticar(error.proposito);
+			const error = respuestaDeError.safeParse(cuerpo);
+			if (!error.success) throw new ErrorSinRed(clave);
+			if (error.data.error === "reautenticar" && !yaReautentico) {
+				await opciones.alReautenticar(error.data.proposito);
 				yaReautentico = true;
 				continue;
 			}
-			if (error.error === "actualizar") opciones.alActualizar(error.version_minima);
-			throw error.error === "conflicto_version"
-				? new ErrorDeConflicto(respuesta.status, error)
-				: new ErrorDeLaApi(respuesta.status, error);
+			if (error.data.error === "actualizar") opciones.alActualizar(error.data.version_minima);
+			throw error.data.error === "conflicto_version"
+				? new ErrorDeConflicto(estado, error.data, clave)
+				: new ErrorDeLaApi(estado, error.data, clave);
 		}
 	}
 
@@ -154,15 +176,19 @@ export function crearCliente<
 		): Promise<z.output<Acciones[Nombre]["resultado"]>> {
 			const contrato: Acciones[Nombre] | undefined = contratos.acciones[nombre];
 			if (contrato === undefined) throw new Error(`no existe la acción ${nombre}`);
-			const cuerpo = await pedir(`${opciones.urlBase}/v1/acciones/${nombre}`, {
-				method: "POST",
-				headers: { "content-type": "application/json" },
-				body: JSON.stringify({
-					clave_idempotencia: clave,
-					datos: peticion.datos,
-					...(peticion.version === undefined ? {} : { version: peticion.version }),
-				}),
-			});
+			const cuerpo = await pedir(
+				`${opciones.urlBase}/v1/acciones/${nombre}`,
+				{
+					method: "POST",
+					headers: { "content-type": "application/json" },
+					body: JSON.stringify({
+						clave_idempotencia: clave,
+						datos: peticion.datos,
+						...(peticion.version === undefined ? {} : { version: peticion.version }),
+					}),
+				},
+				clave,
+			);
 			const leido =
 				typeof cuerpo === "object" && cuerpo !== null && "resultado" in cuerpo ? cuerpo.resultado : undefined;
 			const esquema: Acciones[Nombre]["resultado"] = contrato.resultado;
