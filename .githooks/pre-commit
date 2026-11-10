@@ -1,0 +1,5 @@
+#!/bin/sh
+# Unifórmame · gancho de git antes de cada commit.
+# Fase 1 · docs/cimientos/ESTRUCTURA.md («Comandos», el sello). La lógica está en scripts/gancho-git.ts.
+# Lo activa `pnpm install` con core.hooksPath; nunca se salta con --no-verify.
+exec node scripts/gancho-git.ts

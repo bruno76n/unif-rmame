@@ -8,9 +8,12 @@
 		"node": "26.13.0"
 	},
 	"scripts": {
+		"prepare": "git config core.hooksPath .githooks || true",
 		"estilo": "biome check .",
 		"tipos": "tsc -p tsconfig.json",
-		"pruebas": "vitest run"
+		"pruebas": "vitest run",
+		"revision:rapida": "node scripts/revision-rapida.ts",
+		"revision": "node scripts/revision.ts"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.6.6",

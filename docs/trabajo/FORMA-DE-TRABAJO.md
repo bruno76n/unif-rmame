@@ -235,4 +235,6 @@ Las reglas completas están en la [regla de código](../../.claude/rules/codigo.
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 1: dónde quedaron los ganchos (el de inicio, el de después de editar, el de fin y el de git), el sello y el interruptor de modo, y cómo se prueban. El script que revisa las carpetas de cada trabajador se agrega en la fase 19.*
+**El sello** (fase 1, parte 2). `pnpm revision` corre sus pasos en orden y, en verde, guarda en `.revision/sello.json` la huella de lo revisado: cada archivo que se guardaría, con el hash de git de su contenido, sin `docs/registros/` (`scripts/sello.ts`). El gancho de git antes de cada commit (`.githooks/pre-commit` → `scripts/gancho-git.ts`) deja pasar un commit de solo registros, corre `pnpm docs:revisar` para uno de solo documentos y, para uno con código, compara el sello con la huella del índice: si no es exactamente lo que se revisó, no entra. `pnpm install` lo deja activo con `core.hooksPath`. Cómo se calcula la huella está en [estructura](../cimientos/ESTRUCTURA.md#cómo-está-hecho). Lo prueban `scripts/sello.prueba.ts` y `scripts/gancho-git.prueba.ts`.
+
+*Los ganchos de Claude Code (el de inicio, el de después de editar y el de fin) y el interruptor de modo los agrega la parte 4 de la fase 1. El script que revisa las carpetas de cada trabajador se agrega en la fase 19.*

@@ -9,3 +9,6 @@ packages:
 saveExact: true
 # Node fuera de la versión de engines detiene la instalación.
 engineStrict: true
+# Cada `pnpm install` corre el `prepare` de la raíz aunque node_modules ya esté al día,
+# así el gancho de git (core.hooksPath) siempre queda activo.
+optimisticRepeatInstall: false

@@ -178,18 +178,45 @@ Cómo encaja en el trabajo de cada parte está en la [forma de trabajo](../traba
 ```text
 uniformame/
 ├── AGENTS.md · CLAUDE.md
-├── package.json               versiones fijas, packageManager y engines
-├── pnpm-workspace.yaml        apps/* y packages/*; engineStrict y saveExact
+├── package.json               versiones fijas, packageManager, engines y los comandos
+├── pnpm-workspace.yaml        apps/* y packages/*; engineStrict, saveExact, optimisticRepeatInstall
 ├── pnpm-lock.yaml
 ├── tsconfig.base.json         TypeScript estricto, solo sintaxis borrable
 ├── tsconfig.json              los scripts y los paquetes, con los tipos de Node
 ├── biome.json
 ├── vitest.config.ts           toma los *.prueba.ts
 ├── .env.ejemplo · .gitignore
+├── .githooks/pre-commit       llama a scripts/gancho-git.ts
 ├── .claude/                   rules/ y agents/
 ├── docs/
 └── scripts/
-    └── versiones.prueba.ts    las versiones contra la tabla del stack
+    ├── archivos.ts            qué se revisa: lo que se va a guardar, lo cambiado y lo del commit
+    ├── comandos.ts            corre Biome, tsc, Vitest, node y pnpm
+    ├── revision.ts            pnpm revision
+    ├── revision-rapida.ts     pnpm revision:rapida
+    ├── sello.ts               la huella y el sello
+    ├── secretos.ts            la búsqueda de secretos
+    ├── gancho-git.ts          los tres casos del gancho de git
+    ├── repositorio-de-prueba.ts  los repositorios temporales de las pruebas
+    └── *.prueba.ts            una prueba por script
 ```
 
-**Los scripts de `package.json`** (fase 1, parte 1): `pnpm estilo` (Biome sobre todo el repositorio), `pnpm tipos` (`tsc` sin emitir) y `pnpm pruebas` (todas las pruebas con Vitest).
+**Los scripts de `package.json`:**
+
+| Script | Qué corre |
+|---|---|
+| `prepare` | `git config core.hooksPath .githooks`; lo corre cada `pnpm install` (con `optimisticRepeatInstall: false`, aunque `node_modules` ya esté al día) |
+| `pnpm estilo` · `pnpm tipos` | `biome check .` · `tsc -p tsconfig.json` |
+| `pnpm pruebas` | `vitest run`: todas las pruebas, sin sellar |
+| `pnpm revision:rapida` | `scripts/revision-rapida.ts`: Biome sobre los archivos cambiados desde el último commit, `tsc` si cambió un `.ts` o un `tsconfig`, y `vitest related` sobre los `.ts` cambiados |
+| `pnpm revision` | `scripts/revision.ts`: Biome, tipos, todas las pruebas, secretos y `pnpm audit`, en ese orden; se detiene en el primero en rojo. Las migraciones desde cero entran en la fase 2 y `openapi.json` en la fase 3 |
+
+**Las herramientas** se llaman desde `node_modules/.bin` (`scripts/comandos.ts`), sin rutas de la máquina: lo mismo corre en la nube y en la Mac.
+
+**La huella del sello** (`scripts/sello.ts`): por cada archivo que se guardaría (lo que git sigue y lo nuevo que `.gitignore` no deja fuera), su ruta y el hash de git de su contenido, ordenados y pasados por SHA-256. No incluye `docs/registros/`. Al revisar se calcula sobre el árbol (`git hash-object`); al hacer el commit, sobre el índice (`git ls-files -s`). Por eso el sello vale solo si se guarda exactamente lo revisado: con todo agregado (`git add -A`), las dos huellas son iguales. La revisión completa calcula la huella antes y después de sus pasos y no sella si algo cambió mientras corría. El sello vive en `.revision/sello.json`, fuera de git.
+
+**El gancho de git** (`.githooks/pre-commit` → `scripts/gancho-git.ts`) ve lo que cambia en el índice: si todo está en `docs/registros/`, pasa; si todo es `*.md`, corre `scripts/docs-revisar.ts`; si hay código, pide que el sello sea igual a la huella del índice.
+
+**La búsqueda de secretos** (`scripts/secretos.ts`) revisa lo que se va a guardar: llaves privadas, direcciones de Postgres con contraseña, el secreto de cliente y las llaves de API de Google, las llaves de Resend, un `.env` que `.gitignore` no deja fuera o que se va a guardar, y cualquier variable de `.env.ejemplo` escrita con un valor (`NOMBRE=algo`), que cubre también las credenciales de R2. Dice el archivo y el renglón, nunca el valor.
+
+**Las pruebas:** `scripts/versiones.prueba.ts`, `revision-rapida.prueba.ts`, `sello.prueba.ts`, `gancho-git.prueba.ts` y `secretos.prueba.ts`, cada una en un repositorio de git temporal con la configuración del real y `node_modules` enlazado.
