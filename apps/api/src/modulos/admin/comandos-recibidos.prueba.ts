@@ -32,10 +32,15 @@ describe("comandos_recibidos: la app solo cambia el resultado, la respuesta, el 
 		await prueba.borrar();
 	});
 
-	it("la app cambia la respuesta, el documento y las columnas de reintento", async () => {
+	it("la app cambia la respuesta, el documento y las columnas de reintento (también el motivo del apartado y lo que espera)", async () => {
 		expect(
 			await conLaApp(
 				`UPDATE comandos_recibidos SET respuesta = '{}', entidad = 'pedidos', reintentos = 1, actualizado_en = now() WHERE id = '${id}'`,
+			),
+		).toBeUndefined();
+		expect(
+			await conLaApp(
+				`UPDATE comandos_recibidos SET motivo_apartado = 'lote_cerrado', espera_entidad_id = NULL WHERE id = '${id}'`,
 			),
 		).toBeUndefined();
 	});

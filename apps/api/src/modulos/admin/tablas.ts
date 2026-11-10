@@ -86,6 +86,9 @@ export const comandosRecibidos = pgTable(
 			.on(tabla.recibidoEn)
 			.where(sql`${tabla.resultado} = 'apartado' and ${tabla.descartadoEn} is null`),
 		index("comandos_recibidos_espera").on(tabla.esperaEntidadId).where(sql`${tabla.esperaEntidadId} is not null`),
+		index("comandos_recibidos_documento")
+			.on(tabla.dispositivoId, tabla.entidadId)
+			.where(sql`${tabla.entidadId} is not null`),
 		check("comandos_recibidos_origen", sql`${tabla.origen} in ('web', 'aparato', 'linea')`),
 		check("comandos_recibidos_resultado", sql`${tabla.resultado} in ('aplicado', 'excepcion', 'apartado')`),
 		check(

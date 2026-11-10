@@ -217,7 +217,7 @@ async function leerAparato(base: Base, registro: RegistroDeModulos, dispositivoI
 	return {
 		aparato: { dispositivoId, tipo: leido.tipo, ubicacionId: leido.ubicacionId },
 		tablas,
-		esquema: esquemaDe(tablas),
+		esquema: esquemaDe(tablas, leido.tipo),
 		fotoPedidaEn: leido.fotoPedidaEn,
 	};
 }

@@ -372,7 +372,8 @@ export async function reintentarComando(
 						entidadId: hecho.entidad?.id ?? null,
 						excepcionId: hecho.excepcionId,
 					}
-				: {}),
+				: // Sigue apartado, quizá por otro motivo: si ya no espera un documento, deja de reintentarse solo.
+					{ motivoApartado: hecho.motivo, esperaEntidadId: hecho.esperaEntidadId }),
 		})
 		.where(eq(comandosRecibidos.id, comandoId));
 	return hecho;
@@ -424,14 +425,17 @@ export async function reintentarLosQueYaTienenSuDocumento(
 	base: Base,
 	dispositivoId: string,
 ): Promise<void> {
+	// Los documentos, en el orden en que pasó el primer apartado que espera cada uno.
 	const { rows } = await base.execute(sql`
-		SELECT DISTINCT a.espera_entidad_id::text AS entidad FROM comandos_recibidos a
+		SELECT a.espera_entidad_id::text AS entidad FROM comandos_recibidos a
 		WHERE a.dispositivo_id = ${dispositivoId}::uuid AND a.resultado = 'apartado'
-			AND a.espera_entidad_id IS NOT NULL AND a.descartado_en IS NULL
+			AND a.motivo_apartado = 'falta_documento' AND a.espera_entidad_id IS NOT NULL AND a.descartado_en IS NULL
 			AND EXISTS (
 				SELECT 1 FROM comandos_recibidos c
 				WHERE c.dispositivo_id = a.dispositivo_id AND c.entidad_id = a.espera_entidad_id AND c.resultado <> 'apartado'
-			)`);
+			)
+		GROUP BY a.espera_entidad_id
+		ORDER BY min(a.ocurrido_en)`);
 	for (const { entidad } of z.array(z.object({ entidad: z.string() })).parse(rows)) {
 		await reintentarLosQueEsperaban(dependencias, base, dispositivoId, entidad);
 	}

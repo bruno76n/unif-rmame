@@ -121,19 +121,6 @@ export function leerCursorDeFoto(llave: Buffer, opaco: string): CursorDeFoto | u
 	return leido.success ? leido.data : undefined;
 }
 
-/**
- * Dos aparatos fijos para escribir cada filtro como texto (con ubicación y sin ella, por si el filtro escoge
- * en el código según el aparato): sus valores salen como parámetros (`$1`), no en el texto.
- */
-const aparatosDeMuestra: readonly AparatoQueBaja[] = [
-	{ dispositivoId: "00000000-0000-0000-0000-000000000000", tipo: "", ubicacionId: null },
-	{
-		dispositivoId: "00000000-0000-0000-0000-000000000000",
-		tipo: "",
-		ubicacionId: "00000000-0000-0000-0000-000000000000",
-	},
-];
-
 /** La versión ya calculada de cada lista de tablas (las del registro no cambian mientras corre el proceso). */
 const yaCalculados = new WeakMap<readonly TablaQueBaja[], number>();
 
@@ -141,13 +128,22 @@ const yaCalculados = new WeakMap<readonly TablaQueBaja[], number>();
  * La versión del esquema de sincronización de un tipo de aparato: sale de sus tablas, su orden, sus columnas,
  * el SQL de su filtro y los parámetros que lo deciden, así que cambia sola cuando un módulo cambia lo que
  * baja (también solo el filtro), y el cursor viejo pide la foto.
- * @param tablas Las tablas que bajan a ese tipo.
+ * El filtro se escribe con dos aparatos de ese tipo (con ubicación y sin ella, por si el filtro escoge en el
+ * código según el aparato); sus valores salen como parámetros (`$1`), no en el texto.
+ * @param tablas Las tablas que bajan a ese tipo (las del registro: la misma lista cada vez).
+ * @param tipo El tipo de aparato.
  * @returns Un entero de 28 bits (cabe en `dispositivos_sync.esquema_sync`).
  */
-export function esquemaDe(tablas: readonly TablaQueBaja[]): number {
+export function esquemaDe(tablas: readonly TablaQueBaja[], tipo: string): number {
 	const calculado = yaCalculados.get(tablas);
 	if (calculado !== undefined) return calculado;
 	const dialecto = new PgDialect();
+	const sinUbicacion: AparatoQueBaja = {
+		dispositivoId: "00000000-0000-0000-0000-000000000000",
+		tipo,
+		ubicacionId: null,
+	};
+	const aparatosDeMuestra = [sinUbicacion, { ...sinUbicacion, ubicacionId: "00000000-0000-0000-0000-000000000000" }];
 	const forma = JSON.stringify(
 		tablas.map((tabla) => [
 			tabla.tabla,

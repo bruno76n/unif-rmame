@@ -52,8 +52,8 @@ Cada acción que llegó, de la web, de un aparato o de uniformame.mx. Hace que u
 | `actualizado_en` | timestamptz | sí | |
 
 - **CHECK:** `dispositivo_id` no nulo si `origen` es `aparato` o `linea`; `usuario_id` y `sesion_id` no nulos si es `web`; `motivo_apartado` no nulo si `resultado` es `apartado`.
-- **Lo que nunca cambia:** quién la mandó, la clave, el origen, la acción, la carga, su huella y sus dos horas. El rol de la app solo puede cambiar el resultado, la respuesta, el documento, la excepción y las columnas de reintento, descarte y retenido.
-- **Índices:** único (`clave_idempotencia`); (`dispositivo_id`, `recibido_en` desc); (`recibido_en`) donde `resultado = 'apartado'` y `descartado_en` es nulo; (`espera_entidad_id`) donde no es nulo.
+- **Lo que nunca cambia:** quién la mandó, la clave, el origen, la acción, la carga, su huella y sus dos horas. El rol de la app solo puede cambiar el resultado, la respuesta, el documento, la excepción y las columnas de reintento (también el motivo del apartado y el documento que espera, que cambian si un reintento lo vuelve a apartar por otra cosa), descarte y retenido.
+- **Índices:** único (`clave_idempotencia`); (`dispositivo_id`, `recibido_en` desc); (`recibido_en`) donde `resultado = 'apartado'` y `descartado_en` es nulo; (`espera_entidad_id`) donde no es nulo; (`dispositivo_id`, `entidad_id`) donde `entidad_id` no es nulo, para destrabar los apartados al empezar cada subida.
 - **No se parte por mes** ni se depura: su llave única tiene que cubrir todos los meses, o un reintento que cruza de mes duplicaría.
 - `usuarios`, `sesiones`, `dispositivos`, `personas` y `excepciones` llegan en fases posteriores: esas columnas nacen con su marca `@llavePendiente` (ver [base de datos](BASE-DE-DATOS.md#llaves-que-apuntan-a-una-fase-posterior)).
 

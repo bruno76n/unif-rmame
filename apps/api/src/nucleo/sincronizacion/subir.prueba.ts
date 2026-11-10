@@ -320,6 +320,21 @@ describe("la subida aplica lo que ya pasó, aparta lo que no puede aplicar y nun
 		]);
 	});
 
+	it("un apartado que al reintentarse se vuelve a apartar por otro motivo guarda el nuevo y deja de reintentarse solo", async () => {
+		const lote = uuidv7();
+		const espera = comando("prueba.registrar_bulto", { id: uuidv7(), lote_id: lote, piezas: 79 });
+		servidor.fallas.bitacoraUnaVez.add("Registró un bulto de 79 piezas");
+		await subir([espera, comando("prueba.abrir_lote", { id: lote, nombre: "L-2026-170" })]);
+		await mandarAccion(servidor, "prueba.cerrar_lote", { datos: { lote_id: lote } });
+		// La siguiente subida lo reintenta: ya no falta el lote, pero está cerrado.
+		await subir([comando("prueba.abrir_lote", { id: uuidv7(), nombre: "L-2026-171" })]);
+		const [cerrado] = await recibido(espera.clave_idempotencia);
+		expect(cerrado).toMatchObject({ resultado: "apartado", motivo_apartado: "lote_cerrado", espera_entidad_id: null });
+		const reintentos = cerrado?.reintentos;
+		await subir([comando("prueba.abrir_lote", { id: uuidv7(), nombre: "L-2026-172" })]);
+		expect((await recibido(espera.clave_idempotencia))[0]?.reintentos).toBe(reintentos);
+	});
+
 	it("si un comando falla por algo del servidor, la tanda se corta con detenido y responde solo lo ya hecho; al volver a mandar, nada se duplica", async () => {
 		const lotes = [uuidv7(), uuidv7(), uuidv7()];
 		const comandos = lotes.map((id, i) => comando("prueba.abrir_lote", { id, nombre: `L-2026-13${i}` }));
