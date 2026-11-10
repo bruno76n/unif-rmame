@@ -24,7 +24,7 @@ Una fase es una parte del sistema y se construye de abajo hacia arriba: primero 
 
 | # | Fase | Qué construye | Estado |
 |---|---|---|---|
-| 5 ● | [Acceso con Google, cuentas y permisos](05-acceso-con-google-cuentas-y-permisos.md) | Entrar con Google, las sesiones, «Confirmar con Google», las cuentas, los departamentos y los permisos finos | Pendiente |
+| 5 ● | [Acceso con Google, cuentas y permisos](05-acceso-con-google-cuentas-y-permisos.md) | Entrar con Google, las sesiones, «Confirmar con Google», las cuentas, los departamentos y los permisos finos | Terminada |
 | 6 ● | [Dispositivos y sincronización](06-dispositivos-y-sincronizacion.md) | Registrar y revocar aparatos, sus llaves, y la sincronización: subir, bajar, foto y avisos en vivo | Pendiente |
 | 7 ● | [Autorizaciones y Personal](07-autorizaciones-y-personal.md) | Las autorizaciones de Dirección, las personas, el PIN del taller, la asistencia y las tarifas | Pendiente |
 | 8 | [Catálogo](08-catalogo.md) | Escuelas, tallas, productos, variantes con su código de barras, listas de precios y precios | Pendiente |

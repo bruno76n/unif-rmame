@@ -1,7 +1,7 @@
 # Fase 05: Acceso con Google, cuentas y permisos ●
 
 > **Etapa:** Módulos.
-> **Estado:** Pendiente.
+> **Estado:** Terminada.
 > **Antes de empezar:** lee la [forma de trabajo](../trabajo/FORMA-DE-TRABAJO.md) y la [revisión de fase](../trabajo/REVISION-DE-FASE.md).
 > **Se conecta con:** [fases](FASES.md) · [fase 4](04-servicios-comunes.md) · [fase 6](06-dispositivos-y-sincronizacion.md)
 

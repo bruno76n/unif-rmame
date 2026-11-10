@@ -63,6 +63,18 @@ export interface SalidaDeEventos {
 	terminar: () => void;
 }
 
+/**
+ * Espera una promesa a lo más `ms` milisegundos.
+ * @throws Error si no terminó a tiempo.
+ */
+function conTiempoLimite<T>(promesa: Promise<T>, ms: number): Promise<T> {
+	let reloj: NodeJS.Timeout | undefined;
+	const tarde = new Promise<never>((_listo, falla) => {
+		reloj = setTimeout(() => falla(new Error(`la revisión de la conexión tardó más de ${ms} ms`)), ms);
+	});
+	return Promise.race([promesa, tarde]).finally(() => clearTimeout(reloj));
+}
+
 /** Una conexión abierta, con lo que le toca. */
 interface Conexion {
 	salida: SalidaDeEventos;
@@ -143,7 +155,8 @@ export function crearAvisosEnVivo(dependencias: DependenciasDeLosAvisosEnVivo) {
 	 * Vuelve a revisar una conexión: si su sesión ya no vale (cerrada, vencida, sin acceso), le manda
 	 * `sesion_cerrada` con su motivo (si no le llegó ya) y la corta; si vale, rearma lo que le toca con sus
 	 * departamentos de ahora. La del latido no empieza si ya hay una en curso; la de un evento de la cuenta sí,
-	 * y entonces el resultado de la anterior se descarta: vale lo que hay después del evento.
+	 * y entonces la anterior ya no rearma nada: vale lo que hay después del evento. Un «ya no vale» corta
+	 * siempre. Cada revisión tiene tiempo límite: el del latido de producción.
 	 * @param conexion La conexión.
 	 * @param porEvento Si la pide un evento de su cuenta.
 	 */
@@ -155,18 +168,22 @@ export function crearAvisosEnVivo(dependencias: DependenciasDeLosAvisosEnVivo) {
 		const esta = conexion.revision;
 		let quien: QuienLlama | undefined;
 		try {
-			quien = await conexion.revisar();
+			// Con tiempo límite: una revisión que no termina no deja la conexión sin revisar para siempre.
+			quien = await conTiempoLimite(conexion.revisar(), latidoPorOmision);
 		} finally {
 			if (conexion.revision === esta) conexion.enRevision = false;
 		}
-		if (!abiertas.has(conexion) || conexion.revision !== esta) return;
+		if (!abiertas.has(conexion)) return;
 		if (quien !== undefined) {
+			// Solo la revisión más nueva rearma lo que le toca: una vieja traería los departamentos de antes.
+			if (conexion.revision !== esta) return;
 			const alcance = quien.tipo === "aparato" ? await dependencias.alcanceDelAparato(quien) : undefined;
 			if (abiertas.has(conexion) && conexion.revision === esta) {
 				conexion.tablasQueLeTocan = filtroDe(quien, dependencias.registro.lectores, alcance);
 			}
 			return;
 		}
+		// Una sesión que ya no vale no vuelve a valer: corta aunque haya una revisión más nueva.
 		// Sale de las abiertas antes de esperar: ninguna otra revisión la vuelve a cortar.
 		abiertas.delete(conexion);
 		try {

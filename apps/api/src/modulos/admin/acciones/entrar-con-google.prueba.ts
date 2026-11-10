@@ -233,5 +233,11 @@ describe("una cuenta activa entra con Google y su sesión queda solo como hash; 
 			createHash("sha256").update(sesion).digest("hex"),
 		]);
 		expect(rows[0]?.motivo_cierre).toBe("salio");
+		// Y a las pantallas de esa sesión les llega `sesion_cerrada`.
+		const evento = await servidor.base.dueno.query(
+			"SELECT datos FROM eventos WHERE tipo = 'sesion.cerrada' AND datos->>'sesion_ids' = (SELECT id::text FROM sesiones WHERE token_hash = $1)",
+			[createHash("sha256").update(sesion).digest("hex")],
+		);
+		expect(evento.rows).toEqual([{ datos: expect.objectContaining({ motivo: "salio" }) }]);
 	});
 });

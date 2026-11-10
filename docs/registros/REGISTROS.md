@@ -21,6 +21,7 @@ Lo que falta decidir o investigar, y en qué fase se resuelve. Lo del negocio ya
 - **Las variables que la API pide en producción** (fase 23, con la puesta en marcha): `entorno.ts` deja opcionales `GOOGLE_*` y `COOKIE_SECRETO` (el worker no las usa); sin ellas la API arranca sin entrada con Google. Revisar al arrancar la API en producción que estén y que el emisor sea el de Google.
 - **Montos en los textos y en las etiquetas para soporte** (fases 19 y 20): el recorte común quita campos, no textos; un `mensaje` o una descripción con un monto ya escrito («Pagó $1,250.00») le llegaría a soporte.
 - **El correo de «sin acceso» en el historial del navegador** (fase 19): la pantalla de acceso lee `#correo=` y lo quita con `history.replaceState`.
+- **La ruta de regreso en la web** (fase 19): la API redirige a la ruta tal como llegó, con `%2f` codificado si lo trae; la web no la decodifica para navegar con ella como dirección.
 - **El intervalo de sincronización de los aparatos** (fase 6): `api.ts` usa 30 segundos mientras `sync.intervalo_segundos` llega con la sincronización.
 - **Las rutas fijas y el recorte común** (fase 20, con las etiquetas y los impresos): las respuestas JSON de las rutas fijas y lo que dibuja una etiqueta no pasan por `recorteComun`; cada tipo de etiqueta recibe los datos ya recortados por su módulo.
 - **El nombre y el puesto de una cuenta** (fase 7, con Personal): hoy los mensajes y la bitácora de las cuentas usan el correo y «Esa persona» (decisión 373).

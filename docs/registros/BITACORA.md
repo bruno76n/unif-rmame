@@ -39,3 +39,4 @@ La línea de la bitácora se escribe al final, con el resultado ya conocido. Esc
 | 10 nov 2026 | 5 | 4 · La revisión de cada llamada | [2026-11-11-fase-05](sesiones/2026-11-11-fase-05.md) |
 | 10 nov 2026 | 5 | Auditoría y correcciones | [2026-11-11-fase-05](sesiones/2026-11-11-fase-05.md) |
 | 10 nov 2026 | 5 | Revisión de las correcciones y segunda vuelta | [2026-11-11-fase-05](sesiones/2026-11-11-fase-05.md) |
+| 10 nov 2026 | 5 | Tercera vuelta y cierre: fase 5 terminada | [2026-11-11-fase-05](sesiones/2026-11-11-fase-05.md) |
