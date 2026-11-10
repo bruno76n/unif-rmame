@@ -121,6 +121,7 @@ describe("el pago por día no viaja ni se cambia sin «ven sueldos y tarifas», 
 		for (const datos of [
 			{ ...sinPago, pago_dia_centavos: 1 },
 			{ ...sinPago, forma_pago: "pieza" },
+			{ ...sinPago, forma_pago: sinPago.forma_pago === "mixta" ? "tiempo" : "mixta" },
 		]) {
 			const respuesta = await mandarAccion(
 				servidor,

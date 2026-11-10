@@ -128,5 +128,11 @@ describe("dar de baja conserva la persona y le quita lo que la deja entrar en la
 		});
 		const cerrada = await servidor.base.dueno.query("SELECT estado, motivo_baja FROM usuarios WHERE id = $1", [cuenta]);
 		expect(cerrada.rows[0]).toEqual({ estado: "sin_acceso", motivo_baja: "Baja de la persona" });
+		// Cerrarle la cuenta le quita sus departamentos: queda como alerta, como «Quitar acceso».
+		const alerta = await servidor.base.dueno.query(
+			"SELECT es_alerta FROM bitacora WHERE accion = 'personal.dar_baja_persona' AND entidad_id = $1",
+			[conCuenta],
+		);
+		expect(alerta.rows).toEqual([{ es_alerta: true }]);
 	});
 });

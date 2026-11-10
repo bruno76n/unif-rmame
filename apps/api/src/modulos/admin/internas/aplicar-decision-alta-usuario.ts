@@ -26,6 +26,7 @@ import { departamentos, usuarioDepartamentos, usuarios } from "../tablas.ts";
 const decision = z.object({
 	autorizacion_id: z.uuid(),
 	decision: z.enum(["autorizar", "rechazar"]),
+	motivo: z.string().optional(),
 	usuario_solicitado_id: z.uuid(),
 });
 
@@ -46,7 +47,9 @@ export async function aplicarDecisionAltaUsuario(contexto: ContextoDeAccion, dat
 	if (leida?.personaId === null || leida?.personaId === undefined) {
 		throw new Error(`la cuenta ${pedida.usuario_solicitado_id} no existe o no tiene persona`);
 	}
-	// El mismo orden de candados que el alta y la baja: los del correo y la persona, la persona, la cuenta.
+	// El mismo orden que el alta de la dueña: los candados del correo y la persona, la persona, la cuenta. La baja
+	// de la persona va al revés (la persona, la cuenta y al final esta AU-): si caen a la vez, Postgres corta
+	// una y el corredor la reintenta, y el resultado es el mismo (decisión 430).
 	await tomarCandadosDeCuenta(transaccion, leida.personaId, leida.correo);
 	const persona = await leerPersonaDeCuenta(contexto, leida.personaId);
 	const [cuenta] = await transaccion
@@ -62,6 +65,8 @@ export async function aplicarDecisionAltaUsuario(contexto: ContextoDeAccion, dat
 		await transaccion.update(usuarios).set({ estado: "rechazada" }).where(eq(usuarios.id, cuenta.id));
 		guardarDecision(contexto, cuenta.id, "cuenta.rechazada");
 		return {
+			mensaje: "Alta rechazada",
+			descripcion: `Rechazó la alta de ${persona.nombre}: ${pedida.motivo ?? ""}`,
 			antes: { estado: "solicitada" },
 			despues: { estado: "rechazada" },
 			datos: datosDeVuelta,
@@ -91,7 +96,7 @@ export async function aplicarDecisionAltaUsuario(contexto: ContextoDeAccion, dat
 	guardarDecision(contexto, cuenta.id, "cuenta.activada");
 	return {
 		mensaje: `${persona.nombre} dada de alta: ya puede entrar con su cuenta de Google${pinAnulado ? ". Su PIN del taller ya no entra" : ""}`,
-		descripcion: `Dio de alta a ${persona.nombre} con ${pedidos.map((depto) => depto.nombre).join(", ")}`,
+		descripcion: `Dio de alta a ${persona.nombre} con ${pedidos.map((depto) => depto.nombre).join(", ")} · autorizado por dirección`,
 		antes: { estado: "solicitada" },
 		despues: {
 			estado: "activa",

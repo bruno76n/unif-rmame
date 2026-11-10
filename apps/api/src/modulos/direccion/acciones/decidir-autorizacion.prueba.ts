@@ -214,8 +214,14 @@ describe("una autorización se decide una sola vez, con Google, con el efecto de
 			url: "/v1/consultas/direccion.autorizaciones",
 			headers: encabezadosDeLaWeb("direccion"),
 		});
+		// «Lo pidió» lleva el nombre de la persona de la cuenta, no su correo.
+		const { rows } = await servidor.base.dueno.query(
+			"SELECT p.nombre FROM usuarios u JOIN personas p ON p.id = u.persona_id WHERE u.id = $1",
+			[cuentaDePrueba("duena")],
+		);
 		expect(otra.json().resultado.por_autorizar.find((una: { id: string }) => una.id === au.id)).toMatchObject({
 			pedida_por_ti: false,
+			pedida_por: rows[0]?.nombre,
 		});
 		await decidir(au, { decision: "autorizar" });
 		expect(await leer(au.id)).toMatchObject({ misma_persona: true });

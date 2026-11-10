@@ -3,10 +3,11 @@
  * Fase 7 · docs/modulos/personal/asistencia.md («`personal.dias_de_semana`»)
  */
 
+import { inicioDeSemana } from "@uniformame/compartido/calculos/fechas";
 import { and, eq, gte, lte } from "drizzle-orm";
 import { z } from "zod";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
-import { diasDeTrabajo, semanaDe } from "../dominio/asistencia.ts";
+import { diasDeSemanaGuardada, diasDeTrabajo, semanaDe } from "../dominio/asistencia.ts";
 import { asistenciaDias, asistenciaSemanas } from "../tablas.ts";
 
 /** Lo que recibe. */
@@ -21,11 +22,22 @@ const pedido = z.object({ persona_id: z.uuid() });
  */
 export async function diasDeSemana(contexto: ContextoDeAccion, datos: unknown) {
 	const { persona_id } = pedido.parse(datos);
-	const semana = semanaDe(contexto.diaDeNegocio, await diasDeTrabajo(contexto));
+	const dias = await diasDeTrabajo(contexto);
+	const lunes = inicioDeSemana(contexto.diaDeNegocio);
+	// La semana guardada de esta semana de lunes a domingo, si ya se abrió; si no, la de los días de hoy.
 	const [abierta] = await contexto.transaccion
-		.select({ estado: asistenciaSemanas.estado })
+		.select()
 		.from(asistenciaSemanas)
-		.where(eq(asistenciaSemanas.fechaInicio, semana.inicio.toString()));
+		.where(
+			and(
+				gte(asistenciaSemanas.fechaInicio, lunes.toString()),
+				lte(asistenciaSemanas.fechaInicio, lunes.add({ days: 6 }).toString()),
+			),
+		);
+	const semana =
+		abierta === undefined
+			? semanaDe(contexto.diaDeNegocio, dias)
+			: diasDeSemanaGuardada(abierta.fechaInicio, abierta.fechaFin, dias);
 	const capturados = await contexto.transaccion
 		.select({ fecha: asistenciaDias.fecha, valor: asistenciaDias.valor })
 		.from(asistenciaDias)

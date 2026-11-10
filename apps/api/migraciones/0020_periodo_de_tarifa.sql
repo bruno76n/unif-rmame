@@ -1,0 +1,1 @@
+ALTER TABLE "tarifas_operacion" ADD CONSTRAINT "tarifas_operacion_periodo" CHECK ("tarifas_operacion"."vigente_hasta" is null or "tarifas_operacion"."vigente_hasta" >= "tarifas_operacion"."vigente_desde");

@@ -68,6 +68,17 @@ describe("el PIN del taller se entrega una sola vez y solo queda su hash Argon2i
 		return calculado.toString("base64").replace(/=+$/, "") === esperado;
 	}
 
+	/**
+	 * Revisa que un texto no lleve el PIN ni su hash: ni en un campo que se llame `pin`, ni como valor de
+	 * ningún campo, ni suelto dentro de una descripción o un mensaje.
+	 */
+	function noLlevaElPin(texto: string, pin: string, hash: string): void {
+		expect(texto).not.toContain(hash);
+		expect(texto).not.toContain('\\"pin\\"');
+		expect(texto).not.toMatch(new RegExp(`\\\\"${pin}\\\\"|"${pin}"`));
+		expect(texto).not.toMatch(new RegExp(`(?<![\\p{L}\\p{N}_.:+-])${pin}(?![\\p{L}\\p{N}_:+-])`, "u"));
+	}
+
 	/** Todo lo que guardó el sistema sobre la persona y sus PIN, como texto. */
 	async function loQueQuedoEscrito(personaId: string): Promise<string> {
 		const { rows } = await servidor.base.dueno.query(
@@ -96,12 +107,12 @@ describe("el PIN del taller se entrega una sola vez y solo queda su hash Argon2i
 		const reintento = await asignar(id, clave);
 		expect(reintento.estado).toBe(200);
 		expect(reintento.cuerpo.resultado).toEqual({ pin_id: resultado.pin_id, mensaje: resultado.mensaje });
+		expect(reintento.cuerpo.secreto_entregado).toBe(true);
 		const escrito = await loQueQuedoEscrito(id);
 		expect(escrito).toContain("Asignó el PIN del taller de Persona de prueba");
 		expect(escrito).toContain("Se muestra una sola vez");
-		expect(escrito).not.toContain(pin.pin_hash);
-		// Ni el PIN (en ningún campo `pin`) ni su hash quedan en la bitácora, los eventos o las respuestas guardadas.
-		expect(escrito).not.toContain('\\"pin\\"');
+		noLlevaElPin(escrito, resultado.pin, pin.pin_hash);
+		noLlevaElPin(servidor.registro.join("\n"), resultado.pin, pin.pin_hash);
 		const otra = await asignar(id);
 		expect(otra.cuerpo).toMatchObject({ codigo: "ya_tiene_pin" });
 	});
@@ -134,15 +145,28 @@ describe("el PIN del taller se entrega una sola vez y solo queda su hash Argon2i
 		expect(sinPin.cuerpo).toMatchObject({ codigo: "sin_pin" });
 		await asignar(id);
 		const [anterior] = await pinesDe(id);
-		const nuevo = await mandarAccion(
-			servidor,
-			"personal.restablecer_pin",
-			{ datos: { persona_id: id }, version: anterior.version },
-			"personal",
-		);
+		const claveDeRestablecer = nuevaClave();
+		const restablecer = () =>
+			mandarAccion(
+				servidor,
+				"personal.restablecer_pin",
+				{ clave: claveDeRestablecer, datos: { persona_id: id }, version: anterior.version },
+				"personal",
+			);
+		const nuevo = await restablecer();
 		expect(nuevo.cuerpo).toMatchObject({
 			resultado: { pin: expect.stringMatching(/^\d{4}$/), mensaje: "El anterior ya no entra." },
 		});
+		// El reintento con la misma clave no lo trae, y nada de lo escrito lo lleva.
+		const reintento = await restablecer();
+		expect(reintento.cuerpo).toMatchObject({ secreto_entregado: true });
+		expect(reintento.cuerpo.resultado).not.toHaveProperty("pin");
+		const pinNuevo = (nuevo.cuerpo.resultado as { pin: string }).pin;
+		const hashNuevo = (await pinesDe(id)).at(-1)?.pin_hash;
+		const escrito = await loQueQuedoEscrito(id);
+		expect(escrito).toContain("Restableció el PIN del taller de Persona de prueba");
+		noLlevaElPin(escrito, pinNuevo, hashNuevo);
+		noLlevaElPin(servidor.registro.join("\n"), pinNuevo, hashNuevo);
 		const [viejo, vigente] = await pinesDe(id);
 		expect(viejo).toMatchObject({ id: anterior.id, estado: "anulado", motivo_anulacion: "restablecido" });
 		expect(vigente).toMatchObject({ estado: "activo" });

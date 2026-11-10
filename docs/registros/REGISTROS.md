@@ -11,6 +11,8 @@ Estos registros nunca cuentan como error del código: si les falta algo, se escr
 
 Lo que falta decidir o investigar, y en qué fase se resuelve. Lo del negocio ya tiene su valor inicial configurable, así que ninguno detiene una fase antes de la suya.
 
+- **Pasar de pieza a tiempo entre el cierre de la semana y su pago** (fase 17): la nómina usa la ficha como esté al pagar (`nomina.md`), así que los registros de esa semana entrarían como de quien cobra por tiempo, sin pagarse y sin poder volver a entrar. Decidir si la nómina congela la forma de pago al cerrar la semana.
+- **En qué paso se redondea medio día** (fase 17): medio día con un pago por día impar da medio centavo. La regla de redondeo ya está en el paquete compartido; falta decir en `nomina.md` si se redondea por día o por semana.
 - **La app puede cambiar sus propios valores de sesión** (fase 22): `uniformame_app` puede hacer `SET idle_in_transaction_session_timeout = 0` o `ALTER ROLE … SET`. El límite de un minuto es el valor por omisión, no una garantía.
 - **`enTransaccionDeshecha` arma su propio Drizzle** (fase 3): si `crearBase` recibe opciones (un `schema`), la ayuda de pruebas tiene que usar las mismas.
 - **Lo que lleva el `409` y la posición del cursor dependen de cada módulo** (fase 22, con la revisión de cada consulta): `tomarVersion` manda lo que le da la acción (`leerVisible`), sin revisar que venga recortado, y `cursorDe` guarda los campos que le pasa la consulta. Una revisión que compare el `409` y el cursor con los `recortables` de la consulta que lee ese registro.
@@ -188,5 +190,6 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 10 nov 2026 | 7 | La versión de capturar un día y de poner una tarifa (decisión 432) | Dos acciones · la versión opcional en `datos` | Opcional en `datos` | No |
 | 10 nov 2026 | 7 | Cómo probar la nómina pagada antes de la fase 17 (decisión 433) | Esperar · un módulo `contaduria` de prueba | El módulo de prueba, que se quita en la fase 17 | No |
 | 10 nov 2026 | 7 | Cómo se nombra la operación antes de los flujos (decisión 434) | Su id · «La operación» | «La operación» | No |
+| 10 nov 2026 | 7 | Qué semana es la de un día si la dueña cambia los días de trabajo (decisión 435) | El inicio de hoy · su semana de lunes a domingo | Su semana de lunes a domingo: una cerrada nunca cambia | No |
 | 10 nov 2026 | 5 | La pantalla del Google de desarrollo | Una propia para escoger cuenta · la de desarrollo de oidc-provider, que pide el correo | La de oidc-provider; `pnpm local` escribe los correos de la muestra al arrancar | No |
 

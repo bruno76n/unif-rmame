@@ -4,7 +4,8 @@
  *
  * Las que esperan, de la más vieja a la más nueva, con «Lo pidió {persona}», «Pedida por ti» y si quien ve
  * la puede decidir; los filtros por tipo con su conteo; y las resueltas por páginas, la más reciente arriba.
- * Hasta Personal (fase 7, parte 2) la persona que pidió se nombra con su cuenta.
+ * Quien pidió se nombra como su cuenta (decisión 428): el nombre de soporte o el de su persona; si la pidió
+ * un aparato, la persona del comando.
  */
 
 import {
@@ -13,11 +14,13 @@ import {
 	tiposDeAutorizacion,
 } from "@uniformame/compartido/contratos/direccion/autorizaciones";
 import { and, asc, count, desc, eq, ne, or, type SQL, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { Temporal } from "temporal-polyfill";
 import { z } from "zod";
 import { cursorDe, leerCursor } from "../../../nucleo/http/consultas.ts";
 import { implementarConsulta } from "../../../nucleo/modulos.ts";
 import { departamentos, usuarios } from "../../admin/tablas.ts";
+import { personas } from "../../personal/tablas.ts";
 import { documentoDe } from "../dominio/autorizaciones.ts";
 import { autorizaciones } from "../tablas.ts";
 
@@ -26,6 +29,10 @@ const resueltasPorPagina = 20;
 
 /** Cuándo quedó resuelta: decidida o cancelada. */
 const resueltaEn = sql<string>`coalesce(${autorizaciones.decididaEn}, ${autorizaciones.canceladoEn})`;
+
+/** La persona de la cuenta que pidió, y la del comando si la pidió un aparato. */
+const personaDeLaCuenta = alias(personas, "persona_de_la_cuenta");
+const personaDelAparato = alias(personas, "persona_del_aparato");
 
 export const consultaAutorizaciones = implementarConsulta(consultaDeAutorizaciones, async (contexto, parametros) => {
 	const { base, quien, ahora } = contexto;
@@ -50,11 +57,15 @@ export const consultaAutorizaciones = implementarConsulta(consultaDeAutorizacion
 		.select({
 			autorizacion: autorizaciones,
 			departamento: departamentos.nombre,
-			pidio: sql<string | null>`coalesce(${usuarios.nombre}, ${usuarios.correo})`,
+			pidio: sql<
+				string | null
+			>`coalesce(${usuarios.nombre}, ${personaDeLaCuenta.nombre}, ${personaDelAparato.nombre}, ${usuarios.correo})`,
 		})
 		.from(autorizaciones)
 		.innerJoin(departamentos, eq(departamentos.id, autorizaciones.departamentoOrigenId))
 		.leftJoin(usuarios, eq(usuarios.id, autorizaciones.creadoPor))
+		.leftJoin(personaDeLaCuenta, eq(personaDeLaCuenta.id, usuarios.personaId))
+		.leftJoin(personaDelAparato, eq(personaDelAparato.id, autorizaciones.personaId))
 		.where(and(esperando, parametros.tipo === undefined ? undefined : eq(autorizaciones.tipo, parametros.tipo)))
 		.orderBy(asc(autorizaciones.creadoEn), asc(autorizaciones.id));
 	const porAutorizar = leidas.map(({ autorizacion, departamento, pidio }) => {

@@ -63,7 +63,8 @@ describe("la semana no se cierra con días exigidos sin capturar; cerrada no se 
 			`INSERT INTO asistencia_dias (id, asistencia_semana_id, persona_id, fecha, valor, origen)
 			 SELECT gen_random_uuid(), $1, p.id, d::date, 'completo', 'personal'
 			 FROM personas p CROSS JOIN generate_series($2::date, $3::date, '1 day') d
-			 WHERE p.forma_pago IN ('tiempo', 'mixta') AND p.fecha_ingreso <= d::date AND p.baja_en IS NULL
+			 WHERE p.forma_pago IN ('tiempo', 'mixta') AND p.fecha_ingreso <= d::date
+			   AND (p.baja_en IS NULL OR (p.baja_en AT TIME ZONE 'America/Mexico_City')::date >= d::date)
 			   AND extract(isodow FROM d) BETWEEN 1 AND 6 AND NOT (p.id = ANY($4::uuid[]))
 			 ON CONFLICT DO NOTHING`,
 			[id, inicio, fin, menos],
@@ -166,5 +167,73 @@ describe("la semana no se cierra con días exigidos sin capturar; cerrada no se 
 		expect((await cerrar(semanaDos)).cuerpo).toMatchObject({
 			resultado: { mensaje: expect.stringContaining("Semana cerrada") },
 		});
+	});
+
+	it("si la dueña cambia los días de trabajo, un día de la semana cerrada sigue sin cambiarse y no se abre otra semana encimada", async () => {
+		const persona = await nuevaPersona(servidor.base.dueno, "oficina");
+		const dia = diaCapturado.parse((await marcar(persona, "2026-09-30", "completo")).cuerpo.resultado);
+		await capturarATodos("2026-09-28", "2026-10-03", []);
+		expect((await cerrar("2026-09-28")).estado).toBe(200);
+		await servidor.base.dueno.query(
+			"UPDATE parametros SET valor_texto = '2,3,4,5,6' WHERE clave = 'general.dias_de_trabajo'",
+		);
+		try {
+			expect((await marcar(persona, "2026-09-30", "falta", dia.version)).cuerpo).toMatchObject({
+				codigo: "semana_cerrada",
+			});
+			expect((await marcar(persona, "2026-09-29", "falta")).cuerpo).toMatchObject({ codigo: "semana_cerrada" });
+			const { rows } = await servidor.base.dueno.query(
+				"SELECT fecha_inicio::text AS inicio, estado FROM asistencia_semanas WHERE fecha_inicio BETWEEN '2026-09-28' AND '2026-10-04'",
+			);
+			expect(rows).toEqual([{ inicio: "2026-09-28", estado: "cerrada" }]);
+			const valor = await servidor.base.dueno.query("SELECT valor FROM asistencia_dias WHERE id = $1", [
+				dia.asistencia_dia_id,
+			]);
+			expect(valor.rows[0]).toEqual({ valor: "completo" });
+		} finally {
+			await servidor.base.dueno.query(
+				"UPDATE parametros SET valor_texto = '1,2,3,4,5,6' WHERE clave = 'general.dias_de_trabajo'",
+			);
+		}
+	});
+
+	it("la regla 4: quien entró a media semana, quien cobra mixto y quien se dio de baja a las 23:30 de México", async () => {
+		const entro = await nuevaPersona(servidor.base.dueno, "oficina");
+		await servidor.base.dueno.query("UPDATE personas SET fecha_ingreso = '2026-09-16' WHERE id = $1", [entro]);
+		const mixta = await nuevaPersona(servidor.base.dueno, "oficina");
+		await servidor.base.dueno.query("UPDATE personas SET forma_pago = 'mixta' WHERE id = $1", [mixta]);
+		const salio = await nuevaPersona(servidor.base.dueno, "oficina");
+		await marcar(entro, "2026-09-16", "completo");
+		await servidor.base.dueno.query(
+			"UPDATE personas SET baja_en = '2026-09-16T23:30:00-06:00', motivo_baja = 'Renunció' WHERE id = $1",
+			[salio],
+		);
+		expect((await marcar(entro, "2026-09-15", "completo")).cuerpo).toMatchObject({ codigo: "antes_de_ingreso" });
+		expect((await marcar(salio, "2026-09-17", "completo")).cuerpo).toMatchObject({ codigo: "despues_de_baja" });
+		await capturarATodos("2026-09-14", "2026-09-19", [entro, mixta, salio]);
+		// Entró el miércoles: 3 días más; mixta: los 6; salió el miércoles en la noche: lunes a miércoles.
+		expect((await cerrar("2026-09-14")).cuerpo).toMatchObject({ mensaje: "Faltan 12 días por capturar" });
+	});
+
+	it("capturar el último día mientras se cierra: o se captura y luego cierra, o cierra sin él y la captura se rechaza", async () => {
+		const persona = await nuevaPersona(servidor.base.dueno, "oficina");
+		await marcar(persona, "2026-09-07", "completo");
+		await capturarATodos("2026-09-07", "2026-09-12", [persona]);
+		for (const fecha of ["2026-09-08", "2026-09-09", "2026-09-10", "2026-09-11"])
+			await marcar(persona, fecha, "completo");
+		const [cerrada, capturada] = await Promise.all([cerrar("2026-09-07"), marcar(persona, "2026-09-12", "completo")]);
+		if (capturada.estado === 200) {
+			expect([200, 422]).toContain(cerrada.estado);
+		} else {
+			expect(capturada.cuerpo).toMatchObject({ codigo: "semana_cerrada" });
+			expect(cerrada.cuerpo).toMatchObject({ codigo: "dias_sin_capturar" });
+		}
+		// Nunca queda cerrada con el día sin capturar.
+		const { rows } = await servidor.base.dueno.query(
+			`SELECT s.estado, (SELECT count(*)::int FROM asistencia_dias d WHERE d.persona_id = $1 AND d.fecha = '2026-09-12') AS dia
+			 FROM asistencia_semanas s WHERE s.fecha_inicio = '2026-09-07'`,
+			[persona],
+		);
+		expect(rows[0]?.estado === "cerrada" ? rows[0]?.dia : 1).toBe(1);
 	});
 });

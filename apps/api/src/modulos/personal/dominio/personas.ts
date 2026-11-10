@@ -103,7 +103,8 @@ export function columnasDeLaFicha(ficha: Ficha, pagoDia: number | null) {
 }
 
 /**
- * La ficha como va en la bitácora: con el pago por día (que la marca como sueldo).
+ * La ficha como va en la bitácora: con el pago por día si lo tiene (que la marca como sueldo); quien cobra por
+ * pieza no lo lleva, y su renglón no queda como sueldo.
  * @param persona La persona guardada.
  */
 export function fichaParaBitacora(persona: Persona) {
@@ -115,7 +116,7 @@ export function fichaParaBitacora(persona: Persona) {
 		rol_tienda: persona.rolTienda,
 		puesto: persona.puesto,
 		forma_pago: persona.formaPago,
-		pago_dia_centavos: persona.pagoDiaCentavos,
+		...(persona.pagoDiaCentavos === null ? {} : { pago_dia_centavos: persona.pagoDiaCentavos }),
 		fecha_ingreso: persona.fechaIngreso,
 	};
 }

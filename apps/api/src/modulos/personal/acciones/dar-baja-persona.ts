@@ -47,6 +47,8 @@ export const accionDarBajaPersona = implementarAccion(darBajaPersona, async (con
 		entidadFolio: persona.folio,
 		antes: { activa: true },
 		despues: { activa: false, motivo: datos.motivo, ...(quitado.length > 0 ? { acceso_quitado: quitado } : {}) },
+		// Cerrarle una cuenta activa le quita sus departamentos: alerta, como «Quitar acceso».
+		...(cerrada === "activa" ? { esAlerta: true } : {}),
 	});
 	contexto.guardarEvento({
 		tipo: "persona.baja",

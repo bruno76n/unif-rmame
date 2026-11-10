@@ -181,5 +181,9 @@ export const tarifasOperacion = pgTable(
 		index("tarifas_operacion_historia").on(tabla.flujoOperacionId, tabla.vigenteDesde),
 		index("tarifas_operacion_xid_escritura").on(tabla.xidEscritura),
 		check("tarifas_operacion_tarifa", sql`${tabla.tarifaCentavos} > 0`),
+		check(
+			"tarifas_operacion_periodo",
+			sql`${tabla.vigenteHasta} is null or ${tabla.vigenteHasta} >= ${tabla.vigenteDesde}`,
+		),
 	],
 );

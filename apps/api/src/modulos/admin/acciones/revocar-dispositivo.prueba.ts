@@ -40,6 +40,17 @@ describe("revocar la tablet pide decir si se perdió; con «anular los PIN», ni
 	it("sin decir si se perdió responde 400; con anular_pines anula todos los PIN vivos del Taller y lo avisa", async () => {
 		const sinDecir = await revocar({});
 		expect(sinDecir.estado).toBe(400);
+		// Con «no se perdió», la tablet se revoca y los PIN siguen vivos (los anula la segunda revocación, abajo).
+		const conservada = await nuevaPersona(servidor.base.dueno, "taller");
+		await mandarAccion(servidor, "personal.asignar_pin", { datos: { persona_id: conservada } }, "personal");
+		const sinAnular = await revocar({ anular_pines: false });
+		expect(sinAnular.cuerpo).toMatchObject({ avisos: [] });
+		const viva = await servidor.base.dueno.query("SELECT estado FROM pines WHERE persona_id = $1", [conservada]);
+		expect(viva.rows).toEqual([{ estado: "activo" }]);
+		await servidor.base.dueno.query(
+			"UPDATE dispositivos SET baja_en = NULL, baja_por = NULL, motivo_baja = NULL, baja_confirmado_con_google_en = NULL WHERE id = $1",
+			[tablet],
+		);
 		expect(sinDecir.cuerpo).toMatchObject({
 			campos: { anular_pines: "Di si se perdió o la pudo usar alguien más." },
 		});
@@ -68,10 +79,10 @@ describe("revocar la tablet pide decir si se perdió; con «anular los PIN», ni
 			{ estado: "anulado", motivo_anulacion: "restablecido" },
 		]);
 		const bitacora = await servidor.base.dueno.query(
-			"SELECT despues FROM bitacora WHERE accion = 'admin.revocar_dispositivo' AND entidad_id = $1",
+			"SELECT despues FROM bitacora WHERE accion = 'admin.revocar_dispositivo' AND entidad_id = $1 AND despues ? 'pines_anulados'",
 			[tablet],
 		);
-		expect(bitacora.rows[0]?.despues).toMatchObject({ revocado: true, pines_anulados: 2 });
+		expect(bitacora.rows[0]?.despues).toMatchObject({ revocado: true, pines_anulados: 3 });
 		// La tablet que la reemplaza en el Taller (aquí, la misma ya sin revocar) baja los PIN anulados y a
 		// ninguna de esas personas: nadie entra con ellos.
 		await servidor.base.dueno.query(

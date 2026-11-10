@@ -4,7 +4,7 @@
  */
 
 import { Temporal } from "temporal-polyfill";
-import { crearContexto, guardarEventosConAdmin } from "../acciones/corredor.ts";
+import { crearContexto, escribirBitacoraConAdmin, guardarEventosConAdmin } from "../acciones/corredor.ts";
 import type { Almacen } from "../almacen.ts";
 import type { Base } from "../base/conexion.ts";
 import { enTransaccion } from "../base/transacciones.ts";
@@ -16,19 +16,26 @@ import { quienesDePrueba } from "./cuentas-de-prueba.ts";
  * @param base La base de la prueba.
  * @param registro Lo que registraron los módulos (sus internas y lecturas).
  * @param hacer Lo que se prueba.
- * @param opciones La hora (por omisión, la de ahora), quién (por omisión, la dueña), el almacén y si guarda los
- * eventos que juntó (como el corredor al terminar), para probar lo que pasa al procesarlos.
+ * @param opciones La hora (por omisión, la de ahora), quién (por omisión, la dueña), el almacén y si guarda,
+ * como el corredor al terminar, los eventos que juntó (para probar lo que pasa al procesarlos) y sus renglones
+ * de bitácora.
  */
 export function enAccionDePrueba<T>(
 	base: Base,
 	registro: RegistroDeModulos,
 	hacer: (contexto: ContextoDeAccion) => Promise<T>,
-	opciones: { ahora?: Temporal.Instant; quien?: QuienEscribe; almacen?: Almacen; guardarEventos?: boolean } = {},
+	opciones: {
+		ahora?: Temporal.Instant;
+		quien?: QuienEscribe;
+		almacen?: Almacen;
+		guardarEventos?: boolean;
+		escribirBitacora?: boolean;
+	} = {},
 ): Promise<T> {
 	const quien = opciones.quien ?? quienesDePrueba.duena;
 	if (quien === undefined) throw new Error("falta la dueña de prueba");
 	return enTransaccion(base, async (transaccion) => {
-		const { contexto, eventos } = crearContexto(
+		const { contexto, eventos, renglones } = crearContexto(
 			registro,
 			transaccion,
 			quien,
@@ -38,6 +45,7 @@ export function enAccionDePrueba<T>(
 			opciones.almacen,
 		);
 		const resultado = await hacer(contexto);
+		if (opciones.escribirBitacora === true) await escribirBitacoraConAdmin(contexto, renglones);
 		if (opciones.guardarEventos === true) await guardarEventosConAdmin(contexto, eventos);
 		return resultado;
 	});

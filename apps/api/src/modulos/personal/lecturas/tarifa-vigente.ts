@@ -5,7 +5,7 @@
  * La usa Producción al recibir un registro de la tablet (fase 12): el registro congela la tarifa que tenía.
  */
 
-import { and, eq, gt, isNull, lte, or } from "drizzle-orm";
+import { and, desc, eq, gt, isNull, lte, or } from "drizzle-orm";
 import { z } from "zod";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
 import { tarifasOperacion } from "../tablas.ts";
@@ -30,6 +30,8 @@ export async function tarifaVigente(contexto: ContextoDeAccion, datos: unknown) 
 				lte(tarifasOperacion.vigenteDesde, en),
 				or(isNull(tarifasOperacion.vigenteHasta), gt(tarifasOperacion.vigenteHasta, en)),
 			),
-		);
+		)
+		.orderBy(desc(tarifasOperacion.vigenteDesde))
+		.limit(1);
 	return vigente ?? null;
 }

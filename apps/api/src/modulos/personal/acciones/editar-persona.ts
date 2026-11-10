@@ -3,7 +3,7 @@
  * Fase 7 · docs/modulos/personal/personas.md («`personal.editar_persona`», reglas 3, 4 y 7)
  *
  * El pago por día, solo con «ven sueldos y tarifas»: sin el permiso no viaja y se conserva, y no se puede
- * pasar de por pieza a por tiempo o mixta ni al revés (eso cambia el sueldo). No se pasa a tienda a alguien
+ * cambiar la forma de pago (eso cambia el sueldo). No se pasa a tienda a alguien
  * con cuenta. Salir del Taller con PIN vivo lo anula, en la misma transacción.
  */
 
@@ -29,10 +29,12 @@ import { personas } from "../tablas.ts";
  * @returns El antes y el después de los campos que cambiaron.
  */
 function loQueCambio(antes: Record<string, unknown>, despues: Record<string, unknown>) {
-	const campos = Object.keys(despues).filter((campo) => antes[campo] !== despues[campo]);
+	// Los campos de las dos fichas: el pago por día solo va en la que lo tiene.
+	const todos = [...new Set([...Object.keys(antes), ...Object.keys(despues)])];
+	const campos = todos.filter((campo) => antes[campo] !== despues[campo]);
 	return {
-		antes: Object.fromEntries(campos.map((campo) => [campo, antes[campo]])),
-		despues: Object.fromEntries(campos.map((campo) => [campo, despues[campo]])),
+		antes: Object.fromEntries(campos.map((campo) => [campo, antes[campo] ?? null])),
+		despues: Object.fromEntries(campos.map((campo) => [campo, despues[campo] ?? null])),
 	};
 }
 
@@ -40,12 +42,9 @@ export const accionEditarPersona = implementarAccion(editarPersona, async (conte
 	const { transaccion } = contexto;
 	const { persona_id: personaId, ...ficha } = datos;
 	const antes = await leerPersona(transaccion, personaId);
-	// Sin el permiso, el pago por día no viaja y se conserva; cambiar si lleva pago o no es cambiar el sueldo.
-	if (!veSueldos(contexto)) {
-		const llevaPago = (forma: string) => forma !== "pieza";
-		if (ficha.pago_dia_centavos !== undefined || llevaPago(antes.formaPago) !== llevaPago(ficha.forma_pago)) {
-			pedirPermisoDeSueldos(contexto);
-		}
+	// Sin el permiso, el pago por día no viaja y se conserva; cambiar la forma de pago es cambiar el sueldo.
+	if (!veSueldos(contexto) && (ficha.pago_dia_centavos !== undefined || antes.formaPago !== ficha.forma_pago)) {
+		pedirPermisoDeSueldos(contexto);
 	}
 	const pagoDia = veSueldos(contexto) ? (ficha.pago_dia_centavos ?? null) : antes.pagoDiaCentavos;
 	await revisarFicha(contexto, ficha, pagoDia);

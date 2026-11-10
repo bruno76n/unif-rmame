@@ -111,10 +111,29 @@ describe("el bloqueo de la tablet avisa a Personal y uno tardío no vuelve a blo
 		expect(JSON.stringify(resumen)).not.toContain("argon2id");
 	});
 
-	it("un bloqueo que pasó antes de que Personal desbloqueara no vuelve a bloquear; uno anulado tampoco", async () => {
+	it("un bloqueo que pasó antes de que Personal desbloqueara no vuelve a bloquear; uno después, sí; uno anulado tampoco", async () => {
 		const { personaId, pinId } = await conPin();
+		const bloqueo = (ocurridoEn: string) =>
+			interna("personal.bloquear_pin", {
+				pin_id: pinId,
+				persona_id: personaId,
+				intentos: 5,
+				ocurrido_en: ocurridoEn,
+				dispositivo_id: tabletId,
+			});
+		// El camino real: la tablet bloquea, Personal desbloquea, y llega tarde un bloqueo de antes.
 		const antes = Temporal.Now.instant().subtract({ minutes: 5 }).toString();
-		await servidor.base.dueno.query("UPDATE pines SET desbloqueado_en = now() WHERE id = $1", [pinId]);
+		expect(await bloqueo(Temporal.Now.instant().subtract({ minutes: 10 }).toString())).toEqual({ estado: "bloqueado" });
+		const { rows } = await servidor.base.dueno.query("SELECT version::int AS version FROM pines WHERE id = $1", [
+			pinId,
+		]);
+		const desbloqueo = await mandarAccion(
+			servidor,
+			"personal.desbloquear_pin",
+			{ datos: { persona_id: personaId }, version: rows[0]?.version },
+			"personal",
+		);
+		expect(desbloqueo.estado).toBe(200);
 		const tardio = await interna("personal.bloquear_pin", {
 			pin_id: pinId,
 			persona_id: personaId,
@@ -124,6 +143,18 @@ describe("el bloqueo de la tablet avisa a Personal y uno tardío no vuelve a blo
 		});
 		expect(tardio).toEqual({ estado: "activo" });
 		expect(await pin(pinId)).toMatchObject({ estado: "activo", intentos_fallidos: 0 });
+		// Uno que pasó después del desbloqueo sí vuelve a bloquear.
+		await new Promise((listo) => setTimeout(listo, 10));
+		expect(await bloqueo(Temporal.Now.instant().toString())).toEqual({ estado: "bloqueado" });
+		const { rows: otra } = await servidor.base.dueno.query("SELECT version::int AS version FROM pines WHERE id = $1", [
+			pinId,
+		]);
+		await mandarAccion(
+			servidor,
+			"personal.desbloquear_pin",
+			{ datos: { persona_id: personaId }, version: otra[0]?.version },
+			"personal",
+		);
 		await interna("personal.anular_pin", { persona_id: personaId, motivo: "cuenta_google" });
 		const anulado = await interna("personal.bloquear_pin", {
 			pin_id: pinId,

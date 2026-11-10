@@ -3,7 +3,7 @@
  * operación del flujo.
  * Fase 7 · docs/modulos/personal/tarifas.md (reglas 1, 2 y 5, «`personal.poner_tarifa_operacion`»)
  *
- * Cierra la vigente y abre la nueva desde ahora; la misma tarifa no escribe nada. Un candado por operación
+ * Cierra la vigente y abre la nueva desde ahora; la misma tarifa no escribe nada (solo revisa la versión). Un candado por operación
  * hace que dos a la vez esperen una a la otra. La bitácora va como sueldo. El nombre de la operación y del
  * flujo, la operación dada de baja y los registros que esperaban su tarifa llegan con Producción (fase 12).
  */
@@ -13,7 +13,7 @@ import { ponerTarifaOperacion } from "@uniformame/compartido/contratos/personal/
 import { centavos } from "@uniformame/compartido/tipos/base";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
-import { tomarVersion, versionActual } from "../../../nucleo/acciones/pisadas.ts";
+import { revisarVersion, tomarVersion, versionActual } from "../../../nucleo/acciones/pisadas.ts";
 import { implementarAccion } from "../../../nucleo/modulos.ts";
 import { tarifasOperacion } from "../tablas.ts";
 
@@ -34,12 +34,13 @@ export const accionPonerTarifaOperacion = implementarAccion(ponerTarifaOperacion
 		.where(and(eq(tarifasOperacion.flujoOperacionId, datos.flujo_operacion_id), isNull(tarifasOperacion.vigenteHasta)));
 	const nueva = textoDeTarifa(datos.tarifa_centavos);
 	if (vigente !== undefined) {
-		await tomarVersion(contexto, tarifasOperacion, vigente.id, datos.version, async () => ({
+		const visible = async () => ({
 			flujo_operacion_id: vigente.flujoOperacionId,
 			tarifa_centavos: vigente.tarifaCentavos,
-		}));
-		// La misma tarifa no abre otra: la vigente sigue desde cuando estaba.
+		});
+		// La misma tarifa no escribe nada: solo revisa la versión, y la vigente sigue desde cuando estaba.
 		if (vigente.tarifaCentavos === datos.tarifa_centavos) {
+			await revisarVersion(contexto, tarifasOperacion, vigente.id, datos.version, visible);
 			return {
 				resultado: {
 					tarifa_operacion_id: vigente.id,
@@ -50,6 +51,7 @@ export const accionPonerTarifaOperacion = implementarAccion(ponerTarifaOperacion
 				sinBitacora: true,
 			};
 		}
+		await tomarVersion(contexto, tarifasOperacion, vigente.id, datos.version, visible);
 		await transaccion
 			.update(tarifasOperacion)
 			.set({ vigenteHasta: contexto.ahora.toString() })

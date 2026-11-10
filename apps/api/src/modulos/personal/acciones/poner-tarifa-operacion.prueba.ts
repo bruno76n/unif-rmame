@@ -61,9 +61,19 @@ describe("la tarifa nueva cierra la vigente; una tarifa en cero no se acepta; un
 			{ tarifa: 120, vigente: true },
 		]);
 		const vigente = tarifaPuesta.parse(nueva.cuerpo.resultado);
+		const huella = async () =>
+			(
+				await servidor.base.dueno.query(
+					"SELECT version::int AS version, xid_escritura::text AS xid, actualizado_en FROM tarifas_operacion WHERE id = $1",
+					[vigente.tarifa_operacion_id],
+				)
+			).rows[0];
+		const antesDeLaMisma = await huella();
 		const misma = await poner(operacion, 120, vigente.version);
 		expect(misma.estado).toBe(200);
 		expect(await tarifasDe(operacion)).toHaveLength(2);
+		// La misma tarifa no escribe nada: ni la versión, ni el número de transacción, ni cuándo cambió.
+		expect(await huella()).toEqual(antesDeLaMisma);
 		expect((await poner(operacion, 150, primera.version)).cuerpo).toMatchObject({ error: "conflicto_version" });
 		const { rows } = await servidor.base.dueno.query(
 			"SELECT descripcion_recortada, sensible_sueldos FROM bitacora WHERE accion = 'personal.poner_tarifa_operacion' AND entidad_id = $1",
@@ -104,20 +114,37 @@ describe("la tarifa nueva cierra la vigente; una tarifa en cero no se acepta; un
 		);
 		expect(ahora).toMatchObject({ tarifa_centavos: 130 });
 		const nuevas = { conTarifa: uuidv7(), sinTarifa: uuidv7() };
-		const copiadas = await enAccionDePrueba(base, servidor.modulos, (contexto) =>
-			contexto.interna("personal.copiar_tarifas_flujo", {
-				flujo_origen_id: uuidv7(),
-				flujo_id: uuidv7(),
-				origen: "Playera polo",
-				flujo: "Playera polo manga larga",
-				operaciones: [
-					{ origen_id: conTarifa, nueva_id: nuevas.conTarifa },
-					{ origen_id: sinTarifa, nueva_id: nuevas.sinTarifa },
-				],
-			}),
+		const copiadas = await enAccionDePrueba(
+			base,
+			servidor.modulos,
+			(contexto) =>
+				contexto.interna("personal.copiar_tarifas_flujo", {
+					flujo_origen_id: uuidv7(),
+					flujo_id: uuidv7(),
+					origen: "Playera polo",
+					flujo: "Playera polo manga larga",
+					operaciones: [
+						{ origen_id: conTarifa, nueva_id: nuevas.conTarifa },
+						{ origen_id: sinTarifa, nueva_id: nuevas.sinTarifa },
+					],
+				}),
+			{ escribirBitacora: true },
 		);
 		expect(copiadas).toEqual({ copiadas: 1 });
+		const bitacora = await servidor.base.dueno.query(
+			"SELECT descripcion_recortada, sensible_sueldos FROM bitacora WHERE descripcion LIKE 'Copió 1 tarifas%'",
+		);
+		expect(bitacora.rows).toEqual([
+			{ descripcion_recortada: "Copió 1 tarifas de Playera polo a Playera polo manga larga", sensible_sueldos: true },
+		]);
 		expect(await tarifasDe(nuevas.conTarifa)).toEqual([{ tarifa: 130, vigente: true }]);
 		expect(await tarifasDe(nuevas.sinTarifa)).toEqual([]);
+	});
+
+	it("tres primeras tarifas a la vez sobre la misma operación: una entra y las otras responden 409; queda una sola vigente", async () => {
+		const operacion = uuidv7();
+		const respuestas = await Promise.all([poner(operacion, 100), poner(operacion, 110), poner(operacion, 120)]);
+		expect(respuestas.map((respuesta) => respuesta.estado).sort()).toEqual([200, 409, 409]);
+		expect((await tarifasDe(operacion)).filter((tarifa) => tarifa.vigente)).toHaveLength(1);
 	});
 });

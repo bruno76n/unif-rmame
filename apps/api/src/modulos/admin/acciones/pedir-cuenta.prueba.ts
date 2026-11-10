@@ -132,7 +132,7 @@ describe("la oficina pide la cuenta y solo la dueña la decide; la baja de la pe
 		);
 		expect(bitacora.rows).toEqual([
 			{
-				descripcion: "Dio de alta a Persona de prueba con Calidad",
+				descripcion: "Dio de alta a Persona de prueba con Calidad · autorizado por dirección",
 				despues: {
 					estado: "autorizada",
 					documento: {
@@ -149,8 +149,12 @@ describe("la oficina pide la cuenta y solo la dueña la decide; la baja de la pe
 			(await pedir(await nuevaPersona(servidor.base.dueno), "no@gmail.com")).cuerpo.resultado,
 		);
 		const rechazada = await decidir(otra.autorizacion_id, "rechazar", "No necesita cuenta");
-		expect(rechazada.cuerpo).toMatchObject({ resultado: { estado: "rechazada" } });
+		expect(rechazada.cuerpo).toMatchObject({ resultado: { estado: "rechazada", mensaje: "Alta rechazada" } });
 		expect(await cuenta(otra.usuario_id)).toMatchObject({ estado: "rechazada" });
+		const rechazo = await servidor.base.dueno.query("SELECT descripcion FROM bitacora WHERE entidad_id = $1", [
+			otra.autorizacion_id,
+		]);
+		expect(rechazo.rows).toEqual([{ descripcion: "Rechazó la alta de Persona de prueba: No necesita cuenta" }]);
 	});
 
 	it("si la persona se dio de baja mientras esperaba, autorizar responde persona_dada_de_baja y no decide nada", async () => {
@@ -207,5 +211,29 @@ describe("la oficina pide la cuenta y solo la dueña la decide; la baja de la pe
 			[pedida.autorizacion_id],
 		);
 		expect(rows[0]).toEqual({ estado: "cancelada", motivo_cancelacion: "La persona se dio de baja" });
+	});
+
+	it("dar de baja a la persona y decidir su alta a la vez: nunca queda una cuenta activa de una persona dada de baja", async () => {
+		for (let vuelta = 0; vuelta < 3; vuelta++) {
+			const personaId = await nuevaPersona(servidor.base.dueno);
+			const pedida = laPedida.parse((await pedir(personaId, `a-la-vez-${vuelta}@gmail.com`)).cuerpo.resultado);
+			const [decidida, baja] = await Promise.all([
+				decidir(pedida.autorizacion_id, "autorizar"),
+				mandarAccion(
+					servidor,
+					"personal.dar_baja_persona",
+					{ datos: { persona_id: personaId, motivo: "Renunció" }, version: await versionDePersona(personaId) },
+					"personal",
+				),
+			]);
+			expect(baja.estado).toBe(200);
+			const { rows } = await servidor.base.dueno.query(
+				"SELECT (SELECT estado FROM usuarios WHERE id = $1) AS cuenta, (SELECT estado FROM autorizaciones WHERE id = $2) AS au",
+				[pedida.usuario_id, pedida.autorizacion_id],
+			);
+			// O se autorizó primero y la baja la cerró, o la baja la rechazó y canceló su AU-.
+			if (decidida.estado === 200) expect(rows[0]).toEqual({ cuenta: "sin_acceso", au: "autorizada" });
+			else expect(rows[0]).toEqual({ cuenta: "rechazada", au: "cancelada" });
+		}
 	});
 });
