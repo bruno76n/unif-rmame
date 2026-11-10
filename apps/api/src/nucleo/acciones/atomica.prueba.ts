@@ -39,7 +39,7 @@ describe("una acción que falla en cualquier paso no deja nada: ni sus escritura
 		expect(servidor.pedidos.eventos.length).toBe(pedidosAntes.eventos + 1);
 		expect(servidor.pedidos.bitacora.at(-1)).toHaveLength(1);
 		expect(servidor.pedidos.eventos.at(-1)).toEqual([
-			{ nombre: "nota.creada", datos: expect.any(Object), tablas: ["prueba_notas"] },
+			expect.objectContaining({ tipo: "nota.creada", datos: expect.any(Object), tablas: ["prueba_notas"] }),
 		]);
 	});
 

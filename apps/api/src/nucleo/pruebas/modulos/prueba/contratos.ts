@@ -16,7 +16,14 @@ export const crearNota = definirAccion({
 		monto_centavos: z.number().int().nonnegative().describe("Un monto, en centavos"),
 		con_pin: z.boolean().optional().describe("Si entrega un PIN"),
 		fallar: z
-			.enum(["despues_de_la_interna", "con_regla", "con_choque_una_vez", "campo_de_mas", "secreto_en_aviso"])
+			.enum([
+				"despues_de_la_interna",
+				"con_regla",
+				"con_choque_una_vez",
+				"campo_de_mas",
+				"secreto_en_aviso",
+				"evento_con_monto",
+			])
 			.optional()
 			.describe("Dónde falla, para las pruebas"),
 	}),

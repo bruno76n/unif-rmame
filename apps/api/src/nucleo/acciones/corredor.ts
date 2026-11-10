@@ -18,20 +18,33 @@ import type { Base } from "../base/conexion.ts";
 import { enTransaccion, type Transaccion } from "../base/transacciones.ts";
 import { errorDeRegla } from "../http/errores.ts";
 import { apartarClave, guardarRespuesta, huellaDeCarga, sinSecretos } from "../idempotencia/claves.ts";
-import type { AccionImplementada, ContextoDeAccion, Evento, RegistroDeModulos, RenglonDeBitacora } from "../modulos.ts";
+import type {
+	AccionImplementada,
+	ContextoDeAccion,
+	Evento,
+	QuienEscribe,
+	RegistroDeModulos,
+	RenglonDeBitacora,
+} from "../modulos.ts";
 import { tomoSuVersion } from "./pisadas.ts";
 
 /**
  * Lo que el corredor pide a `admin`: escribir la bitácora y guardar los eventos de la acción, en su
- * transacción. `admin.escribir_bitacora` y `admin.guardar_evento` llegan en la fase 4.
+ * transacción. Los eventos los guarda `admin.guardar_evento` (`guardarEventosConAdmin`);
+ * `admin.escribir_bitacora` llega en la parte 3 de la fase 4.
  */
 export interface ServiciosDelCorredor {
-	escribirBitacora: (
-		transaccion: Transaccion,
-		renglones: readonly RenglonDeBitacora[],
-		comandoId: string,
-	) => Promise<void>;
-	guardarEventos: (transaccion: Transaccion, eventos: readonly Evento[], comandoId: string) => Promise<void>;
+	escribirBitacora: (contexto: ContextoDeAccion, renglones: readonly RenglonDeBitacora[]) => Promise<void>;
+	guardarEventos: (contexto: ContextoDeAccion, eventos: readonly Evento[]) => Promise<void>;
+}
+
+/**
+ * Guarda cada evento de la acción con `admin.guardar_evento`, en su transacción.
+ * @param contexto El contexto de la acción.
+ * @param eventos Los eventos que juntó la acción.
+ */
+export async function guardarEventosConAdmin(contexto: ContextoDeAccion, eventos: readonly Evento[]): Promise<void> {
+	for (const evento of eventos) await contexto.interna("admin.guardar_evento", { ...evento, modulo: contexto.modulo });
 }
 
 /** El cuerpo de una acción, ya validado contra su contrato. */
@@ -53,12 +66,13 @@ export interface RespuestaDeAccion {
  * Arma el contexto de una acción: lo que recibe ella y las internas que llama.
  * @returns El contexto, con los renglones de bitácora y los eventos que va juntando.
  */
-function crearContexto(
+export function crearContexto(
 	registro: RegistroDeModulos,
 	transaccion: Transaccion,
-	quien: QuienLlama,
+	quien: QuienEscribe,
+	modulo: string,
 	ahora: Temporal.Instant,
-	comandoId: string,
+	comandoId: string | undefined,
 ): {
 	contexto: ContextoDeAccion;
 	renglones: RenglonDeBitacora[];
@@ -69,6 +83,7 @@ function crearContexto(
 	const contexto: ContextoDeAccion = {
 		transaccion,
 		quien,
+		modulo,
 		ahora,
 		diaDeNegocio: diaDeNegocio(ahora),
 		comandoId,
@@ -126,21 +141,36 @@ export async function correrAccion(
 			return leerRespuestaGuardada(apartada.respuesta);
 		}
 		// Paso 7: la acción hace lo suyo.
-		const { contexto, renglones, eventos } = crearContexto(dependencias.registro, transaccion, quien, ahora, comandoId);
+		const { contexto, renglones, eventos } = crearContexto(
+			dependencias.registro,
+			transaccion,
+			quien,
+			moduloDe(contrato.nombre),
+			ahora,
+			comandoId,
+		);
 		const salida = await accion.ejecutar(contexto, cuerpo.datos, cuerpo.version);
 		// Una acción que edita tiene que haber tomado la versión que se leyó: si no, la versión no serviría.
 		if (contrato.edita && !tomoSuVersion(contexto)) throw new Error(`${contrato.nombre} edita pero no tomó su versión`);
 		// La salida se revisa aquí, dentro de la transacción: un campo fuera del contrato no se guarda.
 		const resultado = z.parse(contrato.resultado, salida.resultado);
 		// Paso 8: la bitácora y los eventos, una sola vez por acción.
-		await dependencias.servicios.escribirBitacora(transaccion, renglones, comandoId);
-		await dependencias.servicios.guardarEventos(transaccion, eventos, comandoId);
+		await dependencias.servicios.escribirBitacora(contexto, renglones);
+		await dependencias.servicios.guardarEventos(contexto, eventos);
 		// Paso 9: la respuesta se guarda sin secretos.
 		const respuesta: RespuestaDeAccion = { ok: true, resultado, avisos: salida.avisos ?? [] };
 		await guardarRespuesta(transaccion, comandoId, sinSecretos(respuesta, contrato.secretos), salida.entidad);
 		// Paso 10: confirma al salir de enTransaccion.
 		return respuesta;
 	});
+}
+
+/**
+ * El módulo de una acción, por su nombre: `ventas.confirmar_pedido` es de `ventas`.
+ * @param nombre El nombre completo de la acción.
+ */
+export function moduloDe(nombre: string): string {
+	return nombre.slice(0, nombre.indexOf("."));
 }
 
 /** Dice si un valor leído de JSON es un objeto (no una lista ni nulo). */

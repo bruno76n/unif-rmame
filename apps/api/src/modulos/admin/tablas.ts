@@ -1,10 +1,11 @@
 /**
  * Las tablas del módulo `admin` que ya existen.
  * Fase 3 · docs/cimientos/IDEMPOTENCIA-Y-CONCURRENCIA.md («La tabla `comandos_recibidos`»)
+ * Fase 4 · docs/cimientos/EVENTOS-Y-TRABAJOS.md («La tabla `eventos`» y «Los trabajos programados»)
  *
- * `comandos_recibidos` es de `admin`, pero nace en la fase 3 porque la idempotencia la necesita. Es una
- * tabla técnica: no lleva las columnas comunes. Sus columnas que apuntan a tablas de fases posteriores
- * llevan su `@llavePendiente`.
+ * `comandos_recibidos` es de `admin`, pero nace en la fase 3 porque la idempotencia la necesita.
+ * `comandos_recibidos`, `eventos` y `trabajos_vueltas` son tablas técnicas: no llevan las columnas
+ * comunes. Sus columnas que apuntan a tablas de fases posteriores llevan su `@llavePendiente`.
  */
 
 import { sql } from "drizzle-orm";
@@ -15,6 +16,8 @@ import {
 	integer,
 	jsonb,
 	pgTable,
+	primaryKey,
+	smallint,
 	text,
 	timestamp,
 	uniqueIndex,
@@ -88,4 +91,58 @@ export const comandosRecibidos = pgTable(
 			sql`${tabla.resultado} <> 'apartado' or ${tabla.motivoApartado} is not null`,
 		),
 	],
+);
+
+/**
+ * La bandeja de salida de las acciones: cada evento de dominio, que el worker reparte después de
+ * confirmar. Se parte por mes (`creado_en`) en la migración; solo cambian las columnas del proceso.
+ */
+export const eventos = pgTable(
+	"eventos",
+	{
+		id: uuid("id").notNull(),
+		tipo: text("tipo").notNull(),
+		modulo: text("modulo").notNull(),
+		entidad: text("entidad"),
+		entidadId: uuid("entidad_id"),
+		entidadFolio: text("entidad_folio"),
+		datos: jsonb("datos"),
+		tablas: text("tablas").array().notNull(),
+		ubicacionIds: uuid("ubicacion_ids").array().notNull().default(sql`'{}'`),
+		/** @llavePendiente usuarios.id */
+		usuarioId: uuid("usuario_id"),
+		/** @llavePendiente personas.id */
+		personaId: uuid("persona_id"),
+		/** @llavePendiente dispositivos.id */
+		dispositivoId: uuid("dispositivo_id"),
+		comandoId: uuid("comando_id"),
+		ocurridoEn: momento("ocurrido_en").notNull(),
+		procesadoEn: momento("procesado_en"),
+		intentos: smallint("intentos").notNull().default(0),
+		siguienteIntentoEn: momento("siguiente_intento_en"),
+		ultimoError: text("ultimo_error"),
+		creadoEn: momento("creado_en").notNull().defaultNow(),
+	},
+	(tabla) => [
+		primaryKey({ columns: [tabla.id, tabla.creadoEn] }),
+		index("eventos_pendientes").on(tabla.creadoEn).where(sql`${tabla.procesadoEn} is null`),
+		index("eventos_entidad").on(tabla.entidad, tabla.entidadId),
+	],
+);
+
+/**
+ * Cada vuelta de un trabajo programado: el reloj la encola una vez por periodo y queda terminada cuando
+ * el trabajo acaba bien; si falla, la siguiente vuelta del reloj la vuelve a encolar.
+ */
+export const trabajosVueltas = pgTable(
+	"trabajos_vueltas",
+	{
+		trabajo: text("trabajo").notNull(),
+		periodo: text("periodo").notNull(),
+		encoladoEn: momento("encolado_en").notNull().defaultNow(),
+		terminadoEn: momento("terminado_en"),
+		intentos: integer("intentos").notNull().default(0),
+		ultimoError: text("ultimo_error"),
+	},
+	(tabla) => [primaryKey({ columns: [tabla.trabajo, tabla.periodo] })],
 );

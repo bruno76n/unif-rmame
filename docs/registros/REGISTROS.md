@@ -81,4 +81,9 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 10 nov 2026 | 3 | Adelantar el recorte vigilado, el registro técnico limpio y el permiso en la documentación (decisión 342) | Dejarlos a las fases 5 y 22 · hacerlos ya | Ya: son baratos y cierran fugas reales | No |
 | 10 nov 2026 | 3 | `tomarVersion` con lo que la cuenta ve y la exigencia del corredor (decisión 343) | Dejarlo a cada acción · que el núcleo lo exija | Que el núcleo lo exija: no depende de que alguien se acuerde | No |
 | 10 nov 2026 | 3 | La huella y la clave de otra cuenta (decisión 344) | Huella sobre lo transformado · sobre lo que llegó | Sobre lo que llegó: siempre es JSON plano | No |
+| 10 nov 2026 | 4 | Quién instala el esquema de Graphile Worker (decisión 345) | El worker al arrancar · `base:migrar` con el dueño | El dueño: la app nunca crea objetos | No |
+| 10 nov 2026 | 4 | Cómo se sabe que una vuelta ya corrió (decisión 346) | Solo la clave de Graphile Worker · una tabla `trabajos_vueltas` | La tabla: la clave se libera al terminar la tarea | No |
+| 10 nov 2026 | 4 | Las particiones por mes (decisión 347) | Meses de México · meses de UTC con una de respaldo | UTC, con respaldo: es técnico y nunca falla una escritura | No |
+| 10 nov 2026 | 4 | El sistema como quien escribe (decisión 348) | Un usuario «sistema» · un tipo `sistema` en el contexto | El tipo: no inventa cuentas | No |
+| 10 nov 2026 | 4 | La versión en los avisos en vivo (decisión 349) | Pedir `X-App-Version` · mandarla en `hola` | En `hola`: un `EventSource` no manda encabezados | No |
 

@@ -141,4 +141,41 @@ Este archivo es dueño del mecanismo; cada evento lo produce el archivo de su te
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 4: dónde quedaron el worker, el reloj, el proceso de la bandeja, el reparto de los avisos en vivo y sus pruebas.*
+**Fase 4, parte 1.**
+
+- **Las tablas** (`apps/api/src/modulos/admin/tablas.ts`, migración `0003_eventos.sql`):
+  - `eventos`, partida por rango de `creado_en`. Las particiones son por mes de UTC (un corte técnico, no de negocio) y van con una de respaldo, `eventos_otros`, para que una escritura nunca falle por falta de partición. Las crea `asegurar_particiones(tabla, meses)`: corre con los permisos del dueño, y el reloj la llama en cada vuelta para tener listos dos meses adelante. De un evento, la app solo cambia las columnas del proceso.
+  - `trabajos_vueltas`, con la vuelta de cada trabajo programado por periodo (decisión 346).
+- **`admin.guardar_evento`** (`modulos/admin/internas/guardar-evento.ts`):
+  - Rechaza un evento cuyos `datos` traen un nombre de monto (`centavos`, `monto`, `precio`, `sueldo`, `tarifa`, `importe`, `saldo`, `costo`) o de secreto.
+  - Escribe el evento con quién lo provocó, su comando y su módulo.
+  - Encola `procesar_eventos` con `graphile_worker.add_job` en la misma transacción, con clave y cola fijas (`nucleo/trabajos/encolar.ts`).
+  - El corredor lo llama por cada evento que juntó la acción (`guardarEventosConAdmin`).
+- **El esquema de Graphile Worker** (`nucleo/trabajos/esquema.ts`):
+  - Lo instala `base:migrar` con el rol dueño, después de las migraciones (decisión 345).
+  - Le da a la app sus permisos y una política en cada tabla con seguridad por renglón.
+- **El worker** (`apps/api/src/trabajos.ts`, `nucleo/trabajos/trabajador.ts`):
+  - Corre `run` de Graphile Worker con el rol de la app, la lista de tareas y el `crontab` `* * * * * reloj`.
+  - Las tareas son `procesar_eventos`, `reloj` y una por cada trabajo que registra un módulo (`Trabajo`: `nombre`, `horario`, `trasEventos`, `correr`).
+  - Un trabajo escribe con `contexto.enTransaccion`, que le da el contexto de una acción con el sistema como quien escribe; su bitácora y sus eventos se guardan como los de una acción.
+  - `pnpm local` lo arranca después de migrar.
+  - La bitácora de los trabajos y el aviso `trabajo_fallido` se conectan en las partes 3 y 4.
+- **La bandeja** (`nucleo/trabajos/procesar-eventos.ts`):
+  - `procesarEventos` toma de 100 en 100 con `FOR UPDATE SKIP LOCKED`.
+  - Reparte cada evento en su `SAVEPOINT` (`repartirConLosModulos`): `pg_notify('ua_eventos', id)` y los trabajos con `trasEventos` de ese tipo.
+  - Si un reparto falla, solo ese evento se deshace y espera 1, 5, 30, 120 y luego 120 minutos; al décimo intento avisa a soporte.
+- **El reloj** (`nucleo/trabajos/reloj.ts`):
+  - `correrReloj` asegura las particiones y vuelve a encolar la bandeja si hay reintentos vencidos.
+  - Por cada trabajo con horario (`Horario`: cada tantos minutos, por día, por semana o por mes, en hora de México), `vueltaQueToca` da el periodo si ya toca.
+  - Si su vuelta no ha terminado, la encola en su cola con la clave `{trabajo}:{periodo}` y un solo intento.
+  - `correrTrabajo` no repite una vuelta terminada, la marca al terminar y, si falla, anota el error y avisa a soporte la primera vez; la siguiente vuelta del reloj la vuelve a encolar.
+- **Los avisos en vivo** (`nucleo/sincronizacion/eventos-en-vivo.ts` y la ruta en `servidor.ts`):
+  - `crearAvisosEnVivo` escucha `LISTEN ua_eventos` con una conexión propia y lee cada evento avisado.
+  - Manda `cambios` (solo `tablas`, `entidad` y `entidad_id`) a cada conexión a la que le toca: a una cuenta, las tablas que leen sus departamentos según los `lectores` de cada módulo (su `permisos.ts`); a la dueña, todas; a un aparato, las de su alcance y sus ubicaciones (lo da la fase 6).
+  - `GET /v1/eventos` identifica a quien llama, pero no revisa su versión (un `EventSource` no manda encabezados): la versión mínima va en `hola`, con la hora y el intervalo (decisión 349). Luego van `retry: 5000` y un latido cada 25 segundos.
+- **Las pruebas:**
+  - `modulos/admin/internas/guardar-evento.prueba.ts`;
+  - `nucleo/trabajos/procesar-eventos.prueba.ts` (dos workers sobre 250 eventos; la escalera de reintentos y el aviso);
+  - `nucleo/trabajos/reloj.prueba.ts` (con `runOnce` de Graphile Worker y «ahora» controlado);
+  - `nucleo/sincronizacion/eventos-en-vivo.prueba.ts` (un servidor que escucha de verdad, dos instancias sobre la misma base).
+- **Depurar eventos** (`admin.depurar_eventos`, con `soltar_particiones_de_eventos`) se termina en la parte 2, con su parámetro `admin.dias_guardar_eventos`.

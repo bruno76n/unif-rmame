@@ -75,7 +75,7 @@ TypeScript 7 es el compilador nativo. Se usa solo para revisar tipos (`tsc --noE
 | Conexión a Postgres | pg (node-postgres) | 8.23.1 | https://node-postgres.com/ |
 | Tipos de pg para TypeScript | `@types/pg` | 8.23.1 | https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/pg |
 | Base de datos | PostgreSQL | 18 | https://www.postgresql.org/docs/18/ |
-| Trabajos y colas | Graphile Worker | 0.18.0 | https://worker.graphile.org/ |
+| Trabajos y colas | Graphile Worker (`graphile-worker`) | 0.18.0 | https://worker.graphile.org/ |
 | Entrar con Google | openid-client | 6.8.9 | https://github.com/panva/openid-client |
 | Registro técnico | pino | 10.4.0 | https://getpino.io/ |
 | Hash de llaves, PIN y cifrado | `node:crypto` (SHA-256, Argon2id, AES-256-GCM) | la de Node | https://nodejs.org/docs/latest-v26.x/api/crypto.html |

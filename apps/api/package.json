@@ -12,6 +12,7 @@
 		"drizzle-orm": "0.45.4",
 		"fastify": "5.12.8",
 		"fastify-type-provider-zod": "7.0.0",
+		"graphile-worker": "0.18.0",
 		"pg": "8.23.1",
 		"pino": "10.4.0",
 		"temporal-polyfill": "1.0.8",

@@ -14,9 +14,11 @@ import { generateDrizzleJson, generateMigration } from "drizzle-kit/api";
 import { Temporal } from "temporal-polyfill";
 import { crearServidor, type ServiciosDelServidor } from "../../servidor.ts";
 import type { QuienLlama } from "../acceso/quien.ts";
+import { guardarEventosConAdmin } from "../acciones/corredor.ts";
 import { crearBase } from "../base/conexion.ts";
 import { ErrorDeApi } from "../http/errores.ts";
 import { cargarModulos, registrarModulos } from "../modulos.ts";
+import { crearAvisosEnVivo } from "../sincronizacion/eventos-en-vivo.ts";
 import * as tablasDePrueba from "./modulos/prueba/tablas.ts";
 
 /** Los dominios de las pruebas. */
@@ -102,13 +104,14 @@ export interface ServidorDePrueba {
 	cerrar: () => Promise<void>;
 }
 
-/**
- * Arma la API de prueba: una base copia con las tablas del módulo de prueba y el registro de esta carpeta.
- * @param opciones `entorno` (por omisión, `pruebas`).
- */
-export async function crearServidorDePrueba(
-	opciones: { entorno?: "local" | "pruebas" | "produccion" } = {},
-): Promise<ServidorDePrueba> {
+/** El alcance de la tablet de prueba: baja las notas de la ubicación de prueba. */
+export const alcanceDeLaTablet = {
+	tablas: ["prueba_notas"],
+	ubicacionIds: ["01936f2e-0000-7000-8000-0000000000b1"],
+};
+
+/** Una base copia con las tablas del módulo de prueba y sus disparadores. */
+async function crearBaseConTablasDePrueba(): Promise<BaseDePrueba> {
 	const base = await crearBaseDePrueba();
 	for (const sentencia of await generateMigration(
 		generateDrizzleJson({}),
@@ -119,6 +122,22 @@ export async function crearServidorDePrueba(
 	for (const tabla of ["prueba_notas", "prueba_renglones", "prueba_conteos"]) {
 		await base.dueno.query(`SELECT poner_disparador_comun('${tabla}')`);
 	}
+	return base;
+}
+
+/**
+ * Arma la API de prueba: una base copia con las tablas del módulo de prueba y el registro de esta carpeta.
+ * @param opciones `entorno` (por omisión, `pruebas`); `avisosEnVivo` para tener `GET /v1/eventos` (con su
+ * latido); `otraInstanciaDe` para levantar una segunda instancia sobre la base de otra, como en Render.
+ */
+export async function crearServidorDePrueba(
+	opciones: {
+		entorno?: "local" | "pruebas" | "produccion";
+		avisosEnVivo?: { latidoMs: number };
+		otraInstanciaDe?: ServidorDePrueba;
+	} = {},
+): Promise<ServidorDePrueba> {
+	const base = opciones.otraInstanciaDe?.base ?? (await crearBaseConTablasDePrueba());
 	const modulosDePrueba = await cargarModulos(join(import.meta.dirname, "modulos"));
 	const deLaApi = await cargarModulos(join(import.meta.dirname, "../../modulos"));
 	const registro = registrarModulos([...deLaApi.modulos, ...modulosDePrueba.modulos]);
@@ -133,7 +152,7 @@ export async function crearServidorDePrueba(
 		},
 		revisarPermiso: revisarPermisoDePrueba,
 		versionMinimaDelParametro: async () => parametros.versionMinima,
-		escribirBitacora: async (_transaccion, renglones) => {
+		escribirBitacora: async (_contexto, renglones) => {
 			if (fallas.bitacora) throw new Error("falla de prueba en la bitácora");
 			for (const texto of fallas.bitacoraUnaVez) {
 				if (renglones.some((renglon) => renglon.descripcion.includes(texto))) {
@@ -143,17 +162,30 @@ export async function crearServidorDePrueba(
 			}
 			pedidos.bitacora.push([...renglones]);
 		},
-		guardarEventos: async (_transaccion, eventos) => {
+		guardarEventos: async (contexto, eventos) => {
 			pedidos.eventos.push([...eventos]);
+			await guardarEventosConAdmin(contexto, eventos);
 		},
 	};
 	const destinoDelRegistro = { write: (linea: string) => lineas.push(linea) };
+	const avisosEnVivo =
+		opciones.avisosEnVivo === undefined
+			? undefined
+			: crearAvisosEnVivo({
+					conexiones: base.app,
+					base: crearBase(base.app),
+					registro,
+					alcanceDelAparato: async () => alcanceDeLaTablet,
+					intervaloDeSincronizacion: async () => 30,
+					latidoMs: opciones.avisosEnVivo.latidoMs,
+				});
 	const app = await crearServidor({
 		entorno: { ENTORNO: opciones.entorno ?? "pruebas", ...dominios },
 		base: crearBase(base.app),
 		registro,
 		servicios,
 		destinoDelRegistro,
+		...(avisosEnVivo === undefined ? {} : { avisosEnVivo }),
 	});
 	await app.ready();
 	return {
@@ -165,7 +197,8 @@ export async function crearServidorDePrueba(
 		fallas,
 		cerrar: async () => {
 			await app.close();
-			await base.borrar();
+			// La base es de la primera instancia: la borra ella.
+			if (opciones.otraInstanciaDe === undefined) await base.borrar();
 		},
 	};
 }

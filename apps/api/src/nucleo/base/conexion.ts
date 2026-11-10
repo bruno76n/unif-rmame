@@ -18,7 +18,15 @@ export type Base = NodePgDatabase;
  * @returns El grupo de conexiones; se cierra con `end()`.
  */
 export function abrirConexiones(destino: string | pg.PoolConfig): pg.Pool {
-	return new pg.Pool(typeof destino === "string" ? { connectionString: destino } : destino);
+	const conexiones = new pg.Pool(typeof destino === "string" ? { connectionString: destino } : destino);
+	// Una conexión que se cae (Postgres se reinicia, la red se corta) la quita el grupo solo; sin quién
+	// escuche su aviso, Node tumbaría el proceso. Se anota sin el mensaje, que puede traer datos.
+	const anotar = (error: Error) => {
+		process.stderr.write(`Se cayó una conexión a la base (${"code" in error ? String(error.code) : error.name}).\n`);
+	};
+	conexiones.on("error", anotar);
+	conexiones.on("connect", (conexion) => conexion.on("error", anotar));
+	return conexiones;
 }
 
 /**

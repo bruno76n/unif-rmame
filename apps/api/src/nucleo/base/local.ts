@@ -1,13 +1,15 @@
 /**
- * `pnpm local`: levanta Postgres en Docker, aplica las migraciones y la siembra, y deja entrar al rol de la app.
+ * `pnpm local`: levanta Postgres en Docker, aplica las migraciones y la siembra, deja entrar al rol de la app
+ * y arranca el worker.
  * Fase 2 · docs/cimientos/ARQUITECTURA.md («Cómo corre en local»)
+ * Fase 4 · docs/cimientos/EVENTOS-Y-TRABAJOS.md («El worker»)
  *
  * Lee `.env` (copia de `.env.ejemplo`, con `ENTORNO=local`). La clave del rol de la app sale de
  * `BASE_DATOS_URL`, así que no vive en el código. La API, el worker, la web y la tablet se suman aquí
  * en la fase que los construye.
  */
 
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { join } from "node:path";
 import pg from "pg";
 import { leerEntorno } from "../entorno.ts";
@@ -39,4 +41,9 @@ if (import.meta.main) {
 		await administrador.end();
 	}
 	console.log("Local: Postgres arriba, migraciones y siembra al día, y el rol de la app con entrada.");
+	// El worker corre en primer plano: Ctrl+C lo detiene.
+	spawn(process.execPath, ["--env-file-if-exists=../../.env", "src/trabajos.ts"], {
+		cwd: join(raiz, "apps/api"),
+		stdio: "inherit",
+	});
 }

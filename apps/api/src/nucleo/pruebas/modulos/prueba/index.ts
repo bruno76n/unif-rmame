@@ -9,7 +9,13 @@ import { v7 as uuidv7 } from "uuid";
 import { tomarVersion, versionActual } from "../../../acciones/pisadas.ts";
 import { leerCursor, paginar, recortar } from "../../../http/consultas.ts";
 import { ErrorDeApi, errorDeRegla, noExiste } from "../../../http/errores.ts";
-import { type ContextoDeAccion, definirModulo, implementarAccion, implementarConsulta } from "../../../modulos.ts";
+import {
+	type ContextoDeAccion,
+	definirModulo,
+	type Horario,
+	implementarAccion,
+	implementarConsulta,
+} from "../../../modulos.ts";
 import {
 	agregarRenglon,
 	confirmar,
@@ -24,6 +30,13 @@ import {
 	verNota,
 } from "./contratos.ts";
 import { conteos, notas, renglones } from "./tablas.ts";
+
+/** El horario del trabajo de prueba y cuántas veces corrió; las pruebas del reloj lo cambian. */
+export const trabajoDePrueba: { horario: Horario | undefined; vueltas: string[]; fallar: boolean } = {
+	horario: undefined,
+	vueltas: [],
+	fallar: false,
+};
 
 /** Los textos que ya chocaron una vez (`fallar: "con_choque_una_vez"`). */
 const chocados = new Set<string>();
@@ -46,6 +59,17 @@ async function notaVisible(contexto: ContextoDeAccion, id: string): Promise<Reco
 
 export default definirModulo({
 	nombre: "prueba",
+	lectores: { prueba_notas: ["ventas"] },
+	trabajos: [
+		{
+			nombre: "prueba.resumen",
+			horario: async () => trabajoDePrueba.horario,
+			correr: async (contexto) => {
+				if (trabajoDePrueba.fallar) throw new Error("falla de prueba del trabajo");
+				trabajoDePrueba.vueltas.push(contexto.periodo ?? "");
+			},
+		},
+	],
 	acciones: [
 		implementarAccion(crearNota, async (contexto, datos) => {
 			if (datos.fallar === "con_regla") throw errorDeRegla("texto_prohibido", "Ese texto no se puede guardar");
@@ -61,7 +85,14 @@ export default definirModulo({
 				);
 			}
 			contexto.bitacora({ descripcion: `Creó la nota ${datos.texto}`, entidad: "prueba_notas", entidadId: id });
-			contexto.guardarEvento({ nombre: "nota.creada", datos: { nota_id: id }, tablas: ["prueba_notas"] });
+			contexto.guardarEvento({
+				tipo: "nota.creada",
+				// Un evento con un monto es un error del programa: `admin.guardar_evento` lo rechaza.
+				datos: datos.fallar === "evento_con_monto" ? { nota_id: id, monto_centavos: 1 } : { nota_id: id },
+				tablas: ["prueba_notas"],
+				entidad: "prueba_notas",
+				entidadId: id,
+			});
 			const pin = datos.con_pin === true ? { pin: "4821" } : {};
 			// Formas de equivocarse que el corredor tiene que atrapar antes de guardar.
 			const deMas = datos.fallar === "campo_de_mas" ? { pin_temporal: "SECRETO-DE-MAS" } : {};

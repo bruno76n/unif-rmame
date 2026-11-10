@@ -28,6 +28,7 @@ import type { Entorno } from "./nucleo/entorno.ts";
 import { ErrorDeApi, responderError } from "./nucleo/http/errores.ts";
 import { validarSinTransformar } from "./nucleo/http/validacion.ts";
 import type { RegistroDeModulos } from "./nucleo/modulos.ts";
+import type { AvisosEnVivo } from "./nucleo/sincronizacion/eventos-en-vivo.ts";
 
 declare module "fastify" {
 	interface FastifyRequest {
@@ -80,6 +81,8 @@ export interface DependenciasDelServidor {
 	servicios: ServiciosDelServidor;
 	/** A dónde escribe el registro técnico; por omisión, la salida estándar. Las pruebas pasan uno que guarda lo que escribe. */
 	destinoDelRegistro?: DestinationStream;
+	/** Los avisos en vivo (`GET /v1/eventos`); sin ellos, la ruta no existe. */
+	avisosEnVivo?: AvisosEnVivo;
 	/** De dónde sale «ahora»; las pruebas la fijan. */
 	reloj?: () => Temporal.Instant;
 }
@@ -132,13 +135,23 @@ export async function crearServidor(dependencias: DependenciasDelServidor) {
 		return respuesta.code(error.estado).header("cache-control", "no-store").send(error.cuerpo());
 	});
 
-	/** Pasos 1 y 2: quién llama y la versión de su app. */
-	async function identificarYRevisarVersion(peticion: FastifyRequest): Promise<void> {
+	/** Paso 1: quién llama. */
+	async function identificar(peticion: FastifyRequest): Promise<QuienLlama> {
 		const quien = await servicios.identificar(peticion);
 		if (quien === undefined) throw new ErrorDeApi("sin_sesion", "sin_sesion");
 		peticion.quien = quien;
+		return quien;
+	}
+
+	/** La versión mínima que vale hoy para la app de quien llama: la del código o la del parámetro. */
+	async function minimaDe(quien: QuienLlama): Promise<string> {
 		const app = appDe(quien);
-		const minima = versionMinima(app, await servicios.versionMinimaDelParametro(app));
+		return versionMinima(app, await servicios.versionMinimaDelParametro(app));
+	}
+
+	/** Pasos 1 y 2: quién llama y la versión de su app. */
+	async function identificarYRevisarVersion(peticion: FastifyRequest): Promise<void> {
+		const minima = await minimaDe(await identificar(peticion));
 		const version = peticion.headers["x-app-version"];
 		if (typeof version !== "string" || (compararVersiones(version, minima) ?? -1) < 0) {
 			throw new ErrorDeApi("actualizar", null, undefined, { version_minima: minima });
@@ -209,6 +222,36 @@ export async function crearServidor(dependencias: DependenciasDelServidor) {
 				revisarRecorte(contrato.nombre, contrato.recortables, leido.resultado, recortado);
 				return { ok: true as const, resultado: leido.resultado, recortado };
 			},
+		});
+	}
+
+	if (dependencias.avisosEnVivo !== undefined) registrarEventosEnVivo(dependencias.avisosEnVivo);
+
+	/**
+	 * `GET /v1/eventos`: la conexión de los avisos en vivo. El navegador no manda `X-App-Version` en un
+	 * `EventSource`, así que la versión no se revisa aquí: va en `hola`, y el cliente actúa como con `426`.
+	 */
+	function registrarEventosEnVivo(avisos: AvisosEnVivo): void {
+		app.addHook("onReady", () => avisos.iniciar());
+		app.addHook("onClose", () => avisos.cerrar());
+		app.get("/v1/eventos", { schema: { hide: true }, preValidation: identificar }, async (peticion, respuesta) => {
+			const quien = quienDe(peticion);
+			const hola = { servidor_en: reloj().toString(), version_minima: await minimaDe(quien) };
+			// Fastify ya no escribe la respuesta: pasan los encabezados que pusieron CORS y helmet, y los del SSE.
+			respuesta.hijack();
+			const encabezados = {
+				...respuesta.getHeaders(),
+				"content-type": "text/event-stream",
+				"cache-control": "no-store",
+				connection: "keep-alive",
+			};
+			for (const [nombre, valor] of Object.entries(encabezados)) {
+				if (valor !== undefined) respuesta.raw.setHeader(nombre, valor);
+			}
+			respuesta.raw.writeHead(200);
+			const salida = { escribir: (texto: string) => respuesta.raw.write(texto), terminar: () => respuesta.raw.end() };
+			const quitar = await avisos.conectar(quien, salida, hola);
+			peticion.raw.on("close", quitar);
 		});
 	}
 

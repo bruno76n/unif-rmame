@@ -2,13 +2,15 @@
  * `pnpm base:migrar`: aplica las migraciones pendientes y luego la siembra del sistema.
  * Fase 2 · docs/cimientos/BASE-DE-DATOS.md («Migraciones» y «Siembra del sistema»)
  *
- * Corre con el rol dueño (`BASE_DATOS_URL_DUENO`). Las migraciones viven en `apps/api/migraciones/`.
+ * Corre con el rol dueño (`BASE_DATOS_URL_DUENO`). Las migraciones viven en `apps/api/migraciones/`;
+ * después de ellas instala el esquema de Graphile Worker (fase 4).
  */
 
 import { join } from "node:path";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import type pg from "pg";
 import { leerEntorno } from "../entorno.ts";
+import { prepararEsquemaDelWorker } from "../trabajos/esquema.ts";
 import { abrirConexiones, crearBase } from "./conexion.ts";
 import { type Semilla, sembrarSistema } from "./siembra.ts";
 
@@ -36,6 +38,7 @@ export async function migrarYSembrar(
 	try {
 		const base = crearBase(conexiones);
 		await migrate(base, { migrationsFolder: carpetaDeMigraciones });
+		await prepararEsquemaDelWorker(conexiones);
 		await sembrarSistema(base, semillas);
 	} finally {
 		await conexiones.end();

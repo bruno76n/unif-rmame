@@ -51,9 +51,11 @@ export async function crearBaseDePrueba(): Promise<BaseDePrueba> {
 	// lo avisa con un evento «error»: sin quién lo escuche, Vitest lo cuenta como error no atrapado. Solo
 	// ese se calla; cualquier otro sigue saliendo como error.
 	for (const grupo of [app, dueno]) {
-		grupo.on("error", (error) => {
+		const callarElCorte = (error: Error) => {
 			if (!("code" in error && error.code === "57P01")) throw error;
-		});
+		};
+		grupo.on("error", callarElCorte);
+		grupo.on("connect", (conexion) => conexion.on("error", callarElCorte));
 	}
 	return {
 		nombre,
