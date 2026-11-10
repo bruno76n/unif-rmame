@@ -17,10 +17,12 @@
 		"docs:revisar": "node scripts/docs-revisar.ts",
 		"base:generar": "pnpm --filter @uniformame/api base:generar",
 		"base:migrar": "pnpm --filter @uniformame/api base:migrar",
-		"local": "pnpm --filter @uniformame/api local"
+		"local": "pnpm --filter @uniformame/api local",
+		"base:sembrar": "pnpm --filter @uniformame/api base:sembrar"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.6.6",
+		"@playwright/test": "1.65.0",
 		"@types/node": "26.6.6",
 		"typescript": "7.0.2",
 		"vitest": "5.1.0"

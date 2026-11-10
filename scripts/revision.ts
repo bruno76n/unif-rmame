@@ -4,7 +4,8 @@
  *
  * Corre cada paso en orden y se detiene en el primero en rojo. En verde, guarda el sello con la
  * huella de lo revisado. Los pasos que todavía no existen entran en su fase (ver «Excepciones
- * permitidas» de la fase 1): las migraciones desde cero en la fase 2 y `openapi.json` en la fase 3.
+ * permitidas» de la fase 1): `openapi.json` en la fase 3. Que las migraciones apliquen desde cero lo
+ * prueba `migraciones.prueba.ts` de la base, dentro de «Todas las pruebas».
  */
 
 import { correr } from "./comandos.ts";
@@ -50,6 +51,7 @@ export function pasosDeLaRevision(raiz: string): Paso[] {
 		{ nombre: "Estilo (Biome)", correr: () => correr(raiz, "biome", ["check", "."]) },
 		{ nombre: "Tipos (tsc)", correr: () => correr(raiz, "tsc", ["-p", "tsconfig.json"]) },
 		{ nombre: "Todas las pruebas (Vitest)", correr: () => correr(raiz, "vitest", ["run"]) },
+		{ nombre: "Migraciones y llaves pendientes", correr: () => correr(raiz, "node", ["scripts/migraciones.ts"]) },
 		{ nombre: "Secretos", correr: () => correr(raiz, "node", ["scripts/secretos.ts"]) },
 		{ nombre: "Dependencias (pnpm audit)", correr: () => correr(raiz, "pnpm", ["audit"]) },
 		{ nombre: "Archivos de creación (docs:revisar)", correr: () => correr(raiz, "node", ["scripts/docs-revisar.ts"]) },

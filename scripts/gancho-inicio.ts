@@ -11,6 +11,8 @@
  */
 
 import { spawn, spawnSync } from "node:child_process";
+import { appendFileSync, existsSync } from "node:fs";
+import { join } from "node:path";
 import { setTimeout as esperar } from "node:timers/promises";
 
 /** Cuánto se espera a que el daemon de Docker responda. */
@@ -37,6 +39,21 @@ async function asegurarDocker(): Promise<boolean> {
 	return false;
 }
 
+/**
+ * Deja a Playwright el Chromium que trae la máquina de la nube, en el archivo de variables de la sesión
+ * (`CLAUDE_ENV_FILE`), si los dos existen. La carpeta sale de `PLAYWRIGHT_BROWSERS_PATH`.
+ * @returns `true` si lo dejó.
+ */
+function dejarChromium(): boolean {
+	const navegadores = process.env.PLAYWRIGHT_BROWSERS_PATH;
+	const variablesDeLaSesion = process.env.CLAUDE_ENV_FILE;
+	if (navegadores === undefined || variablesDeLaSesion === undefined) return false;
+	const chromium = join(navegadores, "chromium");
+	if (!existsSync(chromium)) return false;
+	appendFileSync(variablesDeLaSesion, `export CHROMIUM_EJECUTABLE=${JSON.stringify(chromium)}\n`);
+	return true;
+}
+
 if (import.meta.main) {
 	if (process.env.CLAUDE_CODE_REMOTE !== "true") process.exit(0);
 	const raiz = process.env.CLAUDE_PROJECT_DIR ?? process.cwd();
@@ -48,8 +65,9 @@ if (import.meta.main) {
 	const docker = (await asegurarDocker())
 		? "Docker responde."
 		: "Docker no respondió: las pruebas de la base no van a correr.";
+	const chromium = dejarChromium() ? " Playwright usa el Chromium de la máquina." : "";
 	// Lo que sale por la salida estándar de un SessionStart llega como contexto de la sesión.
 	console.log(
-		`Gancho de inicio: dependencias instaladas con pnpm install y gancho de git activo (core.hooksPath = .githooks). ${docker}`,
+		`Gancho de inicio: dependencias instaladas con pnpm install y gancho de git activo (core.hooksPath = .githooks). ${docker}${chromium}`,
 	);
 }

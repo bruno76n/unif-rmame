@@ -13,11 +13,12 @@ export type Base = NodePgDatabase;
 
 /**
  * Abre el grupo de conexiones a una base.
- * @param direccion La dirección de Postgres (`BASE_DATOS_URL` o `BASE_DATOS_URL_DUENO`).
+ * @param destino La dirección de Postgres (`BASE_DATOS_URL` o `BASE_DATOS_URL_DUENO`), o sus datos por
+ * separado (las pruebas).
  * @returns El grupo de conexiones; se cierra con `end()`.
  */
-export function abrirConexiones(direccion: string): pg.Pool {
-	return new pg.Pool({ connectionString: direccion });
+export function abrirConexiones(destino: string | pg.PoolConfig): pg.Pool {
+	return new pg.Pool(typeof destino === "string" ? { connectionString: destino } : destino);
 }
 
 /**

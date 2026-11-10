@@ -19,6 +19,7 @@
 	"scripts": {
 		"base:generar": "drizzle-kit generate",
 		"base:migrar": "node --env-file-if-exists=../../.env src/nucleo/base/migrar.ts",
-		"local": "node --env-file-if-exists=../../.env src/nucleo/base/local.ts"
+		"local": "node --env-file-if-exists=../../.env src/nucleo/base/local.ts",
+		"base:sembrar": "node --env-file-if-exists=../../.env semillas/sembrar.ts"
 	}
 }

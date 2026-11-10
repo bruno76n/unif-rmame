@@ -188,6 +188,8 @@ uniformame/
 ├── biome.json
 ├── vitest.config.ts           toma los *.prueba.ts
 ├── .env.ejemplo · .gitignore
+├── compose.yaml               Postgres 18 para pnpm local
+├── playwright.config.ts       las pruebas en el navegador (*.navegador.ts)
 ├── .githooks/               pre-commit y pre-merge-commit: los dos llaman a scripts/gancho-git.ts
 ├── .worktreeinclude           copia .env a cada worktree
 ├── .claude/
@@ -195,6 +197,17 @@ uniformame/
 │   ├── modo                   supervisado | autonomo
 │   └── rules/ · agents/
 ├── docs/
+├── apps/
+│   └── api/                   @uniformame/api
+│       ├── drizzle.config.ts
+│       ├── migraciones/       0000_base.sql y meta/
+│       ├── semillas/          sembrar.ts (los datos de la muestra)
+│       └── src/nucleo/
+│           ├── entorno.ts
+│           └── base/          conexion, transacciones, columnas, tablas, siembra, migrar, local y el arranque de las pruebas
+├── pruebas/                   @uniformame/pruebas
+│   ├── base/                  la copia de la plantilla por archivo
+│   └── simuladores/           google, resend, r2 y sus fallas
 ├── packages/
 │   └── compartido/            @uniformame/compartido
 │       ├── package.json
@@ -210,6 +223,7 @@ uniformame/
     ├── secretos.ts            la búsqueda de secretos
     ├── gancho-git.ts          los tres casos del gancho de git
     ├── docs-revisar.ts        pnpm docs:revisar
+    ├── migraciones.ts         las migraciones de main sin cambios y las llaves pendientes
     ├── gancho-inicio.ts       el gancho de inicio de Claude Code
     ├── gancho-edicion.ts      el gancho después de editar
     ├── gancho-fin.ts          el gancho de fin y el conteo de intentos
@@ -225,8 +239,11 @@ uniformame/
 | `pnpm estilo` · `pnpm tipos` | `biome check .` · `tsc -p tsconfig.json` |
 | `pnpm pruebas` | `vitest run`: todas las pruebas, sin sellar |
 | `pnpm revision:rapida` | `scripts/revision-rapida.ts`: Biome sobre los archivos cambiados desde el último commit, `tsc` si cambió un `.ts` o un `tsconfig`, y `vitest related` sobre los `.ts` cambiados |
-| `pnpm revision` | `scripts/revision.ts`: Biome, tipos, todas las pruebas, secretos, `pnpm audit` y `pnpm docs:revisar`, en ese orden; se detiene en el primero en rojo. Las migraciones desde cero entran en la fase 2 y `openapi.json` en la fase 3 |
+| `pnpm revision` | `scripts/revision.ts`: Biome, tipos, todas las pruebas (también las migraciones desde cero, con Postgres real), las migraciones y las llaves pendientes, secretos, `pnpm audit` y `pnpm docs:revisar`, en ese orden; se detiene en el primero en rojo. `openapi.json` entra en la fase 3 |
 | `pnpm docs:revisar` | `scripts/docs-revisar.ts`: los archivos de creación (abajo) |
+| `pnpm local` · `pnpm base:generar` · `pnpm base:migrar` · `pnpm base:sembrar` | Los de `apps/api` (ver [base de datos](BASE-DE-DATOS.md#cómo-está-hecho) y [arquitectura](ARQUITECTURA.md#cómo-está-hecho)); leen `.env` con `--env-file-if-exists` |
+
+**El workspace** (`pnpm-workspace.yaml`): `apps/*`, `packages/*` y `pruebas`; ningún paquete corre scripts al instalarse (`allowBuilds`, decisión 330) y dos dependencias indirectas van con `overrides` (decisión 336).
 
 **Las herramientas** se llaman desde `node_modules/.bin` (`scripts/comandos.ts`), sin rutas de la máquina: lo mismo corre en la nube y en la Mac.
 

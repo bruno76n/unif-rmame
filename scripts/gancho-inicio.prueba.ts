@@ -7,7 +7,7 @@
  */
 
 import { spawnSync } from "node:child_process";
-import { chmodSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { delimiter, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { git } from "./archivos.ts";
@@ -82,5 +82,39 @@ describe("en la nube, si Docker no responde, el gancho de inicio arranca su daem
 		expect(codigo, salida).toBe(0);
 		expect(existsSync(marca)).toBe(true);
 		expect(salida).toContain("Docker responde.");
+	});
+});
+
+describe("en la nube, el gancho de inicio le deja a Playwright el Chromium de la máquina", () => {
+	let raiz = "";
+	beforeEach(() => {
+		raiz = crearRepositorioDePrueba({ dependencias: "por-instalar" });
+	});
+	afterEach(() => borrarRepositorioDePrueba(raiz));
+
+	it("escribe CHROMIUM_EJECUTABLE en el archivo de variables de la sesión", { timeout: 120_000 }, () => {
+		const navegadores = join(raiz, "navegadores");
+		const variables = join(raiz, "variables-de-la-sesion");
+		mkdirSync(navegadores);
+		writeFileSync(join(navegadores, "chromium"), "");
+		writeFileSync(variables, "");
+		const anteriores = { navegadores: process.env.PLAYWRIGHT_BROWSERS_PATH, variables: process.env.CLAUDE_ENV_FILE };
+		process.env.PLAYWRIGHT_BROWSERS_PATH = navegadores;
+		process.env.CLAUDE_ENV_FILE = variables;
+		try {
+			const { codigo, salida } = ganchoDeInicio(raiz, true);
+			expect(codigo, salida).toBe(0);
+			expect(readFileSync(variables, "utf8")).toContain(
+				`export CHROMIUM_EJECUTABLE="${join(navegadores, "chromium")}"`,
+			);
+		} finally {
+			for (const [nombre, valor] of [
+				["PLAYWRIGHT_BROWSERS_PATH", anteriores.navegadores],
+				["CLAUDE_ENV_FILE", anteriores.variables],
+			] as const) {
+				if (valor === undefined) delete process.env[nombre];
+				else process.env[nombre] = valor;
+			}
+		}
 	});
 });

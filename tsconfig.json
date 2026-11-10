@@ -9,6 +9,7 @@
 		"packages/*/src/**/*.ts",
 		"apps/*/*.ts",
 		"apps/*/src/**/*.ts",
+		"apps/*/semillas/**/*.ts",
 		"pruebas/**/*.ts"
 	]
 }

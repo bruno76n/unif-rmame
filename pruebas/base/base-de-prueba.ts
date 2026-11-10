@@ -80,3 +80,38 @@ export async function enTransaccionDeshecha<T>(
 		cliente.release();
 	}
 }
+
+/** Una base vacía, sin migraciones, para probar que las migraciones aplican desde cero. */
+export interface BaseVacia {
+	/** Los datos para conectarse con el rol dueño. */
+	dueno: pg.ClientConfig;
+	borrar: () => Promise<void>;
+}
+
+/**
+ * Crea una base vacía, sin copiar la plantilla.
+ * @returns Sus datos de conexión con el rol dueño y cómo borrarla.
+ */
+export async function crearBaseVacia(): Promise<BaseVacia> {
+	const compartida = inject("baseDePruebas");
+	const nombre = `vacia_${randomUUID().replaceAll("-", "")}`;
+	const administrador = new pg.Client(conexion(compartida, "dueno", "postgres"));
+	await administrador.connect();
+	try {
+		await administrador.query(`CREATE DATABASE ${nombre}`);
+	} finally {
+		await administrador.end();
+	}
+	return {
+		dueno: conexion(compartida, "dueno", nombre),
+		borrar: async () => {
+			const cierre = new pg.Client(conexion(compartida, "dueno", "postgres"));
+			await cierre.connect();
+			try {
+				await cierre.query(`DROP DATABASE IF EXISTS ${nombre} WITH (FORCE)`);
+			} finally {
+				await cierre.end();
+			}
+		},
+	};
+}

@@ -7,6 +7,7 @@
 
 import { join } from "node:path";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
+import type pg from "pg";
 import { leerEntorno } from "../entorno.ts";
 import { abrirConexiones, crearBase } from "./conexion.ts";
 import { type Semilla, sembrarSistema } from "./siembra.ts";
@@ -24,14 +25,14 @@ export function semillasDelSistema(): Semilla[] {
 
 /**
  * Aplica las migraciones pendientes y siembra lo que falta.
- * @param direccionDueno La dirección de la base con el rol dueño.
+ * @param destinoDueno La base con el rol dueño: su dirección o sus datos por separado.
  * @param semillas Las semillas; por omisión, las de todos los módulos.
  */
 export async function migrarYSembrar(
-	direccionDueno: string,
+	destinoDueno: string | pg.PoolConfig,
 	semillas: readonly Semilla[] = semillasDelSistema(),
 ): Promise<void> {
-	const conexiones = abrirConexiones(direccionDueno);
+	const conexiones = abrirConexiones(destinoDueno);
 	try {
 		const base = crearBase(conexiones);
 		await migrate(base, { migrationsFolder: carpetaDeMigraciones });
