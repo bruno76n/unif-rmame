@@ -17,7 +17,7 @@ Lo que falta decidir o investigar, y en qué fase se resuelve. Lo del negocio ya
 - **Lo que lleva el `409` y la posición del cursor dependen de cada módulo** (fase 22, con la revisión de cada consulta): `tomarVersion` manda lo que le da la acción (`leerVisible`), sin revisar que venga recortado, y `cursorDe` guarda los campos que le pasa la consulta. Una revisión que compare el `409` y el cursor con los `recortables` de la consulta que lee ese registro.
 - **Una acción puede tomar la versión de otro registro** (fase 22): el corredor sabe que se tomó una versión, no cuál. Revisar que la versión tomada sea la del documento que la acción dice que tocó (`entidad`).
 - **El formato de los parámetros de texto** (fase 19, con la pantalla de Configuración): `admin.cambiar_parametro` revisa que un texto no venga vacío, pero no su forma (los días de trabajo, una versión). Decidir si cada definición lleva su patrón.
-- **Las lecturas de cuentas para los avisos** (fase 5): `admin.cuentas_por_regla` (`duena`, `soporte`, `departamento:{clave}`, con las cuentas activas) y `admin.correo_de_cuenta`. Hasta que existan, el worker no puede crear avisos fuera de las pruebas.
+- **El nombre y el puesto de una cuenta** (fase 7, con Personal): hoy los mensajes y la bitácora de las cuentas usan el correo y «Esa persona» (decisión 373).
 - **El nivel de `pnpm audit`** (fase 22): SEGURIDAD dice que solo una vulnerabilidad alta o crítica detiene la revisión, pero `pnpm revision` corre `pnpm audit` sin nivel y se detiene con cualquiera. Se intentó alinearlo y el permiso del entorno lo negó; Bruno decide si la revisión pide `--audit-level high` o si SEGURIDAD dice «cualquiera».
 - **Un rol solo para el respaldo** (fase 22): hoy el worker vuelca con el rol dueño (decisión 368). Revisar si Render deja un rol de lectura que salte la seguridad por renglón de Graphile Worker.
 - **La lectura `admin.datos_de_aparato`** (fase 6): el tipo, si está revocado, el nombre, el último contacto y la versión de un aparato; sin ella, la impresión solo corre en las pruebas. También `rotar_llave` en `admin.trabajos_impresion`.
@@ -116,4 +116,8 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 10 nov 2026 | 4 | Con qué rol se vuelca el respaldo (decisión 368) | El de la app · uno de lectura · el dueño | El dueño: es el único que lee todo sin ser superusuario | Sí |
 | 10 nov 2026 | 4 | Si se reintenta un respaldo que falló (decisión 369) | Cada minuto · una vez, con el recordatorio diario | Una vez | No |
 | 10 nov 2026 | 4 | Cómo sabe la bitácora qué es un sueldo (decisión 370) | Por el nombre · una lista que declara cada módulo | La lista de cada módulo | No |
+| 10 nov 2026 | 5 | Cómo nacen las cuentas de la muestra y de las pruebas (decisión 371) | Con `admin.crear_cuenta` · directo con el rol dueño | Directo: la dueña y soporte nacen con la siembra y las demás piden una persona | No |
+| 10 nov 2026 | 5 | Si el encargado del taller de la muestra lleva la Puerta del taller | Como la pinta la muestra · sin ella | Sin ella: la regla dice que la Puerta se entra con PIN | No |
+| 10 nov 2026 | 5 | Quién cuida `es_duena` y `es_soporte` (decisión 372) | El código · un disparador en la base | El disparador | No |
+| 10 nov 2026 | 5 | Cómo se nombra una cuenta antes de Personal (decisión 373) | Esperar a la fase 7 · el correo | El correo | No |
 

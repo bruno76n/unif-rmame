@@ -15,6 +15,7 @@
 		"./contratos/admin/avisos": "./src/contratos/admin/avisos.ts",
 		"./contratos/admin/impresion": "./src/contratos/admin/impresion.ts",
 		"./contratos/admin/respaldos": "./src/contratos/admin/respaldos.ts",
+		"./contratos/admin/cuentas": "./src/contratos/admin/cuentas.ts",
 		"./cliente/cliente": "./src/cliente/cliente.ts"
 	},
 	"dependencies": {

@@ -18,10 +18,7 @@ import { armarCorreoDeAviso } from "../dominio/plantilla-de-correo.ts";
 import { tareaDeCorreos } from "../internas/crear-aviso.ts";
 import { avisos, empresa } from "../tablas.ts";
 
-/**
- * La lectura que da el correo de una cuenta (el de Google). La da `usuarios` desde la fase 5; en esta fase
- * la pone el servidor de prueba.
- */
+/** La lectura que da el correo de una cuenta (el de Google): `lecturas/correo-de-cuenta.ts`. */
 export const lecturaDeCorreoDeCuenta = "admin.correo_de_cuenta";
 
 /**
@@ -67,7 +64,8 @@ export const enviarCorreos: Trabajo = {
 					.for("update", { skipLocked: true });
 				for (const aviso of listos) {
 					try {
-						const para = String(await accion.lectura(lecturaDeCorreoDeCuenta, { usuario_id: aviso.usuarioId }));
+						const para = await accion.lectura(lecturaDeCorreoDeCuenta, { usuario_id: aviso.usuarioId });
+						if (typeof para !== "string") throw new Error("la cuenta del aviso no tiene correo");
 						const enlace = aviso.enlace === null ? undefined : `${contexto.dominioWeb}/${aviso.enlace}`;
 						const { html, texto } = armarCorreoDeAviso({ texto: aviso.texto, enlace, marca });
 						await contexto.enviarCorreo({ para, asunto: aviso.texto, html, texto, clave: `aviso:${aviso.id}` });

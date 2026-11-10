@@ -172,4 +172,17 @@ La cuenta de la dueña y la de soporte técnico nacen con la siembra de la puest
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar las fases 5 y 7.*
+**Fase 5, parte 3.**
+
+- **Las tablas** `usuarios` y `usuario_departamentos` están en `apps/api/src/modulos/admin/tablas.ts` (migración `0011_cuentas.sql`), con sus CHECK, sus únicos parciales y el disparador de las columnas comunes.
+  - La misma migración agrega las llaves de las fases 3 y 4 hacia `usuarios`, `sesiones` y `departamentos` (bitácora, avisos, parámetros, comandos recibidos, impresión, archivos y las columnas comunes).
+  - **`es_duena` y `es_soporte`** solo los pone el rol dueño: el disparador `cuidar_duena_y_soporte` rechaza (`42501`) que la app los ponga al insertar o los cambie (decisión 372).
+- **Lo común** está en `modulos/admin/dominio/cuentas.ts`: leer la cuenta, su nombre, revisar que se pueda cambiar (`es_la_duena`, `cuenta_no_activa`), sus departamentos y permisos vigentes, la Puerta del taller y `cerrarSesionesDe`.
+  - **El nombre de una cuenta** es el de soporte o su correo, hasta que Personal dé el de su persona en la fase 7 (decisión 373).
+- **Las acciones**, con sus contratos en `packages/compartido/src/contratos/admin/cuentas.ts`; todas piden `solo_duena` y «Confirmar con Google», y guardan su `confirmado_con_google_en`:
+  - **`admin.crear_cuenta`** (`acciones/crear-cuenta.ts`): toma un candado por persona y otro por correo, en ese orden, y luego busca la cuenta viva; el correo llega en minúsculas y sin espacios. Deja `cuenta.activada`.
+  - **`admin.quitar_acceso`** (`acciones/quitar-acceso.ts`): edita con la versión de la cuenta; da de baja sus departamentos y permisos y cierra sus sesiones con `acceso_quitado` en la misma transacción. `cuenta.acceso_quitado` manda `sesion_cerrada` a las pantallas de la cuenta (`en-vivo.ts`).
+  - **`admin.cambiar_departamentos`** (`acciones/cambiar-departamentos.ts`): la versión va por cuenta en sus datos; bloquea las cuentas en orden por id; lo que se pide dar y quitar a la vez no cambia; si ninguna cuenta cambia, `sin_cambios`, y la que no cambia solo revisa su versión (decisión 375). Un renglón de bitácora con alerta y un `cuenta.departamentos_cambiados` por cuenta, que manda `permisos_cambiados`.
+- **Las lecturas** `admin.cuentas_por_regla` (`lecturas/cuentas-por-regla.ts`) y `admin.correo_de_cuenta` (`lecturas/correo-de-cuenta.ts`) leen `usuarios`: solo cuentas activas.
+- **Las cuentas de la muestra** (`apps/api/semillas/cuentas.ts`): la dueña (Carmen), soporte, la oficina (Rosa), Aduana y bodega (Javier) y el encargado del taller (Tomás), con los departamentos y permisos finos de la muestra. Van directo con el rol dueño, porque la dueña y soporte nacen con la siembra y las demás piden una persona (decisión 371). El encargado del taller no lleva la Puerta del taller: entra con su PIN.
+- **Las pruebas:** `acciones/crear-cuenta.prueba.ts`, `quitar-acceso.prueba.ts` y `cambiar-departamentos.prueba.ts` (con la conexión de avisos en vivo), y `lecturas/cuentas.prueba.ts`. Recorren quién puede, «Confirmar con Google» vencido, cada error de regla, el `409` y dos altas a la vez con el mismo correo.

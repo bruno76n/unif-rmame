@@ -20,4 +20,9 @@ export const lectoresDeAdmin: Record<string, readonly string[]> = {
 	impresoras: ["admin"],
 	respaldos: ["admin"],
 	restauraciones_probadas: ["admin"],
+	departamentos: todosLosDepartamentos,
+	usuarios: ["admin", "personal"],
+	usuario_departamentos: ["admin"],
+	permisos_finos: ["admin"],
+	sesiones: ["admin"],
 };

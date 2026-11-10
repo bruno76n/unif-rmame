@@ -7,20 +7,13 @@ import { Temporal } from "temporal-polyfill";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { crearBase } from "../../../nucleo/base/conexion.ts";
 import { enAccionDePrueba } from "../../../nucleo/pruebas/accion-de-prueba.ts";
+import { cuentaDePrueba } from "../../../nucleo/pruebas/cuentas-de-prueba.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
-import {
-	crearServidorDePrueba,
-	quienesDePrueba,
-	type ServidorDePrueba,
-} from "../../../nucleo/pruebas/servidor-de-prueba.ts";
+import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 import { procesarEventos, repartirConLosModulos } from "../../../nucleo/trabajos/procesar-eventos.ts";
 
-/** El id de una cuenta de prueba. */
-function cuenta(nombre: string): string {
-	const quien = quienesDePrueba[nombre];
-	if (quien?.tipo !== "cuenta") throw new Error(`no hay cuenta de prueba ${nombre}`);
-	return quien.usuarioId;
-}
+/** La cuenta de la oficina de la muestra, que también tiene Administración del sistema. */
+const laOficina = "01936f2e-0000-7000-8000-000000000006";
 
 describe("un aviso no se repite sin leer; va por correo según su parámetro; una alerta se vuelve aviso a la dueña", () => {
 	let servidor: ServidorDePrueba;
@@ -60,9 +53,10 @@ describe("un aviso no se repite sin leer; va por correo según su parámetro; un
 			entidadId: documento,
 		};
 		const primero = await crear(aviso);
-		expect(primero.aviso_ids).toHaveLength(2);
+		// Las de Administración del sistema: la de prueba, soporte y la oficina de la muestra.
+		expect(primero.aviso_ids).toHaveLength(3);
 		expect((await avisosDe("pin_bloqueado")).map((renglon) => renglon.usuario_id).sort()).toEqual(
-			[cuenta("admin"), cuenta("soporte")].sort(),
+			[cuentaDePrueba("admin"), cuentaDePrueba("soporte"), laOficina].sort(),
 		);
 		expect((await crear(aviso)).aviso_ids).toEqual([]);
 		// La cuenta de Administración lo lee: a ella le vuelve a llegar; a soporte, que no lo ha leído, no.
@@ -70,13 +64,13 @@ describe("un aviso no se repite sin leer; va por correo según su parámetro; un
 		expect(leido.estado).toBe(200);
 		const segundo = await crear(aviso);
 		expect(segundo.aviso_ids).toHaveLength(1);
-		expect(await avisosDe("pin_bloqueado")).toHaveLength(3);
+		expect(await avisosDe("pin_bloqueado")).toHaveLength(4);
 	});
 
 	it("el mismo aviso pedido tres veces a la vez deja uno solo", async () => {
 		const aviso = {
 			tipo: "pin_bloqueado",
-			destinatarios: { cuentas: [cuenta("ventas")] },
+			destinatarios: { cuentas: [cuentaDePrueba("ventas")] },
 			texto: "Luis se bloqueó en la tablet",
 			entidad: "personas",
 			entidadId: "01936f2e-0000-7000-8000-0000000000d7",
@@ -89,7 +83,7 @@ describe("un aviso no se repite sin leer; va por correo según su parámetro; un
 		await crear({ tipo: "autorizacion_pedida", destinatarios: { regla: "duena" }, texto: "Ventas pide autorización" });
 		await crear({
 			tipo: "autorizacion_decidida",
-			destinatarios: { cuentas: [cuenta("ventas")] },
+			destinatarios: { cuentas: [cuentaDePrueba("ventas")] },
 			texto: "AU-0028 autorizada",
 		});
 		expect((await avisosDe("autorizacion_pedida"))[0]?.por_correo).toBe(true);
@@ -119,7 +113,7 @@ describe("un aviso no se repite sin leer; va por correo según su parámetro; un
 		);
 		expect(rows).toEqual([
 			{
-				usuario_id: cuenta("duena"),
+				usuario_id: cuentaDePrueba("duena"),
 				texto: "Intento de entrar sin acceso: x@otro.invalid",
 				entidad: "bitacora",
 				enlace: "admin/bitacora",
@@ -130,7 +124,7 @@ describe("un aviso no se repite sin leer; va por correo según su parámetro; un
 	it("cada quien marca solo sus avisos: los ids de otra cuenta se ignoran; sin ids ni todos, 400", async () => {
 		const { aviso_ids } = await crear({
 			tipo: "alerta_direccion",
-			destinatarios: { cuentas: [cuenta("duena")] },
+			destinatarios: { cuentas: [cuentaDePrueba("duena")] },
 			texto: "Una alerta de Dirección",
 		});
 		const deOtra = await mandarAccion(servidor, "admin.marcar_aviso_leido", { datos: { aviso_ids } }, "ventas");

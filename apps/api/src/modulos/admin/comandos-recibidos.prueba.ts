@@ -9,6 +9,8 @@ import { codigoDePostgres } from "../../nucleo/base/transacciones.ts";
 
 const id = "01936f2e-8c3a-7b4d-9e5f-0000000c0001";
 const usuario = "01936f2e-0000-7000-8000-000000000001";
+/** Su sesión de prueba. */
+const sesion = "01936f2e-0000-7000-8000-000000000011";
 
 describe("comandos_recibidos: la app solo cambia el resultado, la respuesta, el documento, la excepción y las columnas de reintento, descarte y retenido; nunca borra", () => {
 	let prueba: BaseDePrueba;
@@ -23,7 +25,7 @@ describe("comandos_recibidos: la app solo cambia el resultado, la respuesta, el 
 		prueba = await crearBaseDePrueba();
 		await prueba.app.query(
 			`INSERT INTO comandos_recibidos (id, clave_idempotencia, origen, usuario_id, sesion_id, tipo_comando, ocurrido_en, carga_hash, resultado)
-			 VALUES ('${id}', '${id}', 'web', '${usuario}', '${usuario}', 'ventas.confirmar_pedido', now(), 'huella', 'aplicado')`,
+			 VALUES ('${id}', '${id}', 'web', '${usuario}', '${sesion}', 'ventas.confirmar_pedido', now(), 'huella', 'aplicado')`,
 		);
 	});
 	afterAll(async () => {
@@ -67,7 +69,7 @@ describe("comandos_recibidos: la app solo cambia el resultado, la respuesta, el 
 		expect(
 			await conLaApp(
 				`INSERT INTO comandos_recibidos (id, clave_idempotencia, origen, usuario_id, sesion_id, tipo_comando, ocurrido_en, carga_hash, resultado)
-				 VALUES (gen_random_uuid(), '${id}', 'web', '${usuario}', '${usuario}', 'x.y', now(), 'h', 'aplicado')`,
+				 VALUES (gen_random_uuid(), '${id}', 'web', '${usuario}', '${sesion}', 'x.y', now(), 'h', 'aplicado')`,
 			),
 		).toBe("23505");
 	});

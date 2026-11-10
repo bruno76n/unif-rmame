@@ -2,29 +2,15 @@
  * Los departamentos de la fábrica, por su clave.
  * Fase 4 · docs/modulos/admin/permisos.md («La siembra»)
  *
- * La tabla `departamentos` llega en la fase 5; mientras, los módulos declaran con estas claves qué
- * departamentos leen cada una de sus tablas (su `permisos.ts`), y los archivos saben qué departamentos
- * atienden cada módulo.
+ * Los módulos declaran con estas claves qué departamentos leen cada una de sus tablas (su `permisos.ts`), y
+ * los archivos saben qué departamentos atienden cada módulo. La tabla `departamentos` (fase 5) tiene las
+ * mismas claves en su CHECK.
  */
 
-/** Las claves de los 15 departamentos, en su orden. */
-export const todosLosDepartamentos: readonly string[] = [
-	"direccion",
-	"compras",
-	"catalogo",
-	"patronaje",
-	"ventas",
-	"linea",
-	"produccion",
-	"puerta_taller",
-	"calidad",
-	"mantenimiento",
-	"aduana",
-	"bodega",
-	"contaduria",
-	"personal",
-	"admin",
-];
+import { clavesDeDepartamento } from "@uniformame/compartido/contratos/admin/cuentas";
+
+/** Las claves de los 15 departamentos, en su orden: las del contrato de las cuentas. */
+export const todosLosDepartamentos: readonly string[] = clavesDeDepartamento;
 
 /** Los departamentos que atiende cada módulo («Módulo que lo atiende» de docs/modulos/admin/permisos.md). */
 export const departamentosDelModulo: Readonly<Record<string, readonly string[]>> = {

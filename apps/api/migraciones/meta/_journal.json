@@ -78,6 +78,13 @@
 			"when": 1794308911802,
 			"tag": "0010_un_puente",
 			"breakpoints": true
+		},
+		{
+			"idx": 11,
+			"version": "7",
+			"when": 1794323297207,
+			"tag": "0011_cuentas",
+			"breakpoints": true
 		}
 	]
 }

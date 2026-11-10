@@ -10,15 +10,23 @@
  */
 
 import { sql } from "drizzle-orm";
-import { bigint, customType, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { type AnyPgColumn, bigint, customType, text, timestamp, uuid } from "drizzle-orm/pg-core";
+// Las tablas de `admin` importan estas columnas y estas columnas apuntan a `usuarios`: la referencia va en
+// una función, así que el ciclo de importación no estorba.
+import { usuarios } from "../../modulos/admin/tablas.ts";
 
 /** Un momento: `timestamptz`. */
 function momento(nombre: string) {
 	return timestamp(nombre, { withTimezone: true, mode: "string" });
 }
 
-/** El tipo `xid8` de Postgres, que Drizzle no trae: el número de la transacción, como texto. */
-const xid8 = customType<{ data: string; driverData: string }>({ dataType: () => "xid8" });
+/**
+ * Una columna del tipo `xid8` de Postgres, que Drizzle no trae: el número de la transacción, como texto.
+ * Es una función y no una constante porque `admin/tablas.ts` y este archivo se importan uno al otro.
+ */
+function xid8(nombre: string) {
+	return customType<{ data: string; driverData: string }>({ dataType: () => "xid8" })(nombre);
+}
 
 /**
  * Las columnas de toda tabla de negocio: cuándo nació, quién la hizo, el último cambio y su versión.
@@ -27,8 +35,7 @@ const xid8 = customType<{ data: string; driverData: string }>({ dataType: () => 
 export function columnasComunes() {
 	return {
 		creadoEn: momento("creado_en").notNull().defaultNow(),
-		/** @llavePendiente usuarios.id */
-		creadoPor: uuid("creado_por"),
+		creadoPor: uuid("creado_por").references((): AnyPgColumn => usuarios.id),
 		actualizadoEn: momento("actualizado_en"),
 		version: bigint("version", { mode: "number" }).notNull().default(0),
 	};
@@ -58,8 +65,7 @@ export function columnasDeAparato() {
 export function columnasDeCancelacion() {
 	return {
 		canceladoEn: momento("cancelado_en"),
-		/** @llavePendiente usuarios.id */
-		canceladoPor: uuid("cancelado_por"),
+		canceladoPor: uuid("cancelado_por").references((): AnyPgColumn => usuarios.id),
 		motivoCancelacion: text("motivo_cancelacion"),
 	};
 }
@@ -68,8 +74,7 @@ export function columnasDeCancelacion() {
 export function columnasDeBaja() {
 	return {
 		bajaEn: momento("baja_en"),
-		/** @llavePendiente usuarios.id */
-		bajaPor: uuid("baja_por"),
+		bajaPor: uuid("baja_por").references((): AnyPgColumn => usuarios.id),
 		motivoBaja: text("motivo_baja"),
 		reactivadoEn: momento("reactivado_en"),
 	};

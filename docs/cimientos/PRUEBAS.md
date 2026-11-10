@@ -86,6 +86,8 @@ En la fase 21 se prueban los 11 flujos de la fábrica, cada uno con su archivo e
 
 ## Cómo está hecho
 
+**Fase 5.** La base plantilla (`nucleo/base/plantilla-de-pruebas.ts`) carga, después de la siembra, los datos de la muestra (`cargasDeLaMuestra`: hoy, sus cuentas) y las cuentas de prueba de un solo departamento con la sesión abierta de cada cuenta de prueba (`nucleo/pruebas/cuentas-de-prueba.ts`, decisión 371). Las ayudas de los avisos en vivo (`escuchar`, `esperarA`, `procesarComoElWorker`) están en `nucleo/pruebas/en-vivo.ts`; `conGoogle` y `darDeAltaCuenta`, en `nucleo/pruebas/llamadas.ts`.
+
 **Fase 4.** La prueba del respaldo semanal corre `pg_dump` y `pg_restore` dentro del contenedor de Postgres 18 de las pruebas (`docker exec`, con el `contenedor` que reparte el arranque), y pide `age` y `age-keygen` en la máquina: están en el entorno de la nube y en la imagen del worker; en una Mac se instalan con Homebrew. El simulador de R2 también acepta la subida por partes.
 
 

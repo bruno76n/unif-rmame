@@ -12,6 +12,7 @@
 
 import { sql } from "drizzle-orm";
 import {
+	type AnyPgColumn,
 	bigint,
 	boolean,
 	check,
@@ -46,10 +47,8 @@ export const comandosRecibidos = pgTable(
 		origen: text("origen").notNull(),
 		/** @llavePendiente dispositivos.id */
 		dispositivoId: uuid("dispositivo_id"),
-		/** @llavePendiente usuarios.id */
-		usuarioId: uuid("usuario_id"),
-		/** @llavePendiente sesiones.id */
-		sesionId: uuid("sesion_id"),
+		usuarioId: uuid("usuario_id").references((): AnyPgColumn => usuarios.id),
+		sesionId: uuid("sesion_id").references((): AnyPgColumn => sesiones.id),
 		/** @llavePendiente personas.id */
 		personaId: uuid("persona_id"),
 		tipoComando: text("tipo_comando").notNull(),
@@ -69,12 +68,10 @@ export const comandosRecibidos = pgTable(
 		reintentos: integer("reintentos").notNull().default(0),
 		ultimoReintentoEn: momento("ultimo_reintento_en"),
 		descartadoEn: momento("descartado_en"),
-		/** @llavePendiente usuarios.id */
-		descartadoPor: uuid("descartado_por"),
+		descartadoPor: uuid("descartado_por").references((): AnyPgColumn => usuarios.id),
 		motivoDescarte: text("motivo_descarte"),
 		retenidoAplicadoEn: momento("retenido_aplicado_en"),
-		/** @llavePendiente usuarios.id */
-		retenidoAplicadoPor: uuid("retenido_aplicado_por"),
+		retenidoAplicadoPor: uuid("retenido_aplicado_por").references((): AnyPgColumn => usuarios.id),
 		actualizadoEn: momento("actualizado_en"),
 	},
 	(tabla) => [
@@ -117,8 +114,7 @@ export const eventos = pgTable(
 		datos: jsonb("datos"),
 		tablas: text("tablas").array().notNull(),
 		ubicacionIds: uuid("ubicacion_ids").array().notNull().default(sql`'{}'`),
-		/** @llavePendiente usuarios.id */
-		usuarioId: uuid("usuario_id"),
+		usuarioId: uuid("usuario_id").references((): AnyPgColumn => usuarios.id),
 		/** @llavePendiente personas.id */
 		personaId: uuid("persona_id"),
 		/** @llavePendiente dispositivos.id */
@@ -243,8 +239,7 @@ export const parametrosHistorial = pgTable(
 		valorAnterior: text("valor_anterior"),
 		valorNuevo: text("valor_nuevo").notNull(),
 		creadoEn: momento("creado_en").notNull().defaultNow(),
-		/** @llavePendiente usuarios.id */
-		creadoPor: uuid("creado_por"),
+		creadoPor: uuid("creado_por").references((): AnyPgColumn => usuarios.id),
 	},
 	(tabla) => [index("parametros_historial_parametro").on(tabla.parametroId, tabla.creadoEn.desc())],
 );
@@ -337,18 +332,15 @@ export const bitacora = pgTable(
 		ocurridoEn: momento("ocurrido_en").notNull().defaultNow(),
 		tipo: text("tipo").notNull(),
 		esAlerta: boolean("es_alerta").notNull().default(false),
-		/** @llavePendiente usuarios.id */
-		usuarioId: uuid("usuario_id"),
+		usuarioId: uuid("usuario_id").references((): AnyPgColumn => usuarios.id),
 		/** @llavePendiente personas.id */
 		personaId: uuid("persona_id"),
 		/** @llavePendiente dispositivos.id */
 		dispositivoId: uuid("dispositivo_id"),
-		/** @llavePendiente sesiones.id */
-		sesionId: uuid("sesion_id"),
+		sesionId: uuid("sesion_id").references((): AnyPgColumn => sesiones.id),
 		comandoId: uuid("comando_id"),
 		correoIntento: text("correo_intento"),
-		/** @llavePendiente departamentos.id */
-		departamentoId: uuid("departamento_id"),
+		departamentoId: uuid("departamento_id").references((): AnyPgColumn => departamentos.id),
 		modulo: text("modulo").notNull(),
 		origen: text("origen").notNull(),
 		accion: text("accion").notNull(),
@@ -399,8 +391,9 @@ export const avisos = pgTable(
 	"avisos",
 	{
 		id: uuid("id").primaryKey(),
-		/** @llavePendiente usuarios.id */
-		usuarioId: uuid("usuario_id").notNull(),
+		usuarioId: uuid("usuario_id")
+			.notNull()
+			.references((): AnyPgColumn => usuarios.id),
 		tipo: text("tipo").notNull(),
 		texto: text("texto").notNull(),
 		enlace: text("enlace"),
@@ -501,10 +494,8 @@ export const trabajosImpresion = pgTable(
 		mandadoEn: momento("mandado_en"),
 		terminadoEn: momento("terminado_en"),
 		error: text("error"),
-		/** @llavePendiente usuarios.id */
-		pedidoPor: uuid("pedido_por"),
-		/** @llavePendiente sesiones.id */
-		sesionId: uuid("sesion_id"),
+		pedidoPor: uuid("pedido_por").references((): AnyPgColumn => usuarios.id),
+		sesionId: uuid("sesion_id").references((): AnyPgColumn => sesiones.id),
 		...columnasComunes(),
 	},
 	(tabla) => [
@@ -567,3 +558,149 @@ export const restauracionesProbadas = pgTable(
 		check("restauraciones_probadas_quien", sql`${tabla.creadoPor} is not null`),
 	],
 );
+
+/** Los 15 departamentos de la fábrica: el catálogo fijo que siembra la migración. */
+export const departamentos = pgTable(
+	"departamentos",
+	{
+		id: uuid("id").primaryKey(),
+		clave: text("clave").notNull(),
+		nombre: text("nombre").notNull(),
+		grupo: text("grupo"),
+		orden: integer("orden").notNull(),
+		asignableEnAlta: boolean("asignable_en_alta").notNull(),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		uniqueIndex("departamentos_clave").on(tabla.clave),
+		check(
+			"departamentos_clave_valida",
+			sql.raw(
+				"clave in ('direccion', 'compras', 'catalogo', 'patronaje', 'ventas', 'linea', 'produccion', 'puerta_taller', 'calidad', 'mantenimiento', 'aduana', 'bodega', 'contaduria', 'personal', 'admin')",
+			),
+		),
+		check("departamentos_grupo", sql`${tabla.grupo} in ('operacion', 'taller', 'almacen', 'administracion')`),
+	],
+);
+
+/** Cada cuenta de Google que entra al sistema de la fábrica. */
+export const usuarios = pgTable(
+	"usuarios",
+	{
+		id: uuid("id").primaryKey(),
+		/** @llavePendiente personas.id */
+		personaId: uuid("persona_id"),
+		correo: text("correo").notNull(),
+		googleSub: text("google_sub"),
+		estado: text("estado").notNull(),
+		esDuena: boolean("es_duena").notNull().default(false),
+		esSoporte: boolean("es_soporte").notNull().default(false),
+		nombre: text("nombre"),
+		/** @llavePendiente autorizaciones.id */
+		autorizacionId: uuid("autorizacion_id"),
+		activadaEn: momento("activada_en"),
+		activadaPor: uuid("activada_por").references((): AnyPgColumn => usuarios.id),
+		confirmadoConGoogleEn: momento("confirmado_con_google_en"),
+		bajaEn: momento("baja_en"),
+		bajaPor: uuid("baja_por").references((): AnyPgColumn => usuarios.id),
+		motivoBaja: text("motivo_baja"),
+		bajaConfirmadoConGoogleEn: momento("baja_confirmado_con_google_en"),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		check("usuarios_estado", sql`${tabla.estado} in ('solicitada', 'activa', 'rechazada', 'sin_acceso')`),
+		check("usuarios_persona", sql`${tabla.personaId} is not null or ${tabla.esSoporte}`),
+		check("usuarios_baja_confirmada", sql`${tabla.bajaEn} is null or ${tabla.bajaConfirmadoConGoogleEn} is not null`),
+		uniqueIndex("usuarios_persona_viva").on(tabla.personaId).where(sql`${tabla.estado} in ('solicitada', 'activa')`),
+		uniqueIndex("usuarios_correo_vivo").on(tabla.correo).where(sql`${tabla.estado} in ('solicitada', 'activa')`),
+		uniqueIndex("usuarios_google_sub").on(tabla.googleSub).where(sql`${tabla.estado} = 'activa'`),
+		uniqueIndex("usuarios_una_duena").on(tabla.esDuena).where(sql`${tabla.esDuena}`),
+	],
+);
+
+/** Qué departamentos tiene cada cuenta (la dueña no lleva renglones: los tiene todos). */
+export const usuarioDepartamentos = pgTable(
+	"usuario_departamentos",
+	{
+		id: uuid("id").primaryKey(),
+		usuarioId: uuid("usuario_id")
+			.notNull()
+			.references(() => usuarios.id),
+		departamentoId: uuid("departamento_id")
+			.notNull()
+			.references(() => departamentos.id),
+		ubicacionId: uuid("ubicacion_id").references(() => ubicaciones.id),
+		confirmadoConGoogleEn: momento("confirmado_con_google_en"),
+		...bajaSinReactivar(),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		uniqueIndex("usuario_departamentos_vigente")
+			.on(tabla.usuarioId, tabla.departamentoId)
+			.where(sql`${tabla.bajaEn} is null`),
+	],
+);
+
+/** Los permisos finos de una cuenta: ven sueldos y tarifas, imprimen guías. */
+export const permisosFinos = pgTable(
+	"permisos_finos",
+	{
+		id: uuid("id").primaryKey(),
+		usuarioId: uuid("usuario_id")
+			.notNull()
+			.references(() => usuarios.id),
+		permiso: text("permiso").notNull(),
+		...bajaSinReactivar(),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		check("permisos_finos_permiso", sql`${tabla.permiso} in ('ven_sueldos_y_tarifas', 'imprime_guias')`),
+		uniqueIndex("permisos_finos_vigente").on(tabla.usuarioId, tabla.permiso).where(sql`${tabla.bajaEn} is null`),
+	],
+);
+
+/** Cada entrada al sistema de la fábrica. La cookie lleva el identificador; aquí, solo su hash. */
+export const sesiones = pgTable(
+	"sesiones",
+	{
+		id: uuid("id").primaryKey(),
+		usuarioId: uuid("usuario_id")
+			.notNull()
+			.references(() => usuarios.id),
+		tokenHash: text("token_hash").notNull(),
+		ultimaActividadEn: momento("ultima_actividad_en").notNull(),
+		venceEn: momento("vence_en").notNull(),
+		ip: inet("ip"),
+		ciudadAproximada: text("ciudad_aproximada"),
+		agente: text("agente"),
+		aparato: text("aparato"),
+		huellaAparato: text("huella_aparato"),
+		esAparatoNuevo: boolean("es_aparato_nuevo").notNull().default(false),
+		/** @llavePendiente dispositivos.id */
+		dispositivoId: uuid("dispositivo_id"),
+		googleConfirmadoEn: momento("google_confirmado_en"),
+		cerradaEn: momento("cerrada_en"),
+		cerradaPor: uuid("cerrada_por").references(() => usuarios.id),
+		motivoCierre: text("motivo_cierre"),
+		creadoEn: momento("creado_en").notNull().defaultNow(),
+		actualizadoEn: momento("actualizado_en"),
+	},
+	(tabla) => [
+		uniqueIndex("sesiones_token").on(tabla.tokenHash),
+		index("sesiones_abiertas").on(tabla.usuarioId).where(sql`${tabla.cerradaEn} is null`),
+		index("sesiones_aparato").on(tabla.usuarioId, tabla.huellaAparato),
+		check(
+			"sesiones_motivo",
+			sql`${tabla.motivoCierre} in ('salio', 'inactividad', 'duracion_maxima', 'cerrada_por_otra_cuenta', 'acceso_quitado')`,
+		),
+		check("sesiones_cerrada_con_motivo", sql`(${tabla.cerradaEn} is null) = (${tabla.motivoCierre} is null)`),
+	],
+);
+
+/** Los intentos que llevan al `429`, para todas las instancias de la API. Es `UNLOGGED` (en la migración). */
+export const intentosRecientes = pgTable("intentos_recientes", {
+	clave: text("clave").primaryKey(),
+	ventanaInicio: momento("ventana_inicio").notNull(),
+	intentos: integer("intentos").notNull(),
+	bloqueadoHasta: momento("bloqueado_hasta"),
+});

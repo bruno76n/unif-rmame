@@ -10,14 +10,10 @@ import { crearBase } from "../base/conexion.ts";
 import { codigoDePostgres, enTransaccion } from "../base/transacciones.ts";
 import { ErrorDeApi } from "../http/errores.ts";
 import type { ContextoDeAccion } from "../modulos.ts";
+import { quienesDePrueba } from "../pruebas/cuentas-de-prueba.ts";
 import { mandarAccion } from "../pruebas/llamadas.ts";
 import { notas } from "../pruebas/modulos/prueba/tablas.ts";
-import {
-	crearServidorDePrueba,
-	encabezadosDeLaWeb,
-	quienesDePrueba,
-	type ServidorDePrueba,
-} from "../pruebas/servidor-de-prueba.ts";
+import { crearServidorDePrueba, encabezadosDeLaWeb, type ServidorDePrueba } from "../pruebas/servidor-de-prueba.ts";
 import { tomarVersion } from "./pisadas.ts";
 
 describe("una edición con versión vieja recibe 409 con la versión actual y sus datos recortados; un cambio en un renglón sube la versión del encabezado", () => {

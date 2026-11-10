@@ -9,7 +9,7 @@ import type { Almacen } from "../almacen.ts";
 import type { Base } from "../base/conexion.ts";
 import { enTransaccion } from "../base/transacciones.ts";
 import type { ContextoDeAccion, QuienEscribe, RegistroDeModulos } from "../modulos.ts";
-import { quienesDePrueba } from "./servidor-de-prueba.ts";
+import { quienesDePrueba } from "./cuentas-de-prueba.ts";
 
 /**
  * Corre `hacer` en una transacción con el contexto de una acción del módulo `prueba`.

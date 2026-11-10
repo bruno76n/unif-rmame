@@ -122,4 +122,11 @@ Lleva las columnas comunes; `creado_por` es la dueña.
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 5.*
+**Fase 5, parte 1.**
+
+- **Las tablas** `departamentos` y `permisos_finos` están en `apps/api/src/modulos/admin/tablas.ts` (migración `0011_cuentas.sql`). La app solo lee `departamentos`.
+- **Las claves** de los 15 departamentos viven en `clavesDeDepartamento` (`packages/compartido/src/contratos/admin/cuentas.ts`); `nucleo/acceso/departamentos.ts` las reusa y la tabla las repite en su CHECK. La siembra está en `modulos/admin/dominio/departamentos.ts`.
+- **`admin.cambiar_permiso_fino`** (`acciones/cambiar-permiso-fino.ts`): edita con la versión de la cuenta; si ya estaba así revisa la versión y responde sin escribir (`sinBitacora`). Su texto es el del aviso, con el nombre de la cuenta hasta que Personal dé el puesto en la fase 7.
+- **`admin.permisos_de`** (`lecturas/permisos-de.ts`): `leerPermisosDe` regresa `activa`, `es_duena`, `es_soporte`, los departamentos efectivos (con `ubicacion_id`) y los permisos finos; la dueña, todos sin renglones; una cuenta que no está activa, ninguno. Lo de los aparatos llega en la fase 6.
+- **Los lectores** de `departamentos`, `usuarios`, `usuario_departamentos`, `permisos_finos` y `sesiones` están en `modulos/admin/permisos.ts`.
+- **Las pruebas:** `acciones/cambiar-permiso-fino.prueba.ts` y `lecturas/cuentas.prueba.ts`.

@@ -74,7 +74,7 @@ describe("el correo sale por el simulador de Resend y, si falla, se reintenta", 
 		const [correo] = simulador.correos;
 		expect(correo).toMatchObject({
 			from: remitenteDeAvisos,
-			to: ["duena@alameda.invalid"],
+			to: ["carmen@uniformesalameda.mx"],
 			subject: "Ventas pide autorización: NC-0012",
 		});
 		expect(correo?.html).toContain('href="https://fabrica.prueba.invalid/direccion/autorizaciones/au-0028"');

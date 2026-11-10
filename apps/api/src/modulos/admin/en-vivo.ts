@@ -4,6 +4,10 @@
  *
  * `impresion.pedida` le avisa al puente de la impresora (`impresion`), que pide sus trabajos;
  * `impresion.terminada` le avisa a la sesión que pidió imprimir (`impresion_terminada`).
+ * Fase 5 · docs/modulos/admin/cuentas.md y docs/modulos/admin/permisos.md («Eventos»)
+ *
+ * `cuenta.acceso_quitado` les manda `sesion_cerrada` a las pantallas de esa cuenta; un cambio de
+ * departamentos o de permisos finos, `permisos_cambiados`, para que su menú cambie al momento.
  */
 
 import { z } from "zod";
@@ -20,6 +24,14 @@ const terminada = z.object({
 	texto: z.string(),
 });
 
+/** Los datos de los eventos de una cuenta. */
+const deUnaCuenta = z.object({ usuario_id: z.uuid() });
+
+/** A las sesiones de una cuenta: `permisos_cambiados`. */
+const permisosCambiados: EnVivo = (evento) => [
+	{ para: { usuarioId: deUnaCuenta.parse(evento.datos).usuario_id }, nombre: "permisos_cambiados", datos: {} },
+];
+
 /** Por tipo de evento, lo que manda en vivo `admin`. */
 export const enVivoDeAdmin: Record<string, EnVivo> = {
 	"impresion.pedida": (evento) => {
@@ -34,4 +46,13 @@ export const enVivoDeAdmin: Record<string, EnVivo> = {
 		const { sesion_id, ...aviso } = datos;
 		return [{ para: { sesionId: sesion_id }, nombre: "impresion_terminada", datos: aviso }];
 	},
+	"cuenta.acceso_quitado": (evento) => [
+		{
+			para: { usuarioId: deUnaCuenta.parse(evento.datos).usuario_id },
+			nombre: "sesion_cerrada",
+			datos: { motivo: "acceso_quitado" },
+		},
+	],
+	"cuenta.departamentos_cambiados": permisosCambiados,
+	"cuenta.permisos_cambiados": permisosCambiados,
 };

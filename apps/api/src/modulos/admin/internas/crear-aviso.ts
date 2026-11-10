@@ -16,10 +16,7 @@ import { canalDeAvisos } from "../../../nucleo/sincronizacion/eventos-en-vivo.ts
 import { encolar } from "../../../nucleo/trabajos/encolar.ts";
 import { avisos } from "../tablas.ts";
 
-/**
- * La lectura que resuelve una regla de destinatarios en ids de cuentas activas. La da `usuarios` desde la
- * fase 5; en esta fase la pone el servidor de prueba con sus cuentas.
- */
+/** La lectura que resuelve una regla de destinatarios en ids de cuentas activas: `lecturas/cuentas-por-regla.ts`. */
 export const lecturaDeCuentasPorRegla = "admin.cuentas_por_regla";
 
 /** La tarea del worker que manda los correos. */

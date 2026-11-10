@@ -69,8 +69,18 @@ describe("el recordatorio avisa a su tiempo y no antes", () => {
 		return rows;
 	}
 
-	/** Una vuelta del recordatorio a la hora `ahora`. */
-	const recordar = () => correrTrabajo(dependencias, recordatorioRestauracion, {});
+	/**
+	 * Una vuelta del recordatorio a la hora `ahora`. Los avisos nacen con la hora de la base: los que deja la
+	 * vuelta se llevan a `ahora`, para que la cuenta de días no dependa del reloj de la máquina.
+	 */
+	async function recordar(): Promise<void> {
+		const { rows } = await servidor.base.dueno.query("SELECT id FROM avisos");
+		await correrTrabajo(dependencias, recordatorioRestauracion, {});
+		await servidor.base.dueno.query("UPDATE avisos SET creado_en = $1 WHERE NOT (id = ANY($2::uuid[]))", [
+			ahora.toString(),
+			rows.map((renglon) => renglon.id),
+		]);
+	}
 
 	it("sin pruebas, cuenta desde el primer respaldo: a los 80 días no avisa; a los 81, sí, y no repite antes de 7 días", async () => {
 		await respaldo("2026-08-21T08:00:00Z");

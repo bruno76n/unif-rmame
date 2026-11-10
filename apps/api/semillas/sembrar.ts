@@ -10,12 +10,13 @@
 import { abrirConexiones, type Base, crearBase } from "../src/nucleo/base/conexion.ts";
 import { migrarYSembrar } from "../src/nucleo/base/migrar.ts";
 import { leerEntorno } from "../src/nucleo/entorno.ts";
+import { cargarCuentasDeLaMuestra } from "./cuentas.ts";
 
 /** Una carga de la muestra: lo que un módulo mete en la base para que se vea como la muestra. */
 export type CargaDeLaMuestra = (base: Base) => Promise<void>;
 
-/** Las cargas de todos los módulos, en orden de dependencia. Todavía no hay módulos. */
-export const cargasDeLaMuestra: CargaDeLaMuestra[] = [];
+/** Las cargas de todos los módulos, en orden de dependencia. */
+export const cargasDeLaMuestra: readonly CargaDeLaMuestra[] = [cargarCuentasDeLaMuestra];
 
 if (import.meta.main) {
 	const entorno = leerEntorno();

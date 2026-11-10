@@ -125,7 +125,7 @@ Van en la sección `parametro`. Cada tipo que agregue otro módulo trae su propi
   - Escribe uno por cuenta, con un candado por cuenta, tipo y documento, y no repite uno sin leer.
   - Decide `por_correo` con su parámetro (`sinCorreo` lo apaga para el aviso de un correo que falló).
   - Hace `pg_notify('ua_avisos', id)` y encola `admin.enviar_correos` si alguno va por correo.
-- **Las dos lecturas de cuentas** (`admin.cuentas_por_regla` y `admin.correo_de_cuenta`) las da `usuarios` en la fase 5. En esta fase las pone el servidor de prueba con sus cuentas (decisión 359).
+- **Las dos lecturas de cuentas** (`admin.cuentas_por_regla` y `admin.correo_de_cuenta`) las da `usuarios` desde la fase 5 (ver [cuentas](cuentas.md#cómo-está-hecho)).
 - **La alerta.** `alerta.registrada` se vuelve `alerta_seguridad` a la dueña en `modulos/admin/al-evento.ts`: lo que hace un módulo al llegar un tipo de evento (`alEvento`), dentro del proceso de la bandeja.
 - **`trabajo_fallido`** a soporte lo crea el worker con `admin.crear_aviso`, «{trabajo} falló: {error}» (`nucleo/trabajos/trabajador.ts`).
 - **`admin.marcar_aviso_leido`** está en `acciones/marcar-aviso-leido.ts`.

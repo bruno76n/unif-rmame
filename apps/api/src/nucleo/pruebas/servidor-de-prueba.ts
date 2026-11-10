@@ -2,8 +2,8 @@
  * El servidor de las pruebas de la fase 3: la API con el módulo de prueba, sobre la base copia del archivo.
  * Fase 3 · docs/fases/03-api-protocolo-e-idempotencia.md («Cómo se construye»)
  *
- * Quién llama sale del encabezado `x-prueba-quien`, que solo existe aquí: la sesión y la llave llegan en
- * las fases 5 y 6. El permiso de prueba revisa el departamento, el permiso fino, `solo_duena` y
+ * Quién llama sale del encabezado `x-prueba-quien`, que solo existe aquí, y su «Confirmar con Google», de
+ * `x-prueba-google`: la sesión y la llave llegan en las fases 5 y 6. El permiso de prueba revisa el departamento, el permiso fino, `solo_duena` y
  * «Confirmar con Google»; la bitácora y los eventos de prueba cuentan cuántas veces se piden.
  */
 
@@ -23,79 +23,13 @@ import { type Semilla, sembrarSistema } from "../base/siembra.ts";
 import { ErrorDeApi } from "../http/errores.ts";
 import { cargarModulos, type RegistroDeModulos, registrarModulos } from "../modulos.ts";
 import { crearAvisosEnVivo } from "../sincronizacion/eventos-en-vivo.ts";
+import { quienesDePrueba } from "./cuentas-de-prueba.ts";
 import * as tablasDePrueba from "./modulos/prueba/tablas.ts";
 
 /** Los dominios de las pruebas. */
 export const dominios = {
 	DOMINIO_WEB: "https://fabrica.prueba.invalid",
 	DOMINIO_TALLER: "https://taller.prueba.invalid",
-};
-
-/** Quién puede llamar en las pruebas, por el valor de `x-prueba-quien`. */
-export const quienesDePrueba: Record<string, QuienLlama> = {
-	duena: {
-		tipo: "cuenta",
-		usuarioId: "01936f2e-0000-7000-8000-000000000001",
-		sesionId: "01936f2e-0000-7000-8000-000000000011",
-		esDuena: true,
-		departamentos: [],
-		permisosFinos: [],
-		confirmadoConGoogleEn: undefined,
-	},
-	ventas: {
-		tipo: "cuenta",
-		usuarioId: "01936f2e-0000-7000-8000-000000000002",
-		sesionId: "01936f2e-0000-7000-8000-000000000012",
-		esDuena: false,
-		departamentos: ["ventas"],
-		permisosFinos: [],
-		confirmadoConGoogleEn: undefined,
-	},
-	admin: {
-		tipo: "cuenta",
-		usuarioId: "01936f2e-0000-7000-8000-000000000004",
-		sesionId: "01936f2e-0000-7000-8000-000000000014",
-		esDuena: false,
-		departamentos: ["admin"],
-		permisosFinos: [],
-		confirmadoConGoogleEn: undefined,
-	},
-	aduana: {
-		tipo: "cuenta",
-		usuarioId: "01936f2e-0000-7000-8000-000000000003",
-		sesionId: "01936f2e-0000-7000-8000-000000000013",
-		esDuena: false,
-		departamentos: ["aduana"],
-		permisosFinos: [],
-		confirmadoConGoogleEn: undefined,
-	},
-	soporte: {
-		tipo: "cuenta",
-		usuarioId: "01936f2e-0000-7000-8000-000000000005",
-		sesionId: "01936f2e-0000-7000-8000-000000000015",
-		esDuena: false,
-		departamentos: ["admin"],
-		permisosFinos: [],
-		confirmadoConGoogleEn: undefined,
-	},
-	puente: {
-		tipo: "aparato",
-		dispositivoId: "01936f2e-0000-7000-8000-000000000031",
-		tipoDeAparato: "puente",
-		personaId: undefined,
-	},
-	otro_puente: {
-		tipo: "aparato",
-		dispositivoId: "01936f2e-0000-7000-8000-000000000032",
-		tipoDeAparato: "puente",
-		personaId: undefined,
-	},
-	tablet: {
-		tipo: "aparato",
-		dispositivoId: "01936f2e-0000-7000-8000-000000000021",
-		tipoDeAparato: "tablet",
-		personaId: undefined,
-	},
 };
 
 /** El permiso de prueba: la misma revisión que hará la fase 5, con los datos de `quienesDePrueba`. */
@@ -120,34 +54,13 @@ async function revisarPermisoDePrueba(quien: QuienLlama, permiso: Permiso, ahora
 	}
 }
 
-/** Las cuentas de prueba que son de soporte técnico. */
-const cuentasDeSoporte = ["soporte"];
-
 /**
- * Las cuentas de prueba que cumplen una regla de destinatarios: la dueña, soporte o las que tienen un
- * departamento. Es lo que dará la lectura de `usuarios` en la fase 5.
- * @param regla `duena`, `soporte` o `departamento:{clave}`.
- */
-export function cuentasDePruebaPorRegla(regla: string): string[] {
-	return Object.entries(quienesDePrueba).flatMap(([nombre, quien]) => {
-		if (quien.tipo !== "cuenta") return [];
-		const cumple =
-			regla === "duena"
-				? quien.esDuena
-				: regla === "soporte"
-					? cuentasDeSoporte.includes(nombre)
-					: quien.departamentos.includes(regla.replace("departamento:", ""));
-		return cumple ? [quien.usuarioId] : [];
-	});
-}
-
-/**
- * El registro con las lecturas que darán `usuarios` (fase 5) y `dispositivos` (fase 6): las cuentas de una
- * regla, el correo de una cuenta (`{nombre}@alameda.invalid`) y los datos de un aparato.
+ * El registro con la lectura que dará `dispositivos` (fase 6): los datos de un aparato. Las cuentas ya son
+ * las de `usuarios`, que la base plantilla trae (`cuentas-de-prueba.ts`).
  * @param registro Lo que registraron los módulos.
  * @param aparatos Los aparatos de prueba.
  */
-export function conCuentasDePrueba(
+export function conAparatosDePrueba(
 	registro: RegistroDeModulos,
 	aparatos: ReadonlyMap<string, AparatoDePrueba> = aparatosDePrueba(),
 ): RegistroDeModulos {
@@ -156,18 +69,6 @@ export function conCuentasDePrueba(
 		const id =
 			typeof datos === "object" && datos !== null && "dispositivo_id" in datos ? String(datos.dispositivo_id) : "";
 		return aparatos.get(id);
-	});
-	lecturas.set("admin.cuentas_por_regla", async (_contexto, datos) => {
-		const regla = typeof datos === "object" && datos !== null && "regla" in datos ? String(datos.regla) : "";
-		return cuentasDePruebaPorRegla(regla);
-	});
-	lecturas.set("admin.correo_de_cuenta", async (_contexto, datos) => {
-		const id = typeof datos === "object" && datos !== null && "usuario_id" in datos ? datos.usuario_id : undefined;
-		const nombre = Object.entries(quienesDePrueba).find(
-			([, quien]) => quien.tipo === "cuenta" && quien.usuarioId === id,
-		)?.[0];
-		if (nombre === undefined) throw new Error(`no hay cuenta de prueba ${String(id)}`);
-		return `${nombre}@alameda.invalid`;
 	});
 	return { ...registro, lecturas };
 }
@@ -293,7 +194,7 @@ export async function crearServidorDePrueba(
 	const base = opciones.otraInstanciaDe?.base ?? (await crearBaseConTablasDePrueba(modulosDePrueba.semillas));
 	const deLaApi = await cargarModulos(join(import.meta.dirname, "../../modulos"));
 	const aparatos = aparatosDePrueba();
-	const registro = conCuentasDePrueba(registrarModulos([...deLaApi.modulos, ...modulosDePrueba.modulos]), aparatos);
+	const registro = conAparatosDePrueba(registrarModulos([...deLaApi.modulos, ...modulosDePrueba.modulos]), aparatos);
 	const pedidos: ServidorDePrueba["pedidos"] = { bitacora: [], eventos: [] };
 	const lineas: string[] = [];
 	const parametros = { versionMinima: "1.0.0" };
@@ -301,7 +202,11 @@ export async function crearServidorDePrueba(
 	const servicios: ServiciosDelServidor = {
 		identificar: async (peticion) => {
 			const valor = peticion.headers["x-prueba-quien"];
-			return typeof valor === "string" ? quienesDePrueba[valor] : undefined;
+			const quien = typeof valor === "string" ? quienesDePrueba[valor] : undefined;
+			// `x-prueba-google`: el momento en que la sesión de prueba confirmó con Google.
+			const google = peticion.headers["x-prueba-google"];
+			if (quien?.tipo !== "cuenta" || typeof google !== "string") return quien;
+			return { ...quien, confirmadoConGoogleEn: Temporal.Instant.from(google) };
 		},
 		revisarPermiso: revisarPermisoDePrueba,
 		versionMinimaDelParametro: async () => parametros.versionMinima,

@@ -1,0 +1,85 @@
+/**
+ * Ayudas para probar los avisos en vivo: escuchar `GET /v1/eventos`, esperar a que llegue algo y procesar
+ * la bandeja como el worker.
+ * Fase 4 · docs/fases/04-servicios-comunes.md (parte 1)
+ */
+
+import { join } from "node:path";
+import { Temporal } from "temporal-polyfill";
+import { expect } from "vitest";
+import { crearBase } from "../base/conexion.ts";
+import { cargarModulos, registrarModulos } from "../modulos.ts";
+import { procesarEventos, repartirConLosModulos } from "../trabajos/procesar-eventos.ts";
+import type { ServidorDePrueba } from "./servidor-de-prueba.ts";
+
+/** Lo que llega por una conexión de eventos: cada bloque, ya separado. */
+export interface Escucha {
+	bloques: string[];
+	/** Los eventos con nombre, con sus datos leídos. */
+	eventos: () => { nombre: string; datos: unknown }[];
+	cerrar: () => void;
+}
+
+/**
+ * Abre `GET /v1/eventos` en un servidor que escucha de verdad, y junta lo que llega.
+ * @param direccion La dirección del servidor.
+ * @param quien Quién se conecta (`x-prueba-quien`).
+ */
+export async function escuchar(direccion: string, quien: string): Promise<Escucha> {
+	const control = new AbortController();
+	const respuesta = await fetch(`${direccion}/v1/eventos`, {
+		headers: { "x-prueba-quien": quien },
+		signal: control.signal,
+	});
+	expect(respuesta.status).toBe(200);
+	expect(respuesta.headers.get("content-type")).toBe("text/event-stream");
+	const bloques: string[] = [];
+	const lector = respuesta.body?.getReader();
+	const decodificador = new TextDecoder();
+	let resto = "";
+	(async () => {
+		for (;;) {
+			const leido = await lector?.read().catch(() => undefined);
+			if (leido === undefined || leido.done) return;
+			resto += decodificador.decode(leido.value, { stream: true });
+			const partes = resto.split("\n\n");
+			resto = partes.pop() ?? "";
+			bloques.push(...partes);
+		}
+	})();
+	return {
+		bloques,
+		eventos: () =>
+			bloques.flatMap((bloque) => {
+				const nombre = /^event: (.+)$/m.exec(bloque)?.[1];
+				const datos = /^data: (.+)$/m.exec(bloque)?.[1];
+				return nombre === undefined || datos === undefined ? [] : [{ nombre, datos: JSON.parse(datos) }];
+			}),
+		cerrar: () => control.abort(),
+	};
+}
+
+/** Espera hasta que se cumpla algo, o falla a los dos segundos. */
+export async function esperarA(condicion: () => boolean): Promise<void> {
+	for (let intento = 0; intento < 100 && !condicion(); intento++) {
+		await new Promise((listo) => setTimeout(listo, 20));
+	}
+	expect(condicion()).toBe(true);
+}
+
+/**
+ * Procesa la bandeja como lo hace el worker: reparte y hace `NOTIFY`.
+ * @param servidor El servidor de prueba, por su base.
+ */
+export async function procesarComoElWorker(servidor: ServidorDePrueba): Promise<void> {
+	const deLaApi = await cargarModulos(join(import.meta.dirname, "../../modulos"));
+	const deLasPruebas = await cargarModulos(join(import.meta.dirname, "modulos"));
+	await procesarEventos({
+		base: crearBase(servidor.base.app),
+		repartir: repartirConLosModulos(registrarModulos([...deLaApi.modulos, ...deLasPruebas.modulos]), () =>
+			Temporal.Now.instant(),
+		),
+		avisarFalla: async () => undefined,
+		ahora: () => Temporal.Now.instant(),
+	});
+}

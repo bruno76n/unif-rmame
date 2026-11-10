@@ -13,16 +13,21 @@
 
 import { definirModulo } from "../../nucleo/modulos.ts";
 import { accionAgregarALista } from "./acciones/agregar-a-lista.ts";
+import { accionCambiarDepartamentos } from "./acciones/cambiar-departamentos.ts";
 import { accionCambiarParametro } from "./acciones/cambiar-parametro.ts";
+import { accionCambiarPermisoFino } from "./acciones/cambiar-permiso-fino.ts";
 import { accionConfirmarImpresion } from "./acciones/confirmar-impresion.ts";
+import { accionCrearCuenta } from "./acciones/crear-cuenta.ts";
 import { accionEditarEmpresa } from "./acciones/editar-empresa.ts";
 import { accionGuardarImpresora } from "./acciones/guardar-impresora.ts";
 import { accionMarcarAlertaRevisada } from "./acciones/marcar-alerta-revisada.ts";
 import { accionMarcarAvisoLeido } from "./acciones/marcar-aviso-leido.ts";
+import { accionQuitarAcceso } from "./acciones/quitar-acceso.ts";
 import { accionRegistrarRestauracion } from "./acciones/registrar-restauracion.ts";
 import { accionTrabajosImpresion } from "./acciones/trabajos-impresion.ts";
 import { alEventoDeAdmin } from "./al-evento.ts";
 import { semillaDeContadores } from "./dominio/contadores.ts";
+import { semillaDeDepartamentos } from "./dominio/departamentos.ts";
 import { enVivoDeAdmin } from "./en-vivo.ts";
 import { crearAviso } from "./internas/crear-aviso.ts";
 import { escribirBitacora } from "./internas/escribir-bitacora.ts";
@@ -32,7 +37,10 @@ import { ligarArchivo } from "./internas/ligar-archivo.ts";
 import { mandarAImprimir } from "./internas/mandar-a-imprimir.ts";
 import { registrarRespaldo } from "./internas/registrar-respaldo.ts";
 import { tomarFolio } from "./internas/tomar-folio.ts";
+import { correoDeCuenta } from "./lecturas/correo-de-cuenta.ts";
+import { cuentasPorRegla } from "./lecturas/cuentas-por-regla.ts";
 import { parametro } from "./lecturas/parametro.ts";
+import { permisosDe } from "./lecturas/permisos-de.ts";
 import { siguienteFolio } from "./lecturas/siguiente-folio.ts";
 import { veDocumento } from "./lecturas/ve-documento.ts";
 import { semillaDeParametrosDeAdmin } from "./parametros.ts";
@@ -56,6 +64,10 @@ export default definirModulo({
 		accionTrabajosImpresion,
 		accionConfirmarImpresion,
 		accionRegistrarRestauracion,
+		accionCrearCuenta,
+		accionQuitarAcceso,
+		accionCambiarDepartamentos,
+		accionCambiarPermisoFino,
 	],
 	internas: {
 		guardar_evento: guardarEvento,
@@ -67,8 +79,15 @@ export default definirModulo({
 		mandar_a_imprimir: mandarAImprimir,
 		registrar_respaldo: registrarRespaldo,
 	},
-	lecturas: { parametro, siguiente_folio: siguienteFolio, ve_documento: veDocumento },
-	semillas: [semillaDeContadores, semillaDeParametrosDeAdmin],
+	lecturas: {
+		parametro,
+		siguiente_folio: siguienteFolio,
+		ve_documento: veDocumento,
+		permisos_de: permisosDe,
+		cuentas_por_regla: cuentasPorRegla,
+		correo_de_cuenta: correoDeCuenta,
+	},
+	semillas: [semillaDeDepartamentos, semillaDeContadores, semillaDeParametrosDeAdmin],
 	trabajos: [depurarEventos, enviarCorreos, respaldoSemanal, recordatorioRestauracion],
 	lectores: lectoresDeAdmin,
 	alEvento: alEventoDeAdmin,
