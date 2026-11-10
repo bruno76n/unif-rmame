@@ -13,7 +13,7 @@ Qué es, para quién y qué entra está en [PROYECTO.md](docs/PROYECTO.md).
 
 ## Modo y órdenes vigentes
 
-**Modo: supervisado.** Cada cambio de modo es una orden nueva aquí, con su fecha. Qué hace cada modo está en [forma de trabajo](docs/trabajo/FORMA-DE-TRABAJO.md#modos).
+**Modo: autónomo.** Cada cambio de modo es una orden nueva aquí, con su fecha. Qué hace cada modo está en [forma de trabajo](docs/trabajo/FORMA-DE-TRABAJO.md#modos).
 
 | # | Orden | Desde | Decisión |
 |---|---|---|---|
@@ -24,9 +24,10 @@ Qué es, para quién y qué entra está en [PROYECTO.md](docs/PROYECTO.md).
 | 5 | Bucle de resolución por problema: hasta tres intentos con enfoques distintos; al tercero, en modo supervisado se pregunta y en autónomo se decide y se anota. | 9 nov 2026 | 164 |
 | 6 | Los registros (bitácora, sesiones, `REGISTROS.md`, «Cómo está hecho») nunca cuentan como error del código: si falta algo, se escribe y ya. | 9 nov 2026 | 165 |
 | 7 | Documentación oficial primero, y todo en local hasta lanzar. | 8 nov 2026 | 172 |
-| 8 | Modo supervisado. | 9 nov 2026 | 174 |
+| 8 | Modo supervisado; la reemplaza la orden 11. | 9 nov 2026 | 174 |
 | 9 | Se trabaja en sesiones de Claude Code en la nube, sobre el repositorio de GitHub; la Mac, cuando Bruno decida. | 10 nov 2026 | 319 |
 | 10 | En la nube, cada commit se empuja en seguida, y `main` solo cambia al cerrar la fase, con el visto bueno de Bruno. | 10 nov 2026 | 321 |
+| 11 | Modo autónomo, hasta el final: sin esperar el «sí» de cada parte ni de cada fase; lo decidido se anota en «Decisiones autónomas». | 10 nov 2026 | 323 |
 
 Cada orden es también una decisión, con su porqué, en [DECISIONES.md](docs/DECISIONES.md).
 

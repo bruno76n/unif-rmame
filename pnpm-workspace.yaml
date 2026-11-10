@@ -1,0 +1,11 @@
+# Unifórmame · el workspace de pnpm.
+# Fase 1 · docs/cimientos/ESTRUCTURA.md
+# Cada carpeta de apps/ y packages/ es un proyecto; las carpetas nacen en la fase que las llena.
+packages:
+  - "apps/*"
+  - "packages/*"
+
+# Las versiones se escriben exactas a mano (docs/cimientos/ARQUITECTURA.md); pnpm add también las guarda exactas.
+saveExact: true
+# Node fuera de la versión de engines detiene la instalación.
+engineStrict: true

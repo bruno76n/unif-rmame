@@ -173,4 +173,23 @@ Cómo encaja en el trabajo de cada parte está en la [forma de trabajo](../traba
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 1: el árbol real, los scripts de `package.json` y cómo se calcula la huella del sello. El script que revisa las carpetas de cada trabajador se agrega en la fase 19.*
+**El árbol real** (fase 1). Solo existen las carpetas que ya tienen algo; las demás nacen en la fase que las llena.
+
+```text
+uniformame/
+├── AGENTS.md · CLAUDE.md
+├── package.json               versiones fijas, packageManager y engines
+├── pnpm-workspace.yaml        apps/* y packages/*; engineStrict y saveExact
+├── pnpm-lock.yaml
+├── tsconfig.base.json         TypeScript estricto, solo sintaxis borrable
+├── tsconfig.json              los scripts y los paquetes, con los tipos de Node
+├── biome.json
+├── vitest.config.ts           toma los *.prueba.ts
+├── .env.ejemplo · .gitignore
+├── .claude/                   rules/ y agents/
+├── docs/
+└── scripts/
+    └── versiones.prueba.ts    las versiones contra la tabla del stack
+```
+
+**Los scripts de `package.json`** (fase 1, parte 1): `pnpm estilo` (Biome sobre todo el repositorio), `pnpm tipos` (`tsc` sin emitir) y `pnpm pruebas` (todas las pruebas con Vitest).

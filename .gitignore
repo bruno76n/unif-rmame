@@ -1,0 +1,6 @@
+# Unifórmame · lo que nunca entra a git (docs/fases/01-repositorio-reglas-y-paquete-compartido.md, parte 1)
+node_modules/
+.env
+.revision/
+.claude/worktrees/
+.claude/estado/

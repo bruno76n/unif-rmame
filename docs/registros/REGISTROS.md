@@ -11,7 +11,7 @@ Estos registros nunca cuentan como error del código: si les falta algo, se escr
 
 Lo que falta decidir o investigar, y en qué fase se resuelve. Lo del negocio ya tiene su valor inicial configurable, así que ninguno detiene una fase antes de la suya.
 
-Ninguno por ahora.
+- **La red del entorno «Unifórmame»** (antes de la fase 2): Claude Code lo creó con red limitada (`nodejs.org` y los registros de paquetes); la [forma de trabajo](../trabajo/FORMA-DE-TRABAJO.md#el-entorno-de-la-nube) pide «Trusted», que también deja pasar las documentaciones oficiales y Docker Hub. Bruno lo cambia en Settings → Environments y abre las sesiones que siguen en ese entorno.
 
 ## Para después
 
@@ -53,3 +53,5 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 
 | Fecha | Fase | Qué se decidió | Opciones | Elegida y por qué | Revisada |
 |---|---|---|---|---|---|
+| 10 nov 2026 | 1 | Cómo empezar con el repositorio vacío y la sesión en el entorno «Default» (decisión 324) | Esperar a que Bruno suba `main` y abra otra sesión · subir el `.zip` como primer commit de la rama de la fase y correr el script del entorno en la sesión | La segunda: Bruno pidió no esperar, y el script es el mismo de la forma de trabajo | No |
+| 10 nov 2026 | 1 | `@types/node` en el stack (decisión 325) | Sin tipos de Node (los scripts no compilan con `strict`) · `@types/node` 26.6.6 | La segunda: es la única forma de tipar `node:fs` y los demás módulos de Node | No |

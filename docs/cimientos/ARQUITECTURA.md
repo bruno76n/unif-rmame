@@ -54,6 +54,7 @@ Versiones exactas al 9 de noviembre de 2026. Se instalan fijas (sin `^`); cambia
 | Correr JavaScript y TypeScript | Node.js (LTS) | 26.13.0 | https://nodejs.org/docs/latest-v26.x/api/ |
 | Monorepo y paquetes | pnpm (workspaces) | 12.18.0 | https://pnpm.io/ |
 | Tipos | TypeScript | 7.0.2 | https://www.typescriptlang.org/docs/ |
+| Tipos de Node para TypeScript (`node:fs`, `node:child_process`…) | `@types/node` | 26.6.6 | https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/node |
 | Estilo y errores comunes | Biome | 2.6.6 | https://biomejs.dev/ |
 | Formas y validación | Zod | 4.6.7 | https://zod.dev/ |
 | Fechas y horas | Temporal, con `temporal-polyfill` | 1.0.8 | https://tc39.es/proposal-temporal/docs/ |
@@ -167,4 +168,13 @@ Todo se construye y se prueba en local hasta la puesta en marcha (fase 23). «En
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 1: el `package.json` raíz con las versiones fijas y la configuración de TypeScript, Biome y Vitest. Cómo arranca `pnpm local` lo agrega la fase 2, con la base, y lo completa cada fase que le suma una pieza.*
+**Fase 1 · el monorepo y sus herramientas.**
+
+- **Las versiones fijas** viven en el `package.json` de cada proyecto, sin `^` ni `~`. El `package.json` raíz fija pnpm con `packageManager: "pnpm@12.18.0"` y Node con `engines.node: "26.13.0"`; `pnpm-workspace.yaml` pone `engineStrict: true` (otro Node detiene la instalación) y `saveExact: true`. El lockfile registra también la versión de pnpm.
+- **La prueba que lo vigila:** `scripts/versiones.prueba.ts` lee las tablas de [el stack](#el-stack) de este archivo, la única fuente de las versiones, y falla si una dependencia de cualquier `package.json` lleva rango o no es la de la tabla, si el lockfile instaló otra, o si el script de [el entorno de la nube](../trabajo/FORMA-DE-TRABAJO.md#el-entorno-de-la-nube) pide otro Node u otro pnpm. Una librería nueva entra primero a la tabla.
+- **TypeScript:** `tsconfig.base.json` es estricto (`strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, sin locales ni parámetros sin usar) y solo acepta sintaxis borrable (`erasableSyntaxOnly`, `verbatimModuleSyntax`, `allowImportingTsExtensions`): los imports llevan `.ts` y Node corre el archivo tal cual. `tsconfig.json` de la raíz lo extiende para los scripts y los paquetes, con los tipos de Node; `pnpm tipos` corre `tsc` sin emitir.
+- **Biome** (`biome.json`): el preset recomendado, con `noExplicitAny` y `noNonNullAssertion` como error, sangría con tabuladores y comillas dobles. Revisa el código y la configuración; los `.md` los revisa `pnpm docs:revisar`, y la muestra visual no se toca.
+- **Vitest** (`vitest.config.ts`): una sola configuración para el monorepo, que toma los `*.prueba.ts` y `*.prueba.tsx` junto a su código.
+- **`.env.ejemplo`** lista las variables de [infraestructura](INFRAESTRUCTURA.md#las-variables-de-entorno), sin valores; `.gitignore` deja fuera `.env`, `.revision/`, `.claude/worktrees/`, `.claude/estado/` y `node_modules/`.
+
+Cómo arranca `pnpm local` lo agrega la fase 2, con la base, y lo completa cada fase que le suma una pieza.

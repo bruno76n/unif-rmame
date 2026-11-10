@@ -11,3 +11,4 @@ La línea de la bitácora se escribe al final, con el resultado ya conocido. Esc
 
 | Fecha | Fase | Parte | Sesión |
 |---|---|---|---|
+| 10 nov 2026 | 1 | 1 · El monorepo y sus herramientas | [2026-11-10-fase-01](sesiones/2026-11-10-fase-01.md) |
