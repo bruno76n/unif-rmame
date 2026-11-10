@@ -5,6 +5,7 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { fotoCompleta } from "../../../nucleo/pruebas/bajada-de-prueba.ts";
 import { quienesDePrueba } from "../../../nucleo/pruebas/cuentas-de-prueba.ts";
 import { conGoogle, mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import { nuevaPersona } from "../../../nucleo/pruebas/personas-de-prueba.ts";
@@ -71,5 +72,17 @@ describe("revocar la tablet pide decir si se perdió; con «anular los PIN», ni
 			[tablet],
 		);
 		expect(bitacora.rows[0]?.despues).toMatchObject({ revocado: true, pines_anulados: 2 });
+		// La tablet que la reemplaza en el Taller (aquí, la misma ya sin revocar) baja los PIN anulados y a
+		// ninguna de esas personas: nadie entra con ellos.
+		await servidor.base.dueno.query(
+			"UPDATE dispositivos SET baja_en = NULL, baja_por = NULL, motivo_baja = NULL, baja_confirmado_con_google_en = NULL WHERE id = $1",
+			[tablet],
+		);
+		const { cambios } = await fotoCompleta(servidor);
+		const suyos = cambios.filter(
+			(cambio) => cambio.tabla === "pines" && personas.includes(String(cambio.datos?.persona_id)),
+		);
+		expect(suyos.map((cambio) => cambio.datos?.estado)).toEqual(["anulado", "anulado"]);
+		expect(cambios.some((cambio) => cambio.tabla === "personas" && personas.includes(cambio.id))).toBe(false);
 	});
 });
