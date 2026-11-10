@@ -108,6 +108,8 @@ export interface ContextoDeAccion {
 	almacen: Almacen | undefined;
 	/** Los campos de sueldo o de tarifa que declaran los módulos, para la bitácora. */
 	camposDeSueldo: ReadonlySet<string>;
+	/** Lo registrado por los módulos: el reintento de un comando apartado corre la acción del comando. */
+	registro: RegistroDeModulos;
 }
 
 /** Una consulta sensible que se apunta en la bitácora: qué se consultó y de qué documento. */
@@ -137,6 +139,11 @@ export interface SalidaDeAccion<Resultado> {
 	 * renglón de bitácora. Sin esto, el corredor exige al menos uno.
 	 */
 	sinBitacora?: true;
+	/**
+	 * Lo que llegó de un aparato y no cuadra: se aplicó igual y abrió esta excepción (`no_cuadra`,
+	 * `cancelacion_tardia`…). La subida lo contesta como `excepcion` (ver docs/cimientos/SINCRONIZACION.md).
+	 */
+	excepcion?: { id: string; codigo: string };
 }
 
 /** Una acción ya registrada: su contrato y lo que hace (su paso 7), con los datos ya validados. */

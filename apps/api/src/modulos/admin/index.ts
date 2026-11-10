@@ -21,6 +21,7 @@ import { accionCerrarMiSesion } from "./acciones/cerrar-mi-sesion.ts";
 import { accionCerrarSesiones } from "./acciones/cerrar-sesiones.ts";
 import { accionConfirmarImpresion } from "./acciones/confirmar-impresion.ts";
 import { accionCrearCuenta } from "./acciones/crear-cuenta.ts";
+import { accionDescartarComandoApartado } from "./acciones/descartar-comando-apartado.ts";
 import { accionEditarEmpresa } from "./acciones/editar-empresa.ts";
 import { accionGenerarCodigoRegistro } from "./acciones/generar-codigo-registro.ts";
 import { accionGuardarImpresora } from "./acciones/guardar-impresora.ts";
@@ -28,6 +29,7 @@ import { accionMarcarAlertaRevisada } from "./acciones/marcar-alerta-revisada.ts
 import { accionMarcarAvisoLeido } from "./acciones/marcar-aviso-leido.ts";
 import { accionQuitarAcceso } from "./acciones/quitar-acceso.ts";
 import { accionRegistrarRestauracion } from "./acciones/registrar-restauracion.ts";
+import { accionReintentarComandoApartado } from "./acciones/reintentar-comando-apartado.ts";
 import { accionRevocarDispositivo } from "./acciones/revocar-dispositivo.ts";
 import { accionRotarLlave } from "./acciones/rotar-llave.ts";
 import { accionSalir } from "./acciones/salir.ts";
@@ -82,6 +84,8 @@ export default definirModulo({
 		accionGenerarCodigoRegistro,
 		accionCancelarCodigoRegistro,
 		accionRevocarDispositivo,
+		accionReintentarComandoApartado,
+		accionDescartarComandoApartado,
 		accionRotarLlave,
 	],
 	internas: {

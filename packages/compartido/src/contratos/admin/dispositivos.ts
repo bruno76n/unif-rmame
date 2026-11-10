@@ -133,3 +133,41 @@ export const rotarLlave = definirAccion({
 	],
 	secretos: ["secreto"],
 });
+
+/** Los errores de un comando que ya no se puede reintentar ni descartar. */
+const erroresDeApartado = [
+	{ codigo: "no_es_apartado", mensaje: "Ese comando no quedó apartado." },
+	{ codigo: "ya_descartado", mensaje: "Ese comando ya se descartó." },
+] as const;
+
+/**
+ * Administración del sistema reintenta un comando apartado: corre su carga guardada por el camino de la
+ * subida, con su hora, su persona y su código, a nombre del mismo aparato.
+ */
+export const reintentarComandoApartado = definirAccion({
+	nombre: "admin.reintentar_comando_apartado",
+	descripcion: "Vuelve a correr un comando apartado de un aparato, con la hora en que pasó",
+	entrada: z.object({ comando_id: z.uuid().describe("El comando apartado") }),
+	salida: z.object({
+		resultado: z.enum(["aplicado", "excepcion", "apartado"]).describe("Qué pasó esta vez"),
+		motivo: z.string().nullable().describe("Si sigue apartado: por qué"),
+		excepciones: z
+			.array(z.object({ id: z.uuid(), codigo: z.string() }))
+			.describe("Las excepciones que abrió: se aplicó, pero no cuadra"),
+	}),
+	permiso: { departamento: "admin" },
+	errores: erroresDeApartado,
+});
+
+/** La dueña descarta un comando apartado: no aplica nada; si era un hecho real, se captura en su módulo. */
+export const descartarComandoApartado = definirAccion({
+	nombre: "admin.descartar_comando_apartado",
+	descripcion: "Descarta un comando apartado de un aparato, con su motivo; no aplica nada",
+	entrada: z.object({
+		comando_id: z.uuid().describe("El comando apartado"),
+		motivo: z.string().trim().min(5, "Escribe el motivo").max(120).describe("Por qué, de 5 a 120 letras"),
+	}),
+	salida: z.object({}),
+	permiso: { departamento: "admin", soloDuena: true },
+	errores: erroresDeApartado,
+});

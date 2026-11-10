@@ -230,3 +230,53 @@ export const marcarDos = definirAccion({
 	salida: z.object({}),
 	permiso: { departamento: "ventas" },
 });
+
+/** La tablet (o Ventas) abre un lote en su ubicación, con el id que hizo el aparato. */
+export const abrirLote = definirAccion({
+	nombre: "prueba.abrir_lote",
+	descripcion: "Abre un lote de prueba",
+	entrada: z.object({ id: z.uuid().describe("El lote"), nombre: z.string().min(1).describe("Su nombre") }),
+	salida: z.object({}),
+	permiso: { departamento: "ventas", aparatos: ["tablet"] },
+});
+
+/** La tablet registra un bulto de un lote: si el lote no ha llegado, espera; con más de 100 piezas, no cuadra. */
+export const registrarBulto = definirAccion({
+	nombre: "prueba.registrar_bulto",
+	descripcion: "Registra un bulto de un lote",
+	entrada: z.object({
+		id: z.uuid().describe("El bulto"),
+		lote_id: z.uuid().describe("Su lote"),
+		piezas: z.number().int().positive().describe("Sus piezas"),
+	}),
+	salida: z.object({}),
+	permiso: { aparatos: ["tablet"] },
+	errores: [{ codigo: "lote_cerrado", mensaje: "Ese lote ya se cerró." }],
+});
+
+/** La tablet cancela un bulto: si ya se atendió, se cancela igual y abre la excepción de cancelación tardía. */
+export const cancelarBulto = definirAccion({
+	nombre: "prueba.cancelar_bulto",
+	descripcion: "Cancela un bulto",
+	entrada: z.object({ bulto_id: z.uuid().describe("El bulto") }),
+	salida: z.object({}),
+	permiso: { aparatos: ["tablet"] },
+});
+
+/** Ventas atiende un bulto. */
+export const atenderBulto = definirAccion({
+	nombre: "prueba.atender_bulto",
+	descripcion: "Atiende un bulto",
+	entrada: z.object({ bulto_id: z.uuid().describe("El bulto") }),
+	salida: z.object({}),
+	permiso: { departamento: "ventas" },
+});
+
+/** Ventas cierra un lote: sus bultos dejan de bajar, así que también se tocan (filtro en otra tabla). */
+export const cerrarLote = definirAccion({
+	nombre: "prueba.cerrar_lote",
+	descripcion: "Cierra un lote",
+	entrada: z.object({ lote_id: z.uuid().describe("El lote") }),
+	salida: z.object({}),
+	permiso: { departamento: "ventas" },
+});

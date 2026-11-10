@@ -22,7 +22,7 @@ import type { AparatoQueLlama } from "./quien.ts";
 const formaDeLaLlave = /^Llave ([a-z0-9]{6,16})\.([A-Za-z0-9_-]{43})$/;
 
 /** El tipo de aparato que llama con su llave, por el tipo de su registro. */
-const tipoQueLlama: Readonly<Record<string, AparatoQueLlama["tipoDeAparato"]>> = {
+export const tipoQueLlama: Readonly<Record<string, AparatoQueLlama["tipoDeAparato"]>> = {
 	tablet_taller: "tablet",
 	puente_impresion: "puente",
 };

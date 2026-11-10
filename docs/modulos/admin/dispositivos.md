@@ -289,3 +289,10 @@ Los dos primeros van en `parametro`; los demás, en `tecnico`. La ventana de int
 - **Los parámetros** `admin.codigo_registro_vigencia_min`, `admin.horas_sin_sincronizar_aviso`, `admin.intentos_codigo_max`, `admin.dias_rotar_llave`, `admin.minutos_gracia_llave`, `admin.minutos_revisar_sincronizacion` y los `sync.*` están en `modulos/admin/parametros.ts`.
 - **En las pruebas**, la base plantilla trae los aparatos de prueba (la tablet del Taller y los puentes de Aduana y del Taller) registrados, con su llave conocida (`llaveDePrueba`). La prueba identifica como la API cuando la llamada trae `Authorization`.
 - **Las pruebas:** `modulos/admin/acciones/canjear-codigo.prueba.ts` y `nucleo/acceso/llave.prueba.ts`.
+
+**Fase 6, parte 2.**
+
+- **`admin.reintentar_comando_apartado`** (`acciones/reintentar-comando-apartado.ts`): lee el comando con candado (`leerApartado`, en `dominio/dispositivos.ts`: `404` si no llegó de un aparato, `no_es_apartado`, `ya_descartado`) y lo corre con `reintentarComando` de la [sincronización](../../cimientos/SINCRONIZACION.md#cómo-está-hecho), en la misma transacción. Si se aplica, la bitácora es la de la acción del comando con `reintento: «reintentado por {nombre}»` en `despues`, y se reintentan detrás los que esperaban lo que creó; si sigue apartado, su propio renglón lo dice y el mensaje es «Sigue apartado: {motivo}».
+- **`admin.descartar_comando_apartado`** (`acciones/descartar-comando-apartado.ts`): solo la dueña; guarda quién, cuándo y por qué, y ya no se reintenta solo.
+- **El reintento solo** de lo que esperaba un documento está en la subida (ver [sincronización](../../cimientos/SINCRONIZACION.md#cómo-está-hecho)).
+- **Las pruebas:** `nucleo/sincronizacion/subir.prueba.ts` («Administración del sistema reintenta o descarta un comando apartado»).

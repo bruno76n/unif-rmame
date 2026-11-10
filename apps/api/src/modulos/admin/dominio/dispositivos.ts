@@ -1,6 +1,6 @@
 /**
  * Lo que comparten las acciones de los aparatos: el código de registro, la parte pública de la llave, la
- * ubicación que le toca a cada tipo y leer un aparato.
+ * ubicación que le toca a cada tipo, leer un aparato y leer un comando apartado.
  * Fase 6 · docs/modulos/admin/dispositivos.md
  */
 
@@ -10,7 +10,7 @@ import type { Base } from "../../../nucleo/base/conexion.ts";
 import type { Transaccion } from "../../../nucleo/base/transacciones.ts";
 import { errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
 import { ubicaciones } from "../../inventario/tablas.ts";
-import { dispositivos, impresoras } from "../tablas.ts";
+import { comandosRecibidos, dispositivos, impresoras } from "../tablas.ts";
 
 /** Las letras del código: sin las que se confunden (0 y O, 1, I y L, 5 y S, 2 y Z, 8 y B). */
 const letrasDelCodigo = "ACDEFGHJKMNPQRTUVWXY34679";
@@ -102,4 +102,38 @@ export async function leerDispositivo(base: Base | Transaccion, dispositivoId: s
 	const [aparato] = await base.select().from(dispositivos).where(eq(dispositivos.id, dispositivoId));
 	if (aparato === undefined) throw noExiste();
 	return aparato;
+}
+
+/** Un comando apartado de un aparato, con el nombre del aparato. */
+export interface ComandoApartado {
+	id: string;
+	tipoComando: string;
+	dispositivoId: string;
+	nombreDelAparato: string;
+}
+
+/**
+ * Lee un comando apartado y lo bloquea, para reintentarlo o descartarlo.
+ * @param transaccion La transacción de la acción.
+ * @param comandoId El comando.
+ * @throws `404` si no existe o no llegó de un aparato; `422 no_es_apartado` o `422 ya_descartado`.
+ */
+export async function leerApartado(transaccion: Transaccion, comandoId: string): Promise<ComandoApartado> {
+	const [comando] = await transaccion
+		.select({
+			id: comandosRecibidos.id,
+			tipoComando: comandosRecibidos.tipoComando,
+			resultado: comandosRecibidos.resultado,
+			descartadoEn: comandosRecibidos.descartadoEn,
+			dispositivoId: dispositivos.id,
+			nombreDelAparato: dispositivos.nombre,
+		})
+		.from(comandosRecibidos)
+		.innerJoin(dispositivos, eq(dispositivos.id, comandosRecibidos.dispositivoId))
+		.where(eq(comandosRecibidos.id, comandoId))
+		.for("update", { of: comandosRecibidos });
+	if (comando === undefined) throw noExiste();
+	if (comando.descartadoEn !== null) throw errorDeRegla("ya_descartado", "Ese comando ya se descartó.");
+	if (comando.resultado !== "apartado") throw errorDeRegla("no_es_apartado", "Ese comando no quedó apartado.");
+	return comando;
 }

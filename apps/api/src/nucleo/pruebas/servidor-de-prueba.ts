@@ -83,6 +83,10 @@ async function crearBaseConTablasDePrueba(semillas: readonly Semilla[]): Promise
 	for (const tabla of ["prueba_notas", "prueba_renglones", "prueba_conteos"]) {
 		await base.dueno.query(`SELECT poner_disparador_comun('${tabla}')`);
 	}
+	// Las que bajan a la tablet toman el número de su transacción (`xid_escritura`).
+	for (const tabla of ["prueba_lotes", "prueba_bultos"]) {
+		await base.dueno.query(`SELECT poner_disparador_comun('${tabla}', baja_a_aparatos => true)`);
+	}
 	await sembrarSistema(crearBase(base.dueno), semillas);
 	// La bitácora solo acepta los módulos del sistema; en esta base también el de prueba.
 	await base.dueno.query(`

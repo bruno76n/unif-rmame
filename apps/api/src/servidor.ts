@@ -42,6 +42,7 @@ import { ErrorDeApi, responderError } from "./nucleo/http/errores.ts";
 import { validarSinTransformar } from "./nucleo/http/validacion.ts";
 import type { ConsultaSensible, ContextoDeRuta, RegistroDeModulos, RutaFija } from "./nucleo/modulos.ts";
 import type { AvisosEnVivo } from "./nucleo/sincronizacion/eventos-en-vivo.ts";
+import { subidaDeAparatos } from "./nucleo/sincronizacion/subir.ts";
 
 declare module "fastify" {
 	interface FastifyRequest {
@@ -368,6 +369,17 @@ export async function crearServidor(dependencias: DependenciasDelServidor) {
 			servicios,
 			reloj,
 			versionMinimaDelParametro: servicios.versionMinimaDelParametro,
+		}),
+	);
+	// La subida de la cola de los aparatos, comando por comando.
+	await app.register(
+		subidaDeAparatos({
+			base,
+			registro,
+			servicios,
+			reloj,
+			versionMinimaDelParametro: servicios.versionMinimaDelParametro,
+			...(dependencias.almacen === undefined ? {} : { almacen: dependencias.almacen }),
 		}),
 	);
 	if (dependencias.entradaConGoogle !== undefined) {

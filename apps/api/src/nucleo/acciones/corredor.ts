@@ -26,6 +26,7 @@ import type {
 	QuienEscribe,
 	RegistroDeModulos,
 	RenglonDeBitacora,
+	SalidaDeAccion,
 } from "../modulos.ts";
 import { tomoSuVersion } from "./pisadas.ts";
 
@@ -115,6 +116,7 @@ export function crearContexto(
 		},
 		hayLectura: (nombre) => registro.lecturas.has(nombre),
 		camposDeSueldo: registro.camposDeSueldo,
+		registro,
 		guardarEvento: (evento) => {
 			eventos.push(evento);
 		},
@@ -159,34 +161,70 @@ export async function correrAccion(
 			if (apartada.cargaHash !== cargaHash || otraCuenta) throw errorDeRegla("clave_usada", mensajeDeClaveUsada);
 			return leerRespuestaGuardada(apartada.respuesta);
 		}
-		// Paso 7: la acción hace lo suyo.
-		const { contexto, renglones, eventos } = crearContexto(
-			dependencias.registro,
-			transaccion,
+		// Pasos 7 y 8: la acción hace lo suyo, con su bitácora y sus eventos.
+		const { respuesta, salida } = await aplicarAccion(dependencias, transaccion, {
+			accion,
 			quien,
-			contrato.nombre,
+			datos: cuerpo.datos,
+			version: cuerpo.version,
 			ahora,
 			comandoId,
-			dependencias.almacen,
-		);
-		const salida = await accion.ejecutar(contexto, cuerpo.datos, cuerpo.version);
-		// Una acción que edita tiene que haber tomado la versión que se leyó: si no, la versión no serviría.
-		if (contrato.edita && !tomoSuVersion(contexto)) throw new Error(`${contrato.nombre} edita pero no tomó su versión`);
-		// La salida se revisa aquí, dentro de la transacción: un campo fuera del contrato no se guarda.
-		const resultado = z.parse(contrato.resultado, salida.resultado);
-		// Paso 8: la bitácora y los eventos, una sola vez por acción. Toda acción deja al menos un renglón,
-		// salvo la que su archivo dice que no (un borrador, lo mismo que ya había).
-		if (renglones.length === 0 && salida.sinBitacora !== true) {
-			throw new Error(`${contrato.nombre} no dejó su renglón de bitácora`);
-		}
-		await dependencias.servicios.escribirBitacora(contexto, renglones);
-		await dependencias.servicios.guardarEventos(contexto, eventos);
+		});
 		// Paso 9: la respuesta se guarda sin secretos.
-		const respuesta: RespuestaDeAccion = { ok: true, resultado, avisos: salida.avisos ?? [] };
 		await guardarRespuesta(transaccion, comandoId, sinSecretos(respuesta, contrato.secretos), salida.entidad);
 		// Paso 10: confirma al salir de enTransaccion.
 		return respuesta;
 	});
+}
+
+/**
+ * Corre una acción dentro de una transacción ya abierta (pasos 7 y 8): la acción hace lo suyo, se revisa su
+ * salida contra el contrato y se escriben su bitácora y sus eventos. Lo usan el corredor y la subida de los
+ * aparatos, que corre cada comando con la hora en que pasó.
+ * @param dependencias Lo registrado por los módulos, los servicios de `admin` y el almacén.
+ * @param transaccion La transacción de la acción.
+ * @param peticion La acción, quién la hace, sus datos, su versión, su hora y el id de su comando.
+ * @param ajustarBitacora Cambia cada renglón de bitácora antes de escribirlo (el reintento de un apartado
+ * dice quién lo reintentó).
+ * @returns La respuesta completa (con secretos) y lo que regresó la acción.
+ */
+export async function aplicarAccion(
+	dependencias: { registro: RegistroDeModulos; servicios: ServiciosDelCorredor; almacen?: Almacen },
+	transaccion: Transaccion,
+	peticion: {
+		accion: AccionImplementada;
+		quien: QuienEscribe;
+		datos: unknown;
+		version: number | undefined;
+		ahora: Temporal.Instant;
+		comandoId: string;
+	},
+	ajustarBitacora: (renglon: RenglonDeBitacora) => RenglonDeBitacora = (renglon) => renglon,
+): Promise<{ respuesta: RespuestaDeAccion; salida: SalidaDeAccion<unknown> }> {
+	const { accion, quien, ahora, comandoId } = peticion;
+	const { contrato } = accion;
+	const { contexto, renglones, eventos } = crearContexto(
+		dependencias.registro,
+		transaccion,
+		quien,
+		contrato.nombre,
+		ahora,
+		comandoId,
+		dependencias.almacen,
+	);
+	const salida = await accion.ejecutar(contexto, peticion.datos, peticion.version);
+	// Una acción que edita tiene que haber tomado la versión que se leyó: si no, la versión no serviría.
+	if (contrato.edita && !tomoSuVersion(contexto)) throw new Error(`${contrato.nombre} edita pero no tomó su versión`);
+	// La salida se revisa aquí, dentro de la transacción: un campo fuera del contrato no se guarda.
+	const resultado = z.parse(contrato.resultado, salida.resultado);
+	// Toda acción deja al menos un renglón de bitácora, salvo la que su archivo dice que no (un borrador, lo
+	// mismo que ya había).
+	if (renglones.length === 0 && salida.sinBitacora !== true) {
+		throw new Error(`${contrato.nombre} no dejó su renglón de bitácora`);
+	}
+	await dependencias.servicios.escribirBitacora(contexto, renglones.map(ajustarBitacora));
+	await dependencias.servicios.guardarEventos(contexto, eventos);
+	return { respuesta: { ok: true, resultado, avisos: salida.avisos ?? [] }, salida };
 }
 
 /**

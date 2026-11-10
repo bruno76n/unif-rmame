@@ -46,6 +46,22 @@ export class ErrorDeApi extends Error {
 }
 
 /**
+ * Falta el documento al que apunta la acción (un bulto de un lote que todavía no llega). En la web es un
+ * `404`; en la subida de un aparato, el comando se aparta con `falta_documento` y se reintenta solo cuando
+ * ese documento llegue (ver docs/cimientos/SINCRONIZACION.md).
+ */
+export class FaltaDocumento extends ErrorDeApi {
+	/** El documento que espera. */
+	readonly entidadId: string;
+
+	/** @param entidadId El documento que espera. */
+	constructor(entidadId: string) {
+		super("no_existe");
+		this.entidadId = entidadId;
+	}
+}
+
+/**
  * Un error de regla del negocio: sale como `422` con su código y su mensaje.
  * @param codigo El código estable que dice el archivo de la acción (`rollo_sin_usar`).
  * @param mensaje El mensaje que dice el archivo de la acción.

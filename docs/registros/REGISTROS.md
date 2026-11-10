@@ -23,6 +23,8 @@ Lo que falta decidir o investigar, y en qué fase se resuelve. Lo del negocio ya
 - **La ruta de regreso en la web** (fase 19): la API redirige a la ruta tal como llegó, con `%2f` codificado si lo trae; la web no la decodifica para navegar con ella como dirección.
 - **Las rutas fijas y el recorte común** (fase 20, con las etiquetas y los impresos): las respuestas JSON de las rutas fijas y lo que dibuja una etiqueta no pasan por `recorteComun`; cada tipo de etiqueta recibe los datos ya recortados por su módulo.
 - **El teléfono para escanear y la credencial de uniformame.mx con su llave** (fases 11 y 18): hoy entran con llave la tablet y el puente; el teléfono entra con la sesión de quien escanea más su llave, y la credencial nace con uniformame.mx.
+- **La persona de un comando de aparato** (fase 7, con Personal): la subida no revisa todavía que `persona_id` exista (`persona_desconocida`) ni avisa si es de otra área o ya tiene baja; hoy guarda la que llega.
+- **La prueba al azar de la subida corre 60 series contra Postgres** (fase 21, con la temporada simulada): como la de la idempotencia, cada serie cuesta varias tandas contra la base real.
 - **El nombre y el puesto de una cuenta** (fase 7, con Personal): hoy los mensajes y la bitácora de las cuentas usan el correo y «Esa persona» (decisión 373).
 - **El nivel de `pnpm audit`** (fase 22): SEGURIDAD dice que solo una vulnerabilidad alta o crítica detiene la revisión, pero `pnpm revision` corre `pnpm audit` sin nivel y se detiene con cualquiera. Se intentó alinearlo y el permiso del entorno lo negó; Bruno decide si la revisión pide `--audit-level high` o si SEGURIDAD dice «cualquiera».
 - **Un rol solo para el respaldo** (fase 22): hoy el worker vuelca con el rol dueño (decisión 368). Revisar si Render deja un rol de lectura que salte la seguridad por renglón de Graphile Worker.
@@ -134,5 +136,12 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 10 nov 2026 | 6 | Cómo se canjea el código sin sesión ni llave (decisión 387) | Una acción sin quien llama · una ruta abierta con el cuerpo de una acción | La ruta abierta, con su clave en `comandos_recibidos` | No |
 | 10 nov 2026 | 6 | Un campo `rotar_llave` que la revisión de los contratos tomaba por secreto (decisión 388) | Cambiarle el nombre · que un booleano no cuente | Que un booleano no cuente | No |
 | 10 nov 2026 | 6 | Dónde se registra un programa de impresión (decisión 389) | En cualquier ubicación · donde haya una impresora | Donde haya una impresora | No |
+| 10 nov 2026 | 6 | Qué cuenta en la huella de un comando de aparato y cuándo se guarda su carga (decisión 390) | Solo acción y datos · también la hora, la persona y el código | También la hora, la persona y el código; la carga en apartados y excepciones | No |
+| 10 nov 2026 | 6 | Dónde queda marcado el reloj desfasado (decisión 391) | En cada comando · en el aparato | En el aparato | No |
+| 10 nov 2026 | 6 | Qué errores de una acción apartan el comando (decisión 392) | Todos · `FaltaDocumento`, regla y `404` | `FaltaDocumento`, regla y `404`; lo demás corta la tanda | No |
+| 10 nov 2026 | 6 | Cuándo se reintentan solos los que esperan un documento (decisión 393) | Al aplicarse el documento · también cuando llega repetido | También repetido, en cadena | No |
+| 10 nov 2026 | 6 | Con qué acción se anota la clave repetida con otros datos (decisión 394) | La del comando · `admin.subir` | `admin.subir` | No |
+| 10 nov 2026 | 6 | De dónde sale el id de la excepción antes de la fase 9 (decisión 395) | Esperar · de la salida de la acción | De la salida de la acción | No |
+| 10 nov 2026 | 6 | Cómo corre `admin.reintentar_comando_apartado` la acción de otro módulo (decisión 396) | Una acción especial del núcleo · el registro en el contexto | El registro en el contexto | No |
 | 10 nov 2026 | 5 | La pantalla del Google de desarrollo | Una propia para escoger cuenta · la de desarrollo de oidc-provider, que pide el correo | La de oidc-provider; `pnpm local` escribe los correos de la muestra al arrancar | No |
 
