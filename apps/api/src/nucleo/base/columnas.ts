@@ -14,6 +14,7 @@ import { type AnyPgColumn, bigint, customType, text, timestamp, uuid } from "dri
 // Las tablas de `admin` importan estas columnas y estas columnas apuntan a `usuarios` y `dispositivos`: la referencia va en
 // una función, así que el ciclo de importación no estorba.
 import { dispositivos, usuarios } from "../../modulos/admin/tablas.ts";
+import { personas } from "../../modulos/personal/tablas.ts";
 
 /** Un momento: `timestamptz`. */
 export function momento(nombre: string) {
@@ -55,8 +56,7 @@ export function columnaXidEscritura() {
 export function columnasDeAparato() {
 	return {
 		dispositivoId: uuid("dispositivo_id").references((): AnyPgColumn => dispositivos.id),
-		/** @llavePendiente personas.id */
-		personaId: uuid("persona_id"),
+		personaId: uuid("persona_id").references((): AnyPgColumn => personas.id),
 	};
 }
 

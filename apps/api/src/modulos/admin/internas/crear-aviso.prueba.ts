@@ -10,6 +10,7 @@ import { crearBase } from "../../../nucleo/base/conexion.ts";
 import { enAccionDePrueba } from "../../../nucleo/pruebas/accion-de-prueba.ts";
 import { cuentaDePrueba } from "../../../nucleo/pruebas/cuentas-de-prueba.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
+import { nuevaPersona } from "../../../nucleo/pruebas/personas-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 import { procesarEventos, repartirConLosModulos } from "../../../nucleo/trabajos/procesar-eventos.ts";
 
@@ -143,7 +144,7 @@ describe("un aviso no se repite sin leer; va por correo según su parámetro; un
 		await servidor.base.dueno.query(
 			`INSERT INTO usuarios (id, persona_id, correo, estado, baja_en, baja_confirmado_con_google_en)
 			 VALUES ($1, $2, 'sin.acceso.aviso@alameda.invalid', 'sin_acceso', now(), now())`,
-			[sinAcceso, uuidv7()],
+			[sinAcceso, await nuevaPersona(servidor.base.dueno)],
 		);
 		const creados = await crear({
 			tipo: "alerta_direccion",

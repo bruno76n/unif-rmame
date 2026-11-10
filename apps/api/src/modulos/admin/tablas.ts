@@ -39,6 +39,7 @@ import {
 } from "../../nucleo/base/columnas.ts";
 import { autorizaciones } from "../direccion/tablas.ts";
 import { ubicaciones } from "../inventario/tablas.ts";
+import { personas } from "../personal/tablas.ts";
 
 /** Un momento: `timestamptz`. */
 function momento(nombre: string) {
@@ -55,8 +56,7 @@ export const comandosRecibidos = pgTable(
 		dispositivoId: uuid("dispositivo_id").references((): AnyPgColumn => dispositivos.id),
 		usuarioId: uuid("usuario_id").references((): AnyPgColumn => usuarios.id),
 		sesionId: uuid("sesion_id").references((): AnyPgColumn => sesiones.id),
-		/** @llavePendiente personas.id */
-		personaId: uuid("persona_id"),
+		personaId: uuid("persona_id").references((): AnyPgColumn => personas.id),
 		tipoComando: text("tipo_comando").notNull(),
 		ocurridoEn: momento("ocurrido_en").notNull(),
 		recibidoEn: momento("recibido_en").notNull().defaultNow(),
@@ -124,8 +124,7 @@ export const eventos = pgTable(
 		tablas: text("tablas").array().notNull(),
 		ubicacionIds: uuid("ubicacion_ids").array().notNull().default(sql`'{}'`),
 		usuarioId: uuid("usuario_id").references((): AnyPgColumn => usuarios.id),
-		/** @llavePendiente personas.id */
-		personaId: uuid("persona_id"),
+		personaId: uuid("persona_id").references((): AnyPgColumn => personas.id),
 		dispositivoId: uuid("dispositivo_id").references((): AnyPgColumn => dispositivos.id),
 		comandoId: uuid("comando_id"),
 		ocurridoEn: momento("ocurrido_en").notNull(),
@@ -341,8 +340,7 @@ export const bitacora = pgTable(
 		tipo: text("tipo").notNull(),
 		esAlerta: boolean("es_alerta").notNull().default(false),
 		usuarioId: uuid("usuario_id").references((): AnyPgColumn => usuarios.id),
-		/** @llavePendiente personas.id */
-		personaId: uuid("persona_id"),
+		personaId: uuid("persona_id").references((): AnyPgColumn => personas.id),
 		dispositivoId: uuid("dispositivo_id").references((): AnyPgColumn => dispositivos.id),
 		sesionId: uuid("sesion_id").references((): AnyPgColumn => sesiones.id),
 		comandoId: uuid("comando_id"),
@@ -594,8 +592,7 @@ export const usuarios = pgTable(
 	"usuarios",
 	{
 		id: uuid("id").primaryKey(),
-		/** @llavePendiente personas.id */
-		personaId: uuid("persona_id"),
+		personaId: uuid("persona_id").references((): AnyPgColumn => personas.id),
 		correo: text("correo").notNull(),
 		googleSub: text("google_sub"),
 		estado: text("estado").notNull(),

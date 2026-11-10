@@ -18,6 +18,7 @@
 		"./contratos/admin/cuentas": "./src/contratos/admin/cuentas.ts",
 		"./contratos/admin/dispositivos": "./src/contratos/admin/dispositivos.ts",
 		"./contratos/direccion/autorizaciones": "./src/contratos/direccion/autorizaciones.ts",
+		"./contratos/personal/personas": "./src/contratos/personal/personas.ts",
 		"./contratos/sincronizacion": "./src/contratos/sincronizacion.ts",
 		"./cliente/cliente": "./src/cliente/cliente.ts"
 	},

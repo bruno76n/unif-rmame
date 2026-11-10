@@ -9,6 +9,7 @@ import { v7 as uuidv7 } from "uuid";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { type Base, crearBase } from "../base/conexion.ts";
 import { cuentaDePrueba } from "../pruebas/cuentas-de-prueba.ts";
+import { nuevaPersona } from "../pruebas/personas-de-prueba.ts";
 import { crearServidorDePrueba, dominios, type ServidorDePrueba } from "../pruebas/servidor-de-prueba.ts";
 import { hashDe, nuevoIdentificador } from "./cookies.ts";
 import { describirAparato, revisarSesion } from "./sesion.ts";
@@ -100,7 +101,7 @@ describe("una sesión cerrada, vencida, inactiva o de una cuenta sin acceso no p
 		await prueba.dueno.query(
 			`INSERT INTO usuarios (id, persona_id, correo, estado, baja_en, baja_confirmado_con_google_en)
 			 VALUES ($1, $2, 'sin.acceso@alameda.invalid', 'sin_acceso', now(), now())`,
-			[usuarioId, uuidv7()],
+			[usuarioId, await nuevaPersona(prueba.dueno)],
 		);
 		const deSinAcceso = await sesion(usuarioId);
 		expect(await revisarSesion(base, deSinAcceso.identificador, ahora)).toBeUndefined();
@@ -155,7 +156,7 @@ describe("con la API: una sesión cerrada, vencida, inactiva o de una cuenta sin
 		await servidor.base.dueno.query(
 			`INSERT INTO usuarios (id, persona_id, correo, estado, baja_en, baja_confirmado_con_google_en)
 			 VALUES ($1, $2, 'sin.acceso.api@alameda.invalid', 'sin_acceso', now(), now())`,
-			[usuarioId, uuidv7()],
+			[usuarioId, await nuevaPersona(servidor.base.dueno)],
 		);
 		const casos = [
 			[await sesionDeVentas("1 minute", "-1 minute"), "duracion_maxima"],

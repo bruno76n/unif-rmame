@@ -13,6 +13,7 @@ import { eq } from "drizzle-orm";
 import { cuentasDeLaMuestra, sembrarCuentas } from "../../../semillas/cuentas.ts";
 import { dispositivos, dispositivosSync, sesiones } from "../../modulos/admin/tablas.ts";
 import { ubicaciones } from "../../modulos/inventario/tablas.ts";
+import { personas } from "../../modulos/personal/tablas.ts";
 import { hashDe } from "../acceso/cookies.ts";
 import type { CuentaQueLlama, QuienLlama } from "../acceso/quien.ts";
 import type { Base } from "../base/conexion.ts";
@@ -69,6 +70,26 @@ export const quienesDePrueba: Record<string, QuienLlama> = {
 		permisosFinos: [],
 		confirmadoConGoogleEn: undefined,
 	},
+	personal: {
+		tipo: "cuenta",
+		usuarioId: "01936f2e-0000-7000-8000-00000000000a",
+		sesionId: "01936f2e-0000-7000-8000-00000000001a",
+		esDuena: false,
+		esSoporte: false,
+		departamentos: ["personal"],
+		permisosFinos: [],
+		confirmadoConGoogleEn: undefined,
+	},
+	personal_sueldos: {
+		tipo: "cuenta",
+		usuarioId: "01936f2e-0000-7000-8000-00000000000b",
+		sesionId: "01936f2e-0000-7000-8000-00000000001b",
+		esDuena: false,
+		esSoporte: false,
+		departamentos: ["personal"],
+		permisosFinos: ["ven_sueldos_y_tarifas"],
+		confirmadoConGoogleEn: undefined,
+	},
 	soporte: {
 		tipo: "cuenta",
 		usuarioId: "01936f2e-0000-7000-8000-000000000005",
@@ -100,6 +121,14 @@ export const quienesDePrueba: Record<string, QuienLlama> = {
 };
 
 /**
+ * La persona de una cuenta de prueba: un id fijo que se parece al de la cuenta.
+ * @param usuarioId La cuenta.
+ */
+export function personaDePrueba(usuarioId: string): string {
+	return `${usuarioId.slice(0, -3)}f${usuarioId.slice(-2)}`;
+}
+
+/**
  * Siembra en la base plantilla las cuentas de prueba que no son de la muestra, y la sesión abierta de
  * cada cuenta de prueba. Corre después de la carga de la muestra, con el rol dueño.
  * @param base La base plantilla, con el rol dueño.
@@ -109,21 +138,35 @@ export async function sembrarCuentasDePrueba(base: Base): Promise<void> {
 	const cuentas = Object.entries(quienesDePrueba).flatMap(([nombre, quien]): [string, CuentaQueLlama][] =>
 		quien.tipo === "cuenta" ? [[nombre, quien]] : [],
 	);
+	const nuevas = cuentas.filter(([, quien]) => !deLaMuestra.has(quien.usuarioId));
+	// Su persona, con un folio que no choca con los de la muestra.
+	await base
+		.insert(personas)
+		.values(
+			nuevas.map(([nombre, quien], i) => ({
+				id: personaDePrueba(quien.usuarioId),
+				folio: `E-9${String(i).padStart(2, "0")}`,
+				nombre: `Prueba ${nombre}`,
+				area: quien.departamentos.includes("aduana") ? "aduana_bodega" : "oficina",
+				puesto: "Cuenta de prueba",
+				formaPago: "tiempo",
+				pagoDiaCentavos: 50_000,
+				fechaIngreso: "2020-01-06",
+			})),
+		)
+		.onConflictDoNothing();
 	await sembrarCuentas(
 		base,
-		cuentas
-			.filter(([, quien]) => !deLaMuestra.has(quien.usuarioId))
-			.map(([nombre, quien]) => ({
-				id: quien.usuarioId,
-				correo: `${nombre}@alameda.invalid`,
-				// Su persona llega en la fase 7: un id fijo que se parece al de la cuenta.
-				personaId: `${quien.usuarioId.slice(0, -3)}f${quien.usuarioId.slice(-2)}`,
-				departamentos: quien.departamentos,
-				permisosFinos: quien.permisosFinos.filter(
-					(permiso): permiso is "ven_sueldos_y_tarifas" | "imprime_guias" =>
-						permiso === "ven_sueldos_y_tarifas" || permiso === "imprime_guias",
-				),
-			})),
+		nuevas.map(([nombre, quien]) => ({
+			id: quien.usuarioId,
+			correo: `${nombre}@alameda.invalid`,
+			personaId: personaDePrueba(quien.usuarioId),
+			departamentos: quien.departamentos,
+			permisosFinos: quien.permisosFinos.filter(
+				(permiso): permiso is "ven_sueldos_y_tarifas" | "imprime_guias" =>
+					permiso === "ven_sueldos_y_tarifas" || permiso === "imprime_guias",
+			),
+		})),
 	);
 	const ahora = new Date().toISOString();
 	await base

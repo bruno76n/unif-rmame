@@ -10,6 +10,7 @@ import { crearBase } from "../base/conexion.ts";
 import { enAccionDePrueba } from "../pruebas/accion-de-prueba.ts";
 import { cuentaDePrueba, quienesDePrueba } from "../pruebas/cuentas-de-prueba.ts";
 import { escuchar, esperarA, procesarComoElWorker } from "../pruebas/en-vivo.ts";
+import { nuevaPersona } from "../pruebas/personas-de-prueba.ts";
 import { crearServidorDePrueba, dominios, type ServidorDePrueba } from "../pruebas/servidor-de-prueba.ts";
 import { crearAvisosEnVivo } from "./eventos-en-vivo.ts";
 
@@ -48,7 +49,7 @@ describe("quitar el acceso corta al momento las conexiones en vivo de la cuenta;
 		const usuarioId = uuidv7();
 		await servidor.base.dueno.query(
 			"INSERT INTO usuarios (id, persona_id, correo, estado) VALUES ($1, $2, $3, 'activa')",
-			[usuarioId, uuidv7(), `${usuarioId}@alameda.invalid`],
+			[usuarioId, await nuevaPersona(servidor.base.dueno), `${usuarioId}@alameda.invalid`],
 		);
 		await servidor.base.dueno.query(
 			`INSERT INTO usuario_departamentos (id, usuario_id, departamento_id)

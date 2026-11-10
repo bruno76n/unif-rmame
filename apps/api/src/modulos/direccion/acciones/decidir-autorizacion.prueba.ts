@@ -9,6 +9,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { cuentaDePrueba } from "../../../nucleo/pruebas/cuentas-de-prueba.ts";
 import { conGoogle, mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
+import { nuevaPersona } from "../../../nucleo/pruebas/personas-de-prueba.ts";
 import {
 	crearServidorDePrueba,
 	encabezadosDeLaWeb,
@@ -248,8 +249,8 @@ describe("una autorización se decide una sola vez, con Google, con el efecto de
 		// Un alta de usuario esperando: otra cuenta de Dirección no la decide.
 		const usuario = uuidv7();
 		await servidor.base.dueno.query(
-			"INSERT INTO usuarios (id, persona_id, correo, estado) VALUES ($1, gen_random_uuid(), $2, 'solicitada')",
-			[usuario, `${usuario}@alameda.invalid`],
+			"INSERT INTO usuarios (id, persona_id, correo, estado) VALUES ($1, $2, $3, 'solicitada')",
+			[usuario, await nuevaPersona(servidor.base.dueno), `${usuario}@alameda.invalid`],
 		);
 		const alta = uuidv7();
 		await servidor.base.dueno.query(

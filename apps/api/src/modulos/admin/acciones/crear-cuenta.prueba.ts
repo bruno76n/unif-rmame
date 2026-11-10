@@ -8,6 +8,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { codigoDePostgres } from "../../../nucleo/base/transacciones.ts";
 import { cuentaDePrueba } from "../../../nucleo/pruebas/cuentas-de-prueba.ts";
 import { conGoogle, mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
+import { nuevaPersona } from "../../../nucleo/pruebas/personas-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 
 describe("solo la dueña crea cuentas, con «Confirmar con Google»; una persona y un correo, una cuenta viva; la Puerta del taller no se da", () => {
@@ -24,7 +25,11 @@ describe("solo la dueña crea cuentas, con «Confirmar con Google»; una persona
 		mandarAccion(servidor, "admin.crear_cuenta", { datos }, quien, haceMinutos === null ? {} : conGoogle(haceMinutos));
 
 	it("Administración del sistema sin ser la dueña responde 403 solo_duena; la dueña sin Google, o con una confirmación de hace más de 5 minutos, 401 reautenticar", async () => {
-		const datos = { persona_id: uuidv7(), correo: "luis@gmail.com", departamentos: ["ventas"] };
+		const datos = {
+			persona_id: await nuevaPersona(servidor.base.dueno),
+			correo: "luis@gmail.com",
+			departamentos: ["ventas"],
+		};
 		const admin = await alta(datos, "admin");
 		expect(admin.estado).toBe(403);
 		expect(admin.cuerpo).toMatchObject({ error: "sin_permiso", codigo: "solo_duena" });
@@ -45,7 +50,7 @@ describe("solo la dueña crea cuentas, con «Confirmar con Google»; una persona
 	});
 
 	it("da de alta la cuenta activa, con el correo en minúsculas, sus departamentos y su confirmación; deja su bitácora y cuenta.activada", async () => {
-		const personaId = uuidv7();
+		const personaId = await nuevaPersona(servidor.base.dueno);
 		const respuesta = await alta({
 			persona_id: personaId,
 			correo: "  Gloria.Rivas@Gmail.com ",
@@ -93,21 +98,33 @@ describe("solo la dueña crea cuentas, con «Confirmar con Google»; una persona
 	});
 
 	it("la misma persona o el mismo correo con cuenta viva no se da de alta otra vez; una solicitud pendiente tampoco; la Puerta del taller no se da", async () => {
-		const personaId = uuidv7();
+		const personaId = await nuevaPersona(servidor.base.dueno);
 		expect((await alta({ persona_id: personaId, correo: "ana@gmail.com", departamentos: ["bodega"] })).estado).toBe(
 			200,
 		);
 		const mismaPersona = await alta({ persona_id: personaId, correo: "ana.2@gmail.com", departamentos: ["bodega"] });
 		expect(mismaPersona.cuerpo).toMatchObject({ codigo: "persona_con_cuenta" });
-		const mismoCorreo = await alta({ persona_id: uuidv7(), correo: "ANA@gmail.com", departamentos: ["bodega"] });
+		const mismoCorreo = await alta({
+			persona_id: await nuevaPersona(servidor.base.dueno),
+			correo: "ANA@gmail.com",
+			departamentos: ["bodega"],
+		});
 		expect(mismoCorreo.cuerpo).toMatchObject({ codigo: "correo_con_cuenta", mensaje: "Ese correo ya tiene cuenta." });
 		await servidor.base.dueno.query(
 			"INSERT INTO usuarios (id, persona_id, correo, estado) VALUES ($1, $2, 'pedida@gmail.com', 'solicitada')",
-			[uuidv7(), uuidv7()],
+			[uuidv7(), await nuevaPersona(servidor.base.dueno)],
 		);
-		const solicitado = await alta({ persona_id: uuidv7(), correo: "pedida@gmail.com", departamentos: ["bodega"] });
+		const solicitado = await alta({
+			persona_id: await nuevaPersona(servidor.base.dueno),
+			correo: "pedida@gmail.com",
+			departamentos: ["bodega"],
+		});
 		expect(solicitado.cuerpo).toMatchObject({ codigo: "correo_solicitado" });
-		const puerta = await alta({ persona_id: uuidv7(), correo: "puerta@gmail.com", departamentos: ["puerta_taller"] });
+		const puerta = await alta({
+			persona_id: await nuevaPersona(servidor.base.dueno),
+			correo: "puerta@gmail.com",
+			departamentos: ["puerta_taller"],
+		});
 		expect(puerta.estado).toBe(422);
 		expect(puerta.cuerpo).toMatchObject({
 			codigo: "departamento_no_asignable",
@@ -117,7 +134,13 @@ describe("solo la dueña crea cuentas, con «Confirmar con Google»; una persona
 
 	it("dos altas a la vez con el mismo correo dejan una sola cuenta", async () => {
 		const respuestas = await Promise.all(
-			[0, 1].map(() => alta({ persona_id: uuidv7(), correo: "doble@gmail.com", departamentos: ["ventas"] })),
+			[0, 1].map(async () =>
+				alta({
+					persona_id: await nuevaPersona(servidor.base.dueno),
+					correo: "doble@gmail.com",
+					departamentos: ["ventas"],
+				}),
+			),
 		);
 		expect(respuestas.map((respuesta) => respuesta.estado).sort()).toEqual([200, 422]);
 		const { rows } = await servidor.base.dueno.query(

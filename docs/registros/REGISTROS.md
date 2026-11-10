@@ -31,7 +31,6 @@ Lo que falta decidir o investigar, y en qué fase se resuelve. Lo del negocio ya
 - **Los errores de los avisos en vivo van con `console.error`** (fase 22): `anotarError` de `api.ts` no pasa por `errorParaElRegistro`; un error de la base trae sus valores.
 - **El comando que siempre falla por el servidor** (fase 21, con la temporada simulada): deja la cola del aparato `detenido` sin renglón; solo lo delata el aviso de aparato sin sincronizar. Decidir si después de varios intentos se aparta con su carga y se avisa a soporte.
 - **Lo que viaja de más a un aparato** (con el POS): los `cambios` en vivo llevan ids de otros aparatos y de parámetros que no le bajan, y la bajada manda `quitar` de todo lo que cambió fuera de su filtro. Solo ids; con las cajas de dos tiendas, revisar que una no vea el movimiento de la otra.
-- **La persona de un comando de aparato** (fase 7, con Personal): la subida no revisa todavía que `persona_id` exista (`persona_desconocida`) ni avisa si es de otra área o ya tiene baja; hoy guarda la que llega.
 - **La prueba al azar de la subida corre 60 series contra Postgres** (fase 21, con la temporada simulada): como la de la idempotencia, cada serie cuesta varias tandas contra la base real.
 - **El nombre y el puesto de una cuenta** (fase 7, con Personal): hoy los mensajes y la bitácora de las cuentas usan el correo y «Esa persona» (decisión 373).
 - **El nivel de `pnpm audit`** (fase 22): SEGURIDAD dice que solo una vulnerabilidad alta o crítica detiene la revisión, pero `pnpm revision` corre `pnpm audit` sin nivel y se detiene con cualquiera. Se intentó alinearlo y el permiso del entorno lo negó; Bruno decide si la revisión pide `--audit-level high` o si SEGURIDAD dice «cualquiera».
@@ -173,5 +172,10 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 10 nov 2026 | 7 | Qué responde la dueña que decide desde la pantalla equivocada (decisión 416) | `403` · `422 no_se_decide_aqui` | `422 no_se_decide_aqui` | No |
 | 10 nov 2026 | 7 | Cuándo nace la consulta de la pantalla de Autorizaciones (decisión 417) | Fase 19 · fase 7 | Fase 7 | No |
 | 10 nov 2026 | 7 | Una cuenta de prueba de Dirección (decisión 418) | Sesión de verdad en cada prueba · en la base plantilla | En la base plantilla | No |
+| 10 nov 2026 | 7 | Qué dice «Entra al sistema» de alguien de la oficina sin cuenta (decisión 419) | Nada · «Sin cuenta» | «Sin cuenta» | No |
+| 10 nov 2026 | 7 | Cuándo nace el listado `personal.personas` (decisión 420) | Con las personas · con las tarifas | Con las tarifas (parte 5) | No |
+| 10 nov 2026 | 7 | Si sin el permiso se puede pasar a por pieza o desde por pieza (decisión 421) | Sí · no: cambia el sueldo | No: `403 sin_permiso_fino` | No |
+| 10 nov 2026 | 7 | Las personas de la muestra y de las cuentas de prueba (decisión 422) | Con la acción de alta · directo en la base, con los ids de las cuentas | Directo en la base | No |
+| 10 nov 2026 | 7 | Qué pasa con la persona de un comando de aparato (decisión 423) | Rechazar · apartar la que no existe y avisar de la vieja | Apartar la que no existe y avisar de la vieja | No |
 | 10 nov 2026 | 5 | La pantalla del Google de desarrollo | Una propia para escoger cuenta · la de desarrollo de oidc-provider, que pide el correo | La de oidc-provider; `pnpm local` escribe los correos de la muestra al arrancar | No |
 

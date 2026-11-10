@@ -11,6 +11,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { cuentaDePrueba } from "../../../nucleo/pruebas/cuentas-de-prueba.ts";
 import { entrarConGoogle } from "../../../nucleo/pruebas/google.ts";
 import { darDeAltaCuenta } from "../../../nucleo/pruebas/llamadas.ts";
+import { nuevaPersona } from "../../../nucleo/pruebas/personas-de-prueba.ts";
 import {
 	clienteDeGooglePrueba,
 	crearServidorDePrueba,
@@ -185,7 +186,13 @@ describe("una cuenta activa entra con Google y su sesión queda solo como hash; 
 		await servidor.base.dueno.query(
 			`INSERT INTO usuarios (id, persona_id, correo, estado, baja_en, baja_confirmado_con_google_en)
 			 VALUES ($1, $2, $3, $4, $5, $5)`,
-			[uuidv7(), uuidv7(), correo, estado, estado === "sin_acceso" ? new Date().toISOString() : null],
+			[
+				uuidv7(),
+				await nuevaPersona(servidor.base.dueno),
+				correo,
+				estado,
+				estado === "sin_acceso" ? new Date().toISOString() : null,
+			],
 		);
 		const cuenta: CuentaDeGoogle = { sub: `20000000000000000000${n}`, email: correo, name: estado };
 		const vuelta = await entrarConGoogle(servidor, simulador, cuenta, { ip: `198.51.100.7${n}` });

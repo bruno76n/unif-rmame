@@ -148,4 +148,16 @@ Nunca bajan el pago por día, el puesto, correos ni nada de las cuentas. Asignar
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 7.*
+**Fase 7, parte 2.**
+
+- **La tabla** `personas` es del módulo `personal` (`apps/api/src/modulos/personal/tablas.ts`, migración `0016_personas.sql`), con sus CHECK (el área, la tienda y su rol solo en tienda, la forma de pago con su pago por día, el nombre, el puesto y la baja con su motivo), `xid_escritura` y el disparador. La misma migración convierte en llaves las `@llavePendiente` hacia `personas`: cuentas, comandos recibidos, eventos, bitácora, archivos, autorizaciones y el responsable de una ubicación.
+- **Lo común** (`dominio/personas.ts`): `veSueldos` (la dueña o «ven sueldos y tarifas», nunca soporte), `revisarFicha` (la tienda y su rol, el pago según la forma, la fecha no futura), las columnas de la ficha, si tiene cuenta viva y si es la de la dueña.
+- **Las acciones**, con sus contratos en `packages/compartido/src/contratos/personal/personas.ts`:
+  - **`personal.dar_alta_persona`**: el pago por día pide el permiso; toma su E- y deja la ficha en la bitácora, marcada como sueldo (la descripción va como plantilla).
+  - **`personal.editar_persona`**: sin el permiso el pago por día se conserva, y mandarlo o cambiar entre por pieza y por tiempo o mixta responde `403 sin_permiso_fino` (decisión 421); no pasa a tienda a quien tiene cuenta viva (`422 tiene_cuenta`); la bitácora lleva solo lo que cambió.
+  - **`personal.dar_baja_persona`** y **`personal.reactivar_persona`**: con su versión; la persona de la dueña no se da de baja. Quitarle el PIN y la cuenta llega en las partes 3 y 4.
+- **La ficha** (`consultas/persona.ts`, `personal.persona`): sin persona, los valores del alta; con persona, la apunta como consulta sensible, y el recorte común le quita el pago por día a quien no tiene el permiso (`recortado` lo dice). El listado `personal.personas`, con sus tarifas, llega con las tarifas en la parte 5 (decisión 420).
+- **La lectura** `personal.entra_al_sistema` (`lecturas/entra-al-sistema.ts`): «Baja {fecha}», «Cuenta de Google · {puesto}», «Sistema de su tienda», en el Taller «Sin PIN» (el PIN, en la parte 3) y, en la oficina o Aduana y bodega sin cuenta, «Sin cuenta» (decisión 419).
+- **La subida** revisa la persona de cada comando (ver [sincronización](../../cimientos/SINCRONIZACION.md#cómo-está-hecho)).
+- **La muestra** (`apps/api/semillas/personas.ts`) carga las personas de la muestra con sus E- y los ids que ya usan las cuentas, antes de las cuentas; las cuentas de prueba llevan su persona (decisión 422). Lo que baja a la tablet se arma con los PIN, en la parte 3.
+- **Las pruebas:** `modulos/personal/acciones/editar-persona.prueba.ts` (el alta con y sin el permiso; los errores de la ficha; editar sin el permiso; la ficha recortada y su consulta sensible; `tiene_cuenta`) y `dar-baja-persona.prueba.ts` (la baja, su motivo, la reactivación y la dueña).

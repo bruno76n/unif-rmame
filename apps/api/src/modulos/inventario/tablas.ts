@@ -7,8 +7,19 @@
  */
 
 import { sql } from "drizzle-orm";
-import { boolean, check, pgTable, smallint, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import {
+	type AnyPgColumn,
+	boolean,
+	check,
+	pgTable,
+	smallint,
+	text,
+	timestamp,
+	uniqueIndex,
+	uuid,
+} from "drizzle-orm/pg-core";
 import { columnasComunes, columnasDeBaja } from "../../nucleo/base/columnas.ts";
+import { personas } from "../personal/tablas.ts";
 
 /** Cada lugar donde puede estar una pieza: Aduana, Bodega, las tiendas, el Taller y los dos de paso. */
 export const ubicaciones = pgTable(
@@ -18,8 +29,7 @@ export const ubicaciones = pgTable(
 		codigo: text("codigo").notNull(),
 		nombre: text("nombre").notNull(),
 		tipo: text("tipo").notNull(),
-		/** @llavePendiente personas.id */
-		responsablePersonaId: uuid("responsable_persona_id"),
+		responsablePersonaId: uuid("responsable_persona_id").references((): AnyPgColumn => personas.id),
 		prefijoFolio: text("prefijo_folio"),
 		surteEnLinea: boolean("surte_en_linea").notNull().default(false),
 		existenciaDesde: timestamp("existencia_desde", { withTimezone: true, mode: "string" }),

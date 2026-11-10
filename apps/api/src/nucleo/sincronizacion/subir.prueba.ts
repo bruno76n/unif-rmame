@@ -8,6 +8,7 @@ import { v7 as uuidv7 } from "uuid";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { cuentaDePrueba, llaveDePrueba, quienesDePrueba } from "../pruebas/cuentas-de-prueba.ts";
 import { mandarAccion, nuevaClave } from "../pruebas/llamadas.ts";
+import { nuevaPersona } from "../pruebas/personas-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../pruebas/servidor-de-prueba.ts";
 
 /** Un comando de la cola de la tablet. */
@@ -172,6 +173,37 @@ describe("la subida aplica lo que ya pasó, aparta lo que no puede aplicar y nun
 		expect(await recibido(queNoExiste.clave_idempotencia)).toEqual([
 			expect.objectContaining({ resultado: "apartado", motivo_apartado: "fuera_de_alcance" }),
 		]);
+	});
+
+	it("una persona que no existe se aparta con persona_desconocida; una dada de baja o de otra área se aplica con aviso", async () => {
+		const desconocida = {
+			...comando("prueba.abrir_lote", { id: uuidv7(), nombre: "L-2026-180" }),
+			persona_id: uuidv7(),
+		};
+		const { cuerpo } = await subir([desconocida]);
+		expect(cuerpo.respuestas[0]).toMatchObject({ resultado: "apartado", motivo: "persona_desconocida" });
+		expect(await recibido(desconocida.clave_idempotencia)).toEqual([
+			expect.objectContaining({
+				persona_id: null,
+				carga: expect.objectContaining({ persona_id: desconocida.persona_id }),
+			}),
+		]);
+		const oficina = await nuevaPersona(servidor.base.dueno);
+		const deOtraArea = { ...comando("prueba.abrir_lote", { id: uuidv7(), nombre: "L-2026-181" }), persona_id: oficina };
+		const otra = await subir([deOtraArea]);
+		expect(otra.cuerpo.respuestas[0]).toMatchObject({
+			resultado: "aplicado",
+			avisos: ["Persona de prueba ya no es de esta área: el aparato tenía la lista vieja."],
+		});
+		await servidor.base.dueno.query("UPDATE personas SET baja_en = now(), motivo_baja = 'Renunció' WHERE id = $1", [
+			lupita,
+		]);
+		const deBaja = await subir([comando("prueba.abrir_lote", { id: uuidv7(), nombre: "L-2026-182" })]);
+		await servidor.base.dueno.query("UPDATE personas SET baja_en = NULL, motivo_baja = NULL WHERE id = $1", [lupita]);
+		expect(deBaja.cuerpo.respuestas[0]).toMatchObject({
+			resultado: "aplicado",
+			avisos: ["Lupita Ramos ya está dada de baja: el aparato tenía la lista vieja."],
+		});
 	});
 
 	it("lo que es solo en línea (rotar la llave, lo del puente) no entra por la cola: fuera_de_alcance, y su carga se guarda sin el secreto", async () => {

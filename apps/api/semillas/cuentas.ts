@@ -4,7 +4,7 @@
  *
  * Las de la muestra aprobada (`docs/interfaz/muestra/sistema-alameda.html`), con sus departamentos y sus
  * permisos finos de inicio. Van directo a la base: la dueña y soporte nacen con la siembra, y las demás
- * piden una persona, que llega en la fase 7 (hasta entonces sus `persona_id` son fijos y sin tabla). La
+ * piden una persona: la de la muestra (`personas.ts`, que se carga antes) con el mismo `persona_id`. La
  * Puerta del taller no se da en un alta: el encargado del taller entra a ella con su PIN.
  */
 

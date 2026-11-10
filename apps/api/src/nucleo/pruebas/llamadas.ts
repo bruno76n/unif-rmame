@@ -5,6 +5,7 @@
 
 import { Temporal } from "temporal-polyfill";
 import { v7 as uuidv7 } from "uuid";
+import { nuevaPersona } from "./personas-de-prueba.ts";
 import { encabezadosDeLaWeb, type ServidorDePrueba } from "./servidor-de-prueba.ts";
 
 /** Una clave de idempotencia nueva, como la hace el cliente al apretar el botón. */
@@ -66,7 +67,7 @@ export async function darDeAltaCuenta(
 	const alta = await mandarAccion(
 		servidor,
 		"admin.crear_cuenta",
-		{ datos: { persona_id: uuidv7(), correo, departamentos } },
+		{ datos: { persona_id: await nuevaPersona(servidor.base.dueno), correo, departamentos } },
 		"duena",
 		conGoogle(),
 	);

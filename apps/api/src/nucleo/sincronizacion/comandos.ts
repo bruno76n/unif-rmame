@@ -16,6 +16,7 @@ import { and, asc, eq, isNull, sql } from "drizzle-orm";
 import { Temporal } from "temporal-polyfill";
 import { z } from "zod";
 import { comandosRecibidos, dispositivos } from "../../modulos/admin/tablas.ts";
+import { personas } from "../../modulos/personal/tablas.ts";
 import { tipoQueLlama } from "../acceso/llave.ts";
 import type { AparatoQueLlama } from "../acceso/quien.ts";
 import { recorteComun } from "../acceso/recorte.ts";
@@ -125,6 +126,49 @@ export function deUnRevocado(ocurridoEn: string, revocadoEn: string): ComandoHec
 	return { respuesta, guardada: respuesta, motivo: null, esperaEntidadId: null, entidad: undefined, excepcionId: null };
 }
 
+/** El área de las personas de cada tipo de aparato: la tablet registra a las del Taller. */
+const areaDelAparato: Readonly<Record<AparatoQueLlama["tipoDeAparato"], string>> = {
+	tablet: "taller",
+	puente: "taller",
+};
+
+/** La persona de un comando: su nombre, su área y si tiene baja. */
+interface PersonaDelComando {
+	nombre: string;
+	area: string;
+	bajaEn: string | null;
+}
+
+/**
+ * Lee la persona de un comando.
+ * @param transaccion La transacción del comando.
+ * @param personaId La persona que mandó el aparato.
+ * @returns La persona, o `undefined` si no existe.
+ */
+export async function personaDelComando(
+	transaccion: Transaccion,
+	personaId: string,
+): Promise<PersonaDelComando | undefined> {
+	const [persona] = await transaccion
+		.select({ nombre: personas.nombre, area: personas.area, bajaEn: personas.bajaEn })
+		.from(personas)
+		.where(eq(personas.id, personaId));
+	return persona;
+}
+
+/**
+ * Los avisos de una persona que el aparato tenía con la lista vieja: de otra área o ya dada de baja.
+ * @param persona La persona.
+ * @param aparato El aparato.
+ */
+function avisosDe(persona: PersonaDelComando, aparato: AparatoQueLlama): string[] {
+	if (persona.bajaEn !== null) return [`${persona.nombre} ya está dada de baja: el aparato tenía la lista vieja.`];
+	if (persona.area !== areaDelAparato[aparato.tipoDeAparato]) {
+		return [`${persona.nombre} ya no es de esta área: el aparato tenía la lista vieja.`];
+	}
+	return [];
+}
+
 /**
  * Aplica un comando de un aparato, con la hora en que pasó y a nombre de su persona.
  * @param dependencias Los módulos, la bitácora y los eventos, y el almacén.
@@ -153,6 +197,10 @@ export async function aplicarComando(
 	// Paso 3: la forma del contrato de su acción.
 	const forma = accion.contrato.entrada.safeParse(carga.datos);
 	if (!forma.success) return apartado("mal_formado", { campos: camposDeZod(forma.error) });
+	// Paso 4: la persona. Si no existe se aparta; si es de otra área o ya tiene baja, se aplica con aviso.
+	const persona = carga.persona_id === undefined ? undefined : await personaDelComando(transaccion, carga.persona_id);
+	if (carga.persona_id !== undefined && persona === undefined) return apartado("persona_desconocida");
+	const avisosDeLaPersona = persona === undefined ? [] : avisosDe(persona, aparato);
 	// Pasos 5 y 6: la acción, con la hora en que pasó; si no puede, no queda nada de lo que hizo.
 	try {
 		const { respuesta, salida } = await enTransaccion(transaccion, (puntoDeGuardado) =>
@@ -182,7 +230,7 @@ export async function aplicarComando(
 			motivo: null,
 			espera_entidad_id: null,
 			campos: null,
-			avisos: respuesta.avisos,
+			avisos: [...avisosDeLaPersona, ...respuesta.avisos],
 		};
 		return {
 			respuesta: { ...comun, datos: recortar(respuesta.resultado) },
@@ -263,7 +311,11 @@ export async function guardarComando(
 		claveIdempotencia: comando.clave,
 		origen: "aparato",
 		dispositivoId: comando.aparato.dispositivoId,
-		personaId: carga.persona_id ?? null,
+		// La persona va ligada si existe; si no, queda solo en la carga (`persona_desconocida`, o un revocado).
+		personaId:
+			carga.persona_id !== undefined && (await personaDelComando(transaccion, carga.persona_id)) !== undefined
+				? carga.persona_id
+				: null,
 		tipoComando: carga.accion,
 		ocurridoEn: carga.ocurrido_en,
 		cargaHash: huellaDeComando(carga),

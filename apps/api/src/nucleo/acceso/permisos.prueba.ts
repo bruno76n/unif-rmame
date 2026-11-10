@@ -15,6 +15,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { cuentaDePrueba, quienesDePrueba } from "../pruebas/cuentas-de-prueba.ts";
 import { nuevaClave } from "../pruebas/llamadas.ts";
+import { nuevaPersona } from "../pruebas/personas-de-prueba.ts";
 import { crearServidorDePrueba, dominios, type ServidorDePrueba } from "../pruebas/servidor-de-prueba.ts";
 import { hashDe, nuevoIdentificador } from "./cookies.ts";
 import { recorteComun } from "./recorte.ts";
@@ -138,7 +139,7 @@ describe("cada acción y consulta revisa en el servidor su departamento, su perm
 		if (opciones.duena !== true && opciones.soporte !== true) {
 			await servidor.base.dueno.query(
 				"INSERT INTO usuarios (id, persona_id, correo, estado) VALUES ($1, $2, $3, 'activa')",
-				[usuarioId, uuidv7(), `${usuarioId}@alameda.invalid`],
+				[usuarioId, await nuevaPersona(servidor.base.dueno), `${usuarioId}@alameda.invalid`],
 			);
 		}
 		for (const clave of departamentos) {

@@ -9,6 +9,7 @@ import { v7 as uuidv7 } from "uuid";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { entrarConGoogle } from "../../../nucleo/pruebas/google.ts";
 import { darDeAltaCuenta } from "../../../nucleo/pruebas/llamadas.ts";
+import { nuevaPersona } from "../../../nucleo/pruebas/personas-de-prueba.ts";
 import {
 	clienteDeGooglePrueba,
 	crearServidorDePrueba,
@@ -108,7 +109,7 @@ describe("una acción que pide «Confirmar con Google» responde 401 reautentica
 	});
 
 	/** La dueña da de alta una cuenta con su sesión de verdad. */
-	const darDeAlta = (correo: string) =>
+	const darDeAlta = async (correo: string) =>
 		servidor.app.inject({
 			method: "POST",
 			url: "/v1/acciones/admin.crear_cuenta",
@@ -116,7 +117,7 @@ describe("una acción que pide «Confirmar con Google» responde 401 reautentica
 			cookies: { ua_sesion: sesion },
 			payload: {
 				clave_idempotencia: uuidv7(),
-				datos: { persona_id: uuidv7(), correo, departamentos: ["ventas"] },
+				datos: { persona_id: await nuevaPersona(servidor.base.dueno), correo, departamentos: ["ventas"] },
 			},
 		});
 
