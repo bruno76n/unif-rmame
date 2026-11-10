@@ -134,6 +134,13 @@
 			"when": 1794346983228,
 			"tag": "0018_cuenta_cerrada_por_baja",
 			"breakpoints": true
+		},
+		{
+			"idx": 19,
+			"version": "7",
+			"when": 1794348210698,
+			"tag": "0019_asistencia_y_tarifas",
+			"breakpoints": true
 		}
 	]
 }

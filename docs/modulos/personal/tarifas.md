@@ -94,4 +94,10 @@ Si la dueña cambia ese parámetro, la tablet pide su foto completa (ver [sincro
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar las fases 7 y 12.*
+**Fase 7, parte 5.**
+
+- **La tabla** `tarifas_operacion` es de `personal` (migración `0019_asistencia_y_tarifas.sql`), con `tarifa_centavos > 0`, una vigente por operación (único parcial donde `vigente_hasta` es nulo), su `xid_escritura` y la `@llavePendiente` hacia `flujo_operaciones`. `tarifa_centavos` es un campo de sueldo (`camposDeSueldo`): sin el permiso no viaja y su renglón de bitácora queda sensible. Lo que baja a la tablet llega con Producción (fase 12).
+- **`personal.poner_tarifa_operacion`** (`acciones/poner-tarifa-operacion.ts`, contrato en `packages/compartido/src/contratos/personal/tarifas.ts`): pide «ven sueldos y tarifas» en su contrato; un candado por operación; la versión de la vigente va en `datos` (la primera no la tiene); cierra la vigente y abre la nueva, y la misma tarifa no escribe nada. La bitácora va como plantilla con las tarifas como sueldo. Mientras no haya flujos, el mensaje dice «La operación: {tarifa} por pieza desde ahora» (decisión 434).
+- **`personal.copiar_tarifas_flujo`** (`internas/tarifas.ts`): copia la vigente de cada operación de origen a su operación nueva, deja «Sin tarifa» las que no tenían y regresa cuántas, sin montos.
+- **`personal.tarifa_vigente`** (`lecturas/tarifa-vigente.ts`): la de ese momento, o `null`.
+- **Las pruebas:** `modulos/personal/acciones/poner-tarifa-operacion.prueba.ts` (la nueva cierra la vigente, la misma no escribe, el `409`, la bitácora sensible; cero y texto no; sin el permiso; la vigente de un momento; copiar un flujo).

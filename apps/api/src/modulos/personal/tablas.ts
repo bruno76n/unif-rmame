@@ -1,15 +1,16 @@
 /**
- * Las tablas de `personal`: las personas (E-) y su PIN del taller.
- * Fase 7 · docs/modulos/personal/personas.md («La tabla `personas`»)
+ * Las tablas de `personal`: las personas (E-), su PIN del taller, su asistencia y las tarifas por operación.
+ * Fase 7 · docs/modulos/personal/personas.md, pin-del-taller.md, asistencia.md y tarifas.md (sus tablas)
  *
  * Una persona no necesita cuenta. Baja a la tablet (si tiene PIN del Taller), así que lleva `xid_escritura`;
- * su PIN también (solo su hash), con todos sus estados.
+ * su PIN también (solo su hash), con todos sus estados, y las tarifas. La asistencia no baja.
  */
 
 import { sql } from "drizzle-orm";
 import {
 	type AnyPgColumn,
 	bigint,
+	boolean,
 	check,
 	date,
 	index,
@@ -103,5 +104,82 @@ export const pines = pgTable(
 			"pines_motivo",
 			sql`${tabla.motivoAnulacion} is null or ${tabla.motivoAnulacion} in ('restablecido', 'baja_persona', 'cuenta_google', 'cambio_area')`,
 		),
+	],
+);
+
+/** Una semana de asistencia: sus días de trabajo, abierta o cerrada para la nómina. */
+export const asistenciaSemanas = pgTable(
+	"asistencia_semanas",
+	{
+		id: uuid("id").primaryKey(),
+		fechaInicio: date("fecha_inicio", { mode: "string" }).notNull(),
+		fechaFin: date("fecha_fin", { mode: "string" }).notNull(),
+		estado: text("estado").notNull().default("abierta"),
+		cerradaEn: momento("cerrada_en"),
+		cerradaPor: uuid("cerrada_por").references((): AnyPgColumn => usuarios.id),
+		reabiertaEn: momento("reabierta_en"),
+		reabiertaPor: uuid("reabierta_por").references((): AnyPgColumn => usuarios.id),
+		motivoReapertura: text("motivo_reapertura"),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		uniqueIndex("asistencia_semanas_inicio").on(tabla.fechaInicio),
+		check("asistencia_semanas_estado", sql`${tabla.estado} in ('abierta', 'cerrada')`),
+		check("asistencia_semanas_fechas", sql`${tabla.fechaFin} >= ${tabla.fechaInicio}`),
+		check("asistencia_semanas_cierre", sql`(${tabla.estado} = 'cerrada') = (${tabla.cerradaEn} is not null)`),
+	],
+);
+
+/** Un día capturado de una persona. */
+export const asistenciaDias = pgTable(
+	"asistencia_dias",
+	{
+		id: uuid("id").primaryKey(),
+		asistenciaSemanaId: uuid("asistencia_semana_id")
+			.notNull()
+			.references(() => asistenciaSemanas.id),
+		personaId: uuid("persona_id")
+			.notNull()
+			.references(() => personas.id),
+		fecha: date("fecha", { mode: "string" }).notNull(),
+		valor: text("valor").notNull(),
+		origen: text("origen").notNull(),
+		capturadoPor: uuid("capturado_por").references((): AnyPgColumn => usuarios.id),
+		valorTienda: text("valor_tienda"),
+		cambiadoEnPersonal: boolean("cambiado_en_personal").notNull().default(false),
+		entradaEn: momento("entrada_en"),
+		salidaEn: momento("salida_en"),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		uniqueIndex("asistencia_dias_persona_fecha").on(tabla.personaId, tabla.fecha),
+		index("asistencia_dias_semana").on(tabla.asistenciaSemanaId),
+		check("asistencia_dias_valor", sql`${tabla.valor} in ('completo', 'medio', 'falta')`),
+		check("asistencia_dias_origen", sql`${tabla.origen} in ('personal', 'tienda')`),
+		check(
+			"asistencia_dias_valor_tienda",
+			sql`${tabla.valorTienda} is null or ${tabla.valorTienda} in ('completo', 'medio', 'falta')`,
+		),
+	],
+);
+
+/** La tarifa por pieza de una operación dentro de su flujo, con su historia. */
+export const tarifasOperacion = pgTable(
+	"tarifas_operacion",
+	{
+		id: uuid("id").primaryKey(),
+		/** @llavePendiente flujo_operaciones.id */
+		flujoOperacionId: uuid("flujo_operacion_id").notNull(),
+		tarifaCentavos: bigint("tarifa_centavos", { mode: "number" }).notNull(),
+		vigenteDesde: momento("vigente_desde").notNull().default(sql`now()`),
+		vigenteHasta: momento("vigente_hasta"),
+		...columnasComunes(),
+		...columnaXidEscritura(),
+	},
+	(tabla) => [
+		uniqueIndex("tarifas_operacion_vigente").on(tabla.flujoOperacionId).where(sql`${tabla.vigenteHasta} is null`),
+		index("tarifas_operacion_historia").on(tabla.flujoOperacionId, tabla.vigenteDesde),
+		index("tarifas_operacion_xid_escritura").on(tabla.xidEscritura),
+		check("tarifas_operacion_tarifa", sql`${tabla.tarifaCentavos} > 0`),
 	],
 );

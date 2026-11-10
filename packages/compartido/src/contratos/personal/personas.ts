@@ -118,3 +118,36 @@ export const persona = definirConsulta({
 	permiso: { departamento: "personal" },
 	recortables: ["pago_dia_centavos"],
 });
+
+/** Personal · Personas: la lista por área, con su pago a la vista solo si se pide y se tiene el permiso. */
+export const personasDeLaLista = definirConsulta({
+	nombre: "personal.personas",
+	descripcion: "Las personas por área; ver las tarifas pide «ven sueldos y tarifas» y queda en la bitácora",
+	entrada: z.object({
+		area: z
+			.enum([...areas, "baja"])
+			.optional()
+			.describe("Un área, o las dadas de baja; sin ella, todas"),
+		ubicacion_id: z.uuid().optional().describe("En el área tienda: cuál"),
+		ver_tarifas: z.enum(["si", "no"]).optional().describe("«si» para ver el pago por día"),
+	}),
+	salida: z.object({
+		personas: z.array(
+			z.object({
+				id: z.uuid(),
+				folio: z.string(),
+				nombre: z.string(),
+				area: z.enum(areas),
+				ubicacion_id: z.uuid().nullable(),
+				puesto: z.string(),
+				forma_pago: z.enum(formasDePago),
+				pago_dia_centavos: z.number().int().nullable().optional().describe("Solo con «ver tarifas» y el permiso"),
+				fecha_ingreso: z.string(),
+				baja_en: z.string().nullable(),
+				entra_al_sistema: z.string(),
+			}),
+		),
+	}),
+	permiso: { departamento: "personal" },
+	recortables: ["pago_dia_centavos"],
+});

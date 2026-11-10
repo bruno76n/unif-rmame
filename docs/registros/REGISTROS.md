@@ -185,5 +185,8 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 10 nov 2026 | 7 | Revocar la tablet sin decir si se perdió (decisión 429) | Tomarlo como no · `400` | `400`: es obligatorio en la tablet | No |
 | 10 nov 2026 | 7 | Cómo leen las cuentas a la persona (decisión 430) | Directo · con la lectura de Personal y `FOR SHARE` | Con la lectura de Personal | No |
 | 10 nov 2026 | 7 | El texto de `persona_no_valida` de una dada de baja (decisión 431) | El de tienda · «{persona} está dada de baja.» | El propio | No |
+| 10 nov 2026 | 7 | La versión de capturar un día y de poner una tarifa (decisión 432) | Dos acciones · la versión opcional en `datos` | Opcional en `datos` | No |
+| 10 nov 2026 | 7 | Cómo probar la nómina pagada antes de la fase 17 (decisión 433) | Esperar · un módulo `contaduria` de prueba | El módulo de prueba, que se quita en la fase 17 | No |
+| 10 nov 2026 | 7 | Cómo se nombra la operación antes de los flujos (decisión 434) | Su id · «La operación» | «La operación» | No |
 | 10 nov 2026 | 5 | La pantalla del Google de desarrollo | Una propia para escoger cuenta · la de desarrollo de oidc-provider, que pide el correo | La de oidc-provider; `pnpm local` escribe los correos de la muestra al arrancar | No |
 
