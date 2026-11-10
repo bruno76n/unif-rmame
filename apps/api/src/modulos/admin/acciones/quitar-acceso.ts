@@ -8,18 +8,17 @@
  */
 
 import { quitarAcceso } from "@uniformame/compartido/contratos/admin/cuentas";
-import { and, eq, isNull } from "drizzle-orm";
 import { tomarVersion, versionActual } from "../../../nucleo/acciones/pisadas.ts";
 import { implementarAccion } from "../../../nucleo/modulos.ts";
 import {
-	cerrarSesionesDe,
 	confirmadoConGoogle,
 	cuentaQueLlama,
 	leerCuenta,
 	nombreDeCuenta,
+	quitarElAcceso,
 	revisarQueSePuedeCambiar,
 } from "../dominio/cuentas.ts";
-import { permisosFinos, usuarioDepartamentos, usuarios } from "../tablas.ts";
+import { usuarios } from "../tablas.ts";
 
 export const accionQuitarAcceso = implementarAccion(quitarAcceso, async (contexto, datos, version) => {
 	const { transaccion } = contexto;
@@ -31,32 +30,8 @@ export const accionQuitarAcceso = implementarAccion(quitarAcceso, async (context
 		usuario_id: cuenta.id,
 		estado: (await leerCuenta(transaccion, cuenta.id)).estado,
 	}));
-	const ahora = contexto.ahora.toString();
 	const motivo = datos.motivo === undefined || datos.motivo === "" ? null : datos.motivo;
-	await transaccion
-		.update(usuarios)
-		.set({
-			estado: "sin_acceso",
-			bajaEn: ahora,
-			bajaPor: duena,
-			motivoBaja: motivo,
-			bajaConfirmadoConGoogleEn: confirmado,
-		})
-		.where(eq(usuarios.id, cuenta.id));
-	const baja = { bajaEn: ahora, bajaPor: duena, motivoBaja: "Se le quitó el acceso" };
-	await transaccion
-		.update(usuarioDepartamentos)
-		.set(baja)
-		.where(and(eq(usuarioDepartamentos.usuarioId, cuenta.id), isNull(usuarioDepartamentos.bajaEn)));
-	await transaccion
-		.update(permisosFinos)
-		.set(baja)
-		.where(and(eq(permisosFinos.usuarioId, cuenta.id), isNull(permisosFinos.bajaEn)));
-	const cerradas = await cerrarSesionesDe(transaccion, cuenta.id, {
-		motivo: "acceso_quitado",
-		cerradaPor: duena,
-		ahora,
-	});
+	const cerradas = await quitarElAcceso(contexto, cuenta.id, { por: duena, motivo, confirmado });
 	const nombre = nombreDeCuenta(cuenta);
 	contexto.bitacora({
 		descripcion: `Quitó el acceso a ${nombre}`,
@@ -66,13 +41,6 @@ export const accionQuitarAcceso = implementarAccion(quitarAcceso, async (context
 		despues: { estado: "sin_acceso", motivo, sesiones_cerradas: cerradas.length },
 		esAlerta: true,
 		confirmadoConGoogleEn: confirmado,
-	});
-	contexto.guardarEvento({
-		tipo: "cuenta.acceso_quitado",
-		datos: { usuario_id: cuenta.id },
-		tablas: ["usuarios", "usuario_departamentos", "permisos_finos", "sesiones"],
-		entidad: "usuarios",
-		entidadId: cuenta.id,
 	});
 	return {
 		resultado: {

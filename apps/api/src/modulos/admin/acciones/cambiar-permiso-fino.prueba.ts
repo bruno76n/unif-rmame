@@ -73,7 +73,7 @@ describe("solo la dueña cambia los permisos finos, con «Confirmar con Google»
 		const da = await cambiar(ventas, "ven_sueldos_y_tarifas", true);
 		expect(da.estado).toBe(200);
 		expect(da.cuerpo.resultado).toMatchObject({
-			mensaje: "Dio acceso a sueldos y tarifas: ventas@alameda.invalid",
+			mensaje: "Dio acceso a sueldos y tarifas: Prueba ventas",
 			version: await versionDe(ventas),
 		});
 		expect(await versionDe(ventas)).toBeGreaterThan(antes);
@@ -84,7 +84,7 @@ describe("solo la dueña cambia los permisos finos, con «Confirmar con Google»
 		expect(igual.estado).toBe(200);
 		const quita = await cambiar(ventas, "ven_sueldos_y_tarifas", false);
 		expect(quita.cuerpo.resultado).toMatchObject({
-			mensaje: "Quitó acceso a sueldos y tarifas: ventas@alameda.invalid",
+			mensaje: "Quitó acceso a sueldos y tarifas: Prueba ventas",
 		});
 		expect(await permisosDe(ventas)).toEqual([]);
 		const { rows } = await servidor.base.dueno.query(
@@ -96,8 +96,8 @@ describe("solo la dueña cambia los permisos finos, con «Confirmar con Google»
 			"SELECT descripcion, es_alerta FROM bitacora WHERE accion = 'admin.cambiar_permiso_fino' ORDER BY ocurrido_en",
 		);
 		expect(bitacora.rows).toEqual([
-			{ descripcion: "Dio acceso a sueldos y tarifas: ventas@alameda.invalid", es_alerta: true },
-			{ descripcion: "Quitó acceso a sueldos y tarifas: ventas@alameda.invalid", es_alerta: true },
+			{ descripcion: "Dio acceso a sueldos y tarifas: Prueba ventas", es_alerta: true },
+			{ descripcion: "Quitó acceso a sueldos y tarifas: Prueba ventas", es_alerta: true },
 		]);
 		enVentas.cerrar();
 	});

@@ -58,7 +58,7 @@ describe("solo la dueña crea cuentas, con «Confirmar con Google»; una persona
 		});
 		expect(respuesta.estado).toBe(200);
 		expect(respuesta.cuerpo.resultado).toMatchObject({
-			mensaje: "gloria.rivas@gmail.com dada de alta: ya puede entrar con su cuenta de Google",
+			mensaje: "Persona de prueba dada de alta: ya puede entrar con su cuenta de Google",
 		});
 		const { rows } = await servidor.base.dueno.query(
 			"SELECT id, estado, correo, persona_id, activada_por, activada_en, confirmado_con_google_en, creado_por FROM usuarios WHERE correo = 'gloria.rivas@gmail.com'",
@@ -86,7 +86,7 @@ describe("solo la dueña crea cuentas, con «Confirmar con Google»; una persona
 		);
 		expect(bitacora.rows).toEqual([
 			{
-				descripcion: "Dio de alta a gloria.rivas@gmail.com con Producción, Calidad",
+				descripcion: "Dio de alta a Persona de prueba con Producción, Calidad",
 				confirmado_con_google_en: expect.any(Date),
 			},
 		]);
@@ -170,5 +170,32 @@ describe("solo la dueña crea cuentas, con «Confirmar con Google»; una persona
 				(error: unknown) => codigoDePostgres(error),
 			);
 		expect(cambiar).toBe("42501");
+	});
+
+	it("la persona tiene que estar activa y no ser de tienda (persona_no_valida); si tenía PIN del taller, se anula", async () => {
+		const tienda = await nuevaPersona(servidor.base.dueno, "tienda");
+		expect(
+			(await alta({ persona_id: tienda, correo: "tienda@gmail.com", departamentos: ["ventas"] })).cuerpo,
+		).toMatchObject({ codigo: "persona_no_valida", mensaje: "Nadie de tienda entra al sistema de fábrica." });
+		const deBaja = await nuevaPersona(servidor.base.dueno);
+		await servidor.base.dueno.query("UPDATE personas SET baja_en = now(), motivo_baja = 'Renunció' WHERE id = $1", [
+			deBaja,
+		]);
+		expect(
+			(await alta({ persona_id: deBaja, correo: "baja@gmail.com", departamentos: ["ventas"] })).cuerpo,
+		).toMatchObject({ codigo: "persona_no_valida", mensaje: "Persona de prueba está dada de baja." });
+		const delTaller = await nuevaPersona(servidor.base.dueno, "taller");
+		await mandarAccion(servidor, "personal.asignar_pin", { datos: { persona_id: delTaller } }, "personal");
+		const conPin = await alta({ persona_id: delTaller, correo: "taller@gmail.com", departamentos: ["produccion"] });
+		expect(conPin.cuerpo).toMatchObject({ avisos: ["Su PIN del taller ya no entra"] });
+		const { rows } = await servidor.base.dueno.query(
+			"SELECT estado, motivo_anulacion FROM pines WHERE persona_id = $1",
+			[delTaller],
+		);
+		expect(rows).toEqual([{ estado: "anulado", motivo_anulacion: "cuenta_google" }]);
+		const bitacora = await servidor.base.dueno.query(
+			"SELECT despues FROM bitacora WHERE accion = 'admin.crear_cuenta' AND despues->>'correo' = 'taller@gmail.com'",
+		);
+		expect(bitacora.rows[0]?.despues).toMatchObject({ acceso_quitado: ["PIN del taller"] });
 	});
 });

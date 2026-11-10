@@ -57,7 +57,7 @@ describe("un aparato conectado con su llave recibe solo lo que le baja; revocado
 		const revocado = await mandarAccion(
 			servidor,
 			"admin.revocar_dispositivo",
-			{ datos: { dispositivo_id: tablet(), motivo: "Se perdió" }, version },
+			{ datos: { dispositivo_id: tablet(), motivo: "Se perdió", anular_pines: false }, version },
 			"duena",
 			conGoogle(),
 		);

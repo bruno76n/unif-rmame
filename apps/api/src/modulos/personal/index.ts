@@ -15,6 +15,7 @@ import { alEventoDePersonal } from "./al-evento.ts";
 import { bajadaDePersonal } from "./bajada.ts";
 import { consultaPersona } from "./consultas/persona.ts";
 import { anularPin, anularPinesUbicacion, bloquearPin } from "./internas/pin.ts";
+import { datosDePersona } from "./lecturas/datos-de-persona.ts";
 import { entraAlSistema } from "./lecturas/entra-al-sistema.ts";
 import { resumenPin } from "./lecturas/resumen-pin.ts";
 import { semillaDeParametrosDePersonal } from "./parametros.ts";
@@ -37,7 +38,7 @@ export default definirModulo({
 		anular_pines_ubicacion: anularPinesUbicacion,
 		bloquear_pin: bloquearPin,
 	},
-	lecturas: { entra_al_sistema: entraAlSistema, resumen_pin: resumenPin },
+	lecturas: { entra_al_sistema: entraAlSistema, resumen_pin: resumenPin, datos_de_persona: datosDePersona },
 	semillas: [semillaDeParametrosDePersonal],
 	alEvento: alEventoDePersonal,
 	bajada: bajadaDePersonal,

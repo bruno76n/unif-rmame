@@ -612,7 +612,11 @@ export const usuarios = pgTable(
 	(tabla) => [
 		check("usuarios_estado", sql`${tabla.estado} in ('solicitada', 'activa', 'rechazada', 'sin_acceso')`),
 		check("usuarios_persona", sql`${tabla.personaId} is not null or ${tabla.esSoporte}`),
-		check("usuarios_baja_confirmada", sql`${tabla.bajaEn} is null or ${tabla.bajaConfirmadoConGoogleEn} is not null`),
+		// La baja de una persona cierra su cuenta sin «Confirmar con Google»: quita acceso, no lo da.
+		check(
+			"usuarios_baja_confirmada",
+			sql`${tabla.bajaEn} is null or ${tabla.bajaConfirmadoConGoogleEn} is not null or ${tabla.motivoBaja} = 'Baja de la persona'`,
+		),
 		uniqueIndex("usuarios_persona_viva").on(tabla.personaId).where(sql`${tabla.estado} in ('solicitada', 'activa')`),
 		uniqueIndex("usuarios_correo_vivo").on(tabla.correo).where(sql`${tabla.estado} in ('solicitada', 'activa')`),
 		uniqueIndex("usuarios_google_sub").on(tabla.googleSub).where(sql`${tabla.estado} = 'activa'`),

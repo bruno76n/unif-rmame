@@ -127,6 +127,13 @@
 			"when": 1794346164118,
 			"tag": "0017_pines",
 			"breakpoints": true
+		},
+		{
+			"idx": 18,
+			"version": "7",
+			"when": 1794346983228,
+			"tag": "0018_cuenta_cerrada_por_baja",
+			"breakpoints": true
 		}
 	]
 }

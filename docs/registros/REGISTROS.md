@@ -180,5 +180,10 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 10 nov 2026 | 7 | Cómo bajan las iniciales de la persona (decisión 424) | Una columna · la tablet · un campo calculado de la bajada | Un campo calculado en SQL: nada guardado dos veces | No |
 | 10 nov 2026 | 7 | Cómo anota la bitácora el PIN anulado en la baja (decisión 425) | Un campo `pin` · `acceso_quitado` | `acceso_quitado`: `pin` parece secreto y la bitácora lo rechaza | No |
 | 10 nov 2026 | 7 | Cuándo se quita la persona de la tablet al anular su PIN (decisión 426) | En la misma ventana · en la siguiente | En la misma: sin la persona nadie la escoge | No |
+| 10 nov 2026 | 7 | La baja de la cuenta sin Google cuando se da de baja la persona (decisión 427) | Una columna · el CHECK con el motivo «Baja de la persona» | El CHECK con el motivo: la regla queda en la base | No |
+| 10 nov 2026 | 7 | El nombre de una cuenta (decisión 428) | El correo · el de su persona | El de su persona | No |
+| 10 nov 2026 | 7 | Revocar la tablet sin decir si se perdió (decisión 429) | Tomarlo como no · `400` | `400`: es obligatorio en la tablet | No |
+| 10 nov 2026 | 7 | Cómo leen las cuentas a la persona (decisión 430) | Directo · con la lectura de Personal y `FOR SHARE` | Con la lectura de Personal | No |
+| 10 nov 2026 | 7 | El texto de `persona_no_valida` de una dada de baja (decisión 431) | El de tienda · «{persona} está dada de baja.» | El propio | No |
 | 10 nov 2026 | 5 | La pantalla del Google de desarrollo | Una propia para escoger cuenta · la de desarrollo de oidc-provider, que pide el correo | La de oidc-provider; `pnpm local` escribe los correos de la muestra al arrancar | No |
 

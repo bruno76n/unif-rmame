@@ -41,31 +41,58 @@ const esLaDuena = { codigo: "es_la_duena", mensaje: "La dueña no se quita el ac
 const cuentaNoActiva = { codigo: "cuenta_no_activa", mensaje: "Esa cuenta ya no tiene acceso." };
 const soporteSinDinero = { codigo: "soporte_sin_dinero", mensaje: "La cuenta de soporte no ve dinero ni nómina." };
 
+/** Lo que recibe una cuenta nueva, la dé la dueña o la pida la oficina. */
+const cuentaNueva = {
+	persona_id: z.uuid("Escoge a la persona.").describe("La persona de Personal"),
+	correo: z
+		.string("Escribe su correo de Google.")
+		.trim()
+		.toLowerCase()
+		.min(1, "Escribe su correo de Google.")
+		.pipe(z.email("Escribe su correo de Google.").max(254))
+		.describe("La cuenta de Google, en minúsculas"),
+	departamentos: z
+		.array(claveDeDepartamento, "Marca al menos un departamento.")
+		.min(1, "Marca al menos un departamento.")
+		.describe("Las claves de sus departamentos"),
+};
+
+/** Los errores de una cuenta nueva. */
+const erroresDeCuentaNueva = [
+	{ codigo: "persona_no_valida", mensaje: "Nadie de tienda entra al sistema de fábrica." },
+	{ codigo: "persona_con_cuenta", mensaje: "Esa persona ya tiene cuenta." },
+	{ codigo: "correo_con_cuenta", mensaje: "Ese correo ya tiene cuenta." },
+	{ codigo: "correo_solicitado", mensaje: "Ya hay una solicitud para ese correo." },
+	{ codigo: "departamento_no_asignable", mensaje: "La Puerta del taller entra con PIN." },
+] as const;
+
 /** La dueña da de alta una cuenta nueva, ya activa. */
 export const crearCuenta = definirAccion({
 	nombre: "admin.crear_cuenta",
 	descripcion: "Da de alta una cuenta de Google ya activa, ligada a su persona y con sus departamentos",
-	entrada: z.object({
-		persona_id: z.uuid("Escoge a la persona.").describe("La persona de Personal"),
-		correo: z
-			.string("Escribe su correo de Google.")
-			.trim()
-			.toLowerCase()
-			.min(1, "Escribe su correo de Google.")
-			.pipe(z.email("Escribe su correo de Google.").max(254))
-			.describe("La cuenta de Google, en minúsculas"),
-		departamentos: z
-			.array(claveDeDepartamento, "Marca al menos un departamento.")
-			.min(1, "Marca al menos un departamento.")
-			.describe("Las claves de sus departamentos"),
-	}),
+	entrada: z.object(cuentaNueva),
 	salida: z.object({ usuario_id: z.uuid().describe("La cuenta nueva") }),
 	permiso: { departamento: "admin", soloDuena: true, confirmarConGoogle: "crear_cuenta" },
+	errores: [...erroresDeCuentaNueva],
+});
+
+/** La oficina pide una cuenta: nace solicitada y su autorización AU- llega a la dueña. */
+export const pedirCuenta = definirAccion({
+	nombre: "admin.pedir_cuenta",
+	descripcion: "Pide una cuenta de Google para una persona; la decide la dueña como alta de usuario",
+	entrada: z.object({
+		...cuentaNueva,
+		para_que: z.string().trim().max(80).optional().describe("Para qué la necesita, hasta 80 letras"),
+	}),
+	salida: z.object({
+		usuario_id: z.uuid().describe("La cuenta solicitada"),
+		autorizacion_id: z.uuid().describe("La autorización AU-"),
+		folio: z.string().describe("El folio AU-"),
+	}),
+	permiso: { departamento: "admin" },
 	errores: [
-		{ codigo: "persona_con_cuenta", mensaje: "Esa persona ya tiene cuenta." },
-		{ codigo: "correo_con_cuenta", mensaje: "Ese correo ya tiene cuenta." },
-		{ codigo: "correo_solicitado", mensaje: "Ya hay una solicitud para ese correo." },
-		{ codigo: "departamento_no_asignable", mensaje: "La Puerta del taller entra con PIN." },
+		{ codigo: "la_duena_da_de_alta", mensaje: "Tú das la cuenta directo con «Cuenta nueva»." },
+		...erroresDeCuentaNueva,
 	],
 });
 

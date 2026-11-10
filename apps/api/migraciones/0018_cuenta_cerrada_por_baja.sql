@@ -1,0 +1,2 @@
+ALTER TABLE "usuarios" DROP CONSTRAINT "usuarios_baja_confirmada";--> statement-breakpoint
+ALTER TABLE "usuarios" ADD CONSTRAINT "usuarios_baja_confirmada" CHECK ("usuarios"."baja_en" is null or "usuarios"."baja_confirmado_con_google_en" is not null or "usuarios"."motivo_baja" = 'Baja de la persona');

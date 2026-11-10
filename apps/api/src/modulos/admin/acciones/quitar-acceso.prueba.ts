@@ -79,7 +79,7 @@ describe("solo la dueña quita el acceso, con «Confirmar con Google»; nadie se
 		await esperarA(() => enAduana.eventos().some((evento) => evento.nombre === "hola"));
 		const respuesta = await quitar(ventas);
 		expect(respuesta.estado).toBe(200);
-		expect(respuesta.cuerpo.resultado).toMatchObject({ mensaje: "ventas@alameda.invalid ya no entra al sistema" });
+		expect(respuesta.cuerpo.resultado).toMatchObject({ mensaje: "Prueba ventas ya no entra al sistema" });
 		const { rows } = await servidor.base.dueno.query(
 			"SELECT estado, baja_en, baja_por, motivo_baja, baja_confirmado_con_google_en FROM usuarios WHERE id = $1",
 			[ventas],
@@ -109,7 +109,7 @@ describe("solo la dueña quita el acceso, con «Confirmar con Google»; nadie se
 		);
 		expect(alerta.rows).toEqual([
 			{
-				descripcion: "Quitó el acceso a ventas@alameda.invalid",
+				descripcion: "Quitó el acceso a Prueba ventas",
 				es_alerta: true,
 				confirmado_con_google_en: expect.any(Date),
 			},
@@ -129,7 +129,7 @@ describe("solo la dueña quita el acceso, con «Confirmar con Google»; nadie se
 		expect(otraVez.estado).toBe(422);
 		expect(otraVez.cuerpo).toMatchObject({
 			codigo: "cuenta_no_activa",
-			mensaje: "ventas@alameda.invalid ya no tiene acceso.",
+			mensaje: "Prueba ventas ya no tiene acceso.",
 		});
 	});
 });

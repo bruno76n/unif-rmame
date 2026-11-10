@@ -148,14 +148,14 @@ Nunca bajan el pago por día, el puesto, correos ni nada de las cuentas. Asignar
 
 ## Cómo está hecho
 
-**Fase 7, partes 2 y 3.**
+**Fase 7, partes 2 a 4.**
 
 - **La tabla** `personas` es del módulo `personal` (`apps/api/src/modulos/personal/tablas.ts`, migración `0016_personas.sql`), con sus CHECK (el área, la tienda y su rol solo en tienda, la forma de pago con su pago por día, el nombre, el puesto y la baja con su motivo), `xid_escritura` y el disparador. La misma migración convierte en llaves las `@llavePendiente` hacia `personas`: cuentas, comandos recibidos, eventos, bitácora, archivos, autorizaciones y el responsable de una ubicación.
 - **Lo común** (`dominio/personas.ts`): `veSueldos` (la dueña o «ven sueldos y tarifas», nunca soporte), `revisarFicha` (la tienda y su rol, el pago según la forma, la fecha no futura), las columnas de la ficha, si tiene cuenta viva y si es la de la dueña.
 - **Las acciones**, con sus contratos en `packages/compartido/src/contratos/personal/personas.ts`:
   - **`personal.dar_alta_persona`**: el pago por día pide el permiso; toma su E- y deja la ficha en la bitácora, marcada como sueldo (la descripción va como plantilla).
   - **`personal.editar_persona`**: sin el permiso el pago por día se conserva, y mandarlo o cambiar entre por pieza y por tiempo o mixta responde `403 sin_permiso_fino` (decisión 421); no pasa a tienda a quien tiene cuenta viva (`422 tiene_cuenta`); la bitácora lleva solo lo que cambió. Salir del Taller anula su PIN vivo (`cambio_area`), con «. Su PIN ya no entra».
-  - **`personal.dar_baja_persona`** y **`personal.reactivar_persona`**: con su versión; la persona de la dueña no se da de baja. Dar de baja anula su PIN vivo (`baja_persona`) en la misma transacción, con «. Su PIN ya no entra» y `acceso_quitado` en la bitácora (decisión 425); cerrar su cuenta llega en la parte 4.
+  - **`personal.dar_baja_persona`** y **`personal.reactivar_persona`**: con su versión; la persona de la dueña no se da de baja. Dar de baja anula su PIN vivo (`baja_persona`) en la misma transacción, con «. Su PIN ya no entra» y `acceso_quitado` en la bitácora (decisión 425), y `admin.cerrar_cuenta_de_persona` cierra su cuenta o rechaza su solicitud («. Su cuenta de Google ya no entra»).
 - **La ficha** (`consultas/persona.ts`, `personal.persona`): sin persona, los valores del alta; con persona, la apunta como consulta sensible, y el recorte común le quita el pago por día a quien no tiene el permiso (`recortado` lo dice). El listado `personal.personas`, con sus tarifas, llega con las tarifas en la parte 5 (decisión 420).
 - **La lectura** `personal.entra_al_sistema` (`lecturas/entra-al-sistema.ts`): «Baja {fecha}», «Cuenta de Google · {puesto}», «Sistema de su tienda», en el Taller «PIN del taller» si tiene un PIN vivo (activo o bloqueado) o «Sin PIN» y, en la oficina o Aduana y bodega sin cuenta, «Sin cuenta» (decisión 419).
 - **La subida** revisa la persona de cada comando (ver [sincronización](../../cimientos/SINCRONIZACION.md#cómo-está-hecho)).

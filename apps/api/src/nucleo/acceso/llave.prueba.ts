@@ -160,7 +160,7 @@ describe("un aparato solo entra con su llave vigente; revocado, responde 401 lla
 		const version = Number(
 			(await servidor.base.dueno.query("SELECT version FROM dispositivos WHERE id = $1", [tablet])).rows[0]?.version,
 		);
-		const datos = { dispositivo_id: tablet, motivo: "Se perdió" };
+		const datos = { dispositivo_id: tablet, motivo: "Se perdió", anular_pines: false };
 		expect(
 			(await mandarAccion(servidor, "admin.revocar_dispositivo", { datos, version }, "admin", conGoogle())).cuerpo,
 		).toMatchObject({

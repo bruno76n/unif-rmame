@@ -484,7 +484,7 @@ describe("Administración del sistema reintenta o descarta un comando apartado",
 			[bulto],
 		);
 		const cuenta = await servidor.base.dueno.query(
-			"SELECT coalesce(nombre, correo) AS nombre FROM usuarios WHERE id = $1",
+			"SELECT coalesce(u.nombre, p.nombre, u.correo) AS nombre FROM usuarios u LEFT JOIN personas p ON p.id = u.persona_id WHERE u.id = $1",
 			[cuentaDePrueba("admin")],
 		);
 		expect(bitacora.rows).toEqual([

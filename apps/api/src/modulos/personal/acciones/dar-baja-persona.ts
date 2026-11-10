@@ -2,12 +2,13 @@
  * `personal.dar_baja_persona`: Personal da de baja a una persona, con su motivo. Nada se borra.
  * Fase 7 · docs/modulos/personal/personas.md («`personal.dar_baja_persona`», reglas 2, 6 y 8)
  *
- * La persona de la dueña no se da de baja. En la misma transacción se anula su PIN del taller; cerrar su cuenta
- * llega con lo que faltaba de las cuentas (parte 4).
+ * La persona de la dueña no se da de baja. En la misma transacción se le quita lo que la deja entrar: se anula
+ * su PIN del taller y se cierra su cuenta de Google (o se rechaza su solicitud).
  */
 
 import { darBajaPersona } from "@uniformame/compartido/contratos/personal/personas";
 import { eq } from "drizzle-orm";
+import { z } from "zod";
 import { tomarVersion, versionActual } from "../../../nucleo/acciones/pisadas.ts";
 import { errorDeRegla } from "../../../nucleo/http/errores.ts";
 import { implementarAccion } from "../../../nucleo/modulos.ts";
@@ -31,13 +32,21 @@ export const accionDarBajaPersona = implementarAccion(darBajaPersona, async (con
 		})
 		.where(eq(personas.id, persona.id));
 	const pin = await anularPin(contexto, { persona_id: persona.id, motivo: "baja_persona", anulado_por: bajaPor });
+	const { cerrada } = z
+		.object({ cerrada: z.enum(["activa", "solicitada"]).nullable() })
+		.parse(await contexto.interna("admin.cerrar_cuenta_de_persona", { persona_id: persona.id }));
+	const quitado = [
+		...(pin.anulado ? ["PIN del taller"] : []),
+		...(cerrada === "activa" ? ["Cuenta de Google"] : []),
+		...(cerrada === "solicitada" ? ["Solicitud de cuenta"] : []),
+	];
 	contexto.bitacora({
 		descripcion: `Dio de baja a ${persona.nombre}: ${datos.motivo}`,
 		entidad: "personas",
 		entidadId: persona.id,
 		entidadFolio: persona.folio,
 		antes: { activa: true },
-		despues: { activa: false, motivo: datos.motivo, ...(pin.anulado ? { acceso_quitado: ["PIN del taller"] } : {}) },
+		despues: { activa: false, motivo: datos.motivo, ...(quitado.length > 0 ? { acceso_quitado: quitado } : {}) },
 	});
 	contexto.guardarEvento({
 		tipo: "persona.baja",
@@ -49,7 +58,7 @@ export const accionDarBajaPersona = implementarAccion(darBajaPersona, async (con
 	});
 	return {
 		resultado: {
-			mensaje: `${persona.nombre} dada de baja${pin.anulado ? ". Su PIN ya no entra" : ""}`,
+			mensaje: `${persona.nombre} dada de baja${pin.anulado ? ". Su PIN ya no entra" : ""}${cerrada === "activa" ? ". Su cuenta de Google ya no entra" : ""}`,
 			version: await versionActual(transaccion, personas, persona.id),
 		},
 		entidad: { nombre: "personas", id: persona.id },

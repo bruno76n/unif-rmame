@@ -58,7 +58,7 @@ describe("lo que llega de un aparato revocado y pasó antes de revocarlo queda r
 		const revocado = await mandarAccion(
 			servidor,
 			"admin.revocar_dispositivo",
-			{ datos: { dispositivo_id: tablet(), motivo: "Se perdió" }, version },
+			{ datos: { dispositivo_id: tablet(), motivo: "Se perdió", anular_pines: false }, version },
 			"duena",
 			conGoogle(),
 		);

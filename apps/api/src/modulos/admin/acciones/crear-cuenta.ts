@@ -1,22 +1,28 @@
 /**
  * `admin.crear_cuenta`: la dueña da de alta una cuenta de Google, ya activa, con sus departamentos.
  * Fase 5 · docs/modulos/admin/cuentas.md («`admin.crear_cuenta`»)
+ * Fase 7 · la persona de la cuenta y su PIN (reglas 2, 3 y 9)
  *
- * Una persona y un correo tienen a lo más una cuenta viva (solicitada o activa); dos altas a la vez para
- * la misma persona o el mismo correo dejan una sola, porque cada una toma su candado antes de buscar. La
- * revisión de la persona (activa, no de tienda) y la anulación de su PIN llegan con Personal, en la fase 7.
+ * La persona tiene que estar activa y no ser de tienda. Una persona y un correo tienen a lo más una cuenta
+ * viva (solicitada o activa); dos altas a la vez para la misma persona o el mismo correo dejan una sola,
+ * porque cada una toma su candado antes de buscar. Si la persona tenía PIN del taller, se anula.
  */
 
 import { crearCuenta } from "@uniformame/compartido/contratos/admin/cuentas";
-import { and, eq, inArray, sql } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
-import { errorDeRegla } from "../../../nucleo/http/errores.ts";
 import { implementarAccion } from "../../../nucleo/modulos.ts";
-import { confirmadoConGoogle, cuentaQueLlama, departamentosPorClave, revisarAsignables } from "../dominio/cuentas.ts";
+import {
+	anularPinPorCuenta,
+	confirmadoConGoogle,
+	cuentaQueLlama,
+	departamentosPorClave,
+	leerPersonaDeCuenta,
+	revisarAsignables,
+	revisarPersonaDeCuenta,
+	revisarQueEstanLibres,
+	tomarCandadosDeCuenta,
+} from "../dominio/cuentas.ts";
 import { usuarioDepartamentos, usuarios } from "../tablas.ts";
-
-/** Los estados de una cuenta viva. */
-const vivas = ["solicitada", "activa"];
 
 export const accionCrearCuenta = implementarAccion(crearCuenta, async (contexto, datos) => {
 	const { transaccion } = contexto;
@@ -25,25 +31,15 @@ export const accionCrearCuenta = implementarAccion(crearCuenta, async (contexto,
 	const claves = [...new Set(datos.departamentos)];
 	const deptos = await departamentosPorClave(transaccion, claves);
 	revisarAsignables(deptos.values());
-	// Los candados en orden fijo (persona, luego correo): dos altas a la vez no se cruzan.
-	await transaccion.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`cuenta_persona:${datos.persona_id}`}))`);
-	await transaccion.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`cuenta_correo:${datos.correo}`}))`);
-	const [conPersona] = await transaccion
-		.select({ id: usuarios.id })
-		.from(usuarios)
-		.where(and(eq(usuarios.personaId, datos.persona_id), inArray(usuarios.estado, vivas)));
-	if (conPersona !== undefined) throw errorDeRegla("persona_con_cuenta", "Esa persona ya tiene cuenta.");
-	const [conCorreo] = await transaccion
-		.select({ estado: usuarios.estado })
-		.from(usuarios)
-		.where(and(eq(usuarios.correo, datos.correo), inArray(usuarios.estado, vivas)));
-	if (conCorreo?.estado === "activa") throw errorDeRegla("correo_con_cuenta", "Ese correo ya tiene cuenta.");
-	if (conCorreo !== undefined) throw errorDeRegla("correo_solicitado", "Ya hay una solicitud para ese correo.");
+	await tomarCandadosDeCuenta(transaccion, datos.persona_id, datos.correo);
+	const persona = await leerPersonaDeCuenta(contexto, datos.persona_id);
+	revisarPersonaDeCuenta(persona);
+	await revisarQueEstanLibres(transaccion, persona, datos.correo);
 	const usuarioId = uuidv7();
 	const ahora = contexto.ahora.toString();
 	await transaccion.insert(usuarios).values({
 		id: usuarioId,
-		personaId: datos.persona_id,
+		personaId: persona.id,
 		correo: datos.correo,
 		estado: "activa",
 		activadaEn: ahora,
@@ -60,12 +56,17 @@ export const accionCrearCuenta = implementarAccion(crearCuenta, async (contexto,
 			creadoPor: duena,
 		})),
 	);
+	const pinAnulado = await anularPinPorCuenta(contexto, persona.id, duena);
 	const nombres = [...deptos.values()].map((depto) => depto.nombre).join(", ");
 	contexto.bitacora({
-		descripcion: `Dio de alta a ${datos.correo} con ${nombres}`,
+		descripcion: `Dio de alta a ${persona.nombre} con ${nombres}`,
 		entidad: "usuarios",
 		entidadId: usuarioId,
-		despues: { correo: datos.correo, departamentos: claves },
+		despues: {
+			correo: datos.correo,
+			departamentos: claves,
+			...(pinAnulado ? { acceso_quitado: ["PIN del taller"] } : {}),
+		},
 		confirmadoConGoogleEn: confirmado,
 	});
 	contexto.guardarEvento({
@@ -78,8 +79,9 @@ export const accionCrearCuenta = implementarAccion(crearCuenta, async (contexto,
 	return {
 		resultado: {
 			usuario_id: usuarioId,
-			mensaje: `${datos.correo} dada de alta: ya puede entrar con su cuenta de Google`,
+			mensaje: `${persona.nombre} dada de alta: ya puede entrar con su cuenta de Google`,
 		},
+		avisos: pinAnulado ? ["Su PIN del taller ya no entra"] : [],
 		entidad: { nombre: "usuarios", id: usuarioId },
 	};
 });

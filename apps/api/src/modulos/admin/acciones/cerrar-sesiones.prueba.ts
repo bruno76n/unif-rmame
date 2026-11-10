@@ -87,7 +87,7 @@ describe("salir y cerrar las propias sesiones; Administración del sistema cierr
 		const respuesta = await mandarAccion(servidor, "admin.cerrar_sesiones", { datos: { usuario_id: ventas } }, "admin");
 		expect(respuesta.cuerpo.resultado).toMatchObject({
 			cerradas: 2,
-			mensaje: "Sesiones de ventas@alameda.invalid cerradas",
+			mensaje: "Sesiones de Prueba ventas cerradas",
 		});
 		const sesiones = await sesionesDe(ventas);
 		expect(sesiones[otra]).toEqual({ motivo: "cerrada_por_otra_cuenta", por: cuentaDePrueba("admin") });
@@ -100,7 +100,7 @@ describe("salir y cerrar las propias sesiones; Administración del sistema cierr
 		const otraVez = await mandarAccion(servidor, "admin.cerrar_sesiones", { datos: { usuario_id: ventas } }, "admin");
 		expect(otraVez.cuerpo).toMatchObject({
 			codigo: "sin_sesiones_abiertas",
-			mensaje: "ventas@alameda.invalid no tiene sesiones abiertas.",
+			mensaje: "Prueba ventas no tiene sesiones abiertas.",
 		});
 		const sinDepartamento = await mandarAccion(
 			servidor,

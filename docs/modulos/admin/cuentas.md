@@ -47,7 +47,7 @@ Una cuenta es la entrada de una persona al sistema con su Google. Solo la dueña
 | `activada_en` · `activada_por` | timestamptz · uuid | sí | Cuándo y quién (siempre la dueña) |
 | `confirmado_con_google_en` | timestamptz | sí | El «Confirmar con Google» de la dueña al darla de alta. Obligatorio al activar, salvo las cuentas de la siembra |
 | `baja_en` · `baja_por` · `motivo_baja` | | sí | «Quitar acceso». El motivo es opcional |
-| `baja_confirmado_con_google_en` | timestamptz | sí | Obligatorio con `baja_en` (CHECK) |
+| `baja_confirmado_con_google_en` | timestamptz | sí | Obligatorio con `baja_en` (CHECK), salvo en la baja de la persona («Baja de la persona»), que no pide Google |
 
 - Lleva las columnas comunes; `creado_por` es quien la pidió o la dueña.
 - **Únicos parciales:** `persona_id` entre `solicitada` y `activa`; `correo` entre `solicitada` y `activa`; `google_sub` entre `activa`; `es_duena` donde es verdadero.
@@ -186,3 +186,12 @@ La cuenta de la dueña y la de soporte técnico nacen con la siembra de la puest
 - **Las lecturas** `admin.cuentas_por_regla` (`lecturas/cuentas-por-regla.ts`) y `admin.correo_de_cuenta` (`lecturas/correo-de-cuenta.ts`) leen `usuarios`: solo cuentas activas.
 - **Las cuentas de la muestra** (`apps/api/semillas/cuentas.ts`): la dueña (Carmen), soporte, la oficina (Rosa), Aduana y bodega (Javier) y el encargado del taller (Tomás), con los departamentos y permisos finos de la muestra. Van directo con el rol dueño, porque la dueña y soporte nacen con la siembra y las demás piden una persona (decisión 371). El encargado del taller no lleva la Puerta del taller: entra con su PIN.
 - **Las pruebas:** `acciones/crear-cuenta.prueba.ts`, `quitar-acceso.prueba.ts` y `cambiar-departamentos.prueba.ts` (con la conexión de avisos en vivo), y `lecturas/cuentas.prueba.ts`. Recorren quién puede, «Confirmar con Google» vencido, cada error de regla, el `409` y dos altas a la vez con el mismo correo.
+
+**Fase 7, parte 4.**
+
+- **La persona de la cuenta:** `admin.crear_cuenta` y `admin.pedir_cuenta` toman sus candados, leen la persona con `personal.datos_de_persona` (con `FOR SHARE`: nadie la da de baja mientras tanto, decisión 430) y revisan que esté activa y no sea de tienda (`422 persona_no_valida`: «{persona} está dada de baja.» o «Nadie de tienda entra al sistema de fábrica.», decisión 431) y que la persona y el correo no tengan otra cuenta viva (`revisarQueEstanLibres`, en `dominio/cuentas.ts`). Al activar una cuenta, `personal.anular_pin` (`cuenta_google`): el aviso «Su PIN del taller ya no entra» y `acceso_quitado` en la bitácora.
+- **El nombre de una cuenta** es el de soporte o el de su persona (`leerCuenta` la junta con `personas`); el correo, solo si no tiene ninguno (decisión 428).
+- **`admin.pedir_cuenta`** (`acciones/pedir-cuenta.ts`): Administración del sistema, la dueña no (`422 la_duena_da_de_alta`). La cuenta nace `solicitada` con sus departamentos sin confirmación, y `direccion.pedir_autorizacion` le da su AU- de `alta_usuario` («Dar cuenta a {persona} con {departamentos}{, para qué}»).
+- **`admin.aplicar_decision_alta_usuario`** (`internas/aplicar-decision-alta-usuario.ts`) es el efecto de `alta_usuario` (`efectosDeAutorizacion`). Toma los candados, la persona y la cuenta en ese orden; al autorizar revisa otra vez la persona (`422 persona_dada_de_baja`) y que siga libre, activa la cuenta con la dueña y su confirmación, y anula el PIN; al rechazar, `rechazada`. Regresa el mensaje y la descripción «Dio de alta a {persona} con {departamentos}» para el renglón de la decisión.
+- **`admin.cerrar_cuenta_de_persona`** (`internas/cerrar-cuenta-de-persona.ts`) la llama `personal.dar_baja_persona`: la cuenta activa queda `sin_acceso` con «Baja de la persona» y sin Google (el CHECK lo permite solo con ese motivo, migración `0018`, decisión 427), con lo mismo que «Quitar acceso» (`quitarElAcceso`, que también usa `admin.quitar_acceso`); la solicitada queda `rechazada` y su AU- se cancela.
+- **Las pruebas:** `acciones/crear-cuenta.prueba.ts` (la persona de tienda y la dada de baja; el PIN anulado) y `acciones/pedir-cuenta.prueba.ts` (la solicitud y su AU-; la dueña no pide; autorizar con el PIN anulado y su bitácora; rechazar; la persona dada de baja mientras esperaba; la baja que cierra la cuenta activa y la que rechaza la solicitud y cancela su AU-).

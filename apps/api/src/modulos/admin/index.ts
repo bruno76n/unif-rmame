@@ -7,8 +7,8 @@
  * Lo que tiene hoy: `comandos_recibidos` (que usa el corredor de acciones); la bandeja de `eventos` con
  * `admin.guardar_evento` y su depuración; las vueltas de los trabajos programados; los folios; los
  * parámetros, las listas y la empresa; la bitácora con sus alertas; los avisos con su correo; los
- * archivos en R2; las impresoras y sus trabajos; los respaldos y sus pruebas de restauración. Las cuentas,
- * las sesiones y los permisos llegan con la fase 5.
+ * archivos en R2; las impresoras y sus trabajos; los respaldos y sus pruebas de restauración; las cuentas,
+ * las sesiones y los permisos (fase 5), con lo que las liga a Personal y a Dirección (fase 7).
  */
 
 import { definirModulo } from "../../nucleo/modulos.ts";
@@ -27,6 +27,7 @@ import { accionGenerarCodigoRegistro } from "./acciones/generar-codigo-registro.
 import { accionGuardarImpresora } from "./acciones/guardar-impresora.ts";
 import { accionMarcarAlertaRevisada } from "./acciones/marcar-alerta-revisada.ts";
 import { accionMarcarAvisoLeido } from "./acciones/marcar-aviso-leido.ts";
+import { accionPedirCuenta } from "./acciones/pedir-cuenta.ts";
 import { accionQuitarAcceso } from "./acciones/quitar-acceso.ts";
 import { accionRegistrarRestauracion } from "./acciones/registrar-restauracion.ts";
 import { accionReintentarComandoApartado } from "./acciones/reintentar-comando-apartado.ts";
@@ -39,6 +40,8 @@ import { bajadaDeAdmin } from "./bajada.ts";
 import { semillaDeContadores } from "./dominio/contadores.ts";
 import { semillaDeDepartamentos } from "./dominio/departamentos.ts";
 import { enVivoDeAdmin } from "./en-vivo.ts";
+import { aplicarDecisionAltaUsuario } from "./internas/aplicar-decision-alta-usuario.ts";
+import { cerrarCuentaDePersona } from "./internas/cerrar-cuenta-de-persona.ts";
 import { crearAviso } from "./internas/crear-aviso.ts";
 import { escribirBitacora } from "./internas/escribir-bitacora.ts";
 import { guardarArchivo } from "./internas/guardar-archivo.ts";
@@ -78,6 +81,7 @@ export default definirModulo({
 		accionConfirmarImpresion,
 		accionRegistrarRestauracion,
 		accionCrearCuenta,
+		accionPedirCuenta,
 		accionQuitarAcceso,
 		accionCambiarDepartamentos,
 		accionCambiarPermisoFino,
@@ -101,7 +105,10 @@ export default definirModulo({
 		guardar_archivo: guardarArchivo,
 		mandar_a_imprimir: mandarAImprimir,
 		registrar_respaldo: registrarRespaldo,
+		aplicar_decision_alta_usuario: aplicarDecisionAltaUsuario,
+		cerrar_cuenta_de_persona: cerrarCuentaDePersona,
 	},
+	efectosDeAutorizacion: { alta_usuario: "aplicar_decision_alta_usuario" },
 	lecturas: {
 		ultima_sincronizacion: ultimaSincronizacion,
 		parametro,

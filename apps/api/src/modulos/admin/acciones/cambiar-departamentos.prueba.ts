@@ -60,7 +60,7 @@ describe("solo la dueña cambia departamentos, con «Confirmar con Google»; a l
 		const sinNada = await cambiar([await cambio(ventas, [], ["ventas"])]);
 		expect(sinNada.cuerpo).toMatchObject({
 			codigo: "sin_departamentos",
-			mensaje: "ventas@alameda.invalid se quedaría sin departamentos. Para quitarle todo, usa «Quitar acceso»",
+			mensaje: "Prueba ventas se quedaría sin departamentos. Para quitarle todo, usa «Quitar acceso»",
 		});
 		const soporte = await cambiar([await cambio(cuentaDePrueba("soporte"), ["contaduria"], [])]);
 		expect(soporte.cuerpo).toMatchObject({
@@ -110,14 +110,13 @@ describe("solo la dueña cambia departamentos, con «Confirmar con Google»; a l
 		);
 		expect(bitacora.rows).toEqual([
 			{
-				descripcion: "Departamentos de aduana@alameda.invalid: recibe Bodega",
+				descripcion: "Departamentos de Prueba aduana: recibe Bodega",
 				es_alerta: true,
 				antes: { departamentos: ["aduana"] },
 				despues: { departamentos: ["aduana", "bodega"] },
 			},
 			{
-				descripcion:
-					"Departamentos de ventas@alameda.invalid: recibe Tienda en línea, Compras · deja Ventas a externos",
+				descripcion: "Departamentos de Prueba ventas: recibe Tienda en línea, Compras · deja Ventas a externos",
 				es_alerta: true,
 				antes: { departamentos: ["ventas"] },
 				despues: { departamentos: ["compras", "linea"] },
