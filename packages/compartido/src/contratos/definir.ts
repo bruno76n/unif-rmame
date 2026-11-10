@@ -24,6 +24,11 @@ export interface Permiso {
 	confirmarConGoogle?: string;
 	/** Los aparatos en cuyo alcance está. Sin esto, ningún aparato la llama. */
 	aparatos?: readonly ("tablet" | "puente" | "caja")[];
+	/**
+	 * Esos aparatos también la suben por su cola, sin internet (`POST /v1/sync/subir`), con la hora en que
+	 * pasó. Sin esto es solo en línea: la subida la aparta con `fuera_de_alcance` (rotar la llave, el puente).
+	 */
+	cola?: true;
 }
 
 /** Un error de regla que puede dar una acción: su código estable y su mensaje. */
@@ -130,6 +135,18 @@ export function definirAccion<
 	secretos?: readonly string[];
 	cierraLaSesion?: boolean;
 }) {
+	// Lo que sube por la cola es de un aparato, y su carga se guarda si se aparta: no puede llevar secretos.
+	if (contrato.permiso.cola === true) {
+		if ((contrato.permiso.aparatos ?? []).length === 0) {
+			throw new Error(`${contrato.nombre}: lo que sube por la cola tiene que nombrar sus aparatos`);
+		}
+		const secreto = Object.entries(contrato.entrada.shape)
+			.flatMap(([campo, esquema]) => [campo, ...camposAnidados(esquema)])
+			.find(pareceSecreto);
+		if (secreto !== undefined) {
+			throw new Error(`${contrato.nombre}: lo que sube por la cola no puede llevar el secreto ${secreto}`);
+		}
+	}
 	// Un secreto se entrega una vez: en la respuesta repetida ya no viene, así que su campo es opcional.
 	for (const secreto of contrato.secretos ?? []) {
 		const campo = contrato.salida.shape[secreto];

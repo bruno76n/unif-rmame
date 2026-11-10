@@ -49,7 +49,9 @@ describe("la foto entrega todo lo vigente del aparato y la bajada sigue desde su
 			"SELECT clave FROM parametros WHERE 'tablet_taller' = ANY(baja_a) ORDER BY clave",
 		);
 		expect([...parametros].sort()).toEqual(rows.map((renglon) => renglon.clave));
-		expect(parametros).toContain("prueba.atendidos_bajan");
+		expect(parametros).toEqual(
+			expect.arrayContaining(["prueba.atendidos_bajan", "sync.intervalo_segundos", "sync.tanda_max_comandos"]),
+		);
 		// Los lotes abiertos del Taller, por id; ni el cerrado ni el de otra ubicación.
 		expect(cambios.filter((cambio) => cambio.tabla === "prueba_lotes").map((cambio) => cambio.id)).toEqual(
 			[...abiertos].sort(),

@@ -103,6 +103,21 @@ describe("una respuesta con un secreto se repite sin el secreto y con secreto_en
 		).toThrow("parece un secreto");
 	});
 
+	it("lo que sube por la cola no lleva secretos en su entrada y nombra sus aparatos", () => {
+		const conCola = (entrada: z.ZodObject<z.ZodRawShape>, aparatos?: readonly ("tablet" | "puente")[]) => () =>
+			definirAccion({
+				nombre: "prueba.cola",
+				descripcion: "cola",
+				entrada,
+				salida: z.object({}),
+				permiso: { ...(aparatos === undefined ? {} : { aparatos }), cola: true },
+			});
+		expect(conCola(z.object({ datos: z.object({ pin: z.string() }) }), ["tablet"])).toThrow("el secreto pin");
+		expect(conCola(z.object({ secreto_nuevo: z.string() }), ["tablet"])).toThrow("el secreto secreto_nuevo");
+		expect(conCola(z.object({ piezas: z.number() }))).toThrow("nombrar sus aparatos");
+		expect(conCola(z.object({ persona_id: z.uuid() }), ["tablet"])).not.toThrow();
+	});
+
 	it("un contrato no deja un secreto dentro de otro campo, pero sí un id con nombre parecido", () => {
 		expect(() =>
 			definirAccion({

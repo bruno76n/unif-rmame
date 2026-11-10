@@ -11,7 +11,7 @@
 import type { App } from "@uniformame/compartido/contratos/versiones";
 import { and, desc, eq, isNull, lte, sql } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
-import { parametros, parametrosHistorial } from "../modulos/admin/tablas.ts";
+import { parametros, parametrosHistorial, type tiposDeDispositivo } from "../modulos/admin/tablas.ts";
 import type { Base } from "./base/conexion.ts";
 import type { Semilla } from "./base/siembra.ts";
 import type { Transaccion } from "./base/transacciones.ts";
@@ -37,8 +37,8 @@ export interface DefinicionDeParametro {
 	permiteVacio?: boolean;
 	/** Los valores de una `opcion`. */
 	opciones?: readonly string[];
-	/** Los tipos de aparato que lo reciben al sincronizar. */
-	bajaA?: readonly string[];
+	/** Los tipos de aparato que lo reciben al sincronizar, por su tipo de registro (`tablet_taller`). */
+	bajaA?: readonly (typeof tiposDeDispositivo)[number][];
 	/** Sale «Por decidir» hasta que la dueña lo cambia. */
 	porDecidir?: boolean;
 	orden: number;

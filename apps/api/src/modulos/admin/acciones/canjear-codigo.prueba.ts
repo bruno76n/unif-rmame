@@ -227,6 +227,20 @@ describe("un código de registro vale sus minutos, se canjea una vez, no dice si
 		expect((await canjear(datos, { ip: "198.51.100.78" })).estado).toBe(200);
 	});
 
+	it("una ráfaga de códigos equivocados a la vez desde una IP no se brinca el 429: pasan 5 y los demás responden 429", async () => {
+		const ip = "198.51.100.79";
+		const respuestas = await Promise.all(
+			Array.from({ length: 20 }, () =>
+				canjear({ codigo: "QQQ-QQQ", tipo: "tablet_taller", secreto: secretoNuevo(), version_app: "1.0.0" }, { ip }),
+			),
+		);
+		const porEstado = respuestas.reduce<Record<number, number>>((cuenta, respuesta) => {
+			cuenta[respuesta.estado] = (cuenta[respuesta.estado] ?? 0) + 1;
+			return cuenta;
+		}, {});
+		expect(porEstado).toEqual({ 422: 5, 429: 15 });
+	});
+
 	it("dos canjes a la vez del mismo código dejan un solo aparato", async () => {
 		const { id, codigo } = await codigoDeTablet();
 		const respuestas = await Promise.all(

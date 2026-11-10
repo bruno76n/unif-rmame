@@ -25,12 +25,21 @@ export interface Escucha {
 /**
  * Abre `GET /v1/eventos` en un servidor que escucha de verdad, y junta lo que llega.
  * @param direccion La dirección del servidor.
- * @param quien Quién se conecta: su nombre en `x-prueba-quien`, o la cookie de su sesión de verdad.
+ * @param quien Quién se conecta: su nombre en `x-prueba-quien`, la cookie de su sesión de verdad o la llave
+ * de un aparato (`Authorization: Llave …`).
  */
-export async function escuchar(direccion: string, quien: string | { sesion: string }): Promise<Escucha> {
+export async function escuchar(
+	direccion: string,
+	quien: string | { sesion: string } | { llave: string },
+): Promise<Escucha> {
 	const control = new AbortController();
 	const respuesta = await fetch(`${direccion}/v1/eventos`, {
-		headers: typeof quien === "string" ? { "x-prueba-quien": quien } : { cookie: `ua_sesion=${quien.sesion}` },
+		headers:
+			typeof quien === "string"
+				? { "x-prueba-quien": quien }
+				: "sesion" in quien
+					? { cookie: `ua_sesion=${quien.sesion}` }
+					: { authorization: quien.llave },
 		signal: control.signal,
 	});
 	expect(respuesta.status).toBe(200);

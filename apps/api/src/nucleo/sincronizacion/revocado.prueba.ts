@@ -112,6 +112,25 @@ describe("lo que llega de un aparato revocado y pasó antes de revocarlo queda r
 		expect(bitacora.rows).toEqual([
 			{ descripcion: "Llegaron 2 movimientos de Tablet del taller después de revocarlo", es_alerta: true },
 		]);
+		// Si la alerta falla, el último comando se queda sin respuesta; al volver a mandarlo, la alerta cuenta
+		// todo lo que llegó desde la anterior: no se pierde.
+		const primero = abrir("L-otro-1", new Date(Date.now() - 30_000).toISOString());
+		const segundo = abrir("L-otro-2", new Date(Date.now() - 20_000).toISOString());
+		servidor.fallas.bitacoraUnaVez.add("después de revocarlo");
+		const cortada = await subir([primero, segundo]);
+		expect(cortada.cuerpo).toMatchObject({
+			detenido: true,
+			respuestas: [expect.objectContaining({ resultado: "excepcion" })],
+		});
+		expect((await subir([segundo])).cuerpo.detenido).toBe(false);
+		const alertas = await servidor.base.dueno.query(
+			"SELECT descripcion FROM bitacora WHERE accion = 'admin.subir' AND es_alerta AND entidad_id = $1 ORDER BY ocurrido_en",
+			[tablet()],
+		);
+		expect(alertas.rows.map((renglon) => renglon.descripcion)).toEqual([
+			"Llegaron 2 movimientos de Tablet del taller después de revocarlo",
+			"Llegaron 2 movimientos de Tablet del taller después de revocarlo",
+		]);
 		// Lo de un aparato revocado no se reintenta a mano.
 		const apartado = await servidor.base.dueno.query(
 			"SELECT id FROM comandos_recibidos WHERE clave_idempotencia = $1",

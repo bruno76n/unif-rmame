@@ -11,6 +11,7 @@
 import { sql } from "drizzle-orm";
 import type { Temporal } from "temporal-polyfill";
 import type { Base } from "../base/conexion.ts";
+import type { Transaccion } from "../base/transacciones.ts";
 
 /** Cuántos intentos y en qué ventana, de sus parámetros. */
 export interface LimiteDeIntentos {
@@ -20,14 +21,14 @@ export interface LimiteDeIntentos {
 
 /**
  * Dice hasta cuándo está bloqueada una clave.
- * @param base La base.
+ * @param base La base, o la transacción del canje (con el candado de su IP).
  * @param clave `entrada:{ip}` o `codigo:{ip}`.
  * @param ahora La hora.
  * @param limite El máximo y la ventana.
  * @returns El momento en que se puede volver a intentar, o `undefined` si no está bloqueada.
  */
 export async function bloqueadaHasta(
-	base: Base,
+	base: Base | Transaccion,
 	clave: string,
 	ahora: Temporal.Instant,
 	limite: LimiteDeIntentos,
@@ -48,13 +49,13 @@ export async function bloqueadaHasta(
 
 /**
  * Anota una falla. Una sola sentencia: dos instancias a la vez cuentan las dos.
- * @param base La base.
+ * @param base La base, o la transacción del canje (con el candado de su IP).
  * @param clave `entrada:{ip}` o `codigo:{ip}`.
  * @param ahora La hora.
  * @param limite El máximo y la ventana.
  */
 export async function anotarFalla(
-	base: Base,
+	base: Base | Transaccion,
 	clave: string,
 	ahora: Temporal.Instant,
 	limite: LimiteDeIntentos,

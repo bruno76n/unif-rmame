@@ -497,7 +497,9 @@ function describir(descripcion: string, permiso: Permiso, recortables: readonly 
 		permiso.permisoFino === undefined ? undefined : `permiso fino ${permiso.permisoFino}`,
 		permiso.soloDuena === true ? "solo la dueña" : undefined,
 		permiso.confirmarConGoogle === undefined ? undefined : `«Confirmar con Google» (${permiso.confirmarConGoogle})`,
-		permiso.aparatos === undefined ? undefined : `aparatos: ${permiso.aparatos.join(", ")}`,
+		permiso.aparatos === undefined
+			? undefined
+			: `aparatos: ${permiso.aparatos.join(", ")}${permiso.cola === true ? " (también por su cola, sin internet)" : ""}`,
 	].filter((parte) => parte !== undefined);
 	const quien = `Permiso: ${partes.length === 0 ? "cualquier cuenta con sesión" : partes.join("; ")}.`;
 	const recorte = recortables.length === 0 ? "" : ` Se puede recortar: ${recortables.join(", ")}.`;

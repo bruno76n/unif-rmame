@@ -24,6 +24,7 @@ import type { Almacen } from "../almacen.ts";
 import { crearBase } from "../base/conexion.ts";
 import { type Semilla, sembrarSistema } from "../base/siembra.ts";
 import { cargarModulos, type RegistroDeModulos, registrarModulos } from "../modulos.ts";
+import { alcanceDeLaBajada } from "../sincronizacion/bajar.ts";
 import { llaveDelCursor } from "../sincronizacion/cursor.ts";
 import { crearAvisosEnVivo } from "../sincronizacion/eventos-en-vivo.ts";
 import { quienesDePrueba } from "./cuentas-de-prueba.ts";
@@ -112,7 +113,8 @@ async function crearBaseConTablasDePrueba(semillas: readonly Semilla[]): Promise
 export async function crearServidorDePrueba(
 	opciones: {
 		entorno?: "local" | "pruebas" | "produccion";
-		avisosEnVivo?: { latidoMs: number };
+		/** Los avisos en vivo; con `alcanceReal`, el de un aparato sale de su bajada y no del alcance fijo. */
+		avisosEnVivo?: { latidoMs: number; alcanceReal?: true };
 		otraInstanciaDe?: ServidorDePrueba;
 		almacen?: Almacen;
 		conGoogle?: true;
@@ -166,7 +168,10 @@ export async function crearServidorDePrueba(
 					conexiones: base.app,
 					base: crearBase(base.app),
 					registro,
-					alcanceDelAparato: async () => alcanceDeLaTablet,
+					alcanceDelAparato:
+						opciones.avisosEnVivo.alcanceReal === true
+							? alcanceDeLaBajada(crearBase(base.app), registro)
+							: async () => alcanceDeLaTablet,
 					intervaloDeSincronizacion: async () => 30,
 					anotarError: (error) =>
 						lineas.push(`error en vivo: ${error instanceof Error ? error.message : String(error)}`),

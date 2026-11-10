@@ -237,7 +237,7 @@ export const abrirLote = definirAccion({
 	descripcion: "Abre un lote de prueba",
 	entrada: z.object({ id: z.uuid().describe("El lote"), nombre: z.string().min(1).describe("Su nombre") }),
 	salida: z.object({}),
-	permiso: { departamento: "ventas", aparatos: ["tablet"] },
+	permiso: { departamento: "ventas", aparatos: ["tablet"], cola: true },
 });
 
 /** La tablet registra un bulto de un lote: si el lote no ha llegado, espera; con más de 100 piezas, no cuadra. */
@@ -250,7 +250,7 @@ export const registrarBulto = definirAccion({
 		piezas: z.number().int().positive().describe("Sus piezas"),
 	}),
 	salida: z.object({}),
-	permiso: { aparatos: ["tablet"] },
+	permiso: { aparatos: ["tablet"], cola: true },
 	errores: [{ codigo: "lote_cerrado", mensaje: "Ese lote ya se cerró." }],
 });
 
@@ -260,7 +260,7 @@ export const cancelarBulto = definirAccion({
 	descripcion: "Cancela un bulto",
 	entrada: z.object({ bulto_id: z.uuid().describe("El bulto") }),
 	salida: z.object({}),
-	permiso: { aparatos: ["tablet"] },
+	permiso: { aparatos: ["tablet"], cola: true },
 });
 
 /** Ventas atiende un bulto. */

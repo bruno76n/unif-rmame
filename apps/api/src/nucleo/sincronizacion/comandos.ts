@@ -10,6 +10,7 @@
  * el comando con su carga para revisarlo o reintentarlo.
  */
 
+import { pareceSecreto } from "@uniformame/compartido/contratos/definir";
 import { respuestaDeComando } from "@uniformame/compartido/contratos/sincronizacion";
 import { and, asc, eq, isNull, sql } from "drizzle-orm";
 import { Temporal } from "temporal-polyfill";
@@ -144,8 +145,9 @@ export async function aplicarComando(
 	ajustarBitacora?: (renglon: RenglonDeBitacora) => RenglonDeBitacora,
 ): Promise<ComandoHecho> {
 	const accion = dependencias.registro.acciones.get(carga.accion);
-	// Paso 2: lo que no está en el alcance de su tipo de aparato.
-	if (accion === undefined || !(accion.contrato.permiso.aparatos ?? []).includes(aparato.tipoDeAparato)) {
+	// Paso 2: lo que no está en el alcance de su tipo de aparato, o no sube por la cola (solo en línea).
+	const { permiso } = accion?.contrato ?? {};
+	if (accion === undefined || permiso?.cola !== true || !(permiso.aparatos ?? []).includes(aparato.tipoDeAparato)) {
 		return apartado("fuera_de_alcance");
 	}
 	// Paso 3: la forma del contrato de su acción.
@@ -220,6 +222,22 @@ export function respuestaRepetida(guardada: unknown): RespuestaSinClave {
 }
 
 /**
+ * Quita de un valor, a cualquier profundidad, los campos con nombre de secreto. Lo que sube por la cola no
+ * los lleva (`definirAccion` lo revisa), pero lo que llega fuera de alcance puede traer cualquier cosa, y su
+ * carga se guarda: un secreto nunca queda en claro en la base.
+ * @param valor Los datos del comando.
+ */
+function sinCamposSecretos(valor: unknown): unknown {
+	if (Array.isArray(valor)) return valor.map(sinCamposSecretos);
+	if (typeof valor !== "object" || valor === null) return valor;
+	return Object.fromEntries(
+		Object.entries(valor)
+			.filter(([campo]) => !pareceSecreto(campo))
+			.map(([campo, interior]) => [campo, sinCamposSecretos(interior)]),
+	);
+}
+
+/**
  * Guarda el comando con lo que pasó: su renglón de `comandos_recibidos`, con su carga si se apartó o abrió
  * una excepción.
  * @param transaccion La transacción del comando.
@@ -249,7 +267,8 @@ export async function guardarComando(
 		tipoComando: carga.accion,
 		ocurridoEn: carga.ocurrido_en,
 		cargaHash: huellaDeComando(carga),
-		carga: resultado === "aplicado" ? null : carga,
+		// La huella ya se tomó con la carga completa; lo que se guarda va sin secretos.
+		carga: resultado === "aplicado" ? null : { ...carga, datos: sinCamposSecretos(carga.datos) },
 		resultado,
 		motivoApartado: hecho.motivo,
 		esperaEntidadId: hecho.esperaEntidadId,

@@ -342,7 +342,7 @@ export const parametrosDeAdmin: readonly DefinicionDeParametro[] = [
 		unidad: "s",
 		inicial: 60,
 		minimo: 5,
-		bajaA: ["tablet"],
+		bajaA: ["tablet_taller"],
 		orden: 1010,
 	},
 	{
@@ -352,7 +352,7 @@ export const parametrosDeAdmin: readonly DefinicionDeParametro[] = [
 		tipo: "entero",
 		inicial: 200,
 		minimo: 1,
-		bajaA: ["tablet"],
+		bajaA: ["tablet_taller"],
 		orden: 1011,
 	},
 	{

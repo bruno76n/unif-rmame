@@ -288,7 +288,8 @@ Los dos primeros van en `parametro`; los demás, en `tecnico`. La ventana de int
 - **`dispositivo.revocado`** manda `dispositivo_revocado` al aparato, y su conexión en vivo se vuelve a revisar y se corta; `dispositivo.registrado` manda `dispositivo_registrado` a la dueña que generó el código.
 - **Los parámetros** `admin.codigo_registro_vigencia_min`, `admin.horas_sin_sincronizar_aviso`, `admin.intentos_codigo_max`, `admin.dias_rotar_llave`, `admin.minutos_gracia_llave`, `admin.minutos_revisar_sincronizacion` y los `sync.*` están en `modulos/admin/parametros.ts`.
 - **En las pruebas**, la base plantilla trae los aparatos de prueba (la tablet del Taller y los puentes de Aduana y del Taller) registrados, con su llave conocida (`llaveDePrueba`). La prueba identifica como la API cuando la llamada trae `Authorization`.
-- **Las pruebas:** `modulos/admin/acciones/canjear-codigo.prueba.ts` y `nucleo/acceso/llave.prueba.ts`.
+- **El `429` del canje:** los canjes de una IP van uno tras otro, con un candado de transacción sobre `codigo:{ip}`; el bloqueo se revisa y la falla se cuenta en la misma transacción, así que una ráfaga a la vez tampoco pasa (decisión 408).
+- **Las pruebas:** `modulos/admin/acciones/canjear-codigo.prueba.ts` (también la ráfaga de 20 códigos equivocados a la vez: 5 responden 422 y 15, 429) y `nucleo/acceso/llave.prueba.ts`.
 
 **Fase 6, parte 2.**
 

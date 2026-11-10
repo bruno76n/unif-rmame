@@ -9,8 +9,9 @@
  */
 
 import { createHash, createHmac, hkdfSync, timingSafeEqual } from "node:crypto";
+import { PgDialect } from "drizzle-orm/pg-core";
 import { z } from "zod";
-import type { TablaQueBaja } from "../modulos.ts";
+import type { AparatoQueBaja, TablaQueBaja } from "../modulos.ts";
 
 /** Un número de transacción (`xid8`), como texto de dígitos. */
 const xid = z.string().regex(/^\d{1,20}$/);
@@ -120,13 +121,30 @@ export function leerCursorDeFoto(llave: Buffer, opaco: string): CursorDeFoto | u
 	return leido.success ? leido.data : undefined;
 }
 
+/** Un aparato fijo para escribir cada filtro como texto: sus valores salen como parámetros (`$1`), no en el texto. */
+const aparatoDeMuestra: AparatoQueBaja = {
+	dispositivoId: "00000000-0000-0000-0000-000000000000",
+	tipo: "",
+	ubicacionId: null,
+};
+
 /**
- * La versión del esquema de sincronización de un tipo de aparato: sale de sus tablas, su orden y sus
- * columnas, así que cambia sola cuando un módulo cambia lo que baja, y el cursor viejo pide la foto.
+ * La versión del esquema de sincronización de un tipo de aparato: sale de sus tablas, su orden, sus columnas,
+ * el SQL de su filtro y los parámetros que lo deciden, así que cambia sola cuando un módulo cambia lo que
+ * baja (también solo el filtro), y el cursor viejo pide la foto.
  * @param tablas Las tablas que bajan a ese tipo.
  * @returns Un entero de 28 bits (cabe en `dispositivos_sync.esquema_sync`).
  */
 export function esquemaDe(tablas: readonly TablaQueBaja[]): number {
-	const forma = JSON.stringify(tablas.map((tabla) => [tabla.tabla, tabla.orden, [...tabla.columnas].sort()]));
+	const dialecto = new PgDialect();
+	const forma = JSON.stringify(
+		tablas.map((tabla) => [
+			tabla.tabla,
+			tabla.orden,
+			[...tabla.columnas].sort(),
+			dialecto.sqlToQuery(tabla.filtro(aparatoDeMuestra)).sql,
+			[...(tabla.parametros ?? [])].sort(),
+		]),
+	);
 	return Number.parseInt(createHash("sha256").update(forma).digest("hex").slice(0, 7), 16);
 }

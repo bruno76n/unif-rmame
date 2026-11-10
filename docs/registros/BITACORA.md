@@ -44,3 +44,4 @@ La línea de la bitácora se escribe al final, con el resultado ya conocido. Esc
 | 10 nov 2026 | 6 | 2 · Subir | [2026-11-10-fase-06](sesiones/2026-11-10-fase-06.md) |
 | 10 nov 2026 | 6 | 3 · Bajar y la foto | [2026-11-10-fase-06](sesiones/2026-11-10-fase-06.md) |
 | 10 nov 2026 | 6 | 4 · El aparato revocado y lo que vigila | [2026-11-10-fase-06](sesiones/2026-11-10-fase-06.md) |
+| 10 nov 2026 | 6 | Auditoría (tres auditores y desmentidor) y sus correcciones | [2026-11-10-fase-06](sesiones/2026-11-10-fase-06.md) |

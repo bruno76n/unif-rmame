@@ -7,13 +7,14 @@
  * idempotencia como una acción: el reintento con la misma clave y los mismos datos contesta lo mismo (la
  * respuesta nunca lleva el secreto: lo hizo el aparato), y con otros datos, `clave_usada`. Un código que no
  * existe o venció responde lo mismo (`codigo_no_valido`) y suma un intento de la IP; con
- * `admin.intentos_codigo_max` en la ventana, `429`. Todo pasa en una transacción con el código bloqueado:
- * dos canjes a la vez dejan un solo aparato.
+ * `admin.intentos_codigo_max` en la ventana, `429`. Los canjes de una IP van uno tras otro (un candado por
+ * IP), así que una ráfaga a la vez no se brinca el `429`. Todo pasa en una transacción con el código
+ * bloqueado: dos canjes a la vez dejan un solo aparato.
  */
 
 import { cuerpoDelCanje, salidaDelCanje } from "@uniformame/compartido/contratos/admin/dispositivos";
 import { type App, compararVersiones, versionMinima } from "@uniformame/compartido/contratos/versiones";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import type { FastifyInstance, FastifyPluginAsync } from "fastify";
 import { Temporal } from "temporal-polyfill";
 import { v7 as uuidv7 } from "uuid";
@@ -95,16 +96,28 @@ function registrarCanje(app: FastifyInstance, dependencias: DependenciasDelCanje
 			throw new ErrorDeApi("actualizar", null, undefined, { version_minima: minima });
 		}
 		respuesta.header("cache-control", "no-store");
-		try {
-			return await enTransaccion(base, (transaccion) =>
-				canjear(transaccion, { claveIdempotencia, datos, ip: peticion.ip, ahora }),
-			);
-		} catch (error) {
-			if (error instanceof ErrorDeApi && error.codigo === "codigo_no_valido") {
-				await anotarFalla(base, clave, ahora, await limite());
+		const tope = await limite();
+		const canje = await enTransaccion(base, async (transaccion) => {
+			// Los canjes de una misma IP van uno tras otro: el bloqueo se revisa y la falla se cuenta con el
+			// candado puesto, así que una ráfaga de códigos a la vez no pasa entera antes de que cuente la primera.
+			await transaccion.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended(${clave}, 0))`);
+			const bloqueada = await bloqueadaHasta(transaccion, clave, ahora, tope);
+			if (bloqueada !== undefined) return { bloqueada };
+			try {
+				const pedido = { claveIdempotencia, datos, ip: peticion.ip, ahora };
+				return { respuesta: await enTransaccion(transaccion, (punto) => canjear(punto, pedido)) };
+			} catch (error) {
+				if (!(error instanceof ErrorDeApi && error.codigo === "codigo_no_valido")) throw error;
+				// La falla se cuenta en la misma transacción; el canje que falló ya se deshizo en su `SAVEPOINT`.
+				await anotarFalla(transaccion, clave, ahora, tope);
+				return { falla: error };
 			}
-			throw error;
+		});
+		if ("bloqueada" in canje) {
+			throw new ErrorDeApi("demasiados_intentos", null, undefined, { reintentar_en: canje.bloqueada });
 		}
+		if ("falla" in canje) throw canje.falla;
+		return canje.respuesta;
 	});
 
 	/**

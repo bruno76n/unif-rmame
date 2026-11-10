@@ -174,6 +174,36 @@ describe("la subida aplica lo que ya pasó, aparta lo que no puede aplicar y nun
 		]);
 	});
 
+	it("lo que es solo en línea (rotar la llave, lo del puente) no entra por la cola: fuera_de_alcance, y su carga se guarda sin el secreto", async () => {
+		const antes = await servidor.base.dueno.query(
+			"SELECT llave_hash, llave_rotada_en FROM dispositivos WHERE id = $1",
+			[tablet()],
+		);
+		const rotar = comando(
+			"admin.rotar_llave",
+			{ secreto_nuevo: "secreto-que-nunca-se-guarda".padEnd(43, "q") },
+			"2035-01-01T00:00:00Z",
+		);
+		const { cuerpo } = await subir([rotar]);
+		expect(cuerpo.respuestas[0]).toMatchObject({ resultado: "apartado", motivo: "fuera_de_alcance" });
+		const despues = await servidor.base.dueno.query(
+			"SELECT llave_hash, llave_rotada_en FROM dispositivos WHERE id = $1",
+			[tablet()],
+		);
+		expect(despues.rows).toEqual(antes.rows);
+		const [guardado] = await recibido(rotar.clave_idempotencia);
+		expect(guardado?.carga).toEqual({
+			accion: "admin.rotar_llave",
+			datos: {},
+			ocurrido_en: "2035-01-01T00:00:00Z",
+			persona_id: lupita,
+		});
+		expect(JSON.stringify(guardado)).not.toContain("secreto-que-nunca");
+		// El puente no sincroniza: lo suyo es en línea.
+		const delPuente = await subir([comando("admin.trabajos_impresion", {})], { llave: llaveDePrueba("otro_puente") });
+		expect(delPuente.cuerpo.respuestas[0]).toMatchObject({ resultado: "apartado", motivo: "fuera_de_alcance" });
+	});
+
 	it("lo que no cuadra se aplica igual y contesta excepcion; la regla que no deja se aparta con su código", async () => {
 		const lote = uuidv7();
 		const bulto = uuidv7();
@@ -255,6 +285,30 @@ describe("la subida aplica lo que ya pasó, aparta lo que no puede aplicar y nun
 			resultado: "repetido",
 			datos: { mensaje: "Bulto registrado" },
 		});
+	});
+
+	it("si el reintento solo falla por algo del servidor, el comando que trajo el documento se queda sin respuesta y, al volver a mandarlo, destraba a los que esperaban", async () => {
+		const lote = uuidv7();
+		const espera = comando(
+			"prueba.registrar_bulto",
+			{ id: uuidv7(), lote_id: lote, piezas: 77 },
+			"2026-11-10T18:02:00Z",
+		);
+		const abrir = comando("prueba.abrir_lote", { id: lote, nombre: "L-2026-160" }, "2026-11-10T18:03:00Z");
+		servidor.fallas.bitacoraUnaVez.add("Registró un bulto de 77 piezas");
+		const cortada = await subir([espera, abrir]);
+		expect(cortada.cuerpo.detenido).toBe(true);
+		expect(cortada.cuerpo.respuestas).toEqual([
+			expect.objectContaining({ resultado: "apartado", motivo: "falta_documento" }),
+		]);
+		const otraVez = await subir([abrir]);
+		expect(otraVez.cuerpo).toMatchObject({
+			detenido: false,
+			respuestas: [expect.objectContaining({ resultado: "repetido" })],
+		});
+		expect(await recibido(espera.clave_idempotencia)).toEqual([
+			expect.objectContaining({ resultado: "aplicado", reintentos: 1 }),
+		]);
 	});
 
 	it("si un comando falla por algo del servidor, la tanda se corta con detenido y responde solo lo ya hecho; al volver a mandar, nada se duplica", async () => {

@@ -92,6 +92,13 @@
 			"when": 1794332298892,
 			"tag": "0012_dispositivos",
 			"breakpoints": true
+		},
+		{
+			"idx": 13,
+			"version": "7",
+			"when": 1794337672914,
+			"tag": "0013_parametros_que_bajan",
+			"breakpoints": true
 		}
 	]
 }
