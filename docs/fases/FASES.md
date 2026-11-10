@@ -26,7 +26,7 @@ Una fase es una parte del sistema y se construye de abajo hacia arriba: primero 
 |---|---|---|---|
 | 5 ● | [Acceso con Google, cuentas y permisos](05-acceso-con-google-cuentas-y-permisos.md) | Entrar con Google, las sesiones, «Confirmar con Google», las cuentas, los departamentos y los permisos finos | Terminada |
 | 6 ● | [Dispositivos y sincronización](06-dispositivos-y-sincronizacion.md) | Registrar y revocar aparatos, sus llaves, y la sincronización: subir, bajar, foto y avisos en vivo | Terminada |
-| 7 ● | [Autorizaciones y Personal](07-autorizaciones-y-personal.md) | Las autorizaciones de Dirección, las personas, el PIN del taller, la asistencia y las tarifas | Pendiente |
+| 7 ● | [Autorizaciones y Personal](07-autorizaciones-y-personal.md) | Las autorizaciones de Dirección, las personas, el PIN del taller, la asistencia y las tarifas | Terminada |
 | 8 | [Catálogo](08-catalogo.md) | Escuelas, tallas, productos, variantes con su código de barras, listas de precios y precios | Pendiente |
 | 9 ● | [Inventario: libro, existencias, reservas y traspasos](09-inventario-libro-existencias-reservas-y-traspasos.md) | El libro de movimientos, las existencias con el cuadre de cada noche, las reservas, los traspasos y las excepciones | Pendiente |
 | 10 | [Patronaje y Compras](10-patronaje-y-compras.md) | Recetas, cuenta de material y desarrollos; materiales, proveedores, órdenes de compra y la proyección de material | Pendiente |
