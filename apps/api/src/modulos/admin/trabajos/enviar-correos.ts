@@ -65,7 +65,18 @@ export const enviarCorreos: Trabajo = {
 				for (const aviso of listos) {
 					try {
 						const para = await accion.lectura(lecturaDeCorreoDeCuenta, { usuario_id: aviso.usuarioId });
-						if (typeof para !== "string") throw new Error("la cuenta del aviso no tiene correo");
+						// A una cuenta que ya no tiene acceso no se le manda nada: queda anotado y no se reintenta.
+						if (typeof para !== "string") {
+							await accion.transaccion
+								.update(avisos)
+								.set({
+									correoIntentos: intentosParaAvisar,
+									correoError: "La cuenta ya no tiene acceso: el correo no se manda",
+									actualizadoEn: ahora,
+								})
+								.where(eq(avisos.id, aviso.id));
+							continue;
+						}
 						const enlace = aviso.enlace === null ? undefined : `${contexto.dominioWeb}/${aviso.enlace}`;
 						const { html, texto } = armarCorreoDeAviso({ texto: aviso.texto, enlace, marca });
 						await contexto.enviarCorreo({ para, asunto: aviso.texto, html, texto, clave: `aviso:${aviso.id}` });

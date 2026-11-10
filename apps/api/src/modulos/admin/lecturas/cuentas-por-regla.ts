@@ -3,9 +3,11 @@
  * Fase 5 · docs/modulos/admin/avisos.md (regla 2)
  *
  * `duena`, `soporte` (las cuentas de soporte técnico) o `departamento:{clave}` (las cuentas con ese
- * departamento sin baja). Solo cuentas activas, en el orden de su id.
+ * departamento sin baja; a soporte nunca le valen Dirección ni Contaduría). Solo cuentas activas, en el orden
+ * de su id.
  */
 
+import { departamentosConDinero } from "@uniformame/compartido/contratos/admin/cuentas";
 import { and, asc, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
@@ -34,14 +36,15 @@ export async function cuentasPorRegla(contexto: ContextoDeAccion, datos: unknown
 			.orderBy(asc(usuarios.id));
 		return renglones.map((renglon) => renglon.id);
 	}
+	const clave = regla.replace("departamento:", "");
+	// A la cuenta de soporte nunca le valen los departamentos de dinero, como en `admin.permisos_de`.
+	const valeParaSoporte = departamentosConDinero.includes(clave) ? eq(usuarios.esSoporte, false) : undefined;
 	const renglones = await transaccion
 		.selectDistinct({ id: usuarios.id })
 		.from(usuarios)
 		.innerJoin(usuarioDepartamentos, eq(usuarioDepartamentos.usuarioId, usuarios.id))
 		.innerJoin(departamentos, eq(departamentos.id, usuarioDepartamentos.departamentoId))
-		.where(
-			and(activa, isNull(usuarioDepartamentos.bajaEn), eq(departamentos.clave, regla.replace("departamento:", ""))),
-		)
+		.where(and(activa, valeParaSoporte, isNull(usuarioDepartamentos.bajaEn), eq(departamentos.clave, clave)))
 		.orderBy(asc(usuarios.id));
 	return renglones.map((renglon) => renglon.id);
 }

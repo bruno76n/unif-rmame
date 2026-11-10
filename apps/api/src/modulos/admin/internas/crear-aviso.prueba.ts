@@ -4,6 +4,7 @@
  */
 
 import { Temporal } from "temporal-polyfill";
+import { v7 as uuidv7 } from "uuid";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { crearBase } from "../../../nucleo/base/conexion.ts";
 import { enAccionDePrueba } from "../../../nucleo/pruebas/accion-de-prueba.ts";
@@ -135,5 +136,24 @@ describe("un aviso no se repite sin leer; va por correo según su parámetro; un
 		expect((await mandarAccion(servidor, "admin.marcar_aviso_leido", { datos: {} }, "duena")).cuerpo).toMatchObject({
 			campos: { aviso_ids: "Di qué avisos o todos." },
 		});
+	});
+
+	it("a una cuenta sin acceso no le llega un aviso, aunque venga en la lista de cuentas", async () => {
+		const sinAcceso = uuidv7();
+		await servidor.base.dueno.query(
+			`INSERT INTO usuarios (id, persona_id, correo, estado, baja_en, baja_confirmado_con_google_en)
+			 VALUES ($1, $2, 'sin.acceso.aviso@alameda.invalid', 'sin_acceso', now(), now())`,
+			[sinAcceso, uuidv7()],
+		);
+		const creados = await crear({
+			tipo: "alerta_direccion",
+			destinatarios: { cuentas: [sinAcceso, cuentaDePrueba("ventas")] },
+			texto: "Un aviso para dos cuentas",
+		});
+		expect(creados.aviso_ids).toHaveLength(1);
+		const { rows } = await servidor.base.dueno.query("SELECT usuario_id FROM avisos WHERE texto = $1", [
+			"Un aviso para dos cuentas",
+		]);
+		expect(rows.map((aviso) => aviso.usuario_id)).toEqual([cuentaDePrueba("ventas")]);
 	});
 });

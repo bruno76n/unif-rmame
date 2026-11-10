@@ -42,12 +42,14 @@ export async function parametroEntero(base: Base | Transaccion, clave: string): 
  * @param base La base.
  * @param identificador Lo que trae `ua_sesion`.
  * @param ahora La hora de la llamada.
+ * @param opciones `sinActividad`: la revisión no escribe la última actividad.
  * @returns La sesión, o `undefined` si no hay o no pasó (y entonces queda cerrada con su motivo).
  */
 export async function revisarSesion(
 	base: Base,
 	identificador: string | undefined,
 	ahora: Temporal.Instant,
+	opciones: { sinActividad?: true } = {},
 ): Promise<SesionValida | undefined> {
 	if (identificador === undefined || identificador === "") return undefined;
 	const [sesion] = await base
@@ -81,7 +83,7 @@ export async function revisarSesion(
 		return undefined;
 	}
 	const ultima = Temporal.Instant.from(sesion.ultimaActividadEn);
-	if (ultima.until(ahora).total("seconds") >= segundosEntreActividades) {
+	if (opciones.sinActividad !== true && ultima.until(ahora).total("seconds") >= segundosEntreActividades) {
 		await base
 			.update(sesiones)
 			.set({ ultimaActividadEn: ahora.toString(), actualizadoEn: sql`now()` })

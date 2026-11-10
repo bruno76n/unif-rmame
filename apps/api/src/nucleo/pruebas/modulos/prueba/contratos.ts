@@ -149,6 +149,15 @@ export const trampa = definirConsulta({
 	recortables: ["monto_centavos"],
 });
 
+/** Una acción que responde con un monto, para ver que el recorte común también le quita los montos a soporte. */
+export const conMonto = definirAccion({
+	nombre: "prueba.con_monto",
+	descripcion: "Una acción que responde con un monto",
+	entrada: z.object({}),
+	salida: z.object({ total_centavos: z.number().int().optional().describe("Un monto") }),
+	permiso: { departamento: "ventas" },
+});
+
 /**
  * Una consulta que no recorta su monto ni su sueldo, como un módulo que lo olvidara: el recorte común del
  * servidor se los quita a quien no los ve.

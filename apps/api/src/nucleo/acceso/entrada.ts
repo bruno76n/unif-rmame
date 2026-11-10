@@ -15,13 +15,15 @@
  *   `auth_time` en la sesión.
  */
 
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import type { FastifyInstance, FastifyPluginAsync, FastifyReply, FastifyRequest } from "fastify";
 import { Temporal } from "temporal-polyfill";
 import { z } from "zod";
+import { cerrarSesionesDe } from "../../modulos/admin/dominio/cuentas.ts";
 import { sesiones, usuarios } from "../../modulos/admin/tablas.ts";
 import { crearContexto, type ServiciosDelCorredor } from "../acciones/corredor.ts";
 import type { Base } from "../base/conexion.ts";
+import type { Transaccion } from "../base/transacciones.ts";
 import { enTransaccion } from "../base/transacciones.ts";
 import { ErrorDeApi } from "../http/errores.ts";
 import type { ContextoDeAccion, QuienEscribe, RegistroDeModulos } from "../modulos.ts";
@@ -63,14 +65,28 @@ const pedidoDeIda = z.object({
 const accionDeEntrar = "admin.entrar_con_google";
 
 /**
- * Una ruta interna de la web, o `/` si no lo es: nunca otro sitio (`//otro.com`, `https:`…).
- * @param regresar Lo que pidió la pantalla.
+ * Dice si un texto trae un carácter de control: el lector de direcciones los quita, y `/\t/otro.com` se
+ * volvería `//otro.com`.
  */
-export function rutaInterna(regresar: string | undefined): string {
-	if (regresar === undefined || !regresar.startsWith("/") || regresar.startsWith("//") || regresar.includes("\\")) {
-		return "/";
-	}
-	return regresar;
+function traeCaracterDeControl(texto: string): boolean {
+	return [...texto].some((caracter) => {
+		const codigo = caracter.codePointAt(0) ?? 0;
+		return codigo < 0x20 || codigo === 0x7f;
+	});
+}
+
+/**
+ * Una ruta interna de la web, o `/` si no lo es: nunca otro sitio (`//otro.com`, `/\t/otro.com`, `https:`…).
+ * Se resuelve contra la web y vale solo si sigue en la web.
+ * @param regresar Lo que pidió la pantalla.
+ * @param dominioWeb La dirección de la web.
+ * @returns La ruta, con su búsqueda y su fragmento, ya resuelta.
+ */
+export function rutaInterna(regresar: string | undefined, dominioWeb: string): string {
+	if (regresar === undefined || !regresar.startsWith("/") || traeCaracterDeControl(regresar)) return "/";
+	const resuelta = new URL(regresar, dominioWeb);
+	if (resuelta.origin !== new URL(dominioWeb).origin) return "/";
+	return `${resuelta.pathname}${resuelta.search}${resuelta.hash}`;
 }
 
 /**
@@ -105,32 +121,35 @@ function registrarEntrada(app: FastifyInstance, dependencias: DependenciasDeLaEn
 		if (hasta !== undefined) throw new ErrorDeApi("demasiados_intentos", null, undefined, { reintentar_en: hasta });
 	};
 
-	/** Corre algo con el contexto de la entrada y escribe su bitácora y sus eventos. */
-	const conContexto = (
+	/**
+	 * Corre algo con el contexto de la entrada, en la transacción que se le da, y escribe su bitácora y sus
+	 * eventos.
+	 */
+	const conContexto = async (
+		transaccion: Transaccion,
 		quien: QuienEscribe,
 		ahora: Temporal.Instant,
-		hacer: (contexto: ContextoDeAccion) => Promise<void>,
-	) =>
-		enTransaccion(base, async (transaccion) => {
-			const { contexto, renglones, eventos } = crearContexto(
-				dependencias.registro,
-				transaccion,
-				quien,
-				accionDeEntrar,
-				ahora,
-				undefined,
-			);
-			await hacer(contexto);
-			await dependencias.servicios.escribirBitacora(contexto, renglones);
-			await dependencias.servicios.guardarEventos(contexto, eventos);
-		});
+		hacer: (contexto: ContextoDeAccion) => void,
+	): Promise<void> => {
+		const { contexto, renglones, eventos } = crearContexto(
+			dependencias.registro,
+			transaccion,
+			quien,
+			accionDeEntrar,
+			ahora,
+			undefined,
+		);
+		hacer(contexto);
+		await dependencias.servicios.escribirBitacora(contexto, renglones);
+		await dependencias.servicios.guardarEventos(contexto, eventos);
+	};
 
 	app.get("/v1/acceso/google", { schema: { hide: true } }, async (peticion, respuesta) => {
 		const ahora = reloj();
 		await revisarIntentos(peticion, ahora);
 		const pedido = pedidoDeIda.safeParse(peticion.query);
 		const proposito = pedido.success ? (pedido.data.proposito ?? "entrar") : "entrar";
-		const regresar = rutaInterna(pedido.success ? pedido.data.regresar : undefined);
+		const regresar = rutaInterna(pedido.success ? pedido.data.regresar : undefined, dependencias.dominioWeb);
 		let opciones: { correo?: string; maxAge?: number } = {};
 		if (proposito === "confirmar") {
 			const sesion = await revisarSesion(base, peticion.cookies[cookies.sesion], ahora);
@@ -219,7 +238,9 @@ function registrarEntrada(app: FastifyInstance, dependencias: DependenciasDeLaEn
 	}
 
 	/**
-	 * Entra con la cuenta de Google: busca la cuenta, abre la sesión y pone las cookies.
+	 * Entra con la cuenta de Google: busca la cuenta, abre la sesión, deja su bitácora y pone las cookies,
+	 * todo en una transacción con la cuenta bloqueada: si le quitan el acceso a la vez, una de las dos espera.
+	 * Si el navegador traía otra sesión abierta, la cierra con `salio`.
 	 * @returns La sesión, o `undefined` si la cuenta de Google no tiene acceso (y entonces deja la alerta).
 	 */
 	async function entrar(
@@ -229,27 +250,36 @@ function registrarEntrada(app: FastifyInstance, dependencias: DependenciasDeLaEn
 		ahora: Temporal.Instant,
 	): Promise<string | undefined> {
 		const ip = peticion.ip;
-		const usuarioId = await buscarCuenta(cuentaDeGoogle);
-		if (usuarioId === undefined) {
-			await conContexto({ tipo: "sistema", trabajo: accionDeEntrar }, ahora, async (contexto) => {
-				contexto.bitacora({
-					tipo: "acceso",
-					departamento: "admin",
-					descripcion: `Intentó entrar una cuenta de Google sin acceso: ${cuentaDeGoogle.correo}`,
-					correoIntento: cuentaDeGoogle.correo,
-					ip,
-					esAlerta: true,
-				});
-				contexto.guardarEvento({ tipo: "acceso.sin_acceso", datos: {}, tablas: ["bitacora"] });
-			});
-			return undefined;
-		}
+		const anterior = await revisarSesion(base, peticion.cookies[cookies.sesion], ahora, { sinActividad: true });
 		const deAntes = peticion.cookies[cookies.aparato];
 		const aparato = deAntes === undefined || deAntes === "" ? nuevoIdentificador() : deAntes;
 		const identificador = nuevoIdentificador();
 		const ciudad = peticion.headers["cf-ipcity"];
-		const sesion = await enTransaccion(base, (transaccion) =>
-			abrirSesion(
+		const sesion = await enTransaccion(base, async (transaccion) => {
+			const usuarioId = await buscarCuenta(transaccion, cuentaDeGoogle);
+			if (usuarioId === undefined) {
+				await conContexto(transaccion, { tipo: "sistema", trabajo: accionDeEntrar }, ahora, (contexto) => {
+					contexto.bitacora({
+						tipo: "acceso",
+						departamento: "admin",
+						descripcion: `Intentó entrar una cuenta de Google sin acceso: ${cuentaDeGoogle.correo}`,
+						correoIntento: cuentaDeGoogle.correo,
+						ip,
+						esAlerta: true,
+					});
+					contexto.guardarEvento({ tipo: "acceso.sin_acceso", datos: {}, tablas: ["bitacora"] });
+				});
+				return undefined;
+			}
+			if (anterior !== undefined) {
+				await cerrarSesionesDe(transaccion, anterior.usuarioId, {
+					motivo: "salio",
+					cerradaPor: anterior.usuarioId,
+					ahora: ahora.toString(),
+					solo: anterior.sesionId,
+				});
+			}
+			const abierta = await abrirSesion(
 				transaccion,
 				usuarioId,
 				identificador,
@@ -260,55 +290,63 @@ function registrarEntrada(app: FastifyInstance, dependencias: DependenciasDeLaEn
 					huella: hashDe(aparato),
 				},
 				ahora,
-			),
-		);
-		const quien = await cuentaDeLaSesion(base, { ...sesion, usuarioId, googleConfirmadoEn: undefined });
-		if (quien === undefined) throw new Error("la cuenta que acaba de entrar ya no está activa");
-		await conContexto(quien, ahora, async (contexto) => {
-			contexto.bitacora({ tipo: "acceso", departamento: "admin", descripcion: "Entró al sistema", ip });
-			contexto.guardarEvento({
-				tipo: "sesion.abierta",
-				datos: { usuario_id: usuarioId, sesion_id: sesion.sesionId },
-				tablas: ["sesiones"],
-			});
-			if (sesion.aparatoNuevo) {
+			);
+			const quien = await cuentaDeLaSesion(transaccion, { ...abierta, usuarioId, googleConfirmadoEn: undefined });
+			if (quien === undefined) throw new Error("la cuenta bloqueada para entrar dejó de estar activa");
+			await conContexto(transaccion, quien, ahora, (contexto) => {
+				contexto.bitacora({ tipo: "acceso", departamento: "admin", descripcion: "Entró al sistema", ip });
+				contexto.guardarEvento({
+					tipo: "sesion.abierta",
+					datos: { usuario_id: usuarioId, sesion_id: abierta.sesionId },
+					tablas: ["sesiones"],
+				});
+				if (!abierta.aparatoNuevo) return;
 				const donde = typeof ciudad === "string" && ciudad !== "" ? `, ${ciudad}` : "";
 				contexto.bitacora({
 					tipo: "acceso",
 					departamento: "admin",
-					descripcion: `Entró desde un dispositivo nuevo: ${sesion.aparato}${donde}`,
+					descripcion: `Entró desde un dispositivo nuevo: ${abierta.aparato}${donde}`,
 					ip,
 					esAlerta: true,
 				});
 				contexto.guardarEvento({
 					tipo: "sesion.aparato_nuevo",
-					datos: { usuario_id: usuarioId, sesion_id: sesion.sesionId },
+					datos: { usuario_id: usuarioId, sesion_id: abierta.sesionId },
 					tablas: ["sesiones"],
 				});
-			}
+			});
+			return abierta;
 		});
+		if (sesion === undefined) return undefined;
 		respuesta.setCookie(cookies.sesion, identificador, opcionesDeLaSesion(new Date(sesion.venceEn.epochMilliseconds)));
 		respuesta.setCookie(cookies.aparato, aparato, opcionesDelAparato);
 		return sesion.sesionId;
 	}
 
 	/**
-	 * La cuenta activa de una cuenta de Google: por su `google_sub`, o la primera vez por el correo (y se le
-	 * pone el `google_sub`). Un correo de una cuenta que ya tiene otro `google_sub` no entra.
+	 * La cuenta activa de una cuenta de Google, bloqueada hasta que termine la entrada: por su `google_sub`,
+	 * o la primera vez por el correo (y se le pone el `google_sub`, si sigue sin uno). Un correo de una cuenta
+	 * que ya tiene otro `google_sub` no entra.
 	 */
-	async function buscarCuenta(cuentaDeGoogle: CuentaQueEntro): Promise<string | undefined> {
-		return enTransaccion(base, async (transaccion) => {
-			const activas = await transaccion
-				.select({ id: usuarios.id, googleSub: usuarios.googleSub, correo: usuarios.correo })
-				.from(usuarios)
-				.where(eq(usuarios.estado, "activa"));
-			const porSub = activas.find((cuenta) => cuenta.googleSub === cuentaDeGoogle.sub);
-			if (porSub !== undefined) return porSub.id;
-			const porCorreo = activas.find((cuenta) => cuenta.correo === cuentaDeGoogle.correo && cuenta.googleSub === null);
-			if (porCorreo === undefined) return undefined;
-			await transaccion.update(usuarios).set({ googleSub: cuentaDeGoogle.sub }).where(eq(usuarios.id, porCorreo.id));
-			return porCorreo.id;
-		});
+	async function buscarCuenta(transaccion: Transaccion, cuentaDeGoogle: CuentaQueEntro): Promise<string | undefined> {
+		const activa = eq(usuarios.estado, "activa");
+		const [porSub] = await transaccion
+			.select({ id: usuarios.id })
+			.from(usuarios)
+			.where(and(activa, eq(usuarios.googleSub, cuentaDeGoogle.sub)))
+			.for("update");
+		if (porSub !== undefined) return porSub.id;
+		const [porCorreo] = await transaccion
+			.select({ id: usuarios.id })
+			.from(usuarios)
+			.where(and(activa, eq(usuarios.correo, cuentaDeGoogle.correo), isNull(usuarios.googleSub)))
+			.for("update");
+		if (porCorreo === undefined) return undefined;
+		await transaccion
+			.update(usuarios)
+			.set({ googleSub: cuentaDeGoogle.sub })
+			.where(and(eq(usuarios.id, porCorreo.id), isNull(usuarios.googleSub)));
+		return porCorreo.id;
 	}
 }
 

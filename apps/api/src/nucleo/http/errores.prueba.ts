@@ -169,7 +169,7 @@ describe("cada error de la tabla de la API sale con su forma y su mensaje; un 50
 		expect(errorParaElRegistro(sinRed)).toMatchObject({ mensaje: "connect ECONNREFUSED 127.0.0.1:5432" });
 		expect(errorParaElRegistro(Object.assign(new Error("valor 42"), { code: "22P02" }))).toEqual({
 			nombre: "Error",
-			codigo: "22P02",
+			sqlstate: "22P02",
 		});
 	});
 });

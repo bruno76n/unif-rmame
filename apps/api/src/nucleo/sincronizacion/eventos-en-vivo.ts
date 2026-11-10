@@ -8,11 +8,17 @@
  * aparato, las de su alcance y sus ubicaciones. Son pistas, no datos: nombres de tablas e ids, nunca
  * montos. También escucha `ua_avisos`: cada aviso nuevo sale como `aviso` a las sesiones de su cuenta. A
  * cada conexión le llega un latido cada 25 segundos.
+ * Fase 5 · docs/modulos/admin/acceso-con-google.md (regla 4: «se puede cortar al instante»)
+ *
+ * Una conexión no vale más que su sesión: con cada latido, y en cuanto llega un evento que cambia lo que
+ * puede su cuenta (`sesion.*`, `cuenta.*`), vuelve a identificar a quien se conectó; si ya no vale, se
+ * corta, y si cambiaron sus departamentos, se rearma lo que le toca.
  */
 
 import { eq } from "drizzle-orm";
 import type pg from "pg";
-import { avisos, eventos } from "../../modulos/admin/tablas.ts";
+import { z } from "zod";
+import { avisos, eventos, sesiones } from "../../modulos/admin/tablas.ts";
 import type { AparatoQueLlama, QuienLlama } from "../acceso/quien.ts";
 import type { Base } from "../base/conexion.ts";
 import type { DestinoEnVivo, RegistroDeModulos } from "../modulos.ts";
@@ -67,7 +73,15 @@ interface Conexion {
 	dispositivoId: string | undefined;
 	/** De las tablas de un evento, las que le tocan (vacío si ninguna). */
 	tablasQueLeTocan: (tablas: readonly string[], ubicacionIds: readonly string[]) => string[];
+	/** Vuelve a identificar a quien se conectó, sin contar como actividad; `undefined` si ya no vale. */
+	revisar: (() => Promise<QuienLlama | undefined>) | undefined;
 }
+
+/** Los eventos que cambian lo que puede una cuenta: tras ellos se revisan sus conexiones. */
+const tocanALaCuenta = /^(sesion|cuenta)\./;
+
+/** La cuenta de un evento de sesión o de cuenta. */
+const deUnaCuenta = z.object({ usuario_id: z.string() });
 
 /**
  * Escribe un evento en el formato de SSE.
@@ -119,6 +133,33 @@ export function crearAvisosEnVivo(dependencias: DependenciasDeLosAvisosEnVivo) {
 		return conexion.usuarioId === para.usuarioId;
 	}
 
+	/**
+	 * Vuelve a revisar una conexión: si su sesión ya no vale (cerrada, vencida, sin acceso), la corta; si
+	 * vale, rearma lo que le toca con sus departamentos de ahora.
+	 */
+	async function revisarConexion(conexion: Conexion): Promise<void> {
+		if (conexion.revisar === undefined || !abiertas.has(conexion)) return;
+		const quien = await conexion.revisar();
+		if (quien === undefined) {
+			abiertas.delete(conexion);
+			// La pantalla sabe por qué: el motivo con que se cerró su sesión.
+			const [cerrada] =
+				conexion.sesionId === undefined
+					? []
+					: await dependencias.base
+							.select({ motivo: sesiones.motivoCierre })
+							.from(sesiones)
+							.where(eq(sesiones.id, conexion.sesionId));
+			if (conexion.sesionId !== undefined) {
+				conexion.salida.escribir(formatoDeEvento("sesion_cerrada", { motivo: cerrada?.motivo ?? "sin_sesion" }));
+			}
+			conexion.salida.terminar();
+			return;
+		}
+		const alcance = quien.tipo === "aparato" ? await dependencias.alcanceDelAparato(quien) : undefined;
+		conexion.tablasQueLeTocan = filtroDe(quien, dependencias.registro.lectores, alcance);
+	}
+
 	/** Lee el evento que avisó el worker y manda `cambios` a quien le toca, y lo que declaren los módulos. */
 	async function repartir(eventoId: string): Promise<void> {
 		const [evento] = await dependencias.base
@@ -152,6 +193,14 @@ export function crearAvisosEnVivo(dependencias: DependenciasDeLosAvisosEnVivo) {
 				}),
 			);
 		}
+		// Si el evento cambió lo que puede una cuenta (cerró sus sesiones, le quitó el acceso, cambió sus
+		// departamentos), sus conexiones se revisan ya: lo que la pantalla haga no cuenta como permiso.
+		const cuenta = deUnaCuenta.safeParse(evento.datos);
+		if (tocanALaCuenta.test(evento.tipo) && cuenta.success) {
+			for (const conexion of [...abiertas]) {
+				if (conexion.usuarioId === cuenta.data.usuario_id) await revisarConexion(conexion);
+			}
+		}
 	}
 
 	/** Lee el aviso nuevo y lo manda a las sesiones de su cuenta. */
@@ -179,8 +228,12 @@ export function crearAvisosEnVivo(dependencias: DependenciasDeLosAvisosEnVivo) {
 				if (llegada.channel === canalDeAvisos) avisar(llegada.payload).catch(dependencias.anotarError);
 			});
 			await escucha.query(`LISTEN ${canalDeEventos}; LISTEN ${canalDeAvisos}`);
+			// Con cada latido, cada conexión vuelve a revisar su sesión: una vencida o inactiva se corta.
 			latido = setInterval(() => {
-				for (const conexion of abiertas) conexion.salida.escribir(": latido\n\n");
+				for (const conexion of abiertas) {
+					conexion.salida.escribir(": latido\n\n");
+					revisarConexion(conexion).catch(dependencias.anotarError);
+				}
 			}, dependencias.latidoMs ?? latidoPorOmision);
 		},
 
@@ -198,9 +251,15 @@ export function crearAvisosEnVivo(dependencias: DependenciasDeLosAvisosEnVivo) {
 		 * @param quien La cuenta o el aparato que se conectó.
 		 * @param salida A dónde se escribe.
 		 * @param hola Los datos de `hola`, sin `intervalo_segundos`, que se suma aquí.
+		 * @param revisar Cómo se vuelve a identificar a quien se conectó, sin contar como actividad.
 		 * @returns Con qué se quita la conexión cuando el cliente se va.
 		 */
-		async conectar(quien: QuienLlama, salida: SalidaDeEventos, hola: Record<string, unknown>): Promise<() => void> {
+		async conectar(
+			quien: QuienLlama,
+			salida: SalidaDeEventos,
+			hola: Record<string, unknown>,
+			revisar?: () => Promise<QuienLlama | undefined>,
+		): Promise<() => void> {
 			const alcance = quien.tipo === "aparato" ? await dependencias.alcanceDelAparato(quien) : undefined;
 			const conexion: Conexion = {
 				salida,
@@ -208,6 +267,7 @@ export function crearAvisosEnVivo(dependencias: DependenciasDeLosAvisosEnVivo) {
 				sesionId: quien.tipo === "cuenta" ? quien.sesionId : undefined,
 				dispositivoId: quien.tipo === "aparato" ? quien.dispositivoId : undefined,
 				tablasQueLeTocan: filtroDe(quien, dependencias.registro.lectores, alcance),
+				revisar,
 			};
 			salida.escribir(`retry: ${esperaParaReconectar}\n\n`);
 			salida.escribir(

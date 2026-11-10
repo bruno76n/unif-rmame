@@ -17,18 +17,20 @@ export interface Escucha {
 	bloques: string[];
 	/** Los eventos con nombre, con sus datos leídos. */
 	eventos: () => { nombre: string; datos: unknown }[];
+	/** Si el servidor ya cortó la conexión. */
+	cortada: () => boolean;
 	cerrar: () => void;
 }
 
 /**
  * Abre `GET /v1/eventos` en un servidor que escucha de verdad, y junta lo que llega.
  * @param direccion La dirección del servidor.
- * @param quien Quién se conecta (`x-prueba-quien`).
+ * @param quien Quién se conecta: su nombre en `x-prueba-quien`, o la cookie de su sesión de verdad.
  */
-export async function escuchar(direccion: string, quien: string): Promise<Escucha> {
+export async function escuchar(direccion: string, quien: string | { sesion: string }): Promise<Escucha> {
 	const control = new AbortController();
 	const respuesta = await fetch(`${direccion}/v1/eventos`, {
-		headers: { "x-prueba-quien": quien },
+		headers: typeof quien === "string" ? { "x-prueba-quien": quien } : { cookie: `ua_sesion=${quien.sesion}` },
 		signal: control.signal,
 	});
 	expect(respuesta.status).toBe(200);
@@ -37,10 +39,14 @@ export async function escuchar(direccion: string, quien: string): Promise<Escuch
 	const lector = respuesta.body?.getReader();
 	const decodificador = new TextDecoder();
 	let resto = "";
+	let cortada = false;
 	(async () => {
 		for (;;) {
 			const leido = await lector?.read().catch(() => undefined);
-			if (leido === undefined || leido.done) return;
+			if (leido === undefined || leido.done) {
+				cortada = leido?.done === true;
+				return;
+			}
 			resto += decodificador.decode(leido.value, { stream: true });
 			const partes = resto.split("\n\n");
 			resto = partes.pop() ?? "";
@@ -55,6 +61,7 @@ export async function escuchar(direccion: string, quien: string): Promise<Escuch
 				const datos = /^data: (.+)$/m.exec(bloque)?.[1];
 				return nombre === undefined || datos === undefined ? [] : [{ nombre, datos: JSON.parse(datos) }];
 			}),
+		cortada: () => cortada,
 		cerrar: () => control.abort(),
 	};
 }

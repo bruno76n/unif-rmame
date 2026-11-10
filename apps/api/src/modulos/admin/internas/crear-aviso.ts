@@ -8,13 +8,13 @@
  * correo lo manda después el worker. Cada aviso sale en vivo a las sesiones de su cuenta al confirmar.
  */
 
-import { sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
 import { canalDeAvisos } from "../../../nucleo/sincronizacion/eventos-en-vivo.ts";
 import { encolar } from "../../../nucleo/trabajos/encolar.ts";
-import { avisos } from "../tablas.ts";
+import { avisos, usuarios } from "../tablas.ts";
 
 /** La lectura que resuelve una regla de destinatarios en ids de cuentas activas: `lecturas/cuentas-por-regla.ts`. */
 export const lecturaDeCuentasPorRegla = "admin.cuentas_por_regla";
@@ -44,6 +44,21 @@ const avisoACrear = z.object({
 const cuentas = z.array(z.uuid());
 
 /**
+ * De una lista de cuentas, las que están activas: a una cuenta sin acceso no le llega nada.
+ * @param contexto El contexto de la acción.
+ * @param lista Las cuentas que pidió quien avisa.
+ */
+async function soloActivas(contexto: ContextoDeAccion, lista: readonly string[]): Promise<string[]> {
+	if (lista.length === 0) return [];
+	const activas = await contexto.transaccion
+		.select({ id: usuarios.id })
+		.from(usuarios)
+		.where(and(inArray(usuarios.id, [...lista]), eq(usuarios.estado, "activa")));
+	const ids = new Set(activas.map((cuenta) => cuenta.id));
+	return lista.filter((id) => ids.has(id));
+}
+
+/**
  * Crea los avisos.
  * @param contexto El contexto de la acción, del trabajo o del proceso de la bandeja.
  * @param datos `tipo`, `destinatarios`, `texto`, `enlace`, el documento y el evento.
@@ -52,9 +67,10 @@ const cuentas = z.array(z.uuid());
 export async function crearAviso(contexto: ContextoDeAccion, datos: unknown): Promise<{ aviso_ids: string[] }> {
 	const aviso = avisoACrear.parse(datos);
 	const { transaccion } = contexto;
+	// La lista de cuentas también se resuelve con las activas de ese momento.
 	const destinatarios =
 		"cuentas" in aviso.destinatarios
-			? aviso.destinatarios.cuentas
+			? await soloActivas(contexto, aviso.destinatarios.cuentas)
 			: cuentas.parse(await contexto.lectura(lecturaDeCuentasPorRegla, aviso.destinatarios));
 	const porCorreo =
 		aviso.sinCorreo !== true &&

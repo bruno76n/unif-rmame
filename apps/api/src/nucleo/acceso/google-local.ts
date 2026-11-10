@@ -56,6 +56,10 @@ export function crearGoogleLocal(configuracion: ConfiguracionDelGoogleLocal): Pr
 
 if (import.meta.main) {
 	const entorno = leerEntorno();
+	if (entorno.ENTORNO !== "local") {
+		console.error("El Google de desarrollo solo corre con ENTORNO=local: acepta cualquier correo.");
+		process.exit(1);
+	}
 	if (
 		entorno.GOOGLE_EMISOR === undefined ||
 		entorno.GOOGLE_CLIENTE_ID === undefined ||

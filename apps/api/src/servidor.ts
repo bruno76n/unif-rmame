@@ -70,15 +70,27 @@ function crearRegistroTecnico(destino: DestinationStream | undefined) {
 			}),
 			res: (respuesta: { statusCode?: number }) => ({ estado: respuesta.statusCode }),
 		},
-		redact: ["req.headers.authorization", "req.headers.cookie", "headers.authorization", "headers.cookie"],
+		// Lo que pide SEGURIDAD («Lo que nunca se registra»): los encabezados de sesión y los campos de secretos.
+		redact: [
+			"req.headers.authorization",
+			"req.headers.cookie",
+			'res.headers["set-cookie"]',
+			"headers.authorization",
+			"headers.cookie",
+			'headers["set-cookie"]',
+			...["secreto", "pin", "token", "llave", "codigo", "contrasena"].flatMap((campo) => [campo, `*.${campo}`]),
+		],
 	};
 	return destino === undefined ? pino(opciones) : pino(opciones, destino);
 }
 
 /** Lo que el servidor pide a los módulos que todavía no llegan: quién llama, el permiso y la versión del parámetro. */
 export interface ServiciosDelServidor extends ServiciosDelCorredor {
-	/** La sesión o la llave del aparato (fases 5 y 6); `undefined` si no hay. */
-	identificar: (peticion: FastifyRequest) => Promise<QuienLlama | undefined>;
+	/**
+	 * La sesión o la llave del aparato (fases 5 y 6); `undefined` si no hay. Con `sinActividad`, la revisión
+	 * no cuenta como actividad de la sesión (la conexión en vivo que se vuelve a revisar sola).
+	 */
+	identificar: (peticion: FastifyRequest, opciones?: { sinActividad?: true }) => Promise<QuienLlama | undefined>;
 	/** Revisa el permiso del contrato (fase 5); lanza `403` o `401` si falta. */
 	revisarPermiso: (quien: QuienLlama, permiso: Permiso, ahora: Temporal.Instant) => Promise<void>;
 	/** La versión mínima del parámetro de la dueña (fase 4). */
@@ -390,7 +402,10 @@ export async function crearServidor(dependencias: DependenciasDelServidor) {
 			}
 			respuesta.raw.writeHead(200);
 			const salida = { escribir: (texto: string) => respuesta.raw.write(texto), terminar: () => respuesta.raw.end() };
-			quitar = await avisos.conectar(quien, salida, hola);
+			// La conexión vuelve a identificar con la misma petición, sin contar como actividad de la sesión.
+			quitar = await avisos.conectar(quien, salida, hola, () =>
+				servicios.identificar(peticion, { sinActividad: true }),
+			);
 			if (cerrada || respuesta.raw.destroyed) quitar();
 		});
 	}

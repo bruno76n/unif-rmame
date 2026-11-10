@@ -79,4 +79,26 @@ describe("los departamentos efectivos: la dueña, todos; las demás, los suyos s
 			"carmen@uniformesalameda.mx",
 		);
 	});
+
+	it("a la cuenta de soporte no le valen Dirección, Contaduría ni «ven sueldos y tarifas», aunque tuviera esos renglones", async () => {
+		const soporte = cuentaDePrueba("soporte");
+		for (const clave of ["direccion", "contaduria"]) {
+			await servidor.base.dueno.query(
+				`INSERT INTO usuario_departamentos (id, usuario_id, departamento_id)
+				 SELECT gen_random_uuid(), $1, id FROM departamentos WHERE clave = $2`,
+				[soporte, clave],
+			);
+		}
+		await servidor.base.dueno.query(
+			"INSERT INTO permisos_finos (id, usuario_id, permiso) VALUES (gen_random_uuid(), $1, 'ven_sueldos_y_tarifas')",
+			[soporte],
+		);
+		expect(await leer("admin.permisos_de", { usuario_id: soporte })).toMatchObject({
+			es_soporte: true,
+			departamentos: [{ clave: "admin", ubicacion_id: null }],
+			permisos_finos: [],
+		});
+		expect(await leer("admin.cuentas_por_regla", { regla: "departamento:contaduria" })).not.toContain(soporte);
+		expect(await leer("admin.cuentas_por_regla", { regla: "departamento:direccion" })).not.toContain(soporte);
+	});
 });

@@ -343,6 +343,15 @@ describe("cada acción y consulta revisa en el servidor su departamento, su perm
 			resultado: { monto_centavos: 125_000, renglones: [{ pago_dia_centavos: 45_000 }] },
 			recortado: [],
 		});
+		const conMonto = servidor.modulos.acciones.get("prueba.con_monto")?.contrato;
+		if (conMonto === undefined) throw new Error("falta prueba.con_monto");
+		const accionDeSoporte = await llamar(conMonto, soporte, {});
+		expect(accionDeSoporte.estado).toBe(200);
+		expect(accionDeSoporte.cuerpo.resultado).toEqual({ mensaje: "Con monto" });
+		expect((await llamar(conMonto, ventas, {})).cuerpo.resultado).toEqual({
+			mensaje: "Con monto",
+			total_centavos: 125_000,
+		});
 		const conflicto = await llamar(provocar, soporte, { error: "conflicto_con_monto" });
 		expect(conflicto.estado).toBe(409);
 		expect(conflicto.cuerpo).toMatchObject({ version: 3, datos: { texto: "La nota" } });

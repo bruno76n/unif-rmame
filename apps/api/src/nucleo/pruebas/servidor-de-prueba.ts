@@ -191,9 +191,10 @@ export async function crearServidorDePrueba(
 	const parametros = { versionMinima: "1.0.0" };
 	const fallas = { bitacora: false, bitacoraUnaVez: new Set<string>() };
 	const servicios: ServiciosDelServidor = {
-		identificar: async (peticion) => {
-			if (opciones.sesionReal === true)
-				return identificarConSesion(crearBase(base.app), () => Temporal.Now.instant())(peticion);
+		identificar: async (peticion, revision) => {
+			if (opciones.sesionReal === true) {
+				return identificarConSesion(crearBase(base.app), () => Temporal.Now.instant())(peticion, revision);
+			}
 			const valor = peticion.headers["x-prueba-quien"];
 			const quien = typeof valor === "string" ? quienesDePrueba[valor] : undefined;
 			// `x-prueba-google`: el momento en que la sesión de prueba confirmó con Google.

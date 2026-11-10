@@ -12,17 +12,21 @@ import type { FastifyRequest } from "fastify";
 import type { Temporal } from "temporal-polyfill";
 import { leerPermisosDe } from "../../modulos/admin/lecturas/permisos-de.ts";
 import type { Base } from "../base/conexion.ts";
+import type { Transaccion } from "../base/transacciones.ts";
 import { cookies } from "./cookies.ts";
 import type { CuentaQueLlama, QuienLlama } from "./quien.ts";
 import { revisarSesion, type SesionValida } from "./sesion.ts";
 
 /**
  * La cuenta de una sesión válida, con lo que puede.
- * @param base La base.
+ * @param base La base o la transacción.
  * @param sesion La sesión que pasó la revisión.
  * @returns Quien llama, o `undefined` si la cuenta ya no está activa.
  */
-export async function cuentaDeLaSesion(base: Base, sesion: SesionValida): Promise<CuentaQueLlama | undefined> {
+export async function cuentaDeLaSesion(
+	base: Base | Transaccion,
+	sesion: SesionValida,
+): Promise<CuentaQueLlama | undefined> {
 	const permisos = await leerPermisosDe(base, sesion.usuarioId);
 	if (permisos === undefined || !permisos.activa) return undefined;
 	return {
@@ -45,9 +49,9 @@ export async function cuentaDeLaSesion(base: Base, sesion: SesionValida): Promis
 export function identificarConSesion(
 	base: Base,
 	reloj: () => Temporal.Instant,
-): (peticion: FastifyRequest) => Promise<QuienLlama | undefined> {
-	return async (peticion) => {
-		const sesion = await revisarSesion(base, peticion.cookies[cookies.sesion], reloj());
+): (peticion: FastifyRequest, opciones?: { sinActividad?: true }) => Promise<QuienLlama | undefined> {
+	return async (peticion, opciones) => {
+		const sesion = await revisarSesion(base, peticion.cookies[cookies.sesion], reloj(), opciones);
 		return sesion === undefined ? undefined : cuentaDeLaSesion(base, sesion);
 	};
 }

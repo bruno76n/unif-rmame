@@ -20,6 +20,7 @@ import {
 	adjuntar,
 	agregarRenglon,
 	confirmar,
+	conMonto,
 	crearNota,
 	editarNota,
 	editarSinVersion,
@@ -189,6 +190,10 @@ export default definirModulo({
 			contexto.bitacora({ descripcion: `Fechó el ${datos.dia.toString()}` });
 			return { resultado: { mensaje: "Fechado", dia_siguiente: datos.dia.add({ days: 1 }).toString() } };
 		}),
+		implementarAccion(conMonto, async () => ({
+			resultado: { total_centavos: 125_000, mensaje: "Con monto" },
+			sinBitacora: true,
+		})),
 		implementarAccion(provocar, async (contexto, datos) => {
 			if (datos.error === "demasiados_intentos") {
 				throw new ErrorDeApi("demasiados_intentos", null, "Demasiados intentos. Vuelve a intentar a las 10:35.", {

@@ -20,7 +20,8 @@ export interface VueltaDeGoogle {
  * @param simulador El simulador de Google de la prueba.
  * @param cuenta La cuenta de Google con que se entra.
  * @param opciones Las cookies que ya trae el navegador, la IP, el propósito, `regresar`, un token dañado,
- * cuándo pasó por Google y si se cambia la cookie de la ida.
+ * cuándo pasó por Google, si se cambia la cookie de la ida, si vuelve con otro `state` y si el código es de
+ * otro reto de PKCE.
  */
 export async function entrarConGoogle(
 	servidor: ServidorDePrueba,
@@ -34,6 +35,10 @@ export async function entrarConGoogle(
 		dano?: DanoDelToken;
 		authTime?: number;
 		cambiarLaIda?: boolean;
+		/** Vuelve con el `state` de otra ida. */
+		stateAjeno?: boolean;
+		/** El código se emite para otro reto de PKCE: el verificador de la ida no sirve. */
+		otroReto?: boolean;
 		agente?: string;
 	} = {},
 ): Promise<VueltaDeGoogle> {
@@ -55,11 +60,12 @@ export async function entrarConGoogle(
 	const codigo = simulador.emitirCodigo(cuenta, {
 		redireccion: clienteDeGooglePrueba.vuelta,
 		nonce: aGoogle.searchParams.get("nonce") ?? "",
-		retoPkce: aGoogle.searchParams.get("code_challenge") ?? "",
+		retoPkce: opciones.otroReto === true ? "otro-reto-de-pkce" : (aGoogle.searchParams.get("code_challenge") ?? ""),
 		...(opciones.dano === undefined ? {} : { dano: opciones.dano }),
 		...(opciones.authTime === undefined ? {} : { authTime: opciones.authTime }),
 	});
-	const vuelta = new URLSearchParams({ code: codigo, state: aGoogle.searchParams.get("state") ?? "" });
+	const state = opciones.stateAjeno === true ? "state-de-otra-ida" : (aGoogle.searchParams.get("state") ?? "");
+	const vuelta = new URLSearchParams({ code: codigo, state });
 	const respuesta = await servidor.app.inject({
 		method: "GET",
 		url: `/v1/acceso/google/vuelta?${vuelta.toString()}`,

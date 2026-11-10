@@ -91,9 +91,10 @@ export function errorParaElRegistro(error: unknown): Record<string, unknown> {
 	const codigoDeLaBase = codigo !== undefined && /^[0-9A-Z]{5}$/.test(codigo) ? codigo : undefined;
 	if ("query" in error && typeof error.query === "string") {
 		// Un error de Drizzle: su mensaje y su pila llevan los valores de la consulta.
-		return { nombre: error.name, consulta: error.query, codigo: codigoDeLaBase };
+		return { nombre: error.name, consulta: error.query, sqlstate: codigoDeLaBase };
 	}
-	if (codigoDeLaBase !== undefined) return { nombre: error.name, codigo: codigoDeLaBase };
+	// Va como `sqlstate`: un campo `codigo` se tacha en el registro (puede ser un código de registro).
+	if (codigoDeLaBase !== undefined) return { nombre: error.name, sqlstate: codigoDeLaBase };
 	return { nombre: error.name, mensaje: error.message, pila: error.stack };
 }
 

@@ -127,4 +127,27 @@ describe("el correo sale por el simulador de Resend y, si falla, se reintenta", 
 			"Ventas pide autorización: NC-0014",
 		);
 	});
+
+	it("a una cuenta que perdió el acceso no le sale el correo: queda anotado y no se reintenta", async () => {
+		const id = await avisoPorCorreo("Aviso de una cuenta que ya no entra");
+		const enviados = simulador.correos.length;
+		await servidor.base.dueno.query(
+			"UPDATE usuarios SET estado = 'sin_acceso' WHERE id = (SELECT usuario_id FROM avisos WHERE id = $1)",
+			[id],
+		);
+		try {
+			await correrTrabajo(dependencias, enviarCorreos, {});
+			expect(simulador.correos).toHaveLength(enviados);
+			expect(await estado(id)).toMatchObject({
+				enviado: false,
+				correo_intentos: 10,
+				correo_error: "La cuenta ya no tiene acceso: el correo no se manda",
+			});
+		} finally {
+			await servidor.base.dueno.query(
+				"UPDATE usuarios SET estado = 'activa' WHERE id = (SELECT usuario_id FROM avisos WHERE id = $1)",
+				[id],
+			);
+		}
+	});
 });

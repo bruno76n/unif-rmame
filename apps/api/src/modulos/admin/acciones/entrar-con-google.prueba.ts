@@ -129,20 +129,37 @@ describe("una cuenta activa entra con Google y su sesión queda solo como hash; 
 		expect((await sesionesDe(idDeGloria)).at(-1)?.es_aparato_nuevo).toBe(true);
 	});
 
-	it.each(["firma", "nonce", "audiencia", "vencido"] as const)(
+	it.each([
+		["firma", 1],
+		["nonce", 2],
+		["audiencia", 3],
+		["vencido", 4],
+		["emisor", 5],
+		["sin_verificar", 6],
+	] as const)(
 		"un id_token con %s malo no entra: regresa a la pantalla de acceso con google_fallo y no abre sesión",
-		async (dano) => {
+		async (dano, n) => {
 			const antes = (await sesionesDe(cuentaDePrueba("aduana"))).length;
-			const vuelta = await entrarConGoogle(servidor, simulador, aduana, { dano, ip: `198.51.100.${dano.length}` });
+			const vuelta = await entrarConGoogle(servidor, simulador, aduana, { dano, ip: `198.51.100.${n}` });
 			expect(vuelta.ubicacion).toBe("https://fabrica.prueba.invalid/acceso?error=google_fallo");
 			expect(vuelta.cookies.ua_sesion).toBeUndefined();
 			expect(await sesionesDe(cuentaDePrueba("aduana"))).toHaveLength(antes);
 		},
 	);
 
-	it("una ida cambiada o vencida no entra", async () => {
-		const vuelta = await entrarConGoogle(servidor, simulador, aduana, { cambiarLaIda: true, ip: "198.51.100.50" });
-		expect(vuelta.ubicacion).toBe("https://fabrica.prueba.invalid/acceso?error=google_fallo");
+	it("una ida cambiada, una vuelta con el state de otra ida o un código de otro reto de PKCE no entran", async () => {
+		for (const opciones of [{ cambiarLaIda: true }, { stateAjeno: true }, { otroReto: true }]) {
+			const vuelta = await entrarConGoogle(servidor, simulador, aduana, { ...opciones, ip: "198.51.100.50" });
+			expect(vuelta.ubicacion).toBe("https://fabrica.prueba.invalid/acceso?error=google_fallo");
+			expect(vuelta.cookies.ua_sesion).toBeUndefined();
+		}
+	});
+
+	it("ningún código, token, verificador ni secreto del cliente queda en el registro técnico", () => {
+		const registro = servidor.registro.join("\n");
+		for (const prohibido of ["4/", "eyJ", "ya29.", "code_verifier", "verificador", clienteDeGooglePrueba.secreto]) {
+			expect([prohibido, registro.includes(prohibido)]).toEqual([prohibido, false]);
+		}
 	});
 
 	it("una cuenta de Google sin alta no entra: «Esta cuenta no tiene acceso» con su correo y una alerta con correo_intento", async () => {
@@ -181,11 +198,37 @@ describe("una cuenta activa entra con Google y su sesión queda solo como hash; 
 		expect(vuelta.ubicacion).toContain("/acceso?error=sin_acceso");
 	});
 
-	it("regresar a otro sitio no se puede: regresa a la raíz de la web", async () => {
-		const vuelta = await entrarConGoogle(servidor, simulador, gloria, {
-			regresar: "//malo.invalid/robar",
+	it("regresar a otro sitio no se puede, ni con un tabulador o un salto de línea escondidos: regresa a la raíz de la web; una ruta de la web se respeta", async () => {
+		for (const regresar of [
+			"//malo.invalid/robar",
+			"/\t/malo.invalid/robar",
+			"/\n/malo.invalid",
+			"/\r/malo.invalid",
+			"/\\malo.invalid",
+			"https://malo.invalid/",
+		]) {
+			const vuelta = await entrarConGoogle(servidor, simulador, gloria, {
+				regresar,
+				cookies: { ua_aparato: aparatoDeGloria },
+			});
+			expect([regresar, vuelta.ubicacion]).toEqual([regresar, "https://fabrica.prueba.invalid/"]);
+		}
+		const buena = await entrarConGoogle(servidor, simulador, gloria, {
+			regresar: "/calidad/lotes?estado=abierto",
 			cookies: { ua_aparato: aparatoDeGloria },
 		});
-		expect(vuelta.ubicacion).toBe("https://fabrica.prueba.invalid/");
+		expect(buena.ubicacion).toBe("https://fabrica.prueba.invalid/calidad/lotes?estado=abierto");
+	});
+
+	it("entrar otra vez desde el mismo navegador cierra la sesión que traía, con salio", async () => {
+		const primera = await entrarConGoogle(servidor, simulador, gloria, { cookies: { ua_aparato: aparatoDeGloria } });
+		const sesion = primera.cookies.ua_sesion?.valor ?? "";
+		await entrarConGoogle(servidor, simulador, gloria, {
+			cookies: { ua_aparato: aparatoDeGloria, ua_sesion: sesion },
+		});
+		const { rows } = await servidor.base.dueno.query("SELECT motivo_cierre FROM sesiones WHERE token_hash = $1", [
+			createHash("sha256").update(sesion).digest("hex"),
+		]);
+		expect(rows[0]?.motivo_cierre).toBe("salio");
 	});
 });

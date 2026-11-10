@@ -6,7 +6,8 @@
  * punto de tokens (con PKCE S256) y las llaves públicas para revisar el `id_token`, firmado con RS256
  * por una llave de prueba que nace con cada simulador. Trae tres cuentas: la dueña, una dada de alta y
  * una que el sistema no conoce. El `id_token` lleva `auth_time` (la hora de entrar, o la que diga la
- * prueba) y se puede pedir dañado: con otra firma, otro `nonce`, otra audiencia o ya vencido.
+ * prueba) y se puede pedir dañado: con otra firma, otro `nonce`, otra audiencia, ya vencido, de otro emisor
+ * o con el correo sin verificar.
  * Fase 5 · docs/fases/05-acceso-con-google-cuentas-y-permisos.md (parte 2)
  */
 
@@ -34,7 +35,7 @@ export const cuentasDeGoogle = {
 } satisfies Record<string, CuentaDeGoogle>;
 
 /** Cómo sale dañado un `id_token`, para probar que no entra. */
-export type DanoDelToken = "firma" | "nonce" | "audiencia" | "vencido";
+export type DanoDelToken = "firma" | "nonce" | "audiencia" | "vencido" | "emisor" | "sin_verificar";
 
 /** Lo que se guardó al emitir un código: de quién es y lo que hay que revisar al cambiarlo. */
 interface CodigoEmitido {
@@ -78,12 +79,12 @@ export function crearSimuladorDeGoogle(
 		const encabezado = base64url(JSON.stringify({ alg: "RS256", kid, typ: "JWT" }));
 		const contenido = base64url(
 			JSON.stringify({
-				iss: emisorDeGoogle,
+				iss: dano === "emisor" ? "https://otro-emisor.invalid" : emisorDeGoogle,
 				azp: clienteId,
 				aud: dano === "audiencia" ? "otro-cliente.apps.googleusercontent.com" : clienteId,
 				sub: cuenta.sub,
 				email: cuenta.email,
-				email_verified: true,
+				email_verified: dano !== "sin_verificar",
 				name: cuenta.name,
 				iat: dano === "vencido" ? hora - 7200 : hora,
 				exp: dano === "vencido" ? hora - 3600 : hora + 3600,
