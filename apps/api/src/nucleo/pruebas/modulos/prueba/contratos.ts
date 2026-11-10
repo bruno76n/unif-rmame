@@ -126,11 +126,14 @@ export const verMontos = definirAccion({
 	permiso: { departamento: "ventas", permisoFino: "ven_montos" },
 });
 
-/** Una consulta que hace trampa: manda el monto y dice que lo recortó. */
+/**
+ * Una consulta que hace trampa: manda el monto y dice que lo recortó o, con `fuera`, dice que recortó un
+ * campo que su contrato no deja recortar.
+ */
 export const trampa = definirConsulta({
 	nombre: "prueba.trampa",
 	descripcion: "Una consulta que manda lo que dice que recortó",
-	entrada: z.object({}),
+	entrada: z.object({ fuera: z.enum(["si"]).optional().describe("Recorta un campo que no es recortable") }),
 	salida: z.object({ monto_centavos: z.number().int().optional().describe("Un monto") }),
 	permiso: { departamento: "ventas" },
 	recortables: ["monto_centavos"],

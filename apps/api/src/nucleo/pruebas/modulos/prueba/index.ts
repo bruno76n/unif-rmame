@@ -106,13 +106,13 @@ export default definirModulo({
 		implementarAccion(fechar, async (_contexto, datos) => ({
 			resultado: { mensaje: "Fechado", dia_siguiente: datos.dia.add({ days: 1 }).toString() },
 		})),
-		implementarAccion(provocar, async (_contexto, datos) => {
+		implementarAccion(provocar, async (contexto, datos) => {
 			if (datos.error === "demasiados_intentos") {
 				throw new ErrorDeApi("demasiados_intentos", null, "Demasiados intentos. Vuelve a intentar a las 10:35.", {
 					reintentar_en: "2026-11-10T16:35:00Z",
 				});
 			}
-			if (datos.error === "base") await _contexto.transaccion.execute(sql`SELECT ${datos.valor ?? ""}::integer`);
+			if (datos.error === "base") await contexto.transaccion.execute(sql`SELECT ${datos.valor ?? ""}::integer`);
 			if (datos.error === "no_disponible")
 				throw new ErrorDeApi("no_disponible", null, undefined, { reintentar_en: "2026-11-10T17:00:00Z" });
 			throw new Error("la causa secreta: SELECT * FROM comandos_recibidos");

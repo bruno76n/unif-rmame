@@ -1,7 +1,7 @@
 # Fase 03: API: protocolo e idempotencia ●
 
 > **Etapa:** Cimientos.
-> **Estado:** Pendiente.
+> **Estado:** Terminada.
 > **Antes de empezar:** lee la [forma de trabajo](../trabajo/FORMA-DE-TRABAJO.md) y la [revisión de fase](../trabajo/REVISION-DE-FASE.md).
 > **Se conecta con:** [fases](FASES.md) · [fase 2](02-base-de-datos-y-pruebas.md) · [fase 4](04-servicios-comunes.md)
 

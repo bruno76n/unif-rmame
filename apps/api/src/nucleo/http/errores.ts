@@ -76,7 +76,9 @@ export function conflictoDeVersion(version: number, datos: unknown): ErrorDeApi 
  */
 export function errorParaElRegistro(error: unknown): Record<string, unknown> {
 	if (!(error instanceof Error)) return { tipo: typeof error };
-	const codigoDeLaBase = codigoDePostgres(error);
+	// Un código de Postgres (SQLSTATE) son cinco letras o números; `ECONNREFUSED` o `FST_…` no lo son.
+	const codigo = codigoDePostgres(error);
+	const codigoDeLaBase = codigo !== undefined && /^[0-9A-Z]{5}$/.test(codigo) ? codigo : undefined;
 	if ("query" in error && typeof error.query === "string") {
 		// Un error de Drizzle: su mensaje y su pila llevan los valores de la consulta.
 		return { nombre: error.name, consulta: error.query, codigo: codigoDeLaBase };
@@ -105,8 +107,10 @@ export function responderError(
 	if (codigo === "FST_ERR_CTP_BODY_TOO_LARGE")
 		return { estado: 413, cuerpo: new ErrorDeApi("demasiado_grande").cuerpo() };
 	// Un cuerpo que no es JSON, vacío o de un tipo que no se acepta es un error de forma, como cualquier otro.
+	// Solo los de Fastify (`FST_…`): el `4xx` de otro plugin no es de forma y no se disfraza de validación.
 	const estado = propiedad(error, "statusCode");
-	if (typeof estado === "number" && estado >= 400 && estado < 500) {
+	const deFastify = typeof codigo === "string" && codigo.startsWith("FST_");
+	if (deFastify && typeof estado === "number" && estado >= 400 && estado < 500) {
 		return { estado: 400, cuerpo: { ...new ErrorDeApi("validacion").cuerpo(), campos: {} } };
 	}
 	const referencia = randomUUID();

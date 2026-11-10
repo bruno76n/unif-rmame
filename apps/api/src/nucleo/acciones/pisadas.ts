@@ -14,11 +14,23 @@ import type { Transaccion } from "../base/transacciones.ts";
 import { conflictoDeVersion, noExiste } from "../http/errores.ts";
 import type { ContextoDeAccion } from "../modulos.ts";
 
+/** Los contextos de las acciones que ya tomaron su versión: el corredor lo pregunta con `tomoSuVersion`. */
+const contextosConVersion = new WeakSet<ContextoDeAccion>();
+
 /**
- * Toma la versión de un registro (o del encabezado de su agregado) antes de cambiarlo: primero revisa que
- * la cuenta lo pueda ver; luego, si la versión sigue siendo la que se leyó, la sube y la acción puede
- * cambiar el registro y sus renglones.
- * @param contexto El contexto de la acción: la transacción y la marca que el corredor exige a las que editan.
+ * Dice si la acción de este contexto tomó su versión con `tomarVersion`.
+ * @param contexto El contexto de la acción.
+ */
+export function tomoSuVersion(contexto: ContextoDeAccion): boolean {
+	return contextosConVersion.has(contexto);
+}
+
+/**
+ * Toma la versión de un registro (o del encabezado de su agregado) antes de cambiarlo. Primero bloquea el
+ * renglón (`FOR UPDATE`): desde ahí nadie lo cambia hasta que la acción termine, así que la versión y lo
+ * que se lee de él son del mismo momento. Luego revisa que la cuenta lo pueda ver y, si la versión sigue
+ * siendo la que se leyó, la sube; la acción ya puede cambiar el registro y sus renglones.
+ * @param contexto El contexto de la acción.
  * @param tabla La tabla del registro, con las columnas comunes.
  * @param id El id del registro.
  * @param versionLeida La versión que trajo la acción.
@@ -34,18 +46,16 @@ export async function tomarVersion(
 	leerVisible: () => Promise<unknown>,
 ): Promise<void> {
 	const { transaccion } = contexto;
+	const bloqueada = await transaccion.execute(sql`SELECT version FROM ${tabla} WHERE id = ${id} FOR UPDATE`);
+	const version = bloqueada.rows[0]?.version;
 	const visible = await leerVisible();
-	if (visible === undefined) throw noExiste();
+	if (version === undefined || visible === undefined) throw noExiste();
+	if (Number(version) !== versionLeida) throw conflictoDeVersion(Number(version), visible);
 	// La versión se sube aquí con la secuencia, aunque a la tabla le faltara su disparador.
-	const tomada = await transaccion.execute(
-		sql`UPDATE ${tabla} SET actualizado_en = now(), version = nextval('public.version_global') WHERE id = ${id} AND version = ${versionLeida ?? -1} RETURNING version`,
+	await transaccion.execute(
+		sql`UPDATE ${tabla} SET actualizado_en = now(), version = nextval('public.version_global') WHERE id = ${id}`,
 	);
-	contexto.marcarVersionTomada();
-	if (tomada.rows.length > 0) return;
-	const actual = await transaccion.execute(sql`SELECT version FROM ${tabla} WHERE id = ${id}`);
-	const version = actual.rows[0]?.version;
-	if (version === undefined) throw noExiste();
-	throw conflictoDeVersion(Number(version), visible);
+	contextosConVersion.add(contexto);
 }
 
 /**

@@ -71,14 +71,28 @@ export interface ContratoDeConsulta<
 }
 
 /** Las palabras que delatan un secreto en el nombre de un campo de la salida. */
-const nombresDeSecreto = /(^|_)(secreto|pin|token|llave|contrasena)(_|$)/;
+const nombresDeSecreto = /(^|_)(secreto|pin|token|llave|contrasena|password|clave_acceso|api_key)(_|$)/;
 
 /**
- * Dice si el nombre de un campo parece de un secreto.
+ * Dice si el nombre de un campo parece de un secreto. Un id (`llave_id`, `pin_id`) no lo es.
  * @param campo El nombre del campo.
  */
 export function pareceSecreto(campo: string): boolean {
-	return nombresDeSecreto.test(campo);
+	return nombresDeSecreto.test(campo) && !campo.endsWith("_id");
+}
+
+/**
+ * Los nombres de los campos que van dentro de otros (de un objeto o de una lista de objetos) en un esquema,
+ * a cualquier profundidad. Un secreto solo puede ir en el primer nivel: más adentro no se quitaría.
+ * @param esquema El esquema de un campo de la salida.
+ */
+function camposAnidados(esquema: z.core.$ZodType): string[] {
+	if (esquema instanceof z.ZodOptional || esquema instanceof z.ZodNullable) return camposAnidados(esquema.unwrap());
+	if (esquema instanceof z.ZodArray) return camposAnidados(esquema.element);
+	if (esquema instanceof z.ZodObject) {
+		return Object.entries(esquema.shape).flatMap(([campo, interior]) => [campo, ...camposAnidados(interior)]);
+	}
+	return [];
 }
 
 /** Un nombre de acción o de consulta: `modulo.nombre`, en snake_case. */
@@ -111,9 +125,15 @@ export function definirAccion<
 		}
 	}
 	// Un campo con nombre de secreto que no está declarado se guardaría para los reintentos: no se deja.
-	for (const campo of Object.keys(contrato.salida.shape)) {
+	for (const [campo, esquema] of Object.entries(contrato.salida.shape)) {
 		if (pareceSecreto(campo) && !(contrato.secretos ?? []).includes(campo)) {
 			throw new Error(`${contrato.nombre}: el campo ${campo} parece un secreto; decláralo en secretos`);
+		}
+		const anidado = camposAnidados(esquema).find(pareceSecreto);
+		if (anidado !== undefined) {
+			throw new Error(
+				`${contrato.nombre}: el secreto ${campo}.${anidado} tiene que ir en el primer nivel de la salida`,
+			);
 		}
 	}
 	const resultado = z

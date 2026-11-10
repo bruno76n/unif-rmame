@@ -87,4 +87,8 @@ describe("una consulta pagina con cursor, no regresa un campo recortado y lo dic
 		expect(respuesta.estado).toBe(500);
 		expect(JSON.stringify(respuesta.cuerpo)).not.toContain("125000");
 	});
+
+	it("una consulta que dice que recortó un campo que su contrato no deja recortar sale con 500", async () => {
+		expect((await consultar("/v1/consultas/prueba.trampa?fuera=si")).estado).toBe(500);
+	});
 });

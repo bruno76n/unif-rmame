@@ -106,13 +106,28 @@ export async function guardarRespuesta(
 		.where(eq(comandosRecibidos.id, id));
 }
 
+/** Escapa un texto para buscarlo tal cual dentro de una expresión regular. */
+function literal(texto: string): string {
+	return texto.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * Dice si un secreto va escrito en un texto para personas: como palabra suelta, no pegado a letras,
+ * números ni guiones (así un PIN `4821` no se confunde con el folio `PE-4821` ni con un pedazo de un id).
+ * @param texto El mensaje o un aviso.
+ * @param secreto El valor del secreto.
+ */
+function llevaElSecreto(texto: string, secreto: string): boolean {
+	return new RegExp(`(?<![\\p{L}\\p{N}_-])${literal(secreto)}(?![\\p{L}\\p{N}_-])`, "u").test(texto);
+}
+
 /**
  * Quita los secretos del resultado para guardarlo.
  * @param respuesta La respuesta completa.
  * @param secretos Los campos del resultado que son secretos (siempre de primer nivel: ver la regla de contratos).
  * @returns La respuesta que se guarda: sin esos campos y, si quitó alguno, con `secreto_entregado: true`.
- * @throws Error si el valor de un secreto aparece en otra parte de la respuesta (un aviso, el mensaje):
- * es un error del programa y la acción no se guarda.
+ * @throws Error si el valor de un secreto va escrito en el mensaje o en un aviso, que sí se guardan: es un
+ * error del programa y la acción no se guarda.
  */
 export function sinSecretos(
 	respuesta: { ok: true; resultado: Record<string, unknown>; avisos: string[] },
@@ -124,12 +139,13 @@ export function sinSecretos(
 	const quitados = Object.entries(resultado)
 		.filter(([llave]) => secretos.includes(llave))
 		.map(([, valor]) => valor);
-	const guardada = { ...respuesta, resultado: limpio, ...(quitados.length > 0 ? { secreto_entregado: true } : {}) };
-	const texto = JSON.stringify(guardada);
+	const textos = [typeof resultado.mensaje === "string" ? resultado.mensaje : "", ...respuesta.avisos];
 	for (const valor of quitados) {
-		if (valor !== undefined && valor !== null && texto.includes(String(valor))) {
+		if (typeof valor !== "string" && typeof valor !== "number") continue;
+		const secreto = String(valor);
+		if (secreto !== "" && textos.some((texto) => llevaElSecreto(texto, secreto))) {
 			throw new Error("un secreto aparece fuera de su campo en la respuesta");
 		}
 	}
-	return guardada;
+	return { ...respuesta, resultado: limpio, ...(quitados.length > 0 ? { secreto_entregado: true } : {}) };
 }

@@ -8,6 +8,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { mandarAccion, nuevaClave } from "../pruebas/llamadas.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../pruebas/servidor-de-prueba.ts";
+import { sinSecretos } from "./claves.ts";
 
 describe("una respuesta con un secreto se repite sin el secreto y con secreto_entregado", () => {
 	let servidor: ServidorDePrueba;
@@ -100,5 +101,44 @@ describe("una respuesta con un secreto se repite sin el secreto y con secreto_en
 				permiso: {},
 			}),
 		).toThrow("parece un secreto");
+	});
+
+	it("un contrato no deja un secreto dentro de otro campo, pero sí un id con nombre parecido", () => {
+		expect(() =>
+			definirAccion({
+				nombre: "prueba.mal3",
+				descripcion: "mal",
+				entrada: z.object({}),
+				salida: z.object({ accesos: z.array(z.object({ pin: z.string() })).optional() }),
+				permiso: {},
+			}),
+		).toThrow("primer nivel");
+		expect(() =>
+			definirAccion({
+				nombre: "prueba.bien",
+				descripcion: "bien",
+				entrada: z.object({}),
+				salida: z.object({ llave_id: z.string(), aparato: z.object({ pin_id: z.string() }) }),
+				permiso: {},
+			}),
+		).not.toThrow();
+	});
+
+	it("un secreto solo se busca escrito como palabra en el mensaje y en los avisos: un id, un folio o un secreto vacío no fallan", () => {
+		const conId = {
+			ok: true as const,
+			resultado: { mensaje: "Pedido PE-4821 creado", id: "0196f3a2-4821-7abc-9def-000000004821", pin: "4821" },
+			avisos: ["Folio PE-4821"],
+		};
+		expect(sinSecretos(conId, ["pin"])).toMatchObject({
+			resultado: { id: conId.resultado.id },
+			secreto_entregado: true,
+		});
+		expect(sinSecretos({ ok: true, resultado: { mensaje: "Listo", pin: "" }, avisos: [] }, ["pin"])).toMatchObject({
+			secreto_entregado: true,
+		});
+		expect(() =>
+			sinSecretos({ ok: true, resultado: { mensaje: "Tu PIN es 4821.", pin: "4821" }, avisos: [] }, ["pin"]),
+		).toThrow("secreto");
 	});
 });

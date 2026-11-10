@@ -3,9 +3,22 @@
  * Fase 3 · docs/fases/03-api-protocolo-e-idempotencia.md (parte 3)
  */
 
+import { eq } from "drizzle-orm";
+import { Temporal } from "temporal-polyfill";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { crearBase } from "../base/conexion.ts";
+import { codigoDePostgres, enTransaccion } from "../base/transacciones.ts";
+import { ErrorDeApi } from "../http/errores.ts";
+import type { ContextoDeAccion } from "../modulos.ts";
 import { mandarAccion } from "../pruebas/llamadas.ts";
-import { crearServidorDePrueba, encabezadosDeLaWeb, type ServidorDePrueba } from "../pruebas/servidor-de-prueba.ts";
+import { notas } from "../pruebas/modulos/prueba/tablas.ts";
+import {
+	crearServidorDePrueba,
+	encabezadosDeLaWeb,
+	quienesDePrueba,
+	type ServidorDePrueba,
+} from "../pruebas/servidor-de-prueba.ts";
+import { tomarVersion } from "./pisadas.ts";
 
 describe("una edición con versión vieja recibe 409 con la versión actual y sus datos recortados; un cambio en un renglón sube la versión del encabezado", () => {
 	let servidor: ServidorDePrueba;
@@ -99,5 +112,59 @@ describe("una edición con versión vieja recibe 409 con la versión actual y su
 		const { rows } = await servidor.base.dueno.query("SELECT texto FROM prueba_notas WHERE id = $1", [id]);
 		// La acción cambiaba el texto a «sin versión»: el corredor la deshizo y quedó el de antes.
 		expect(rows[0]?.texto).toBe("antes de editar");
+	});
+
+	it("el 409 lleva la versión y los datos del mismo momento: mientras se leen, nadie más cambia el registro", async () => {
+		const { id, version } = await crearYLeer("del mismo momento");
+		await mandarAccion(servidor, "prueba.editar_nota", { datos: { id, texto: "vigente" }, version });
+		const ajeno: { codigo?: string | undefined } = {};
+		const quien = quienesDePrueba.ventas;
+		if (quien === undefined) throw new Error("falta la cuenta de prueba de ventas");
+		const error = await enTransaccion(crearBase(servidor.base.app), async (transaccion) => {
+			const contexto: ContextoDeAccion = {
+				transaccion,
+				quien,
+				ahora: Temporal.Now.instant(),
+				diaDeNegocio: Temporal.PlainDate.from("2026-11-10"),
+				comandoId: "01936f2e-0000-7000-8000-0000000000aa",
+				interna: async () => undefined,
+				lectura: async () => undefined,
+				guardarEvento: () => {},
+				bitacora: () => {},
+			};
+			return tomarVersion(contexto, notas, id, version, async () => {
+				// Otra persona intenta cambiarla justo mientras se lee: tiene que esperar (aquí, rendirse).
+				await servidor.base.dueno
+					.query(`SET lock_timeout = '200ms'; UPDATE prueba_notas SET texto = 'ajeno' WHERE id = '${id}'`)
+					.catch((e: unknown) => {
+						ajeno.codigo = codigoDePostgres(e);
+					});
+				const [nota] = await transaccion.select({ texto: notas.texto }).from(notas).where(eq(notas.id, id));
+				return nota;
+			}).then(
+				() => undefined,
+				(e: unknown) => e,
+			);
+		});
+		expect(ajeno.codigo).toBe("55P03");
+		expect(error).toBeInstanceOf(ErrorDeApi);
+		const { rows } = await servidor.base.dueno.query("SELECT texto, version FROM prueba_notas WHERE id = $1", [id]);
+		expect(error instanceof ErrorDeApi ? error.cuerpo() : undefined).toMatchObject({
+			version: Number(rows[0]?.version),
+			datos: { texto: "vigente" },
+		});
+		expect(rows[0]?.texto).toBe("vigente");
+	});
+
+	it("la versión sube aunque a la tabla le falte su disparador", async () => {
+		const { id, version } = await crearYLeer("sin disparador");
+		await servidor.base.dueno.query("ALTER TABLE prueba_notas DISABLE TRIGGER columnas_comunes");
+		try {
+			const editada = await mandarAccion(servidor, "prueba.editar_nota", { datos: { id, texto: "otra" }, version });
+			expect(editada.estado).toBe(200);
+			expect((editada.cuerpo.resultado as { version: number }).version).toBeGreaterThan(version);
+		} finally {
+			await servidor.base.dueno.query("ALTER TABLE prueba_notas ENABLE TRIGGER columnas_comunes");
+		}
 	});
 });

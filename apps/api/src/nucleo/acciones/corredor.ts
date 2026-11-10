@@ -19,6 +19,7 @@ import { enTransaccion, type Transaccion } from "../base/transacciones.ts";
 import { errorDeRegla } from "../http/errores.ts";
 import { apartarClave, guardarRespuesta, huellaDeCarga, sinSecretos } from "../idempotencia/claves.ts";
 import type { AccionImplementada, ContextoDeAccion, Evento, RegistroDeModulos, RenglonDeBitacora } from "../modulos.ts";
+import { tomoSuVersion } from "./pisadas.ts";
 
 /**
  * Lo que el corredor pide a `admin`: escribir la bitácora y guardar los eventos de la acción, en su
@@ -62,11 +63,9 @@ function crearContexto(
 	contexto: ContextoDeAccion;
 	renglones: RenglonDeBitacora[];
 	eventos: Evento[];
-	estado: { versionTomada: boolean };
 } {
 	const renglones: RenglonDeBitacora[] = [];
 	const eventos: Evento[] = [];
-	const estado = { versionTomada: false };
 	const contexto: ContextoDeAccion = {
 		transaccion,
 		quien,
@@ -89,11 +88,8 @@ function crearContexto(
 		bitacora: (renglon) => {
 			renglones.push(renglon);
 		},
-		marcarVersionTomada: () => {
-			estado.versionTomada = true;
-		},
 	};
-	return { contexto, renglones, eventos, estado };
+	return { contexto, renglones, eventos };
 }
 
 /**
@@ -130,16 +126,10 @@ export async function correrAccion(
 			return leerRespuestaGuardada(apartada.respuesta);
 		}
 		// Paso 7: la acción hace lo suyo.
-		const { contexto, renglones, eventos, estado } = crearContexto(
-			dependencias.registro,
-			transaccion,
-			quien,
-			ahora,
-			comandoId,
-		);
+		const { contexto, renglones, eventos } = crearContexto(dependencias.registro, transaccion, quien, ahora, comandoId);
 		const salida = await accion.ejecutar(contexto, cuerpo.datos, cuerpo.version);
 		// Una acción que edita tiene que haber tomado la versión que se leyó: si no, la versión no serviría.
-		if (contrato.edita && !estado.versionTomada) throw new Error(`${contrato.nombre} edita pero no tomó su versión`);
+		if (contrato.edita && !tomoSuVersion(contexto)) throw new Error(`${contrato.nombre} edita pero no tomó su versión`);
 		// La salida se revisa aquí, dentro de la transacción: un campo fuera del contrato no se guarda.
 		const resultado = z.parse(contrato.resultado, salida.resultado);
 		// Paso 8: la bitácora y los eventos, una sola vez por acción.

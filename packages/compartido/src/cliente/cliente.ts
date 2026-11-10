@@ -97,6 +97,9 @@ export interface Consultado<Resultado> {
 	recortado: string[];
 }
 
+/** La marca de un cuerpo que no se pudo leer como JSON. */
+const sinCuerpo = Symbol("sin cuerpo");
+
 /** Dice si un estado se reintenta con la misma clave: el servidor o su balanceador no dieron respuesta útil. */
 function seReintenta(estado: number): boolean {
 	return estado === 500 || estado === 502 || estado === 503 || estado === 504;
@@ -124,17 +127,13 @@ export function crearCliente<
 	async function pedir(url: string, init: RequestInit, clave?: string): Promise<unknown> {
 		let yaReautentico = false;
 		for (let intento = 0; ; intento++) {
-			let estado: number;
-			let cuerpo: unknown;
+			let respuesta: Response;
 			try {
-				const respuesta = await llamar(url, {
+				respuesta = await llamar(url, {
 					...init,
 					...(opciones.credenciales === undefined ? {} : { credentials: opciones.credenciales }),
 					headers: { "x-app-version": opciones.versionApp, ...(opciones.encabezados?.() ?? {}), ...init.headers },
 				});
-				estado = respuesta.status;
-				// El cuerpo se lee aquí: si la conexión se corta a la mitad, cuenta como falta de red.
-				cuerpo = await respuesta.json();
 			} catch {
 				if (intento < reintentos) {
 					await esperar(2 ** intento * 500);
@@ -142,8 +141,13 @@ export function crearCliente<
 				}
 				throw new ErrorSinRed(clave);
 			}
-			if (estado >= 200 && estado < 300) return cuerpo;
-			if (seReintenta(estado) && intento < reintentos) {
+			const estado = respuesta.status;
+			// Un cuerpo que se corta o que no es JSON no se pudo leer: en un `2xx` o un `5xx` cuenta como falta
+			// de red y se reintenta; en un `4xx` (de un proxy, por ejemplo) no, porque repetirlo da lo mismo.
+			const cuerpo: unknown = await respuesta.json().catch(() => sinCuerpo);
+			const correcto = estado >= 200 && estado < 300;
+			if (correcto && cuerpo !== sinCuerpo) return cuerpo;
+			if ((correcto || seReintenta(estado)) && intento < reintentos) {
 				await esperar(2 ** intento * 500);
 				continue;
 			}

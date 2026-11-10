@@ -51,8 +51,6 @@ export interface ContextoDeAccion {
 	lectura: (nombre: string, datos: unknown) => Promise<unknown>;
 	guardarEvento: (evento: Evento) => void;
 	bitacora: (renglon: RenglonDeBitacora) => void;
-	/** Lo llama `tomarVersion`: el corredor exige que una acción que edita haya tomado su versión. */
-	marcarVersionTomada: () => void;
 }
 
 /** Lo que recibe una consulta: la base para leer, quién llama y la hora. */

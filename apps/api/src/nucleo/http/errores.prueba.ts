@@ -6,6 +6,7 @@
 import { tablaDeErrores } from "@uniformame/compartido/contratos/protocolo";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { crearServidorDePrueba, encabezadosDeLaWeb, type ServidorDePrueba } from "../pruebas/servidor-de-prueba.ts";
+import { errorParaElRegistro, responderError } from "./errores.ts";
 
 describe("cada error de la tabla de la API sale con su forma y su mensaje; un 500 no enseña la causa y su referencia está en el registro técnico", () => {
 	let servidor: ServidorDePrueba;
@@ -66,7 +67,9 @@ describe("cada error de la tabla de la API sale con su forma y su mensaje; un 50
 			codigo: null,
 			mensaje: tablaDeErrores.no_existe.mensaje,
 		});
-		expect((await servidor.app.inject({ method: "GET", url: "/v1/nada" })).statusCode).toBe(404);
+		const ruta = await servidor.app.inject({ method: "GET", url: "/v1/nada" });
+		expect(ruta.statusCode).toBe(404);
+		expect(ruta.headers["cache-control"]).toBe("no-store");
 	});
 
 	it("413 demasiado_grande con un cuerpo de más de 1 MB", async () => {
@@ -155,5 +158,18 @@ describe("cada error de la tabla de la API sale con su forma y su mensaje; un 50
 		expect(registro).toContain(respuesta.json().referencia);
 		expect(registro).not.toContain("SECRETO-DE-LA-BASE");
 		expect(registro).not.toContain("RFC-XAXX010101000");
+	});
+
+	it("solo un 4xx de Fastify sale como 400 de forma; el de otro plugin es un 500, y un error que no es de la base guarda su mensaje", () => {
+		const deOtro = Object.assign(new Error("muchas"), { statusCode: 429, code: "OTRO_PLUGIN" });
+		expect(responderError(deOtro, servidor.app.log).estado).toBe(500);
+		const deFastify = Object.assign(new Error("tipo"), { statusCode: 415, code: "FST_ERR_CTP_INVALID_MEDIA_TYPE" });
+		expect(responderError(deFastify, servidor.app.log).estado).toBe(400);
+		const sinRed = Object.assign(new Error("connect ECONNREFUSED 127.0.0.1:5432"), { code: "ECONNREFUSED" });
+		expect(errorParaElRegistro(sinRed)).toMatchObject({ mensaje: "connect ECONNREFUSED 127.0.0.1:5432" });
+		expect(errorParaElRegistro(Object.assign(new Error("valor 42"), { code: "22P02" }))).toEqual({
+			nombre: "Error",
+			codigo: "22P02",
+		});
 	});
 });

@@ -226,4 +226,12 @@ describe("el cliente solo compila con nombres y datos que existen en los contrat
 			ErrorSinRed,
 		);
 	});
+
+	it("un 4xx que no es JSON (de un proxy) no se reintenta: repetirlo daría lo mismo", async () => {
+		const { cliente, llamadas } = clienteCon([new Response("<html>Not Found</html>", { status: 404 })]);
+		await expect(cliente.accion("ventas.confirmar_pedido", { datos: { pedido_id: pedidoId } })).rejects.toBeInstanceOf(
+			ErrorSinRed,
+		);
+		expect(llamadas).toHaveLength(1);
+	});
 });

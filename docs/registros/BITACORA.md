@@ -24,3 +24,4 @@ La línea de la bitácora se escribe al final, con el resultado ya conocido. Esc
 | 10 nov 2026 | 3 | 1 a 4 · El servidor, el corredor, la idempotencia y las consultas | [2026-11-10-fase-03](sesiones/2026-11-10-fase-03.md) |
 | 10 nov 2026 | 3 | 5 · Contratos, cliente y documentación de la API | [2026-11-10-fase-03](sesiones/2026-11-10-fase-03.md) |
 | 10 nov 2026 | 3 | Auditoría y correcciones | [2026-11-10-fase-03](sesiones/2026-11-10-fase-03.md) |
+| 10 nov 2026 | 3 | Revisión de las correcciones y cierre: fase 3 terminada | [2026-11-10-fase-03](sesiones/2026-11-10-fase-03.md) |
