@@ -35,6 +35,7 @@ import { accionRotarLlave } from "./acciones/rotar-llave.ts";
 import { accionSalir } from "./acciones/salir.ts";
 import { accionTrabajosImpresion } from "./acciones/trabajos-impresion.ts";
 import { alEventoDeAdmin } from "./al-evento.ts";
+import { bajadaDeAdmin } from "./bajada.ts";
 import { semillaDeContadores } from "./dominio/contadores.ts";
 import { semillaDeDepartamentos } from "./dominio/departamentos.ts";
 import { enVivoDeAdmin } from "./en-vivo.ts";
@@ -88,6 +89,7 @@ export default definirModulo({
 		accionDescartarComandoApartado,
 		accionRotarLlave,
 	],
+	bajada: bajadaDeAdmin,
 	internas: {
 		guardar_evento: guardarEvento,
 		tomar_folio: tomarFolio,

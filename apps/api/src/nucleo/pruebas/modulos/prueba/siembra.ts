@@ -1,5 +1,6 @@
 /**
- * La siembra del módulo de prueba: parámetros de cada tipo con sus límites, dos listas y la empresa.
+ * La siembra del módulo de prueba: parámetros de cada tipo con sus límites (y uno que decide qué baja a la
+ * tablet), dos listas y la empresa.
  * Fase 4 · docs/fases/04-servicios-comunes.md (parte 2)
  *
  * Solo la carga el servidor de prueba en su base copia. La lista de las unidades de material lleva la
@@ -51,6 +52,15 @@ const parametrosDePrueba = semillaDeParametros("prueba", [
 		inicial: 40_000,
 		porDecidir: true,
 		orden: 5,
+	},
+	{
+		clave: "prueba.atendidos_bajan",
+		seccion: "parametro",
+		nombre: "Los bultos atendidos bajan a la tablet",
+		tipo: "booleano",
+		inicial: false,
+		bajaA: ["tablet_taller"],
+		orden: 6,
 	},
 ]);
 

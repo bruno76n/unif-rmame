@@ -68,3 +68,68 @@ export const respuestaDeSubida = z
 		hay_cambios: z.boolean().describe("Hay algo nuevo que bajar"),
 	})
 	.strict();
+
+/** Un renglón que baja: su tabla, si cambió o se quita, su id y sus columnas. */
+export const cambioQueBaja = z
+	.object({
+		tabla: z.string().describe("La tabla del renglón"),
+		op: z.enum(["cambio", "quitar"]).describe("`cambio`: se guarda así; `quitar`: ya no le toca al aparato"),
+		id: z.uuid().describe("El renglón"),
+		datos: z
+			.record(z.string(), z.unknown())
+			.nullable()
+			.describe("Las columnas que le tocan al aparato; nulo al quitar"),
+	})
+	.strict();
+
+/** Cuántos renglones pide el aparato por página: hasta `sync.pagina_max_renglones`. */
+const limiteDePagina = z.coerce
+	.number()
+	.int()
+	.min(1)
+	.optional()
+	.describe("Cuántos renglones, hasta `sync.pagina_max_renglones`");
+
+/** Los parámetros de `GET /v1/sync/bajar`. */
+export const parametrosDeBajada = z
+	.object({
+		desde: z.string().max(2000).optional().describe("El cursor de la página anterior; sin él, pide la foto"),
+		limite: limiteDePagina,
+	})
+	.strict();
+
+/** La respuesta de `GET /v1/sync/bajar`. */
+export const respuestaDeBajada = z
+	.object({
+		ok: z.literal(true),
+		cambios: z.array(cambioQueBaja).describe("Los renglones, en el orden de dependencias"),
+		cursor: z.string().nullable().describe("El cursor para la siguiente página; opaco. Nulo si pide la foto"),
+		hay_mas: z.boolean().describe("Si hay más renglones en esta ventana"),
+		requiere_foto: z.boolean().describe("El cursor no sirve: el aparato pide la foto completa"),
+		rotar_llave: z.boolean().describe("Ya le toca cambiar su llave"),
+		servidor_en: z.string().describe("La hora del servidor"),
+	})
+	.strict();
+
+/** Los parámetros de `GET /v1/sync/foto`. */
+export const parametrosDeFoto = z
+	.object({
+		parte: z.string().max(2000).optional().describe("El cursor de la página anterior de la foto; sin él, empieza"),
+		limite: limiteDePagina,
+	})
+	.strict();
+
+/** La respuesta de `GET /v1/sync/foto`. */
+export const respuestaDeFoto = z
+	.object({
+		ok: z.literal(true),
+		cambios: z.array(cambioQueBaja).describe("Los renglones vigentes, tabla por tabla en el orden de dependencias"),
+		parte: z.string().nullable().describe("El cursor de la siguiente página de la foto; nulo al terminar"),
+		hay_mas: z.boolean().describe("Si falta foto"),
+		cursor_bajar: z
+			.string()
+			.nullable()
+			.describe("Al terminar: el cursor con que el aparato sigue bajando desde el inicio de la foto"),
+		servidor_en: z.string().describe("La hora del servidor"),
+	})
+	.strict();

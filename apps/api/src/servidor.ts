@@ -41,6 +41,7 @@ import type { Entorno } from "./nucleo/entorno.ts";
 import { ErrorDeApi, responderError } from "./nucleo/http/errores.ts";
 import { validarSinTransformar } from "./nucleo/http/validacion.ts";
 import type { ConsultaSensible, ContextoDeRuta, RegistroDeModulos, RutaFija } from "./nucleo/modulos.ts";
+import { bajadaDeAparatos } from "./nucleo/sincronizacion/bajar.ts";
 import type { AvisosEnVivo } from "./nucleo/sincronizacion/eventos-en-vivo.ts";
 import { subidaDeAparatos } from "./nucleo/sincronizacion/subir.ts";
 
@@ -113,6 +114,8 @@ export interface DependenciasDelServidor {
 	almacen?: Almacen;
 	/** De dónde sale «ahora»; las pruebas la fijan. */
 	reloj?: () => Temporal.Instant;
+	/** La llave de los cursores de la bajada (`llaveDelCursor`); sin ella, `/v1/sync/bajar` y `/v1/sync/foto` no existen. */
+	llaveDelCursor?: Buffer;
 	/** La entrada con Google y la llave de `ua_google`; sin ella, `/v1/acceso/google` no existe. */
 	entradaConGoogle?: { google: AccesoConGoogle; llave: Buffer };
 }
@@ -382,6 +385,18 @@ export async function crearServidor(dependencias: DependenciasDelServidor) {
 			...(dependencias.almacen === undefined ? {} : { almacen: dependencias.almacen }),
 		}),
 	);
+	// La bajada y la foto de los aparatos, con su cursor firmado.
+	if (dependencias.llaveDelCursor !== undefined) {
+		await app.register(
+			bajadaDeAparatos({
+				base,
+				registro,
+				reloj,
+				versionMinimaDelParametro: servicios.versionMinimaDelParametro,
+				llave: dependencias.llaveDelCursor,
+			}),
+		);
+	}
 	if (dependencias.entradaConGoogle !== undefined) {
 		await app.register(
 			entradaConGoogle({

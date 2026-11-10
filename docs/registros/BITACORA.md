@@ -42,3 +42,4 @@ La línea de la bitácora se escribe al final, con el resultado ya conocido. Esc
 | 10 nov 2026 | 5 | Tercera vuelta y cierre: fase 5 terminada | [2026-11-11-fase-05](sesiones/2026-11-11-fase-05.md) |
 | 10 nov 2026 | 6 | 1 · Aparatos y llaves | [2026-11-10-fase-06](sesiones/2026-11-10-fase-06.md) |
 | 10 nov 2026 | 6 | 2 · Subir | [2026-11-10-fase-06](sesiones/2026-11-10-fase-06.md) |
+| 10 nov 2026 | 6 | 3 · Bajar y la foto | [2026-11-10-fase-06](sesiones/2026-11-10-fase-06.md) |

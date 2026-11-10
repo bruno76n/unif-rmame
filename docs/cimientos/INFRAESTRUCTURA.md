@@ -80,7 +80,7 @@ La raíz `uniformame.mx` queda para la tienda en línea, después. Si el dominio
 | `BASE_DATOS_URL` | La conexión de la app a Postgres, con TLS | API, worker |
 | `BASE_DATOS_URL_DUENO` | La conexión del rol dueño, solo para las migraciones | El comando previo al despliegue |
 | `GOOGLE_EMISOR` · `GOOGLE_CLIENTE_ID` · `GOOGLE_CLIENTE_SECRETO` | El proveedor de OpenID y el cliente | API |
-| `COOKIE_SECRETO` | La llave que cifra la cookie de la entrada con Google | API |
+| `COOKIE_SECRETO` | La llave que cifra la cookie de la entrada con Google; de ella sale también, con HKDF, la que firma los cursores de la bajada de los aparatos | API |
 | `R2_CUENTA` · `R2_ARCHIVOS_LLAVE_ID` · `R2_ARCHIVOS_SECRETO` | La credencial del cubo de archivos | API, worker |
 | `R2_RESPALDOS_LLAVE_ID` · `R2_RESPALDOS_SECRETO` | La credencial del cubo de respaldos, solo escribe | Worker |
 | `BASE_DATOS_URL_DUENO` en el worker | El volcado del respaldo semanal usa el rol dueño, el único que lee todo (decisión 368) | Worker |

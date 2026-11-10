@@ -10,20 +10,20 @@
  */
 
 import { cuerpoDeSubida, respuestaDeSubida } from "@uniformame/compartido/contratos/sincronizacion";
-import { type App, compararVersiones, versionMinima } from "@uniformame/compartido/contratos/versiones";
+import type { App } from "@uniformame/compartido/contratos/versiones";
 import { eq, sql } from "drizzle-orm";
-import type { FastifyInstance, FastifyPluginAsync, FastifyRequest } from "fastify";
+import type { FastifyInstance, FastifyPluginAsync } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import type { Temporal } from "temporal-polyfill";
 import { v7 as uuidv7 } from "uuid";
 import type { z } from "zod";
 import { comandosRecibidos, dispositivosSync } from "../../modulos/admin/tablas.ts";
-import { type AparatoConLlave, identificarConLlave } from "../acceso/llave.ts";
-import { appDe } from "../acceso/quien.ts";
+import type { AparatoConLlave } from "../acceso/llave.ts";
 import { parametroEntero } from "../acceso/sesion.ts";
 import type { Base } from "../base/conexion.ts";
 import { enTransaccion } from "../base/transacciones.ts";
 import { ErrorDeApi, errorParaElRegistro } from "../http/errores.ts";
+import { identificarAparato } from "./aparato.ts";
 import {
 	anotarClaveRepetida,
 	aplicarComando,
@@ -64,19 +64,6 @@ function registrarSubida(raiz: FastifyInstance, dependencias: DependenciasDeLaSu
 	const { base } = dependencias;
 	const app = raiz.withTypeProvider<ZodTypeProvider>();
 
-	/** Pasos 1 y 2 de la API: la llave del aparato y la versión de su app. */
-	async function identificarAparato(peticion: FastifyRequest, ahora: Temporal.Instant): Promise<AparatoConLlave> {
-		const aparato = await identificarConLlave(base, peticion, ahora);
-		if (aparato === undefined) throw new ErrorDeApi("sin_sesion", "sin_sesion");
-		const app = appDe(aparato.quien);
-		const minima = versionMinima(app, await dependencias.versionMinimaDelParametro(app));
-		const version = peticion.headers["x-app-version"];
-		if (typeof version !== "string" || (compararVersiones(version, minima) ?? -1) < 0) {
-			throw new ErrorDeApi("actualizar", null, undefined, { version_minima: minima });
-		}
-		return aparato;
-	}
-
 	app.post(
 		"/v1/sync/subir",
 		{
@@ -90,8 +77,7 @@ function registrarSubida(raiz: FastifyInstance, dependencias: DependenciasDeLaSu
 		},
 		async (peticion, respuesta) => {
 			const ahora = dependencias.reloj();
-			const aparato = await identificarAparato(peticion, ahora);
-			peticion.quien = aparato.quien;
+			const aparato = await identificarAparato(base, dependencias.versionMinimaDelParametro, peticion, ahora);
 			const cuerpo = peticion.body;
 			const tandaMaxima = await parametroEntero(base, "sync.tanda_max_comandos");
 			if (cuerpo.comandos.length > tandaMaxima) {

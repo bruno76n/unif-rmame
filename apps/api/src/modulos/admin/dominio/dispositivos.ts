@@ -1,16 +1,19 @@
 /**
  * Lo que comparten las acciones de los aparatos: el código de registro, la parte pública de la llave, la
- * ubicación que le toca a cada tipo, leer un aparato y leer un comando apartado.
+ * ubicación que le toca a cada tipo, leer un aparato, leer un comando apartado, si le toca rotar la llave y
+ * pedirle la foto.
  * Fase 6 · docs/modulos/admin/dispositivos.md
  */
 
 import { randomBytes, randomInt } from "node:crypto";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNull, sql } from "drizzle-orm";
+import { Temporal } from "temporal-polyfill";
 import type { Base } from "../../../nucleo/base/conexion.ts";
 import type { Transaccion } from "../../../nucleo/base/transacciones.ts";
 import { errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
+import { leerParametro } from "../../../nucleo/parametros.ts";
 import { ubicaciones } from "../../inventario/tablas.ts";
-import { comandosRecibidos, dispositivos, impresoras } from "../tablas.ts";
+import { comandosRecibidos, dispositivos, dispositivosSync, impresoras } from "../tablas.ts";
 
 /** Las letras del código: sin las que se confunden (0 y O, 1, I y L, 5 y S, 2 y Z, 8 y B). */
 const letrasDelCodigo = "ACDEFGHJKMNPQRTUVWXY34679";
@@ -136,4 +139,44 @@ export async function leerApartado(transaccion: Transaccion, comandoId: string):
 	if (comando.descartadoEn !== null) throw errorDeRegla("ya_descartado", "Ese comando ya se descartó.");
 	if (comando.resultado !== "apartado") throw errorDeRegla("no_es_apartado", "Ese comando no quedó apartado.");
 	return comando;
+}
+
+/**
+ * Dice si a un aparato ya le toca cambiar su llave: pasaron `admin.dias_rotar_llave` desde la última vez
+ * (o desde que se registró). Se lo dicen la bajada y, al puente, sus trabajos.
+ * @param base La base o la transacción.
+ * @param dispositivoId El aparato.
+ * @param ahora La hora de la llamada.
+ */
+export async function leTocaRotarLaLlave(
+	base: Base | Transaccion,
+	dispositivoId: string,
+	ahora: Temporal.Instant,
+): Promise<boolean> {
+	const aparato = await leerDispositivo(base, dispositivoId);
+	const dias = Number(await leerParametro(base, { clave: "admin.dias_rotar_llave" }));
+	const desde = Temporal.Instant.from(aparato.llaveRotadaEn ?? aparato.creadoEn);
+	return Temporal.Instant.compare(desde.add({ hours: dias * 24 }), ahora) <= 0;
+}
+
+/**
+ * Pide la foto completa a los aparatos vigentes de unos tipos: su siguiente bajada responde `requiere_foto`.
+ * Se usa cuando cambia algo que decide qué les baja sin tocar los renglones (un parámetro).
+ * @param transaccion La transacción de la acción.
+ * @param tipos Los tipos de aparato.
+ * @param ahora La hora de la acción.
+ */
+export async function pedirLaFoto(
+	transaccion: Transaccion,
+	tipos: readonly string[],
+	ahora: Temporal.Instant,
+): Promise<void> {
+	const vigentes = transaccion
+		.select({ id: dispositivos.id })
+		.from(dispositivos)
+		.where(and(inArray(dispositivos.tipo, [...tipos]), isNull(dispositivos.bajaEn)));
+	await transaccion
+		.update(dispositivosSync)
+		.set({ fotoPedidaEn: ahora.toString(), actualizadoEn: sql`now()` })
+		.where(inArray(dispositivosSync.dispositivoId, vigentes));
 }

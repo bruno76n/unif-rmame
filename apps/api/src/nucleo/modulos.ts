@@ -11,6 +11,7 @@ import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import type { ContratoDeAccion, ContratoDeConsulta, EsquemaDeObjeto } from "@uniformame/compartido/contratos/definir";
+import type { SQL } from "drizzle-orm";
 import type { Temporal } from "temporal-polyfill";
 import type { z } from "zod";
 import type { QuienLlama } from "./acceso/quien.ts";
@@ -296,6 +297,33 @@ export interface EventoGuardado {
  */
 export type AlEvento = (contexto: ContextoDeAccion, evento: EventoGuardado) => Promise<void>;
 
+/** El aparato que baja: con esto arma cada tabla su filtro. */
+export interface AparatoQueBaja {
+	dispositivoId: string;
+	/** Su tipo de registro (`tablet_taller`). */
+	tipo: string;
+	ubicacionId: string | null;
+}
+
+/**
+ * Una tabla que baja a un tipo de aparato, como la declara su módulo en su `bajada.ts` (ver
+ * docs/cimientos/SINCRONIZACION.md): lleva `id` y `xid_escritura`.
+ */
+export interface TablaQueBaja {
+	/** El nombre de la tabla en la base. */
+	tabla: string;
+	/** Los tipos de aparato a los que baja (`tablet_taller`). */
+	aparatos: readonly string[];
+	/** Su lugar en el orden de dependencias: la de número menor baja antes (el catálogo antes que lo que lo usa). */
+	orden: number;
+	/** Las columnas que bajan, además de `id`. */
+	columnas: readonly string[];
+	/** El filtro del aparato, en SQL sobre la tabla con el alias `t`. */
+	filtro: (aparato: AparatoQueBaja) => SQL;
+	/** Los parámetros que deciden su filtro: si cambia uno, se pide la foto a esos aparatos. */
+	parametros?: readonly string[];
+}
+
 /** Un módulo, como lo exporta su `index.ts`. */
 export interface Modulo {
 	nombre: string;
@@ -321,6 +349,8 @@ export interface Modulo {
 	 * uno viaja en el `antes` o el `despues` de un renglón de bitácora, el renglón queda sensible.
 	 */
 	camposDeSueldo: readonly string[];
+	/** De su `bajada.ts`: lo que baja a cada tipo de aparato. */
+	bajada: readonly TablaQueBaja[];
 }
 
 /**
@@ -383,6 +413,7 @@ export function definirModulo(modulo: Pick<Modulo, "nombre"> & Partial<Modulo>):
 		tiposDeEtiqueta: [],
 		enVivo: {},
 		camposDeSueldo: [],
+		bajada: [],
 		...modulo,
 	};
 }
@@ -408,6 +439,28 @@ export interface RegistroDeModulos {
 	enVivo: ReadonlyMap<string, readonly EnVivo[]>;
 	/** Los campos de sueldo o de tarifa de todos los módulos. */
 	camposDeSueldo: ReadonlySet<string>;
+	/** Por tipo de aparato, las tablas que le bajan, en el orden de dependencias. */
+	bajada: ReadonlyMap<string, readonly TablaQueBaja[]>;
+}
+
+/**
+ * Junta lo que baja a cada tipo de aparato, en el orden de dependencias (y por nombre, si empatan).
+ * @param modulos Los módulos.
+ * @throws Error si una tabla baja dos veces al mismo tipo de aparato.
+ */
+function juntarBajada(modulos: readonly Modulo[]): ReadonlyMap<string, readonly TablaQueBaja[]> {
+	const porTipo = new Map<string, TablaQueBaja[]>();
+	for (const tabla of modulos.flatMap((modulo) => modulo.bajada)) {
+		for (const tipo of tabla.aparatos) {
+			const tablas = porTipo.get(tipo) ?? [];
+			if (tablas.some((otra) => otra.tabla === tabla.tabla)) throw new Error(`${tabla.tabla} baja dos veces a ${tipo}`);
+			porTipo.set(tipo, [...tablas, tabla]);
+		}
+	}
+	for (const tablas of porTipo.values()) {
+		tablas.sort((una, otra) => una.orden - otra.orden || (una.tabla < otra.tabla ? -1 : 1));
+	}
+	return porTipo;
 }
 
 /** Dice si lo que exportó un `index.ts` tiene la forma de un módulo. */
@@ -475,6 +528,7 @@ export function registrarModulos(modulos: readonly Modulo[]): RegistroDeModulos 
 		tiposDeEtiqueta,
 		enVivo,
 		camposDeSueldo: new Set(modulos.flatMap((modulo) => modulo.camposDeSueldo)),
+		bajada: juntarBajada(modulos),
 	};
 }
 

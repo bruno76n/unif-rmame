@@ -24,6 +24,7 @@ import type { Almacen } from "../almacen.ts";
 import { crearBase } from "../base/conexion.ts";
 import { type Semilla, sembrarSistema } from "../base/siembra.ts";
 import { cargarModulos, type RegistroDeModulos, registrarModulos } from "../modulos.ts";
+import { llaveDelCursor } from "../sincronizacion/cursor.ts";
 import { crearAvisosEnVivo } from "../sincronizacion/eventos-en-vivo.ts";
 import { quienesDePrueba } from "./cuentas-de-prueba.ts";
 import * as tablasDePrueba from "./modulos/prueba/tablas.ts";
@@ -62,6 +63,9 @@ export interface ServidorDePrueba {
 }
 
 /** El alcance de la tablet de prueba: baja las notas de la ubicación de prueba. */
+/** El secreto de donde sale la llave de los cursores de la bajada en las pruebas: solo de pruebas. */
+export const secretoDeLosCursoresDePrueba = "secreto-de-prueba-de-los-cursores-de-la-bajada";
+
 export const alcanceDeLaTablet = {
 	tablas: ["prueba_notas"],
 	ubicacionIds: ["01936f2e-0000-7000-8000-0000000000b1"],
@@ -174,6 +178,7 @@ export async function crearServidorDePrueba(
 		registro,
 		servicios,
 		destinoDelRegistro,
+		llaveDelCursor: llaveDelCursor(secretoDeLosCursoresDePrueba),
 		...(avisosEnVivo === undefined ? {} : { avisosEnVivo }),
 		...(opciones.almacen === undefined ? {} : { almacen: opciones.almacen }),
 		...(opciones.conGoogle === undefined

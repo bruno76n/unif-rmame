@@ -3,9 +3,10 @@
  * Fase 5 · docs/cimientos/ACCESO-Y-PERMISOS.md («Cómo se revisa cada llamada») y
  * docs/cimientos/ARQUITECTURA.md («Cómo corre en local»)
  *
- * Quién llama sale de la sesión de Google (la llave de los aparatos llega en la fase 6); el permiso, de
- * `acceso/permisos.ts`. Con `GOOGLE_*` y `COOKIE_SECRETO` existe la entrada con Google. Escucha en `PORT`
- * (Render) o en el puerto de `DOMINIO_API` (local).
+ * Quién llama sale de la sesión de Google o de la llave del aparato; el permiso, de `acceso/permisos.ts`. Con
+ * `GOOGLE_*` y `COOKIE_SECRETO` existe la entrada con Google; con `COOKIE_SECRETO`, la bajada y la foto de
+ * los aparatos (su cursor se firma con una llave sacada de él). Escucha en `PORT` (Render) o en el puerto
+ * de `DOMINIO_API` (local).
  */
 
 import { join } from "node:path";
@@ -20,6 +21,8 @@ import { abrirConexiones, crearBase } from "./nucleo/base/conexion.ts";
 import { type Entorno, leerEntorno } from "./nucleo/entorno.ts";
 import { cargarModulos } from "./nucleo/modulos.ts";
 import { leerParametro, versionMinimaDeLosParametros } from "./nucleo/parametros.ts";
+import { alcanceDeLaBajada } from "./nucleo/sincronizacion/bajar.ts";
+import { llaveDelCursor } from "./nucleo/sincronizacion/cursor.ts";
 import { crearAvisosEnVivo } from "./nucleo/sincronizacion/eventos-en-vivo.ts";
 import { crearServidor } from "./servidor.ts";
 
@@ -75,12 +78,13 @@ if (import.meta.main) {
 			conexiones,
 			base,
 			registro,
-			alcanceDelAparato: async () => ({ tablas: [], ubicacionIds: [] }),
+			alcanceDelAparato: alcanceDeLaBajada(base, registro),
 			intervaloDeSincronizacion: async () => Number(await leerParametro(base, { clave: "sync.intervalo_segundos" })),
 			anotarError: (error) => console.error("aviso en vivo que no se repartió", error),
 		}),
 		...almacenDeArchivosDelEntorno(entorno),
 		...entradaDelEntorno(entorno),
+		...(entorno.COOKIE_SECRETO === undefined ? {} : { llaveDelCursor: llaveDelCursor(entorno.COOKIE_SECRETO) }),
 	});
 	const puerto = entorno.PORT ?? Number(new URL(entorno.DOMINIO_API).port);
 	await app.listen({ port: puerto, host: entorno.PORT === undefined ? "127.0.0.1" : "0.0.0.0" });

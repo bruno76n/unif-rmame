@@ -296,3 +296,9 @@ Los dos primeros van en `parametro`; los demás, en `tecnico`. La ventana de int
 - **`admin.descartar_comando_apartado`** (`acciones/descartar-comando-apartado.ts`): solo la dueña; guarda quién, cuándo y por qué, y ya no se reintenta solo.
 - **El reintento solo** de lo que esperaba un documento está en la subida (ver [sincronización](../../cimientos/SINCRONIZACION.md#cómo-está-hecho)).
 - **Las pruebas:** `nucleo/sincronizacion/subir.prueba.ts` («Administración del sistema reintenta o descarta un comando apartado»).
+
+**Fase 6, parte 3.**
+
+- **Lo que baja de `admin`** a la tablet (`modulos/admin/bajada.ts`): sus parámetros y su propio renglón (`folio`, `nombre`, `tipo`, `ubicacion_id`, `prefijo_folio`, `llave_rotada_en`; nunca la llave).
+- **`leTocaRotarLaLlave`** (`dominio/dispositivos.ts`) es la regla de `admin.dias_rotar_llave`: la usan la bajada y los trabajos del puente.
+- **`pedirLaFoto`** pone `foto_pedida_en` a los aparatos vigentes de unos tipos (ver [sincronización](../../cimientos/SINCRONIZACION.md#cómo-está-hecho)).

@@ -143,5 +143,10 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 10 nov 2026 | 6 | Con qué acción se anota la clave repetida con otros datos (decisión 394) | La del comando · `admin.subir` | `admin.subir` | No |
 | 10 nov 2026 | 6 | De dónde sale el id de la excepción antes de la fase 9 (decisión 395) | Esperar · de la salida de la acción | De la salida de la acción | No |
 | 10 nov 2026 | 6 | Cómo corre `admin.reintentar_comando_apartado` la acción de otro módulo (decisión 396) | Una acción especial del núcleo · el registro en el contexto | El registro en el contexto | No |
+| 10 nov 2026 | 6 | De dónde sale la llave de los cursores (decisión 397) | Una variable nueva · al azar al arrancar · HKDF de `COOKIE_SECRETO` | HKDF de `COOKIE_SECRETO` | No |
+| 10 nov 2026 | 6 | Cómo se versiona el esquema de sincronización (decisión 398) | A mano · de la forma de sus tablas | De la forma de sus tablas | No |
+| 10 nov 2026 | 6 | Cómo sabe la bajada que se pidió la foto después del cursor (decisión 399) | Comparando horas · el cursor guarda la petición que vio | El cursor guarda la petición que vio | No |
+| 10 nov 2026 | 6 | Qué responde una parte de la foto que no sirve (decisión 400) | Empezar sola · `400` | `400`, «Empieza la foto otra vez.» | No |
+| 10 nov 2026 | 6 | Quién dice qué parámetro decide un filtro de la bajada (decisión 401) | El parámetro · la tabla que baja | La tabla que baja | No |
 | 10 nov 2026 | 5 | La pantalla del Google de desarrollo | Una propia para escoger cuenta · la de desarrollo de oidc-provider, que pide el correo | La de oidc-provider; `pnpm local` escribe los correos de la muestra al arrancar | No |
 

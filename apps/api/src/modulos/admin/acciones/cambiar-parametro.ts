@@ -4,8 +4,8 @@
  *
  * Revisa el valor contra su tipo y sus límites, guarda el nuevo con `estado_decision = decidido`, escribe
  * su historial y su bitácora y guarda `parametro.cambiado`. El mismo valor que ya tenía responde bien sin
- * escribir nada. Pedir la foto a los aparatos (fase 6) y mover la fecha de pago de la nómina (fase 17)
- * llegan con sus fases.
+ * escribir nada. Si el parámetro decide qué baja a un aparato (lo dice la bajada de su módulo), pide la foto
+ * a esos aparatos. Mover la fecha de pago de la nómina llega en la fase 17.
  */
 
 import { centavosATexto } from "@uniformame/compartido/calculos/dinero";
@@ -24,6 +24,7 @@ import {
 	type ValorDeParametro,
 	valorDelRenglon,
 } from "../../../nucleo/parametros.ts";
+import { pedirLaFoto } from "../dominio/dispositivos.ts";
 import { parametros, parametrosHistorial } from "../tablas.ts";
 
 /** Un parámetro como lo lee esta acción. */
@@ -125,6 +126,11 @@ export const accionCambiarParametro = implementarAccion(cambiarParametro, async 
 		valorNuevo: textoCanonico(nuevo),
 		creadoPor: quien.tipo === "cuenta" ? quien.usuarioId : null,
 	});
+	// Un parámetro que decide qué baja a un aparato pide la foto completa a esos aparatos.
+	const tipos = [...contexto.registro.bajada]
+		.filter(([, tablas]) => tablas.some((tabla) => (tabla.parametros ?? []).includes(antes.clave)))
+		.map(([tipo]) => tipo);
+	if (tipos.length > 0) await pedirLaFoto(contexto.transaccion, tipos, contexto.ahora);
 	const texto =
 		antes.seccion === "decision_operacion"
 			? `${antes.nombre}: ${valorParaLeer(antes, nuevo)}`

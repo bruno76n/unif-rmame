@@ -249,7 +249,7 @@ Dentro de una acción, cada clave se lee una sola vez y se recuerda hasta que la
   - Revisa el valor contra su tipo y sus límites y responde `400` en `valor` con el mensaje de la casilla (`errorDeCampo`).
   - El mismo valor que ya tenía solo revisa la versión (`revisarVersion`) y no escribe nada (decisión 351).
   - Si cambia, toma la versión, guarda el valor con `decidido`, escribe el historial con quién, la bitácora y `parametro.cambiado`.
-  - Pedir la foto a los aparatos llega en la fase 6 y la nómina en la 17.
+  - Si el parámetro decide qué baja a un aparato (una tabla de la bajada lo nombra en sus `parametros`), pide la foto a esos aparatos con `pedirLaFoto`: su `foto_pedida_en` cambia y su siguiente bajada responde `requiere_foto` (fase 6, ver [sincronización](../../cimientos/SINCRONIZACION.md#cómo-está-hecho)). La nómina llega en la 17.
 - **`admin.parametro`** (`lecturas/parametro.ts`) recuerda cada clave hasta que la acción termina.
 - **`admin.agregar_a_lista`** (`acciones/agregar-a-lista.ts`):
   - compara con `sin_acentos` y responde `ya_esta` con `INSERT … ON CONFLICT DO NOTHING`;
