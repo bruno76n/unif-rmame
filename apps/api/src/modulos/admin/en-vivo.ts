@@ -11,7 +11,8 @@
  * departamentos o de permisos finos, `permisos_cambiados`, para que su menú cambie al momento.
  * Fase 6 · docs/modulos/admin/dispositivos.md («Eventos»): `dispositivo.revocado` le manda
  * `dispositivo_revocado` al aparato; `dispositivo.registrado`, `dispositivo_registrado` a la dueña que
- * generó el código, para que su ventana se cierre sola.
+ * generó el código, para que su ventana se cierre sola; `dispositivo.foto_pedida`, `resincronizar` a cada
+ * aparato al que se le pidió la foto (ver docs/cimientos/SINCRONIZACION.md).
  */
 
 import { z } from "zod";
@@ -36,6 +37,9 @@ const sesionesCerradas = z.object({ sesion_ids: z.string(), motivo: z.string() }
 
 /** Los datos de los eventos de un aparato. */
 const deUnAparato = z.object({ dispositivo_id: z.uuid() });
+
+/** Los datos de `dispositivo.foto_pedida`: los aparatos, separados por coma, y el motivo. */
+const fotoPedida = z.object({ dispositivo_ids: z.string(), motivo: z.string() });
 
 /** Los datos de `dispositivo.registrado`. */
 const registrado = z.object({
@@ -75,6 +79,12 @@ export const enVivoDeAdmin: Record<string, EnVivo> = {
 		return datos.sesion_ids
 			.split(",")
 			.map((sesionId) => ({ para: { sesionId }, nombre: "sesion_cerrada", datos: { motivo: datos.motivo } }));
+	},
+	"dispositivo.foto_pedida": (evento) => {
+		const datos = fotoPedida.parse(evento.datos);
+		return datos.dispositivo_ids
+			.split(",")
+			.map((dispositivoId) => ({ para: { dispositivoId }, nombre: "resincronizar", datos: { motivo: datos.motivo } }));
 	},
 	"dispositivo.revocado": (evento) => [
 		{

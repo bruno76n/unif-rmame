@@ -53,11 +53,13 @@ import { datosDeAparato } from "./lecturas/datos-de-aparato.ts";
 import { parametro } from "./lecturas/parametro.ts";
 import { permisosDe } from "./lecturas/permisos-de.ts";
 import { siguienteFolio } from "./lecturas/siguiente-folio.ts";
+import { ultimaSincronizacion } from "./lecturas/ultima-sincronizacion.ts";
 import { veDocumento } from "./lecturas/ve-documento.ts";
 import { semillaDeParametrosDeAdmin } from "./parametros.ts";
 import { lectoresDeAdmin } from "./permisos.ts";
 import { rutasDeArchivos } from "./rutas/archivos.ts";
 import { rutasDeEtiquetas } from "./rutas/etiquetas.ts";
+import { aparatosSinSincronizar } from "./trabajos/aparatos-sin-sincronizar.ts";
 import { depurarEventos } from "./trabajos/depurar-eventos.ts";
 import { enviarCorreos } from "./trabajos/enviar-correos.ts";
 import { recordatorioRestauracion } from "./trabajos/recordatorio-restauracion.ts";
@@ -101,6 +103,7 @@ export default definirModulo({
 		registrar_respaldo: registrarRespaldo,
 	},
 	lecturas: {
+		ultima_sincronizacion: ultimaSincronizacion,
 		parametro,
 		siguiente_folio: siguienteFolio,
 		ve_documento: veDocumento,
@@ -110,7 +113,7 @@ export default definirModulo({
 		datos_de_aparato: datosDeAparato,
 	},
 	semillas: [semillaDeDepartamentos, semillaDeContadores, semillaDeParametrosDeAdmin],
-	trabajos: [depurarEventos, enviarCorreos, respaldoSemanal, recordatorioRestauracion],
+	trabajos: [depurarEventos, enviarCorreos, respaldoSemanal, recordatorioRestauracion, aparatosSinSincronizar],
 	lectores: lectoresDeAdmin,
 	alEvento: alEventoDeAdmin,
 	rutas: [...rutasDeArchivos, ...rutasDeEtiquetas],

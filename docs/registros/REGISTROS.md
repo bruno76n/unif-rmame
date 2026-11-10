@@ -23,6 +23,7 @@ Lo que falta decidir o investigar, y en qué fase se resuelve. Lo del negocio ya
 - **La ruta de regreso en la web** (fase 19): la API redirige a la ruta tal como llegó, con `%2f` codificado si lo trae; la web no la decodifica para navegar con ella como dirección.
 - **Las rutas fijas y el recorte común** (fase 20, con las etiquetas y los impresos): las respuestas JSON de las rutas fijas y lo que dibuja una etiqueta no pasan por `recorteComun`; cada tipo de etiqueta recibe los datos ya recortados por su módulo.
 - **El teléfono para escanear y la credencial de uniformame.mx con su llave** (fases 11 y 18): hoy entran con llave la tablet y el puente; el teléfono entra con la sesión de quien escanea más su llave, y la credencial nace con uniformame.mx.
+- **El tope detenido solo ve las transacciones del rol de la app** (fase 22, con la seguridad completa): `pg_stat_activity` no le enseña al rol de la app el inicio de las del dueño (una migración, el respaldo). El respaldo no frena el tope (solo lee); una migración larga no avisaría. Decidir si el worker lee con `pg_read_all_stats`.
 - **La persona de un comando de aparato** (fase 7, con Personal): la subida no revisa todavía que `persona_id` exista (`persona_desconocida`) ni avisa si es de otra área o ya tiene baja; hoy guarda la que llega.
 - **La prueba al azar de la subida corre 60 series contra Postgres** (fase 21, con la temporada simulada): como la de la idempotencia, cada serie cuesta varias tandas contra la base real.
 - **El nombre y el puesto de una cuenta** (fase 7, con Personal): hoy los mensajes y la bitácora de las cuentas usan el correo y «Esa persona» (decisión 373).
@@ -148,5 +149,9 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 10 nov 2026 | 6 | Cómo sabe la bajada que se pidió la foto después del cursor (decisión 399) | Comparando horas · el cursor guarda la petición que vio | El cursor guarda la petición que vio | No |
 | 10 nov 2026 | 6 | Qué responde una parte de la foto que no sirve (decisión 400) | Empezar sola · `400` | `400`, «Empieza la foto otra vez.» | No |
 | 10 nov 2026 | 6 | Quién dice qué parámetro decide un filtro de la bajada (decisión 401) | El parámetro · la tabla que baja | La tabla que baja | No |
+| 10 nov 2026 | 6 | Cómo se guarda lo retenido antes de la tabla de excepciones (decisión 402) | Esperar a la fase 9 · `excepcion` con `dispositivo_revocado`, sin aplicar | `excepcion` con `dispositivo_revocado`, sin aplicar | No |
+| 10 nov 2026 | 6 | Si se reintenta lo de un aparato revocado (decisión 403) | Sí, a mano · no | No: `dispositivo_revocado` | No |
+| 10 nov 2026 | 6 | De dónde sale el aviso `resincronizar` (decisión 404) | De `parametro.cambiado` · de un evento `dispositivo.foto_pedida` | De `dispositivo.foto_pedida` | No |
+| 10 nov 2026 | 6 | Cómo se sabe que el tope está detenido (decisión 405) | Guardar el tope cada minuto · la transacción abierta más vieja | La transacción abierta más vieja, una vez por episodio | No |
 | 10 nov 2026 | 5 | La pantalla del Google de desarrollo | Una propia para escoger cuenta · la de desarrollo de oidc-provider, que pide el correo | La de oidc-provider; `pnpm local` escribe los correos de la muestra al arrancar | No |
 

@@ -260,7 +260,7 @@ Los dos primeros van en `parametro`; los demás, en `tecnico`. La ventana de int
 
 ## Eventos
 
-`dispositivo.codigo_generado` · `dispositivo.registrado` · `dispositivo.revocado` · `dispositivo.llave_rotada` · `dispositivo.sin_sincronizar`.
+`dispositivo.codigo_generado` · `dispositivo.registrado` · `dispositivo.revocado` · `dispositivo.llave_rotada` · `dispositivo.sin_sincronizar` · `dispositivo.foto_pedida` (a cada aparato al que se le pidió la foto, `resincronizar`).
 
 ## Lo que llega después
 
@@ -302,3 +302,11 @@ Los dos primeros van en `parametro`; los demás, en `tecnico`. La ventana de int
 - **Lo que baja de `admin`** a la tablet (`modulos/admin/bajada.ts`): sus parámetros y su propio renglón (`folio`, `nombre`, `tipo`, `ubicacion_id`, `prefijo_folio`, `llave_rotada_en`; nunca la llave).
 - **`leTocaRotarLaLlave`** (`dominio/dispositivos.ts`) es la regla de `admin.dias_rotar_llave`: la usan la bajada y los trabajos del puente.
 - **`pedirLaFoto`** pone `foto_pedida_en` a los aparatos vigentes de unos tipos (ver [sincronización](../../cimientos/SINCRONIZACION.md#cómo-está-hecho)).
+
+**Fase 6, parte 4.**
+
+- **El trabajo de aparatos sin sincronizar** (`trabajos/aparatos-sin-sincronizar.ts`, `admin.aparatos_sin_sincronizar`) corre cada `admin.minutos_revisar_sincronizacion`: las tablets (y las cajas, con el POS) vigentes cuya última sincronización completa, o su registro, tiene `admin.horas_sin_sincronizar_aviso` o más, y que no tienen su aviso. A cada una le pone `aviso_sin_sincronizar_en`, avisa `dispositivo_sin_sincronizar` a la dueña (con el aparato como documento, «{nombre} sin sincronizar desde hace {tiempo}: {ubicación} · ventas y existencia sin enviar», el tiempo en horas hasta dos días y luego en días) y guarda `dispositivo.sin_sincronizar` («hay cambios» en `dispositivos`, que leen Administración y Dirección). La bajada completa limpia la marca.
+- **La lectura `admin.ultima_sincronizacion`** (`lecturas/ultima-sincronizacion.ts`): por ubicación y tipo (los dos opcionales), el aparato vigente registrado más reciente y su última sincronización completa.
+- **`dispositivo.foto_pedida`** manda `resincronizar` a cada aparato al que se le pidió la foto.
+- **Lo de un aparato revocado** no se reintenta: `leerApartado` dice si llegó de uno revocado o si su aparato se revocó después (ver [sincronización](../../cimientos/SINCRONIZACION.md#cómo-está-hecho)).
+- **Las pruebas:** `trabajos/aparatos-sin-sincronizar.prueba.ts` (antes del tiempo, una vez por episodio, la bajada completa acaba el episodio, el siguiente avisa otra vez, el revocado y el puente no avisan; la lectura) y `nucleo/sincronizacion/revocado.prueba.ts`.

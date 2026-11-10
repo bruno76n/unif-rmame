@@ -25,4 +25,6 @@ export const lectoresDeAdmin: Record<string, readonly string[]> = {
 	usuario_departamentos: ["admin"],
 	permisos_finos: ["admin"],
 	sesiones: ["admin"],
+	dispositivos: ["admin", "direccion"],
+	dispositivos_sync: ["admin", "direccion"],
 };

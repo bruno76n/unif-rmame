@@ -5,7 +5,8 @@
  * En cada vuelta lee el horario de cada trabajo (de sus parámetros, así que un cambio vale desde la
  * siguiente vuelta), ve en hora de México si ya le toca y, si su vuelta de ese periodo no ha terminado, lo
  * encola en su propia cola con la clave del periodo (`admin.respaldo_semanal:2026-11-09`). Además deja
- * listas las particiones de los meses que vienen y vuelve a encolar la bandeja si hay reintentos vencidos.
+ * listas las particiones de los meses que vienen, vuelve a encolar la bandeja si hay reintentos vencidos y
+ * revisa si el tope de la sincronización está detenido.
  */
 
 import { zonaDelNegocio } from "@uniformame/compartido/calculos/fechas";
@@ -16,6 +17,7 @@ import { enTransaccion } from "../base/transacciones.ts";
 import type { ContextoDeTrabajo, Horario, Trabajo } from "../modulos.ts";
 import { encolar } from "./encolar.ts";
 import { listosParaProcesar } from "./procesar-eventos.ts";
+import { revisarTopeDetenido } from "./tope-detenido.ts";
 
 /** Cuántos meses adelante quedan listas las particiones. */
 const mesesDeParticionesAdelante = 2;
@@ -86,6 +88,15 @@ export async function correrReloj(trabajos: Iterable<Trabajo>, contexto: Context
 			await encolar(transaccion, { tarea: "procesar_eventos", cola: "procesar_eventos", clave: "procesar_eventos" });
 		}
 	});
+	// El tope seguro de la sincronización: si una transacción abierta lo frena, avisa a soporte.
+	try {
+		await revisarTopeDetenido(contexto);
+	} catch (error) {
+		await contexto.avisarFalla(
+			"Revisar el tope de la sincronización",
+			error instanceof Error ? error.message : String(error),
+		);
+	}
 	for (const trabajo of trabajos) {
 		const horario = trabajo.horario === undefined ? undefined : await trabajo.horario(contexto);
 		const periodo = horario === undefined ? undefined : vueltaQueToca(horario, contexto.ahora);

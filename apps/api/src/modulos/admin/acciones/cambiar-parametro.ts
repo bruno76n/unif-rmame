@@ -130,7 +130,7 @@ export const accionCambiarParametro = implementarAccion(cambiarParametro, async 
 	const tipos = [...contexto.registro.bajada]
 		.filter(([, tablas]) => tablas.some((tabla) => (tabla.parametros ?? []).includes(antes.clave)))
 		.map(([tipo]) => tipo);
-	if (tipos.length > 0) await pedirLaFoto(contexto.transaccion, tipos, contexto.ahora);
+	if (tipos.length > 0) await pedirLaFoto(contexto, tipos, "parametro");
 	const texto =
 		antes.seccion === "decision_operacion"
 			? `${antes.nombre}: ${valorParaLeer(antes, nuevo)}`

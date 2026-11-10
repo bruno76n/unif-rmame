@@ -97,6 +97,33 @@ function apartado(
 	};
 }
 
+/** El motivo de lo que llega de un aparato revocado y pasó antes de revocarlo: queda retenido. */
+export const motivoDeRetenido = "dispositivo_revocado";
+
+/**
+ * Lo que llegó de un aparato revocado no se aplica: lo que pasó antes de revocarlo queda retenido (se
+ * contesta `excepcion`: la dueña lo aplica o Bodega lo resuelve, fase 9); lo de después se aparta con
+ * `despues_de_revocar`. Ninguna de las dos cosas se pierde: su carga se guarda.
+ * @param ocurridoEn Cuándo pasó.
+ * @param revocadoEn Cuándo se revocó el aparato.
+ */
+export function deUnRevocado(ocurridoEn: string, revocadoEn: string): ComandoHecho {
+	if (Temporal.Instant.compare(Temporal.Instant.from(ocurridoEn), Temporal.Instant.from(revocadoEn)) >= 0) {
+		return apartado("despues_de_revocar");
+	}
+	const respuesta: RespuestaSinClave = {
+		resultado: "excepcion",
+		datos: null,
+		entidad: null,
+		excepciones: [],
+		motivo: motivoDeRetenido,
+		espera_entidad_id: null,
+		campos: null,
+		avisos: [],
+	};
+	return { respuesta, guardada: respuesta, motivo: null, esperaEntidadId: null, entidad: undefined, excepcionId: null };
+}
+
 /**
  * Aplica un comando de un aparato, con la hora en que pasó y a nombre de su persona.
  * @param dependencias Los módulos, la bitácora y los eventos, y el almacén.
@@ -200,7 +227,15 @@ export function respuestaRepetida(guardada: unknown): RespuestaSinClave {
  */
 export async function guardarComando(
 	transaccion: Transaccion,
-	comando: { id: string; clave: string; aparato: AparatoQueLlama; carga: CargaDeComando; hecho: ComandoHecho },
+	comando: {
+		id: string;
+		clave: string;
+		aparato: AparatoQueLlama;
+		carga: CargaDeComando;
+		hecho: ComandoHecho;
+		/** Llegó de un aparato ya revocado. */
+		revocado: boolean;
+	},
 ): Promise<void> {
 	const { hecho, carga } = comando;
 	const resultado =
@@ -222,6 +257,7 @@ export async function guardarComando(
 		entidad: hecho.entidad?.nombre ?? null,
 		entidadId: hecho.entidad?.id ?? null,
 		respuesta: hecho.guardada,
+		dispositivoRevocado: comando.revocado,
 	});
 }
 
@@ -266,7 +302,8 @@ export async function anotarClaveRepetida(
  * @param transaccion La transacción del reintento.
  * @param comandoId El comando.
  * @param ajustarBitacora Cambia cada renglón de bitácora de la acción (quién lo reintentó).
- * @returns Lo que pasó, o `undefined` si el comando ya no está apartado o se descartó.
+ * @returns Lo que pasó, o `undefined` si el comando ya no está apartado, se descartó o es de un aparato
+ * revocado.
  */
 export async function reintentarComando(
 	dependencias: DependenciasDeComandos,
@@ -280,13 +317,17 @@ export async function reintentarComando(
 			descartadoEn: comandosRecibidos.descartadoEn,
 			carga: comandosRecibidos.carga,
 			dispositivoId: comandosRecibidos.dispositivoId,
+			deUnRevocado: comandosRecibidos.dispositivoRevocado,
 			tipo: dispositivos.tipo,
+			revocadoEn: dispositivos.bajaEn,
 		})
 		.from(comandosRecibidos)
 		.innerJoin(dispositivos, eq(dispositivos.id, comandosRecibidos.dispositivoId))
 		.where(eq(comandosRecibidos.id, comandoId))
 		.for("update", { of: comandosRecibidos });
 	if (comando === undefined || comando.resultado !== "apartado" || comando.descartadoEn !== null) return undefined;
+	// Lo de un aparato revocado no se reintenta: pudo estar en otras manos.
+	if (comando.deUnRevocado || comando.revocadoEn !== null) return undefined;
 	const carga = cargaDeComando.parse(comando.carga);
 	const tipoDeAparato = tipoQueLlama[comando.tipo];
 	if (comando.dispositivoId === null || tipoDeAparato === undefined) return undefined;

@@ -166,6 +166,7 @@ Este archivo es dueño del mecanismo; cada evento lo produce el archivo de su te
   - Si un reparto falla, solo ese evento se deshace y espera 1, 5, 30, 120 y luego 120 minutos; al décimo intento avisa a soporte.
 - **El reloj** (`nucleo/trabajos/reloj.ts`):
   - `correrReloj` asegura las particiones y vuelve a encolar la bandeja si hay reintentos vencidos. Si una partición no se puede crear (la de respaldo ya tiene renglones de ese mes), avisa a soporte y sigue con los trabajos.
+  - Desde la fase 6 revisa también el tope de la sincronización (`revisarTopeDetenido`, ver [sincronización](SINCRONIZACION.md#cómo-está-hecho)); si la revisión falla, avisa a soporte y sigue.
   - Por cada trabajo con horario (`Horario`: cada tantos minutos, por día, por semana o por mes, en hora de México), `vueltaQueToca` da el periodo si ya toca.
   - Si su vuelta no ha terminado, la encola en su cola con la clave `{trabajo}:{periodo}` y un solo intento.
   - `correrTrabajo` no repite una vuelta terminada, la marca al terminar y, si falla, anota el error y avisa a soporte la primera vez; la siguiente vuelta del reloj la vuelve a encolar.

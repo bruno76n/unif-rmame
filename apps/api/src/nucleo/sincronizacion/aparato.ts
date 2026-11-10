@@ -19,16 +19,19 @@ import { ErrorDeApi } from "../http/errores.ts";
  * @param versionMinimaDelParametro La versión mínima del parámetro de la dueña para una app.
  * @param peticion La petición.
  * @param ahora La hora de la llamada.
+ * @param opciones `permitirRevocado`: la subida, que sigue recibiendo la cola de un aparato revocado.
  * @returns El aparato, con su nombre y si está revocado.
- * @throws `401 sin_sesion` sin llave o con una que no vale, `426 actualizar` con una app vieja.
+ * @throws `401 sin_sesion` sin llave o con una que no vale (o revocada, salvo en la subida), `426
+ * actualizar` con una app vieja.
  */
 export async function identificarAparato(
 	base: Base,
 	versionMinimaDelParametro: (app: App) => Promise<string>,
 	peticion: FastifyRequest,
 	ahora: Temporal.Instant,
+	opciones: { permitirRevocado?: true } = {},
 ): Promise<AparatoConLlave> {
-	const aparato = await identificarConLlave(base, peticion, ahora);
+	const aparato = await identificarConLlave(base, peticion, ahora, opciones);
 	if (aparato === undefined) throw new ErrorDeApi("sin_sesion", "sin_sesion");
 	const app = appDe(aparato.quien);
 	const minima = versionMinima(app, await versionMinimaDelParametro(app));

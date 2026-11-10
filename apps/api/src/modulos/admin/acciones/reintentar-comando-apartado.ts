@@ -11,6 +11,7 @@
 
 import { reintentarComandoApartado } from "@uniformame/compartido/contratos/admin/dispositivos";
 import { escribirBitacoraConAdmin, guardarEventosConAdmin } from "../../../nucleo/acciones/corredor.ts";
+import { errorDeRegla } from "../../../nucleo/http/errores.ts";
 import { implementarAccion, type RenglonDeBitacora } from "../../../nucleo/modulos.ts";
 import { reintentarComando, reintentarLosQueEsperaban } from "../../../nucleo/sincronizacion/comandos.ts";
 import { cuentaQueLlama, leerCuenta, nombreDeCuenta } from "../dominio/cuentas.ts";
@@ -31,6 +32,10 @@ export const accionReintentarComandoApartado = implementarAccion(reintentarComan
 	const { transaccion } = contexto;
 	const nombre = nombreDeCuenta(await leerCuenta(transaccion, cuentaQueLlama(contexto)));
 	const comando = await leerApartado(transaccion, datos.comando_id);
+	// Lo de un aparato revocado pudo hacerlo alguien más: no se reintenta (lo retenido lo aplica la dueña).
+	if (comando.deUnRevocado) {
+		throw errorDeRegla("dispositivo_revocado", "Llegó de un aparato revocado: no se reintenta.");
+	}
 	const dependencias = {
 		registro: contexto.registro,
 		servicios: { escribirBitacora: escribirBitacoraConAdmin, guardarEventos: guardarEventosConAdmin },

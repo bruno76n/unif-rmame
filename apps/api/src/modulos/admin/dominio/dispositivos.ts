@@ -11,6 +11,7 @@ import { Temporal } from "temporal-polyfill";
 import type { Base } from "../../../nucleo/base/conexion.ts";
 import type { Transaccion } from "../../../nucleo/base/transacciones.ts";
 import { errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
+import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
 import { leerParametro } from "../../../nucleo/parametros.ts";
 import { ubicaciones } from "../../inventario/tablas.ts";
 import { comandosRecibidos, dispositivos, dispositivosSync, impresoras } from "../tablas.ts";
@@ -113,6 +114,8 @@ export interface ComandoApartado {
 	tipoComando: string;
 	dispositivoId: string;
 	nombreDelAparato: string;
+	/** Llegó de un aparato ya revocado, o el aparato se revocó después. */
+	deUnRevocado: boolean;
 }
 
 /**
@@ -130,6 +133,8 @@ export async function leerApartado(transaccion: Transaccion, comandoId: string):
 			descartadoEn: comandosRecibidos.descartadoEn,
 			dispositivoId: dispositivos.id,
 			nombreDelAparato: dispositivos.nombre,
+			llegoRevocado: comandosRecibidos.dispositivoRevocado,
+			revocadoEn: dispositivos.bajaEn,
 		})
 		.from(comandosRecibidos)
 		.innerJoin(dispositivos, eq(dispositivos.id, comandosRecibidos.dispositivoId))
@@ -138,7 +143,8 @@ export async function leerApartado(transaccion: Transaccion, comandoId: string):
 	if (comando === undefined) throw noExiste();
 	if (comando.descartadoEn !== null) throw errorDeRegla("ya_descartado", "Ese comando ya se descartó.");
 	if (comando.resultado !== "apartado") throw errorDeRegla("no_es_apartado", "Ese comando no quedó apartado.");
-	return comando;
+	const { llegoRevocado, revocadoEn, ...demas } = comando;
+	return { ...demas, deUnRevocado: llegoRevocado || revocadoEn !== null };
 }
 
 /**
@@ -160,23 +166,28 @@ export async function leTocaRotarLaLlave(
 }
 
 /**
- * Pide la foto completa a los aparatos vigentes de unos tipos: su siguiente bajada responde `requiere_foto`.
- * Se usa cuando cambia algo que decide qué les baja sin tocar los renglones (un parámetro).
- * @param transaccion La transacción de la acción.
+ * Pide la foto completa a los aparatos vigentes de unos tipos: su siguiente bajada responde `requiere_foto`,
+ * y el evento `dispositivo.foto_pedida` les manda `resincronizar` en vivo. Se usa cuando cambia algo que
+ * decide qué les baja sin tocar los renglones (un parámetro).
+ * @param contexto El contexto de la acción.
  * @param tipos Los tipos de aparato.
- * @param ahora La hora de la acción.
+ * @param motivo Por qué, para el aviso en vivo (`parametro`).
  */
-export async function pedirLaFoto(
-	transaccion: Transaccion,
-	tipos: readonly string[],
-	ahora: Temporal.Instant,
-): Promise<void> {
+export async function pedirLaFoto(contexto: ContextoDeAccion, tipos: readonly string[], motivo: string): Promise<void> {
+	const { transaccion } = contexto;
 	const vigentes = transaccion
 		.select({ id: dispositivos.id })
 		.from(dispositivos)
 		.where(and(inArray(dispositivos.tipo, [...tipos]), isNull(dispositivos.bajaEn)));
-	await transaccion
+	const pedidos = await transaccion
 		.update(dispositivosSync)
-		.set({ fotoPedidaEn: ahora.toString(), actualizadoEn: sql`now()` })
-		.where(inArray(dispositivosSync.dispositivoId, vigentes));
+		.set({ fotoPedidaEn: contexto.ahora.toString(), actualizadoEn: sql`now()` })
+		.where(inArray(dispositivosSync.dispositivoId, vigentes))
+		.returning({ dispositivoId: dispositivosSync.dispositivoId });
+	if (pedidos.length === 0) return;
+	contexto.guardarEvento({
+		tipo: "dispositivo.foto_pedida",
+		datos: { dispositivo_ids: pedidos.map((pedido) => pedido.dispositivoId).join(","), motivo },
+		tablas: ["dispositivos_sync"],
+	});
 }

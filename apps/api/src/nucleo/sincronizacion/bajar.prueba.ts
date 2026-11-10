@@ -6,6 +6,7 @@
 
 import { v7 as uuidv7 } from "uuid";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { enVivoDeAdmin } from "../../modulos/admin/en-vivo.ts";
 import {
 	bajar,
 	bajarHasta,
@@ -166,7 +167,7 @@ describe("cada aparato baja solo lo suyo, hasta un tope seguro, con su cursor fi
 		expect(cambios.length).toBeLessThanOrEqual(2);
 	});
 
-	it("un parámetro que cambia el filtro pide la foto: el cursor de antes ya no sirve, el de la foto nueva sí", async () => {
+	it("un parámetro que cambia el filtro pide la foto (con `resincronizar` en vivo): el cursor de antes ya no sirve, el de la foto nueva sí", async () => {
 		const { cursor } = await fotoCompleta(servidor);
 		expect((await bajar(servidor, cursor)).requiere_foto).toBe(false);
 		const version = Number(
@@ -186,6 +187,15 @@ describe("cada aparato baja solo lo suyo, hasta un tope seguro, con su cursor fi
 			[tablet()],
 		);
 		expect(rows[0]?.foto_pedida_en).toEqual(expect.any(Date));
+		// El aviso en vivo `resincronizar`, a cada aparato al que se le pidió la foto.
+		const evento = await servidor.base.dueno.query(
+			"SELECT id, tipo, datos FROM eventos WHERE tipo = 'dispositivo.foto_pedida' ORDER BY creado_en DESC LIMIT 1",
+		);
+		const guardado = evento.rows[0];
+		expect(guardado?.datos).toEqual({ dispositivo_ids: tablet(), motivo: "parametro" });
+		expect(enVivoDeAdmin["dispositivo.foto_pedida"]?.(guardado)).toEqual([
+			{ para: { dispositivoId: tablet() }, nombre: "resincronizar", datos: { motivo: "parametro" } },
+		]);
 		expect(await bajar(servidor, cursor)).toMatchObject({ requiere_foto: true, cursor: null });
 		const { cursor: nuevo } = await fotoCompleta(servidor);
 		expect((await bajar(servidor, nuevo)).requiere_foto).toBe(false);

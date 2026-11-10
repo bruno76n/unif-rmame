@@ -156,7 +156,10 @@ export const reintentarComandoApartado = definirAccion({
 			.describe("Las excepciones que abrió: se aplicó, pero no cuadra"),
 	}),
 	permiso: { departamento: "admin" },
-	errores: erroresDeApartado,
+	errores: [
+		...erroresDeApartado,
+		{ codigo: "dispositivo_revocado", mensaje: "Llegó de un aparato revocado: no se reintenta." },
+	],
 });
 
 /** La dueña descarta un comando apartado: no aplica nada; si era un hecho real, se captura en su módulo. */
