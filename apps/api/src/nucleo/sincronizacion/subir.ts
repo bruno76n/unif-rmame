@@ -40,6 +40,7 @@ import {
 	motivoDeClaveRepetida,
 	type RespuestaSinClave,
 	reintentarLosQueEsperaban,
+	reintentarLosQueYaTienenSuDocumento,
 	respuestaRepetida,
 } from "./comandos.ts";
 
@@ -95,6 +96,18 @@ function registrarSubida(raiz: FastifyInstance, dependencias: DependenciasDeLaSu
 				});
 			}
 			respuesta.header("cache-control", "no-store");
+			const dispositivoId = aparato.quien.dispositivoId;
+			/** Reintenta los apartados que esperaban documentos que ya llegaron; si falla, la cola sigue. */
+			const destrabar = async (entidadId?: string) => {
+				try {
+					if (entidadId === undefined) await reintentarLosQueYaTienenSuDocumento(dependencias, base, dispositivoId);
+					else await reintentarLosQueEsperaban(dependencias, base, dispositivoId, entidadId);
+				} catch (error) {
+					peticion.log.error({ error: errorParaElRegistro(error) }, "un apartado no se pudo reintentar");
+				}
+			};
+			// Lo que se quedó esperando un documento que ya llegó (un reintento que falló antes) se vuelve a intentar.
+			if (aparato.revocadoEn === undefined) await destrabar();
 			const respuestas: RespuestaConClave[] = [];
 			let detenido = false;
 			for (const [indice, comando] of cuerpo.comandos.entries()) {
@@ -102,18 +115,23 @@ function registrarSubida(raiz: FastifyInstance, dependencias: DependenciasDeLaSu
 					// La alerta de un aparato revocado va con el último comando de la tanda, en su transacción.
 					const alertar = aparato.revocadoEn !== undefined && indice === cuerpo.comandos.length - 1;
 					const contestado = await subirComando(dependencias, aparato, comando, ahora, alertar);
-					// Lo que creó o tocó puede ser el documento que esperaban sus apartados. Se reintentan antes de
-					// contestar: si el reintento falla, este comando se queda sin respuesta, el aparato lo vuelve a
-					// mandar y, ya como `repetido`, los vuelve a destrabar.
-					if (contestado.entidad !== null) {
-						await reintentarLosQueEsperaban(dependencias, base, aparato.quien.dispositivoId, contestado.entidad.id);
-					}
 					respuestas.push(contestado);
+					// Lo que creó o tocó puede ser el documento que esperaban sus apartados. Si su reintento falla,
+					// este comando ya quedó y la cola sigue: se vuelven a intentar al empezar la siguiente subida.
+					if (contestado.entidad !== null) await destrabar(contestado.entidad.id);
 				} catch (error) {
 					peticion.log.error({ error: errorParaElRegistro(error) }, "la subida se detuvo");
 					detenido = true;
 					break;
 				}
+			}
+			// Una tanda de un revocado que se cortó antes de su último comando intenta su alerta aparte.
+			if (detenido && aparato.revocadoEn !== undefined) {
+				await enTransaccion(base, (transaccion) =>
+					alertarDeUnRevocado(dependencias, transaccion, aparato, ahora),
+				).catch((error: unknown) =>
+					peticion.log.error({ error: errorParaElRegistro(error) }, "la alerta no se escribió"),
+				);
 			}
 			await anotarSubida(base, aparato, {
 				ahora,
@@ -224,10 +242,11 @@ async function contestarComando(
 
 /**
  * La bitácora de una tanda de un aparato revocado, con alerta (llega a la dueña como `alerta_seguridad`).
- * Cuenta lo que llegó del aparato revocado desde la alerta anterior (la alerta guarda el último comando que
- * contó), así que si una tanda se corta antes de su alerta, la siguiente la escribe con todo lo que faltaba.
+ * Cuenta lo que llegó del aparato revocado y no ha contado ninguna alerta: todo lo llegado menos lo que ya
+ * sumaron las anteriores (cada una guarda sus `movimientos`). Con el candado del aparato, dos tandas a la vez
+ * no cuentan lo mismo dos veces, y si una tanda se corta antes de su alerta, la siguiente cuenta lo que faltaba.
  * @param dependencias Los módulos y la bitácora.
- * @param transaccion La transacción del último comando de la tanda.
+ * @param transaccion La transacción del último comando de la tanda (o una propia, si la tanda se cortó).
  * @param aparato El aparato revocado.
  * @param ahora La hora de la subida.
  */
@@ -238,19 +257,17 @@ async function alertarDeUnRevocado(
 	ahora: Temporal.Instant,
 ): Promise<void> {
 	const dispositivoId = aparato.quien.dispositivoId;
-	// Dos tandas a la vez no cuentan lo mismo dos veces.
 	await transaccion.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended(${`alerta:${dispositivoId}`}, 0))`);
 	const { rows } = await transaccion.execute(sql`
-		WITH anterior AS (
-			SELECT (despues->>'hasta_comando_id')::uuid AS hasta FROM bitacora
-			WHERE accion = ${accionDeLaSubida} AND es_alerta AND entidad_id = ${dispositivoId}::uuid
-			ORDER BY ocurrido_en DESC LIMIT 1
-		)
-		SELECT count(*)::int AS cuantos, max(c.id::text) AS hasta FROM comandos_recibidos c
-		WHERE c.dispositivo_id = ${dispositivoId}::uuid AND c.dispositivo_revocado
-			AND c.id > coalesce((SELECT hasta FROM anterior), '00000000-0000-0000-0000-000000000000'::uuid)`);
-	const nuevos = z.object({ cuantos: z.number(), hasta: z.string().nullable() }).parse(rows[0]);
-	if (nuevos.cuantos === 0 || nuevos.hasta === null) return;
+		SELECT
+			(SELECT count(*) FROM comandos_recibidos
+			 WHERE dispositivo_id = ${dispositivoId}::uuid AND dispositivo_revocado)
+			- (SELECT coalesce(sum((despues->>'movimientos')::int), 0) FROM bitacora
+			   WHERE accion = ${accionDeLaSubida} AND es_alerta AND entidad = 'dispositivos'
+			     AND entidad_id = ${dispositivoId}::uuid)
+			AS cuantos`);
+	const cuantos = z.object({ cuantos: z.coerce.number() }).parse(rows[0]).cuantos;
+	if (cuantos <= 0) return;
 	const { contexto } = crearContexto(
 		dependencias.registro,
 		transaccion,
@@ -261,11 +278,14 @@ async function alertarDeUnRevocado(
 	);
 	await dependencias.servicios.escribirBitacora(contexto, [
 		{
-			descripcion: `Llegaron ${nuevos.cuantos} movimientos de ${aparato.nombre} después de revocarlo`,
+			descripcion:
+				cuantos === 1
+					? `Llegó 1 movimiento de ${aparato.nombre} después de revocarlo`
+					: `Llegaron ${cuantos} movimientos de ${aparato.nombre} después de revocarlo`,
 			entidad: "dispositivos",
 			entidadId: dispositivoId,
 			esAlerta: true,
-			despues: { movimientos: nuevos.cuantos, hasta_comando_id: nuevos.hasta },
+			despues: { movimientos: cuantos },
 		},
 	]);
 }

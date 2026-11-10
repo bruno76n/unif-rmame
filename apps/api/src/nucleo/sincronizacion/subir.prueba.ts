@@ -287,7 +287,7 @@ describe("la subida aplica lo que ya pasó, aparta lo que no puede aplicar y nun
 		});
 	});
 
-	it("si el reintento solo falla por algo del servidor, el comando que trajo el documento se queda sin respuesta y, al volver a mandarlo, destraba a los que esperaban", async () => {
+	it("si el reintento solo falla por algo del servidor, la cola sigue y el apartado se vuelve a intentar al empezar la siguiente subida; aunque falle siempre, no traba lo que viene detrás", async () => {
 		const lote = uuidv7();
 		const espera = comando(
 			"prueba.registrar_bulto",
@@ -296,18 +296,27 @@ describe("la subida aplica lo que ya pasó, aparta lo que no puede aplicar y nun
 		);
 		const abrir = comando("prueba.abrir_lote", { id: lote, nombre: "L-2026-160" }, "2026-11-10T18:03:00Z");
 		servidor.fallas.bitacoraUnaVez.add("Registró un bulto de 77 piezas");
-		const cortada = await subir([espera, abrir]);
-		expect(cortada.cuerpo.detenido).toBe(true);
-		expect(cortada.cuerpo.respuestas).toEqual([
-			expect.objectContaining({ resultado: "apartado", motivo: "falta_documento" }),
-		]);
-		const otraVez = await subir([abrir]);
-		expect(otraVez.cuerpo).toMatchObject({
-			detenido: false,
-			respuestas: [expect.objectContaining({ resultado: "repetido" })],
-		});
+		const primera = await subir([espera, abrir]);
+		expect(primera.cuerpo.detenido).toBe(false);
+		expect(primera.cuerpo.respuestas.map((r: { resultado: string }) => r.resultado)).toEqual(["apartado", "aplicado"]);
+		expect(await recibido(espera.clave_idempotencia)).toEqual([expect.objectContaining({ resultado: "apartado" })]);
+		// La siguiente subida, de lo que sea, lo destraba al empezar.
+		await subir([comando("prueba.abrir_lote", { id: uuidv7(), nombre: "L-2026-161" })]);
 		expect(await recibido(espera.clave_idempotencia)).toEqual([
 			expect.objectContaining({ resultado: "aplicado", reintentos: 1 }),
+		]);
+		// Un apartado cuyo reintento falla siempre no detiene la cola.
+		const otroLote = uuidv7();
+		const siempreFalla = comando("prueba.registrar_bulto", { id: uuidv7(), lote_id: otroLote, piezas: 78 });
+		const despues = comando("prueba.abrir_lote", { id: uuidv7(), nombre: "L-2026-162" });
+		servidor.fallas.bitacoraUnaVez.add("Registró un bulto de 78 piezas");
+		const tanda = [siempreFalla, comando("prueba.abrir_lote", { id: otroLote, nombre: "L-2026-163" }), despues];
+		const conFalla = await subir(tanda);
+		expect(conFalla.cuerpo).toMatchObject({ detenido: false });
+		expect(conFalla.cuerpo.respuestas.map((r: { resultado: string }) => r.resultado)).toEqual([
+			"apartado",
+			"aplicado",
+			"aplicado",
 		]);
 	});
 

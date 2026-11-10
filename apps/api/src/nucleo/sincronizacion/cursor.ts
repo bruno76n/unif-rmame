@@ -121,12 +121,21 @@ export function leerCursorDeFoto(llave: Buffer, opaco: string): CursorDeFoto | u
 	return leido.success ? leido.data : undefined;
 }
 
-/** Un aparato fijo para escribir cada filtro como texto: sus valores salen como parámetros (`$1`), no en el texto. */
-const aparatoDeMuestra: AparatoQueBaja = {
-	dispositivoId: "00000000-0000-0000-0000-000000000000",
-	tipo: "",
-	ubicacionId: null,
-};
+/**
+ * Dos aparatos fijos para escribir cada filtro como texto (con ubicación y sin ella, por si el filtro escoge
+ * en el código según el aparato): sus valores salen como parámetros (`$1`), no en el texto.
+ */
+const aparatosDeMuestra: readonly AparatoQueBaja[] = [
+	{ dispositivoId: "00000000-0000-0000-0000-000000000000", tipo: "", ubicacionId: null },
+	{
+		dispositivoId: "00000000-0000-0000-0000-000000000000",
+		tipo: "",
+		ubicacionId: "00000000-0000-0000-0000-000000000000",
+	},
+];
+
+/** La versión ya calculada de cada lista de tablas (las del registro no cambian mientras corre el proceso). */
+const yaCalculados = new WeakMap<readonly TablaQueBaja[], number>();
 
 /**
  * La versión del esquema de sincronización de un tipo de aparato: sale de sus tablas, su orden, sus columnas,
@@ -136,15 +145,19 @@ const aparatoDeMuestra: AparatoQueBaja = {
  * @returns Un entero de 28 bits (cabe en `dispositivos_sync.esquema_sync`).
  */
 export function esquemaDe(tablas: readonly TablaQueBaja[]): number {
+	const calculado = yaCalculados.get(tablas);
+	if (calculado !== undefined) return calculado;
 	const dialecto = new PgDialect();
 	const forma = JSON.stringify(
 		tablas.map((tabla) => [
 			tabla.tabla,
 			tabla.orden,
 			[...tabla.columnas].sort(),
-			dialecto.sqlToQuery(tabla.filtro(aparatoDeMuestra)).sql,
+			aparatosDeMuestra.map((aparato) => dialecto.sqlToQuery(tabla.filtro(aparato)).sql),
 			[...(tabla.parametros ?? [])].sort(),
 		]),
 	);
-	return Number.parseInt(createHash("sha256").update(forma).digest("hex").slice(0, 7), 16);
+	const esquema = Number.parseInt(createHash("sha256").update(forma).digest("hex").slice(0, 7), 16);
+	yaCalculados.set(tablas, esquema);
+	return esquema;
 }

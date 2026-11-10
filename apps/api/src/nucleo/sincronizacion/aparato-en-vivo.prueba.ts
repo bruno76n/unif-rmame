@@ -1,6 +1,7 @@
 /**
  * Prueba de los avisos en vivo de un aparato con su llave: le llega solo lo que le baja, y al revocarlo recibe
- * `dispositivo_revocado`, su conexión se corta y ya no se vuelve a conectar.
+ * `dispositivo_revocado`, su conexión se corta y ya no se vuelve a conectar. El latido va largo: así el corte
+ * viene del evento, con su aviso (el latido también corta una llave revocada, pero sin aviso).
  * Fase 6 · docs/fases/06-dispositivos-y-sincronizacion.md (parte 4: «los avisos en vivo con la llave»)
  */
 
@@ -22,7 +23,7 @@ describe("un aparato conectado con su llave recibe solo lo que le baja; revocado
 	let servidor: ServidorDePrueba;
 	let direccion: string;
 	beforeAll(async () => {
-		servidor = await crearServidorDePrueba({ avisosEnVivo: { latidoMs: 100, alcanceReal: true } });
+		servidor = await crearServidorDePrueba({ avisosEnVivo: { latidoMs: 60_000, alcanceReal: true } });
 		direccion = await servidor.app.listen({ port: 0, host: "127.0.0.1" });
 	});
 	afterAll(async () => {

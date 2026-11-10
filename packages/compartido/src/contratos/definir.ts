@@ -81,10 +81,12 @@ export interface ContratoDeConsulta<
 const nombresDeSecreto = /(^|_)(secreto|pin|token|llave|contrasena|password|clave_acceso|api_key)(_|$)/;
 
 /**
- * Dice si el nombre de un campo parece de un secreto. Un id (`llave_id`, `pin_id`) no lo es.
+ * Dice si el nombre de un campo parece de un secreto. Un id (`llave_id`, `pin_id`) no lo es; `*` (las llaves
+ * libres de un `record`, que no se pueden revisar) sí.
  * @param campo El nombre del campo.
  */
 export function pareceSecreto(campo: string): boolean {
+	if (campo === "*") return true;
 	return nombresDeSecreto.test(campo) && !campo.endsWith("_id");
 }
 
@@ -100,6 +102,27 @@ function camposAnidados(esquema: z.core.$ZodType): string[] {
 		return Object.entries(esquema.shape).flatMap(([campo, interior]) => [campo, ...camposAnidados(interior)]);
 	}
 	return [];
+}
+
+/**
+ * Los nombres de todos los campos de un JSON Schema, a cualquier profundidad: también dentro de uniones,
+ * intersecciones y listas. Un objeto con llaves libres (un `record`) no se puede revisar: sale como `*`, que
+ * cuenta como secreto, para que un contrato de la cola no lo lleve.
+ * @param esquema El JSON Schema de la entrada.
+ */
+function camposDelEsquemaJson(esquema: unknown): string[] {
+	if (Array.isArray(esquema)) return esquema.flatMap(camposDelEsquemaJson);
+	if (typeof esquema !== "object" || esquema === null) return [];
+	return Object.entries(esquema).flatMap(([llave, interior]) => {
+		if (llave === "properties" && typeof interior === "object" && interior !== null) {
+			return [...Object.keys(interior), ...camposDelEsquemaJson(interior)];
+		}
+		const llavesLibres =
+			(llave === "additionalProperties" && typeof interior === "object" && interior !== null) ||
+			llave === "propertyNames" ||
+			llave === "patternProperties";
+		return llavesLibres ? ["*", ...camposDelEsquemaJson(interior)] : camposDelEsquemaJson(interior);
+	});
 }
 
 /**
@@ -140,9 +163,9 @@ export function definirAccion<
 		if ((contrato.permiso.aparatos ?? []).length === 0) {
 			throw new Error(`${contrato.nombre}: lo que sube por la cola tiene que nombrar sus aparatos`);
 		}
-		const secreto = Object.entries(contrato.entrada.shape)
-			.flatMap(([campo, esquema]) => [campo, ...camposAnidados(esquema)])
-			.find(pareceSecreto);
+		const secreto = camposDelEsquemaJson(
+			z.toJSONSchema(contrato.entrada, { io: "input", unrepresentable: "any" }),
+		).find(pareceSecreto);
 		if (secreto !== undefined) {
 			throw new Error(`${contrato.nombre}: lo que sube por la cola no puede llevar el secreto ${secreto}`);
 		}

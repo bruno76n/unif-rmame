@@ -115,6 +115,11 @@ describe("una respuesta con un secreto se repite sin el secreto y con secreto_en
 		expect(conCola(z.object({ datos: z.object({ pin: z.string() }) }), ["tablet"])).toThrow("el secreto pin");
 		expect(conCola(z.object({ secreto_nuevo: z.string() }), ["tablet"])).toThrow("el secreto secreto_nuevo");
 		expect(conCola(z.object({ piezas: z.number() }))).toThrow("nombrar sus aparatos");
+		// También dentro de una unión, y un `record` con llaves libres no se deja.
+		expect(
+			conCola(z.object({ modo: z.union([z.object({ a: z.string() }), z.object({ pin: z.string() })]) }), ["tablet"]),
+		).toThrow("el secreto pin");
+		expect(conCola(z.object({ libre: z.record(z.string(), z.string()) }), ["tablet"])).toThrow("el secreto *");
 		expect(conCola(z.object({ persona_id: z.uuid() }), ["tablet"])).not.toThrow();
 	});
 

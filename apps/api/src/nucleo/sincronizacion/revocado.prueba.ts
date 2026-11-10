@@ -112,8 +112,8 @@ describe("lo que llega de un aparato revocado y pasó antes de revocarlo queda r
 		expect(bitacora.rows).toEqual([
 			{ descripcion: "Llegaron 2 movimientos de Tablet del taller después de revocarlo", es_alerta: true },
 		]);
-		// Si la alerta falla, el último comando se queda sin respuesta; al volver a mandarlo, la alerta cuenta
-		// todo lo que llegó desde la anterior: no se pierde.
+		// Si la alerta falla, el último comando se queda sin respuesta: la tanda cortada intenta su alerta aparte
+		// con lo que sí quedó, y al volver a mandar el último, su alerta cuenta lo que faltaba. Nada se pierde.
 		const primero = abrir("L-otro-1", new Date(Date.now() - 30_000).toISOString());
 		const segundo = abrir("L-otro-2", new Date(Date.now() - 20_000).toISOString());
 		servidor.fallas.bitacoraUnaVez.add("después de revocarlo");
@@ -129,8 +129,22 @@ describe("lo que llega de un aparato revocado y pasó antes de revocarlo queda r
 		);
 		expect(alertas.rows.map((renglon) => renglon.descripcion)).toEqual([
 			"Llegaron 2 movimientos de Tablet del taller después de revocarlo",
-			"Llegaron 2 movimientos de Tablet del taller después de revocarlo",
+			"Llegó 1 movimiento de Tablet del taller después de revocarlo",
+			"Llegó 1 movimiento de Tablet del taller después de revocarlo",
 		]);
+		// Varias tandas a la vez: las alertas suman exactamente lo que llegó, ni más ni menos.
+		const tandas = Array.from({ length: 5 }, (_, i) => [
+			abrir(`L-vez-${i}-a`, new Date(Date.now() - 10_000).toISOString()),
+			abrir(`L-vez-${i}-b`, new Date(Date.now() - 10_000).toISOString()),
+		]);
+		await Promise.all(tandas.map((tanda) => subir(tanda)));
+		const suma = await servidor.base.dueno.query(
+			`SELECT (SELECT count(*)::int FROM comandos_recibidos WHERE dispositivo_id = $1 AND dispositivo_revocado) AS llegaron,
+			        (SELECT sum((despues->>'movimientos')::int)::int FROM bitacora
+			         WHERE accion = 'admin.subir' AND es_alerta AND entidad_id = $1) AS alertados`,
+			[tablet()],
+		);
+		expect(suma.rows[0]?.alertados).toBe(suma.rows[0]?.llegaron);
 		// Lo de un aparato revocado no se reintenta a mano.
 		const apartado = await servidor.base.dueno.query(
 			"SELECT id FROM comandos_recibidos WHERE clave_idempotencia = $1",

@@ -411,3 +411,28 @@ export async function reintentarLosQueEsperaban(
 			await reintentarLosQueEsperaban(dependencias, base, dispositivoId, hecho.entidad.id);
 	}
 }
+
+/**
+ * Reintenta los apartados de un aparato que esperaban un documento que ya llegó de ese mismo aparato (lo creó
+ * o lo tocó un comando suyo que se aplicó): los que se quedaron esperando porque su reintento falló.
+ * @param dependencias Los módulos, la bitácora y los eventos.
+ * @param base La base.
+ * @param dispositivoId El aparato.
+ */
+export async function reintentarLosQueYaTienenSuDocumento(
+	dependencias: DependenciasDeComandos,
+	base: Base,
+	dispositivoId: string,
+): Promise<void> {
+	const { rows } = await base.execute(sql`
+		SELECT DISTINCT a.espera_entidad_id::text AS entidad FROM comandos_recibidos a
+		WHERE a.dispositivo_id = ${dispositivoId}::uuid AND a.resultado = 'apartado'
+			AND a.espera_entidad_id IS NOT NULL AND a.descartado_en IS NULL
+			AND EXISTS (
+				SELECT 1 FROM comandos_recibidos c
+				WHERE c.dispositivo_id = a.dispositivo_id AND c.entidad_id = a.espera_entidad_id AND c.resultado <> 'apartado'
+			)`);
+	for (const { entidad } of z.array(z.object({ entidad: z.string() })).parse(rows)) {
+		await reintentarLosQueEsperaban(dependencias, base, dispositivoId, entidad);
+	}
+}
