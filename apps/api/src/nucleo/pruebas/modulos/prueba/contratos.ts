@@ -23,6 +23,7 @@ export const crearNota = definirAccion({
 				"campo_de_mas",
 				"secreto_en_aviso",
 				"evento_con_monto",
+				"sin_bitacora",
 			])
 			.optional()
 			.describe("Dónde falla, para las pruebas"),
@@ -157,5 +158,14 @@ export const fechar = definirAccion({
 			.describe("Un día de negocio"),
 	}),
 	salida: z.object({ dia_siguiente: z.string().describe("El día siguiente") }),
+	permiso: { departamento: "ventas" },
+});
+
+/** Una consulta sensible: la ficha de una nota, que se apunta en la bitácora. */
+export const ficha = definirConsulta({
+	nombre: "prueba.ficha",
+	descripcion: "La ficha de una nota; consultarla se apunta en la bitácora",
+	entrada: z.object({ id: z.uuid().describe("La nota") }),
+	salida: z.object({ texto: z.string().describe("El texto") }),
 	permiso: { departamento: "ventas" },
 });

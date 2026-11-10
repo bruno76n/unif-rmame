@@ -124,6 +124,7 @@ describe("una edición con versión vieja recibe 409 con la versión actual y su
 			const contexto: ContextoDeAccion = {
 				transaccion,
 				quien,
+				accion: "prueba.editar_nota",
 				modulo: "prueba",
 				ahora: Temporal.Now.instant(),
 				diaDeNegocio: Temporal.PlainDate.from("2026-11-10"),

@@ -9,7 +9,7 @@
 
 import { join } from "node:path";
 import { run } from "graphile-worker";
-import { guardarEventosConAdmin } from "./nucleo/acciones/corredor.ts";
+import { escribirBitacoraConAdmin, guardarEventosConAdmin } from "./nucleo/acciones/corredor.ts";
 import { abrirConexiones, crearBase } from "./nucleo/base/conexion.ts";
 import { leerEntorno } from "./nucleo/entorno.ts";
 import { cargarModulos } from "./nucleo/modulos.ts";
@@ -42,10 +42,7 @@ if (import.meta.main) {
 		registro: await cargarModulos(join(import.meta.dirname, "modulos")),
 		servicios: {
 			guardarEventos: guardarEventosConAdmin,
-			// La bitácora de los trabajos llega con `admin.escribir_bitacora` (parte 3 de la fase 4).
-			escribirBitacora: async (_contexto, renglones) => {
-				if (renglones.length > 0) throw new Error("la bitácora de los trabajos todavía no existe");
-			},
+			escribirBitacora: escribirBitacoraConAdmin,
 		},
 		// El aviso `trabajo_fallido` a soporte llega con `admin.crear_aviso` (parte 4 de la fase 4).
 		avisarFalla: async (texto) => {

@@ -16,4 +16,5 @@ export const lectoresDeAdmin: Record<string, readonly string[]> = {
 	listas: leenListas,
 	lista_valores: leenListas,
 	empresa: ["admin"],
+	bitacora: ["admin"],
 };

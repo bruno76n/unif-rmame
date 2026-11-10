@@ -118,4 +118,8 @@ Las formas fijas en que los módulos se hablan, para que nadie invente otra:
   - Los eventos los guarda `admin.guardar_evento`.
   - Una semilla puede ser los renglones de una tabla o una siembra propia (`{ sembrar(base) }`), como la de los parámetros, que también escribe su historial.
   - `nucleo/base/migrar.ts` junta las semillas de todos los módulos con `cargarModulos`.
+  - El contexto lleva también `accion`, el nombre completo de la acción o del trabajo.
+  - Un renglón de bitácora (`RenglonDeBitacora`) lleva su descripción, o su plantilla con los sueldos marcados, el documento, `antes` y `despues`, y si es alerta, misma persona o confirmó con Google.
+  - Toda acción deja al menos un renglón, salvo la que regresa `sinBitacora` porque su archivo lo dice.
+  - Una consulta apunta su consulta sensible con `apuntarConsultaSensible`.
 - **Las pruebas:** `nucleo/acciones/atomica.prueba.ts` (una acción que falla antes de escribir, después de su interna o en la bitácora no deja nada), `nucleo/acciones/pisadas.prueba.ts` y `nucleo/modulos.prueba.ts` (un módulo nuevo en su carpeta se registra solo; uno mal nombrado se rechaza).

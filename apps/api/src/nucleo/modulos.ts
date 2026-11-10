@@ -44,22 +44,39 @@ export interface SistemaQueEscribe {
 /** Quién escribe en una transacción: quien llamó a la API o el sistema desde un trabajo. */
 export type QuienEscribe = QuienLlama | SistemaQueEscribe;
 
+/**
+ * Una descripción que trae sueldos o tarifas: la plantilla con `{nombre}` y sus valores; los que son
+ * sueldo o tarifa van como `{ sueldo }`, para armar también la descripción sin ellos.
+ */
+export interface DescripcionConSueldos {
+	plantilla: string;
+	valores: Record<string, string | { sueldo: string }>;
+}
+
 /** Un renglón de bitácora que arma la acción (ver docs/modulos/admin/bitacora.md). */
 export interface RenglonDeBitacora {
-	descripcion: string;
+	/** «Qué pasó», ya armado; si trae sueldos o tarifas, con su plantilla. */
+	descripcion: string | DescripcionConSueldos;
 	entidad?: string;
 	entidadId?: string;
+	entidadFolio?: string;
+	/** Solo lo que cambió. Nunca secretos. */
 	antes?: unknown;
 	despues?: unknown;
-	/** Trae sueldos o tarifas: se recorta a quien no tiene el permiso. */
-	conSueldos?: boolean;
+	esAlerta?: boolean;
+	/** «Pedida y autorizada por la misma persona». */
+	mismaPersona?: boolean;
+	/** En las acciones que piden «Confirmar con Google»: cuándo se confirmó. */
+	confirmadoConGoogleEn?: string;
 }
 
 /** Lo que recibe una acción y lo que reciben las internas que llama: todo dentro de su transacción. */
 export interface ContextoDeAccion {
 	transaccion: Transaccion;
 	quien: QuienEscribe;
-	/** El módulo de la acción o del trabajo que abrió la transacción: lo llevan sus eventos y su bitácora. */
+	/** La acción (o el trabajo) que abrió la transacción, con su módulo: `admin.cambiar_parametro`. */
+	accion: string;
+	/** Su módulo: lo llevan sus eventos y su bitácora. */
 	modulo: string;
 	/** Una sola hora para toda la acción. */
 	ahora: Temporal.Instant;
@@ -74,12 +91,20 @@ export interface ContextoDeAccion {
 	bitacora: (renglon: RenglonDeBitacora) => void;
 }
 
+/** Una consulta sensible que se apunta en la bitácora: qué se consultó y de qué documento. */
+export type ConsultaSensible = Pick<RenglonDeBitacora, "descripcion" | "entidad" | "entidadId" | "entidadFolio">;
+
 /** Lo que recibe una consulta: la base para leer, quién llama y la hora. */
 export interface ContextoDeConsulta {
 	base: Base;
 	quien: QuienLlama;
 	ahora: Temporal.Instant;
 	diaDeNegocio: Temporal.PlainDate;
+	/**
+	 * Apunta en la bitácora una consulta a datos sensibles (la ficha de una persona, las tarifas, el saldo
+	 * de un cliente): una vez por cuenta y documento cada `admin.minutos_consulta_sensible`.
+	 */
+	apuntarConsultaSensible: (consulta: ConsultaSensible) => Promise<void>;
 }
 
 /** Lo que regresa una acción. */
@@ -88,6 +113,11 @@ export interface SalidaDeAccion<Resultado> {
 	avisos?: string[];
 	/** El documento que creó o tocó, para `comandos_recibidos`. */
 	entidad?: { nombre: string; id: string };
+	/**
+	 * Solo cuando su archivo lo dice (guardar un borrador, o lo mismo que ya había): la acción no deja
+	 * renglón de bitácora. Sin esto, el corredor exige al menos uno.
+	 */
+	sinBitacora?: true;
 }
 
 /** Una acción ya registrada: su contrato y lo que hace (su paso 7), con los datos ya validados. */

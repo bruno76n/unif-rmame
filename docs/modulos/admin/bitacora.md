@@ -101,4 +101,22 @@ La pantalla, sus filtros y su buscador están en [pantallas de Administración](
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 4.*
+**Fase 4, parte 3.**
+
+- **La tabla** `bitacora` está en `apps/api/src/modulos/admin/tablas.ts` (migración `0005_bitacora.sql`).
+  - Se parte por mes de `ocurrido_en`, como `eventos`: `asegurar_particiones`, que el reloj llama en cada vuelta. La app entra solo por la tabla madre, nunca directo a una partición (decisión 357).
+  - Lleva sus índices, el de trigramas sobre `sin_acentos(descripcion)` y los CHECK de `tipo`, `modulo` y `origen`.
+  - Es una tabla que solo crece (`marcar_solo_crece`).
+- **`admin.escribir_bitacora`** está en `modulos/admin/internas/escribir-bitacora.ts`.
+  - Escribe un renglón; quién, el comando, el módulo, el origen y la acción salen del contexto.
+  - Falla si `antes` o `despues` traen un campo de secreto, a cualquier profundidad.
+  - Una descripción con sueldos llega como plantilla, con los sueldos marcados `{ sueldo }` (`DescripcionConSueldos`; decisión 356). Se guardan la completa y la recortada con «••••», y el renglón queda `sensible_sueldos`.
+  - Una consulta sensible toma un candado por cuenta y documento y no se repite dentro de `admin.minutos_consulta_sensible`.
+  - Una alerta guarda `alerta.registrada`; el aviso a la dueña llega con la parte 4.
+- **El corredor** llama a la interna una vez por renglón (`escribirBitacoraConAdmin`): todos llevan el mismo `comando_id`. No guarda una acción que no dejó renglón, salvo la que lo dice con `sinBitacora` (decisión 355). Hoy lo dice `admin.cambiar_parametro` cuando recibe lo mismo que ya había.
+- **Una consulta** apunta su consulta sensible con `contexto.apuntarConsultaSensible`, en una transacción corta propia.
+- **`admin.marcar_alerta_revisada`** está en `acciones/marcar-alerta-revisada.ts`, con un candado por alerta, y su contrato en `contratos/admin/bitacora.ts`.
+- **Lo que llega después:**
+  - `ip`, `sesion_id` de verdad y `departamento_id`, con la sesión de la fase 5;
+  - `persona_id`, con el PIN de la fase 7.
+- **Las pruebas** están en `modulos/admin/internas/escribir-bitacora.prueba.ts`. La de prueba es la consulta `prueba.ficha`.

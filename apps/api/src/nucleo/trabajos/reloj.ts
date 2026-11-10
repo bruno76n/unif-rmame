@@ -21,7 +21,7 @@ import { listosParaProcesar } from "./procesar-eventos.ts";
 const mesesDeParticionesAdelante = 2;
 
 /** Las tablas partidas por mes. */
-export const tablasPartidas = ["eventos"] as const;
+export const tablasPartidas = ["eventos", "bitacora"] as const;
 
 /**
  * El momento en que toca un horario dentro de su periodo, y el nombre de ese periodo.

@@ -110,7 +110,7 @@ export const accionCambiarParametro = implementarAccion(cambiarParametro, async 
 	// El mismo valor que ya tenía: responde bien sin escribir nada.
 	if (textoCanonico(anterior) === textoCanonico(nuevo)) {
 		await revisarVersion(contexto, parametros, antes.id, version, visible);
-		return { resultado: { mensaje: "Parámetro guardado", version: antes.version } };
+		return { resultado: { mensaje: "Parámetro guardado", version: antes.version }, sinBitacora: true };
 	}
 	await tomarVersion(contexto, parametros, antes.id, version, visible);
 	await contexto.transaccion

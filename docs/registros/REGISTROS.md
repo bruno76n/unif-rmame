@@ -92,4 +92,7 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 10 nov 2026 | 4 | La plantilla de los folios con alcance (decisión 352) | Que cada acción pase el año · ponerlo solo | Ponerlo solo, con el día de negocio | No |
 | 10 nov 2026 | 4 | Dónde se revisa `solo_duena_agrega` (decisión 353) | Un contrato por lista · en la acción | En la acción: depende de la lista | No |
 | 10 nov 2026 | 4 | El historial de la siembra de parámetros (decisión 354) | Aparte · en la misma siembra | En la misma: solo para los recién creados | No |
+| 10 nov 2026 | 4 | Un renglón de bitácora por acción, exigido (decisión 355) | Confiar en cada acción · que el corredor lo exija | Que lo exija, con `sinBitacora` para las excepciones | No |
+| 10 nov 2026 | 4 | Los sueldos en la bitácora (decisión 356) | Dos descripciones · una plantilla | La plantilla | No |
+| 10 nov 2026 | 4 | Los permisos de las particiones (decisión 357) | Por omisión · solo por la madre | Solo por la madre | No |
 

@@ -23,6 +23,7 @@ import {
 	editarNota,
 	editarSinVersion,
 	fechar,
+	ficha,
 	listarNotas,
 	provocar,
 	trampa,
@@ -86,7 +87,9 @@ export default definirModulo({
 					sql`DO $$ BEGIN RAISE EXCEPTION 'choque de prueba' USING ERRCODE = '40001'; END $$`,
 				);
 			}
-			contexto.bitacora({ descripcion: `Creó la nota ${datos.texto}`, entidad: "prueba_notas", entidadId: id });
+			if (datos.fallar !== "sin_bitacora") {
+				contexto.bitacora({ descripcion: `Creó la nota ${datos.texto}`, entidad: "prueba_notas", entidadId: id });
+			}
 			contexto.guardarEvento({
 				tipo: "nota.creada",
 				// Un evento con un monto es un error del programa: `admin.guardar_evento` lo rechaza.
@@ -130,15 +133,22 @@ export default definirModulo({
 				},
 			};
 		}),
-		implementarAccion(confirmar, async () => ({ resultado: { mensaje: "Confirmado" } })),
+		implementarAccion(confirmar, async (contexto) => {
+			contexto.bitacora({ descripcion: "Confirmó" });
+			return { resultado: { mensaje: "Confirmado" } };
+		}),
 		implementarAccion(editarSinVersion, async (contexto, datos) => {
 			await contexto.transaccion.update(notas).set({ texto: "sin versión" }).where(eq(notas.id, datos.id));
 			return { resultado: { mensaje: "Guardada sin versión" } };
 		}),
-		implementarAccion(verMontos, async () => ({ resultado: { mensaje: "Montos" } })),
-		implementarAccion(fechar, async (_contexto, datos) => ({
-			resultado: { mensaje: "Fechado", dia_siguiente: datos.dia.add({ days: 1 }).toString() },
-		})),
+		implementarAccion(verMontos, async (contexto) => {
+			contexto.bitacora({ descripcion: "Vio los montos" });
+			return { resultado: { mensaje: "Montos" } };
+		}),
+		implementarAccion(fechar, async (contexto, datos) => {
+			contexto.bitacora({ descripcion: `Fechó el ${datos.dia.toString()}` });
+			return { resultado: { mensaje: "Fechado", dia_siguiente: datos.dia.add({ days: 1 }).toString() } };
+		}),
 		implementarAccion(provocar, async (contexto, datos) => {
 			if (datos.error === "demasiados_intentos") {
 				throw new ErrorDeApi("demasiados_intentos", null, "Demasiados intentos. Vuelve a intentar a las 10:35.", {
@@ -181,6 +191,16 @@ export default definirModulo({
 				},
 				recortado: [...new Set(recortadas.flatMap((r) => r.recortado))],
 			};
+		}),
+		implementarConsulta(ficha, async (contexto, parametros) => {
+			const [nota] = await contexto.base.select({ texto: notas.texto }).from(notas).where(eq(notas.id, parametros.id));
+			if (nota === undefined) throw noExiste();
+			await contexto.apuntarConsultaSensible({
+				descripcion: `Consultó la ficha de la nota ${nota.texto}`,
+				entidad: "prueba_notas",
+				entidadId: parametros.id,
+			});
+			return { resultado: nota };
 		}),
 		implementarConsulta(verNota, async (contexto, parametros) => {
 			const [nota] = await contexto.base

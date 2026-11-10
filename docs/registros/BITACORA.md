@@ -27,3 +27,4 @@ La línea de la bitácora se escribe al final, con el resultado ya conocido. Esc
 | 10 nov 2026 | 3 | Revisión de las correcciones y cierre: fase 3 terminada | [2026-11-10-fase-03](sesiones/2026-11-10-fase-03.md) |
 | 10 nov 2026 | 4 | 1 · Eventos, worker y avisos en vivo | [2026-11-10-fase-04](sesiones/2026-11-10-fase-04.md) |
 | 10 nov 2026 | 4 | 2 · Folios, configuración y ubicaciones | [2026-11-10-fase-04](sesiones/2026-11-10-fase-04.md) |
+| 10 nov 2026 | 4 | 3 · Bitácora | [2026-11-10-fase-04](sesiones/2026-11-10-fase-04.md) |

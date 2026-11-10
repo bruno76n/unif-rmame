@@ -36,7 +36,8 @@ CREATE INDEX "eventos_entidad" ON "eventos" USING btree ("entidad","entidad_id")
 -- Escrito a mano (docs/cimientos/BASE-DE-DATOS.md, «Tablas que crecen sin parar»): las particiones por mes.
 -- Crea las particiones de una tabla partida por mes, del mes en curso a `meses` más adelante, y la de
 -- respaldo (`_otros`) que recibe lo que caiga fuera. Los meses son de UTC: es un corte técnico, no de
--- negocio. Corre con los permisos del dueño para que el reloj del worker la pueda llamar.
+-- negocio. Corre con los permisos del dueño para que el reloj del worker la pueda llamar. La app no tiene
+-- permisos sobre las particiones: entra por la tabla madre, que es la que dice qué puede hacer.
 CREATE FUNCTION asegurar_particiones(tabla regclass, meses integer) RETURNS void
 	LANGUAGE plpgsql SECURITY DEFINER
 	SET search_path = pg_catalog, public
@@ -47,6 +48,7 @@ DECLARE
 	desde timestamptz;
 BEGIN
 	EXECUTE format('CREATE TABLE IF NOT EXISTS public.%I PARTITION OF %s DEFAULT', nombre || '_otros', tabla);
+	EXECUTE format('REVOKE ALL ON public.%I FROM uniformame_app', nombre || '_otros');
 	FOR i IN 0..meses LOOP
 		desde := inicio + make_interval(months => i);
 		EXECUTE format(
@@ -56,6 +58,8 @@ BEGIN
 			desde,
 			desde + interval '1 month'
 		);
+		-- La app entra solo por la tabla madre, con sus permisos; a la partición, directo, no.
+		EXECUTE format('REVOKE ALL ON public.%I FROM uniformame_app', nombre || '_' || to_char(desde AT TIME ZONE 'UTC', 'YYYY_MM'));
 	END LOOP;
 END
 $$;

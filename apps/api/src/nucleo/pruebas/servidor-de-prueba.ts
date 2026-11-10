@@ -12,9 +12,11 @@ import type { Permiso } from "@uniformame/compartido/contratos/definir";
 import { type BaseDePrueba, crearBaseDePrueba } from "@uniformame/pruebas/base";
 import { generateDrizzleJson, generateMigration } from "drizzle-kit/api";
 import { Temporal } from "temporal-polyfill";
+import { armarDescripciones } from "../../modulos/admin/internas/escribir-bitacora.ts";
+import { modulosDeLaBitacora } from "../../modulos/admin/tablas.ts";
 import { crearServidor, type ServiciosDelServidor } from "../../servidor.ts";
 import type { QuienLlama } from "../acceso/quien.ts";
-import { guardarEventosConAdmin } from "../acciones/corredor.ts";
+import { escribirBitacoraConAdmin, guardarEventosConAdmin } from "../acciones/corredor.ts";
 import { crearBase } from "../base/conexion.ts";
 import { type Semilla, sembrarSistema } from "../base/siembra.ts";
 import { ErrorDeApi } from "../http/errores.ts";
@@ -139,6 +141,12 @@ async function crearBaseConTablasDePrueba(semillas: readonly Semilla[]): Promise
 		await base.dueno.query(`SELECT poner_disparador_comun('${tabla}')`);
 	}
 	await sembrarSistema(crearBase(base.dueno), semillas);
+	// La bitácora solo acepta los módulos del sistema; en esta base también el de prueba.
+	await base.dueno.query(`
+		ALTER TABLE bitacora DROP CONSTRAINT bitacora_modulo;
+		ALTER TABLE bitacora ADD CONSTRAINT bitacora_modulo
+			CHECK (modulo in (${[...modulosDeLaBitacora, "prueba"].map((modulo) => `'${modulo}'`).join(", ")}));
+	`);
 	return base;
 }
 
@@ -169,15 +177,16 @@ export async function crearServidorDePrueba(
 		},
 		revisarPermiso: revisarPermisoDePrueba,
 		versionMinimaDelParametro: async () => parametros.versionMinima,
-		escribirBitacora: async (_contexto, renglones) => {
+		escribirBitacora: async (contexto, renglones) => {
 			if (fallas.bitacora) throw new Error("falla de prueba en la bitácora");
 			for (const texto of fallas.bitacoraUnaVez) {
-				if (renglones.some((renglon) => renglon.descripcion.includes(texto))) {
+				if (renglones.some((renglon) => armarDescripciones(renglon.descripcion).completa.includes(texto))) {
 					fallas.bitacoraUnaVez.delete(texto);
 					throw new Error("falla pasajera de prueba en la bitácora");
 				}
 			}
 			pedidos.bitacora.push([...renglones]);
+			await escribirBitacoraConAdmin(contexto, renglones);
 		},
 		guardarEventos: async (contexto, eventos) => {
 			pedidos.eventos.push([...eventos]);

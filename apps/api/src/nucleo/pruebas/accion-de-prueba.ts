@@ -27,7 +27,7 @@ export function enAccionDePrueba<T>(
 	if (quien === undefined) throw new Error("falta la dueña de prueba");
 	return enTransaccion(base, (transaccion) =>
 		hacer(
-			crearContexto(registro, transaccion, quien, "prueba", opciones.ahora ?? Temporal.Now.instant(), undefined)
+			crearContexto(registro, transaccion, quien, "prueba.accion", opciones.ahora ?? Temporal.Now.instant(), undefined)
 				.contexto,
 		),
 	);

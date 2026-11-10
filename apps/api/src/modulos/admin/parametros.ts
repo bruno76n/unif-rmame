@@ -1,8 +1,8 @@
 /**
- * Los parámetros que declara `admin`: los generales que usan todos, las versiones mínimas de cada app y
- * cuánto se guardan los eventos.
- * Fase 4 · docs/modulos/admin/configuracion.md («Parámetros»), docs/cimientos/API.md y
- * docs/cimientos/EVENTOS-Y-TRABAJOS.md («Parámetros»)
+ * Los parámetros que declara `admin`: los generales que usan todos, las versiones mínimas de cada app,
+ * cuánto se guardan los eventos y cada cuánto se apunta una consulta sensible.
+ * Fase 4 · docs/modulos/admin/configuracion.md («Parámetros»), docs/cimientos/API.md,
+ * docs/cimientos/EVENTOS-Y-TRABAJOS.md («Parámetros») y docs/modulos/admin/bitacora.md («Parámetros»)
  */
 
 import { type DefinicionDeParametro, semillaDeParametros } from "../../nucleo/parametros.ts";
@@ -55,6 +55,17 @@ export const parametrosDeAdmin: readonly DefinicionDeParametro[] = [
 		tipo: "texto",
 		inicial: "1.0.0",
 		orden: 920,
+	},
+	{
+		clave: "admin.minutos_consulta_sensible",
+		seccion: "tecnico",
+		nombre: "Minutos entre consultas sensibles",
+		explicacion: "Cada cuánto se vuelve a apuntar la misma consulta sensible de la misma cuenta",
+		tipo: "entero",
+		unidad: "min",
+		inicial: 10,
+		minimo: 1,
+		orden: 940,
 	},
 	{
 		clave: "admin.dias_guardar_eventos",

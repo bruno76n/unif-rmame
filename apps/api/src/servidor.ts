@@ -22,12 +22,18 @@ import pino, { type DestinationStream } from "pino";
 import { Temporal } from "temporal-polyfill";
 import { z } from "zod";
 import { appDe, type QuienLlama } from "./nucleo/acceso/quien.ts";
-import { type CuerpoDeAccion, correrAccion, type ServiciosDelCorredor } from "./nucleo/acciones/corredor.ts";
+import {
+	type CuerpoDeAccion,
+	correrAccion,
+	crearContexto,
+	type ServiciosDelCorredor,
+} from "./nucleo/acciones/corredor.ts";
 import type { Base } from "./nucleo/base/conexion.ts";
+import { enTransaccion } from "./nucleo/base/transacciones.ts";
 import type { Entorno } from "./nucleo/entorno.ts";
 import { ErrorDeApi, responderError } from "./nucleo/http/errores.ts";
 import { validarSinTransformar } from "./nucleo/http/validacion.ts";
-import type { RegistroDeModulos } from "./nucleo/modulos.ts";
+import type { ConsultaSensible, RegistroDeModulos } from "./nucleo/modulos.ts";
 import type { AvisosEnVivo } from "./nucleo/sincronizacion/eventos-en-vivo.ts";
 
 declare module "fastify" {
@@ -215,7 +221,14 @@ export async function crearServidor(dependencias: DependenciasDelServidor) {
 				respuesta.header("cache-control", "no-store");
 				const ahora = reloj();
 				const leido = await consulta.leer(
-					{ base, quien: quienDe(peticion), ahora, diaDeNegocio: diaDeNegocio(ahora) },
+					{
+						base,
+						quien: quienDe(peticion),
+						ahora,
+						diaDeNegocio: diaDeNegocio(ahora),
+						apuntarConsultaSensible: (renglon) =>
+							apuntarConsultaSensible(quienDe(peticion), contrato.nombre, ahora, renglon),
+					},
 					peticion.query,
 				);
 				const recortado = leido.recortado ?? [];
@@ -223,6 +236,27 @@ export async function crearServidor(dependencias: DependenciasDelServidor) {
 				return { ok: true as const, resultado: leido.resultado, recortado };
 			},
 		});
+	}
+
+	/**
+	 * Apunta una consulta sensible en la bitácora, en su propia transacción corta: la consulta solo lee.
+	 * `admin.escribir_bitacora` no la repite si la cuenta ya la apuntó hace poco sobre el mismo documento.
+	 */
+	async function apuntarConsultaSensible(
+		quien: QuienLlama,
+		consulta: string,
+		ahora: Temporal.Instant,
+		renglon: ConsultaSensible,
+	): Promise<void> {
+		await enTransaccion(base, (transaccion) =>
+			crearContexto(registro, transaccion, quien, consulta, ahora, undefined).contexto.interna(
+				"admin.escribir_bitacora",
+				{
+					...renglon,
+					tipo: "consulta_sensible",
+				},
+			),
+		);
 	}
 
 	if (dependencias.avisosEnVivo !== undefined) registrarEventosEnVivo(dependencias.avisosEnVivo);

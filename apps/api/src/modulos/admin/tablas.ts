@@ -16,6 +16,7 @@ import {
 	boolean,
 	check,
 	index,
+	inet,
 	integer,
 	jsonb,
 	numeric,
@@ -305,4 +306,77 @@ export const empresa = pgTable(
 		...columnasComunes(),
 	},
 	(tabla) => [uniqueIndex("empresa_unica").on(tabla.unica), check("empresa_solo_una", sql`${tabla.unica}`)],
+);
+
+/** Los módulos del sistema y `sistema`: los que pueden escribir en la bitácora. */
+export const modulosDeLaBitacora = [
+	"admin",
+	"personal",
+	"direccion",
+	"catalogo",
+	"patronaje",
+	"compras",
+	"ventas",
+	"produccion",
+	"calidad",
+	"mantenimiento",
+	"inventario",
+	"contaduria",
+	"linea",
+	"sistema",
+] as const;
+
+/**
+ * Todo lo que pasa en el sistema: cambios, accesos y consultas sensibles. Solo crece. Se parte por mes
+ * (`ocurrido_en`) en la migración.
+ */
+export const bitacora = pgTable(
+	"bitacora",
+	{
+		id: uuid("id").notNull(),
+		ocurridoEn: momento("ocurrido_en").notNull().defaultNow(),
+		tipo: text("tipo").notNull(),
+		esAlerta: boolean("es_alerta").notNull().default(false),
+		/** @llavePendiente usuarios.id */
+		usuarioId: uuid("usuario_id"),
+		/** @llavePendiente personas.id */
+		personaId: uuid("persona_id"),
+		/** @llavePendiente dispositivos.id */
+		dispositivoId: uuid("dispositivo_id"),
+		/** @llavePendiente sesiones.id */
+		sesionId: uuid("sesion_id"),
+		comandoId: uuid("comando_id"),
+		correoIntento: text("correo_intento"),
+		/** @llavePendiente departamentos.id */
+		departamentoId: uuid("departamento_id"),
+		modulo: text("modulo").notNull(),
+		origen: text("origen").notNull(),
+		accion: text("accion").notNull(),
+		descripcion: text("descripcion").notNull(),
+		descripcionRecortada: text("descripcion_recortada"),
+		entidad: text("entidad"),
+		entidadId: uuid("entidad_id"),
+		entidadFolio: text("entidad_folio"),
+		antes: jsonb("antes"),
+		despues: jsonb("despues"),
+		sensibleSueldos: boolean("sensible_sueldos").notNull().default(false),
+		mismaPersona: boolean("misma_persona").notNull().default(false),
+		confirmadoConGoogleEn: momento("confirmado_con_google_en"),
+		ip: inet("ip"),
+	},
+	(tabla) => [
+		primaryKey({ columns: [tabla.id, tabla.ocurridoEn] }),
+		index("bitacora_ocurrido").on(tabla.ocurridoEn.desc()),
+		index("bitacora_entidad").on(tabla.entidad, tabla.entidadId, tabla.ocurridoEn.desc()),
+		index("bitacora_usuario").on(tabla.usuarioId, tabla.ocurridoEn.desc()),
+		index("bitacora_persona").on(tabla.personaId, tabla.ocurridoEn.desc()),
+		index("bitacora_tipo").on(tabla.tipo, tabla.ocurridoEn.desc()),
+		index("bitacora_alertas").on(tabla.ocurridoEn.desc()).where(sql`${tabla.esAlerta}`),
+		check("bitacora_tipo", sql`${tabla.tipo} in ('cambio', 'acceso', 'consulta_sensible')`),
+		check("bitacora_modulo", sql.raw(`modulo in (${modulosDeLaBitacora.map((modulo) => `'${modulo}'`).join(", ")})`)),
+		check(
+			"bitacora_origen",
+			sql`${tabla.origen} in ('fabrica', 'tienda', 'tablet', 'panel_linea', 'servidor_linea', 'sistema')`,
+		),
+	],
 );

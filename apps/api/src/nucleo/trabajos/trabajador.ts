@@ -36,14 +36,6 @@ export interface DependenciasDelTrabajador {
 export const crontabDelTrabajador = "* * * * * reloj";
 
 /**
- * El módulo de un trabajo, por su nombre: `admin.depurar_eventos` es de `admin`.
- * @param nombre El nombre completo del trabajo.
- */
-function moduloDelTrabajo(nombre: string): string {
-	return nombre.slice(0, nombre.indexOf("."));
-}
-
-/**
  * Arma el contexto de un trabajo.
  * @param dependencias Lo que necesita el worker.
  * @param trabajo El nombre del trabajo.
@@ -67,7 +59,7 @@ export function contextoDeTrabajo(
 					dependencias.registro,
 					transaccion,
 					quien,
-					moduloDelTrabajo(trabajo),
+					trabajo,
 					ahora,
 					undefined,
 				);
