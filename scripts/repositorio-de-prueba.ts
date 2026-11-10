@@ -7,10 +7,10 @@
  * debe rechazar sin tocar el repositorio de Unifórmame.
  */
 
-import { execFileSync } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import { git } from "./archivos.ts";
 
 /** La raíz del repositorio de Unifórmame, de donde se copia la configuración. */
 export const raizReal = join(import.meta.dirname, "..");
@@ -25,16 +25,6 @@ const archivosDeConfiguracion = [
 	".gitignore",
 	".env.ejemplo",
 ];
-
-/**
- * Corre git en un repositorio.
- * @param raiz La carpeta del repositorio.
- * @param argumentos Lo que va después de `git`.
- * @returns Lo que git escribió en la salida.
- */
-export function git(raiz: string, argumentos: string[]): string {
-	return execFileSync("git", argumentos, { cwd: raiz, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
-}
 
 /**
  * Escribe un archivo dentro del repositorio temporal, creando sus carpetas.

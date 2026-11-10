@@ -33,7 +33,7 @@ El sistema guarda el dinero, los sueldos y el inventario de la fábrica, así qu
 - **Los secretos de los aparatos** no los conoce nadie: los hace el propio aparato y el servidor guarda su SHA-256 (ver [dispositivos](../modulos/admin/dispositivos.md)).
 - **La llave privada de los respaldos** la guarda Bruno fuera del sistema (ver [respaldos](../modulos/admin/respaldos.md)).
 - **Si un secreto se filtra,** se cambia en su servicio y en Render y se vuelve a desplegar; se anota en `REGISTROS.md`. Las sesiones se cierran con «Cerrar sesiones» y un aparato se revoca.
-- **La búsqueda de secretos** de la revisión completa es un script de `scripts/` que busca, en lo que se va a guardar, los secretos que este sistema usa: llaves privadas, direcciones de Postgres con contraseña, los formatos de las llaves de Google, Resend y R2, un `.env` fuera de `.gitignore` y cualquier variable de la lista con un valor escrito.
+- **La búsqueda de secretos** de la revisión completa es un script de `scripts/` que busca, en lo que se va a guardar, los secretos que este sistema usa: llaves privadas, direcciones de Postgres con contraseña, los formatos de las llaves de Google y Resend, un `.env` fuera de `.gitignore` y cualquier variable de la lista con un valor escrito. Las credenciales de R2 no tienen un formato propio que las distinga de otro texto en hexadecimal, así que se encuentran por su variable (`R2_…=valor`; decisión 328).
 
 ## Las cookies
 

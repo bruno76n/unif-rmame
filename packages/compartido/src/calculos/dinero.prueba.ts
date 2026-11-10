@@ -70,11 +70,25 @@ describe("el dinero nunca pierde ni sobra un centavo: aPesoEntero siempre da mú
 		);
 	});
 
-	it("la mitad se redondea hacia arriba", () => {
+	it("la mitad se redondea lejos del cero", () => {
 		expect(aPesoEntero(c(12_350))).toBe(12_400);
 		expect(aPesoEntero(c(12_349))).toBe(12_300);
-		expect(aPesoEntero(c(-12_350))).toBe(-12_300);
-		expect(aPesoEntero(c(-12_351))).toBe(-12_400);
+		expect(aPesoEntero(c(-12_350))).toBe(-12_400);
+		expect(aPesoEntero(c(-12_349))).toBe(-12_300);
+	});
+
+	it("un negativo se redondea igual que su positivo, con el signo contrario", () => {
+		fc.assert(
+			fc.property(montos, (monto) => {
+				expect(aPesoEntero(c(-monto))).toBe(-aPesoEntero(monto) || 0);
+			}),
+			{ numRuns: 3000 },
+		);
+	});
+
+	it("con un monto que no cabe al redondearlo, falla en lugar de dar otro", () => {
+		expect(() => aPesoEntero(c(Number.MAX_SAFE_INTEGER))).toThrow(RangeError);
+		expect(aPesoEntero(c(Number.MAX_SAFE_INTEGER - 91))).toBe(Number.MAX_SAFE_INTEGER - 91);
 	});
 });
 
@@ -97,12 +111,22 @@ describe("el dinero nunca pierde ni sobra un centavo: pesosACentavos rechaza lo 
 		);
 	});
 
-	it("rechaza lo que no tiene forma de dinero", () => {
-		const dinero = /^\s*-?\$?\s*(\d{1,3}(,\d{3})+|\d+)(\.\d{1,2})?\s*$/;
+	it("rechaza un monto que se echó a perder al escribirlo", () => {
+		/** Cada forma de echar a perder un monto bien escrito deja algo que ya no es dinero. */
+		const echarAPerder: ((texto: string) => string)[] = [
+			(texto) => `${texto}5`, // tres decimales
+			(texto) => texto.replace(/\d/, "a"), // una letra
+			(texto) => `${texto}.`, // un punto de más
+			(texto) => texto.replace(".", ","), // coma en lugar del punto decimal
+			(texto) => `+${texto}`, // signo de más
+			(texto) => `$-${texto.replace("-", "")}`, // el signo después del peso
+			(texto) => `${texto}-`, // el signo al final
+			(texto) => `1,${texto.replace("-", "").slice(0, 2)}`, // un grupo de miles con menos de tres cifras
+		];
 		fc.assert(
-			fc.property(fc.string(), (texto) => {
-				fc.pre(!dinero.test(texto));
-				expect(pesosACentavos(texto)).toBeNull();
+			fc.property(montos, fc.integer({ min: 0, max: echarAPerder.length - 1 }), (monto, forma) => {
+				const echado = echarAPerder[forma]?.(comoTexto(monto, false, true)) ?? "";
+				expect(pesosACentavos(echado), echado).toBeNull();
 			}),
 			{ numRuns: 5000 },
 		);
@@ -155,6 +179,20 @@ describe("aplicarPorcentaje saca un porcentaje y lo redondea al centavo; centavo
 		expect(aplicarPorcentaje(c(25_000), "0")).toBe(0);
 		expect(() => aplicarPorcentaje(c(25_000), "12.3456")).toThrow(RangeError);
 		expect(() => aplicarPorcentaje(c(25_000), "-5")).toThrow(RangeError);
+		expect(aplicarPorcentaje(c(5), "10")).toBe(1);
+		expect(aplicarPorcentaje(c(-5), "10")).toBe(-1);
+		expect(aplicarPorcentaje(c(Number.MAX_SAFE_INTEGER), "100")).toBe(Number.MAX_SAFE_INTEGER);
+		expect(() => aplicarPorcentaje(c(Number.MAX_SAFE_INTEGER), "999.999")).toThrow(RangeError);
+	});
+
+	it("un porcentaje de un negativo es el contrario del de su positivo", () => {
+		fc.assert(
+			fc.property(montos, fc.integer({ min: 0, max: 999_999 }), (monto, milesimas) => {
+				const porcentaje = (milesimas / 1000).toFixed(3);
+				expect(aplicarPorcentaje(c(-monto), porcentaje)).toBe(-aplicarPorcentaje(monto, porcentaje) || 0);
+			}),
+			{ numRuns: 3000 },
+		);
 	});
 
 	it("muestra pesos sin decimales y, donde se aceptan centavos, con dos decimales", () => {
@@ -162,6 +200,18 @@ describe("aplicarPorcentaje saca un porcentaje y lo redondea al centavo; centavo
 		expect(centavosATexto(c(125_050), { conCentavos: true })).toBe("$1,250.50");
 		expect(centavosATexto(c(-5), { conCentavos: true })).toBe("-$0.05");
 		expect(centavosATexto(c(0))).toBe("$0");
+		expect(centavosATexto(c(12_350))).toBe("$124");
+		expect(centavosATexto(c(-12_350))).toBe("-$124");
+		expect(centavosATexto(c(12_349))).toBe("$123");
+	});
+
+	it("sin centavos muestra el mismo peso que aPesoEntero", () => {
+		fc.assert(
+			fc.property(montos, (monto) => {
+				expect(pesosACentavos(centavosATexto(monto))).toBe(aPesoEntero(monto));
+			}),
+			{ numRuns: 3000 },
+		);
 	});
 
 	it("el texto con centavos se lee de vuelta al mismo monto", () => {

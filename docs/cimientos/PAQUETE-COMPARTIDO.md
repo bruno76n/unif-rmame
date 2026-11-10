@@ -49,7 +49,7 @@ Un cálculo nuevo entra aquí solo si una pantalla lo necesita mientras se escri
   | `aplicarPorcentaje` | Saca un porcentaje de un monto y lo redondea al centavo |
   | `repartir` | Reparte un monto entre renglones en proporción, sin perder ni sobrar un centavo (por ejemplo, el IVA proporcional de lo recibido) |
 
-- **Redondeo:** al más cercano; la mitad, hacia arriba.
+- **Redondeo:** al más cercano; la mitad, hacia arriba en los positivos y lejos del cero en los negativos, así un negativo da exactamente el contrario de su positivo (123.50 → 124 y −123.50 → −124; decisión 327). Al mostrar sin centavos se redondea igual.
 - **Porcentajes y metros sin decimales sueltos.** Un porcentaje (`numeric(6,3)`, 12.5 = 12.5 %) se convierte a milésimas enteras antes de multiplicar. Los metros y las demás unidades de material (`numeric(12,3)`) se suman en milésimas enteras. Así nada se pierde por redondeos de punto flotante.
 
 ## Fechas y horas
@@ -91,13 +91,13 @@ El protocolo completo está en [API](API.md).
 | Función | Cómo |
 |---|---|
 | `pesosACentavos(texto)` | Acepta signo, `$`, pesos con comas de miles bien puestas o sin comas, y hasta dos decimales; regresa `null` con cualquier otra cosa o si no cabe en un entero seguro |
-| `centavosATexto(monto, { conCentavos })` | `Intl.NumberFormat("es-MX", MXN)` con el monto como texto decimal exacto: «$1,250» o «$1,250.50» |
-| `aPesoEntero(monto)` | Al múltiplo de 100 más cercano, la mitad hacia arriba (−123.50 queda en −123) |
-| `aplicarPorcentaje(monto, porcentaje)` | El porcentaje (`12.5` o `"12.500"`) se pasa a milésimas enteras; monto × milésimas ÷ 100 000, al centavo y con la mitad hacia arriba. Un porcentaje negativo o con más de tres decimales es `RangeError` |
+| `centavosATexto(monto, { conCentavos })` | `Intl.NumberFormat("es-MX", MXN)` con el monto como texto decimal exacto: «$1,250» o «$1,250.50». Sin centavos, primero redondea con `aPesoEntero`, así la pantalla dice el mismo peso que se guarda |
+| `aPesoEntero(monto)` | Al múltiplo de 100 más cercano, la mitad lejos del cero (123.50 → 124 y −123.50 → −124); falla con `RangeError` si el resultado ya no cabe en un entero seguro |
+| `aplicarPorcentaje(monto, porcentaje)` | El porcentaje (`12.5` o `"12.500"`) se pasa a milésimas enteras; monto × milésimas ÷ 100 000, al centavo y con la mitad lejos del cero. Un porcentaje negativo o con más de tres decimales es `RangeError` |
 | `repartir(total, proporciones)` | Restos mayores: cada renglón recibe la parte entera de su proporción, y los centavos que faltan van a los restos más grandes (en empate, al primero). Un total negativo se reparte igual, con su signo. Sin renglones, con un peso que no es entero de cero en adelante, o con todos en cero y algo que repartir, es `RangeError` |
 
 **Las fechas** (`src/calculos/fechas.ts`): `zonaDelNegocio` es `America/Mexico_City`; `diaDeNegocio(momento)` es la fecha del reloj de México; `inicioDeSemana(dia)` es su lunes; `diasHabilesEntre(desde, hasta, diasDeTrabajo)` cuenta los días de trabajo después de `desde` y hasta `hasta`, incluido; `sumarDiasHabiles(dia, n, diasDeTrabajo)` avanza `n` días de trabajo. Los días de trabajo llegan como números ISO (1 lunes … 7 domingo), ya leídos de `general.dias_de_trabajo`.
 
-**Las pruebas**, con fast-check y casos fijos: `src/calculos/dinero.prueba.ts` (lo repartido suma exactamente el total y cada parte queda a menos de un centavo de la exacta; `aPesoEntero` da múltiplos de 100 a menos de medio peso; `pesosACentavos` lee de vuelta cualquier monto y rechaza todo texto sin forma de dinero; el porcentaje queda a menos de medio centavo del exacto), `src/calculos/fechas.prueba.ts` (las 23:30 de México son de ese día aunque en UTC sea el siguiente; el lunes de cada semana; los días hábiles con cualquier juego de días de trabajo) y `src/tipos/base.prueba.ts`.
+**Las pruebas**, con fast-check y casos fijos: `src/calculos/dinero.prueba.ts` (lo repartido suma exactamente el total y cada parte queda a menos de un centavo de la exacta; `aPesoEntero` da múltiplos de 100 a menos de medio peso y es simétrico con los negativos; `pesosACentavos` lee de vuelta cualquier monto y rechaza un monto echado a perder de ocho formas distintas; el porcentaje queda a menos de medio centavo del exacto y es simétrico; sin centavos se muestra el peso de `aPesoEntero`), `src/calculos/fechas.prueba.ts` (las 23:30 de México son de ese día aunque en UTC sea el siguiente, también en el verano de 2021, con horario de verano, y de 2026; el lunes de cada semana; los días hábiles con cualquier juego de días de trabajo) y `src/tipos/base.prueba.ts`.
 
 *Lo completa la fase 3: cómo se arma el cliente desde los contratos.*

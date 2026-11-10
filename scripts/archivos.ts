@@ -2,8 +2,9 @@
  * Qué archivos se revisan: los que se van a guardar y los que cambiaron.
  * Fase 1 · docs/cimientos/ESTRUCTURA.md («Comandos»)
  *
- * Lo usan el sello, la búsqueda de secretos y la revisión rápida. Todo sale de git, así que lo que
- * `.gitignore` deja fuera (`node_modules`, `.env`, `.revision/`) nunca se revisa ni entra a la huella.
+ * Lo usan el sello, la búsqueda de secretos, la revisión rápida, `docs:revisar`, el gancho de git y
+ * las pruebas. Todo sale de git, así que lo que `.gitignore` deja fuera (`node_modules`, `.env`,
+ * `.revision/`) nunca se revisa ni entra a la huella.
  */
 
 import { execFileSync } from "node:child_process";
@@ -68,4 +69,17 @@ export function archivosCambiados(raiz: string): string[] {
  */
 export function archivosDelCommit(raiz: string): string[] {
 	return rutasDe(git(raiz, ["diff", "-z", "--cached", "--name-only", "--no-renames"])).sort();
+}
+
+/**
+ * Los archivos que cambiaron en el árbol de trabajo y no están agregados al índice, con los nuevos.
+ * @param raiz La carpeta del repositorio.
+ * @returns Las rutas relativas, ordenadas.
+ */
+export function archivosSinAgregar(raiz: string): string[] {
+	const rutas = [
+		...rutasDe(git(raiz, ["diff", "-z", "--name-only"])),
+		...rutasDe(git(raiz, ["ls-files", "-z", "--others", "--exclude-standard"])),
+	];
+	return [...new Set(rutas)].sort();
 }

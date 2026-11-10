@@ -1,16 +1,16 @@
 /**
- * El gancho de git antes de cada commit (`.githooks/pre-commit`).
+ * El gancho de git antes de cada commit y de cada merge (`.githooks/pre-commit` y `.githooks/pre-merge-commit`).
  * Fase 1 · docs/cimientos/ESTRUCTURA.md («Comandos», el sello)
  *
  * Tres casos, según lo que lleva el commit:
- * 1. solo `docs/registros/`: pasa;
+ * 1. solo registros (los `.md` de `docs/registros/`): pasa;
  * 2. solo documentos (`*.md`): pasa si `pnpm docs:revisar` sale en verde;
  * 3. código: pasa solo si el sello de la última revisión completa es de exactamente lo que se guarda.
  */
 
-import { archivosDelCommit } from "./archivos.ts";
+import { archivosDelCommit, archivosSinAgregar } from "./archivos.ts";
 import { correr } from "./comandos.ts";
-import { carpetaDeRegistros, huellaDelIndice, leerSello } from "./sello.ts";
+import { esRegistro, huellaDelIndice, leerSello } from "./sello.ts";
 
 /** Lo que decide el gancho y por qué. */
 export interface Veredicto {
@@ -25,10 +25,18 @@ export interface Veredicto {
  */
 export function revisarCommit(raiz: string): Veredicto {
 	const archivos = archivosDelCommit(raiz);
-	if (archivos.every((ruta) => ruta.startsWith(carpetaDeRegistros))) {
+	if (archivos.every(esRegistro)) {
 		return { pasa: true, motivo: "Solo registros: no piden revisión." };
 	}
 	if (archivos.every((ruta) => ruta.endsWith(".md"))) {
+		// docs:revisar lee el árbol de trabajo: solo revisa lo que se guarda si no hay documentos sin agregar.
+		const sinAgregar = archivosSinAgregar(raiz).filter((ruta) => ruta.endsWith(".md") && !esRegistro(ruta));
+		if (sinAgregar.length > 0) {
+			return {
+				pasa: false,
+				motivo: `Hay documentos cambiados sin agregar (${sinAgregar.join(", ")}). Agrégalos con git add o guárdalos aparte, para que se revise lo mismo que se guarda.`,
+			};
+		}
 		const enVerde = correr(raiz, "node", ["scripts/docs-revisar.ts"]);
 		return enVerde
 			? { pasa: true, motivo: "Solo documentos, con pnpm docs:revisar en verde." }

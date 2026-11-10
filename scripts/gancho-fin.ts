@@ -10,10 +10,10 @@
  * `.claude/estado/`, que no entra a git.
  */
 
-import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { finalDeLaSalida, revisionRapidaCapturada } from "./comandos.ts";
 
 /** Donde vive el conteo de intentos por problema. */
 export const archivoDeEstado = ".claude/estado/intentos.json";
@@ -50,17 +50,45 @@ function leerModo(raiz: string): "supervisado" | "autonomo" {
  * @returns Una firma corta del problema.
  */
 export function firmaDelProblema(salida: string): string {
-	const renglones = salida.split("\n");
+	const renglones = salida.split("\n").map(limpiarRenglon);
 	const paso = renglones.find((r) => r.includes("Revisión rápida en rojo")) ?? "";
+	// Primero el renglón que nombra la prueba que falló; si no hay, el primer error de tsc o de Biome.
 	const primerError =
-		renglones.find((r) => /error|FAIL|×|✖|lint\//i.test(r) && !r.includes("Revisión rápida en rojo")) ?? "";
-	const limpio = `${paso}\n${primerError}`.replace(/\(\d+,\d+\)|:\d+:\d+|\s+/g, " ").trim();
-	return createHash("sha256").update(limpio).digest("hex").slice(0, 16);
+		renglones.find((r) => r.startsWith("FAIL ")) ??
+		renglones.find((r) => /error TS\d+|lint\/|format|×|✖/.test(r) && !r.includes("Revisión rápida en rojo")) ??
+		"";
+	return createHash("sha256").update(`${paso}\n${primerError}`).digest("hex").slice(0, 16);
 }
 
-/** El resumen que se le pasa a Claude: el final de la salida, que es donde está el error. */
-function resumen(salida: string): string {
-	return salida.trim().split("\n").slice(-30).join("\n");
+/**
+ * Quita de un renglón lo que cambia entre corridas sin que cambie el problema: los colores, los
+ * tiempos, los conteos de Vitest, el renglón y la columna.
+ */
+function limpiarRenglon(renglon: string): string {
+	return renglon
+		.replace(new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, "g"), "")
+		.replace(/\d+(\.\d+)?\s?m?s\b/g, "")
+		.replace(/\(\d+ tests?[^)]*\)/g, "")
+		.replace(/\(\d+,\d+\)|:\d+:\d+/g, "")
+		.replace(/\s+/g, " ")
+		.trim();
+}
+
+/**
+ * Lee el conteo de intentos guardado.
+ * @returns El conteo por firma; si no existe o está dañado, vacío: el gancho nunca deja de vigilar por eso.
+ */
+function leerIntentos(rutaDeEstado: string): Record<string, number> {
+	if (!existsSync(rutaDeEstado)) return {};
+	try {
+		const leido: unknown = JSON.parse(readFileSync(rutaDeEstado, "utf8"));
+		if (typeof leido !== "object" || leido === null) return {};
+		return Object.fromEntries(
+			Object.entries(leido).filter((par): par is [string, number] => typeof par[1] === "number"),
+		);
+	} catch {
+		return {};
+	}
 }
 
 /**
@@ -72,9 +100,7 @@ function resumen(salida: string): string {
  */
 export function procesarFin(raiz: string, revision: ResultadoDeRevision, continuando: boolean): RespuestaDeFin {
 	const rutaDeEstado = join(raiz, archivoDeEstado);
-	const intentos: Record<string, number> = existsSync(rutaDeEstado)
-		? JSON.parse(readFileSync(rutaDeEstado, "utf8"))
-		: {};
+	const intentos = leerIntentos(rutaDeEstado);
 	const guardar = (estado: Record<string, number>): void => {
 		mkdirSync(dirname(rutaDeEstado), { recursive: true });
 		writeFileSync(rutaDeEstado, `${JSON.stringify(estado, null, "\t")}\n`);
@@ -93,7 +119,7 @@ export function procesarFin(raiz: string, revision: ResultadoDeRevision, continu
 	if (intento < intentosAntesDelProtocolo) {
 		return {
 			codigo: 2,
-			mensaje: `Revisión rápida en rojo (intento ${intento} de ${intentosAntesDelProtocolo} sobre este problema). Resuélvelo con el bucle de resolución: entiende la causa, corrige y comprueba solo este problema; si ya lo intentaste, usa otro enfoque.\n\n${resumen(revision.salida)}`,
+			mensaje: `Revisión rápida en rojo (intento ${intento} de ${intentosAntesDelProtocolo} sobre este problema). Resuélvelo con el bucle de resolución: entiende la causa, corrige y comprueba solo este problema; si ya lo intentaste, usa otro enfoque.\n\n${finalDeLaSalida(revision.salida)}`,
 		};
 	}
 	if (intento === intentosAntesDelProtocolo || !continuando) {
@@ -103,7 +129,7 @@ export function procesarFin(raiz: string, revision: ResultadoDeRevision, continu
 				: "Modo supervisado: detente y pregúntale a Bruno, con lo que intentaste, lo que viste y las opciones que ves.";
 		return {
 			codigo: 2,
-			mensaje: `Tercer intento fallido sobre el mismo problema. ${protocolo}\n\n${resumen(revision.salida)}`,
+			mensaje: `Tercer intento fallido sobre el mismo problema. ${protocolo}\n\n${finalDeLaSalida(revision.salida)}`,
 		};
 	}
 	// Ya se pidió el protocolo y el turno sigue por este gancho: se deja terminar para no dar vueltas.
@@ -123,12 +149,7 @@ if (import.meta.main) {
 	} catch {
 		// Sin entrada legible se toma como un fin de turno normal.
 	}
-	const corrida = spawnSync(process.execPath, ["scripts/revision-rapida.ts"], { cwd: raiz, encoding: "utf8" });
-	const { codigo, mensaje } = procesarFin(
-		raiz,
-		{ pasa: corrida.status === 0, salida: `${corrida.stdout}${corrida.stderr}` },
-		continuando,
-	);
+	const { codigo, mensaje } = procesarFin(raiz, revisionRapidaCapturada(raiz), continuando);
 	// Con el código 2, Claude Code le pasa a Claude lo que sale por la salida de errores.
 	if (codigo === 2) console.error(mensaje);
 	process.exit(codigo);

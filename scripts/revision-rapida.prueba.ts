@@ -5,7 +5,8 @@
 
 import { spawnSync } from "node:child_process";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { borrarRepositorioDePrueba, crearRepositorioDePrueba, escribir, git } from "./repositorio-de-prueba.ts";
+import { git } from "./archivos.ts";
+import { borrarRepositorioDePrueba, crearRepositorioDePrueba, escribir } from "./repositorio-de-prueba.ts";
 
 /** Corre `scripts/revision-rapida.ts` en el repositorio temporal y regresa si pasó y lo que dijo. */
 function revisionRapida(raiz: string): { pasa: boolean; salida: string } {

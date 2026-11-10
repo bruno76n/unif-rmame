@@ -4,7 +4,7 @@
  *
  * Todo se hace con enteros: los productos que pueden pasar de un entero seguro se hacen con `BigInt`,
  * y los porcentajes se convierten a milésimas enteras antes de multiplicar. El redondeo es al más
- * cercano, y la mitad, hacia arriba.
+ * cercano, y la mitad, lejos del cero: un negativo da exactamente el contrario de su positivo.
  */
 
 import { type Centavos, centavos } from "../tipos/base.ts";
@@ -27,16 +27,16 @@ function deBigInt(valor: bigint): Centavos {
 }
 
 /**
- * Divide redondeando al más cercano, con la mitad hacia arriba.
+ * Divide redondeando al más cercano, con la mitad lejos del cero.
  * @param dividendo Cualquier entero.
  * @param divisor Un entero positivo.
+ * @returns Un negativo da exactamente el contrario de su positivo: −0.5 es −1 y 0.5 es 1.
  */
 function dividirRedondeando(dividendo: bigint, divisor: bigint): bigint {
-	// floor((2·dividendo + divisor) / (2·divisor)) redondea al más cercano con la mitad hacia arriba.
-	const numerador = 2n * dividendo + divisor;
-	const denominador = 2n * divisor;
-	const cociente = numerador / denominador;
-	return numerador % denominador !== 0n && numerador < 0n ? cociente - 1n : cociente;
+	const absoluto = dividendo < 0n ? -dividendo : dividendo;
+	// (2·|dividendo| + divisor) / (2·divisor), truncado, redondea |dividendo| / divisor con la mitad hacia arriba.
+	const redondeado = (2n * absoluto + divisor) / (2n * divisor);
+	return dividendo < 0n ? -redondeado : redondeado;
 }
 
 /**
@@ -77,9 +77,11 @@ const formatoConCentavos = new Intl.NumberFormat("es-MX", {
  * Al formato se le pasa el monto como texto decimal exacto, así que nunca pasa por un número con decimales.
  */
 export function centavosATexto(monto: Centavos, opciones: { conCentavos?: boolean } = {}): string {
-	const absoluto = Math.abs(monto);
-	const decimal = `${monto < 0 ? "-" : ""}${Math.trunc(absoluto / 100)}.${String(absoluto % 100).padStart(2, "0")}`;
-	if (!esNumeroDecimal(decimal)) throw new RangeError(`${monto} no se pudo escribir como número decimal`);
+	// Sin centavos se redondea aquí, con la regla del dinero, y no con la del formato.
+	const mostrado = opciones.conCentavos === true ? monto : aPesoEntero(monto);
+	const absoluto = Math.abs(mostrado);
+	const decimal = `${mostrado < 0 ? "-" : ""}${Math.trunc(absoluto / 100)}.${String(absoluto % 100).padStart(2, "0")}`;
+	if (!esNumeroDecimal(decimal)) throw new RangeError(`${mostrado} no se pudo escribir como número decimal`);
 	const formato = opciones.conCentavos === true ? formatoConCentavos : formatoSinCentavos;
 	return formato.format(decimal);
 }
@@ -94,21 +96,23 @@ function esNumeroDecimal(texto: string): texto is `${number}` {
 }
 
 /**
- * Redondea un monto a peso entero, al más cercano y con la mitad hacia arriba.
+ * Redondea un monto a peso entero, al más cercano y con la mitad lejos del cero.
  * @param monto Los centavos.
- * @returns Un múltiplo de 100. Lo usa todo precio que sale de un porcentaje, como el de mayoreo.
+ * @returns Un múltiplo de 100. Lo usa todo precio que sale de un porcentaje, como el de mayoreo, y
+ * `centavosATexto` al mostrar sin centavos, para que la pantalla diga el mismo peso que se guarda.
+ * @throws RangeError si el resultado ya no cabe en un entero seguro (montos de más de 90 billones de pesos).
  */
 export function aPesoEntero(monto: Centavos): Centavos {
-	const resto = ((monto % 100) + 100) % 100;
-	return centavos(monto - resto + (resto >= 50 ? 100 : 0));
+	return deBigInt(dividirRedondeando(BigInt(monto), 100n) * 100n);
 }
 
 /**
  * Saca un porcentaje de un monto y lo redondea al centavo.
  * @param monto Los centavos.
  * @param porcentaje Como lo guarda la base (`numeric(6,3)`): 12.5 o «12.500» es el 12.5 %.
- * @returns El porcentaje del monto, en centavos.
- * @throws RangeError si el porcentaje es negativo o tiene más de tres decimales.
+ * @returns El porcentaje del monto, en centavos, con la mitad lejos del cero.
+ * @throws RangeError si el porcentaje es negativo o tiene más de tres decimales, o si el resultado no
+ * cabe en un entero seguro.
  */
 export function aplicarPorcentaje(monto: Centavos, porcentaje: number | string): Centavos {
 	const partes = formaDePorcentaje.exec(String(porcentaje));

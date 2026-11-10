@@ -6,7 +6,8 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { borrarRepositorioDePrueba, crearRepositorioDePrueba, escribir, git } from "./repositorio-de-prueba.ts";
+import { git } from "./archivos.ts";
+import { borrarRepositorioDePrueba, crearRepositorioDePrueba, escribir } from "./repositorio-de-prueba.ts";
 import { correrRevision } from "./revision.ts";
 import { huellaDelArbol, huellaDelIndice, leerSello } from "./sello.ts";
 
@@ -54,6 +55,12 @@ describe("la revisión completa en verde guarda el sello con la huella de lo rev
 		escribir(raiz, "docs/registros/BITACORA.md", "# Bitácora\n\n| una línea |\n");
 		escribir(raiz, "docs/registros/sesiones/2026-11-10-fase-01.md", "# Sesión\n");
 		expect(huellaDelArbol(raiz)).toBe(antes);
+	});
+
+	it("un archivo que no es .md bajo docs/registros/ sí cambia la huella", () => {
+		const antes = huellaDelArbol(raiz);
+		escribir(raiz, "docs/registros/algo.prueba.ts", "export const a = 1;\n");
+		expect(huellaDelArbol(raiz)).not.toBe(antes);
 	});
 
 	it("cambiar cualquier otro archivo sí cambia la huella", () => {

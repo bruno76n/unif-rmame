@@ -73,10 +73,16 @@ function leerPaquetes(): { ruta: string; contenido: Record<string, unknown> }[] 
 	return rutas.map((ruta) => ({ ruta, contenido: JSON.parse(readFileSync(join(raiz, ruta), "utf8")) }));
 }
 
+/** Los pares de texto de un objeto leído de JSON; cualquier otra cosa da una lista vacía. */
+function textosDe(valor: unknown): [string, string][] {
+	if (typeof valor !== "object" || valor === null) return [];
+	return Object.entries(valor).filter((par): par is [string, string] => typeof par[1] === "string");
+}
+
 /** Las dependencias de un `package.json`, de todas sus listas, con lo que piden. */
 function dependenciasDe(contenido: Record<string, unknown>): [string, string][] {
 	const listas = ["dependencies", "devDependencies", "optionalDependencies", "peerDependencies"];
-	return listas.flatMap((lista) => Object.entries((contenido[lista] ?? {}) as Record<string, string>));
+	return listas.flatMap((lista) => textosDe(contenido[lista]));
 }
 
 /**
@@ -157,7 +163,7 @@ describe("pnpm install instala exactamente las versiones de la arquitectura y ni
 	it("el package.json raíz fija pnpm y Node con las versiones del stack", () => {
 		const raizPaquete = paquetes[0]?.contenido ?? {};
 		expect(raizPaquete.packageManager).toBe(`pnpm@${versionEnElStack(stack, "pnpm")}`);
-		expect((raizPaquete.engines as Record<string, string> | undefined)?.node).toBe(versionEnElStack(stack, "node.js"));
+		expect(Object.fromEntries(textosDe(raizPaquete.engines)).node).toBe(versionEnElStack(stack, "node.js"));
 	});
 });
 

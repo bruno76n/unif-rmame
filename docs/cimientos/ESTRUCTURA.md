@@ -186,7 +186,7 @@ uniformame/
 ├── biome.json
 ├── vitest.config.ts           toma los *.prueba.ts
 ├── .env.ejemplo · .gitignore
-├── .githooks/pre-commit       llama a scripts/gancho-git.ts
+├── .githooks/               pre-commit y pre-merge-commit: los dos llaman a scripts/gancho-git.ts
 ├── .worktreeinclude           copia .env a cada worktree
 ├── .claude/
 │   ├── settings.json          los ganchos de inicio, de después de editar y de fin; worktree.baseRef
@@ -212,7 +212,7 @@ uniformame/
     ├── gancho-edicion.ts      el gancho después de editar
     ├── gancho-fin.ts          el gancho de fin y el conteo de intentos
     ├── repositorio-de-prueba.ts  los repositorios temporales de las pruebas
-    └── *.prueba.ts            una prueba por script
+    └── *.prueba.ts            las pruebas, junto a su script
 ```
 
 **Los scripts de `package.json`:**
@@ -228,9 +228,9 @@ uniformame/
 
 **Las herramientas** se llaman desde `node_modules/.bin` (`scripts/comandos.ts`), sin rutas de la máquina: lo mismo corre en la nube y en la Mac.
 
-**La huella del sello** (`scripts/sello.ts`): por cada archivo que se guardaría (lo que git sigue y lo nuevo que `.gitignore` no deja fuera), su ruta y el hash de git de su contenido, ordenados y pasados por SHA-256. No incluye `docs/registros/`. Al revisar se calcula sobre el árbol (`git hash-object`); al hacer el commit, sobre el índice (`git ls-files -s`). Por eso el sello vale solo si se guarda exactamente lo revisado: con todo agregado (`git add -A`), las dos huellas son iguales. La revisión completa calcula la huella antes y después de sus pasos y no sella si algo cambió mientras corría. El sello vive en `.revision/sello.json`, fuera de git.
+**La huella del sello** (`scripts/sello.ts`): por cada archivo que se guardaría (lo que git sigue y lo nuevo que `.gitignore` no deja fuera), su ruta y el hash de git de su contenido, ordenados y pasados por SHA-256. No incluye los registros: los `.md` de `docs/registros/` (cualquier otro archivo ahí se sella como código). Al revisar se calcula sobre el árbol (`git hash-object`); al hacer el commit, sobre el índice (`git ls-files -s`). Por eso el sello vale solo si se guarda exactamente lo revisado: con todo agregado (`git add -A`), las dos huellas son iguales. La revisión completa calcula la huella antes y después de sus pasos y no sella si algo cambió mientras corría. El sello vive en `.revision/sello.json`, fuera de git.
 
-**El gancho de git** (`.githooks/pre-commit` → `scripts/gancho-git.ts`) ve lo que cambia en el índice: si todo está en `docs/registros/`, pasa; si todo es `*.md`, corre `scripts/docs-revisar.ts`; si hay código, pide que el sello sea igual a la huella del índice.
+**El gancho de git** (`.githooks/pre-commit` y `.githooks/pre-merge-commit` → `scripts/gancho-git.ts`) ve lo que cambia en el índice, también en un merge: si todo son registros, pasa; si todo es `*.md`, rechaza el commit si hay documentos cambiados sin agregar (porque `docs:revisar` lee el árbol de trabajo) y si no, corre `scripts/docs-revisar.ts`; si hay código, pide que el sello sea igual a la huella del índice. Un merge con código se hace con `git merge --no-commit`, `pnpm revision` y `git commit`.
 
 **La búsqueda de secretos** (`scripts/secretos.ts`) revisa lo que se va a guardar: llaves privadas, direcciones de Postgres con contraseña, el secreto de cliente y las llaves de API de Google, las llaves de Resend, un `.env` que `.gitignore` no deja fuera o que se va a guardar, y cualquier variable de `.env.ejemplo` escrita con un valor (`NOMBRE=algo`), que cubre también las credenciales de R2. Dice el archivo y el renglón, nunca el valor.
 
@@ -241,6 +241,13 @@ uniformame/
 - **las conexiones:** si el «Se conecta con» de A enlaza a B, el de B enlaza a A;
 - **el índice:** cada archivo revisado está enlazado desde `docs/INDICE.md`.
 
-De `docs/registros/` solo revisa el encabezado de la bitácora y de `REGISTROS.md`. Dice cada error con su archivo y su renglón.
+De `docs/registros/` solo revisa el encabezado de la bitácora y de `REGISTROS.md`; las carpetas de dentro (sesiones y auditorías) no. Dice cada error con su archivo y su renglón.
 
-**Las pruebas:** `scripts/versiones.prueba.ts`, `revision-rapida.prueba.ts`, `sello.prueba.ts`, `gancho-git.prueba.ts`, `secretos.prueba.ts`, `docs-revisar.prueba.ts`, `gancho-inicio.prueba.ts`, `gancho-edicion.prueba.ts` y `gancho-fin.prueba.ts`, cada una en un repositorio de git temporal con la configuración del real y `node_modules` enlazado.
+**Las pruebas:**
+
+- en un repositorio de git temporal con la configuración del real y `node_modules` enlazado (`scripts/repositorio-de-prueba.ts`): `revision-rapida.prueba.ts`, `sello.prueba.ts`, `gancho-git.prueba.ts`, `secretos.prueba.ts`, `docs-revisar.prueba.ts` y `gancho-edicion.prueba.ts`;
+- en uno temporal sin enlazar `node_modules`, porque instala de verdad: `gancho-inicio.prueba.ts`;
+- con salidas simuladas en una carpeta temporal, y con la revisión rápida real en un repositorio temporal: `gancho-fin.prueba.ts`;
+- sobre el repositorio real, que solo leen: `versiones.prueba.ts` (las versiones) y `revision.prueba.ts` (los pasos de la revisión completa y su orden).
+
+`archivos.ts` y `comandos.ts` no tienen prueba propia: los prueban las de los scripts que los usan.

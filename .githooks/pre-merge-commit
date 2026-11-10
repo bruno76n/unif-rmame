@@ -1,0 +1,5 @@
+#!/bin/sh
+# Unifórmame · gancho de git antes de cada merge que hace su propio commit.
+# Fase 1 · docs/cimientos/ESTRUCTURA.md («Comandos», el sello). Revisa lo mismo que pre-commit:
+# el índice ya trae lo que queda unido.
+exec node scripts/gancho-git.ts

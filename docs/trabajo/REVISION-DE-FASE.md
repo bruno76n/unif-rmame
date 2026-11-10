@@ -68,4 +68,8 @@ Al final, el auditor dice qué no pudo revisar y por qué.
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 1: cómo se lanza la auditoría y dónde quedan los reportes.*
+**Fase 1.**
+
+- **Cómo se lanza la auditoría:** la sesión principal lanza un subagente nuevo, sin el contexto de la sesión, con la orden de leer y seguir [auditor](../../.claude/agents/auditor.md). Le pasa la rama, el commit base de la fase (`git diff` contra la rama principal; en la fase 1, contra el commit de los archivos de creación, porque `main` todavía no existía) y lo que no puede correr (`pnpm revision`, que sella, ni `pnpm install`). El auditor solo lee y corre pruebas, y entrega su reporte como respuesta.
+- **Dónde quedan los reportes:** en `docs/registros/auditorias/AAAA-MM-DD-fase-NN.md`, con una columna más que dice qué se hizo con cada hallazgo. Son registros: no entran a la huella del sello y `pnpm docs:revisar` no revisa su contenido.
+- **El revisor distinto:** lo corregido lo revisa otro subagente sin contexto, que recibe solo la lista de hallazgos y el `git diff` de las correcciones.

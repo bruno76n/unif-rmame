@@ -13,11 +13,20 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { archivosDelArbol, git } from "./archivos.ts";
 
-/** Lo que la huella no incluye: los registros (ver docs/trabajo/FORMA-DE-TRABAJO.md, «Los registros»). */
-export const carpetaDeRegistros = "docs/registros/";
+/** Donde viven los registros (ver docs/trabajo/FORMA-DE-TRABAJO.md, «Los registros»). */
+const carpetaDeRegistros = "docs/registros/";
 
 /** Donde vive el sello; `.gitignore` lo deja fuera de git. */
 const archivoDelSello = ".revision/sello.json";
+
+/**
+ * Dice si una ruta es un registro: un `.md` bajo `docs/registros/` (la bitácora, las sesiones, `REGISTROS.md`).
+ * Cualquier otro archivo en esa carpeta se revisa y se sella como código.
+ * @param ruta La ruta relativa a la raíz.
+ */
+export function esRegistro(ruta: string): boolean {
+	return ruta.startsWith(carpetaDeRegistros) && ruta.endsWith(".md");
+}
 
 /**
  * Dice si una ruta cuenta para la huella.
@@ -25,7 +34,7 @@ const archivoDelSello = ".revision/sello.json";
  * @returns `false` para los registros.
  */
 export function cuentaParaLaHuella(ruta: string): boolean {
-	return !ruta.startsWith(carpetaDeRegistros);
+	return !esRegistro(ruta);
 }
 
 /**

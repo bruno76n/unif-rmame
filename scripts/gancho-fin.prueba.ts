@@ -10,8 +10,9 @@ import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { archivoDeEstado, procesarFin } from "./gancho-fin.ts";
-import { escribir, raizReal } from "./repositorio-de-prueba.ts";
+import { revisionRapidaCapturada } from "./comandos.ts";
+import { archivoDeEstado, firmaDelProblema, procesarFin } from "./gancho-fin.ts";
+import { borrarRepositorioDePrueba, crearRepositorioDePrueba, escribir, raizReal } from "./repositorio-de-prueba.ts";
 
 const verde = { pasa: true, salida: "✓ Revisión rápida en verde." };
 const errorDeTipos = {
@@ -109,5 +110,49 @@ describe("el gancho de fin cuenta los intentos por problema y, al tercero, pide 
 		expect(archivoDeEstado).toBe(".claude/estado/intentos.json");
 		expect(existsSync(join(raiz, archivoDeEstado))).toBe(true);
 		expect(readFileSync(join(raizReal, ".gitignore"), "utf8")).toContain(".claude/estado/");
+	});
+});
+
+describe("el mismo problema da la misma firma con la salida real de cada herramienta", () => {
+	it("una prueba que falla, corrida dos veces con la revisión rápida real, es el mismo problema", {
+		timeout: 60_000,
+	}, () => {
+		const raiz = crearRepositorioDePrueba();
+		try {
+			escribir(raiz, "scripts/a.ts", "/** Ejemplo. */\nexport const a = (): number => 1;\n");
+			escribir(
+				raiz,
+				"scripts/a.prueba.ts",
+				'import { expect, it } from "vitest";\nimport { a } from "./a.ts";\n\nit("da dos", () => {\n\texpect(a()).toBe(2);\n});\n',
+			);
+			const primera = revisionRapidaCapturada(raiz);
+			const segunda = revisionRapidaCapturada(raiz);
+			expect(primera.pasa).toBe(false);
+			expect(firmaDelProblema(primera.salida)).toBe(firmaDelProblema(segunda.salida));
+		} finally {
+			borrarRepositorioDePrueba(raiz);
+		}
+	});
+
+	it("los tiempos y los conteos de Vitest no cambian la firma", () => {
+		const una =
+			" ❯ scripts/a.prueba.ts (1 test | 1 failed) 7ms\n   × da dos 3ms\n FAIL  scripts/a.prueba.ts > da dos\n✗ Revisión rápida en rojo: Pruebas relacionadas (Vitest).";
+		const otra = una.replace("7ms", "12ms").replace("3ms", "5ms");
+		expect(firmaDelProblema(una)).toBe(firmaDelProblema(otra));
+	});
+
+	it("dos pruebas distintas que fallan son dos problemas", () => {
+		const una = " FAIL  scripts/a.prueba.ts > da dos\n✗ Revisión rápida en rojo: Pruebas relacionadas (Vitest).";
+		expect(firmaDelProblema(una)).not.toBe(firmaDelProblema(una.replace("da dos", "da tres")));
+	});
+
+	it("un estado de intentos dañado no detiene al gancho: empieza de cero", () => {
+		const raiz = mkdtempSync(join(tmpdir(), "uniformame-fin-"));
+		try {
+			escribir(raiz, archivoDeEstado, "{ esto no es json");
+			expect(procesarFin(raiz, errorDeTipos, false).mensaje).toContain("intento 1 de 3");
+		} finally {
+			rmSync(raiz, { recursive: true, force: true });
+		}
 	});
 });

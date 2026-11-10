@@ -10,7 +10,8 @@ import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { borrarRepositorioDePrueba, crearRepositorioDePrueba, git } from "./repositorio-de-prueba.ts";
+import { git } from "./archivos.ts";
+import { borrarRepositorioDePrueba, crearRepositorioDePrueba } from "./repositorio-de-prueba.ts";
 
 /** Corre el gancho de inicio como lo corre Claude Code, con o sin la marca de la nube. */
 function ganchoDeInicio(raiz: string, enLaNube: boolean): { codigo: number | null; salida: string } {

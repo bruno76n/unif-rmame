@@ -7,7 +7,8 @@
  * - que cada enlace relativo lleve a un archivo que existe, y su ancla, a un título de ese archivo;
  * - que cada «Se conecta con» esté en los dos archivos;
  * - que cada archivo esté en docs/INDICE.md.
- * De los registros solo revisa el encabezado de la bitácora y de REGISTROS.md; las sesiones y el
+ * De los registros solo revisa el encabezado de la bitácora y de REGISTROS.md; las carpetas de
+ * registros (las sesiones y las auditorías) y el
  * contenido de los registros no se revisan (ver docs/trabajo/FORMA-DE-TRABAJO.md, «Los registros»).
  */
 
@@ -39,7 +40,8 @@ interface Documento {
 
 const indice = "docs/INDICE.md";
 const registros = "docs/registros/";
-const sesiones = "docs/registros/sesiones/";
+/** Las carpetas de los registros (sesiones, auditorías): su contenido no se revisa. */
+const dentroDeRegistros = /^docs\/registros\/[^/]+\//;
 
 /** Los campos del encabezado, en orden, y los estados que acepta cada tipo de archivo. */
 const encabezadoDeTema = {
@@ -56,7 +58,7 @@ const encabezadoDeFase = {
  * @param ruta La ruta relativa a la raíz.
  */
 function esDeCreacion(ruta: string): boolean {
-	if (!ruta.endsWith(".md") || ruta.startsWith(sesiones)) return false;
+	if (!ruta.endsWith(".md") || dentroDeRegistros.test(ruta)) return false;
 	return ruta.startsWith("docs/") || ruta.startsWith(".claude/") || ruta === "AGENTS.md" || ruta === "CLAUDE.md";
 }
 

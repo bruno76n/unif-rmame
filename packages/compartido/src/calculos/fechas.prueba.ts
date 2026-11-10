@@ -42,6 +42,13 @@ describe("el día de negocio sale en hora de México: un momento de las 23:30 de
 		expect(diaDeNegocio(Temporal.Instant.from("2027-01-01T05:00:00Z")).toString()).toBe("2026-12-31");
 	});
 
+	it("casos fijos en verano: hoy México no cambia de horario; en 2021 todavía tenía horario de verano", () => {
+		expect(diaDeNegocio(Temporal.Instant.from("2026-07-15T05:30:00Z")).toString()).toBe("2026-07-14");
+		expect(diaDeNegocio(Temporal.Instant.from("2026-07-15T06:00:00Z")).toString()).toBe("2026-07-15");
+		expect(diaDeNegocio(Temporal.Instant.from("2021-07-15T04:30:00Z")).toString()).toBe("2021-07-14");
+		expect(diaDeNegocio(Temporal.Instant.from("2021-07-15T05:00:00Z")).toString()).toBe("2021-07-15");
+	});
+
 	it("siempre es la fecha del reloj de México en ese momento", () => {
 		fc.assert(
 			fc.property(momentos, (momento) => {
