@@ -14,6 +14,7 @@ import type { ContratoDeAccion, ContratoDeConsulta, EsquemaDeObjeto } from "@uni
 import type { Temporal } from "temporal-polyfill";
 import type { z } from "zod";
 import type { QuienLlama } from "./acceso/quien.ts";
+import type { Almacen } from "./almacen.ts";
 import type { Base } from "./base/conexion.ts";
 import type { Semilla } from "./base/siembra.ts";
 import type { Transaccion } from "./base/transacciones.ts";
@@ -88,8 +89,12 @@ export interface ContextoDeAccion {
 	interna: (nombre: string, datos: unknown) => Promise<unknown>;
 	/** Llama a la lectura de otro módulo, en esta misma transacción. */
 	lectura: (nombre: string, datos: unknown) => Promise<unknown>;
+	/** Dice si algún módulo ofrece esa lectura (para las que son optativas, como `{modulo}.ve_documento`). */
+	hayLectura: (nombre: string) => boolean;
 	guardarEvento: (evento: Evento) => void;
 	bitacora: (renglon: RenglonDeBitacora) => void;
+	/** El almacén de archivos (R2), si quien abrió la transacción lo tiene. */
+	almacen: Almacen | undefined;
 }
 
 /** Una consulta sensible que se apunta en la bitácora: qué se consultó y de qué documento. */
@@ -187,6 +192,35 @@ export interface Trabajo {
 	correr: (contexto: ContextoDeTrabajo) => Promise<void>;
 }
 
+/** Lo que recibe una ruta fija: quién llama ya identificado, la base, la hora y una transacción si escribe. */
+export interface ContextoDeRuta extends ContextoDeConsulta {
+	/** Abre una transacción con el contexto de una acción con el nombre de la ruta, para escribir. */
+	enTransaccion: <T>(hacer: (contexto: ContextoDeAccion) => Promise<T>) => Promise<T>;
+	/** El almacén de archivos (R2). */
+	almacen: Almacen | undefined;
+}
+
+/** Lo que regresa una ruta fija: un cuerpo JSON con su estado, o una redirección. */
+export type RespuestaDeRuta = { estado: number; cuerpo: unknown } | { redirigir: string };
+
+/**
+ * Una ruta fija que no es acción ni consulta (`POST /v1/archivos/subida`): la registra su módulo y el
+ * servidor la atiende después de identificar a quien llama y revisar su versión (y su `Origin` en un `POST`).
+ */
+export interface RutaFija {
+	/** Su nombre completo, con el del módulo: `admin.subir_archivo`. */
+	nombre: string;
+	metodo: "GET" | "POST";
+	/** La dirección, con sus parámetros como los escribe Fastify: `/v1/archivos/:id`. */
+	url: string;
+	descripcion: string;
+	/** Atiende la petición: su cuerpo, sus parámetros de la dirección y su búsqueda. */
+	atender: (
+		contexto: ContextoDeRuta,
+		peticion: { cuerpo: unknown; parametros: unknown; busqueda: unknown },
+	) => Promise<RespuestaDeRuta>;
+}
+
 /** Un evento ya guardado en la bandeja, como lo ve quien lo atiende. */
 export interface EventoGuardado {
 	id: string;
@@ -218,6 +252,8 @@ export interface Modulo {
 	lectores: Readonly<Record<string, readonly string[]>>;
 	/** Lo que hace al llegar cada tipo de evento (de cualquier módulo). */
 	alEvento: Readonly<Record<string, AlEvento>>;
+	/** Sus rutas fijas. */
+	rutas: readonly RutaFija[];
 }
 
 /**
@@ -276,6 +312,7 @@ export function definirModulo(modulo: Pick<Modulo, "nombre"> & Partial<Modulo>):
 		trabajos: [],
 		lectores: {},
 		alEvento: {},
+		rutas: [],
 		...modulo,
 	};
 }
@@ -293,6 +330,8 @@ export interface RegistroDeModulos {
 	lectores: ReadonlyMap<string, readonly string[]>;
 	/** Por tipo de evento, lo que hacen los módulos al llegar. */
 	alEvento: ReadonlyMap<string, readonly AlEvento[]>;
+	/** Las rutas fijas de todos los módulos. */
+	rutas: readonly RutaFija[];
 }
 
 /** Dice si lo que exportó un `index.ts` tiene la forma de un módulo. */
@@ -342,6 +381,13 @@ export function registrarModulos(modulos: readonly Modulo[]): RegistroDeModulos 
 		trabajos,
 		lectores,
 		alEvento,
+		rutas: modulos.flatMap((modulo) => {
+			for (const ruta of modulo.rutas) {
+				if (!ruta.nombre.startsWith(`${modulo.nombre}.`))
+					throw new Error(`${ruta.nombre} no es del módulo ${modulo.nombre}`);
+			}
+			return modulo.rutas;
+		}),
 	};
 }
 

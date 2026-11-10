@@ -29,7 +29,7 @@ import {
 	uniqueIndex,
 	uuid,
 } from "drizzle-orm/pg-core";
-import { columnasComunes, columnasDeBaja, columnaXidEscritura } from "../../nucleo/base/columnas.ts";
+import { columnasComunes, columnasDeAparato, columnasDeBaja, columnaXidEscritura } from "../../nucleo/base/columnas.ts";
 import { ubicaciones } from "../inventario/tablas.ts";
 
 /** Un momento: `timestamptz`. */
@@ -421,5 +421,44 @@ export const avisos = pgTable(
 			.on(tabla.creadoEn)
 			.where(sql`${tabla.porCorreo} and ${tabla.correoEnviadoEn} is null`),
 		check("avisos_tipo", sql.raw(`tipo in (${tiposDeAvisoDelNucleo.map((tipo) => `'${tipo}'`).join(", ")})`)),
+	],
+);
+
+/** Los propósitos de un archivo: de ellos salen los tipos que acepta. */
+export const propositosDeArchivo = [
+	"foto",
+	"comprobante",
+	"documento_contador",
+	"factura_proveedor",
+	"etiqueta",
+	"guia",
+	"pdf_documento",
+	"evidencia_restauracion",
+] as const;
+
+/** El registro de cada archivo que vive en R2: la base no guarda el contenido. */
+export const archivos = pgTable(
+	"archivos",
+	{
+		id: uuid("id").primaryKey(),
+		proposito: text("proposito").notNull(),
+		modulo: text("modulo").notNull(),
+		entidad: text("entidad"),
+		entidadId: uuid("entidad_id"),
+		nombreOriginal: text("nombre_original").notNull(),
+		tipoMime: text("tipo_mime").notNull(),
+		tamanoBytes: bigint("tamano_bytes", { mode: "number" }).notNull(),
+		sha256: text("sha256").notNull(),
+		almacenClave: text("almacen_clave").notNull(),
+		subidoEn: momento("subido_en"),
+		...columnasDeAparato(),
+		...bajaSinReactivar(),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		uniqueIndex("archivos_almacen_clave").on(tabla.almacenClave),
+		index("archivos_entidad").on(tabla.entidad, tabla.entidadId),
+		index("archivos_sha256").on(tabla.sha256),
+		check("archivos_proposito", sql.raw(`proposito in (${propositosDeArchivo.map((p) => `'${p}'`).join(", ")})`)),
 	],
 );

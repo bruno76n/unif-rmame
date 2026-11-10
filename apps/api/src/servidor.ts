@@ -28,12 +28,13 @@ import {
 	crearContexto,
 	type ServiciosDelCorredor,
 } from "./nucleo/acciones/corredor.ts";
+import type { Almacen } from "./nucleo/almacen.ts";
 import type { Base } from "./nucleo/base/conexion.ts";
 import { enTransaccion } from "./nucleo/base/transacciones.ts";
 import type { Entorno } from "./nucleo/entorno.ts";
 import { ErrorDeApi, responderError } from "./nucleo/http/errores.ts";
 import { validarSinTransformar } from "./nucleo/http/validacion.ts";
-import type { ConsultaSensible, RegistroDeModulos } from "./nucleo/modulos.ts";
+import type { ConsultaSensible, ContextoDeRuta, RegistroDeModulos, RutaFija } from "./nucleo/modulos.ts";
 import type { AvisosEnVivo } from "./nucleo/sincronizacion/eventos-en-vivo.ts";
 
 declare module "fastify" {
@@ -89,6 +90,8 @@ export interface DependenciasDelServidor {
 	destinoDelRegistro?: DestinationStream;
 	/** Los avisos en vivo (`GET /v1/eventos`); sin ellos, la ruta no existe. */
 	avisosEnVivo?: AvisosEnVivo;
+	/** El almacén de archivos (R2): lo usan las rutas y las internas de los archivos. */
+	almacen?: Almacen;
 	/** De dónde sale «ahora»; las pruebas la fijan. */
 	reloj?: () => Temporal.Instant;
 }
@@ -197,7 +200,12 @@ export async function crearServidor(dependencias: DependenciasDelServidor) {
 			handler: async (peticion, respuesta) => {
 				respuesta.header("cache-control", "no-store");
 				return correrAccion(
-					{ base, registro, servicios },
+					{
+						base,
+						registro,
+						servicios,
+						...(dependencias.almacen === undefined ? {} : { almacen: dependencias.almacen }),
+					},
 					{ accion, quien: quienDe(peticion), cuerpo: cuerpoValidado(peticion.body), ahora: reloj() },
 				);
 			},
@@ -257,6 +265,49 @@ export async function crearServidor(dependencias: DependenciasDelServidor) {
 				},
 			),
 		);
+	}
+
+	for (const ruta of registro.rutas) registrarRutaFija(ruta);
+
+	/**
+	 * Una ruta fija de un módulo: identifica, revisa la versión (y el `Origin` en un `POST`) y la atiende con
+	 * un contexto que puede abrir su transacción.
+	 */
+	function registrarRutaFija(ruta: RutaFija): void {
+		app.route({
+			method: ruta.metodo,
+			url: ruta.url,
+			schema: { description: ruta.descripcion, tags: [ruta.nombre.split(".")[0] ?? ""] },
+			preValidation:
+				ruta.metodo === "POST" ? [identificarYRevisarVersion, revisarOrigen] : [identificarYRevisarVersion],
+			handler: async (peticion, respuesta) => {
+				const quien = quienDe(peticion);
+				const ahora = reloj();
+				const contexto: ContextoDeRuta = {
+					base,
+					quien,
+					ahora,
+					diaDeNegocio: diaDeNegocio(ahora),
+					almacen: dependencias.almacen,
+					apuntarConsultaSensible: (renglon) => apuntarConsultaSensible(quien, ruta.nombre, ahora, renglon),
+					enTransaccion: (hacer) =>
+						enTransaccion(base, (transaccion) =>
+							hacer(
+								crearContexto(registro, transaccion, quien, ruta.nombre, ahora, undefined, dependencias.almacen)
+									.contexto,
+							),
+						),
+				};
+				const resultado = await ruta.atender(contexto, {
+					cuerpo: peticion.body,
+					parametros: peticion.params,
+					busqueda: peticion.query,
+				});
+				respuesta.header("cache-control", "no-store");
+				if ("redirigir" in resultado) return respuesta.redirect(resultado.redirigir, 302);
+				return respuesta.code(resultado.estado).send(resultado.cuerpo);
+			},
+		});
 	}
 
 	if (dependencias.avisosEnVivo !== undefined) registrarEventosEnVivo(dependencias.avisosEnVivo);

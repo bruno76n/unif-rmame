@@ -17,6 +17,14 @@ const esquema = z.object({
 	BASE_DATOS_URL_DUENO: z.url({ protocol: /^postgres(ql)?$/ }).optional(),
 	/** La llave de Resend: la usa el worker para los correos; en local no hace falta. */
 	RESEND_LLAVE: z.string().min(1).optional(),
+	/** La cuenta de Cloudflare de R2 y las credenciales de sus dos cubos. */
+	R2_CUENTA: z.string().min(1).optional(),
+	R2_ARCHIVOS_LLAVE_ID: z.string().min(1).optional(),
+	R2_ARCHIVOS_SECRETO: z.string().min(1).optional(),
+	R2_RESPALDOS_LLAVE_ID: z.string().min(1).optional(),
+	R2_RESPALDOS_SECRETO: z.string().min(1).optional(),
+	/** Solo en local: la dirección del almacén compatible con S3 en lugar de la de R2. */
+	R2_DIRECCION: z.url({ protocol: /^https?$/ }).optional(),
 });
 
 /** Las variables ya validadas. */

@@ -17,6 +17,7 @@ import {
 	implementarConsulta,
 } from "../../../modulos.ts";
 import {
+	adjuntar,
 	agregarRenglon,
 	confirmar,
 	crearNota,
@@ -133,6 +134,17 @@ export default definirModulo({
 				},
 			};
 		}),
+		implementarAccion(adjuntar, async (contexto, datos) => {
+			await contexto.interna("admin.ligar_archivo", {
+				archivo_id: datos.archivo_id,
+				proposito: "comprobante",
+				modulo: "prueba",
+				entidad: "prueba_notas",
+				entidad_id: datos.nota_id,
+			});
+			contexto.bitacora({ descripcion: "Adjuntó un comprobante", entidad: "prueba_notas", entidadId: datos.nota_id });
+			return { resultado: { mensaje: "Comprobante adjunto" } };
+		}),
 		implementarAccion(confirmar, async (contexto) => {
 			contexto.bitacora({ descripcion: "Confirmó" });
 			return { resultado: { mensaje: "Confirmado" } };
@@ -220,6 +232,11 @@ export default definirModulo({
 		},
 	},
 	lecturas: {
+		// Quién ve una nota, para abrir sus archivos: lo mismo que su consulta.
+		ve_documento: async (contexto, datos) => {
+			const id = typeof datos === "object" && datos !== null && "entidad_id" in datos ? String(datos.entidad_id) : "";
+			return (await notaVisible(contexto, id)) !== undefined;
+		},
 		texto: async (contexto, datos) => {
 			const id = typeof datos === "object" && datos !== null && "id" in datos ? String(datos.id) : "";
 			const [nota] = await contexto.transaccion.select({ texto: notas.texto }).from(notas).where(eq(notas.id, id));

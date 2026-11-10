@@ -120,4 +120,34 @@ Los dos van en la sección `tecnico`.
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 4.*
+**Fase 4, parte 5.**
+
+- **La tabla** `archivos` está en `apps/api/src/modulos/admin/tablas.ts` (migración `0007_archivos.sql`), con su disparador común. Quien la subió va en `creado_por` (una cuenta) o en `dispositivo_id` y `persona_id` (un aparato).
+- **El almacén** (`apps/api/src/nucleo/almacen.ts`) usa el SDK de S3 contra R2 (`https://{R2_CUENTA}.r2.cloudflarestorage.com`, región `auto`, rutas por cubo), con las sumas automáticas del SDK apagadas.
+  - La dirección de subida firma `content-type`, `content-length` y `x-amz-checksum-sha256` como encabezados que el cliente manda tal cual.
+  - La revisión (`HEAD` con `ChecksumMode`) da el tamaño y la suma.
+  - La bajada lleva su `content-disposition`.
+  - Los cubos son `uniformame-archivos` y `uniformame-respaldos`.
+- **Las rutas** las registra `admin` como rutas fijas (`modulos/admin/rutas/archivos.ts`; decisión 362).
+  - **`POST /v1/archivos/subida`** revisa la forma, el departamento del módulo (`departamentosDelModulo`; un aparato, por ahora a cualquier módulo), el tipo del propósito y el tamaño. Escribe el archivo sin `subido_en` y regresa `archivo_id`, `url_subida` y `encabezados`. Un aparato que repite su subida con el mismo `archivo_id` recibe otra vez la dirección.
+  - **`GET /v1/archivos/{id}`** redirige (`302`) a la dirección firmada. Un archivo sin ligar solo lo abre quien lo subió. Uno ligado lo abre quien pasa la lectura `{modulo}.ve_documento` del módulo dueño (decisión 363); si el módulo no la tiene, nadie.
+- **`admin.ligar_archivo`** (`internas/ligar-archivo.ts`) bloquea el archivo y revisa:
+  - que exista;
+  - que sea del propósito;
+  - que lo haya subido quien llama;
+  - que no sea de otro documento;
+  - que R2 lo tenga con su tamaño y su suma.
+
+  Ligarlo otra vez al mismo documento no hace nada.
+- **`admin.guardar_archivo`** (`internas/guardar-archivo.ts`) sube lo que genera el servidor con su suma y regresa una dirección para bajarlo.
+- **En local** (decisión 361), el almacén es versitygw v1.9.0 en `compose.yaml` (con `VGW_REGION=auto`), en `R2_DIRECCION`. `pnpm local` crea los dos cubos. Antes de escogerlo se probó aquí:
+  - la subida firmada con suma pasa;
+  - con otro contenido responde `BadDigest`;
+  - sin los encabezados firmados responde `403`;
+  - la revisión da el tamaño y la suma;
+  - la bajada lleva su nombre;
+  - un enlace vencido responde `403`.
+- **Las pruebas**, con el simulador de R2 y el SDK de verdad:
+  - `acciones/subir-archivo.prueba.ts` (tipo, tamaño, departamento, la firma que vence y quién abre);
+  - `internas/ligar-archivo.prueba.ts` (no llegó, suma distinta, ajeno, ya ligado, otro propósito, no existe, y `guardar_archivo`).
+  - La lectura de prueba es `prueba.ve_documento`.

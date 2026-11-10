@@ -2,8 +2,8 @@
  * Los parámetros que declara `admin`: los generales que usan todos, si cada aviso va por correo, las
  * versiones mínimas de cada app, cuánto se guardan los eventos y cada cuánto se apunta una consulta sensible.
  * Fase 4 · docs/modulos/admin/configuracion.md («Parámetros»), docs/cimientos/API.md,
- * docs/cimientos/EVENTOS-Y-TRABAJOS.md («Parámetros»), docs/modulos/admin/bitacora.md y
- * docs/modulos/admin/avisos.md («Parámetros»)
+ * docs/cimientos/EVENTOS-Y-TRABAJOS.md («Parámetros»), docs/modulos/admin/bitacora.md,
+ * docs/modulos/admin/avisos.md y docs/modulos/admin/archivos.md («Parámetros»)
  */
 
 import { type DefinicionDeParametro, semillaDeParametros } from "../../nucleo/parametros.ts";
@@ -91,6 +91,28 @@ export const parametrosDeAdmin: readonly DefinicionDeParametro[] = [
 		inicial: 10,
 		minimo: 1,
 		orden: 940,
+	},
+	{
+		clave: "admin.archivo_tamano_max_mb",
+		seccion: "tecnico",
+		nombre: "Tamaño máximo de un archivo",
+		explicacion: "El tamaño máximo de cualquier archivo que se sube",
+		tipo: "entero",
+		unidad: "MB",
+		inicial: 20,
+		minimo: 1,
+		orden: 950,
+	},
+	{
+		clave: "admin.minutos_enlace_archivo",
+		seccion: "tecnico",
+		nombre: "Minutos que vale un enlace a un archivo",
+		explicacion: "Cuánto valen las direcciones firmadas de subida y de bajada",
+		tipo: "entero",
+		unidad: "min",
+		inicial: 5,
+		minimo: 1,
+		orden: 960,
 	},
 	{
 		clave: "admin.dias_guardar_eventos",

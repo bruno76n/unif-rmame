@@ -131,8 +131,10 @@ describe("una edición con versión vieja recibe 409 con la versión actual y su
 				comandoId: "01936f2e-0000-7000-8000-0000000000aa",
 				interna: async () => undefined,
 				lectura: async () => undefined,
+				hayLectura: () => false,
 				guardarEvento: () => {},
 				bitacora: () => {},
+				almacen: undefined,
 			};
 			return tomarVersion(contexto, notas, id, version, async () => {
 				// Otra persona intenta cambiarla justo mientras se lee: tiene que esperar (aquí, rendirse).

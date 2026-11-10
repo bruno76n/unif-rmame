@@ -17,6 +17,7 @@ import { modulosDeLaBitacora } from "../../modulos/admin/tablas.ts";
 import { crearServidor, type ServiciosDelServidor } from "../../servidor.ts";
 import type { QuienLlama } from "../acceso/quien.ts";
 import { escribirBitacoraConAdmin, guardarEventosConAdmin } from "../acciones/corredor.ts";
+import type { Almacen } from "../almacen.ts";
 import { crearBase } from "../base/conexion.ts";
 import { type Semilla, sembrarSistema } from "../base/siembra.ts";
 import { ErrorDeApi } from "../http/errores.ts";
@@ -205,13 +206,15 @@ async function crearBaseConTablasDePrueba(semillas: readonly Semilla[]): Promise
 /**
  * Arma la API de prueba: una base copia con las tablas del módulo de prueba y el registro de esta carpeta.
  * @param opciones `entorno` (por omisión, `pruebas`); `avisosEnVivo` para tener `GET /v1/eventos` (con su
- * latido); `otraInstanciaDe` para levantar una segunda instancia sobre la base de otra, como en Render.
+ * latido); `otraInstanciaDe` para levantar una segunda instancia sobre la base de otra, como en Render;
+ * `almacen` para los archivos (el de R2, sobre su simulador).
  */
 export async function crearServidorDePrueba(
 	opciones: {
 		entorno?: "local" | "pruebas" | "produccion";
 		avisosEnVivo?: { latidoMs: number };
 		otraInstanciaDe?: ServidorDePrueba;
+		almacen?: Almacen;
 	} = {},
 ): Promise<ServidorDePrueba> {
 	const modulosDePrueba = await cargarModulos(join(import.meta.dirname, "modulos"));
@@ -264,6 +267,7 @@ export async function crearServidorDePrueba(
 		servicios,
 		destinoDelRegistro,
 		...(avisosEnVivo === undefined ? {} : { avisosEnVivo }),
+		...(opciones.almacen === undefined ? {} : { almacen: opciones.almacen }),
 	});
 	await app.ready();
 	return {

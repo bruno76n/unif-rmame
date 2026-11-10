@@ -169,3 +169,12 @@ export const ficha = definirConsulta({
 	salida: z.object({ texto: z.string().describe("El texto") }),
 	permiso: { departamento: "ventas" },
 });
+
+/** Adjunta un comprobante a una nota, con `admin.ligar_archivo`. */
+export const adjuntar = definirAccion({
+	nombre: "prueba.adjuntar",
+	descripcion: "Adjunta un comprobante ya subido a una nota",
+	entrada: z.object({ nota_id: z.uuid().describe("La nota"), archivo_id: z.uuid().describe("El archivo subido") }),
+	salida: z.object({}),
+	permiso: { departamento: "ventas" },
+});

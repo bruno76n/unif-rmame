@@ -6,7 +6,8 @@
  *
  * Lo que tiene hoy: `comandos_recibidos` (que usa el corredor de acciones); la bandeja de `eventos` con
  * `admin.guardar_evento` y su depuración; las vueltas de los trabajos programados; los folios; los
- * parámetros, las listas y la empresa; la bitácora con sus alertas; los avisos con su correo. Lo demás llega con las partes de la fase 4 y con la fase 5.
+ * parámetros, las listas y la empresa; la bitácora con sus alertas; los avisos con su correo; los
+ * archivos en R2. Lo demás llega con las partes de la fase 4 y con la fase 5.
  */
 
 import { definirModulo } from "../../nucleo/modulos.ts";
@@ -19,12 +20,15 @@ import { alEventoDeAdmin } from "./al-evento.ts";
 import { semillaDeContadores } from "./dominio/contadores.ts";
 import { crearAviso } from "./internas/crear-aviso.ts";
 import { escribirBitacora } from "./internas/escribir-bitacora.ts";
+import { guardarArchivo } from "./internas/guardar-archivo.ts";
 import { guardarEvento } from "./internas/guardar-evento.ts";
+import { ligarArchivo } from "./internas/ligar-archivo.ts";
 import { tomarFolio } from "./internas/tomar-folio.ts";
 import { parametro } from "./lecturas/parametro.ts";
 import { siguienteFolio } from "./lecturas/siguiente-folio.ts";
 import { semillaDeParametrosDeAdmin } from "./parametros.ts";
 import { lectoresDeAdmin } from "./permisos.ts";
+import { rutasDeArchivos } from "./rutas/archivos.ts";
 import { depurarEventos } from "./trabajos/depurar-eventos.ts";
 import { enviarCorreos } from "./trabajos/enviar-correos.ts";
 
@@ -42,10 +46,13 @@ export default definirModulo({
 		tomar_folio: tomarFolio,
 		escribir_bitacora: escribirBitacora,
 		crear_aviso: crearAviso,
+		ligar_archivo: ligarArchivo,
+		guardar_archivo: guardarArchivo,
 	},
 	lecturas: { parametro, siguiente_folio: siguienteFolio },
 	semillas: [semillaDeContadores, semillaDeParametrosDeAdmin],
 	trabajos: [depurarEventos, enviarCorreos],
 	lectores: lectoresDeAdmin,
 	alEvento: alEventoDeAdmin,
+	rutas: rutasDeArchivos,
 });

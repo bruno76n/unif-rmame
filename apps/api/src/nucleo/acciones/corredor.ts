@@ -14,6 +14,7 @@ import type { Temporal } from "temporal-polyfill";
 import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
 import type { QuienLlama } from "../acceso/quien.ts";
+import type { Almacen } from "../almacen.ts";
 import type { Base } from "../base/conexion.ts";
 import { enTransaccion, type Transaccion } from "../base/transacciones.ts";
 import { errorDeRegla } from "../http/errores.ts";
@@ -86,6 +87,7 @@ export function crearContexto(
 	accion: string,
 	ahora: Temporal.Instant,
 	comandoId: string | undefined,
+	almacen?: Almacen,
 ): {
 	contexto: ContextoDeAccion;
 	renglones: RenglonDeBitacora[];
@@ -111,12 +113,14 @@ export function crearContexto(
 			if (lectura === undefined) throw new Error(`no existe la lectura ${nombre}`);
 			return lectura(contexto, datos);
 		},
+		hayLectura: (nombre) => registro.lecturas.has(nombre),
 		guardarEvento: (evento) => {
 			eventos.push(evento);
 		},
 		bitacora: (renglon) => {
 			renglones.push(renglon);
 		},
+		almacen,
 	};
 	return { contexto, renglones, eventos };
 }
@@ -130,7 +134,7 @@ export function crearContexto(
  * cualquier otro error; en todos los casos no queda nada escrito.
  */
 export async function correrAccion(
-	dependencias: { base: Base; registro: RegistroDeModulos; servicios: ServiciosDelCorredor },
+	dependencias: { base: Base; registro: RegistroDeModulos; servicios: ServiciosDelCorredor; almacen?: Almacen },
 	peticion: { accion: AccionImplementada; quien: QuienLlama; cuerpo: CuerpoDeAccion; ahora: Temporal.Instant },
 ): Promise<RespuestaDeAccion> {
 	const { accion, quien, cuerpo, ahora } = peticion;
@@ -162,6 +166,7 @@ export async function correrAccion(
 			contrato.nombre,
 			ahora,
 			comandoId,
+			dependencias.almacen,
 		);
 		const salida = await accion.ejecutar(contexto, cuerpo.datos, cuerpo.version);
 		// Una acción que edita tiene que haber tomado la versión que se leyó: si no, la versión no serviría.

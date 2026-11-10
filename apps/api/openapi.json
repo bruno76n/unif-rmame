@@ -612,6 +612,42 @@
           }
         }
       }
+    },
+    "/v1/archivos/subida": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "description": "Registra un archivo y da la dirección firmada para subirlo directo a R2",
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/v1/archivos/{id}": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "description": "Abre o baja un archivo: redirige a una dirección firmada si la cuenta puede ver su documento",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
     }
   }
 }

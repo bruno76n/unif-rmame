@@ -15,6 +15,7 @@ import type { Task, TaskList } from "graphile-worker";
 import { Temporal } from "temporal-polyfill";
 import { trabajosVueltas } from "../../modulos/admin/tablas.ts";
 import { crearContexto, type ServiciosDelCorredor } from "../acciones/corredor.ts";
+import type { Almacen } from "../almacen.ts";
 import type { Base } from "../base/conexion.ts";
 import { enTransaccion } from "../base/transacciones.ts";
 import type { EnviarCorreo } from "../correo.ts";
@@ -34,6 +35,8 @@ export interface DependenciasDelTrabajador {
 	enviarCorreo: EnviarCorreo;
 	/** La dirección de la web, para los enlaces de los correos. */
 	dominioWeb: string;
+	/** El almacén de archivos (R2), para lo que genera el worker. */
+	almacen?: Almacen;
 	/** La hora; en las pruebas, una controlada. */
 	reloj?: () => Temporal.Instant;
 }
@@ -90,6 +93,7 @@ export function contextoDeTrabajo(
 					trabajo,
 					ahora,
 					undefined,
+					dependencias.almacen,
 				);
 				const resultado = await hacer(contexto);
 				await dependencias.servicios.escribirBitacora(contexto, renglones);

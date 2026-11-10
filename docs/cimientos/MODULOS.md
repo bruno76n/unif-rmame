@@ -122,4 +122,7 @@ Las formas fijas en que los módulos se hablan, para que nadie invente otra:
   - Un renglón de bitácora (`RenglonDeBitacora`) lleva su descripción, o su plantilla con los sueldos marcados, el documento, `antes` y `despues`, y si es alerta, misma persona o confirmó con Google.
   - Toda acción deja al menos un renglón, salvo la que regresa `sinBitacora` porque su archivo lo dice.
   - Una consulta apunta su consulta sensible con `apuntarConsultaSensible`.
+  - Un módulo puede registrar rutas fijas (`RutaFija`: nombre, método, dirección y cómo se atienden), como las de los archivos. El servidor las atiende después de identificar y revisar la versión (y el `Origin` en un `POST`).
+  - El contexto lleva el `almacen` de archivos y `hayLectura(nombre)`, para las lecturas que un módulo puede no tener (`{modulo}.ve_documento`).
+  - Lo que un módulo hace al llegar un tipo de evento va en `alEvento`.
 - **Las pruebas:** `nucleo/acciones/atomica.prueba.ts` (una acción que falla antes de escribir, después de su interna o en la bitácora no deja nada), `nucleo/acciones/pisadas.prueba.ts` y `nucleo/modulos.prueba.ts` (un módulo nuevo en su carpeta se registra solo; uno mal nombrado se rechaza).

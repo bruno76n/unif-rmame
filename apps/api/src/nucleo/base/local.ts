@@ -1,6 +1,6 @@
 /**
- * `pnpm local`: levanta Postgres en Docker, aplica las migraciones y la siembra, deja entrar al rol de la app
- * y arranca el worker.
+ * `pnpm local`: levanta Postgres y el almacén compatible con S3 en Docker, aplica las migraciones y la
+ * siembra, deja entrar al rol de la app, crea los cubos y arranca el worker.
  * Fase 2 · docs/cimientos/ARQUITECTURA.md («Cómo corre en local»)
  * Fase 4 · docs/cimientos/EVENTOS-Y-TRABAJOS.md («El worker»)
  *
@@ -11,11 +11,38 @@
 
 import { spawn, spawnSync } from "node:child_process";
 import { join } from "node:path";
+import { CreateBucketCommand, S3Client } from "@aws-sdk/client-s3";
 import pg from "pg";
-import { leerEntorno } from "../entorno.ts";
+import { cubos } from "../almacen.ts";
+import { type Entorno, leerEntorno } from "../entorno.ts";
 import { migrarYSembrar } from "./migrar.ts";
 
 const raiz = join(import.meta.dirname, "../../../../..");
+
+/**
+ * Crea los dos cubos en el almacén local, si no están. Pide `R2_DIRECCION` y la credencial de archivos, que
+ * en local es la del contenedor (`compose.yaml`).
+ */
+async function crearCubosLocales(entorno: Entorno): Promise<void> {
+	if (
+		entorno.R2_DIRECCION === undefined ||
+		entorno.R2_ARCHIVOS_LLAVE_ID === undefined ||
+		entorno.R2_ARCHIVOS_SECRETO === undefined
+	) {
+		throw new Error("pnpm local pide R2_DIRECCION, R2_ARCHIVOS_LLAVE_ID y R2_ARCHIVOS_SECRETO en .env.");
+	}
+	const s3 = new S3Client({
+		endpoint: entorno.R2_DIRECCION,
+		region: "auto",
+		forcePathStyle: true,
+		credentials: { accessKeyId: entorno.R2_ARCHIVOS_LLAVE_ID, secretAccessKey: entorno.R2_ARCHIVOS_SECRETO },
+	});
+	for (const cubo of Object.values(cubos)) {
+		await s3.send(new CreateBucketCommand({ Bucket: cubo })).catch((error: unknown) => {
+			if (!(error instanceof Error && error.name === "BucketAlreadyOwnedByYou")) throw error;
+		});
+	}
+}
 
 if (import.meta.main) {
 	const entorno = leerEntorno();
@@ -23,7 +50,10 @@ if (import.meta.main) {
 		console.error("pnpm local corre solo con ENTORNO=local y BASE_DATOS_URL_DUENO en .env.");
 		process.exit(1);
 	}
-	const docker = spawnSync("docker", ["compose", "up", "-d", "--wait", "base"], { cwd: raiz, stdio: "inherit" });
+	const docker = spawnSync("docker", ["compose", "up", "-d", "--wait", "base", "almacen"], {
+		cwd: raiz,
+		stdio: "inherit",
+	});
 	if (docker.status !== 0) process.exit(1);
 	await migrarYSembrar(entorno.BASE_DATOS_URL_DUENO);
 	const app = new URL(entorno.BASE_DATOS_URL);
@@ -40,7 +70,8 @@ if (import.meta.main) {
 	} finally {
 		await administrador.end();
 	}
-	console.log("Local: Postgres arriba, migraciones y siembra al día, y el rol de la app con entrada.");
+	await crearCubosLocales(entorno);
+	console.log("Local: Postgres y el almacén arriba, migraciones y siembra al día, y el rol de la app con entrada.");
 	// El worker corre en primer plano: Ctrl+C lo detiene.
 	spawn(process.execPath, ["--env-file-if-exists=../../.env", "src/trabajos.ts"], {
 		cwd: join(raiz, "apps/api"),
