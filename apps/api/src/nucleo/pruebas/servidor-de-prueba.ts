@@ -331,6 +331,8 @@ export async function crearServidorDePrueba(
 					registro,
 					alcanceDelAparato: async () => alcanceDeLaTablet,
 					intervaloDeSincronizacion: async () => 30,
+					anotarError: (error) =>
+						lineas.push(`error en vivo: ${error instanceof Error ? error.message : String(error)}`),
 					latidoMs: opciones.avisosEnVivo.latidoMs,
 				});
 	const app = await crearServidor({

@@ -7,7 +7,8 @@
  * Lo que tiene hoy: `comandos_recibidos` (que usa el corredor de acciones); la bandeja de `eventos` con
  * `admin.guardar_evento` y su depuración; las vueltas de los trabajos programados; los folios; los
  * parámetros, las listas y la empresa; la bitácora con sus alertas; los avisos con su correo; los
- * archivos en R2; las impresoras y sus trabajos; los respaldos y sus pruebas de restauración. Lo demás llega con las partes de la fase 4 y con la fase 5.
+ * archivos en R2; las impresoras y sus trabajos; los respaldos y sus pruebas de restauración. Las cuentas,
+ * las sesiones y los permisos llegan con la fase 5.
  */
 
 import { definirModulo } from "../../nucleo/modulos.ts";
@@ -33,6 +34,7 @@ import { registrarRespaldo } from "./internas/registrar-respaldo.ts";
 import { tomarFolio } from "./internas/tomar-folio.ts";
 import { parametro } from "./lecturas/parametro.ts";
 import { siguienteFolio } from "./lecturas/siguiente-folio.ts";
+import { veDocumento } from "./lecturas/ve-documento.ts";
 import { semillaDeParametrosDeAdmin } from "./parametros.ts";
 import { lectoresDeAdmin } from "./permisos.ts";
 import { rutasDeArchivos } from "./rutas/archivos.ts";
@@ -65,7 +67,7 @@ export default definirModulo({
 		mandar_a_imprimir: mandarAImprimir,
 		registrar_respaldo: registrarRespaldo,
 	},
-	lecturas: { parametro, siguiente_folio: siguienteFolio },
+	lecturas: { parametro, siguiente_folio: siguienteFolio, ve_documento: veDocumento },
 	semillas: [semillaDeContadores, semillaDeParametrosDeAdmin],
 	trabajos: [depurarEventos, enviarCorreos, respaldoSemanal, recordatorioRestauracion],
 	lectores: lectoresDeAdmin,

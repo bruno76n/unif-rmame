@@ -10,6 +10,7 @@
 import { and, arrayContains, eq, inArray, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { ErrorDeApi, noExiste } from "../../../nucleo/http/errores.ts";
+import { camposDeZod } from "../../../nucleo/http/validacion.ts";
 import type { ContextoDeRuta, RutaFija, TipoDeEtiqueta } from "../../../nucleo/modulos.ts";
 import { leerParametro } from "../../../nucleo/parametros.ts";
 import { impresoras, trabajosImpresion } from "../tablas.ts";
@@ -19,12 +20,13 @@ const parametrosDeEtiqueta = z.object({ tipo: z.string().min(1), id: z.uuid() })
 
 /** Lo que va en la búsqueda: el formato, las copias y, si son varias, los ids. */
 const busquedaDeEtiqueta = z.object({
-	formato: z.enum(["zpl", "pdf"]),
+	formato: z.enum(["zpl", "pdf"], "Pide zpl o pdf."),
 	copias: z.coerce.number().int().positive().optional(),
 	ids: z
 		.string()
 		.optional()
-		.transform((ids) => (ids === undefined || ids === "" ? undefined : ids.split(","))),
+		.transform((ids) => (ids === undefined || ids === "" ? undefined : ids.split(",")))
+		.pipe(z.array(z.uuid()).optional()),
 });
 
 /**
@@ -74,8 +76,9 @@ const etiqueta: RutaFija = {
 		const busqueda = busquedaDeEtiqueta.safeParse(peticion.busqueda);
 		const tipo = parametros.success ? contexto.registro.tiposDeEtiqueta.get(parametros.data.tipo) : undefined;
 		if (!parametros.success || tipo === undefined) throw noExiste();
-		if (!busqueda.success)
-			throw new ErrorDeApi("validacion", null, undefined, { campos: { formato: "Pide zpl o pdf." } });
+		if (!busqueda.success) {
+			throw new ErrorDeApi("validacion", null, undefined, { campos: camposDeZod(busqueda.error) });
+		}
 		const ids = busqueda.data.ids ?? [parametros.data.id];
 		await revisarQuienPide(contexto, tipo, ids);
 		const maximo = Number(await leerParametro(contexto.base, { clave: "admin.copias_max_impresion" }));

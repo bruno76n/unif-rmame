@@ -130,7 +130,8 @@ Los dos van en la sección `tecnico`.
   - Los cubos son `uniformame-archivos` y `uniformame-respaldos`.
 - **Las rutas** las registra `admin` como rutas fijas (`modulos/admin/rutas/archivos.ts`; decisión 362).
   - **`POST /v1/archivos/subida`** revisa la forma, el departamento del módulo (`departamentosDelModulo`; un aparato, por ahora a cualquier módulo), el tipo del propósito y el tamaño. Escribe el archivo sin `subido_en` y regresa `archivo_id`, `url_subida` y `encabezados`. Un aparato que repite su subida con el mismo `archivo_id` recibe otra vez la dirección.
-  - **`GET /v1/archivos/{id}`** redirige (`302`) a la dirección firmada. Un archivo sin ligar solo lo abre quien lo subió. Uno ligado lo abre quien pasa la lectura `{modulo}.ve_documento` del módulo dueño (decisión 363); si el módulo no la tiene, nadie.
+  - **El módulo** de la subida tiene que ser uno del sistema (aunque su carpeta llegue en otra fase) o uno registrado.
+  - **`GET /v1/archivos/{id}`** redirige (`302`) a la dirección firmada. Un archivo sin ligar solo lo abre quien lo subió. Uno ligado lo abre quien pasa la lectura `{modulo}.ve_documento` del módulo dueño (decisión 363); si el módulo no la tiene, nadie. La de `admin` (`lecturas/ve-documento.ts`) deja abrir la evidencia de una restauración a quien tiene Administración del sistema.
 - **`admin.ligar_archivo`** (`internas/ligar-archivo.ts`) bloquea el archivo y revisa:
   - que exista;
   - que sea del propósito;

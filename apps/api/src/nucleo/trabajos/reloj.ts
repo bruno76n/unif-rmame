@@ -62,12 +62,18 @@ function yaToca(local: Temporal.PlainDateTime, toca: Temporal.PlainDateTime, per
  */
 export async function correrReloj(trabajos: Iterable<Trabajo>, contexto: ContextoDeTrabajo): Promise<void> {
 	const ahora = contexto.ahora.toString();
-	await enTransaccion(contexto.base, async (transaccion) => {
-		for (const tabla of tablasPartidas) {
-			await transaccion.execute(
+	// Las particiones van aparte: si una no se puede crear (la de respaldo ya tiene renglones de ese mes),
+	// se avisa a soporte y el reloj sigue encolando la bandeja y los trabajos.
+	for (const tabla of tablasPartidas) {
+		try {
+			await contexto.base.execute(
 				sql`SELECT asegurar_particiones(${`public.${tabla}`}::regclass, ${mesesDeParticionesAdelante})`,
 			);
+		} catch (error) {
+			await contexto.avisarFalla(`Las particiones de ${tabla}`, error instanceof Error ? error.message : String(error));
 		}
+	}
+	await enTransaccion(contexto.base, async (transaccion) => {
 		const [vencido] = await transaccion
 			.select({ id: eventos.id })
 			.from(eventos)

@@ -71,6 +71,13 @@
 			"when": 1794307581917,
 			"tag": "0009_respaldos",
 			"breakpoints": true
+		},
+		{
+			"idx": 10,
+			"version": "7",
+			"when": 1794308911802,
+			"tag": "0010_un_puente",
+			"breakpoints": true
 		}
 	]
 }

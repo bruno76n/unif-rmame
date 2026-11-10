@@ -111,6 +111,7 @@ La pantalla, sus filtros y su buscador están en [pantallas de Administración](
   - Escribe un renglón; quién, el comando, el módulo, el origen y la acción salen del contexto.
   - Falla si `antes` o `despues` traen un campo de secreto, a cualquier profundidad.
   - Una descripción con sueldos llega como plantilla, con los sueldos marcados `{ sueldo }` (`DescripcionConSueldos`; decisión 356). Se guardan la completa y la recortada con «••••», y el renglón queda `sensible_sueldos`.
+  - Un campo de sueldo o de tarifa en `antes` o `despues` (`sueldo`, `tarifa`, `pago_por_dia`, `nomina`) también marca el renglón sensible. Si su descripción viene en texto suelto, falla como error del programa, porque no se podría tapar.
   - Una consulta sensible toma un candado por cuenta y documento y no se repite dentro de `admin.minutos_consulta_sensible`.
   - Una alerta guarda `alerta.registrada`; el aviso a la dueña llega con la parte 4.
 - **El corredor** llama a la interna una vez por renglón (`escribirBitacoraConAdmin`): todos llevan el mismo `comando_id`. No guarda una acción que no dejó renglón, salvo la que lo dice con `sinBitacora` (decisión 355). Hoy lo dice `admin.cambiar_parametro` cuando recibe lo mismo que ya había.

@@ -3,8 +3,9 @@
  * Fase 4 · docs/modulos/admin/bitacora.md («`admin.escribir_bitacora` · interna»)
  *
  * Quién, el comando, el módulo, el origen y la acción salen del contexto. Falla como error del programa si
- * `antes` o `despues` traen un campo de secreto. Si la descripción trae sueldos o tarifas, guarda también
- * la descripción con «••••» en su lugar y marca `sensible_sueldos`. Una consulta sensible no se vuelve a
+ * `antes` o `despues` traen un campo de secreto. Si la descripción trae sueldos o tarifas, o `antes` o
+ * `despues` traen un campo de sueldo o de tarifa, guarda también la descripción con «••••» en su lugar y
+ * marca `sensible_sueldos`. Una consulta sensible no se vuelve a
  * apuntar si la misma cuenta ya la apuntó sobre el mismo documento en los últimos
  * `admin.minutos_consulta_sensible`. Una alerta guarda `alerta.registrada`.
  */
@@ -55,6 +56,19 @@ function campoSecreto(valor: unknown): string | undefined {
 		if (adentro !== undefined) return adentro;
 	}
 	return undefined;
+}
+
+/** Los nombres de campo de un sueldo o una tarifa (el pago por día, la tarifa por pieza, la nómina). */
+const nombresDeSueldo = /(^|_)(sueldo|sueldos|tarifa|tarifas|pago_por_dia|nomina)(_|$)/;
+
+/**
+ * Dice si un valor trae un campo de sueldo o de tarifa, a cualquier profundidad.
+ * @param valor El `antes` o el `despues` de un renglón.
+ */
+function traeCampoDeSueldo(valor: unknown): boolean {
+	if (Array.isArray(valor)) return valor.some(traeCampoDeSueldo);
+	if (typeof valor !== "object" || valor === null) return false;
+	return Object.entries(valor).some(([campo, interior]) => nombresDeSueldo.test(campo) || traeCampoDeSueldo(interior));
 }
 
 /**
@@ -109,6 +123,13 @@ export async function escribirBitacora(
 		return undefined;
 	}
 	const { completa, recortada } = armarDescripciones(renglon.descripcion);
+	// Un sueldo o una tarifa en antes o despues hace sensible el renglón, aunque la descripción no lo diga;
+	// si la descripción va en texto suelto no se puede tapar nada: es un error del programa.
+	const sueldosEnLoQueCambio = traeCampoDeSueldo(renglon.antes) || traeCampoDeSueldo(renglon.despues);
+	if (sueldosEnLoQueCambio && typeof renglon.descripcion === "string") {
+		throw new Error("un renglón con sueldos o tarifas tiene que dar su descripción como plantilla");
+	}
+	const sensible = recortada !== null || sueldosEnLoQueCambio;
 	const id = uuidv7();
 	await transaccion.insert(bitacora).values({
 		id,
@@ -125,13 +146,13 @@ export async function escribirBitacora(
 		origen: origenDe(quien),
 		accion: contexto.accion,
 		descripcion: completa,
-		descripcionRecortada: recortada,
+		descripcionRecortada: sensible ? (recortada ?? completa) : null,
 		entidad: renglon.entidad ?? null,
 		entidadId: renglon.entidadId ?? null,
 		entidadFolio: renglon.entidadFolio ?? null,
 		antes: renglon.antes ?? null,
 		despues: renglon.despues ?? null,
-		sensibleSueldos: recortada !== null,
+		sensibleSueldos: sensible,
 		mismaPersona: renglon.mismaPersona ?? false,
 		confirmadoConGoogleEn: renglon.confirmadoConGoogleEn ?? null,
 		ip: renglon.ip ?? null,

@@ -183,6 +183,22 @@ describe("una sesión recibe cambios solo de las tablas que leen sus departament
 		for (const conexion of [duena, duenaEnLaOtra, ventas]) conexion.cerrar();
 	});
 
+	it("el documento del evento solo viaja a quien lee su tabla", async () => {
+		const ventas = await escuchar(direccion, "ventas");
+		await esperarA(() => ventas.eventos().length > 0);
+		await servidor.base.dueno.query(
+			`INSERT INTO eventos (id, tipo, modulo, tablas, entidad, entidad_id, ocurrido_en)
+			 VALUES ('01936f2e-0000-7000-8000-0000000000e3', 'otra.cosa', 'prueba', '{prueba_notas,otra_tabla}',
+			 'otra_tabla', '01936f2e-0000-7000-8000-0000000000e4', now())`,
+		);
+		await procesarComoElWorker();
+		await esperarA(() => ventas.eventos().some((evento) => evento.nombre === "cambios"));
+		expect(ventas.eventos().filter((evento) => evento.nombre === "cambios")).toEqual([
+			{ nombre: "cambios", datos: { tablas: ["prueba_notas"] } },
+		]);
+		ventas.cerrar();
+	});
+
 	it("a cada conexión le llega su latido", async () => {
 		const ventas = await escuchar(direccion, "ventas");
 		await esperarA(() => ventas.bloques.includes(": latido"));

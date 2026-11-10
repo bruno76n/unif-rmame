@@ -192,3 +192,12 @@ export const imprimir = definirAccion({
 	permiso: { departamento: "ventas" },
 	errores: [{ codigo: "impresora_sin_puente", mensaje: "La impresora no está conectada. Usa el PDF." }],
 });
+
+/** Marca dos notas a la vez: deja un renglón de bitácora por nota, con el mismo comando. */
+export const marcarDos = definirAccion({
+	nombre: "prueba.marcar_dos",
+	descripcion: "Marca dos notas; un renglón de bitácora por cada una",
+	entrada: z.object({ ids: z.array(z.uuid()).length(2).describe("Las dos notas") }),
+	salida: z.object({}),
+	permiso: { departamento: "ventas" },
+});

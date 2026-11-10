@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "impresoras_un_puente" ON "impresoras" USING btree ("dispositivo_id") WHERE "impresoras"."dispositivo_id" is not null and "impresoras"."baja_en" is null;

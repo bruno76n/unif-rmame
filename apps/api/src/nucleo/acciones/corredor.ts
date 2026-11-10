@@ -189,11 +189,13 @@ export async function correrAccion(
 }
 
 /**
- * El módulo de una acción, por su nombre: `ventas.confirmar_pedido` es de `ventas`.
+ * El módulo de una acción, por su nombre: `ventas.confirmar_pedido` es de `ventas`; un nombre sin módulo
+ * es el suyo.
  * @param nombre El nombre completo de la acción.
  */
 export function moduloDe(nombre: string): string {
-	return nombre.slice(0, nombre.indexOf("."));
+	const punto = nombre.indexOf(".");
+	return punto === -1 ? nombre : nombre.slice(0, punto);
 }
 
 /** Dice si un valor leído de JSON es un objeto (no una lista ni nulo). */

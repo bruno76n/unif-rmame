@@ -179,7 +179,7 @@ describe("un trabajo de impresión pasa de por_imprimir a mandado y a impreso o 
 		]);
 	});
 
-	it("la etiqueta en PDF la pide Ventas; Aduana no", async () => {
+	it("la etiqueta en PDF la pide Ventas; Aduana no; unos ids que no son ids responden 400", async () => {
 		const pdf = await servidor.app.inject({
 			method: "GET",
 			url: `/v1/etiquetas/prueba/${nota}?formato=pdf`,
@@ -193,6 +193,18 @@ describe("un trabajo de impresión pasa de por_imprimir a mandado y a impreso o 
 			headers: encabezadosDeLaWeb("aduana"),
 		});
 		expect(aduana.json()).toMatchObject({ error: "sin_permiso", codigo: "sin_departamento" });
+		const malos = await servidor.app.inject({
+			method: "GET",
+			url: `/v1/etiquetas/prueba/${nota}?formato=zpl&ids=no-es-un-id`,
+			headers: encabezadosDeLaWeb(),
+		});
+		expect(malos.statusCode).toBe(400);
+		const malosDelPuente = await servidor.app.inject({
+			method: "GET",
+			url: `/v1/etiquetas/prueba/${nota}?formato=zpl&ids=no-es-un-id`,
+			headers: { "x-prueba-quien": "puente", "x-app-version": "1.0.0" },
+		});
+		expect(malosDelPuente.statusCode).toBe(400);
 		const noHay = await servidor.app.inject({
 			method: "GET",
 			url: `/v1/etiquetas/otra/${nota}?formato=pdf`,

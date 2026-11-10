@@ -60,6 +60,32 @@ describe("toda acción deja su renglón de bitácora; uno con un secreto falla; 
 		]);
 	});
 
+	it("una acción que cambia dos documentos deja un renglón por cada uno, con el mismo comando", async () => {
+		const ids = ["01936f2e-0000-7000-8000-0000000000c3", "01936f2e-0000-7000-8000-0000000000c4"];
+		expect((await mandarAccion(servidor, "prueba.marcar_dos", { datos: { ids } })).estado).toBe(200);
+		const { rows } = await servidor.base.dueno.query(
+			"SELECT entidad_id, comando_id FROM bitacora WHERE accion = 'prueba.marcar_dos' ORDER BY entidad_id",
+		);
+		expect(rows.map((renglon) => renglon.entidad_id)).toEqual(ids);
+		expect(rows[0]?.comando_id).not.toBeNull();
+		expect(rows[1]?.comando_id).toBe(rows[0]?.comando_id);
+	});
+
+	it("un sueldo en antes o despues marca el renglón sensible; con la descripción en texto suelto es un error del programa", async () => {
+		await expect(
+			escribir({ descripcion: "Cambió el pago de Ana: $1,350", despues: { pago_por_dia_centavos: 135_000 } }),
+		).rejects.toThrow("plantilla");
+		const { bitacora_id } = (await escribir({
+			descripcion: { plantilla: "Cambió el pago de {persona}", valores: { persona: "Ana" } },
+			despues: { persona: { sueldo_centavos: 135_000 } },
+		})) as { bitacora_id: string };
+		const { rows } = await servidor.base.dueno.query(
+			"SELECT descripcion_recortada, sensible_sueldos FROM bitacora WHERE id = $1",
+			[bitacora_id],
+		);
+		expect(rows[0]).toEqual({ descripcion_recortada: "Cambió el pago de Ana", sensible_sueldos: true });
+	});
+
 	it("una acción que no deja renglón, sin decir que su archivo lo permite, no se guarda", async () => {
 		const antes = await contar(servidor, "prueba_notas");
 		const respuesta = await servidor.app.inject({

@@ -2,8 +2,8 @@
  * `admin.enviar_correos`: manda por correo los avisos que lo piden.
  * Fase 4 · docs/modulos/admin/avisos.md («El correo»)
  *
- * Lo encola `admin.crear_aviso` cuando nace un aviso por correo. Toma los avisos pendientes de 20 en 20
- * con `FOR UPDATE SKIP LOCKED` y los manda con la plantilla, al correo de la cuenta y con la clave de
+ * Lo encola `admin.crear_aviso` cuando nace un aviso por correo. Toma los avisos pendientes de uno en
+ * uno, cada uno en su transacción corta, con `FOR UPDATE SKIP LOCKED`, y los manda con la plantilla, al correo de la cuenta y con la clave de
  * idempotencia del aviso. Si uno falla, sube `correo_intentos`, guarda `correo_error` y espera como los
  * eventos (1, 5, 30 y 120 minutos); a los 10 intentos avisa a soporte con `trabajo_fallido` (sin correo,
  * para no avisar por correo que el correo falla). Al terminar, se vuelve a encolar para el siguiente
@@ -24,8 +24,12 @@ import { avisos, empresa } from "../tablas.ts";
  */
 export const lecturaDeCorreoDeCuenta = "admin.correo_de_cuenta";
 
-/** Cuántos avisos toma cada vuelta. */
-const avisosPorVuelta = 20;
+/**
+ * Cuántos avisos toma cada transacción: uno, para que la transacción que espera la respuesta de Resend
+ * solo tenga bloqueado ese aviso y dure lo que dura un envío. Si choca y se repite, la clave de
+ * idempotencia del aviso evita el correo doble.
+ */
+const avisosPorVuelta = 1;
 
 /** Al llegar a este intento, se avisa a soporte y el aviso ya no se reintenta. */
 const intentosParaAvisar = 10;

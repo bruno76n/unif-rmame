@@ -463,19 +463,28 @@ export const archivos = pgTable(
 	],
 );
 
-/** Cada impresora de etiquetas: de una ubicación, con su programa puente. */
-export const impresoras = pgTable("impresoras", {
-	id: uuid("id").primaryKey(),
-	nombre: text("nombre").notNull(),
-	modelo: text("modelo").notNull(),
-	ubicacionId: uuid("ubicacion_id")
-		.notNull()
-		.references(() => ubicaciones.id),
-	/** @llavePendiente dispositivos.id */
-	dispositivoId: uuid("dispositivo_id"),
-	...bajaSinReactivar(),
-	...columnasComunes(),
-});
+/** Cada impresora de etiquetas: de una ubicación, con su programa puente (uno por impresora). */
+export const impresoras = pgTable(
+	"impresoras",
+	{
+		id: uuid("id").primaryKey(),
+		nombre: text("nombre").notNull(),
+		modelo: text("modelo").notNull(),
+		ubicacionId: uuid("ubicacion_id")
+			.notNull()
+			.references(() => ubicaciones.id),
+		/** @llavePendiente dispositivos.id */
+		dispositivoId: uuid("dispositivo_id"),
+		...bajaSinReactivar(),
+		...columnasComunes(),
+	},
+	// Un puente atiende una sola impresora sin baja.
+	(tabla) => [
+		uniqueIndex("impresoras_un_puente")
+			.on(tabla.dispositivoId)
+			.where(sql`${tabla.dispositivoId} is not null and ${tabla.bajaEn} is null`),
+	],
+);
 
 /** Cada trabajo de impresión: de `por_imprimir` a `mandado` y a `impreso` o `fallo`. */
 export const trabajosImpresion = pgTable(

@@ -51,13 +51,16 @@ export interface Almacen {
 	/** Guarda un objeto que generó el servidor, con su suma. */
 	guardar(clave: string, contenido: Uint8Array, tipo: string): Promise<void>;
 	/**
-	 * Guarda lo que va saliendo de un flujo, por partes y sin pasar por disco, cada parte con su suma.
+	 * Guarda lo que va saliendo de un flujo, por partes y sin pasar por disco, cada parte con su suma. Antes
+	 * de cerrar la subida espera `antesDeCerrar` (que quien produce el flujo terminó bien): si falla, la
+	 * subida se cancela y el objeto no queda.
 	 * @returns El tamaño y la suma SHA-256 (hexadecimal) de todo lo que se subió.
 	 */
 	guardarFlujo(
 		clave: string,
 		flujo: AsyncIterable<Uint8Array>,
 		tipo: string,
+		antesDeCerrar?: () => Promise<void>,
 	): Promise<ObjetoGuardado & { sha256: string }>;
 }
 
@@ -170,7 +173,7 @@ export function crearAlmacen(conexion: ConexionDelAlmacen): Almacen {
 				throw error;
 			}
 		},
-		async guardarFlujo(clave, flujo, tipo) {
+		async guardarFlujo(clave, flujo, tipo, antesDeCerrar) {
 			const { UploadId } = await cliente.send(
 				new CreateMultipartUploadCommand({ Bucket, Key: clave, ContentType: tipo, ChecksumAlgorithm: "SHA256" }),
 			);
@@ -200,10 +203,12 @@ export function crearAlmacen(conexion: ConexionDelAlmacen): Almacen {
 					if (enEspera >= tamanoDeParte) await subirParte();
 				}
 				if (enEspera > 0 || partes.length === 0) await subirParte();
+				await antesDeCerrar?.();
 				await cliente.send(
 					new CompleteMultipartUploadCommand({ Bucket, Key: clave, UploadId, MultipartUpload: { Parts: partes } }),
 				);
 			} catch (error) {
+				// Se cancela lo subido; si cancelar también falla, el error que importa es el primero.
 				await cliente.send(new AbortMultipartUploadCommand({ Bucket, Key: clave, UploadId })).catch(() => undefined);
 				throw error;
 			}

@@ -27,6 +27,7 @@ import {
 	ficha,
 	imprimir,
 	listarNotas,
+	marcarDos,
 	provocar,
 	trampa,
 	verMontos,
@@ -163,6 +164,11 @@ export default definirModulo({
 			};
 			contexto.bitacora({ descripcion: `Mandó a imprimir ${datos.ids.length} etiquetas` });
 			return { resultado: { mensaje: "Etiquetas mandadas", trabajo_id } };
+		}),
+		implementarAccion(marcarDos, async (contexto, datos) => {
+			for (const id of datos.ids)
+				contexto.bitacora({ descripcion: "Marcó la nota", entidad: "prueba_notas", entidadId: id });
+			return { resultado: { mensaje: "Notas marcadas" } };
 		}),
 		implementarAccion(confirmar, async (contexto) => {
 			contexto.bitacora({ descripcion: "Confirmó" });

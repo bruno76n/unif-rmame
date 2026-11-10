@@ -166,4 +166,36 @@ describe("el respaldo semanal sale cifrado, llega con su SHA-256 y, descifrado y
 		]);
 		expect(avisos.rows[0]?.texto).toMatch(/^El respaldo semanal no se hizo: pg_dump salió con 1: /);
 	});
+
+	it("un volcado que sale mal a medias no deja un objeto en R2", async () => {
+		ahora = Temporal.Instant.from("2026-11-29T08:00:00Z");
+		const { respaldo } = dependencias;
+		if (respaldo === undefined) throw new Error("falta el respaldo de prueba");
+		const volcado = ["sh", "-c", "echo parcial; exit 3"];
+		await correrTrabajo({ ...dependencias, respaldo: { ...respaldo, volcado } }, respaldoSemanal, {});
+		const { rows } = await prueba.dueno.query("SELECT estado, error FROM respaldos ORDER BY hecho_en DESC LIMIT 1");
+		expect(rows[0]).toMatchObject({ estado: "fallido", error: "pg_dump salió con 3: sin mensaje" });
+		expect(simulador.objetos.has("uniformame-respaldos/2026/2026-11-29.dump.age")).toBe(false);
+	});
+
+	it("si R2 falla mientras el volcado sigue, el trabajo termina y para el volcado y el cifrado", async () => {
+		ahora = Temporal.Instant.from("2026-12-06T08:00:00Z");
+		const { respaldo } = dependencias;
+		if (respaldo === undefined) throw new Error("falta el respaldo de prueba");
+		simulador.ponerAFallar("error_del_servidor");
+		try {
+			// Un volcado que no termina nunca: si nadie lo para, el trabajo se queda esperando.
+			await correrTrabajo(
+				{ ...dependencias, respaldo: { ...respaldo, volcado: ["yes", "respaldo"] } },
+				respaldoSemanal,
+				{},
+			);
+		} finally {
+			simulador.ponerAFallar("ninguna");
+		}
+		const { rows } = await prueba.dueno.query("SELECT estado FROM respaldos ORDER BY hecho_en DESC LIMIT 1");
+		expect(rows[0]?.estado).toBe("fallido");
+		await new Promise((listo) => setTimeout(listo, 200));
+		expect(spawnSync("pgrep", ["-f", "^yes respaldo$"]).status).toBe(1);
+	});
 });

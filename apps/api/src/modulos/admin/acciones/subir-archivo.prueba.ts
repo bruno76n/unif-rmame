@@ -80,7 +80,7 @@ describe("un archivo de otro tipo o más grande no se acepta; la dirección firm
 		expect((await subir(cuerpo.resultado)).status).toBe(200);
 	});
 
-	it("otro tipo, más grande o sin el departamento del módulo no se acepta", async () => {
+	it("otro tipo, más grande, sin el departamento del módulo o de un módulo que no existe no se acepta", async () => {
 		expect((await pedirSubida({ tipo_mime: "application/zip" })).cuerpo).toMatchObject({
 			error: "regla",
 			codigo: "tipo_no_aceptado",
@@ -95,6 +95,9 @@ describe("un archivo de otro tipo o más grande no se acepta; la dirección firm
 			codigo: "sin_departamento",
 		});
 		expect((await pedirSubida({ sha256: "no-es-una-suma" })).estado).toBe(400);
+		expect((await pedirSubida({ modulo: "no_existe" }, "duena")).cuerpo).toMatchObject({
+			campos: { modulo: "Ese módulo no existe." },
+		});
 	});
 
 	it("la dirección firmada vence a los 5 minutos", async () => {

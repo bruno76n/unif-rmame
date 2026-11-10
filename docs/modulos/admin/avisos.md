@@ -134,11 +134,11 @@ Van en la sección `parametro`. Cada tipo que agregue otro módulo trae su propi
   - No deja bitácora (`sinBitacora`).
   - Su contrato está en `contratos/admin/avisos.ts`.
 - **El correo:**
-  - **El trabajo** `admin.enviar_correos` (`trabajos/enviar-correos.ts`) toma de 20 en 20 con `FOR UPDATE SKIP LOCKED`, manda al correo de la cuenta con la clave de idempotencia `aviso:{id}` y espera como los eventos. Al décimo intento avisa a soporte sin correo y deja de reintentar. Al terminar, se encola para el siguiente reintento que toque (decisión 360).
+  - **El trabajo** `admin.enviar_correos` (`trabajos/enviar-correos.ts`) toma los avisos de uno en uno, cada uno en su transacción corta, con `FOR UPDATE SKIP LOCKED`, manda al correo de la cuenta con la clave de idempotencia `aviso:{id}` y espera como los eventos. Al décimo intento avisa a soporte sin correo y deja de reintentar. Al terminar, se encola para el siguiente reintento que toque (decisión 360).
   - **La plantilla** (`dominio/plantilla-de-correo.ts`) se arma con los componentes de React Email y `renderToStaticMarkup`, sin JSX (decisión 358).
   - **El envío** (`apps/api/src/nucleo/correo.ts`) va con Resend en producción (`RESEND_LLAVE`, remitente `avisos@uniformame.mx`). En local, el correo queda en el registro del worker.
 - **En vivo:** cada instancia escucha `ua_avisos` y manda `aviso` a las sesiones de la cuenta.
 - **Las pruebas:**
-  - `internas/crear-aviso.prueba.ts`;
+  - `internas/crear-aviso.prueba.ts` (también el mismo aviso pedido a la vez);
   - `trabajos/enviar-correos.prueba.ts` (con el simulador de Resend y el SDK de verdad);
   - el caso de `aviso` en `nucleo/sincronizacion/eventos-en-vivo.prueba.ts`.

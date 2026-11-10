@@ -46,6 +46,8 @@ export interface DependenciasDeLosAvisosEnVivo {
 	/** Cada cuántos segundos pregunta solo un aparato si no le llega nada (`sync.intervalo_segundos`). */
 	intervaloDeSincronizacion: () => Promise<number>;
 	latidoMs?: number;
+	/** Anota en el registro técnico un aviso que no se pudo repartir; la conexión sigue. */
+	anotarError: (error: unknown) => void;
 }
 
 /** A dónde se escribe una conexión abierta. */
@@ -143,8 +145,10 @@ export function crearAvisosEnVivo(dependencias: DependenciasDeLosAvisosEnVivo) {
 			conexion.salida.escribir(
 				formatoDeEvento("cambios", {
 					tablas,
-					...(evento.entidad === null ? {} : { entidad: evento.entidad }),
-					...(evento.entidadId === null ? {} : { entidad_id: evento.entidadId }),
+					// El documento solo viaja a quien lee su tabla.
+					...(evento.entidad === null || !tablas.includes(evento.entidad)
+						? {}
+						: { entidad: evento.entidad, ...(evento.entidadId === null ? {} : { entidad_id: evento.entidadId }) }),
 				}),
 			);
 		}
@@ -171,8 +175,8 @@ export function crearAvisosEnVivo(dependencias: DependenciasDeLosAvisosEnVivo) {
 			escucha = await dependencias.conexiones.connect();
 			escucha.on("notification", (llegada) => {
 				if (llegada.payload === undefined) return;
-				if (llegada.channel === canalDeEventos) repartir(llegada.payload).catch(() => undefined);
-				if (llegada.channel === canalDeAvisos) avisar(llegada.payload).catch(() => undefined);
+				if (llegada.channel === canalDeEventos) repartir(llegada.payload).catch(dependencias.anotarError);
+				if (llegada.channel === canalDeAvisos) avisar(llegada.payload).catch(dependencias.anotarError);
 			});
 			await escucha.query(`LISTEN ${canalDeEventos}; LISTEN ${canalDeAvisos}`);
 			latido = setInterval(() => {

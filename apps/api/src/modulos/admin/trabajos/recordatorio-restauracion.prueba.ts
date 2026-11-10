@@ -109,7 +109,7 @@ describe("el recordatorio avisa a su tiempo y no antes", () => {
 		]);
 	});
 
-	it("registrar una restauración que cuadró, con su evidencia, reinicia la cuenta; sin evidencia, futura o de un respaldo fallido, no se registra", async () => {
+	it("registrar una restauración que cuadró, con su evidencia, reinicia la cuenta; sin evidencia, futura o de un respaldo fallido, no se registra; su evidencia la abre Administración del sistema", async () => {
 		const evidencia = new TextEncoder().encode("conteos: todo igual");
 		const pedida = await servidor.app.inject({
 			method: "POST",

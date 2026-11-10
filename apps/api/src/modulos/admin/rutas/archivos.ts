@@ -64,6 +64,13 @@ const subirArchivo: RutaFija = {
 		const leido = pedidoDeSubida.safeParse(peticion.cuerpo);
 		if (!leido.success) throw new ErrorDeApi("validacion", null, undefined, { campos: camposDeZod(leido.error) });
 		const pedido = leido.data;
+		// Un módulo del sistema (aunque su carpeta llegue en otra fase) o uno registrado.
+		const conocido =
+			pedido.modulo in departamentosDelModulo ||
+			contexto.registro.modulos.some((modulo) => modulo.nombre === pedido.modulo);
+		if (!conocido) {
+			throw new ErrorDeApi("validacion", null, undefined, { campos: { modulo: "Ese módulo no existe." } });
+		}
 		revisarDepartamento(contexto.quien, pedido.modulo);
 		const aceptados = tiposPorProposito[pedido.proposito];
 		if (!aceptados.tipos.includes(pedido.tipo_mime)) {

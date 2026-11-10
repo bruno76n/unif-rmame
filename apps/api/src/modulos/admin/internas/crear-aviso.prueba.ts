@@ -73,6 +73,18 @@ describe("un aviso no se repite sin leer; va por correo según su parámetro; un
 		expect(await avisosDe("pin_bloqueado")).toHaveLength(3);
 	});
 
+	it("el mismo aviso pedido tres veces a la vez deja uno solo", async () => {
+		const aviso = {
+			tipo: "pin_bloqueado",
+			destinatarios: { cuentas: [cuenta("ventas")] },
+			texto: "Luis se bloqueó en la tablet",
+			entidad: "personas",
+			entidadId: "01936f2e-0000-7000-8000-0000000000d7",
+		};
+		const creados = await Promise.all([crear(aviso), crear(aviso), crear(aviso)]);
+		expect(creados.flatMap((creado) => creado.aviso_ids)).toHaveLength(1);
+	});
+
 	it("va por correo según avisos.correo_{tipo}, decidido al crearlo", async () => {
 		await crear({ tipo: "autorizacion_pedida", destinatarios: { regla: "duena" }, texto: "Ventas pide autorización" });
 		await crear({

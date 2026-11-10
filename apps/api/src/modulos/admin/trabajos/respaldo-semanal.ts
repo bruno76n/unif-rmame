@@ -4,7 +4,8 @@
  *
  * Corre el día y la hora de sus parámetros, en hora de México. Si ya hay uno correcto esa semana, no
  * corre. El volcado sale cifrado con la llave pública y se sube por partes mientras sale, sin pasar por
- * disco, con la suma de cada parte; la suma de todo queda en su registro. Si falla, queda registrado como
+ * disco, con la suma de cada parte; la suma de todo queda en su registro. La subida solo se cierra si el
+ * volcado y el cifrado terminaron bien: un respaldo a medias no queda en R2. Si falla, queda registrado como
  * fallido y avisa a la dueña y a soporte; no se reintenta cada minuto: el recordatorio diario vuelve a avisar.
  */
 
@@ -47,11 +48,14 @@ export const respaldoSemanal: Trabajo = {
 			if (medios === undefined) {
 				throw new Error("el worker no tiene la llave pública, la credencial del cubo de respaldos o el rol dueño");
 			}
-			const { flujo, termino } = volcarYCifrar(medios);
-			const [subido] = await Promise.all([
-				medios.almacen.guardarFlujo(clave, flujo, "application/octet-stream"),
-				termino,
-			]);
+			const { flujo, termino, detener } = volcarYCifrar(medios);
+			// La subida solo se cierra si pg_dump y age terminaron bien; si la subida falla, se paran los dos.
+			const subido = await medios.almacen
+				.guardarFlujo(clave, flujo, "application/octet-stream", () => termino)
+				.catch((error: unknown) => {
+					detener();
+					throw error;
+				});
 			registro = { estado: "correcto", tamano_bytes: subido.tamano, sha256: subido.sha256 };
 		} catch (error) {
 			registro = { estado: "fallido", error: error instanceof Error ? error.message : String(error) };

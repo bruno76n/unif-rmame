@@ -85,6 +85,12 @@ describe("dos documentos que piden folio a la vez reciben números seguidos, sin
 		expect(await tomar({ tipo: "lote" }, anioNuevo)).toEqual({ folio: "L-2027-001", numero: 1 });
 	});
 
+	it("los primeros folios de un año nuevo pedidos a la vez salen seguidos desde 1", async () => {
+		const anio = Temporal.Instant.from("2028-01-02T18:00:00Z");
+		const folios = await Promise.all([1, 2, 3].map(() => tomar({ tipo: "lote" }, anio)));
+		expect(folios.map((folio) => (folio as { numero: number }).numero).sort()).toEqual([1, 2, 3]);
+	});
+
 	it("el número de un aparato no da folio: solo sube el contador, y uno viejo que llega tarde no lo baja", async () => {
 		expect(await tomar({ tipo: "venta_tienda", alcance: "T1", numero_recibido: 41 })).toBeUndefined();
 		expect(await siguiente({ tipo: "venta_tienda", alcance: "T1" })).toEqual({ folio: "T1-000042", quedan: undefined });

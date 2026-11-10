@@ -154,7 +154,8 @@ Los dos primeros van en `parametro`; los demás, en `tecnico`.
 - **El trabajo `admin.respaldo_semanal`** (`trabajos/respaldo-semanal.ts`):
   - su horario sale de `admin.dia_respaldo_semanal` y `admin.hora_respaldo_semanal`;
   - no corre si ya hay uno correcto esa semana (desde su lunes en México);
-  - si falla (o al worker le falta la llave, la credencial o el rol dueño), lo registra como fallido y avisa, sin reintentarlo cada minuto (decisión 369).
+  - si falla (o al worker le falta la llave, la credencial o el rol dueño), lo registra como fallido y avisa, sin reintentarlo cada minuto (decisión 369);
+  - la subida solo se cierra si `pg_dump` y `age` salieron bien: un volcado a medias no deja objeto en R2. Si la subida falla, se paran los dos programas.
 - **`admin.registrar_respaldo`** (`internas/registrar-respaldo.ts`) escribe el registro y `respaldo.hecho`; si falló, `respaldo_fallido` a la dueña y a soporte.
 - **El trabajo `admin.recordatorio_restauracion`** (`trabajos/recordatorio-restauracion.ts`), cada día a su hora:
   - cuenta desde la última prueba que cuadró, o desde el primer respaldo;

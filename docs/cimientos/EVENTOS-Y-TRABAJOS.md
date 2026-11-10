@@ -165,13 +165,13 @@ Este archivo es dueño del mecanismo; cada evento lo produce el archivo de su te
   - Reparte cada evento en su `SAVEPOINT` (`repartirConLosModulos`): `pg_notify('ua_eventos', id)` y los trabajos con `trasEventos` de ese tipo.
   - Si un reparto falla, solo ese evento se deshace y espera 1, 5, 30, 120 y luego 120 minutos; al décimo intento avisa a soporte.
 - **El reloj** (`nucleo/trabajos/reloj.ts`):
-  - `correrReloj` asegura las particiones y vuelve a encolar la bandeja si hay reintentos vencidos.
+  - `correrReloj` asegura las particiones y vuelve a encolar la bandeja si hay reintentos vencidos. Si una partición no se puede crear (la de respaldo ya tiene renglones de ese mes), avisa a soporte y sigue con los trabajos.
   - Por cada trabajo con horario (`Horario`: cada tantos minutos, por día, por semana o por mes, en hora de México), `vueltaQueToca` da el periodo si ya toca.
   - Si su vuelta no ha terminado, la encola en su cola con la clave `{trabajo}:{periodo}` y un solo intento.
   - `correrTrabajo` no repite una vuelta terminada, la marca al terminar y, si falla, anota el error y avisa a soporte la primera vez; la siguiente vuelta del reloj la vuelve a encolar.
 - **Los avisos en vivo** (`nucleo/sincronizacion/eventos-en-vivo.ts` y la ruta en `servidor.ts`):
   - `crearAvisosEnVivo` escucha `LISTEN ua_eventos` con una conexión propia y lee cada evento avisado.
-  - Manda `cambios` (solo `tablas`, `entidad` y `entidad_id`) a cada conexión a la que le toca: a una cuenta, las tablas que leen sus departamentos según los `lectores` de cada módulo (su `permisos.ts`); a la dueña, todas; a un aparato, las de su alcance y sus ubicaciones (lo da la fase 6).
+  - Manda `cambios` (solo `tablas` y, si la cuenta lee la tabla del documento, `entidad` y `entidad_id`) a cada conexión a la que le toca: a una cuenta, las tablas que leen sus departamentos según los `lectores` de cada módulo (su `permisos.ts`); a la dueña, todas; a un aparato, las de su alcance y sus ubicaciones (lo da la fase 6).
   - `GET /v1/eventos` identifica a quien llama, pero no revisa su versión (un `EventSource` no manda encabezados): la versión mínima va en `hola`, con la hora y el intervalo (decisión 349). Luego van `retry: 5000` y un latido cada 25 segundos.
 - **Las pruebas:**
   - `modulos/admin/internas/guardar-evento.prueba.ts`;

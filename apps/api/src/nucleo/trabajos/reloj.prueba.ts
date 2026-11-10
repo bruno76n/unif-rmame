@@ -138,4 +138,49 @@ describe("un trabajo corre a la hora de México de su parámetro, una sola vez p
 			"2026-12-31",
 		);
 	});
+
+	it("el respaldo semanal corre el día y la hora de sus parámetros, y cambiarlos vale desde la siguiente vuelta", async () => {
+		const respaldoPendiente = async () => {
+			const { rows } = await prueba.dueno.query(
+				"SELECT key FROM graphile_worker.jobs WHERE task_identifier = 'admin.respaldo_semanal' AND attempts < max_attempts",
+			);
+			return rows.map((renglon) => renglon.key);
+		};
+		// Domingo 15 de noviembre, 01:59 y 02:00 en México.
+		ahora = Temporal.Instant.from("2026-11-15T07:59:00Z");
+		await vueltaDelReloj();
+		expect(await respaldoPendiente()).toEqual([]);
+		ahora = Temporal.Instant.from("2026-11-15T08:00:00Z");
+		await vueltaDelReloj();
+		expect(await respaldoPendiente()).toEqual(["admin.respaldo_semanal:2026-11-09"]);
+		await prueba.dueno.query("DELETE FROM graphile_worker._private_jobs WHERE key LIKE 'admin.respaldo_semanal:%'");
+		// La dueña lo pasa a las 03:00: el domingo siguiente, a las 02:30 todavía no toca; a las 03:00, sí.
+		await prueba.dueno.query("UPDATE parametros SET valor_texto = '03:00' WHERE clave = 'admin.hora_respaldo_semanal'");
+		ahora = Temporal.Instant.from("2026-11-22T08:30:00Z");
+		await vueltaDelReloj();
+		expect(await respaldoPendiente()).toEqual([]);
+		ahora = Temporal.Instant.from("2026-11-22T09:00:00Z");
+		await vueltaDelReloj();
+		expect(await respaldoPendiente()).toEqual(["admin.respaldo_semanal:2026-11-16"]);
+		await prueba.dueno.query("DELETE FROM graphile_worker._private_jobs WHERE key LIKE 'admin.respaldo_semanal:%'");
+	});
+
+	it("si una partición no se puede crear, avisa a soporte y el reloj sigue encolando los trabajos", async () => {
+		const { rows } = await prueba.dueno.query(
+			"SELECT to_char(date_trunc('month', now() AT TIME ZONE 'UTC') + interval '2 month', 'YYYY_MM') AS mes, (date_trunc('month', now() AT TIME ZONE 'UTC') + interval '2 month' + interval '3 day') AT TIME ZONE 'UTC' AS dentro",
+		);
+		const mes = rows[0]?.mes;
+		// Un renglón del mes que viene cayó en la partición de respaldo: esa partición ya no se puede crear.
+		await prueba.dueno.query(`DROP TABLE eventos_${mes}`);
+		await prueba.dueno.query(
+			"INSERT INTO eventos (id, tipo, modulo, tablas, ocurrido_en, creado_en, procesado_en) VALUES ('01936f2e-0000-7000-8000-0000000000e5', 'nota.creada', 'prueba', '{x}', now(), $1, now())",
+			[rows[0]?.dentro],
+		);
+		const antes = avisos.length;
+		trabajoDePrueba.horario = { cada: "minutos", minutos: 5 };
+		ahora = Temporal.Instant.from("2026-11-23T18:00:00Z");
+		await vueltaDelReloj();
+		expect(avisos.slice(antes)).toEqual([expect.stringMatching(/^Las particiones de eventos falló: /)]);
+		expect(await pendientes()).toContainEqual({ key: "prueba.resumen:2026-11-23T12:00", queue_name: "prueba.resumen" });
+	});
 });

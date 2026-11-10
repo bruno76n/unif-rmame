@@ -341,8 +341,15 @@ export async function crearServidor(dependencias: DependenciasDelServidor) {
 			}
 			respuesta.raw.writeHead(200);
 			const salida = { escribir: (texto: string) => respuesta.raw.write(texto), terminar: () => respuesta.raw.end() };
-			const quitar = await avisos.conectar(quien, salida, hola);
-			peticion.raw.on("close", quitar);
+			// Se escucha el cierre antes de esperar: si el cliente se va mientras se conecta, igual se quita.
+			let quitar: (() => void) | undefined;
+			let cerrada = false;
+			peticion.raw.on("close", () => {
+				cerrada = true;
+				quitar?.();
+			});
+			quitar = await avisos.conectar(quien, salida, hola);
+			if (cerrada) quitar();
 		});
 	}
 

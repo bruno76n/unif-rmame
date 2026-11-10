@@ -23,11 +23,13 @@ export interface MediosDeRespaldo {
 	entornoDelVolcado?: Record<string, string>;
 }
 
-/** Lo que sale del volcado cifrado: el flujo y cuándo terminaron los dos programas. */
+/** Lo que sale del volcado cifrado: el flujo, cuándo terminaron los dos programas y cómo pararlos. */
 export interface VolcadoCifrado {
 	flujo: Readable;
 	/** Termina bien si `pg_dump` y `age` salieron con 0; si no, falla con lo que dijeron. */
 	termino: Promise<void>;
+	/** Para los dos programas: si la subida falla, nadie más lee su salida y se quedarían esperando. */
+	detener: () => void;
 }
 
 /** Junta lo que un programa escribe en su salida de errores, para decirlo si falla. */
@@ -66,11 +68,19 @@ export function volcarYCifrar(
 	});
 	const cifrado = spawn("age", ["-r", medios.llavePublica], { stdio: ["pipe", "pipe", "pipe"] });
 	volcado.stdout.pipe(cifrado.stdin);
+	// Si age termina antes (se paró, o falló), escribirle da EPIPE: la falla ya la dicen las salidas de los dos.
+	cifrado.stdin.on("error", () => undefined);
 	const termino = Promise.all([
 		esperarSalida(volcado, "pg_dump", errores(volcado.stderr)),
 		esperarSalida(cifrado, "age", errores(cifrado.stderr)),
 	]).then(() => undefined);
-	return { flujo: cifrado.stdout, termino };
+	// Si nadie espera a `termino` (la subida falló antes), su falla no queda suelta.
+	termino.catch(() => undefined);
+	const detener = () => {
+		volcado.kill("SIGTERM");
+		cifrado.kill("SIGTERM");
+	};
+	return { flujo: cifrado.stdout, termino, detener };
 }
 
 /**

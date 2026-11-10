@@ -83,9 +83,9 @@ La raíz `uniformame.mx` queda para la tienda en línea, después. Si el dominio
 | `COOKIE_SECRETO` | La llave que cifra la cookie de la entrada con Google | API |
 | `R2_CUENTA` · `R2_ARCHIVOS_LLAVE_ID` · `R2_ARCHIVOS_SECRETO` | La credencial del cubo de archivos | API, worker |
 | `R2_RESPALDOS_LLAVE_ID` · `R2_RESPALDOS_SECRETO` | La credencial del cubo de respaldos, solo escribe | Worker |
-| `RESPALDO_LLAVE_PUBLICA` (formato `age1…`) y `BASE_DATOS_URL_DUENO` | Con ellas el worker vuelca y cifra el respaldo semanal: el volcado usa el rol dueño, el único que lee todo | Worker |
+| `BASE_DATOS_URL_DUENO` en el worker | El volcado del respaldo semanal usa el rol dueño, el único que lee todo (decisión 368) | Worker |
 | `R2_DIRECCION` | Solo en local: la dirección del almacén compatible con S3 de `compose.yaml` (`http://127.0.0.1:7070`) | `pnpm local` |
-| `RESPALDO_LLAVE_PUBLICA` | La llave pública de age con que se cifra el respaldo | Worker |
+| `RESPALDO_LLAVE_PUBLICA` | La llave pública de age con que se cifra el respaldo (formato `age1…`) | Worker |
 | `RESEND_LLAVE` | La llave de Resend | Worker |
 | `CORREO_DUENA` · `CORREO_SOPORTE` | Los correos de las dos cuentas que nacen con la siembra de la puesta en marcha | El comando de la migración, al terminar la base |
 

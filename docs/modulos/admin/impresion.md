@@ -150,7 +150,7 @@ Los dos van en la sección `tecnico`.
 
 **Fase 4, parte 6.**
 
-- **Las tablas** `impresoras` y `trabajos_impresion` están en `apps/api/src/modulos/admin/tablas.ts` (migración `0008_impresion.sql`), con su disparador común y los CHECK del estado, del error con `fallo` y de las copias.
+- **Las tablas** `impresoras` y `trabajos_impresion` están en `apps/api/src/modulos/admin/tablas.ts` (migración `0008_impresion.sql`), con su disparador común y los CHECK del estado, del error con `fallo` y de las copias. Un índice único (migración `0010_un_puente.sql`) cuida que un puente atienda una sola impresora sin baja.
 - **El puente.** Si es un puente, si está conectado y su versión salen de la lectura `admin.datos_de_aparato` (`dominio/impresion.ts`). La da `dispositivos` en la fase 6; aquí la pone el servidor de prueba con los datos que pone cada prueba (decisión 364). Un puente está conectado si:
   - es `puente_impresion` sin revocar;
   - dio señales en los últimos `admin.minutos_puente_sin_contacto`;
