@@ -3,7 +3,7 @@
 > **Qué cubre:** una semana de trabajo hasta su pago: las piezas de la tablet con su tarifa congelada, la operación nueva que todavía no tiene tarifa, el registro cancelado, la asistencia, el cierre de la semana, el descuento semanal, pagar la nómina y la corrección de algo ya pagado en la siguiente; lo que tiene que cuadrar al final y lo que sale mal.
 > **Estado:** Decidido.
 > **Se construye en:** [fase 21](../../fases/21-pruebas-de-punta-a-punta.md).
-> **Se conecta con:** [pruebas](../../cimientos/PRUEBAS.md) · [nómina](../../modulos/contaduria/nomina.md) · [asistencia](../../modulos/personal/asistencia.md)
+> **Se conecta con:** [pruebas](../../cimientos/PRUEBAS.md) · [nómina](../../modulos/contaduria/nomina.md) · [asistencia](../../modulos/personal/asistencia.md) · [fase 21](../../fases/21-pruebas-de-punta-a-punta.md)
 
 ## Qué prueba
 

@@ -197,6 +197,7 @@ uniformame/
     ├── sello.ts               la huella y el sello
     ├── secretos.ts            la búsqueda de secretos
     ├── gancho-git.ts          los tres casos del gancho de git
+    ├── docs-revisar.ts        pnpm docs:revisar
     ├── repositorio-de-prueba.ts  los repositorios temporales de las pruebas
     └── *.prueba.ts            una prueba por script
 ```
@@ -209,7 +210,8 @@ uniformame/
 | `pnpm estilo` · `pnpm tipos` | `biome check .` · `tsc -p tsconfig.json` |
 | `pnpm pruebas` | `vitest run`: todas las pruebas, sin sellar |
 | `pnpm revision:rapida` | `scripts/revision-rapida.ts`: Biome sobre los archivos cambiados desde el último commit, `tsc` si cambió un `.ts` o un `tsconfig`, y `vitest related` sobre los `.ts` cambiados |
-| `pnpm revision` | `scripts/revision.ts`: Biome, tipos, todas las pruebas, secretos y `pnpm audit`, en ese orden; se detiene en el primero en rojo. Las migraciones desde cero entran en la fase 2 y `openapi.json` en la fase 3 |
+| `pnpm revision` | `scripts/revision.ts`: Biome, tipos, todas las pruebas, secretos, `pnpm audit` y `pnpm docs:revisar`, en ese orden; se detiene en el primero en rojo. Las migraciones desde cero entran en la fase 2 y `openapi.json` en la fase 3 |
+| `pnpm docs:revisar` | `scripts/docs-revisar.ts`: los archivos de creación (abajo) |
 
 **Las herramientas** se llaman desde `node_modules/.bin` (`scripts/comandos.ts`), sin rutas de la máquina: lo mismo corre en la nube y en la Mac.
 
@@ -219,4 +221,13 @@ uniformame/
 
 **La búsqueda de secretos** (`scripts/secretos.ts`) revisa lo que se va a guardar: llaves privadas, direcciones de Postgres con contraseña, el secreto de cliente y las llaves de API de Google, las llaves de Resend, un `.env` que `.gitignore` no deja fuera o que se va a guardar, y cualquier variable de `.env.ejemplo` escrita con un valor (`NOMBRE=algo`), que cubre también las credenciales de R2. Dice el archivo y el renglón, nunca el valor.
 
-**Las pruebas:** `scripts/versiones.prueba.ts`, `revision-rapida.prueba.ts`, `sello.prueba.ts`, `gancho-git.prueba.ts` y `secretos.prueba.ts`, cada una en un repositorio de git temporal con la configuración del real y `node_modules` enlazado.
+**`pnpm docs:revisar`** (`scripts/docs-revisar.ts`) lee todos los `.md` de `docs/`, `AGENTS.md`, `CLAUDE.md` y `.claude/` que se van a guardar, menos las sesiones:
+
+- **el encabezado:** título, renglón vacío y los cuatro campos en orden (Qué cubre, Estado, Se construye en, Se conecta con; en `docs/fases/NN-…`, Etapa, Estado, Antes de empezar, Se conecta con), con un estado de la lista y «Se construye en» con su enlace. Antes del título solo puede ir el bloque de configuración `---` de `.claude/` o la línea `@AGENTS.md`;
+- **los enlaces:** cada enlace relativo fuera de los bloques de código lleva a un archivo o carpeta que existe, y su ancla, a un título de ese archivo, calculada como GitHub (minúsculas, sin puntuación salvo `-` y `_`, un guion por espacio, acentos incluidos; los títulos repetidos llevan `-1`, `-2`);
+- **las conexiones:** si el «Se conecta con» de A enlaza a B, el de B enlaza a A;
+- **el índice:** cada archivo revisado está enlazado desde `docs/INDICE.md`.
+
+De `docs/registros/` solo revisa el encabezado de la bitácora y de `REGISTROS.md`. Dice cada error con su archivo y su renglón.
+
+**Las pruebas:** `scripts/versiones.prueba.ts`, `revision-rapida.prueba.ts`, `sello.prueba.ts`, `gancho-git.prueba.ts`, `secretos.prueba.ts` y `docs-revisar.prueba.ts`, cada una en un repositorio de git temporal con la configuración del real y `node_modules` enlazado.

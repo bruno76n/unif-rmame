@@ -3,7 +3,7 @@
 > **Qué cubre:** el pedido de un cliente externo de punta a punta, de la venta al cobro: confirmar, anticipo, mandar a producción, entregar tela, cortar, la tablet, Calidad, Aduana, la nota, el despacho, la entrega y el pago; lo que tiene que cuadrar al final y lo que sale mal.
 > **Estado:** Decidido.
 > **Se construye en:** [fase 21](../../fases/21-pruebas-de-punta-a-punta.md).
-> **Se conecta con:** [pruebas](../../cimientos/PRUEBAS.md) · [pedidos](../../modulos/ventas/pedidos.md)
+> **Se conecta con:** [pruebas](../../cimientos/PRUEBAS.md) · [pedidos](../../modulos/ventas/pedidos.md) · [fase 21](../../fases/21-pruebas-de-punta-a-punta.md)
 
 ## Qué prueba
 

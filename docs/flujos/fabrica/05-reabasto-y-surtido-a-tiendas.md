@@ -3,7 +3,7 @@
 > **Qué cubre:** el reabasto de Bodega del mínimo a la sugerencia, la orden y el lote que la llena, y el surtido a una tienda sin caja: «Mandar a {tienda}», la recepción en Aduana, el despacho y la entrega con la firma de su encargada; lo que tiene que cuadrar al final y lo que sale mal.
 > **Estado:** Decidido.
 > **Se construye en:** [fase 21](../../fases/21-pruebas-de-punta-a-punta.md).
-> **Se conecta con:** [pruebas](../../cimientos/PRUEBAS.md) · [mínimos y reabasto](../../modulos/inventario/minimos-y-reabasto.md) · [migración](../../MIGRACION.md)
+> **Se conecta con:** [pruebas](../../cimientos/PRUEBAS.md) · [mínimos y reabasto](../../modulos/inventario/minimos-y-reabasto.md) · [migración](../../MIGRACION.md) · [fase 21](../../fases/21-pruebas-de-punta-a-punta.md)
 
 ## Qué prueba
 

@@ -3,7 +3,7 @@
 > **Qué cubre:** la compra de material de punta a punta, de la orden al pago: levantar y enviar la orden con su PDF, recibir en Aduana rollo por rollo, las etiquetas de los rollos, el despacho a Bodega, la factura con sus tres puntas, el pago y el cierre de la orden; con la recepción de más, la factura que no cuadra y la nota que cobra otro precio.
 > **Estado:** Decidido.
 > **Se construye en:** [fase 21](../../fases/21-pruebas-de-punta-a-punta.md).
-> **Se conecta con:** [pruebas](../../cimientos/PRUEBAS.md) · [órdenes de compra](../../modulos/compras/ordenes-de-compra.md)
+> **Se conecta con:** [pruebas](../../cimientos/PRUEBAS.md) · [órdenes de compra](../../modulos/compras/ordenes-de-compra.md) · [fase 21](../../fases/21-pruebas-de-punta-a-punta.md)
 
 ## Qué prueba
 

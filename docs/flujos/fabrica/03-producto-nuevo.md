@@ -3,7 +3,7 @@
 > **Qué cubre:** una prenda nueva de punta a punta: el desarrollo con su muestra y la aprobación de Dirección, el alta en Catálogo a partir de otra prenda, la receta copiada y corregida, sus etiquetas, la primera orden y el primer corte que verifica la receta; lo que tiene que cuadrar al final y lo que sale mal.
 > **Estado:** Decidido.
 > **Se construye en:** [fase 21](../../fases/21-pruebas-de-punta-a-punta.md).
-> **Se conecta con:** [pruebas](../../cimientos/PRUEBAS.md) · [productos](../../modulos/catalogo/productos.md)
+> **Se conecta con:** [pruebas](../../cimientos/PRUEBAS.md) · [productos](../../modulos/catalogo/productos.md) · [fase 21](../../fases/21-pruebas-de-punta-a-punta.md)
 
 ## Qué prueba
 

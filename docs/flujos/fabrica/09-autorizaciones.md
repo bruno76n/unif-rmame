@@ -3,7 +3,7 @@
 > **Qué cubre:** los seis tipos de autorización de Dirección de punta a punta: quién la pide, cómo llega, quién decide con «Confirmar con Google», qué pasa al autorizar y al rechazar en el módulo de origen, la que pide y decide la misma persona, la que se cancela porque su documento se canceló, y el alta de usuario que solo da la dueña; lo que tiene que cuadrar al final y lo que sale mal.
 > **Estado:** Decidido.
 > **Se construye en:** [fase 21](../../fases/21-pruebas-de-punta-a-punta.md).
-> **Se conecta con:** [pruebas](../../cimientos/PRUEBAS.md) · [autorizaciones](../../modulos/direccion/autorizaciones.md)
+> **Se conecta con:** [pruebas](../../cimientos/PRUEBAS.md) · [autorizaciones](../../modulos/direccion/autorizaciones.md) · [fase 21](../../fases/21-pruebas-de-punta-a-punta.md)
 
 ## Qué prueba
 

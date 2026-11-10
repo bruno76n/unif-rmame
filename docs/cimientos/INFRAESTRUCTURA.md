@@ -3,7 +3,7 @@
 > **Qué cubre:** dónde corre el sistema y cuánto cuesta: Render a precio fijo (la API, el worker, Postgres 18 y la web estática, en un Blueprint), el dominio en Cloudflare, los archivos y los respaldos en R2, el correo en Resend y la entrada con Google; las variables de entorno; cómo se despliega; la recuperación y la restauración probada; y la vigilancia que avisa si algo se cae o empieza a fallar.
 > **Estado:** Decidido.
 > **Se construye en:** [fase 23 ●](../fases/23-puesta-en-marcha.md).
-> **Se conecta con:** [respaldos](../modulos/admin/respaldos.md) · [arquitectura](ARQUITECTURA.md) · [seguridad](SEGURIDAD.md) · [base de datos](BASE-DE-DATOS.md) · [avisos](../modulos/admin/avisos.md) · [acceso con Google](../modulos/admin/acceso-con-google.md) · [archivos](../modulos/admin/archivos.md) · [eventos y trabajos](EVENTOS-Y-TRABAJOS.md) · [migración](../MIGRACION.md) · [puente de impresión](../apps/puente-de-impresion.md) · [la tablet](../apps/tablet.md) · [fase 4](../fases/04-servicios-comunes.md)
+> **Se conecta con:** [respaldos](../modulos/admin/respaldos.md) · [arquitectura](ARQUITECTURA.md) · [seguridad](SEGURIDAD.md) · [base de datos](BASE-DE-DATOS.md) · [avisos](../modulos/admin/avisos.md) · [acceso con Google](../modulos/admin/acceso-con-google.md) · [archivos](../modulos/admin/archivos.md) · [eventos y trabajos](EVENTOS-Y-TRABAJOS.md) · [migración](../MIGRACION.md) · [puente de impresión](../apps/puente-de-impresion.md) · [la tablet](../apps/tablet.md) · [fase 4](../fases/04-servicios-comunes.md) · [fase 23](../fases/23-puesta-en-marcha.md)
 
 ## Para qué sirve
 

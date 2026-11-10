@@ -13,7 +13,8 @@
 		"tipos": "tsc -p tsconfig.json",
 		"pruebas": "vitest run",
 		"revision:rapida": "node scripts/revision-rapida.ts",
-		"revision": "node scripts/revision.ts"
+		"revision": "node scripts/revision.ts",
+		"docs:revisar": "node scripts/docs-revisar.ts"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.6.6",

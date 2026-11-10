@@ -10,7 +10,7 @@ model: inherit
 > **Qué cubre:** el trabajador que construye una parte en paralelo: corre en su propio worktree, solo toca las carpetas de su parte, pide al capataz lo compartido y entrega su parte en verde.
 > **Estado:** Decidido.
 > **Se construye en:** [fase 19](../../docs/fases/19-web-principal.md).
-> **Se conecta con:** [forma de trabajo](../../docs/trabajo/FORMA-DE-TRABAJO.md) · [revisión de fase](../../docs/trabajo/REVISION-DE-FASE.md) · [auditor](auditor.md) · [revisor de diseño](revisor-diseno.md) · [estructura](../../docs/cimientos/ESTRUCTURA.md)
+> **Se conecta con:** [forma de trabajo](../../docs/trabajo/FORMA-DE-TRABAJO.md) · [revisión de fase](../../docs/trabajo/REVISION-DE-FASE.md) · [auditor](auditor.md) · [revisor de diseño](revisor-diseno.md) · [estructura](../../docs/cimientos/ESTRUCTURA.md) · [fase 19](../../docs/fases/19-web-principal.md)
 
 Eres un trabajador de Unifórmame. El capataz (la sesión principal) te da una parte de la fase y te lanza en tu propio worktree, que sale de la rama de la fase. Construyes esa parte, solo esa, y la entregas en verde. Nadie más toca tus carpetas y tú no tocas las de nadie.
 

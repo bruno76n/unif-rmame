@@ -52,6 +52,7 @@ export function pasosDeLaRevision(raiz: string): Paso[] {
 		{ nombre: "Todas las pruebas (Vitest)", correr: () => correr(raiz, "vitest", ["run"]) },
 		{ nombre: "Secretos", correr: () => correr(raiz, "node", ["scripts/secretos.ts"]) },
 		{ nombre: "Dependencias (pnpm audit)", correr: () => correr(raiz, "pnpm", ["audit"]) },
+		{ nombre: "Archivos de creación (docs:revisar)", correr: () => correr(raiz, "node", ["scripts/docs-revisar.ts"]) },
 	];
 }
 

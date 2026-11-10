@@ -3,7 +3,7 @@
 > **Etapa:** Cimientos.
 > **Estado:** Pendiente.
 > **Antes de empezar:** lee la [forma de trabajo](../trabajo/FORMA-DE-TRABAJO.md) y la [revisión de fase](../trabajo/REVISION-DE-FASE.md).
-> **Se conecta con:** [fases](FASES.md) · [fase 3](03-api-protocolo-e-idempotencia.md) · [fase 5](05-acceso-con-google-cuentas-y-permisos.md)
+> **Se conecta con:** [fases](FASES.md) · [fase 3](03-api-protocolo-e-idempotencia.md) · [fase 5](05-acceso-con-google-cuentas-y-permisos.md) · [infraestructura](../cimientos/INFRAESTRUCTURA.md)
 
 ## Objetivo
 

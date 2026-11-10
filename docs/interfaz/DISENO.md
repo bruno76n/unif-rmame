@@ -3,7 +3,7 @@
 > **Qué cubre:** el sistema de diseño de las pantallas sobre Tailwind y shadcn/ui: los colores, la paleta de escuelas, la tipografía, las medidas, los componentes, los estados en cuadro sólido y los íconos; la muestra (versión 36) como referencia visual y lo que no se construye de ella.
 > **Estado:** Decidido.
 > **Se construye en:** [fase 19](../fases/19-web-principal.md).
-> **Se conecta con:** [textos](TEXTOS.md) · [lo común de las pantallas](comunes.md) · [regla de pantallas](../../.claude/rules/react.md) · [revisor de diseño](../../.claude/agents/revisor-diseno.md) · [escuelas y secciones](../modulos/catalogo/escuelas-y-secciones.md) · [estructura](../cimientos/ESTRUCTURA.md) · [arquitectura](../cimientos/ARQUITECTURA.md) · [pantallas de la tablet](tablet.md)
+> **Se conecta con:** [textos](TEXTOS.md) · [lo común de las pantallas](comunes.md) · [regla de pantallas](../../.claude/rules/react.md) · [revisor de diseño](../../.claude/agents/revisor-diseno.md) · [escuelas y secciones](../modulos/catalogo/escuelas-y-secciones.md) · [estructura](../cimientos/ESTRUCTURA.md) · [arquitectura](../cimientos/ARQUITECTURA.md) · [pantallas de la tablet](tablet.md) · [fase 19](../fases/19-web-principal.md)
 
 ## Para qué sirve
 

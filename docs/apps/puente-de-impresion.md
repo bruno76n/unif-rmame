@@ -3,7 +3,7 @@
 > **Qué cubre:** el programa chico que corre en la computadora de Aduana y en la del taller: cómo se instala y se registra con su código, cómo se entera de sus trabajos, manda el ZPL a su Zebra por la red local y confirma cada uno; su configuración, su diario, su llave y cómo se actualiza.
 > **Estado:** Decidido.
 > **Se construye en:** [fase 20](../fases/20-tablet-puente-de-impresion-e-impresos.md).
-> **Se conecta con:** [impresión](../modulos/admin/impresion.md) · [etiquetas](../impresos/etiquetas.md) · [dispositivos](../modulos/admin/dispositivos.md) · [eventos y trabajos](../cimientos/EVENTOS-Y-TRABAJOS.md) · [API](../cimientos/API.md) · [sincronización](../cimientos/SINCRONIZACION.md) · [arquitectura](../cimientos/ARQUITECTURA.md) · [pantallas de Administración](../interfaz/fabrica/administracion.md) · [infraestructura](../cimientos/INFRAESTRUCTURA.md)
+> **Se conecta con:** [impresión](../modulos/admin/impresion.md) · [etiquetas](../impresos/etiquetas.md) · [dispositivos](../modulos/admin/dispositivos.md) · [eventos y trabajos](../cimientos/EVENTOS-Y-TRABAJOS.md) · [API](../cimientos/API.md) · [sincronización](../cimientos/SINCRONIZACION.md) · [arquitectura](../cimientos/ARQUITECTURA.md) · [pantallas de Administración](../interfaz/fabrica/administracion.md) · [infraestructura](../cimientos/INFRAESTRUCTURA.md) · [fase 20](../fases/20-tablet-puente-de-impresion-e-impresos.md)
 
 ## Para qué sirve
 

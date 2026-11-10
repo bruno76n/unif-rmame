@@ -3,7 +3,7 @@
 > **Qué cubre:** una falla de punta a punta: el reporte desde la tablet (también sin internet), la máquina parada que atora un lote, mandarla a reparación, la nota de seguimiento, registrar la reparación con su costo y sus horas de paro, el gasto que nace en Contaduría y el lote que deja de estar atorado; lo que tiene que cuadrar al final y lo que sale mal.
 > **Estado:** Decidido.
 > **Se construye en:** [fase 21](../../fases/21-pruebas-de-punta-a-punta.md).
-> **Se conecta con:** [pruebas](../../cimientos/PRUEBAS.md) · [máquinas, fallas y servicios](../../modulos/mantenimiento/maquinas-fallas-y-servicios.md)
+> **Se conecta con:** [pruebas](../../cimientos/PRUEBAS.md) · [máquinas, fallas y servicios](../../modulos/mantenimiento/maquinas-fallas-y-servicios.md) · [fase 21](../../fases/21-pruebas-de-punta-a-punta.md)
 
 ## Qué prueba
 

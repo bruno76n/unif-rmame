@@ -3,7 +3,7 @@
 > **Qué cubre:** cómo se escribe todo texto de pantalla (títulos, pestañas, columnas, estados, botones y avisos): el tono, los nombres fijos, las siete formas de los estados con su color, y los textos de los pedidos, el hilo, la receta y el corte.
 > **Estado:** Decidido.
 > **Se construye en:** [fase 19](../fases/19-web-principal.md).
-> **Se conecta con:** [diseño](DISENO.md) · [lo común de las pantallas](comunes.md) · [regla de pantallas](../../.claude/rules/react.md) · [API](../cimientos/API.md) · [revisor de diseño](../../.claude/agents/revisor-diseno.md) · [pantallas de la tablet](tablet.md)
+> **Se conecta con:** [diseño](DISENO.md) · [lo común de las pantallas](comunes.md) · [regla de pantallas](../../.claude/rules/react.md) · [API](../cimientos/API.md) · [revisor de diseño](../../.claude/agents/revisor-diseno.md) · [pantallas de la tablet](tablet.md) · [fase 19](../fases/19-web-principal.md)
 
 ## Para qué sirve
 

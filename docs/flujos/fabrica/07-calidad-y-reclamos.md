@@ -3,7 +3,7 @@
 > **Qué cubre:** la revisión de un lote con rechazos por talla, el reproceso que regresa al taller y vuelve aprobado, el reclamo de un cliente rastreado desde el código de la prenda, la nota de crédito con piezas que regresan, la revisión de esa devolución y el reclamo resuelto; lo que tiene que cuadrar al final y lo que sale mal.
 > **Estado:** Decidido.
 > **Se construye en:** [fase 21](../../fases/21-pruebas-de-punta-a-punta.md).
-> **Se conecta con:** [pruebas](../../cimientos/PRUEBAS.md) · [revisión de lotes](../../modulos/calidad/revision-de-lotes.md)
+> **Se conecta con:** [pruebas](../../cimientos/PRUEBAS.md) · [revisión de lotes](../../modulos/calidad/revision-de-lotes.md) · [fase 21](../../fases/21-pruebas-de-punta-a-punta.md)
 
 ## Qué prueba
 

@@ -3,7 +3,7 @@
 > **Qué cubre:** el pedido W- que manda el sitio, de que llega pagado a «Listo para empacar»: sus reservas y su promesa, el surtido de Bodega, la recepción en Aduana, el pago pendiente que vence, la prenda que no está, y la cancelación; lo que tiene que cuadrar al final y lo que sale mal.
 > **Estado:** Decidido.
 > **Se construye en:** [fase 21](../../fases/21-pruebas-de-punta-a-punta.md).
-> **Se conecta con:** [pruebas](../../cimientos/PRUEBAS.md) · [pedidos en línea](../../modulos/linea/pedidos-en-linea.md)
+> **Se conecta con:** [pruebas](../../cimientos/PRUEBAS.md) · [pedidos en línea](../../modulos/linea/pedidos-en-linea.md) · [fase 21](../../fases/21-pruebas-de-punta-a-punta.md)
 
 ## Qué prueba
 

@@ -63,4 +63,26 @@ describe("el gancho de git rechaza un commit de código sin sello vigente, deja 
 		const { entra, salida } = commit(raiz);
 		expect(entra, salida).toBe(true);
 	});
+
+	it("deja pasar un commit de solo documentos con pnpm docs:revisar en verde", () => {
+		escribirIndice(raiz, "");
+		const { entra, salida } = commit(raiz);
+		expect(entra, salida).toBe(true);
+	});
+
+	it("rechaza un commit de documentos con un enlace roto", () => {
+		escribirIndice(raiz, "Ver [lo que no existe](no-existe.md).\n");
+		const { entra, salida } = commit(raiz);
+		expect(entra).toBe(false);
+		expect(salida).toContain("no-existe.md");
+	});
 });
+
+/** Escribe un índice bien formado, que se lista a sí mismo, con un texto al final. */
+function escribirIndice(raiz: string, texto: string): void {
+	escribir(
+		raiz,
+		"docs/INDICE.md",
+		`# Índice\n\n> **Qué cubre:** todo.\n> **Estado:** Decidido.\n> **Se construye en:** [fase 1](INDICE.md).\n> **Se conecta con:** \n\n- [Índice](INDICE.md) — todo.\n\n${texto}`,
+	);
+}

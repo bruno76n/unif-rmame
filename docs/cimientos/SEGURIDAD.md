@@ -3,7 +3,7 @@
 > **Qué cubre:** lo que protege a todo el sistema: la base que nunca se expone, los secretos y las variables de entorno, las cookies, el origen y CORS, los encabezados de seguridad, los límites de peticiones e intentos, lo que se guarda cifrado o como hash, lo que nunca se registra, lo que llega de los aparatos y de fuera, y cómo se revisa todo en la fase 22.
 > **Estado:** Decidido.
 > **Se construye en:** [fase 22 ●](../fases/22-seguridad-completa.md).
-> **Se conecta con:** [acceso y permisos](ACCESO-Y-PERMISOS.md) · [API](API.md) · [auditor](../../.claude/agents/auditor.md) · [arquitectura](ARQUITECTURA.md) · [infraestructura](INFRAESTRUCTURA.md) · [base de datos](BASE-DE-DATOS.md) · [acceso con Google](../modulos/admin/acceso-con-google.md) · [archivos](../modulos/admin/archivos.md) · [bitácora](../modulos/admin/bitacora.md) · [dispositivos](../modulos/admin/dispositivos.md) · [respaldos](../modulos/admin/respaldos.md) · [sincronización](SINCRONIZACION.md)
+> **Se conecta con:** [acceso y permisos](ACCESO-Y-PERMISOS.md) · [API](API.md) · [auditor](../../.claude/agents/auditor.md) · [arquitectura](ARQUITECTURA.md) · [infraestructura](INFRAESTRUCTURA.md) · [base de datos](BASE-DE-DATOS.md) · [acceso con Google](../modulos/admin/acceso-con-google.md) · [archivos](../modulos/admin/archivos.md) · [bitácora](../modulos/admin/bitacora.md) · [dispositivos](../modulos/admin/dispositivos.md) · [respaldos](../modulos/admin/respaldos.md) · [sincronización](SINCRONIZACION.md) · [fase 22](../fases/22-seguridad-completa.md)
 
 ## Para qué sirve
 

@@ -10,7 +10,7 @@ model: inherit
 > **Qué cubre:** el revisor de las fases de interfaz: abre cada pantalla construida y la misma de la muestra, las compara con capturas, revisa sus textos y sus estados, y entrega un hallazgo por diferencia con su evidencia.
 > **Estado:** Decidido.
 > **Se construye en:** [fase 19](../../docs/fases/19-web-principal.md).
-> **Se conecta con:** [revisión de fase](../../docs/trabajo/REVISION-DE-FASE.md) · [auditor](auditor.md) · [trabajador](trabajador.md) · [diseño](../../docs/interfaz/DISENO.md) · [textos](../../docs/interfaz/TEXTOS.md) · [lo común de las pantallas](../../docs/interfaz/comunes.md) · [regla de pantallas](../rules/react.md) · [fase 20](../../docs/fases/20-tablet-puente-de-impresion-e-impresos.md)
+> **Se conecta con:** [revisión de fase](../../docs/trabajo/REVISION-DE-FASE.md) · [auditor](auditor.md) · [trabajador](trabajador.md) · [diseño](../../docs/interfaz/DISENO.md) · [textos](../../docs/interfaz/TEXTOS.md) · [lo común de las pantallas](../../docs/interfaz/comunes.md) · [regla de pantallas](../rules/react.md) · [fase 20](../../docs/fases/20-tablet-puente-de-impresion-e-impresos.md) · [fase 19](../../docs/fases/19-web-principal.md)
 
 Eres el revisor de diseño de una fase de interfaz de Unifórmame. No construiste las pantallas y no las vas a corregir: las pones junto a la muestra y dices dónde no se parecen, cada cosa con su captura. La lógica ya está probada en la API; aquí se revisa lo que se ve.
 

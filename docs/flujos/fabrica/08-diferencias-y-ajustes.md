@@ -3,7 +3,7 @@
 > **Qué cubre:** cómo nace y se cierra cada diferencia de inventario: la de una recepción que no cuadró y su aclaración, la de una pieza que Bodega no encuentra, el conteo ciego con su ajuste y la autorización de Dirección, la diferencia del cuadre de la noche y la de un avío que no alcanzó; lo que tiene que cuadrar al final y lo que sale mal.
 > **Estado:** Decidido.
 > **Se construye en:** [fase 21](../../fases/21-pruebas-de-punta-a-punta.md).
-> **Se conecta con:** [pruebas](../../cimientos/PRUEBAS.md) · [diferencias, ajustes y mermas](../../modulos/inventario/diferencias-ajustes-y-mermas.md)
+> **Se conecta con:** [pruebas](../../cimientos/PRUEBAS.md) · [diferencias, ajustes y mermas](../../modulos/inventario/diferencias-ajustes-y-mermas.md) · [fase 21](../../fases/21-pruebas-de-punta-a-punta.md)
 
 ## Qué prueba
 

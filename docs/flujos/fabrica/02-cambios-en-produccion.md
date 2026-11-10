@@ -3,7 +3,7 @@
 > **Qué cubre:** los cambios a un pedido que ya está en producción: una versión que agrega y quita piezas y cambia la entrega, mandar lo nuevo, aplicar el cambio a los lotes, lo ya cortado que va a Bodega, y cancelar un pedido; lo que tiene que cuadrar al final y lo que sale mal.
 > **Estado:** Decidido.
 > **Se construye en:** [fase 21](../../fases/21-pruebas-de-punta-a-punta.md).
-> **Se conecta con:** [pruebas](../../cimientos/PRUEBAS.md) · [cambios a pedido](../../modulos/produccion/cambios-a-pedido.md)
+> **Se conecta con:** [pruebas](../../cimientos/PRUEBAS.md) · [cambios a pedido](../../modulos/produccion/cambios-a-pedido.md) · [fase 21](../../fases/21-pruebas-de-punta-a-punta.md)
 
 ## Qué prueba
 
