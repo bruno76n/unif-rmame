@@ -17,7 +17,7 @@ La API habla su protocolo completo: acciones y consultas con sus contratos, erro
 
 ### Parte 1 · El servidor y el protocolo
 
-**Construye:** `apps/api/src/servidor.ts` con Fastify; las rutas `POST /v1/acciones/{modulo}.{accion}` y `GET /v1/consultas/{modulo}.{consulta}` armadas desde los contratos registrados; `GET /v1/salud`; la forma de las respuestas y de los errores con su tabla completa; la revisión del `Origin` en las acciones; `426` por versión de app; los mensajes de Zod en español; helmet y CORS con credenciales para el subdominio de la web; pino con una `referencia` por error `500`.
+**Construye:** `apps/api/src/servidor.ts` con Fastify; las rutas `POST /v1/acciones/{modulo}.{accion}` y `GET /v1/consultas/{modulo}.{consulta}` armadas desde los contratos registrados; `GET /v1/salud`; la forma de las respuestas y de los errores con su tabla completa; la revisión del `Origin` en las acciones; `426` por versión de app; los mensajes de Zod en español; helmet y CORS con credenciales para el subdominio de la web; pino con una `referencia` por error `500`; el proyecto `api` de Vitest para sus pruebas (decisión 337).
 
 **Leer:**
 - [API](../cimientos/API.md) — el protocolo, las rutas fijas, los errores y sus mensajes.

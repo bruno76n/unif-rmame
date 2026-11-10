@@ -11,6 +11,9 @@ Estos registros nunca cuentan como error del código: si les falta algo, se escr
 
 Lo que falta decidir o investigar, y en qué fase se resuelve. Lo del negocio ya tiene su valor inicial configurable, así que ninguno detiene una fase antes de la suya.
 
+- **Que cada tabla de negocio lleve su disparador** (fase 6, con la sincronización): nada revisa que una tabla con `version` tenga el disparador `columnas_comunes`, ni que una con `xid_escritura` lo lleve con `baja_a_aparatos`; sin eso, la app podría poner `xid_escritura` a mano. Una revisión en `scripts/migraciones.ts` o una prueba sobre el catálogo de la base.
+- **La app puede cambiar sus propios valores de sesión** (fase 22): `uniformame_app` puede hacer `SET idle_in_transaction_session_timeout = 0` o `ALTER ROLE … SET`. El límite de un minuto es el valor por omisión, no una garantía.
+- **`enTransaccionDeshecha` arma su propio Drizzle** (fase 3): si `crearBase` recibe opciones (un `schema`), la ayuda de pruebas tiene que usar las mismas.
 - **Un commit de solo registros no corre `docs:revisar`** (fase 22): el encabezado de la bitácora o de `REGISTROS.md` se puede romper ahí y solo lo ve la siguiente revisión completa. Se decide al revisar la seguridad completa si el gancho también revisa esos dos encabezados.
 - **La red del entorno «Unifórmame»** (antes de la fase 2): Claude Code lo creó con red limitada (`nodejs.org` y los registros de paquetes); la [forma de trabajo](../trabajo/FORMA-DE-TRABAJO.md#el-entorno-de-la-nube) pide «Trusted», que también deja pasar las documentaciones oficiales y Docker Hub. Bruno lo cambia en Settings → Environments y abre las sesiones que siguen en ese entorno.
 
@@ -66,4 +69,5 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 10 nov 2026 | 2 | El rol de la app y su clave (decisión 335) | Clave en la migración · rol sin entrada y clave por máquina | Sin entrada: ningún secreto en el código | No |
 | 10 nov 2026 | 2 | Tres avisos moderados de `pnpm audit` en dependencias indirectas (decisión 336) | Bajar el nivel del audit · `overrides` con las versiones corregidas | `overrides`: bajar el nivel sería debilitar la revisión | No |
 | 10 nov 2026 | 2 | El tercer proyecto de Vitest (decisión 337) | Crearlo vacío · que entre con la API | Con la API: un proyecto sin pruebas no demuestra nada | No |
+| 10 nov 2026 | 2 | El disparador y los objetos temporales (decisión 338) | Solo el `REVOKE TEMPORARY` · solo el `search_path` · los dos, con la migración fallando si no pudo quitar el permiso | Los dos: una base restaurada o copiada pierde el permiso, y el `search_path` sigue cuidando | No |
 

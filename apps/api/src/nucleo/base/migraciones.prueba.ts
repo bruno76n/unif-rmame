@@ -39,6 +39,11 @@ describe("las migraciones aplican desde cero sobre una base vacía; la siembra c
 		expect(secuencia.rowCount).toBe(1);
 		const sinAcentos = await dueno.query("SELECT sin_acentos('Instituto JUAN Pablo II · Educación') AS texto");
 		expect(sinAcentos.rows[0].texto).toBe("instituto juan pablo ii · educacion");
+		// La base migrada no deja a la app crear objetos temporales (migración 0001).
+		const temporales = await dueno.query(
+			"SELECT has_database_privilege('uniformame_app', current_database(), 'TEMP') AS puede",
+		);
+		expect(temporales.rows[0].puede).toBe(false);
 	});
 
 	it("la siembra agrega lo que falta y, la segunda vez, no cambia nada aunque la dueña haya cambiado el valor", async () => {

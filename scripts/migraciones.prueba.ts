@@ -58,6 +58,33 @@ describe("la revisión completa falla si cambió una migración que ya está en 
 		expect(revisarMigracionesDeLaRama(raiz).map((p) => p.archivo)).toEqual(["apps/api/migraciones/meta/_journal.json"]);
 	});
 
+	it("reconoce las tablas creadas de otras formas en SQL", () => {
+		escribir(
+			raiz,
+			"apps/api/migraciones/0001_varias.sql",
+			'CREATE  UNLOGGED TABLE\n  "intentos" (id uuid);\nCREATE TABLE Bitacora (id uuid);\nCREATE TABLE IF NOT EXISTS public."eventos" (id uuid);\n',
+		);
+		escribir(
+			raiz,
+			"apps/api/src/modulos/admin/tablas.ts",
+			"/** @llavePendiente intentos.id */\n/** @llavePendiente bitacora */\n/** @llavePendiente eventos.id */\n",
+		);
+		expect(revisarLlavesPendientes(raiz)).toHaveLength(3);
+	});
+
+	it("falla si una migración nueva tiene fecha anterior a la última de main", () => {
+		escribir(raiz, "apps/api/migraciones/meta/_journal.json", '{"entries":[{"idx":0,"when":200,"tag":"0000_base"}]}\n');
+		git(raiz, ["add", "-A"]);
+		git(raiz, ["-c", "core.hooksPath=/dev/null", "commit", "-q", "-m", "registro"]);
+		git(raiz, ["branch", "-f", "main", "HEAD"]);
+		escribir(
+			raiz,
+			"apps/api/migraciones/meta/_journal.json",
+			'{"entries":[{"idx":0,"when":200,"tag":"0000_base"},{"idx":1,"when":100,"tag":"0001_vieja"}]}\n',
+		);
+		expect(revisarMigracionesDeLaRama(raiz)[0]?.que).toContain("fecha anterior");
+	});
+
 	it("una tabla creada a mano en una migración cuenta como existente, y la marca sin columna también se revisa", () => {
 		escribir(raiz, "apps/api/migraciones/0001_bitacora.sql", 'CREATE TABLE "bitacora_2026_11" (id uuid);\n');
 		escribir(raiz, "apps/api/src/modulos/admin/tablas.ts", "/** @llavePendiente bitacora_2026_11 */\n");

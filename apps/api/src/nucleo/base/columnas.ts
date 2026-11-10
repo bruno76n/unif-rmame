@@ -3,10 +3,10 @@
  * Fase 2 · docs/cimientos/BASE-DE-DATOS.md («Columnas comunes» y «Nada se borra»)
  *
  * `version`, `actualizado_en` y `xid_escritura` las pone el disparador `columnas_comunes` (ver
- * `migraciones/0000_base.sql`): sus valores por omisión solo sirven para que Drizzle no las pida al
+ * `migraciones/0000_base.sql` y `0001_disparador_seguro.sql`): sus valores por omisión solo sirven para que Drizzle no las pida al
  * insertar, y el disparador los pisa. Por eso el de `version` es 0 y no `nextval`: así cada
  * escritura gasta un solo número de la secuencia. Cada migración que crea una tabla de negocio llama a
- * `poner_disparador_comun('<tabla>', <baja>)` en su SQL.
+ * `poner_disparador_comun('<tabla>', baja_a_aparatos => <true|false>)` en su SQL.
  */
 
 import { sql } from "drizzle-orm";

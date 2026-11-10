@@ -19,6 +19,10 @@ $$;
 DO $$
 BEGIN
 	EXECUTE format('REVOKE TEMPORARY ON DATABASE %I FROM PUBLIC', current_database());
+	-- Si quien migra no es dueño de la base, el REVOKE solo avisa: aquí no se sigue sin quitarlo.
+	IF has_database_privilege('uniformame_app', current_database(), 'TEMP') THEN
+		RAISE EXCEPTION 'uniformame_app todavía puede crear objetos temporales: migra con el dueño de la base';
+	END IF;
 END
 $$;
 --> statement-breakpoint

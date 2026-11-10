@@ -78,35 +78,36 @@ describe("toda escritura pone version desde la secuencia global y actualizado_en
 		const [antes] = await base.select().from(documentos).where(eq(documentos.id, id));
 		await base
 			.update(documentos)
-			.set({ nombre: "L-2026-122 (corte)", version: 1, xidEscritura: "1" })
+			.set({ nombre: "L-2026-122 (corte)", version: 1, xidEscritura: "1", actualizadoEn: "2000-01-01T00:00:00Z" })
 			.where(eq(documentos.id, id));
 		const [despues] = await base.select().from(documentos).where(eq(documentos.id, id));
 		expect(despues?.version).toBeGreaterThan(antes?.version ?? Number.POSITIVE_INFINITY);
 		expect(despues?.xidEscritura).not.toBe("1");
 		expect(despues?.xidEscritura).not.toBe(antes?.xidEscritura);
-		expect(new Date(despues?.actualizadoEn ?? 0).getTime()).toBeGreaterThan(
+		// La fecha vieja que mandó el código no queda: queda la de la escritura, que no es anterior a la de antes.
+		expect(new Date(despues?.actualizadoEn ?? 0).getFullYear()).toBeGreaterThan(2000);
+		expect(new Date(despues?.actualizadoEn ?? 0).getTime()).toBeGreaterThanOrEqual(
 			new Date(antes?.actualizadoEn ?? 0).getTime(),
 		);
 	});
 
-	it("la app no puede tomar otra secuencia: una secuencia temporal con el mismo nombre no cambia la version", async () => {
+	it("aunque la app pudiera crear una secuencia temporal con el mismo nombre, el disparador usa la de la base", async () => {
+		// Se le da a la app el permiso que la migración le quita, para probar la otra defensa: el search_path del disparador.
+		await prueba.dueno.query(`GRANT TEMPORARY ON DATABASE ${prueba.nombre} TO uniformame_app`);
 		const cliente = await prueba.app.connect();
 		try {
-			const creada = await cliente.query("CREATE TEMP SEQUENCE version_global START 424242").then(
-				() => true,
-				() => false,
-			);
+			await cliente.query("CREATE TEMP SEQUENCE version_global START 424242");
+			await cliente.query("SET search_path = pg_temp, public");
 			await cliente.query(
-				"INSERT INTO prueba_documentos (id, nombre) VALUES ('01936f2e-8c3a-7b4d-9e5f-000000000009', 'temporal')",
+				"INSERT INTO public.prueba_documentos (id, nombre) VALUES ('01936f2e-8c3a-7b4d-9e5f-000000000009', 'temporal')",
 			);
 			const { rows } = await cliente.query(
-				"SELECT version FROM prueba_documentos WHERE id = '01936f2e-8c3a-7b4d-9e5f-000000000009'",
+				"SELECT version FROM public.prueba_documentos WHERE id = '01936f2e-8c3a-7b4d-9e5f-000000000009'",
 			);
 			expect(Number(rows[0]?.version)).toBeLessThan(424242);
-			// Mejor aún: la app ni siquiera puede crear objetos temporales.
-			expect(creada).toBe(false);
 		} finally {
 			cliente.release();
+			await prueba.dueno.query(`REVOKE TEMPORARY ON DATABASE ${prueba.nombre} FROM uniformame_app`);
 		}
 	});
 

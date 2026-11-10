@@ -75,6 +75,8 @@ describe("dos transacciones que se cruzan por los mismos renglones en el orden f
 			await enTransaccion(transaccion, async (adentro) => {
 				await adentro.execute(sql`UPDATE prueba_cuentas SET saldo = saldo + 100`);
 			});
+			const dentro = await transaccion.execute(sql`SELECT sum(saldo)::int AS total FROM prueba_cuentas`);
+			expect(dentro.rows[0]?.total).toBe(antes.rows[0].total + 200);
 		});
 		const despues = await prueba.dueno.query("SELECT sum(saldo)::int AS total FROM prueba_cuentas");
 		expect(despues.rows[0].total).toBe(antes.rows[0].total);

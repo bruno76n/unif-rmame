@@ -20,3 +20,4 @@ La línea de la bitácora se escribe al final, con el resultado ya conocido. Esc
 | 10 nov 2026 | 2 | 1 · Postgres en local y la conexión (con la base de las pruebas) | [2026-11-10-fase-02](sesiones/2026-11-10-fase-02.md) |
 | 10 nov 2026 | 2 | 2 a 4 · Las convenciones, las migraciones y la siembra, y la base de las pruebas | [2026-11-10-fase-02](sesiones/2026-11-10-fase-02.md) |
 | 10 nov 2026 | 2 | Auditoría y correcciones | [2026-11-10-fase-02](sesiones/2026-11-10-fase-02.md) |
+| 10 nov 2026 | 2 | Revisión de las correcciones y cierre: fase 2 terminada | [2026-11-10-fase-02](sesiones/2026-11-10-fase-02.md) |

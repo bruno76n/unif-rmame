@@ -200,7 +200,7 @@ uniformame/
 ├── apps/
 │   └── api/                   @uniformame/api
 │       ├── drizzle.config.ts
-│       ├── migraciones/       0000_base.sql y meta/
+│       ├── migraciones/       las migraciones en orden y meta/
 │       ├── semillas/          sembrar.ts (los datos de la muestra)
 │       └── src/nucleo/
 │           ├── entorno.ts

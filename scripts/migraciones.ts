@@ -36,6 +36,14 @@ function ramasQueExisten(raiz: string): string[] {
 	});
 }
 
+/** La fecha (`when`) de una entrada del registro, ya como texto JSON. */
+function cuandoDe(entrada: string): number {
+	const leida: unknown = JSON.parse(entrada);
+	return typeof leida === "object" && leida !== null && "when" in leida && typeof leida.when === "number"
+		? leida.when
+		: 0;
+}
+
 /** Las entradas del registro de drizzle-kit (`meta/_journal.json`), como texto para compararlas. */
 function entradasDelRegistro(texto: string): string[] {
 	try {
@@ -69,7 +77,10 @@ export function revisarMigracionesDeLaRama(raiz: string): ProblemaDeMigracion[] 
 			.filter((ruta) => ruta !== "" && !ruta.includes("/meta/"));
 		for (const archivo of enLaRama) {
 			if (!ahora.has(archivo)) {
-				problemas.set(archivo, { archivo, que: "se borró una migración que ya está en la rama principal" });
+				problemas.set(archivo, {
+					archivo,
+					que: "una migración de la rama principal no está aquí: se borró, o esta rama no está al día con main",
+				});
 				continue;
 			}
 			const original = git(raiz, ["rev-parse", `${rama}:${archivo}`]).trim();
@@ -91,7 +102,16 @@ export function revisarMigracionesDeLaRama(raiz: string): ProblemaDeMigracion[] 
 		const actuales = ahora.has(registroDeMigraciones)
 			? entradasDelRegistro(readFileSync(join(raiz, registroDeMigraciones), "utf8"))
 			: [];
-		if (entradasDelRegistro(registroDeLaRama).some((entrada, i) => actuales[i] !== entrada)) {
+		const deLaRama = entradasDelRegistro(registroDeLaRama);
+		// Drizzle aplica en orden de `when` y se salta una entrada nueva con fecha anterior a la última aplicada.
+		const ultimaDeLaRama = Math.max(0, ...deLaRama.map(cuandoDe));
+		if (actuales.slice(deLaRama.length).some((entrada) => cuandoDe(entrada) <= ultimaDeLaRama)) {
+			problemas.set(`${registroDeMigraciones}#orden`, {
+				archivo: registroDeMigraciones,
+				que: "una migración nueva tiene fecha anterior a la última de la rama principal: Drizzle se la saltaría; genérala otra vez",
+			});
+		}
+		if (deLaRama.some((entrada, i) => actuales[i] !== entrada)) {
 			problemas.set(registroDeMigraciones, {
 				archivo: registroDeMigraciones,
 				que: "cambió una entrada del registro de migraciones que ya está en la rama principal",
@@ -119,7 +139,11 @@ export function revisarLlavesPendientes(raiz: string): ProblemaDeMigracion[] {
 			.filter(({ archivo }) => archivo.endsWith("tablas.ts"))
 			.flatMap(({ texto }) => [...texto.matchAll(/pgTable\(\s*["'`]([a-z0-9_]+)["'`]/g)].map((m) => m[1])),
 		...migraciones.flatMap(({ texto }) =>
-			[...texto.matchAll(/CREATE TABLE (?:IF NOT EXISTS )?(?:"?public"?\.)?"?([a-z0-9_]+)"?/gi)].map((m) => m[1]),
+			[
+				...texto.matchAll(
+					/CREATE\s+(?:UNLOGGED\s+|TEMP(?:ORARY)?\s+)?TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:"?public"?\s*\.\s*)?(?:"([^"]+)"|([A-Za-z0-9_]+))/gi,
+				),
+			].map((m) => m[1] ?? (m[2] ?? "").toLowerCase()),
 		),
 	]);
 	const problemas: ProblemaDeMigracion[] = [];

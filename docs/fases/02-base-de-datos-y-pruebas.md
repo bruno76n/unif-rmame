@@ -1,7 +1,7 @@
 # Fase 02: Base de datos y pruebas
 
 > **Etapa:** Cimientos.
-> **Estado:** Pendiente.
+> **Estado:** Terminada.
 > **Antes de empezar:** lee la [forma de trabajo](../trabajo/FORMA-DE-TRABAJO.md) y la [revisión de fase](../trabajo/REVISION-DE-FASE.md).
 > **Se conecta con:** [fases](FASES.md) · [fase 1](01-repositorio-reglas-y-paquete-compartido.md) · [fase 3](03-api-protocolo-e-idempotencia.md)
 
@@ -41,7 +41,7 @@ Las convenciones de la base quedan hechas código y probadas, y cualquier fase p
 
 ### Parte 4 · La base de las pruebas
 
-**Construye:** los proyectos de Vitest (cálculos, base, API); Testcontainers con Postgres 18, la base plantilla y una base copia por archivo; cada prueba dentro de una transacción que se deshace; los simuladores de Google, Resend y R2 con MSW en `pruebas/simuladores/`, cada uno con su modo de fallar; fast-check; la configuración de Playwright para las fases 19 y 21.
+**Construye:** los proyectos de Vitest (cálculos y base; el de la API entra en la fase 3, decisión 337); Testcontainers con Postgres 18, la base plantilla y una base copia por archivo; cada prueba dentro de una transacción que se deshace; los simuladores de Google, Resend y R2 con MSW en `pruebas/simuladores/`, cada uno con su modo de fallar; fast-check; la configuración de Playwright para las fases 19 y 21.
 
 **Leer:**
 - [pruebas](../cimientos/PRUEBAS.md) — los niveles, la base real, los simuladores y lo que sale mal.

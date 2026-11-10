@@ -16,7 +16,7 @@ Una fase es una parte del sistema y se construye de abajo hacia arriba: primero 
 | # | Fase | Qué construye | Estado |
 |---|---|---|---|
 | 1 | [Repositorio, reglas y paquete compartido](01-repositorio-reglas-y-paquete-compartido.md) | El monorepo con sus versiones fijas, los ganchos, el sello y el interruptor de modo; las reglas y los subagentes; el paquete compartido con el dinero y las fechas | Terminada |
-| 2 | [Base de datos y pruebas](02-base-de-datos-y-pruebas.md) | Las convenciones de la base hechas código: columnas comunes, versión, nada se borra, migraciones, siembra y datos de la muestra; la base de las pruebas con Postgres real y simuladores | Pendiente |
+| 2 | [Base de datos y pruebas](02-base-de-datos-y-pruebas.md) | Las convenciones de la base hechas código: columnas comunes, versión, nada se borra, migraciones, siembra y datos de la muestra; la base de las pruebas con Postgres real y simuladores | Terminada |
 | 3 ● | [API: protocolo e idempotencia](03-api-protocolo-e-idempotencia.md) | El protocolo de acciones y consultas, los errores, la clave de idempotencia, el control de pisadas, la forma de un módulo y la documentación de la API | Pendiente |
 | 4 | [Servicios comunes](04-servicios-comunes.md) | Lo que usan todos los módulos: eventos y trabajos, folios, configuración, bitácora, avisos, archivos, impresión y respaldos | Pendiente |
 
