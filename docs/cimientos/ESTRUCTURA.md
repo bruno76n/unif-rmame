@@ -187,7 +187,11 @@ uniformame/
 ├── vitest.config.ts           toma los *.prueba.ts
 ├── .env.ejemplo · .gitignore
 ├── .githooks/pre-commit       llama a scripts/gancho-git.ts
-├── .claude/                   rules/ y agents/
+├── .worktreeinclude           copia .env a cada worktree
+├── .claude/
+│   ├── settings.json          los ganchos de inicio, de después de editar y de fin; worktree.baseRef
+│   ├── modo                   supervisado | autonomo
+│   └── rules/ · agents/
 ├── docs/
 └── scripts/
     ├── archivos.ts            qué se revisa: lo que se va a guardar, lo cambiado y lo del commit
@@ -198,6 +202,9 @@ uniformame/
     ├── secretos.ts            la búsqueda de secretos
     ├── gancho-git.ts          los tres casos del gancho de git
     ├── docs-revisar.ts        pnpm docs:revisar
+    ├── gancho-inicio.ts       el gancho de inicio de Claude Code
+    ├── gancho-edicion.ts      el gancho después de editar
+    ├── gancho-fin.ts          el gancho de fin y el conteo de intentos
     ├── repositorio-de-prueba.ts  los repositorios temporales de las pruebas
     └── *.prueba.ts            una prueba por script
 ```
@@ -230,4 +237,4 @@ uniformame/
 
 De `docs/registros/` solo revisa el encabezado de la bitácora y de `REGISTROS.md`. Dice cada error con su archivo y su renglón.
 
-**Las pruebas:** `scripts/versiones.prueba.ts`, `revision-rapida.prueba.ts`, `sello.prueba.ts`, `gancho-git.prueba.ts`, `secretos.prueba.ts` y `docs-revisar.prueba.ts`, cada una en un repositorio de git temporal con la configuración del real y `node_modules` enlazado.
+**Las pruebas:** `scripts/versiones.prueba.ts`, `revision-rapida.prueba.ts`, `sello.prueba.ts`, `gancho-git.prueba.ts`, `secretos.prueba.ts`, `docs-revisar.prueba.ts`, `gancho-inicio.prueba.ts`, `gancho-edicion.prueba.ts` y `gancho-fin.prueba.ts`, cada una en un repositorio de git temporal con la configuración del real y `node_modules` enlazado.

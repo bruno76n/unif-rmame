@@ -45,7 +45,7 @@ El repositorio queda listo para trabajar como dice la forma de trabajo: el monor
 
 ### Parte 4 · Claude Code: ganchos, modo y worktrees
 
-**Construye:** `.claude/settings.json` con el gancho de inicio (en la nube, `pnpm install`, que deja activo el gancho de git; fuera de la nube no hace nada), el gancho después de editar (revisión rápida de lo cambiado) y el gancho de fin (revisión rápida y conteo de intentos por problema, en un archivo de estado que no entra a git); el interruptor `.claude/modo` en `supervisado`; `worktree.baseRef: "head"`; `.worktreeinclude`. Al tercer intento fallido sobre el mismo problema, el gancho de fin lee el modo y pide el protocolo que corresponde.
+**Construye:** `.claude/settings.json` con el gancho de inicio (en la nube, `pnpm install`, que deja activo el gancho de git; fuera de la nube no hace nada), el gancho después de editar (revisión rápida de lo cambiado) y el gancho de fin (revisión rápida y conteo de intentos por problema, en un archivo de estado que no entra a git); el interruptor `.claude/modo` con el modo vigente de `AGENTS.md` (`autonomo` desde la decisión 323); `worktree.baseRef: "head"`; `.worktreeinclude`. Al tercer intento fallido sobre el mismo problema, el gancho de fin lee el modo y pide el protocolo que corresponde.
 
 **Leer:**
 - [CLAUDE.md](../../CLAUDE.md) — los subagentes, los ganchos y los worktrees.

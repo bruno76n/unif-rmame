@@ -237,4 +237,20 @@ Las reglas completas están en la [regla de código](../../.claude/rules/codigo.
 
 **El sello** (fase 1, parte 2). `pnpm revision` corre sus pasos en orden y, en verde, guarda en `.revision/sello.json` la huella de lo revisado: cada archivo que se guardaría, con el hash de git de su contenido, sin `docs/registros/` (`scripts/sello.ts`). El gancho de git antes de cada commit (`.githooks/pre-commit` → `scripts/gancho-git.ts`) deja pasar un commit de solo registros, corre `pnpm docs:revisar` para uno de solo documentos y, para uno con código, compara el sello con la huella del índice: si no es exactamente lo que se revisó, no entra. `pnpm install` lo deja activo con `core.hooksPath`. Cómo se calcula la huella está en [estructura](../cimientos/ESTRUCTURA.md#cómo-está-hecho). Lo prueban `scripts/sello.prueba.ts` y `scripts/gancho-git.prueba.ts`.
 
-*Los ganchos de Claude Code (el de inicio, el de después de editar y el de fin) y el interruptor de modo los agrega la parte 4 de la fase 1. El script que revisa las carpetas de cada trabajador se agrega en la fase 19.*
+**Los ganchos de Claude Code** (fase 1, parte 4) están en `.claude/settings.json`, y cada uno llama a su script con `node "$CLAUDE_PROJECT_DIR/scripts/…"`:
+
+| Gancho | Evento | Script | Qué hace |
+|---|---|---|---|
+| De inicio | `SessionStart` (`startup` y `resume`) | `scripts/gancho-inicio.ts` | Con `CLAUDE_CODE_REMOTE=true` (la nube), corre `pnpm install --frozen-lockfile`, que instala el lockfile tal cual y, con el `prepare`, deja `core.hooksPath` en `.githooks`. Fuera de la nube no hace nada |
+| Después de editar | `PostToolUse` de `Edit`, `Write` y `NotebookEdit` | `scripts/gancho-edicion.ts` | Corre la revisión rápida; en rojo sale con el código 2 y Claude ve el final de la salida |
+| De fin | `Stop` | `scripts/gancho-fin.ts` | Corre la revisión rápida y cuenta los intentos por problema (abajo) |
+
+**El conteo de intentos.** Cada revisión en rojo tiene una firma: el paso que falló y su primer error, sin renglón ni columna, así que el mismo error movido de lugar sigue siendo el mismo problema. El conteo por firma vive en `.claude/estado/intentos.json`, fuera de git, y un verde lo borra. En rojo, el gancho no deja terminar el turno (código 2) y dice el número de intento. Al tercero sobre el mismo problema pide el protocolo del modo; si el turno ya sigue por el propio gancho (`stop_hook_active`) y el problema sigue, deja terminar para no dar vueltas.
+
+**El interruptor de modo** es `.claude/modo`: una palabra, `supervisado` o `autonomo`. El gancho de fin lo lee al tercer intento; cualquier otra cosa cuenta como `supervisado`.
+
+**Los worktrees:** `worktree.baseRef: "head"` en `.claude/settings.json` hace que cada worktree salga de la rama de la fase, y `.worktreeinclude` copia `.env`. `.claude/worktrees/` está en `.gitignore`.
+
+**Las pruebas:** `scripts/gancho-inicio.prueba.ts` instala de verdad en un repositorio temporal con y sin `CLAUDE_CODE_REMOTE=true`; `scripts/gancho-fin.prueba.ts` usa salidas de revisión simuladas con los dos modos; `scripts/gancho-edicion.prueba.ts` edita un archivo con un error de tipos.
+
+*El script que revisa las carpetas de cada trabajador se agrega en la fase 19.*

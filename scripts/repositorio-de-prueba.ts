@@ -48,12 +48,17 @@ export function escribir(raiz: string, ruta: string, contenido: string): void {
 }
 
 /**
- * Crea un repositorio de git en una carpeta temporal con la configuración y los scripts del real,
- * `node_modules` enlazado al del real y un primer commit.
+ * Crea un repositorio de git en una carpeta temporal con la configuración y los scripts del real y un
+ * primer commit.
+ * @param opciones `dependencias: "enlazadas"` (lo normal) enlaza `node_modules` al del real;
+ * `"por-instalar"` no lo enlaza y copia el lockfile y el workspace, para probar un `pnpm install` de verdad
+ * sin tocar el `node_modules` del real.
  * @returns La carpeta del repositorio. Se borra con {@link borrarRepositorioDePrueba}.
  * El primer commit se hace sin ganchos: todavía no hay `core.hooksPath`.
  */
-export function crearRepositorioDePrueba(): string {
+export function crearRepositorioDePrueba(
+	opciones: { dependencias: "enlazadas" | "por-instalar" } = { dependencias: "enlazadas" },
+): string {
 	const raiz = mkdtempSync(join(tmpdir(), "uniformame-prueba-"));
 	for (const archivo of archivosDeConfiguracion) {
 		if (existsSync(join(raizReal, archivo))) cpSync(join(raizReal, archivo), join(raiz, archivo));
@@ -64,7 +69,12 @@ export function crearRepositorioDePrueba(): string {
 	});
 	if (existsSync(join(raizReal, ".githooks")))
 		cpSync(join(raizReal, ".githooks"), join(raiz, ".githooks"), { recursive: true });
-	symlinkSync(join(raizReal, "node_modules"), join(raiz, "node_modules"), "dir");
+	if (opciones.dependencias === "enlazadas") {
+		symlinkSync(join(raizReal, "node_modules"), join(raiz, "node_modules"), "dir");
+	} else {
+		for (const archivo of ["pnpm-lock.yaml", "pnpm-workspace.yaml"])
+			cpSync(join(raizReal, archivo), join(raiz, archivo));
+	}
 	git(raiz, ["init", "-q", "-b", "main"]);
 	git(raiz, ["config", "user.name", "Prueba"]);
 	git(raiz, ["config", "user.email", "prueba@uniformame.invalid"]);
