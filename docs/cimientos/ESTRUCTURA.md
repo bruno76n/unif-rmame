@@ -43,7 +43,7 @@ uniformame/
 ├── packages/
 │   ├── compartido/            contratos, tipos, cálculos puros y el cliente de la API
 │   └── interfaz/              el sistema de diseño
-├── pruebas/                   las pruebas de punta a punta y los flujos
+├── pruebas/                   la base de las pruebas, los simuladores y, desde la fase 21, las de punta a punta
 └── scripts/                   revisión, sello, docs:revisar y carpetas de trabajadores
 ```
 

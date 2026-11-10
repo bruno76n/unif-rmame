@@ -1,5 +1,5 @@
 /**
- * El simulador de Google (OpenID Connect) para las pruebas y `pnpm local`.
+ * El simulador de Google (OpenID Connect) para las pruebas.
  * Fase 2 · docs/cimientos/PRUEBAS.md («Simuladores de los servicios de fuera») y docs/modulos/admin/acceso-con-google.md
  *
  * Sigue la interfaz oficial de Google: el documento de descubrimiento, el intercambio del código en el
@@ -36,6 +36,7 @@ interface CodigoEmitido {
 	cuenta: CuentaDeGoogle;
 	nonce: string | undefined;
 	retoPkce: string | undefined;
+	redireccion: string;
 	usado: boolean;
 }
 
@@ -46,11 +47,15 @@ function base64url(datos: Buffer | string): string {
 
 /**
  * Crea un simulador de Google con su propia llave de firma.
- * @param clienteId El `client_id` que espera el punto de tokens y que lleva el `aud` del `id_token`.
+ * @param cliente El `client_id` (que lleva el `aud` del `id_token`) y el `client_secret` que espera el punto de tokens.
  * @param ahora De dónde sale la hora, en segundos; las pruebas la fijan.
  * @returns Sus manejadores de MSW, cómo emitir un código para una cuenta y cómo ponerlo a fallar.
  */
-export function crearSimuladorDeGoogle(clienteId: string, ahora: () => number = () => Math.floor(Date.now() / 1000)) {
+export function crearSimuladorDeGoogle(
+	cliente: { id: string; secreto: string },
+	ahora: () => number = () => Math.floor(Date.now() / 1000),
+) {
+	const clienteId = cliente.id;
 	const { privateKey, publicKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
 	const kid = randomUUID();
 	const codigos = new Map<string, CodigoEmitido>();
@@ -81,13 +86,16 @@ export function crearSimuladorDeGoogle(clienteId: string, ahora: () => number = 
 	/** El error de Google para un código o un verificador que no sirven. */
 	const concesionInvalida = () =>
 		HttpResponse.json({ error: "invalid_grant", error_description: "Bad Request" }, { status: 400 });
-	const errorDeGoogle = () =>
-		HttpResponse.json({ error: "server_error", error_description: "Internal error" }, { status: 500 });
+	const erroresDeGoogle = {
+		servidor: () => HttpResponse.json({ error: "server_error", error_description: "Internal error" }, { status: 500 }),
+		demasiadasPeticiones: () =>
+			HttpResponse.json({ error: "rate_limit_exceeded", error_description: "Too many requests" }, { status: 429 }),
+	};
 
 	const manejadores = [
 		http.get(`${emisorDeGoogle}/.well-known/openid-configuration`, async () => {
 			return (
-				(await aplicarFalla(modo, errorDeGoogle)) ??
+				(await aplicarFalla(modo, erroresDeGoogle)) ??
 				HttpResponse.json({
 					issuer: emisorDeGoogle,
 					authorization_endpoint: `${emisorDeGoogle}/o/oauth2/v2/auth`,
@@ -103,19 +111,26 @@ export function crearSimuladorDeGoogle(clienteId: string, ahora: () => number = 
 		}),
 		http.get(puntoDeLlaves, async () => {
 			return (
-				(await aplicarFalla(modo, errorDeGoogle)) ??
+				(await aplicarFalla(modo, erroresDeGoogle)) ??
 				HttpResponse.json({ keys: [{ ...publicKey.export({ format: "jwk" }), kid, alg: "RS256", use: "sig" }] })
 			);
 		}),
 		http.post(puntoDeTokens, async ({ request }) => {
-			const falla = await aplicarFalla(modo, errorDeGoogle);
+			const falla = await aplicarFalla(modo, erroresDeGoogle);
 			if (falla) return falla;
 			const datos = new URLSearchParams(await request.text());
 			const emitido = codigos.get(datos.get("code") ?? "");
-			if (datos.get("grant_type") !== "authorization_code" || datos.get("client_id") !== clienteId) {
+			if (
+				datos.get("grant_type") !== "authorization_code" ||
+				datos.get("client_id") !== clienteId ||
+				datos.get("client_secret") !== cliente.secreto
+			) {
 				return HttpResponse.json({ error: "invalid_client", error_description: "Unauthorized" }, { status: 401 });
 			}
 			if (emitido === undefined || emitido.usado) return concesionInvalida();
+			if (datos.get("redirect_uri") !== emitido.redireccion) {
+				return HttpResponse.json({ error: "redirect_uri_mismatch", error_description: "Bad Request" }, { status: 400 });
+			}
 			// PKCE: el verificador tiene que dar el reto con que se pidió el código.
 			const verificador = datos.get("code_verifier") ?? "";
 			if (
@@ -140,11 +155,17 @@ export function crearSimuladorDeGoogle(clienteId: string, ahora: () => number = 
 		/**
 		 * Emite el código que Google le daría a la app después de que la cuenta entra.
 		 * @param cuenta Una de `cuentasDeGoogle`.
-		 * @param pedido El `nonce` y el reto PKCE (S256) con que la app pidió entrar.
+		 * @param pedido La dirección de vuelta, y el `nonce` y el reto PKCE (S256) con que la app pidió entrar.
 		 */
-		emitirCodigo(cuenta: CuentaDeGoogle, pedido: { nonce?: string; retoPkce?: string } = {}): string {
+		emitirCodigo(cuenta: CuentaDeGoogle, pedido: { redireccion: string; nonce?: string; retoPkce?: string }): string {
 			const codigo = `4/${randomUUID()}`;
-			codigos.set(codigo, { cuenta, nonce: pedido.nonce, retoPkce: pedido.retoPkce, usado: false });
+			codigos.set(codigo, {
+				cuenta,
+				nonce: pedido.nonce,
+				retoPkce: pedido.retoPkce,
+				redireccion: pedido.redireccion,
+				usado: false,
+			});
 			return codigo;
 		},
 		ponerAFallar(nuevoModo: ModoDeFalla): void {

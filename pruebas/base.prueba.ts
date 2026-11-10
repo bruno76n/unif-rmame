@@ -3,6 +3,7 @@
  * Fase 2 · docs/fases/02-base-de-datos-y-pruebas.md (parte 4)
  */
 
+import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { type BaseDePrueba, crearBaseDePrueba, enTransaccionDeshecha } from "./base/base-de-prueba.ts";
 
@@ -34,14 +35,18 @@ describe("cada archivo de pruebas tiene su propia base copia de la plantilla, y 
 
 	it("una prueba dentro de su transacción deshecha deja la base como la encontró, aunque falle", async () => {
 		const antes = await otra.dueno.query("SELECT count(*)::int AS n FROM prueba_notas");
-		await enTransaccionDeshecha(otra.dueno, async (cliente) => {
-			await cliente.query("INSERT INTO prueba_notas VALUES (7, 'de paso')");
-			const dentro = await cliente.query("SELECT count(*)::int AS n FROM prueba_notas");
-			expect(dentro.rows[0].n).toBe(antes.rows[0].n + 1);
+		await enTransaccionDeshecha(otra.dueno, async (transaccion) => {
+			await transaccion.execute(sql`INSERT INTO prueba_notas VALUES (7, 'de paso')`);
+			// Una transacción de adentro (como la de una acción) queda en un SAVEPOINT y también se deshace.
+			await transaccion.transaction(async (adentro) => {
+				await adentro.execute(sql`INSERT INTO prueba_notas VALUES (9, 'de adentro')`);
+			});
+			const dentro = await transaccion.execute(sql`SELECT count(*)::int AS n FROM prueba_notas`);
+			expect(dentro.rows[0]?.n).toBe(antes.rows[0].n + 2);
 		});
 		await expect(
-			enTransaccionDeshecha(otra.dueno, async (cliente) => {
-				await cliente.query("INSERT INTO prueba_notas VALUES (8, 'falla')");
+			enTransaccionDeshecha(otra.dueno, async (transaccion) => {
+				await transaccion.execute(sql`INSERT INTO prueba_notas VALUES (8, 'falla')`);
 				throw new Error("la prueba falló");
 			}),
 		).rejects.toThrow("la prueba falló");

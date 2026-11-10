@@ -2,8 +2,9 @@
  * La revisión de las migraciones y de las llaves pendientes, un paso de `pnpm revision`.
  * Fase 2 · docs/cimientos/BASE-DE-DATOS.md («Migraciones» y «Llaves que apuntan a una fase posterior»)
  *
- * Falla si cambió o se borró una migración que ya está en la rama principal (una migración aplicada
- * nunca se edita), o si una marca `@llavePendiente <tabla>.<columna>` apunta a una tabla que ya existe
+ * Falla si cambió o se borró una migración que ya está en la rama principal (la del remoto o la local),
+ * si cambió una entrada de su registro (`meta/_journal.json`), si no hay rama principal con qué
+ * comparar (una migración aplicada nunca se edita), o si una marca `@llavePendiente <tabla>.<columna>` apunta a una tabla que ya existe
  * (su llave foránea se quedó olvidada). Que las migraciones apliquen desde cero lo prueba
  * `apps/api/src/nucleo/base/migraciones.prueba.ts`, dentro de «Todas las pruebas».
  */
@@ -19,35 +20,85 @@ export interface ProblemaDeMigracion {
 }
 
 const carpetaDeMigraciones = "apps/api/migraciones/";
-const rama = "main";
+const registroDeMigraciones = `${carpetaDeMigraciones}meta/_journal.json`;
+/** Las ramas principales contra las que se compara: la del remoto y la local, las que existan. */
+const ramasPrincipales = ["refs/remotes/origin/main", "refs/heads/main"];
 
-/**
- * Compara las migraciones de la rama principal con las de ahora.
- * @param raiz La carpeta del repositorio.
- * @returns Las que cambiaron o se borraron; vacío si no hay rama principal todavía.
- */
-export function revisarMigracionesDeLaRama(raiz: string): ProblemaDeMigracion[] {
+/** Las ramas principales que existen en este repositorio. */
+function ramasQueExisten(raiz: string): string[] {
+	return ramasPrincipales.filter((rama) => {
+		try {
+			git(raiz, ["rev-parse", "--verify", "-q", rama]);
+			return true;
+		} catch {
+			return false;
+		}
+	});
+}
+
+/** Las entradas del registro de drizzle-kit (`meta/_journal.json`), como texto para compararlas. */
+function entradasDelRegistro(texto: string): string[] {
 	try {
-		git(raiz, ["rev-parse", "--verify", "-q", `refs/heads/${rama}`]);
+		const leido: unknown = JSON.parse(texto);
+		if (typeof leido !== "object" || leido === null || !("entries" in leido) || !Array.isArray(leido.entries))
+			return [];
+		return leido.entries.map((entrada: unknown) => JSON.stringify(entrada));
 	} catch {
 		return [];
 	}
-	const enLaRama = git(raiz, ["ls-tree", "-r", "-z", "--name-only", rama, "--", carpetaDeMigraciones])
-		.split("\0")
-		.filter((ruta) => ruta !== "" && !ruta.includes("/meta/"));
+}
+
+/**
+ * Compara las migraciones de la rama principal (la del remoto y la local) con las de ahora.
+ * @param raiz La carpeta del repositorio.
+ * @returns Las que cambiaron o se borraron, las entradas del registro que cambiaron, o un problema si
+ * no hay ninguna rama principal con qué comparar (en un clon de una sola rama: `git fetch origin main`).
+ */
+export function revisarMigracionesDeLaRama(raiz: string): ProblemaDeMigracion[] {
+	const ramas = ramasQueExisten(raiz);
+	if (ramas.length === 0) {
+		return [
+			{ archivo: carpetaDeMigraciones, que: "no hay rama principal con qué comparar: corre git fetch origin main" },
+		];
+	}
 	const ahora = new Set(archivosDelArbol(raiz));
-	const problemas: ProblemaDeMigracion[] = [];
-	for (const archivo of enLaRama) {
-		if (!ahora.has(archivo)) {
-			problemas.push({ archivo, que: `se borró una migración que ya está en ${rama}` });
+	const problemas = new Map<string, ProblemaDeMigracion>();
+	for (const rama of ramas) {
+		const enLaRama = git(raiz, ["ls-tree", "-r", "-z", "--name-only", rama, "--", carpetaDeMigraciones])
+			.split("\0")
+			.filter((ruta) => ruta !== "" && !ruta.includes("/meta/"));
+		for (const archivo of enLaRama) {
+			if (!ahora.has(archivo)) {
+				problemas.set(archivo, { archivo, que: "se borró una migración que ya está en la rama principal" });
+				continue;
+			}
+			const original = git(raiz, ["rev-parse", `${rama}:${archivo}`]).trim();
+			const actual = git(raiz, ["hash-object", archivo]).trim();
+			if (original !== actual) {
+				problemas.set(archivo, {
+					archivo,
+					que: "cambió una migración que ya está en la rama principal: va en una nueva",
+				});
+			}
+		}
+		// El registro de drizzle-kit solo puede crecer: sus entradas de la rama principal siguen iguales.
+		let registroDeLaRama = "";
+		try {
+			registroDeLaRama = git(raiz, ["show", `${rama}:${registroDeMigraciones}`]);
+		} catch {
 			continue;
 		}
-		const original = git(raiz, ["rev-parse", `${rama}:${archivo}`]).trim();
-		const actual = git(raiz, ["hash-object", archivo]).trim();
-		if (original !== actual)
-			problemas.push({ archivo, que: `cambió una migración que ya está en ${rama}: va en una nueva` });
+		const actuales = ahora.has(registroDeMigraciones)
+			? entradasDelRegistro(readFileSync(join(raiz, registroDeMigraciones), "utf8"))
+			: [];
+		if (entradasDelRegistro(registroDeLaRama).some((entrada, i) => actuales[i] !== entrada)) {
+			problemas.set(registroDeMigraciones, {
+				archivo: registroDeMigraciones,
+				que: "cambió una entrada del registro de migraciones que ya está en la rama principal",
+			});
+		}
 	}
-	return problemas;
+	return [...problemas.values()];
 }
 
 /**
@@ -56,21 +107,29 @@ export function revisarMigracionesDeLaRama(raiz: string): ProblemaDeMigracion[] 
  * @returns Una por marca olvidada.
  */
 export function revisarLlavesPendientes(raiz: string): ProblemaDeMigracion[] {
-	const fuentes = archivosDelArbol(raiz).filter((ruta) => ruta.startsWith("apps/api/src/") && ruta.endsWith(".ts"));
-	const textos = fuentes.map((archivo) => ({ archivo, texto: readFileSync(join(raiz, archivo), "utf8") }));
-	// Las tablas que existen: cada `pgTable("<nombre>"` de un tablas.ts.
-	const tablas = new Set(
-		textos
+	const archivos = archivosDelArbol(raiz);
+	const leer = (archivo: string) => ({ archivo, texto: readFileSync(join(raiz, archivo), "utf8") });
+	const textos = archivos.filter((ruta) => ruta.startsWith("apps/api/src/") && ruta.endsWith(".ts")).map(leer);
+	const migraciones = archivos
+		.filter((ruta) => ruta.startsWith(carpetaDeMigraciones) && ruta.endsWith(".sql"))
+		.map(leer);
+	// Las tablas que existen: cada `pgTable("<nombre>"` de un tablas.ts y cada `CREATE TABLE` de una migración.
+	const tablas = new Set([
+		...textos
 			.filter(({ archivo }) => archivo.endsWith("tablas.ts"))
 			.flatMap(({ texto }) => [...texto.matchAll(/pgTable\(\s*["'`]([a-z0-9_]+)["'`]/g)].map((m) => m[1])),
-	);
+		...migraciones.flatMap(({ texto }) =>
+			[...texto.matchAll(/CREATE TABLE (?:IF NOT EXISTS )?(?:"?public"?\.)?"?([a-z0-9_]+)"?/gi)].map((m) => m[1]),
+		),
+	]);
 	const problemas: ProblemaDeMigracion[] = [];
 	for (const { archivo, texto } of textos) {
-		for (const marca of texto.matchAll(/@llavePendiente\s+([a-z0-9_]+)\.([a-z0-9_]+)/g)) {
-			if (tablas.has(marca[1])) {
+		for (const marca of texto.matchAll(/@llavePendiente\s+([A-Za-z0-9_]+)(?:\.([A-Za-z0-9_]+))?/g)) {
+			const tabla = (marca[1] ?? "").toLowerCase();
+			if (tablas.has(tabla)) {
 				problemas.push({
 					archivo,
-					que: `@llavePendiente ${marca[1]}.${marca[2]}: la tabla ${marca[1]} ya existe; agrega la llave foránea en su migración y quita la marca`,
+					que: `@llavePendiente ${marca[1]}${marca[2] ? `.${marca[2]}` : ""}: la tabla ${tabla} ya existe; agrega la llave foránea en su migración y quita la marca`,
 				});
 			}
 		}

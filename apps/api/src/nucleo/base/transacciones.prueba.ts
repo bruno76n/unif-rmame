@@ -3,7 +3,7 @@
  * Fase 2 · docs/fases/02-base-de-datos-y-pruebas.md (parte 1)
  */
 
-import { type BaseDePrueba, crearBaseDePrueba } from "@uniformame/pruebas/base";
+import { type BaseDePrueba, crearBaseDePrueba, enTransaccionDeshecha } from "@uniformame/pruebas/base";
 import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { type Base, crearBase } from "./conexion.ts";
@@ -67,5 +67,16 @@ describe("dos transacciones que se cruzan por los mismos renglones en el orden f
 		}).catch((e: unknown) => e);
 		expect(codigoDePostgres(error)).toBe("22012");
 		expect(intentos).toBe(1);
+	});
+
+	it("dentro de una transacción deshecha de prueba, lo que hace enTransaccion también se deshace", async () => {
+		const antes = await prueba.dueno.query("SELECT sum(saldo)::int AS total FROM prueba_cuentas");
+		await enTransaccionDeshecha(prueba.app, async (transaccion) => {
+			await enTransaccion(transaccion, async (adentro) => {
+				await adentro.execute(sql`UPDATE prueba_cuentas SET saldo = saldo + 100`);
+			});
+		});
+		const despues = await prueba.dueno.query("SELECT sum(saldo)::int AS total FROM prueba_cuentas");
+		expect(despues.rows[0].total).toBe(antes.rows[0].total);
 	});
 });

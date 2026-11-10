@@ -17,14 +17,14 @@ export default defineConfig({
 			{
 				test: {
 					name: "calculos",
-					include: ["packages/**/*.prueba.ts", "scripts/**/*.prueba.ts"],
+					include: ["packages/**/*.prueba.{ts,tsx}", "scripts/**/*.prueba.{ts,tsx}"],
 					exclude: fuera,
 				},
 			},
 			{
 				test: {
 					name: "base",
-					include: ["apps/**/*.prueba.ts", "pruebas/**/*.prueba.ts"],
+					include: ["apps/**/*.prueba.{ts,tsx}", "pruebas/**/*.prueba.{ts,tsx}"],
 					exclude: fuera,
 					globalSetup: ["apps/api/src/nucleo/base/plantilla-de-pruebas.ts"],
 					testTimeout: 30_000,

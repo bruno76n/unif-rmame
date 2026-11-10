@@ -1,5 +1,5 @@
 /**
- * El simulador de Resend (correo) para las pruebas y `pnpm local`.
+ * El simulador de Resend (correo) para las pruebas.
  * Fase 2 · docs/cimientos/PRUEBAS.md («Simuladores de los servicios de fuera») y docs/modulos/admin/avisos.md
  *
  * Sigue la interfaz oficial de envío (`POST https://api.resend.com/emails`): pide la llave en
@@ -46,13 +46,18 @@ export function crearSimuladorDeResend() {
 
 	const manejadores = [
 		http.post(envioDeResend, async ({ request }) => {
-			const falla = await aplicarFalla(modo, () =>
-				errorDeResend(500, "application_error", "An unexpected error occurred, please try again later."),
-			);
+			const falla = await aplicarFalla(modo, {
+				servidor: () =>
+					errorDeResend(500, "application_error", "An unexpected error occurred, please try again later."),
+				demasiadasPeticiones: () =>
+					errorDeResend(429, "rate_limit_exceeded", "Too many requests. Please try again later."),
+			});
 			if (falla) return falla;
-			if (!/^Bearer re_\S+$/.test(request.headers.get("authorization") ?? "")) {
+			const autorizacion = request.headers.get("authorization");
+			if (autorizacion === null || !autorizacion.startsWith("Bearer ")) {
 				return errorDeResend(401, "missing_api_key", "Missing API key in the authorization header.");
 			}
+			if (!/^Bearer re_\S+$/.test(autorizacion)) return errorDeResend(403, "invalid_api_key", "API key is invalid.");
 			const crudo = await request.text();
 			const clave = request.headers.get("idempotency-key");
 			const anterior = clave === null ? undefined : porClave.get(clave);

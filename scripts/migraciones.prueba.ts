@@ -40,6 +40,30 @@ describe("la revisión completa falla si cambió una migración que ya está en 
 		expect(revisarMigracionesDeLaRama(raiz)).toHaveLength(1);
 	});
 
+	it("compara también contra origin/main, y falla si no hay rama principal con qué comparar", () => {
+		git(raiz, ["update-ref", "refs/remotes/origin/main", "main"]);
+		git(raiz, ["branch", "-D", "main"]);
+		escribir(raiz, "apps/api/migraciones/0000_base.sql", "CREATE SEQUENCE version_global START 10;\n");
+		expect(revisarMigracionesDeLaRama(raiz)).toHaveLength(1);
+		git(raiz, ["update-ref", "-d", "refs/remotes/origin/main"]);
+		expect(revisarMigracionesDeLaRama(raiz)[0]?.que).toContain("git fetch origin main");
+	});
+
+	it("falla si cambió una entrada del registro de migraciones que ya está en main", () => {
+		escribir(raiz, "apps/api/migraciones/meta/_journal.json", '{"entries":[{"idx":0,"tag":"0000_base"}]}\n');
+		git(raiz, ["add", "-A"]);
+		git(raiz, ["-c", "core.hooksPath=/dev/null", "commit", "-q", "-m", "registro"]);
+		git(raiz, ["branch", "-f", "main", "HEAD"]);
+		escribir(raiz, "apps/api/migraciones/meta/_journal.json", '{"entries":[{"idx":0,"tag":"0000_otra"}]}\n');
+		expect(revisarMigracionesDeLaRama(raiz).map((p) => p.archivo)).toEqual(["apps/api/migraciones/meta/_journal.json"]);
+	});
+
+	it("una tabla creada a mano en una migración cuenta como existente, y la marca sin columna también se revisa", () => {
+		escribir(raiz, "apps/api/migraciones/0001_bitacora.sql", 'CREATE TABLE "bitacora_2026_11" (id uuid);\n');
+		escribir(raiz, "apps/api/src/modulos/admin/tablas.ts", "/** @llavePendiente bitacora_2026_11 */\n");
+		expect(revisarLlavesPendientes(raiz)).toHaveLength(1);
+	});
+
 	it("una marca que apunta a una tabla que todavía no existe sale en verde", () => {
 		escribir(
 			raiz,

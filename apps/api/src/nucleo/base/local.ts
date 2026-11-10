@@ -25,6 +25,10 @@ if (import.meta.main) {
 	if (docker.status !== 0) process.exit(1);
 	await migrarYSembrar(entorno.BASE_DATOS_URL_DUENO);
 	const app = new URL(entorno.BASE_DATOS_URL);
+	if (app.username !== "uniformame_app") {
+		console.error("BASE_DATOS_URL tiene que entrar con el rol uniformame_app.");
+		process.exit(1);
+	}
 	const administrador = new pg.Client({ connectionString: entorno.BASE_DATOS_URL_DUENO });
 	await administrador.connect();
 	try {

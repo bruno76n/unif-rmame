@@ -65,4 +65,5 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 10 nov 2026 | 2 | La base de las pruebas antes (decisión 334) | Probar las partes 1 a 3 sin base · traer la base de pruebas a la parte 1 | Traerla: las pruebas piden Postgres real | No |
 | 10 nov 2026 | 2 | El rol de la app y su clave (decisión 335) | Clave en la migración · rol sin entrada y clave por máquina | Sin entrada: ningún secreto en el código | No |
 | 10 nov 2026 | 2 | Tres avisos moderados de `pnpm audit` en dependencias indirectas (decisión 336) | Bajar el nivel del audit · `overrides` con las versiones corregidas | `overrides`: bajar el nivel sería debilitar la revisión | No |
+| 10 nov 2026 | 2 | El tercer proyecto de Vitest (decisión 337) | Crearlo vacío · que entre con la API | Con la API: un proyecto sin pruebas no demuestra nada | No |
 

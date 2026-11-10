@@ -3,9 +3,11 @@
  * Fase 2 · docs/cimientos/BASE-DE-DATOS.md («Candados»)
  *
  * Si Postgres corta una transacción por un bloqueo cruzado (`40P01`) o por serialización (`40001`),
- * se repite la transacción completa hasta tres veces; a la cuarta se responde el error.
+ * se repite la transacción completa hasta tres veces, con una espera corta al azar entre intentos; a la
+ * cuarta se responde el error.
  */
 
+import { setTimeout as esperar } from "node:timers/promises";
 import type { Base } from "./conexion.ts";
 
 /** La transacción que recibe el trabajo: la misma interfaz que la base, dentro de una transacción. */
@@ -32,19 +34,24 @@ export function codigoDePostgres(error: unknown): string | undefined {
 
 /**
  * Corre un trabajo en una transacción y la repite completa si chocó con otra.
- * @param base La base con Drizzle.
+ * @param base La base con Drizzle, o una transacción (entonces esta queda en un `SAVEPOINT` de aquella).
  * @param trabajo Lo que se hace dentro de la transacción; se puede correr más de una vez, así que no
  * debe tocar nada fuera de la base.
  * @returns Lo que regresa el trabajo.
  * @throws El error del trabajo si no es un choque, o el del cuarto intento si sigue chocando.
  */
-export async function enTransaccion<T>(base: Base, trabajo: (transaccion: Transaccion) => Promise<T>): Promise<T> {
+export async function enTransaccion<T>(
+	base: Base | Transaccion,
+	trabajo: (transaccion: Transaccion) => Promise<T>,
+): Promise<T> {
 	for (let intento = 0; ; intento++) {
 		try {
 			return await base.transaction(trabajo);
 		} catch (error) {
 			const codigo = codigoDePostgres(error);
 			if (intento >= reintentosPorChoque || codigo === undefined || !codigosDeChoque.has(codigo)) throw error;
+			// Una espera corta y al azar, para que las dos transacciones que chocaron no vuelvan a chocar igual.
+			await esperar(Math.random() * 20 * (intento + 1));
 		}
 	}
 }

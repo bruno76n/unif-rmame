@@ -7,6 +7,7 @@
  */
 
 import { randomUUID } from "node:crypto";
+import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import { inject } from "vitest";
 import type { BaseDePruebasCompartida } from "./contexto.ts";
@@ -39,6 +40,8 @@ export async function crearBaseDePrueba(): Promise<BaseDePrueba> {
 	await administrador.connect();
 	try {
 		await administrador.query(`CREATE DATABASE ${nombre} TEMPLATE ${compartida.plantilla}`);
+		// Postgres no copia los permisos de la base con la plantilla: se repite el de la migración 0001.
+		await administrador.query(`REVOKE TEMPORARY ON DATABASE ${nombre} FROM PUBLIC`);
 	} finally {
 		await administrador.end();
 	}
@@ -61,24 +64,35 @@ export async function crearBaseDePrueba(): Promise<BaseDePrueba> {
 	};
 }
 
+/** La transacción de Drizzle que recibe una prueba que se deshace. */
+export type TransaccionDeshecha = Parameters<Parameters<NodePgDatabase["transaction"]>[0]>[0];
+
+/** La señal para deshacer la transacción de la prueba al final. */
+class Deshacer extends Error {}
+
 /**
- * Corre una prueba dentro de una transacción que se deshace al final, pase lo que pase.
+ * Corre una prueba dentro de una transacción de Drizzle que se deshace al final, pase lo que pase.
+ * Lo que la prueba corra adentro con transacciones (también `enTransaccion` de la API) queda en
+ * `SAVEPOINT`s de esta, así que el final también lo deshace.
  * @param pool La conexión con la que trabaja la prueba.
- * @param prueba Lo que hace la prueba, con su cliente dentro de la transacción.
+ * @param prueba Lo que hace la prueba, con la transacción.
  * @returns Lo que regresa la prueba.
  */
 export async function enTransaccionDeshecha<T>(
 	pool: pg.Pool,
-	prueba: (cliente: pg.PoolClient) => Promise<T>,
+	prueba: (transaccion: TransaccionDeshecha) => Promise<T>,
 ): Promise<T> {
-	const cliente = await pool.connect();
+	let resultado: { valor: T } | undefined;
 	try {
-		await cliente.query("BEGIN");
-		return await prueba(cliente);
-	} finally {
-		await cliente.query("ROLLBACK");
-		cliente.release();
+		await drizzle({ client: pool }).transaction(async (transaccion) => {
+			resultado = { valor: await prueba(transaccion) };
+			throw new Deshacer();
+		});
+	} catch (error) {
+		if (!(error instanceof Deshacer)) throw error;
 	}
+	if (resultado === undefined) throw new Error("la prueba no terminó");
+	return resultado.valor;
 }
 
 /** Una base vacía, sin migraciones, para probar que las migraciones aplican desde cero. */

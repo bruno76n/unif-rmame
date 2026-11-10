@@ -188,9 +188,6 @@ importers:
 
   apps/api:
     dependencies:
-      '@uniformame/compartido':
-        specifier: workspace:*
-        version: link:../../packages/compartido
       drizzle-orm:
         specifier: 0.45.4
         version: 0.45.4(@types/pg@8.23.1)(pg@8.23.1)
@@ -213,9 +210,6 @@ importers:
       drizzle-kit:
         specifier: 0.31.11
         version: 0.31.11
-      testcontainers:
-        specifier: 12.2.1
-        version: 12.2.1(bare-buffer@3.7.1)
 
   packages/compartido:
     dependencies:
@@ -229,6 +223,9 @@ importers:
 
   pruebas:
     dependencies:
+      drizzle-orm:
+        specifier: 0.45.4
+        version: 0.45.4(@types/pg@8.23.1)(pg@8.23.1)
       msw:
         specifier: 3.0.4
         version: 3.0.4(@types/node@26.6.6)(typescript@7.0.2)(vite@8.3.6(@types/node@26.6.6)(esbuild@0.28.2)(tsx@4.23.15)(yaml@2.9.1))

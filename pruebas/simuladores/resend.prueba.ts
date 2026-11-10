@@ -4,13 +4,12 @@
  */
 
 import { setupServer } from "msw/node";
+import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
+import { crearSimuladorDeResend, envioDeResend } from "./resend.ts";
 
 /** La respuesta de un envío: su id. */
 const enviado = z.object({ id: z.string() });
-
-import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
-import { crearSimuladorDeResend, envioDeResend } from "./resend.ts";
 
 const simulador = crearSimuladorDeResend();
 const servidor = setupServer(...simulador.manejadores);
@@ -53,20 +52,37 @@ describe("cada simulador responde como su servicio y, puesto a fallar, falla com
 		expect((await mandar({ ...correo, subject: "otro" }, { "idempotency-key": "aviso-1" })).status).toBe(409);
 	});
 
-	it("sin llave contesta 401 y sin campos obligatorios 422, con la forma de error de Resend", async () => {
+	it("sin llave contesta 401, con una llave inválida 403 y sin campos obligatorios 422, con la forma de error de Resend", async () => {
 		const sinLlave = await fetch(envioDeResend, { method: "POST", body: JSON.stringify(correo) });
 		expect(sinLlave.status).toBe(401);
+		const llaveInvalida = await fetch(envioDeResend, {
+			method: "POST",
+			headers: { authorization: "Bearer otra-cosa" },
+			body: JSON.stringify(correo),
+		});
+		expect(llaveInvalida.status).toBe(403);
+		expect(await llaveInvalida.json()).toMatchObject({ name: "invalid_api_key" });
 		const incompleto = await mandar({ from: correo.from });
 		expect(incompleto.status).toBe(422);
 		expect(await incompleto.json()).toMatchObject({ statusCode: 422, name: "validation_error" });
 	});
 
-	it("puesto a fallar: sin respuesta o con error del servidor", async () => {
+	it("puesto a fallar: sin respuesta, con error del servidor, con demasiadas peticiones o tarde", {
+		timeout: 10_000,
+	}, async () => {
 		simulador.ponerAFallar("sin_respuesta");
 		await expect(mandar(correo)).rejects.toThrow();
 		simulador.ponerAFallar("error_del_servidor");
 		const conError = await mandar(correo);
 		expect(conError.status).toBe(500);
 		expect(await conError.json()).toMatchObject({ name: "application_error" });
+		simulador.ponerAFallar("demasiadas_peticiones");
+		const limite = await mandar(correo);
+		expect(limite.status).toBe(429);
+		expect(await limite.json()).toMatchObject({ name: "rate_limit_exceeded" });
+		simulador.ponerAFallar("lento");
+		const inicio = performance.now();
+		await mandar(correo);
+		expect(performance.now() - inicio).toBeGreaterThanOrEqual(2900);
 	});
 });

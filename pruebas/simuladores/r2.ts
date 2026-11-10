@@ -1,14 +1,18 @@
 /**
- * El simulador de Cloudflare R2 (almacenamiento con la interfaz de S3) para las pruebas y `pnpm local`.
+ * El simulador de Cloudflare R2 (almacenamiento con la interfaz de S3) para las pruebas.
  * Fase 2 · docs/cimientos/PRUEBAS.md («Simuladores de los servicios de fuera») y docs/modulos/admin/archivos.md
  *
  * Sigue la interfaz de S3 que expone R2 en `https://<cuenta>.r2.cloudflarestorage.com/<cubo>/<llave>`:
  * la subida (`PUT`) y la bajada (`GET`) con dirección firmada, y la revisión de que el objeto llegó
  * (`HEAD`). La dirección firmada se revisa por su forma y su vencimiento (`X-Amz-Date` más
  * `X-Amz-Expires`); la firma de verdad solo la revisa R2 (ver «Verificación real pendiente»). Una
- * llamada sin dirección firmada pide `Authorization` con SigV4. Sus errores son los XML de S3.
+ * llamada sin dirección firmada pide `Authorization` con SigV4. Si la subida trae su suma
+ * (`x-amz-checksum-sha256`, que la dirección firmada obliga a mandar), el contenido tiene que darla; la
+ * revisión con `HEAD` regresa el tamaño y la suma, y el `ETag` es el MD5 del contenido, como en S3. Sus
+ * errores son los XML de S3.
  */
 
+import { createHash } from "node:crypto";
 import { HttpResponse, http } from "msw";
 import { aplicarFalla, type ModoDeFalla } from "./fallas.ts";
 
@@ -16,6 +20,7 @@ import { aplicarFalla, type ModoDeFalla } from "./fallas.ts";
 interface Objeto {
 	contenido: Uint8Array;
 	tipo: string;
+	suma: string | undefined;
 }
 
 /** Un error con la forma de S3. */
@@ -26,6 +31,11 @@ function errorDeS3(estado: number, codigo: string, mensaje: string): Response {
 			status: estado,
 		},
 	);
+}
+
+/** El `ETag` de S3: el MD5 del contenido, entre comillas. */
+function etagDe(contenido: Uint8Array): string {
+	return `"${createHash("md5").update(contenido).digest("hex")}"`;
 }
 
 /**
@@ -56,9 +66,10 @@ export function crearSimuladorDeR2(cuenta: string, ahora: () => number = Date.no
 
 	/** Revisa la falla y la autorización; si algo no deja seguir, regresa la respuesta. */
 	async function revisar(request: Request): Promise<Response | undefined> {
-		const falla = await aplicarFalla(modo, () =>
-			errorDeS3(500, "InternalError", "We encountered an internal error. Please try again."),
-		);
+		const falla = await aplicarFalla(modo, {
+			servidor: () => errorDeS3(500, "InternalError", "We encountered an internal error. Please try again."),
+			demasiadasPeticiones: () => errorDeS3(503, "SlowDown", "Please reduce your request rate."),
+		});
 		if (falla) return falla;
 		const url = new URL(request.url);
 		const vence = vencimientoDeLaFirma(url);
@@ -78,11 +89,21 @@ export function crearSimuladorDeR2(cuenta: string, ahora: () => number = Date.no
 		http.put(direccion, async ({ request }) => {
 			const negado = await revisar(request);
 			if (negado) return negado;
+			const contenido = new Uint8Array(await request.arrayBuffer());
+			const suma = request.headers.get("x-amz-checksum-sha256") ?? undefined;
+			const firmados = new URL(request.url).searchParams.get("X-Amz-SignedHeaders") ?? "";
+			if (suma === undefined && firmados.split(";").includes("x-amz-checksum-sha256")) {
+				return errorDeS3(400, "InvalidRequest", "Missing required header for this request: x-amz-checksum-sha256");
+			}
+			if (suma !== undefined && createHash("sha256").update(contenido).digest("base64") !== suma) {
+				return errorDeS3(400, "BadDigest", "The SHA256 you specified did not match the calculated checksum.");
+			}
 			objetos.set(llaveDe(request), {
-				contenido: new Uint8Array(await request.arrayBuffer()),
+				contenido,
 				tipo: request.headers.get("content-type") ?? "application/octet-stream",
+				suma,
 			});
-			return new HttpResponse(null, { status: 200, headers: { ETag: `"${objetos.size}"` } });
+			return new HttpResponse(null, { status: 200, headers: { ETag: etagDe(contenido) } });
 		}),
 		http.head(direccion, async ({ request }) => {
 			const negado = await revisar(request);
@@ -92,7 +113,12 @@ export function crearSimuladorDeR2(cuenta: string, ahora: () => number = Date.no
 				? new HttpResponse(null, { status: 404 })
 				: new HttpResponse(null, {
 						status: 200,
-						headers: { "Content-Length": String(objeto.contenido.byteLength), "Content-Type": objeto.tipo },
+						headers: {
+							"Content-Length": String(objeto.contenido.byteLength),
+							"Content-Type": objeto.tipo,
+							ETag: etagDe(objeto.contenido),
+							...(objeto.suma === undefined ? {} : { "x-amz-checksum-sha256": objeto.suma }),
+						},
 					});
 		}),
 		http.get(direccion, async ({ request }) => {

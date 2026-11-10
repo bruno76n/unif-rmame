@@ -54,4 +54,9 @@ describe("con el rol de la app no se puede borrar en una tabla de negocio ni cam
 		expect(await conLaApp("SELECT poner_disparador_comun('prueba_pedidos')")).toBe(permisoDenegado);
 		expect(await conLaApp("SELECT marcar_solo_crece('prueba_pedidos')")).toBe(permisoDenegado);
 	});
+
+	it("una transacción de la app que se queda abierta sin hacer nada se corta al minuto", async () => {
+		const { rows } = await prueba.app.query("SHOW idle_in_transaction_session_timeout");
+		expect(rows[0]?.idle_in_transaction_session_timeout).toBe("1min");
+	});
 });

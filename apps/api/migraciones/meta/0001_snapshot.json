@@ -1,0 +1,29 @@
+{
+	"id": "d9874f65-bd6e-4a7a-b976-cc85ac58c305",
+	"prevId": "e14ad68d-e531-4921-b0cf-14af2b845e1e",
+	"version": "7",
+	"dialect": "postgresql",
+	"tables": {},
+	"enums": {},
+	"schemas": {},
+	"views": {},
+	"sequences": {
+		"public.version_global": {
+			"name": "version_global",
+			"increment": "1",
+			"minValue": "1",
+			"maxValue": "9223372036854775807",
+			"startWith": "1",
+			"cache": "1",
+			"cycle": false,
+			"schema": "public"
+		}
+	},
+	"roles": {},
+	"policies": {},
+	"_meta": {
+		"columns": {},
+		"schemas": {},
+		"tables": {}
+	}
+}
