@@ -11,7 +11,6 @@ Estos registros nunca cuentan como error del código: si les falta algo, se escr
 
 Lo que falta decidir o investigar, y en qué fase se resuelve. Lo del negocio ya tiene su valor inicial configurable, así que ninguno detiene una fase antes de la suya.
 
-- **Que cada tabla de negocio lleve su disparador** (fase 6, con la sincronización): nada revisa que una tabla con `version` tenga el disparador `columnas_comunes`, ni que una con `xid_escritura` lo lleve con `baja_a_aparatos`; sin eso, la app podría poner `xid_escritura` a mano. Una revisión en `scripts/migraciones.ts` o una prueba sobre el catálogo de la base.
 - **La app puede cambiar sus propios valores de sesión** (fase 22): `uniformame_app` puede hacer `SET idle_in_transaction_session_timeout = 0` o `ALTER ROLE … SET`. El límite de un minuto es el valor por omisión, no una garantía.
 - **`enTransaccionDeshecha` arma su propio Drizzle** (fase 3): si `crearBase` recibe opciones (un `schema`), la ayuda de pruebas tiene que usar las mismas.
 - **Lo que lleva el `409` y la posición del cursor dependen de cada módulo** (fase 22, con la revisión de cada consulta): `tomarVersion` manda lo que le da la acción (`leerVisible`), sin revisar que venga recortado, y `cursorDe` guarda los campos que le pasa la consulta. Una revisión que compare el `409` y el cursor con los `recortables` de la consulta que lee ese registro.
@@ -22,13 +21,11 @@ Lo que falta decidir o investigar, y en qué fase se resuelve. Lo del negocio ya
 - **Montos en los textos y en las etiquetas para soporte** (fases 19 y 20): el recorte común quita campos, no textos; un `mensaje` o una descripción con un monto ya escrito («Pagó $1,250.00») le llegaría a soporte.
 - **El correo de «sin acceso» en el historial del navegador** (fase 19): la pantalla de acceso lee `#correo=` y lo quita con `history.replaceState`.
 - **La ruta de regreso en la web** (fase 19): la API redirige a la ruta tal como llegó, con `%2f` codificado si lo trae; la web no la decodifica para navegar con ella como dirección.
-- **El intervalo de sincronización de los aparatos** (fase 6): `api.ts` usa 30 segundos mientras `sync.intervalo_segundos` llega con la sincronización.
 - **Las rutas fijas y el recorte común** (fase 20, con las etiquetas y los impresos): las respuestas JSON de las rutas fijas y lo que dibuja una etiqueta no pasan por `recorteComun`; cada tipo de etiqueta recibe los datos ya recortados por su módulo.
+- **El teléfono para escanear y la credencial de uniformame.mx con su llave** (fases 11 y 18): hoy entran con llave la tablet y el puente; el teléfono entra con la sesión de quien escanea más su llave, y la credencial nace con uniformame.mx.
 - **El nombre y el puesto de una cuenta** (fase 7, con Personal): hoy los mensajes y la bitácora de las cuentas usan el correo y «Esa persona» (decisión 373).
 - **El nivel de `pnpm audit`** (fase 22): SEGURIDAD dice que solo una vulnerabilidad alta o crítica detiene la revisión, pero `pnpm revision` corre `pnpm audit` sin nivel y se detiene con cualquiera. Se intentó alinearlo y el permiso del entorno lo negó; Bruno decide si la revisión pide `--audit-level high` o si SEGURIDAD dice «cualquiera».
 - **Un rol solo para el respaldo** (fase 22): hoy el worker vuelca con el rol dueño (decisión 368). Revisar si Render deja un rol de lectura que salte la seguridad por renglón de Graphile Worker.
-- **La lectura `admin.datos_de_aparato`** (fase 6): el tipo, si está revocado, el nombre, el último contacto y la versión de un aparato; sin ella, la impresión solo corre en las pruebas. También `rotar_llave` en `admin.trabajos_impresion`.
-- **Qué módulos puede usar un aparato al subir un archivo** (fase 6, con el alcance de cada aparato): hoy `POST /v1/archivos/subida` deja a un aparato subir a cualquier módulo.
 - **Abrir un archivo desde una liga del navegador** (fase 19, con las pantallas): `GET /v1/archivos/{id}` pide `X-App-Version` como toda ruta fija, y un `<img>` o un `<a>` no la manda. Decidir si esa ruta revisa la versión o si la pantalla pide la dirección con una llamada.
 - **El worker con dos procesos de Graphile Worker** (fase 21, con la temporada simulada): la bandeja se probó con dos llamadas a la vez y las colas se revisaron leyendo el código.
 - **Un `\u0000` en la entrada o en la respuesta** (fase 22): Postgres no lo guarda en `text` ni en `jsonb`, y sale `500` en lugar de `400`. Rechazarlo en la validación del protocolo.
@@ -134,5 +131,8 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 10 nov 2026 | 5 | Si el servidor marca usada la cookie de la ida a Google (decisión 385) | Una tabla de `state` usados · no | No: httpOnly, el código sirve una vez y el archivo pide «sin tabla» | No |
 | 10 nov 2026 | 5 | Cómo se corta una conexión en vivo cuya sesión ya no vale (decisión 386) | Que la pantalla la cierre · que el servidor la revise en cada latido y tras los eventos de la cuenta | El servidor | No |
 | 10 nov 2026 | 5 | Si las acciones y el `409` dicen `recortado` | Sí, cambiando el protocolo · no, y API.md lo dice | No: la lista va en las consultas | No |
+| 10 nov 2026 | 6 | Cómo se canjea el código sin sesión ni llave (decisión 387) | Una acción sin quien llama · una ruta abierta con el cuerpo de una acción | La ruta abierta, con su clave en `comandos_recibidos` | No |
+| 10 nov 2026 | 6 | Un campo `rotar_llave` que la revisión de los contratos tomaba por secreto (decisión 388) | Cambiarle el nombre · que un booleano no cuente | Que un booleano no cuente | No |
+| 10 nov 2026 | 6 | Dónde se registra un programa de impresión (decisión 389) | En cualquier ubicación · donde haya una impresora | Donde haya una impresora | No |
 | 10 nov 2026 | 5 | La pantalla del Google de desarrollo | Una propia para escoger cuenta · la de desarrollo de oidc-provider, que pide el correo | La de oidc-provider; `pnpm local` escribe los correos de la muestra al arrancar | No |
 

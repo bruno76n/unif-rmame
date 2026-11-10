@@ -43,11 +43,24 @@ function almacenDe(contexto: ContextoDeRuta) {
 }
 
 /**
- * Revisa que quien sube tenga un departamento del módulo que usa el archivo (la dueña, todos). Un aparato
- * sube por ahora a cualquier módulo: su alcance llega con la fase 6.
+ * Los módulos a los que sube archivos cada tipo de aparato: la tablet, a Producción (lo que sube con sus
+ * acciones); el puente, a ninguno (docs/cimientos/SINCRONIZACION.md, «Lo que puede cada aparato»).
+ */
+const modulosDelAparato: Readonly<Record<string, readonly string[]>> = { tablet: ["produccion"], puente: [] };
+
+/**
+ * Revisa que quien sube tenga un departamento del módulo que usa el archivo (la dueña, todos), o que el
+ * módulo esté en el alcance del aparato.
+ * @throws `403 sin_departamento` o `403 fuera_de_alcance`.
  */
 function revisarDepartamento(quien: QuienLlama, modulo: string): void {
-	if (quien.tipo !== "cuenta" || quien.esDuena) return;
+	if (quien.tipo === "aparato") {
+		if (!(modulosDelAparato[quien.tipoDeAparato] ?? []).includes(modulo)) {
+			throw new ErrorDeApi("sin_permiso", "fuera_de_alcance");
+		}
+		return;
+	}
+	if (quien.esDuena) return;
 	const delModulo = Object.hasOwn(departamentosDelModulo, modulo) ? (departamentosDelModulo[modulo] ?? []) : [];
 	if (!delModulo.some((departamento) => quien.departamentos.includes(departamento))) {
 		throw new ErrorDeApi("sin_permiso", "sin_departamento");

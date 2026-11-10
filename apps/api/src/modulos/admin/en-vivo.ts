@@ -9,6 +9,9 @@
  * `cuenta.acceso_quitado` les manda `sesion_cerrada` a las pantallas de esa cuenta, y `sesion.cerrada` a las
  * de las sesiones que se cerraron (salir, cerrar las propias, cerrar las de otra cuenta); un cambio de
  * departamentos o de permisos finos, `permisos_cambiados`, para que su menú cambie al momento.
+ * Fase 6 · docs/modulos/admin/dispositivos.md («Eventos»): `dispositivo.revocado` le manda
+ * `dispositivo_revocado` al aparato; `dispositivo.registrado`, `dispositivo_registrado` a la dueña que
+ * generó el código, para que su ventana se cierre sola.
  */
 
 import { z } from "zod";
@@ -30,6 +33,16 @@ const deUnaCuenta = z.object({ usuario_id: z.uuid() });
 
 /** Los datos de `sesion.cerrada`: las sesiones, separadas por coma, y el motivo. */
 const sesionesCerradas = z.object({ sesion_ids: z.string(), motivo: z.string() });
+
+/** Los datos de los eventos de un aparato. */
+const deUnAparato = z.object({ dispositivo_id: z.uuid() });
+
+/** Los datos de `dispositivo.registrado`. */
+const registrado = z.object({
+	dispositivo_id: z.uuid(),
+	codigo_registro_id: z.uuid(),
+	usuario_id: z.uuid().nullable(),
+});
 
 /** A las sesiones de una cuenta: `permisos_cambiados`. */
 const permisosCambiados: EnVivo = (evento) => [
@@ -62,6 +75,24 @@ export const enVivoDeAdmin: Record<string, EnVivo> = {
 		return datos.sesion_ids
 			.split(",")
 			.map((sesionId) => ({ para: { sesionId }, nombre: "sesion_cerrada", datos: { motivo: datos.motivo } }));
+	},
+	"dispositivo.revocado": (evento) => [
+		{
+			para: { dispositivoId: deUnAparato.parse(evento.datos).dispositivo_id },
+			nombre: "dispositivo_revocado",
+			datos: {},
+		},
+	],
+	"dispositivo.registrado": (evento) => {
+		const datos = registrado.parse(evento.datos);
+		if (datos.usuario_id === null) return [];
+		return [
+			{
+				para: { usuarioId: datos.usuario_id },
+				nombre: "dispositivo_registrado",
+				datos: { dispositivo_id: datos.dispositivo_id, codigo_registro_id: datos.codigo_registro_id },
+			},
+		];
 	},
 	"cuenta.departamentos_cambiados": permisosCambiados,
 	"cuenta.permisos_cambiados": permisosCambiados,

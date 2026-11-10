@@ -122,6 +122,17 @@ describe("una respuesta con un secreto se repite sin el secreto y con secreto_en
 				permiso: {},
 			}),
 		).not.toThrow();
+		// Un sí o no con nombre parecido tampoco lleva secreto; un texto con el mismo nombre, sí.
+		const conElCampo = (rotarLlave: z.ZodType) => () =>
+			definirAccion({
+				nombre: "prueba.rotar",
+				descripcion: "rotar",
+				entrada: z.object({}),
+				salida: z.object({ rotar_llave: rotarLlave }),
+				permiso: {},
+			});
+		expect(conElCampo(z.boolean().optional())).not.toThrow();
+		expect(conElCampo(z.string().optional())).toThrow("parece un secreto");
 	});
 
 	it("un secreto solo se busca escrito como palabra en el mensaje y en los avisos: un id, un folio o un secreto vacío no fallan", () => {

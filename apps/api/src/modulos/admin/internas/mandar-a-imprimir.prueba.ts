@@ -91,13 +91,15 @@ describe("sin puente conectado responde impresora_sin_puente; con él, el trabaj
 
 	it("dos impresoras guardadas a la vez con el mismo puente: una entra y la otra responde puente_ocupado", async () => {
 		const puenteLibre = "01936f2e-0000-7000-8000-000000000033";
-		servidor.aparatos.set(puenteLibre, {
-			tipo: "puente_impresion",
-			revocado: false,
-			nombre: "Puente nuevo",
-			ultimo_contacto_en: new Date().toISOString(),
-			version_app: "1.0.0",
-		});
+		await servidor.base.dueno.query(
+			`INSERT INTO dispositivos (id, folio, nombre, tipo, ubicacion_id, llave_id, llave_hash)
+			 SELECT $1, 'DV-P33', 'Puente nuevo', 'puente_impresion', id, 'prueba33', 'x' FROM ubicaciones WHERE codigo = 'BOD'`,
+			[puenteLibre],
+		);
+		await servidor.base.dueno.query(
+			"INSERT INTO dispositivos_sync (id, dispositivo_id, ultimo_contacto_en, version_app) VALUES ($1, $1, now(), '1.0.0')",
+			[puenteLibre],
+		);
 		const [una, otra] = await Promise.all([
 			guardar({ nombre: "Zebra A", modelo: "ZD421", ubicacion_id: ubicacion.BOD, dispositivo_id: puenteLibre }),
 			guardar({ nombre: "Zebra B", modelo: "ZD421", ubicacion_id: ubicacion.BOD, dispositivo_id: puenteLibre }),
@@ -131,21 +133,29 @@ describe("sin puente conectado responde impresora_sin_puente; con él, el trabaj
 	});
 
 	it("un puente callado más de 5 minutos, con versión vieja o revocado no está conectado; más copias que el máximo, 400", async () => {
-		const puente = servidor.aparatos.get(puenteAduana);
-		if (puente === undefined) throw new Error("falta el puente de prueba");
-		const conectado = { ...puente };
+		/** Cambia el puente de Aduana como lo dejaría su último contacto, su versión o su revocación. */
+		const cambiar = (sentencia: string) => servidor.base.dueno.query(sentencia, [puenteAduana]);
 		try {
-			servidor.aparatos.set(puenteAduana, {
-				...conectado,
-				ultimo_contacto_en: new Date(Date.now() - 6 * 60_000).toISOString(),
-			});
+			await cambiar(
+				"UPDATE dispositivos_sync SET ultimo_contacto_en = now() - interval '6 minutes' WHERE dispositivo_id = $1",
+			);
 			expect((await imprimir("ADU")).cuerpo).toMatchObject({ codigo: "impresora_sin_puente" });
-			servidor.aparatos.set(puenteAduana, { ...conectado, version_app: "0.9.0" });
+			await cambiar(
+				"UPDATE dispositivos_sync SET ultimo_contacto_en = now(), version_app = '0.9.0' WHERE dispositivo_id = $1",
+			);
 			expect((await imprimir("ADU")).cuerpo).toMatchObject({ codigo: "impresora_sin_puente" });
-			servidor.aparatos.set(puenteAduana, { ...conectado, revocado: true });
+			await cambiar("UPDATE dispositivos_sync SET version_app = '1.0.0' WHERE dispositivo_id = $1");
+			await cambiar(
+				"UPDATE dispositivos SET baja_en = now(), motivo_baja = 'Se perdió', baja_confirmado_con_google_en = now() WHERE id = $1",
+			);
 			expect((await imprimir("ADU")).cuerpo).toMatchObject({ codigo: "impresora_sin_puente" });
 		} finally {
-			servidor.aparatos.set(puenteAduana, conectado);
+			await cambiar(
+				"UPDATE dispositivos SET baja_en = NULL, motivo_baja = NULL, baja_confirmado_con_google_en = NULL WHERE id = $1",
+			);
+			await cambiar(
+				"UPDATE dispositivos_sync SET ultimo_contacto_en = now(), version_app = '1.0.0' WHERE dispositivo_id = $1",
+			);
 		}
 		expect((await imprimir("ADU", 101)).cuerpo).toMatchObject({ campos: { copias: "Escribe de 1 a 100 copias." } });
 	});

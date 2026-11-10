@@ -95,11 +95,11 @@ interface Conexion {
 	avisadaDelCierre: boolean;
 }
 
-/** Los eventos que cambian lo que puede una cuenta: tras ellos se revisan sus conexiones. */
-const tocanALaCuenta = /^(sesion|cuenta)\./;
+/** Los eventos que cambian lo que puede una cuenta o un aparato: tras ellos se revisan sus conexiones. */
+const tocanAQuienLlama = /^(sesion|cuenta|dispositivo)\./;
 
-/** La cuenta de un evento de sesión o de cuenta. */
-const deUnaCuenta = z.object({ usuario_id: z.string() });
+/** La cuenta o el aparato de un evento de sesión, de cuenta o de aparato. */
+const deQuienLlama = z.object({ usuario_id: z.string().optional(), dispositivo_id: z.string().optional() });
 
 /**
  * Escribe un evento en el formato de SSE.
@@ -237,9 +237,14 @@ export function crearAvisosEnVivo(dependencias: DependenciasDeLosAvisosEnVivo) {
 		}
 		// Si el evento cambió lo que puede una cuenta (cerró sus sesiones, le quitó el acceso, cambió sus
 		// departamentos), sus conexiones se revisan ya: lo que la pantalla haga no cuenta como permiso.
-		const cuenta = deUnaCuenta.safeParse(evento.datos);
-		if (tocanALaCuenta.test(evento.tipo) && cuenta.success) {
-			const suyas = [...abiertas].filter((conexion) => conexion.usuarioId === cuenta.data.usuario_id);
+		const de = deQuienLlama.safeParse(evento.datos);
+		if (tocanAQuienLlama.test(evento.tipo) && de.success) {
+			const { usuario_id: usuarioId, dispositivo_id: dispositivoId } = de.data;
+			const suyas = [...abiertas].filter(
+				(conexion) =>
+					(usuarioId !== undefined && conexion.usuarioId === usuarioId) ||
+					(dispositivoId !== undefined && conexion.dispositivoId === dispositivoId),
+			);
 			const revisadas = await Promise.allSettled(suyas.map((conexion) => revisarConexion(conexion, true)));
 			for (const revisada of revisadas) {
 				if (revisada.status === "rejected") dependencias.anotarError(revisada.reason);

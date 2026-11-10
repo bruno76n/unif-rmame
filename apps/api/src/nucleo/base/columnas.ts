@@ -11,9 +11,9 @@
 
 import { sql } from "drizzle-orm";
 import { type AnyPgColumn, bigint, customType, text, timestamp, uuid } from "drizzle-orm/pg-core";
-// Las tablas de `admin` importan estas columnas y estas columnas apuntan a `usuarios`: la referencia va en
+// Las tablas de `admin` importan estas columnas y estas columnas apuntan a `usuarios` y `dispositivos`: la referencia va en
 // una función, así que el ciclo de importación no estorba.
-import { usuarios } from "../../modulos/admin/tablas.ts";
+import { dispositivos, usuarios } from "../../modulos/admin/tablas.ts";
 
 /** Un momento: `timestamptz`. */
 function momento(nombre: string) {
@@ -24,7 +24,7 @@ function momento(nombre: string) {
  * Una columna del tipo `xid8` de Postgres, que Drizzle no trae: el número de la transacción, como texto.
  * Es una función y no una constante porque `admin/tablas.ts` y este archivo se importan uno al otro.
  */
-function xid8(nombre: string) {
+export function columnaXid8(nombre: string) {
 	return customType<{ data: string; driverData: string }>({ dataType: () => "xid8" })(nombre);
 }
 
@@ -47,15 +47,14 @@ export function columnasComunes() {
  */
 export function columnaXidEscritura() {
 	return {
-		xidEscritura: xid8("xid_escritura").notNull().default(sql`pg_current_xact_id()`),
+		xidEscritura: columnaXid8("xid_escritura").notNull().default(sql`pg_current_xact_id()`),
 	};
 }
 
 /** Las columnas de lo que llega de un aparato: cuál fue y quién cobró o registró (sin cuenta). */
 export function columnasDeAparato() {
 	return {
-		/** @llavePendiente dispositivos.id */
-		dispositivoId: uuid("dispositivo_id"),
+		dispositivoId: uuid("dispositivo_id").references((): AnyPgColumn => dispositivos.id),
 		/** @llavePendiente personas.id */
 		personaId: uuid("persona_id"),
 	};

@@ -46,7 +46,10 @@ export const trabajosImpresion = definirAccion({
 	nombre: "admin.trabajos_impresion",
 	descripcion: "El programa puente pide los trabajos por imprimir de su impresora; al entregarlos pasan a mandado",
 	entrada: z.object({}),
-	salida: z.object({ trabajos: z.array(trabajoParaElPuente).describe("En el orden en que se pidieron") }),
+	salida: z.object({
+		trabajos: z.array(trabajoParaElPuente).describe("En el orden en que se pidieron"),
+		rotar_llave: z.boolean().optional().describe("Ya le toca cambiar su llave (`admin.rotar_llave`)"),
+	}),
 	permiso: { aparatos: ["puente"] },
 });
 

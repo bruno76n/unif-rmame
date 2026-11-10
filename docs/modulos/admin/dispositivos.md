@@ -271,4 +271,21 @@ Los dos primeros van en `parametro`; los demás, en `tecnico`. La ventana de int
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 6.*
+**Fase 6, parte 1.**
+
+- **Las tablas** `dispositivos` (con `xid_escritura`: su propio renglón baja al aparato), `codigos_registro` y `dispositivos_sync` están en `apps/api/src/modulos/admin/tablas.ts` (migración `0012_dispositivos.sql`), con sus CHECK. La misma migración agrega las llaves hacia `dispositivos` de las fases anteriores (comandos recibidos, eventos, bitácora, archivos, impresoras, sesiones). De un aparato, la app solo cambia su llave y su baja; de un código, su estado y su canje o su cancelación.
+- **Lo común** (`modulos/admin/dominio/dispositivos.ts`): el código de 6 letras sin las que se confunden (`nuevoCodigo`, «K7Q-422», y `codigoNormal`, que quita el guion y pone mayúsculas), la parte pública de la llave (`nuevaLlaveId`: 8 letras), el secreto de la credencial y `revisarUbicacion` (la tablet en el Taller; el teléfono en Aduana o Bodega; la caja en una tienda; el programa de impresión donde haya una impresora sin baja).
+- **Las acciones**, con sus contratos en `packages/compartido/src/contratos/admin/dispositivos.ts`:
+  - **`admin.generar_codigo_registro`**: guarda el SHA-256 del código; el código es un secreto del contrato, así que la respuesta guardada para los reintentos va sin él.
+  - **`admin.cancelar_codigo_registro`**: toma el código con candado.
+  - **`admin.revocar_dispositivo`**: edita con la versión del aparato; avisa lo que tenía sin subir. Anular los PIN del taller llega en la fase 7.
+  - **`admin.rotar_llave`**: el aparato manda su secreto nuevo; desde la web solo se rota la credencial, que recibe su secreto una vez. La salida dice `rotada_en`.
+- **El canje** (`modulos/admin/rutas/canje.ts`) es una ruta abierta, `POST /v1/dispositivos/canjear`, con el cuerpo de una acción (`clave_idempotencia` y `datos`): el código es la credencial (decisión 387). En una transacción con el código bloqueado nacen el aparato (con su folio DV-, su `llave_id` y el hash de su secreto) y su renglón de sincronización, y se guarda su clave en `comandos_recibidos`; la bitácora va a nombre de la dueña que generó el código (`aNombreDe`). Un código que no existe, venció o ya se usó responde lo mismo y suma un intento de la IP (`codigo:{ip}`).
+- **Quién llama con la llave** (`nucleo/acceso/llave.ts`, ver [acceso y permisos](../../cimientos/ACCESO-Y-PERMISOS.md#cómo-está-hecho)) y el contacto de cada llamada (`anotarContacto`, a lo más una vez por minuto).
+- **La lectura** `admin.datos_de_aparato` (`lecturas/datos-de-aparato.ts`) da el tipo, si está revocado, el nombre, el último contacto y la versión de un aparato: la usa la impresión.
+- **`admin.trabajos_impresion`** le dice al puente `rotar_llave` cuando su llave cumplió `admin.dias_rotar_llave`.
+- **`POST /v1/archivos/subida`** deja a la tablet subir archivos de Producción, y al puente, ninguno.
+- **`dispositivo.revocado`** manda `dispositivo_revocado` al aparato, y su conexión en vivo se vuelve a revisar y se corta; `dispositivo.registrado` manda `dispositivo_registrado` a la dueña que generó el código.
+- **Los parámetros** `admin.codigo_registro_vigencia_min`, `admin.horas_sin_sincronizar_aviso`, `admin.intentos_codigo_max`, `admin.dias_rotar_llave`, `admin.minutos_gracia_llave`, `admin.minutos_revisar_sincronizacion` y los `sync.*` están en `modulos/admin/parametros.ts`.
+- **En las pruebas**, la base plantilla trae los aparatos de prueba (la tablet del Taller y los puentes de Aduana y del Taller) registrados, con su llave conocida (`llaveDePrueba`). La prueba identifica como la API cuando la llamada trae `Authorization`.
+- **Las pruebas:** `modulos/admin/acciones/canjear-codigo.prueba.ts` y `nucleo/acceso/llave.prueba.ts`.

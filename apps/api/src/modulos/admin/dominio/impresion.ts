@@ -9,8 +9,7 @@ import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
 
 /**
  * La lectura que da los datos de un aparato registrado: su tipo, si está revocado, su nombre, su último
- * contacto y la versión con que llamó. La da `dispositivos` desde la fase 6; en esta fase la pone el
- * servidor de prueba con los datos que pone la prueba.
+ * contacto y la versión con que llamó (`lecturas/datos-de-aparato.ts`).
  */
 export const lecturaDeAparato = "admin.datos_de_aparato";
 

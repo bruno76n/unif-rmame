@@ -12,19 +12,16 @@ import { join } from "node:path";
 import { Temporal } from "temporal-polyfill";
 import { llaveDeLaEntrada } from "./nucleo/acceso/cookies.ts";
 import { crearAccesoConGoogle } from "./nucleo/acceso/google.ts";
-import { identificarConSesion } from "./nucleo/acceso/identificar.ts";
+import { identificarEnLaApi } from "./nucleo/acceso/identificar.ts";
 import { revisionDePermisos } from "./nucleo/acceso/permisos.ts";
 import { escribirBitacoraConAdmin, guardarEventosConAdmin } from "./nucleo/acciones/corredor.ts";
 import { almacenDeArchivosDelEntorno } from "./nucleo/almacen.ts";
 import { abrirConexiones, crearBase } from "./nucleo/base/conexion.ts";
 import { type Entorno, leerEntorno } from "./nucleo/entorno.ts";
 import { cargarModulos } from "./nucleo/modulos.ts";
-import { versionMinimaDeLosParametros } from "./nucleo/parametros.ts";
+import { leerParametro, versionMinimaDeLosParametros } from "./nucleo/parametros.ts";
 import { crearAvisosEnVivo } from "./nucleo/sincronizacion/eventos-en-vivo.ts";
 import { crearServidor } from "./servidor.ts";
-
-/** Cada cuántos segundos pregunta un aparato si no le llega nada, mientras la fase 6 trae su parámetro. */
-const intervaloSinParametro = 30;
 
 /**
  * La entrada con Google según el entorno; sin sus variables, no existe.
@@ -68,7 +65,7 @@ if (import.meta.main) {
 		base,
 		registro,
 		servicios: {
-			identificar: identificarConSesion(base, reloj),
+			identificar: identificarEnLaApi(base, reloj),
 			revisarPermiso: revisionDePermisos(base),
 			versionMinimaDelParametro: versionMinimaDeLosParametros(base),
 			escribirBitacora: escribirBitacoraConAdmin,
@@ -79,7 +76,7 @@ if (import.meta.main) {
 			base,
 			registro,
 			alcanceDelAparato: async () => ({ tablas: [], ubicacionIds: [] }),
-			intervaloDeSincronizacion: async () => intervaloSinParametro,
+			intervaloDeSincronizacion: async () => Number(await leerParametro(base, { clave: "sync.intervalo_segundos" })),
 			anotarError: (error) => console.error("aviso en vivo que no se repartió", error),
 		}),
 		...almacenDeArchivosDelEntorno(entorno),

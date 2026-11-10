@@ -12,7 +12,7 @@ import type { BaseDePruebasCompartida } from "@uniformame/pruebas/base/contexto"
 import pg from "pg";
 import type { TestProject } from "vitest/node";
 import { cargasDeLaMuestra } from "../../../semillas/sembrar.ts";
-import { sembrarCuentasDePrueba } from "../pruebas/cuentas-de-prueba.ts";
+import { sembrarAparatosDePrueba, sembrarCuentasDePrueba } from "../pruebas/cuentas-de-prueba.ts";
 import { abrirConexiones, crearBase } from "./conexion.ts";
 import { migrarYSembrar } from "./migrar.ts";
 
@@ -38,6 +38,7 @@ export default async function arrancar(proyecto: TestProject): Promise<() => Pro
 		const base = crearBase(conexiones);
 		for (const cargar of cargasDeLaMuestra) await cargar(base);
 		await sembrarCuentasDePrueba(base);
+		await sembrarAparatosDePrueba(base);
 	} finally {
 		await conexiones.end();
 	}

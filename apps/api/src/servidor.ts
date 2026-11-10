@@ -22,6 +22,7 @@ import { jsonSchemaTransform, serializerCompiler, type ZodTypeProvider } from "f
 import pino, { type DestinationStream } from "pino";
 import { Temporal } from "temporal-polyfill";
 import { z } from "zod";
+import { canjeDeCodigo } from "./modulos/admin/rutas/canje.ts";
 import { cookies } from "./nucleo/acceso/cookies.ts";
 import { entradaConGoogle } from "./nucleo/acceso/entrada.ts";
 import type { AccesoConGoogle } from "./nucleo/acceso/google.ts";
@@ -359,6 +360,16 @@ export async function crearServidor(dependencias: DependenciasDelServidor) {
 	}
 
 	if (dependencias.avisosEnVivo !== undefined) registrarEventosEnVivo(dependencias.avisosEnVivo);
+	// El canje del código de un aparato nuevo: sin sesión ni llave, el código es la credencial.
+	await app.register(
+		canjeDeCodigo({
+			base,
+			registro,
+			servicios,
+			reloj,
+			versionMinimaDelParametro: servicios.versionMinimaDelParametro,
+		}),
+	);
 	if (dependencias.entradaConGoogle !== undefined) {
 		await app.register(
 			entradaConGoogle({
@@ -403,8 +414,12 @@ export async function crearServidor(dependencias: DependenciasDelServidor) {
 			respuesta.raw.writeHead(200);
 			const salida = { escribir: (texto: string) => respuesta.raw.write(texto), terminar: () => respuesta.raw.end() };
 			// La conexión vuelve a identificar con la misma petición, sin contar como actividad de la sesión.
+			// Una sesión o una llave que ya no vale (`401`) no es un error: la conexión se corta.
 			quitar = await avisos.conectar(quien, salida, hola, () =>
-				servicios.identificar(peticion, { sinActividad: true }),
+				servicios.identificar(peticion, { sinActividad: true }).catch((error: unknown) => {
+					if (error instanceof ErrorDeApi && error.error === "sin_sesion") return undefined;
+					throw error;
+				}),
 			);
 			if (cerrada || respuesta.raw.destroyed) quitar();
 		});

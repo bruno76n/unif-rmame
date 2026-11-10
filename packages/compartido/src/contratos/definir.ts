@@ -97,6 +97,15 @@ function camposAnidados(esquema: z.core.$ZodType): string[] {
 	return [];
 }
 
+/**
+ * Dice si un campo es un sí o no (opcional o con nulo, también).
+ * @param esquema El esquema del campo.
+ */
+function esBooleano(esquema: z.core.$ZodType): boolean {
+	if (esquema instanceof z.ZodOptional || esquema instanceof z.ZodNullable) return esBooleano(esquema.unwrap());
+	return esquema instanceof z.ZodBoolean;
+}
+
 /** Un nombre de acción o de consulta: `modulo.nombre`, en snake_case. */
 type NombreDeContrato = `${string}.${string}`;
 
@@ -130,7 +139,8 @@ export function definirAccion<
 	}
 	// Un campo con nombre de secreto que no está declarado se guardaría para los reintentos: no se deja.
 	for (const [campo, esquema] of Object.entries(contrato.salida.shape)) {
-		if (pareceSecreto(campo) && !(contrato.secretos ?? []).includes(campo)) {
+		// Un sí o no (`rotar_llave`) no puede llevar un secreto, aunque su nombre lo parezca.
+		if (pareceSecreto(campo) && !esBooleano(esquema) && !(contrato.secretos ?? []).includes(campo)) {
 			throw new Error(`${contrato.nombre}: el campo ${campo} parece un secreto; decláralo en secretos`);
 		}
 		const anidado = camposAnidados(esquema).find(pareceSecreto);

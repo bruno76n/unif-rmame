@@ -30,7 +30,13 @@ import {
 	uniqueIndex,
 	uuid,
 } from "drizzle-orm/pg-core";
-import { columnasComunes, columnasDeAparato, columnasDeBaja, columnaXidEscritura } from "../../nucleo/base/columnas.ts";
+import {
+	columnasComunes,
+	columnasDeAparato,
+	columnasDeBaja,
+	columnaXid8,
+	columnaXidEscritura,
+} from "../../nucleo/base/columnas.ts";
 import { ubicaciones } from "../inventario/tablas.ts";
 
 /** Un momento: `timestamptz`. */
@@ -45,8 +51,7 @@ export const comandosRecibidos = pgTable(
 		id: uuid("id").primaryKey(),
 		claveIdempotencia: uuid("clave_idempotencia").notNull(),
 		origen: text("origen").notNull(),
-		/** @llavePendiente dispositivos.id */
-		dispositivoId: uuid("dispositivo_id"),
+		dispositivoId: uuid("dispositivo_id").references((): AnyPgColumn => dispositivos.id),
 		usuarioId: uuid("usuario_id").references((): AnyPgColumn => usuarios.id),
 		sesionId: uuid("sesion_id").references((): AnyPgColumn => sesiones.id),
 		/** @llavePendiente personas.id */
@@ -117,8 +122,7 @@ export const eventos = pgTable(
 		usuarioId: uuid("usuario_id").references((): AnyPgColumn => usuarios.id),
 		/** @llavePendiente personas.id */
 		personaId: uuid("persona_id"),
-		/** @llavePendiente dispositivos.id */
-		dispositivoId: uuid("dispositivo_id"),
+		dispositivoId: uuid("dispositivo_id").references((): AnyPgColumn => dispositivos.id),
 		comandoId: uuid("comando_id"),
 		ocurridoEn: momento("ocurrido_en").notNull(),
 		procesadoEn: momento("procesado_en"),
@@ -335,8 +339,7 @@ export const bitacora = pgTable(
 		usuarioId: uuid("usuario_id").references((): AnyPgColumn => usuarios.id),
 		/** @llavePendiente personas.id */
 		personaId: uuid("persona_id"),
-		/** @llavePendiente dispositivos.id */
-		dispositivoId: uuid("dispositivo_id"),
+		dispositivoId: uuid("dispositivo_id").references((): AnyPgColumn => dispositivos.id),
 		sesionId: uuid("sesion_id").references((): AnyPgColumn => sesiones.id),
 		comandoId: uuid("comando_id"),
 		correoIntento: text("correo_intento"),
@@ -466,8 +469,7 @@ export const impresoras = pgTable(
 		ubicacionId: uuid("ubicacion_id")
 			.notNull()
 			.references(() => ubicaciones.id),
-		/** @llavePendiente dispositivos.id */
-		dispositivoId: uuid("dispositivo_id"),
+		dispositivoId: uuid("dispositivo_id").references((): AnyPgColumn => dispositivos.id),
 		...bajaSinReactivar(),
 		...columnasComunes(),
 	},
@@ -676,8 +678,7 @@ export const sesiones = pgTable(
 		aparato: text("aparato"),
 		huellaAparato: text("huella_aparato"),
 		esAparatoNuevo: boolean("es_aparato_nuevo").notNull().default(false),
-		/** @llavePendiente dispositivos.id */
-		dispositivoId: uuid("dispositivo_id"),
+		dispositivoId: uuid("dispositivo_id").references((): AnyPgColumn => dispositivos.id),
 		googleConfirmadoEn: momento("google_confirmado_en"),
 		cerradaEn: momento("cerrada_en"),
 		cerradaPor: uuid("cerrada_por").references(() => usuarios.id),
@@ -704,3 +705,105 @@ export const intentosRecientes = pgTable("intentos_recientes", {
 	intentos: integer("intentos").notNull(),
 	bloqueadoHasta: momento("bloqueado_hasta"),
 });
+
+/** Los tipos de aparato registrado (docs/modulos/admin/dispositivos.md, «Los tipos»). */
+export const tiposDeDispositivo = [
+	"computadora_tienda",
+	"tablet_taller",
+	"telefono_escanear",
+	"puente_impresion",
+	"credencial_servidor",
+] as const;
+
+/** El CHECK de un tipo de aparato. */
+const tipoDeDispositivoValido = sql.raw(`tipo in (${tiposDeDispositivo.map((tipo) => `'${tipo}'`).join(", ")})`);
+
+/** Cada aparato registrado, con su propia llave. Su renglón baja al aparato (`xid_escritura`). */
+export const dispositivos = pgTable(
+	"dispositivos",
+	{
+		id: uuid("id").primaryKey(),
+		folio: text("folio").notNull(),
+		nombre: text("nombre").notNull(),
+		tipo: text("tipo").notNull(),
+		ubicacionId: uuid("ubicacion_id").references(() => ubicaciones.id),
+		prefijoFolio: text("prefijo_folio"),
+		llaveId: text("llave_id").notNull(),
+		llaveHash: text("llave_hash").notNull(),
+		llaveAnteriorHash: text("llave_anterior_hash"),
+		llaveAnteriorVenceEn: momento("llave_anterior_vence_en"),
+		llaveRotadaEn: momento("llave_rotada_en"),
+		codigoRegistroId: uuid("codigo_registro_id").references((): AnyPgColumn => codigosRegistro.id),
+		bajaEn: momento("baja_en"),
+		bajaPor: uuid("baja_por").references((): AnyPgColumn => usuarios.id),
+		motivoBaja: text("motivo_baja"),
+		bajaConfirmadoConGoogleEn: momento("baja_confirmado_con_google_en"),
+		...columnasComunes(),
+		...columnaXidEscritura(),
+	},
+	(tabla) => [
+		uniqueIndex("dispositivos_folio").on(tabla.folio),
+		uniqueIndex("dispositivos_llave_id").on(tabla.llaveId),
+		uniqueIndex("dispositivos_prefijo_vigente").on(tabla.prefijoFolio).where(sql`${tabla.bajaEn} is null`),
+		index("dispositivos_xid_escritura").on(tabla.xidEscritura),
+		check("dispositivos_tipo", tipoDeDispositivoValido),
+		check("dispositivos_ubicacion", sql`${tabla.ubicacionId} is not null or ${tabla.tipo} = 'credencial_servidor'`),
+		check(
+			"dispositivos_baja",
+			sql`${tabla.bajaEn} is null or (${tabla.motivoBaja} is not null and char_length(${tabla.motivoBaja}) between 5 and 60 and ${tabla.bajaConfirmadoConGoogleEn} is not null)`,
+		),
+		check("dispositivos_nombre", sql`char_length(${tabla.nombre}) between 1 and 30`),
+	],
+);
+
+/** El código de 10 minutos con que la dueña registra un aparato: aquí solo su hash. */
+export const codigosRegistro = pgTable(
+	"codigos_registro",
+	{
+		id: uuid("id").primaryKey(),
+		codigoHash: text("codigo_hash").notNull(),
+		nombre: text("nombre").notNull(),
+		tipo: text("tipo").notNull(),
+		ubicacionId: uuid("ubicacion_id").references(() => ubicaciones.id),
+		venceEn: momento("vence_en").notNull(),
+		estado: text("estado").notNull(),
+		canjeadoEn: momento("canjeado_en"),
+		canjeIp: inet("canje_ip"),
+		dispositivoId: uuid("dispositivo_id").references((): AnyPgColumn => dispositivos.id),
+		canceladoEn: momento("cancelado_en"),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		index("codigos_registro_hash").on(tabla.codigoHash).where(sql`${tabla.estado} = 'vigente'`),
+		check("codigos_registro_tipo", tipoDeDispositivoValido),
+		check("codigos_registro_estado", sql`${tabla.estado} in ('vigente', 'canjeado', 'cancelado')`),
+		check("codigos_registro_canjeado", sql`${tabla.estado} <> 'canjeado' or ${tabla.dispositivoId} is not null`),
+		check("codigos_registro_quien", sql`${tabla.creadoPor} is not null`),
+	],
+);
+
+/** El estado de la sincronización de cada aparato. Técnica: sin `creado_por` ni `version`. */
+export const dispositivosSync = pgTable(
+	"dispositivos_sync",
+	{
+		id: uuid("id").primaryKey(),
+		dispositivoId: uuid("dispositivo_id")
+			.notNull()
+			.references(() => dispositivos.id),
+		cursorXid: columnaXid8("cursor_xid"),
+		esquemaSync: integer("esquema_sync"),
+		fotoPedidaEn: momento("foto_pedida_en"),
+		ultimaSincronizacionEn: momento("ultima_sincronizacion_en"),
+		ultimaSubidaEn: momento("ultima_subida_en"),
+		ultimaBajadaEn: momento("ultima_bajada_en"),
+		ultimoContactoEn: momento("ultimo_contacto_en"),
+		pendientesPorSubir: integer("pendientes_por_subir").notNull().default(0),
+		desfaseRelojSeg: integer("desfase_reloj_seg"),
+		avisoSinSincronizarEn: momento("aviso_sin_sincronizar_en"),
+		versionApp: text("version_app"),
+		ip: inet("ip"),
+		creadoEn: momento("creado_en").notNull().defaultNow(),
+		actualizadoEn: momento("actualizado_en"),
+	},
+	(tabla) => [uniqueIndex("dispositivos_sync_dispositivo").on(tabla.dispositivoId)],
+);

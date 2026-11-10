@@ -40,8 +40,10 @@ export interface Evento {
 /** El sistema, cuando escribe desde un trabajo del worker y no por una llamada. */
 export interface SistemaQueEscribe {
 	tipo: "sistema";
-	/** El trabajo que escribe. */
+	/** El trabajo (o la entrada sin cuenta, como el canje de un código) que escribe. */
 	trabajo: string;
+	/** La cuenta a cuyo nombre queda en la bitácora: el canje, a nombre de la dueña que generó el código. */
+	aNombreDe?: string;
 }
 
 /** Quién escribe en una transacción: quien llamó a la API o el sistema desde un trabajo. */

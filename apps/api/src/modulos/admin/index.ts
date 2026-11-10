@@ -16,16 +16,20 @@ import { accionAgregarALista } from "./acciones/agregar-a-lista.ts";
 import { accionCambiarDepartamentos } from "./acciones/cambiar-departamentos.ts";
 import { accionCambiarParametro } from "./acciones/cambiar-parametro.ts";
 import { accionCambiarPermisoFino } from "./acciones/cambiar-permiso-fino.ts";
+import { accionCancelarCodigoRegistro } from "./acciones/cancelar-codigo-registro.ts";
 import { accionCerrarMiSesion } from "./acciones/cerrar-mi-sesion.ts";
 import { accionCerrarSesiones } from "./acciones/cerrar-sesiones.ts";
 import { accionConfirmarImpresion } from "./acciones/confirmar-impresion.ts";
 import { accionCrearCuenta } from "./acciones/crear-cuenta.ts";
 import { accionEditarEmpresa } from "./acciones/editar-empresa.ts";
+import { accionGenerarCodigoRegistro } from "./acciones/generar-codigo-registro.ts";
 import { accionGuardarImpresora } from "./acciones/guardar-impresora.ts";
 import { accionMarcarAlertaRevisada } from "./acciones/marcar-alerta-revisada.ts";
 import { accionMarcarAvisoLeido } from "./acciones/marcar-aviso-leido.ts";
 import { accionQuitarAcceso } from "./acciones/quitar-acceso.ts";
 import { accionRegistrarRestauracion } from "./acciones/registrar-restauracion.ts";
+import { accionRevocarDispositivo } from "./acciones/revocar-dispositivo.ts";
+import { accionRotarLlave } from "./acciones/rotar-llave.ts";
 import { accionSalir } from "./acciones/salir.ts";
 import { accionTrabajosImpresion } from "./acciones/trabajos-impresion.ts";
 import { alEventoDeAdmin } from "./al-evento.ts";
@@ -42,6 +46,7 @@ import { registrarRespaldo } from "./internas/registrar-respaldo.ts";
 import { tomarFolio } from "./internas/tomar-folio.ts";
 import { correoDeCuenta } from "./lecturas/correo-de-cuenta.ts";
 import { cuentasPorRegla } from "./lecturas/cuentas-por-regla.ts";
+import { datosDeAparato } from "./lecturas/datos-de-aparato.ts";
 import { parametro } from "./lecturas/parametro.ts";
 import { permisosDe } from "./lecturas/permisos-de.ts";
 import { siguienteFolio } from "./lecturas/siguiente-folio.ts";
@@ -74,6 +79,10 @@ export default definirModulo({
 		accionSalir,
 		accionCerrarMiSesion,
 		accionCerrarSesiones,
+		accionGenerarCodigoRegistro,
+		accionCancelarCodigoRegistro,
+		accionRevocarDispositivo,
+		accionRotarLlave,
 	],
 	internas: {
 		guardar_evento: guardarEvento,
@@ -92,6 +101,7 @@ export default definirModulo({
 		permisos_de: permisosDe,
 		cuentas_por_regla: cuentasPorRegla,
 		correo_de_cuenta: correoDeCuenta,
+		datos_de_aparato: datosDeAparato,
 	},
 	semillas: [semillaDeDepartamentos, semillaDeContadores, semillaDeParametrosDeAdmin],
 	trabajos: [depurarEventos, enviarCorreos, respaldoSemanal, recordatorioRestauracion],

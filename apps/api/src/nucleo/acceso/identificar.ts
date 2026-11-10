@@ -4,8 +4,8 @@
  *
  * La cookie `ua_sesion` se revisa como dice `sesion.ts`; si pasa, quien llama es su cuenta con sus
  * departamentos efectivos, sus permisos finos, si es la dueña o soporte y su última confirmación con
- * Google. Sin sesión válida no hay quien llama, y la llamada responde `401 sin_sesion`. La llave de los
- * aparatos llega en la fase 6.
+ * Google. Sin sesión válida no hay quien llama, y la llamada responde `401 sin_sesion`.
+ * Fase 6: con `Authorization: Llave …` quien llama es el aparato de esa llave (`llave.ts`).
  */
 
 import type { FastifyRequest } from "fastify";
@@ -14,6 +14,7 @@ import { leerPermisosDe } from "../../modulos/admin/lecturas/permisos-de.ts";
 import type { Base } from "../base/conexion.ts";
 import type { Transaccion } from "../base/transacciones.ts";
 import { cookies } from "./cookies.ts";
+import { identificarConLlave, traeLlave } from "./llave.ts";
 import type { CuentaQueLlama, QuienLlama } from "./quien.ts";
 import { revisarSesion, type SesionValida } from "./sesion.ts";
 
@@ -53,5 +54,21 @@ export function identificarConSesion(
 	return async (peticion, opciones) => {
 		const sesion = await revisarSesion(base, peticion.cookies[cookies.sesion], reloj(), opciones);
 		return sesion === undefined ? undefined : cuentaDeLaSesion(base, sesion);
+	};
+}
+
+/**
+ * El paso «quién llama» de la API: con `Authorization: Llave …`, el aparato; si no, la sesión de Google.
+ * @param base La base.
+ * @param reloj La hora de cada llamada.
+ */
+export function identificarEnLaApi(
+	base: Base,
+	reloj: () => Temporal.Instant,
+): (peticion: FastifyRequest, opciones?: { sinActividad?: true }) => Promise<QuienLlama | undefined> {
+	const conSesion = identificarConSesion(base, reloj);
+	return async (peticion, opciones) => {
+		if (!traeLlave(peticion.headers.authorization)) return conSesion(peticion, opciones);
+		return (await identificarConLlave(base, peticion, reloj(), opciones ?? {}))?.quien;
 	};
 }

@@ -5,10 +5,15 @@
  *
  * La dueña y soporte son las de la muestra; Ventas, Aduana y Administración del sistema son cuentas de un
  * solo departamento, para probar lo que una cuenta no puede. Cada cuenta trae su sesión abierta.
+ * Fase 6: los aparatos de prueba (la tablet del Taller, el puente de Aduana y el del Taller) son aparatos
+ * registrados, con su llave conocida (`llavesDePrueba`) y su contacto de ahora con la versión 1.0.0.
  */
 
+import { eq } from "drizzle-orm";
 import { cuentasDeLaMuestra, sembrarCuentas } from "../../../semillas/cuentas.ts";
-import { sesiones } from "../../modulos/admin/tablas.ts";
+import { dispositivos, dispositivosSync, sesiones } from "../../modulos/admin/tablas.ts";
+import { ubicaciones } from "../../modulos/inventario/tablas.ts";
+import { hashDe } from "../acceso/cookies.ts";
 import type { CuentaQueLlama, QuienLlama } from "../acceso/quien.ts";
 import type { Base } from "../base/conexion.ts";
 
@@ -133,4 +138,62 @@ export function cuentaDePrueba(nombre: string): string {
 	const quien = quienesDePrueba[nombre];
 	if (quien?.tipo !== "cuenta") throw new Error(`no hay cuenta de prueba ${nombre}`);
 	return quien.usuarioId;
+}
+
+/** Los aparatos de prueba: su tipo registrado, su ubicación, su nombre y su llave conocida. */
+export const aparatosRegistradosDePrueba = {
+	tablet: { tipo: "tablet_taller", ubicacion: "TAL", nombre: "Tablet del taller", llaveId: "prueba21" },
+	puente: { tipo: "puente_impresion", ubicacion: "ADU", nombre: "Puente de Aduana", llaveId: "prueba31" },
+	otro_puente: { tipo: "puente_impresion", ubicacion: "TAL", nombre: "Puente del Taller", llaveId: "prueba32" },
+} as const;
+
+/** El secreto de la llave de cada aparato de prueba: 43 letras de base64url, solo de pruebas. */
+export function secretoDePrueba(nombre: keyof typeof aparatosRegistradosDePrueba): string {
+	return `secreto-de-prueba-${nombre}`.padEnd(43, "x");
+}
+
+/**
+ * El encabezado `Authorization` de un aparato de prueba.
+ * @param nombre El aparato.
+ */
+export function llaveDePrueba(nombre: keyof typeof aparatosRegistradosDePrueba): string {
+	return `Llave ${aparatosRegistradosDePrueba[nombre].llaveId}.${secretoDePrueba(nombre)}`;
+}
+
+/**
+ * Siembra en la base plantilla los aparatos de prueba, con su renglón de sincronización: contacto de
+ * ahora y versión 1.0.0.
+ * @param base La base plantilla, con el rol dueño.
+ */
+export async function sembrarAparatosDePrueba(base: Base): Promise<void> {
+	for (const nombre of ["tablet", "puente", "otro_puente"] as const) {
+		const aparato = aparatosRegistradosDePrueba[nombre];
+		const quien = quienesDePrueba[nombre];
+		if (quien?.tipo !== "aparato") throw new Error(`no hay aparato de prueba ${nombre}`);
+		const [ubicacion] = await base
+			.select({ id: ubicaciones.id })
+			.from(ubicaciones)
+			.where(eq(ubicaciones.codigo, aparato.ubicacion));
+		await base
+			.insert(dispositivos)
+			.values({
+				id: quien.dispositivoId,
+				folio: `DV-P${quien.dispositivoId.slice(-2)}`,
+				nombre: aparato.nombre,
+				tipo: aparato.tipo,
+				ubicacionId: ubicacion?.id ?? null,
+				llaveId: aparato.llaveId,
+				llaveHash: hashDe(secretoDePrueba(nombre)),
+			})
+			.onConflictDoNothing();
+		await base
+			.insert(dispositivosSync)
+			.values({
+				id: quien.dispositivoId,
+				dispositivoId: quien.dispositivoId,
+				ultimoContactoEn: new Date().toISOString(),
+				versionApp: "1.0.0",
+			})
+			.onConflictDoNothing();
+	}
 }

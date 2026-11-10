@@ -17,7 +17,7 @@ import { modulosDeLaBitacora } from "../../modulos/admin/tablas.ts";
 import { crearServidor, type ServiciosDelServidor } from "../../servidor.ts";
 import { llaveDeLaEntrada } from "../acceso/cookies.ts";
 import { crearAccesoConGoogle } from "../acceso/google.ts";
-import { identificarConSesion } from "../acceso/identificar.ts";
+import { identificarEnLaApi } from "../acceso/identificar.ts";
 import { revisionDePermisos } from "../acceso/permisos.ts";
 import { escribirBitacoraConAdmin, guardarEventosConAdmin } from "../acciones/corredor.ts";
 import type { Almacen } from "../almacen.ts";
@@ -41,74 +41,6 @@ export const clienteDeGooglePrueba = {
 	vuelta: "https://api.prueba.invalid/v1/acceso/google/vuelta",
 };
 
-/**
- * El registro con la lectura que dará `dispositivos` (fase 6): los datos de un aparato. Las cuentas ya son
- * las de `usuarios`, que la base plantilla trae (`cuentas-de-prueba.ts`).
- * @param registro Lo que registraron los módulos.
- * @param aparatos Los aparatos de prueba.
- */
-export function conAparatosDePrueba(
-	registro: RegistroDeModulos,
-	aparatos: ReadonlyMap<string, AparatoDePrueba> = aparatosDePrueba(),
-): RegistroDeModulos {
-	const lecturas = new Map(registro.lecturas);
-	lecturas.set("admin.datos_de_aparato", async (_contexto, datos) => {
-		const id =
-			typeof datos === "object" && datos !== null && "dispositivo_id" in datos ? String(datos.dispositivo_id) : "";
-		return aparatos.get(id);
-	});
-	return { ...registro, lecturas };
-}
-
-/** Los datos de un aparato como los dará `dispositivos` en la fase 6. */
-export interface AparatoDePrueba {
-	tipo: string;
-	revocado: boolean;
-	nombre: string;
-	ultimo_contacto_en: string | null;
-	version_app: string | null;
-}
-
-/**
- * Los aparatos de prueba, por su id: los dos puentes, conectados ahora con la versión 1.0.0. La prueba
- * los cambia para ver un puente callado, viejo o revocado.
- */
-export function aparatosDePrueba(): Map<string, AparatoDePrueba> {
-	const ahora = new Date().toISOString();
-	return new Map([
-		[
-			"01936f2e-0000-7000-8000-000000000031",
-			{
-				tipo: "puente_impresion",
-				revocado: false,
-				nombre: "Puente de Aduana",
-				ultimo_contacto_en: ahora,
-				version_app: "1.0.0",
-			},
-		],
-		[
-			"01936f2e-0000-7000-8000-000000000032",
-			{
-				tipo: "puente_impresion",
-				revocado: false,
-				nombre: "Puente del Taller",
-				ultimo_contacto_en: ahora,
-				version_app: "1.0.0",
-			},
-		],
-		[
-			"01936f2e-0000-7000-8000-000000000021",
-			{
-				tipo: "tablet_taller",
-				revocado: false,
-				nombre: "Tablet del taller",
-				ultimo_contacto_en: ahora,
-				version_app: "1.0.0",
-			},
-		],
-	]);
-}
-
 /** Lo que guarda el servidor de prueba para que las pruebas lo revisen. */
 export interface ServidorDePrueba {
 	app: Awaited<ReturnType<typeof crearServidor>>;
@@ -119,8 +51,6 @@ export interface ServidorDePrueba {
 	registro: string[];
 	/** Lo que registraron los módulos de la API y los de prueba. */
 	modulos: RegistroDeModulos;
-	/** Los aparatos de prueba, que la prueba puede cambiar. */
-	aparatos: Map<string, AparatoDePrueba>;
 	/** La versión mínima del parámetro, que la prueba puede cambiar. */
 	parametros: { versionMinima: string };
 	/**
@@ -184,16 +114,16 @@ export async function crearServidorDePrueba(
 	const modulosDePrueba = await cargarModulos(join(import.meta.dirname, "modulos"));
 	const base = opciones.otraInstanciaDe?.base ?? (await crearBaseConTablasDePrueba(modulosDePrueba.semillas));
 	const deLaApi = await cargarModulos(join(import.meta.dirname, "../../modulos"));
-	const aparatos = aparatosDePrueba();
-	const registro = conAparatosDePrueba(registrarModulos([...deLaApi.modulos, ...modulosDePrueba.modulos]), aparatos);
+	const registro = registrarModulos([...deLaApi.modulos, ...modulosDePrueba.modulos]);
 	const pedidos: ServidorDePrueba["pedidos"] = { bitacora: [], eventos: [] };
 	const lineas: string[] = [];
 	const parametros = { versionMinima: "1.0.0" };
 	const fallas = { bitacora: false, bitacoraUnaVez: new Set<string>() };
 	const servicios: ServiciosDelServidor = {
 		identificar: async (peticion, revision) => {
-			if (opciones.sesionReal === true) {
-				return identificarConSesion(crearBase(base.app), () => Temporal.Now.instant())(peticion, revision);
+			// Con la llave de un aparato o con la sesión de verdad, se identifica como en la API.
+			if (opciones.sesionReal === true || peticion.headers.authorization !== undefined) {
+				return identificarEnLaApi(crearBase(base.app), () => Temporal.Now.instant())(peticion, revision);
 			}
 			const valor = peticion.headers["x-prueba-quien"];
 			const quien = typeof valor === "string" ? quienesDePrueba[valor] : undefined;
@@ -263,7 +193,6 @@ export async function crearServidorDePrueba(
 		pedidos,
 		registro: lineas,
 		modulos: registro,
-		aparatos,
 		parametros,
 		fallas,
 		cerrar: async () => {

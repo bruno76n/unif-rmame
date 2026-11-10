@@ -4,11 +4,16 @@
  *
  * Es una acción y no una consulta: entregar los trabajos los pasa a `mandado`. Solo los de la impresora de
  * ese puente, en el orden en que se pidieron. Sin bitácora: imprimir no cambia datos del negocio.
+ * Fase 6 · docs/modulos/admin/dispositivos.md (regla 7): la respuesta le dice `rotar_llave` cuando su llave
+ * cumplió `admin.dias_rotar_llave` desde que se rotó (o desde que se registró).
  */
 
 import { trabajosImpresion } from "@uniformame/compartido/contratos/admin/impresion";
 import { and, asc, eq, inArray, isNull } from "drizzle-orm";
-import { implementarAccion } from "../../../nucleo/modulos.ts";
+import { Temporal } from "temporal-polyfill";
+import { type ContextoDeAccion, implementarAccion } from "../../../nucleo/modulos.ts";
+import { leerParametro } from "../../../nucleo/parametros.ts";
+import { leerDispositivo } from "../dominio/dispositivos.ts";
 import { impresoras, trabajosImpresion as trabajos } from "../tablas.ts";
 
 /**
@@ -19,6 +24,18 @@ export function rutaDeLaEtiqueta(trabajo: { tipo: string; ids: readonly string[]
 	const [primero] = trabajo.ids;
 	const varios = trabajo.ids.length > 1 ? `&ids=${trabajo.ids.join(",")}` : "";
 	return `/v1/etiquetas/${trabajo.tipo}/${primero}?formato=zpl&copias=${trabajo.copias}${varios}`;
+}
+
+/**
+ * Dice si al aparato que llama ya le toca cambiar su llave.
+ * @param contexto El contexto de la acción.
+ */
+async function leTocaRotar(contexto: ContextoDeAccion): Promise<boolean> {
+	if (contexto.quien.tipo !== "aparato") return false;
+	const aparato = await leerDispositivo(contexto.transaccion, contexto.quien.dispositivoId);
+	const dias = Number(await leerParametro(contexto.transaccion, { clave: "admin.dias_rotar_llave" }));
+	const desde = Temporal.Instant.from(aparato.llaveRotadaEn ?? aparato.creadoEn);
+	return Temporal.Instant.compare(desde.add({ hours: dias * 24 }), contexto.ahora) <= 0;
 }
 
 export const accionTrabajosImpresion = implementarAccion(trabajosImpresion, async (contexto) => {
@@ -47,6 +64,7 @@ export const accionTrabajosImpresion = implementarAccion(trabajosImpresion, asyn
 	}
 	return {
 		resultado: {
+			rotar_llave: await leTocaRotar(contexto),
 			mensaje: `${pendientes.length} trabajos`,
 			trabajos: pendientes.map((trabajo) => ({
 				id: trabajo.id,

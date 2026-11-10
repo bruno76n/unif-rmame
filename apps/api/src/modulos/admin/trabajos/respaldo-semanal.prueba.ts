@@ -22,7 +22,6 @@ import { escribirBitacoraConAdmin, guardarEventosConAdmin } from "../../../nucle
 import { crearAlmacen, cubos, direccionDeR2 } from "../../../nucleo/almacen.ts";
 import { crearBase } from "../../../nucleo/base/conexion.ts";
 import { cargarModulos } from "../../../nucleo/modulos.ts";
-import { conAparatosDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 import { correrTrabajo, type DependenciasDelTrabajador } from "../../../nucleo/trabajos/trabajador.ts";
 import { respaldoSemanal } from "./respaldo-semanal.ts";
 
@@ -49,7 +48,7 @@ describe("el respaldo semanal sale cifrado, llega con su SHA-256 y, descifrado y
 		prueba = await crearBaseDePrueba();
 		dependencias = {
 			base: crearBase(prueba.app),
-			registro: conAparatosDePrueba(await cargarModulos(join(import.meta.dirname, "../.."))),
+			registro: await cargarModulos(join(import.meta.dirname, "../..")),
 			servicios: { guardarEventos: guardarEventosConAdmin, escribirBitacora: escribirBitacoraConAdmin },
 			enviarCorreo: async () => undefined,
 			dominioWeb: "https://fabrica.prueba.invalid",

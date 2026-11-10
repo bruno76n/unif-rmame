@@ -117,7 +117,8 @@ export async function escribirBitacora(
 	const secreto = campoSecreto(renglon.antes) ?? campoSecreto(renglon.despues);
 	if (secreto !== undefined) throw new Error(`un renglón de bitácora trae el secreto ${secreto}`);
 	const { quien, transaccion } = contexto;
-	const usuarioId = quien.tipo === "cuenta" ? quien.usuarioId : null;
+	const usuarioId =
+		quien.tipo === "cuenta" ? quien.usuarioId : quien.tipo === "sistema" ? (quien.aNombreDe ?? null) : null;
 	if (
 		renglon.tipo === "consulta_sensible" &&
 		(await yaSeApunto(contexto, usuarioId, renglon.entidad, renglon.entidadId))
