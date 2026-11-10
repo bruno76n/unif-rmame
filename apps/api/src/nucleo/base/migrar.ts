@@ -10,6 +10,7 @@ import { join } from "node:path";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import type pg from "pg";
 import { leerEntorno } from "../entorno.ts";
+import { cargarModulos } from "../modulos.ts";
 import { prepararEsquemaDelWorker } from "../trabajos/esquema.ts";
 import { abrirConexiones, crearBase } from "./conexion.ts";
 import { type Semilla, sembrarSistema } from "./siembra.ts";
@@ -17,12 +18,12 @@ import { type Semilla, sembrarSistema } from "./siembra.ts";
 /** La carpeta de las migraciones que escribe drizzle-kit. */
 export const carpetaDeMigraciones = join(import.meta.dirname, "../../../migraciones");
 
-/**
- * Las semillas del sistema de todos los módulos. Todavía no hay módulos: desde la fase 3,
- * `nucleo/modulos.ts` las junta de cada carpeta de `modulos/`.
- */
-export function semillasDelSistema(): Semilla[] {
-	return [];
+/** La carpeta de los módulos de la API. */
+const carpetaDeModulos = join(import.meta.dirname, "../../modulos");
+
+/** Las semillas del sistema de todos los módulos: las junta `cargarModulos` de cada carpeta de `modulos/`. */
+export async function semillasDelSistema(): Promise<readonly Semilla[]> {
+	return (await cargarModulos(carpetaDeModulos)).semillas;
 }
 
 /**
@@ -32,14 +33,14 @@ export function semillasDelSistema(): Semilla[] {
  */
 export async function migrarYSembrar(
 	destinoDueno: string | pg.PoolConfig,
-	semillas: readonly Semilla[] = semillasDelSistema(),
+	semillas?: readonly Semilla[],
 ): Promise<void> {
 	const conexiones = abrirConexiones(destinoDueno);
 	try {
 		const base = crearBase(conexiones);
 		await migrate(base, { migrationsFolder: carpetaDeMigraciones });
 		await prepararEsquemaDelWorker(conexiones);
-		await sembrarSistema(base, semillas);
+		await sembrarSistema(base, semillas ?? (await semillasDelSistema()));
 	} finally {
 		await conexiones.end();
 	}

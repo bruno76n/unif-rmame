@@ -1,0 +1,39 @@
+/**
+ * El módulo `inventario`. Por ahora, solo sus ubicaciones con su siembra.
+ * Fase 4 · docs/modulos/inventario/libro-de-movimientos.md («La tabla `ubicaciones`»)
+ *
+ * Las ubicaciones nacen en la fase 4 porque las usan antes los parámetros, las impresoras, las cuentas,
+ * los aparatos y las personas. Lo demás del inventario llega en la fase 9. Los responsables nacen vacíos.
+ */
+
+import { v7 as uuidv7 } from "uuid";
+import { todosLosDepartamentos } from "../../nucleo/acceso/departamentos.ts";
+import { definirModulo } from "../../nucleo/modulos.ts";
+import { ubicaciones } from "./tablas.ts";
+
+/** Las ubicaciones de la siembra, en su orden. */
+const ubicacionesDeLaSiembra = [
+	{ orden: 1, codigo: "ADU", nombre: "Aduana", tipo: "aduana", prefijoFolio: null, surteEnLinea: false },
+	{ orden: 2, codigo: "BOD", nombre: "Bodega", tipo: "bodega", prefijoFolio: null, surteEnLinea: true },
+	{ orden: 3, codigo: "T1", nombre: "Tienda 1", tipo: "tienda", prefijoFolio: "T1", surteEnLinea: true },
+	{ orden: 4, codigo: "T2", nombre: "Tienda 2", tipo: "tienda", prefijoFolio: "T2", surteEnLinea: true },
+	{ orden: 5, codigo: "TAL", nombre: "Taller", tipo: "taller", prefijoFolio: null, surteEnLinea: false },
+	{ orden: 6, codigo: "TRA", nombre: "Tránsito", tipo: "transito", prefijoFolio: null, surteEnLinea: false },
+	{
+		orden: 7,
+		codigo: "ECA",
+		nombre: "En camino a aduana",
+		tipo: "en_camino_aduana",
+		prefijoFolio: null,
+		surteEnLinea: false,
+	},
+];
+
+export default definirModulo({
+	nombre: "inventario",
+	// Las ubicaciones salen en las pantallas de todos los departamentos.
+	lectores: { ubicaciones: todosLosDepartamentos },
+	semillas: [
+		{ tabla: ubicaciones, filas: ubicacionesDeLaSiembra.map((ubicacion) => ({ id: uuidv7(), ...ubicacion })) },
+	],
+});

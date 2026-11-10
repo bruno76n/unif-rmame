@@ -116,4 +116,6 @@ Las formas fijas en que los módulos se hablan, para que nadie invente otra:
   - El contexto lleva el `modulo` de la acción o del trabajo.
   - `quien` puede ser el sistema (`{ tipo: "sistema", trabajo }`) cuando escribe un trabajo, y entonces `comandoId` va vacío (decisión 348).
   - Los eventos los guarda `admin.guardar_evento`.
+  - Una semilla puede ser los renglones de una tabla o una siembra propia (`{ sembrar(base) }`), como la de los parámetros, que también escribe su historial.
+  - `nucleo/base/migrar.ts` junta las semillas de todos los módulos con `cargarModulos`.
 - **Las pruebas:** `nucleo/acciones/atomica.prueba.ts` (una acción que falla antes de escribir, después de su interna o en la bitácora no deja nada), `nucleo/acciones/pisadas.prueba.ts` y `nucleo/modulos.prueba.ts` (un módulo nuevo en su carpeta se registra solo; uno mal nombrado se rechaza).

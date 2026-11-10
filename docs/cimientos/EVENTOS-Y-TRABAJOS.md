@@ -178,4 +178,7 @@ Este archivo es dueño del mecanismo; cada evento lo produce el archivo de su te
   - `nucleo/trabajos/procesar-eventos.prueba.ts` (dos workers sobre 250 eventos; la escalera de reintentos y el aviso);
   - `nucleo/trabajos/reloj.prueba.ts` (con `runOnce` de Graphile Worker y «ahora» controlado);
   - `nucleo/sincronizacion/eventos-en-vivo.prueba.ts` (un servidor que escucha de verdad, dos instancias sobre la misma base).
-- **Depurar eventos** (`admin.depurar_eventos`, con `soltar_particiones_de_eventos`) se termina en la parte 2, con su parámetro `admin.dias_guardar_eventos`.
+- **Depurar eventos** (`modulos/admin/trabajos/depurar-eventos.ts`, parte 2):
+  - Es el trabajo `admin.depurar_eventos`. Lee `admin.dias_guardar_eventos` y llama a `soltar_particiones_de_eventos(corte)`, que corre con los permisos del dueño.
+  - Suelta la partición de cada mes que terminó antes del corte y no tiene nada sin procesar. Un mes a medias espera a que todo su mes quede atrás del corte.
+  - Su prueba es `depurar-eventos.prueba.ts`.

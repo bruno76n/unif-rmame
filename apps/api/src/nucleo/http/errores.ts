@@ -54,6 +54,16 @@ export function errorDeRegla(codigo: string, mensaje: string): ErrorDeApi {
 	return new ErrorDeApi("regla", codigo, mensaje);
 }
 
+/**
+ * Un campo que no se puede guardar por una regla que depende de lo guardado (el rango de un parámetro):
+ * `400` con el mensaje debajo de ese campo, como los de la forma.
+ * @param campo El nombre del campo.
+ * @param mensaje El mensaje en español.
+ */
+export function errorDeCampo(campo: string, mensaje: string): ErrorDeApi {
+	return new ErrorDeApi("validacion", null, undefined, { campos: { [campo]: mensaje } });
+}
+
 /** Lo que no existe, o existe pero la cuenta no lo puede ver: `404`. */
 export function noExiste(): ErrorDeApi {
 	return new ErrorDeApi("no_existe");

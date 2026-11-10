@@ -14,7 +14,7 @@ import type { Transaccion } from "../base/transacciones.ts";
 import { conflictoDeVersion, noExiste } from "../http/errores.ts";
 import type { ContextoDeAccion } from "../modulos.ts";
 
-/** Los contextos de las acciones que ya tomaron su versión: el corredor lo pregunta con `tomoSuVersion`. */
+/** Los contextos de las acciones que ya revisaron o tomaron su versión: el corredor lo pregunta con `tomoSuVersion`. */
 const contextosConVersion = new WeakSet<ContextoDeAccion>();
 
 /**
@@ -26,16 +26,41 @@ export function tomoSuVersion(contexto: ContextoDeAccion): boolean {
 }
 
 /**
- * Toma la versión de un registro (o del encabezado de su agregado) antes de cambiarlo. Primero bloquea el
+ * Revisa la versión de un registro (o del encabezado de su agregado) sin cambiarla. Primero bloquea el
  * renglón (`FOR UPDATE`): desde ahí nadie lo cambia hasta que la acción termine, así que la versión y lo
- * que se lee de él son del mismo momento. Luego revisa que la cuenta lo pueda ver y, si la versión sigue
- * siendo la que se leyó, la sube; la acción ya puede cambiar el registro y sus renglones.
+ * que se lee de él son del mismo momento. Luego revisa que la cuenta lo pueda ver y que la versión siga
+ * siendo la que se leyó. Sirve sola a la acción que, con lo mismo que ya había, responde sin escribir.
  * @param contexto El contexto de la acción.
  * @param tabla La tabla del registro, con las columnas comunes.
  * @param id El id del registro.
  * @param versionLeida La versión que trajo la acción.
  * @param leerVisible Lo que hay ahora, ya recortado según la cuenta, o `undefined` si la cuenta no lo
  * puede ver (entonces sale `404`, como si no existiera). Es lo que lleva el `409`.
+ * @throws `404` si no existe o la cuenta no lo puede ver; `409 conflicto_version` si alguien lo cambió.
+ */
+export async function revisarVersion(
+	contexto: ContextoDeAccion,
+	tabla: PgTable,
+	id: string,
+	versionLeida: number | undefined,
+	leerVisible: () => Promise<unknown>,
+): Promise<void> {
+	const bloqueada = await contexto.transaccion.execute(sql`SELECT version FROM ${tabla} WHERE id = ${id} FOR UPDATE`);
+	const version = bloqueada.rows[0]?.version;
+	const visible = await leerVisible();
+	if (version === undefined || visible === undefined) throw noExiste();
+	if (Number(version) !== versionLeida) throw conflictoDeVersion(Number(version), visible);
+	contextosConVersion.add(contexto);
+}
+
+/**
+ * Toma la versión de un registro antes de cambiarlo: la revisa como `revisarVersion` y la sube; la
+ * acción ya puede cambiar el registro y sus renglones.
+ * @param contexto El contexto de la acción.
+ * @param tabla La tabla del registro, con las columnas comunes.
+ * @param id El id del registro.
+ * @param versionLeida La versión que trajo la acción.
+ * @param leerVisible Lo que hay ahora, ya recortado según la cuenta (ver `revisarVersion`).
  * @throws `404` si no existe o la cuenta no lo puede ver; `409 conflicto_version` si alguien lo cambió.
  */
 export async function tomarVersion(
@@ -45,17 +70,11 @@ export async function tomarVersion(
 	versionLeida: number | undefined,
 	leerVisible: () => Promise<unknown>,
 ): Promise<void> {
-	const { transaccion } = contexto;
-	const bloqueada = await transaccion.execute(sql`SELECT version FROM ${tabla} WHERE id = ${id} FOR UPDATE`);
-	const version = bloqueada.rows[0]?.version;
-	const visible = await leerVisible();
-	if (version === undefined || visible === undefined) throw noExiste();
-	if (Number(version) !== versionLeida) throw conflictoDeVersion(Number(version), visible);
+	await revisarVersion(contexto, tabla, id, versionLeida, leerVisible);
 	// La versión se sube aquí con la secuencia, aunque a la tabla le faltara su disparador.
-	await transaccion.execute(
+	await contexto.transaccion.execute(
 		sql`UPDATE ${tabla} SET actualizado_en = now(), version = nextval('public.version_global') WHERE id = ${id}`,
 	);
-	contextosConVersion.add(contexto);
 }
 
 /**

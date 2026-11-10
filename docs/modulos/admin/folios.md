@@ -123,4 +123,21 @@ Las pantallas lo muestran como dato (ver [pantallas de Administración](../../in
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 4.*
+**Fase 4, parte 2.**
+
+- **La tabla** `contadores_folio` está en `apps/api/src/modulos/admin/tablas.ts` (migración `0004_configuracion.sql`).
+- **La siembra** está en `modulos/admin/dominio/contadores.ts`. Cada tipo tiene un renglón con alcance vacío.
+  - En los tipos con alcance, ese renglón es la plantilla: su prefijo lleva dónde va el alcance (`OP-{año}-`, `S-{T}-`, `{tipo}-`), y de él nace el contador de cada alcance la primera vez que se pide (decisión 352).
+  - El código de barras empieza en 100001 y su máximo es 499999.
+- **`admin.tomar_folio`** está en `modulos/admin/internas/tomar-folio.ts`.
+  - Con `asigna = servidor`, toma los folios con un solo `UPDATE … SET siguiente = siguiente + n … RETURNING`, que solo pasa si le alcanzan los `n` (si no, `422 folio_agotado`).
+  - En los tipos con `{año}`, el alcance se pone solo con el año del día de negocio.
+  - Con `asigna = aparato` y `numero_recibido`, solo sube el contador.
+- **`admin.siguiente_folio`** (`lecturas/siguiente-folio.ts`) arma el siguiente sin tomarlo. A un alcance sin contador le toca el mínimo de su plantilla.
+- **Lo que comparten** las dos está en `dominio/folios.ts`.
+- **Las pruebas** están en `modulos/admin/internas/tomar-folio.prueba.ts`:
+  - dos a la vez, cuando la primera falla;
+  - el año en hora de México;
+  - el número de un aparato;
+  - `n`;
+  - el tope del código de barras.

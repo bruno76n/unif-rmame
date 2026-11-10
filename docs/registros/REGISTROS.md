@@ -16,6 +16,7 @@ Lo que falta decidir o investigar, y en qué fase se resuelve. Lo del negocio ya
 - **`enTransaccionDeshecha` arma su propio Drizzle** (fase 3): si `crearBase` recibe opciones (un `schema`), la ayuda de pruebas tiene que usar las mismas.
 - **Lo que lleva el `409` y la posición del cursor dependen de cada módulo** (fase 22, con la revisión de cada consulta): `tomarVersion` manda lo que le da la acción (`leerVisible`), sin revisar que venga recortado, y `cursorDe` guarda los campos que le pasa la consulta. Una revisión que compare el `409` y el cursor con los `recortables` de la consulta que lee ese registro.
 - **Una acción puede tomar la versión de otro registro** (fase 22): el corredor sabe que se tomó una versión, no cuál. Revisar que la versión tomada sea la del documento que la acción dice que tocó (`entidad`).
+- **El formato de los parámetros de texto** (fase 19, con la pantalla de Configuración): `admin.cambiar_parametro` revisa que un texto no venga vacío, pero no su forma (los días de trabajo, una versión). Decidir si cada definición lleva su patrón.
 - **Un `\u0000` en la entrada o en la respuesta** (fase 22): Postgres no lo guarda en `text` ni en `jsonb`, y sale `500` en lugar de `400`. Rechazarlo en la validación del protocolo.
 - **El tipo del cliente no pide `version` cuando el contrato edita** (fase 19, con las pantallas): `definirAccion` tendría que conservar `edita` como literal para que el cliente lo exija; hoy el servidor responde `400`.
 - **La prueba al azar de la idempotencia corre 150 series contra Postgres** (fase 21, con la temporada simulada): la regla de pruebas pide miles; con la base real cada serie cuesta, y la temporada simulada es donde se corren muchas más.
@@ -86,4 +87,9 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 10 nov 2026 | 4 | Las particiones por mes (decisión 347) | Meses de México · meses de UTC con una de respaldo | UTC, con respaldo: es técnico y nunca falla una escritura | No |
 | 10 nov 2026 | 4 | El sistema como quien escribe (decisión 348) | Un usuario «sistema» · un tipo `sistema` en el contexto | El tipo: no inventa cuentas | No |
 | 10 nov 2026 | 4 | La versión en los avisos en vivo (decisión 349) | Pedir `X-App-Version` · mandarla en `hola` | En `hola`: un `EventSource` no manda encabezados | No |
+| 10 nov 2026 | 4 | Cómo se guardan los días de trabajo (decisión 350) | Un booleano por día · texto con los días ISO | Texto: un solo parámetro y su historial | Sí |
+| 10 nov 2026 | 4 | El mismo valor en una acción que edita (decisión 351) | Subir la versión · solo revisarla | Solo revisarla: no se escribe nada | No |
+| 10 nov 2026 | 4 | La plantilla de los folios con alcance (decisión 352) | Que cada acción pase el año · ponerlo solo | Ponerlo solo, con el día de negocio | No |
+| 10 nov 2026 | 4 | Dónde se revisa `solo_duena_agrega` (decisión 353) | Un contrato por lista · en la acción | En la acción: depende de la lista | No |
+| 10 nov 2026 | 4 | El historial de la siembra de parámetros (decisión 354) | Aparte · en la misma siembra | En la misma: solo para los recién creados | No |
 

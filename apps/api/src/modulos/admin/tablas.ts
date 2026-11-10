@@ -3,26 +3,33 @@
  * Fase 3 · docs/cimientos/IDEMPOTENCIA-Y-CONCURRENCIA.md («La tabla `comandos_recibidos`»)
  * Fase 4 · docs/cimientos/EVENTOS-Y-TRABAJOS.md («La tabla `eventos`» y «Los trabajos programados»)
  *
+ * Fase 4 · docs/modulos/admin/folios.md y docs/modulos/admin/configuracion.md (sus tablas)
+ *
  * `comandos_recibidos` es de `admin`, pero nace en la fase 3 porque la idempotencia la necesita.
  * `comandos_recibidos`, `eventos` y `trabajos_vueltas` son tablas técnicas: no llevan las columnas
- * comunes. Sus columnas que apuntan a tablas de fases posteriores llevan su `@llavePendiente`.
+ * comunes; las demás sí. Sus columnas que apuntan a tablas de fases posteriores llevan su `@llavePendiente`.
  */
 
 import { sql } from "drizzle-orm";
 import {
+	bigint,
 	boolean,
 	check,
 	index,
 	integer,
 	jsonb,
+	numeric,
 	pgTable,
 	primaryKey,
 	smallint,
 	text,
 	timestamp,
+	unique,
 	uniqueIndex,
 	uuid,
 } from "drizzle-orm/pg-core";
+import { columnasComunes, columnasDeBaja, columnaXidEscritura } from "../../nucleo/base/columnas.ts";
+import { ubicaciones } from "../inventario/tablas.ts";
 
 /** Un momento: `timestamptz`. */
 function momento(nombre: string) {
@@ -145,4 +152,157 @@ export const trabajosVueltas = pgTable(
 		ultimoError: text("ultimo_error"),
 	},
 	(tabla) => [primaryKey({ columns: [tabla.trabajo, tabla.periodo] })],
+);
+
+/** Un contador de folio por tipo de documento y alcance (el año, el prefijo del aparato, el tipo de máquina). */
+export const contadoresFolio = pgTable(
+	"contadores_folio",
+	{
+		id: uuid("id").primaryKey(),
+		tipo: text("tipo").notNull(),
+		alcance: text("alcance").notNull().default(""),
+		prefijo: text("prefijo").notNull(),
+		siguiente: bigint("siguiente", { mode: "number" }).notNull(),
+		digitos: smallint("digitos").notNull(),
+		minimo: bigint("minimo", { mode: "number" }).notNull().default(1),
+		maximo: bigint("maximo", { mode: "number" }),
+		asigna: text("asigna").notNull(),
+		modulo: text("modulo").notNull(),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		uniqueIndex("contadores_folio_tipo_alcance").on(tabla.tipo, tabla.alcance),
+		check("contadores_folio_asigna", sql`${tabla.asigna} in ('servidor', 'aparato')`),
+	],
+);
+
+/** Los parámetros del negocio: un valor por clave (y por ubicación, si lo es), con su tipo y sus límites. */
+export const parametros = pgTable(
+	"parametros",
+	{
+		id: uuid("id").primaryKey(),
+		clave: text("clave").notNull(),
+		ubicacionId: uuid("ubicacion_id").references(() => ubicaciones.id),
+		seccion: text("seccion").notNull(),
+		nombre: text("nombre").notNull(),
+		explicacion: text("explicacion"),
+		tipoValor: text("tipo_valor").notNull(),
+		unidad: text("unidad"),
+		valorEntero: bigint("valor_entero", { mode: "number" }),
+		valorPorcentaje: numeric("valor_porcentaje", { precision: 6, scale: 3 }),
+		valorTexto: text("valor_texto"),
+		valorBooleano: boolean("valor_booleano"),
+		opciones: text("opciones").array(),
+		minimo: bigint("minimo", { mode: "number" }),
+		maximo: bigint("maximo", { mode: "number" }),
+		permiteVacio: boolean("permite_vacio").notNull().default(false),
+		estadoDecision: text("estado_decision").notNull(),
+		moduloLector: text("modulo_lector").notNull(),
+		bajaA: text("baja_a").array().notNull().default(sql`'{}'`),
+		orden: integer("orden").notNull(),
+		...columnasComunes(),
+		...columnaXidEscritura(),
+	},
+	(tabla) => [
+		unique("parametros_clave_ubicacion").on(tabla.clave, tabla.ubicacionId).nullsNotDistinct(),
+		index("parametros_xid_escritura").on(tabla.xidEscritura),
+		check("parametros_seccion", sql`${tabla.seccion} in ('decision_operacion', 'parametro', 'tecnico')`),
+		check(
+			"parametros_tipo_valor",
+			sql`${tabla.tipoValor} in ('entero', 'centavos', 'porcentaje', 'opcion', 'booleano', 'texto', 'hora')`,
+		),
+		check("parametros_estado_decision", sql`${tabla.estadoDecision} in ('decidido', 'por_decidir')`),
+		// Según su tipo va lleno su valor y los demás en nulo; vacío solo si lo permite.
+		check(
+			"parametros_valor_de_su_tipo",
+			sql`(${tabla.tipoValor} in ('entero', 'centavos')
+				and ${tabla.valorPorcentaje} is null and ${tabla.valorTexto} is null and ${tabla.valorBooleano} is null
+				and (${tabla.valorEntero} is not null or ${tabla.permiteVacio}))
+			or (${tabla.tipoValor} = 'porcentaje'
+				and ${tabla.valorEntero} is null and ${tabla.valorTexto} is null and ${tabla.valorBooleano} is null
+				and (${tabla.valorPorcentaje} is not null or ${tabla.permiteVacio}))
+			or (${tabla.tipoValor} in ('opcion', 'texto', 'hora')
+				and ${tabla.valorEntero} is null and ${tabla.valorPorcentaje} is null and ${tabla.valorBooleano} is null
+				and (${tabla.valorTexto} is not null or ${tabla.permiteVacio}))
+			or (${tabla.tipoValor} = 'booleano'
+				and ${tabla.valorEntero} is null and ${tabla.valorPorcentaje} is null and ${tabla.valorTexto} is null
+				and (${tabla.valorBooleano} is not null or ${tabla.permiteVacio}))`,
+		),
+	],
+);
+
+/** Cada valor que tuvo un parámetro y desde cuándo. Solo crece. */
+export const parametrosHistorial = pgTable(
+	"parametros_historial",
+	{
+		id: uuid("id").primaryKey(),
+		parametroId: uuid("parametro_id")
+			.notNull()
+			.references(() => parametros.id),
+		valorAnterior: text("valor_anterior"),
+		valorNuevo: text("valor_nuevo").notNull(),
+		creadoEn: momento("creado_en").notNull().defaultNow(),
+		/** @llavePendiente usuarios.id */
+		creadoPor: uuid("creado_por"),
+	},
+	(tabla) => [index("parametros_historial_parametro").on(tabla.parametroId, tabla.creadoEn.desc())],
+);
+
+/** Las listas sencillas que el usuario agrega: categorías de gasto, unidades de material… */
+export const listas = pgTable(
+	"listas",
+	{
+		id: uuid("id").primaryKey(),
+		clave: text("clave").notNull(),
+		nombre: text("nombre").notNull(),
+		modulo: text("modulo").notNull(),
+		soloDuenaAgrega: boolean("solo_duena_agrega").notNull().default(true),
+		bajaA: text("baja_a").array().notNull().default(sql`'{}'`),
+		...columnasComunes(),
+	},
+	(tabla) => [uniqueIndex("listas_clave").on(tabla.clave)],
+);
+
+/** Las columnas de baja sin `reactivado_en`: un valor de lista dado de baja no se reactiva. */
+function bajaSinReactivar() {
+	const { bajaEn, bajaPor, motivoBaja } = columnasDeBaja();
+	return { bajaEn, bajaPor, motivoBaja };
+}
+
+/** Los valores de una lista: lo nuevo queda al final, y no se renombran ni se quitan. */
+export const listaValores = pgTable(
+	"lista_valores",
+	{
+		id: uuid("id").primaryKey(),
+		listaId: uuid("lista_id")
+			.notNull()
+			.references(() => listas.id),
+		nombre: text("nombre").notNull(),
+		nombreNormalizado: text("nombre_normalizado").notNull(),
+		clave: text("clave"),
+		seleccionable: boolean("seleccionable").notNull().default(true),
+		seCuentaEntera: boolean("se_cuenta_entera"),
+		orden: integer("orden").notNull(),
+		...bajaSinReactivar(),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		uniqueIndex("lista_valores_nombre").on(tabla.listaId, tabla.nombreNormalizado),
+		uniqueIndex("lista_valores_clave").on(tabla.listaId, tabla.clave),
+	],
+);
+
+/** Los datos de la empresa que salen en las hojas y el ticket. Un solo renglón. */
+export const empresa = pgTable(
+	"empresa",
+	{
+		id: uuid("id").primaryKey(),
+		unica: boolean("unica").notNull().default(true),
+		razonSocial: text("razon_social").notNull(),
+		nombreComercial: text("nombre_comercial").notNull(),
+		rfc: text("rfc").notNull(),
+		domicilio: text("domicilio").notNull(),
+		...columnasComunes(),
+	},
+	(tabla) => [uniqueIndex("empresa_unica").on(tabla.unica), check("empresa_solo_una", sql`${tabla.unica}`)],
 );

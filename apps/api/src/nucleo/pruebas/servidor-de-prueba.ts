@@ -16,8 +16,9 @@ import { crearServidor, type ServiciosDelServidor } from "../../servidor.ts";
 import type { QuienLlama } from "../acceso/quien.ts";
 import { guardarEventosConAdmin } from "../acciones/corredor.ts";
 import { crearBase } from "../base/conexion.ts";
+import { type Semilla, sembrarSistema } from "../base/siembra.ts";
 import { ErrorDeApi } from "../http/errores.ts";
-import { cargarModulos, registrarModulos } from "../modulos.ts";
+import { cargarModulos, type RegistroDeModulos, registrarModulos } from "../modulos.ts";
 import { crearAvisosEnVivo } from "../sincronizacion/eventos-en-vivo.ts";
 import * as tablasDePrueba from "./modulos/prueba/tablas.ts";
 
@@ -44,6 +45,15 @@ export const quienesDePrueba: Record<string, QuienLlama> = {
 		sesionId: "01936f2e-0000-7000-8000-000000000012",
 		esDuena: false,
 		departamentos: ["ventas"],
+		permisosFinos: [],
+		confirmadoConGoogleEn: undefined,
+	},
+	admin: {
+		tipo: "cuenta",
+		usuarioId: "01936f2e-0000-7000-8000-000000000004",
+		sesionId: "01936f2e-0000-7000-8000-000000000014",
+		esDuena: false,
+		departamentos: ["admin"],
 		permisosFinos: [],
 		confirmadoConGoogleEn: undefined,
 	},
@@ -94,6 +104,8 @@ export interface ServidorDePrueba {
 	pedidos: { bitacora: unknown[][]; eventos: unknown[][] };
 	/** Lo que escribió el registro técnico. */
 	registro: string[];
+	/** Lo que registraron los módulos de la API y los de prueba. */
+	modulos: RegistroDeModulos;
 	/** La versión mínima del parámetro, que la prueba puede cambiar. */
 	parametros: { versionMinima: string };
 	/**
@@ -110,8 +122,12 @@ export const alcanceDeLaTablet = {
 	ubicacionIds: ["01936f2e-0000-7000-8000-0000000000b1"],
 };
 
-/** Una base copia con las tablas del módulo de prueba y sus disparadores. */
-async function crearBaseConTablasDePrueba(): Promise<BaseDePrueba> {
+/**
+ * Una base copia con las tablas del módulo de prueba, sus disparadores y su siembra (sus parámetros, sus
+ * listas y la empresa de prueba).
+ * @param semillas Las semillas de los módulos de prueba.
+ */
+async function crearBaseConTablasDePrueba(semillas: readonly Semilla[]): Promise<BaseDePrueba> {
 	const base = await crearBaseDePrueba();
 	for (const sentencia of await generateMigration(
 		generateDrizzleJson({}),
@@ -122,6 +138,7 @@ async function crearBaseConTablasDePrueba(): Promise<BaseDePrueba> {
 	for (const tabla of ["prueba_notas", "prueba_renglones", "prueba_conteos"]) {
 		await base.dueno.query(`SELECT poner_disparador_comun('${tabla}')`);
 	}
+	await sembrarSistema(crearBase(base.dueno), semillas);
 	return base;
 }
 
@@ -137,8 +154,8 @@ export async function crearServidorDePrueba(
 		otraInstanciaDe?: ServidorDePrueba;
 	} = {},
 ): Promise<ServidorDePrueba> {
-	const base = opciones.otraInstanciaDe?.base ?? (await crearBaseConTablasDePrueba());
 	const modulosDePrueba = await cargarModulos(join(import.meta.dirname, "modulos"));
+	const base = opciones.otraInstanciaDe?.base ?? (await crearBaseConTablasDePrueba(modulosDePrueba.semillas));
 	const deLaApi = await cargarModulos(join(import.meta.dirname, "../../modulos"));
 	const registro = registrarModulos([...deLaApi.modulos, ...modulosDePrueba.modulos]);
 	const pedidos: ServidorDePrueba["pedidos"] = { bitacora: [], eventos: [] };
@@ -193,6 +210,7 @@ export async function crearServidorDePrueba(
 		base,
 		pedidos,
 		registro: lineas,
+		modulos: registro,
 		parametros,
 		fallas,
 		cerrar: async () => {

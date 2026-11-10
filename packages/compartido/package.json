@@ -10,6 +10,7 @@
 		"./contratos/definir": "./src/contratos/definir.ts",
 		"./contratos/protocolo": "./src/contratos/protocolo.ts",
 		"./contratos/versiones": "./src/contratos/versiones.ts",
+		"./contratos/admin/configuracion": "./src/contratos/admin/configuracion.ts",
 		"./cliente/cliente": "./src/cliente/cliente.ts"
 	},
 	"dependencies": {

@@ -29,6 +29,7 @@ import {
 	verMontos,
 	verNota,
 } from "./contratos.ts";
+import { semillasDePrueba } from "./siembra.ts";
 import { conteos, notas, renglones } from "./tablas.ts";
 
 /** El horario del trabajo de prueba y cuántas veces corrió; las pruebas del reloj lo cambian. */
@@ -60,6 +61,7 @@ async function notaVisible(contexto: ContextoDeAccion, id: string): Promise<Reco
 export default definirModulo({
 	nombre: "prueba",
 	lectores: { prueba_notas: ["ventas"] },
+	semillas: semillasDePrueba,
 	trabajos: [
 		{
 			nombre: "prueba.resumen",

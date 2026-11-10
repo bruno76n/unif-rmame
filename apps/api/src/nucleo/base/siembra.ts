@@ -10,11 +10,13 @@
 import type { PgTable } from "drizzle-orm/pg-core";
 import type { Base } from "./conexion.ts";
 
-/** Lo que un módulo siembra en una de sus tablas: los renglones con su llave única. */
-export interface Semilla {
-	tabla: PgTable;
-	filas: Record<string, unknown>[];
-}
+/**
+ * Lo que un módulo siembra: los renglones de una de sus tablas con su llave única, o una siembra propia
+ * (como la de los parámetros, que también escribe su historial) que regresa cuántos agregó.
+ */
+export type Semilla =
+	| { tabla: PgTable; filas: Record<string, unknown>[] }
+	| { sembrar: (base: Base) => Promise<number> };
 
 /**
  * Siembra los renglones que falten. Si un renglón ya existe (choca con su llave primaria o única),
@@ -25,9 +27,13 @@ export interface Semilla {
  */
 export async function sembrarSistema(base: Base, semillas: readonly Semilla[]): Promise<number> {
 	let agregados = 0;
-	for (const { tabla, filas } of semillas) {
-		if (filas.length === 0) continue;
-		const resultado = await base.insert(tabla).values(filas).onConflictDoNothing();
+	for (const semilla of semillas) {
+		if ("sembrar" in semilla) {
+			agregados += await semilla.sembrar(base);
+			continue;
+		}
+		if (semilla.filas.length === 0) continue;
+		const resultado = await base.insert(semilla.tabla).values(semilla.filas).onConflictDoNothing();
 		agregados += resultado.rowCount ?? 0;
 	}
 	return agregados;

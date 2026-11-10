@@ -195,3 +195,5 @@ Ninguno propio: cada acción guarda los suyos, con `existencias` entre sus tabla
 ## Cómo está hecho
 
 *Lo escribe Claude Code al terminar la fase 9 (y las fases 4, 10, 11 y 12 en lo que les toca).*
+
+**Fase 4.** La tabla `ubicaciones` está en `apps/api/src/modulos/inventario/tablas.ts` (migración `0004_configuracion.sql`), con su disparador común y el índice único de una sola por tipo fuera de las tiendas. Su siembra, con los siete renglones y los responsables vacíos, está en `modulos/inventario/index.ts`, que por ahora solo registra eso y dice que las ubicaciones las leen todos los departamentos.

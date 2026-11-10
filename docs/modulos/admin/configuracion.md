@@ -232,4 +232,34 @@ Dentro de una acción, cada clave se lee una sola vez y se recuerda hasta que la
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 4.*
+**Fase 4, parte 2.**
+
+- **Las tablas** están en `apps/api/src/modulos/admin/tablas.ts` (migración `0004_configuracion.sql`): `parametros`, `parametros_historial`, `listas`, `lista_valores` y `empresa`.
+  - Cada una lleva su disparador común; `parametros` va con `xid_escritura`.
+  - El historial solo crece.
+  - El CHECK de `parametros` exige la columna de su tipo y las demás en nulo.
+  - La empresa no admite un segundo renglón: un índice único sobre `unica` y el CHECK `unica`.
+- **Los parámetros por dentro** (`apps/api/src/nucleo/parametros.ts`):
+  - **La definición.** Cada módulo declara los suyos con `semillaDeParametros(modulo, definiciones)`; `DefinicionDeParametro` lleva la clave, la sección, el nombre, el tipo, la unidad, el inicial, los límites, si acepta vacío, las opciones, a qué baja, si va por decidir y el orden.
+  - **La siembra.** Crea solo los que faltan y su primer historial, sin valor anterior (decisión 354).
+  - **La lectura.** `leerParametro` da el valor con su tipo o, con `en`, el último del historial hasta ese momento.
+  - **La versión mínima.** `versionMinimaDeLosParametros` da la de cada app para el paso 2 de cada llamada.
+- **Los de `admin`** están en `modulos/admin/parametros.ts`: `general.largo_minimo_motivo`, `general.dias_de_trabajo` (texto con los días ISO separados por coma: `1,2,3,4,5,6`; decisión 350), las tres versiones mínimas y `admin.dias_guardar_eventos`.
+- **`admin.cambiar_parametro`** está en `acciones/cambiar-parametro.ts`.
+  - Revisa el valor contra su tipo y sus límites y responde `400` en `valor` con el mensaje de la casilla (`errorDeCampo`).
+  - El mismo valor que ya tenía solo revisa la versión (`revisarVersion`) y no escribe nada (decisión 351).
+  - Si cambia, toma la versión, guarda el valor con `decidido`, escribe el historial con quién, la bitácora y `parametro.cambiado`.
+  - Pedir la foto a los aparatos llega en la fase 6 y la nómina en la 17.
+- **`admin.parametro`** (`lecturas/parametro.ts`) recuerda cada clave hasta que la acción termina.
+- **`admin.agregar_a_lista`** (`acciones/agregar-a-lista.ts`):
+  - compara con `sin_acentos` y responde `ya_esta` con `INSERT … ON CONFLICT DO NOTHING`;
+  - revisa el largo y `se_cuenta_entera`;
+  - revisa `solo_duena_agrega` dentro de la acción, porque depende de la lista (decisión 353).
+- **`admin.editar_empresa`** está en `acciones/editar-empresa.ts`.
+- **Los contratos** de las tres acciones están en `packages/compartido/src/contratos/admin/configuracion.ts`.
+- **Las pruebas:**
+  - `acciones/cambiar-parametro.prueba.ts`;
+  - `lecturas/parametro.prueba.ts` (con `en`, una sola lectura por acción, la siembra que no pisa y la versión mínima);
+  - `acciones/agregar-a-lista.prueba.ts`;
+  - `acciones/editar-empresa.prueba.ts`.
+- **La siembra de prueba** (parámetros de cada tipo, tres listas y la empresa) está en `nucleo/pruebas/modulos/prueba/siembra.ts`.
