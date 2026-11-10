@@ -79,4 +79,25 @@ El protocolo completo está en [API](API.md).
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 1 (dónde quedó cada función de dinero y fechas, con sus pruebas de datos al azar) y lo completa en la fase 3 (cómo se arma el cliente desde los contratos).*
+**Fase 1.** `packages/compartido` es el paquete `@uniformame/compartido` del workspace; depende solo de `temporal-polyfill` (y de `fast-check` para sus pruebas). Cada archivo se importa por su ruta (`@uniformame/compartido/calculos/dinero`), sin archivos que solo reexportan.
+
+**Los tipos base** (`src/tipos/base.ts`):
+
+- `Centavos` y `Uuid` llevan una marca de tipo: un número cualquiera no pasa por centavos. Se obtienen con `esCentavos(n)` (entero seguro), `centavos(n)` (igual, pero falla con `RangeError`) y `esUuid(texto)` (uuid v7 en minúsculas).
+- `DiaNegocio` es `Temporal.PlainDate` y `Momento` es `Temporal.Instant`, del polyfill.
+
+**El dinero** (`src/calculos/dinero.ts`), todo con enteros y `BigInt` donde un producto puede pasar de un entero seguro:
+
+| Función | Cómo |
+|---|---|
+| `pesosACentavos(texto)` | Acepta signo, `$`, pesos con comas de miles bien puestas o sin comas, y hasta dos decimales; regresa `null` con cualquier otra cosa o si no cabe en un entero seguro |
+| `centavosATexto(monto, { conCentavos })` | `Intl.NumberFormat("es-MX", MXN)` con el monto como texto decimal exacto: «$1,250» o «$1,250.50» |
+| `aPesoEntero(monto)` | Al múltiplo de 100 más cercano, la mitad hacia arriba (−123.50 queda en −123) |
+| `aplicarPorcentaje(monto, porcentaje)` | El porcentaje (`12.5` o `"12.500"`) se pasa a milésimas enteras; monto × milésimas ÷ 100 000, al centavo y con la mitad hacia arriba. Un porcentaje negativo o con más de tres decimales es `RangeError` |
+| `repartir(total, proporciones)` | Restos mayores: cada renglón recibe la parte entera de su proporción, y los centavos que faltan van a los restos más grandes (en empate, al primero). Un total negativo se reparte igual, con su signo. Sin renglones, con un peso que no es entero de cero en adelante, o con todos en cero y algo que repartir, es `RangeError` |
+
+**Las fechas** (`src/calculos/fechas.ts`): `zonaDelNegocio` es `America/Mexico_City`; `diaDeNegocio(momento)` es la fecha del reloj de México; `inicioDeSemana(dia)` es su lunes; `diasHabilesEntre(desde, hasta, diasDeTrabajo)` cuenta los días de trabajo después de `desde` y hasta `hasta`, incluido; `sumarDiasHabiles(dia, n, diasDeTrabajo)` avanza `n` días de trabajo. Los días de trabajo llegan como números ISO (1 lunes … 7 domingo), ya leídos de `general.dias_de_trabajo`.
+
+**Las pruebas**, con fast-check y casos fijos: `src/calculos/dinero.prueba.ts` (lo repartido suma exactamente el total y cada parte queda a menos de un centavo de la exacta; `aPesoEntero` da múltiplos de 100 a menos de medio peso; `pesosACentavos` lee de vuelta cualquier monto y rechaza todo texto sin forma de dinero; el porcentaje queda a menos de medio centavo del exacto), `src/calculos/fechas.prueba.ts` (las 23:30 de México son de ese día aunque en UTC sea el siguiente; el lunes de cada semana; los días hábiles con cualquier juego de días de trabajo) y `src/tipos/base.prueba.ts`.
+
+*Lo completa la fase 3: cómo se arma el cliente desde los contratos.*

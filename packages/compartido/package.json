@@ -1,0 +1,17 @@
+{
+	"name": "@uniformame/compartido",
+	"private": true,
+	"description": "Lo que comparten la API, la web y la tablet: tipos base, cálculos puros y, desde la fase 3, los contratos y el cliente de la API.",
+	"type": "module",
+	"exports": {
+		"./tipos/base": "./src/tipos/base.ts",
+		"./calculos/dinero": "./src/calculos/dinero.ts",
+		"./calculos/fechas": "./src/calculos/fechas.ts"
+	},
+	"dependencies": {
+		"temporal-polyfill": "1.0.8"
+	},
+	"devDependencies": {
+		"fast-check": "4.10.2"
+	}
+}

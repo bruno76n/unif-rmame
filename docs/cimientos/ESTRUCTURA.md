@@ -193,6 +193,12 @@ uniformame/
 │   ├── modo                   supervisado | autonomo
 │   └── rules/ · agents/
 ├── docs/
+├── packages/
+│   └── compartido/            @uniformame/compartido
+│       ├── package.json
+│       └── src/
+│           ├── tipos/base.ts          Centavos, Uuid, DiaNegocio, Momento
+│           └── calculos/              dinero.ts y fechas.ts, con sus *.prueba.ts
 └── scripts/
     ├── archivos.ts            qué se revisa: lo que se va a guardar, lo cambiado y lo del commit
     ├── comandos.ts            corre Biome, tsc, Vitest, node y pnpm
