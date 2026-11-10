@@ -5,7 +5,9 @@
  * Sigue la interfaz oficial de Google: el documento de descubrimiento, el intercambio del código en el
  * punto de tokens (con PKCE S256) y las llaves públicas para revisar el `id_token`, firmado con RS256
  * por una llave de prueba que nace con cada simulador. Trae tres cuentas: la dueña, una dada de alta y
- * una que el sistema no conoce.
+ * una que el sistema no conoce. El `id_token` lleva `auth_time` (la hora de entrar, o la que diga la
+ * prueba) y se puede pedir dañado: con otra firma, otro `nonce`, otra audiencia o ya vencido.
+ * Fase 5 · docs/fases/05-acceso-con-google-cuentas-y-permisos.md (parte 2)
  */
 
 import { createHash, createSign, generateKeyPairSync, randomUUID } from "node:crypto";
@@ -31,10 +33,16 @@ export const cuentasDeGoogle = {
 	noExiste: { sub: "100000000000000000003", email: "desconocida@ejemplo.invalid", name: "Desconocida" },
 } satisfies Record<string, CuentaDeGoogle>;
 
+/** Cómo sale dañado un `id_token`, para probar que no entra. */
+export type DanoDelToken = "firma" | "nonce" | "audiencia" | "vencido";
+
 /** Lo que se guardó al emitir un código: de quién es y lo que hay que revisar al cambiarlo. */
 interface CodigoEmitido {
 	cuenta: CuentaDeGoogle;
 	nonce: string | undefined;
+	/** Cuándo pasó por Google, en segundos. */
+	authTime: number | undefined;
+	dano: DanoDelToken | undefined;
 	retoPkce: string | undefined;
 	redireccion: string;
 	usado: boolean;
@@ -57,29 +65,35 @@ export function crearSimuladorDeGoogle(
 ) {
 	const clienteId = cliente.id;
 	const { privateKey, publicKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
+	// Otra llave, que no está en las públicas: firma los tokens con la firma dañada.
+	const otraLlave = generateKeyPairSync("rsa", { modulusLength: 2048 }).privateKey;
 	const kid = randomUUID();
 	const codigos = new Map<string, CodigoEmitido>();
 	let modo: ModoDeFalla = "ninguna";
 
-	/** Firma un `id_token` para una cuenta. */
-	function firmarIdToken(cuenta: CuentaDeGoogle, nonce: string | undefined): string {
-		const emitido = ahora();
+	/** Firma un `id_token` para el código emitido, dañado si así se pidió. */
+	function firmarIdToken(emitido: CodigoEmitido): string {
+		const { cuenta, nonce, dano } = emitido;
+		const hora = ahora();
 		const encabezado = base64url(JSON.stringify({ alg: "RS256", kid, typ: "JWT" }));
 		const contenido = base64url(
 			JSON.stringify({
 				iss: emisorDeGoogle,
 				azp: clienteId,
-				aud: clienteId,
+				aud: dano === "audiencia" ? "otro-cliente.apps.googleusercontent.com" : clienteId,
 				sub: cuenta.sub,
 				email: cuenta.email,
 				email_verified: true,
 				name: cuenta.name,
-				iat: emitido,
-				exp: emitido + 3600,
-				...(nonce === undefined ? {} : { nonce }),
+				iat: dano === "vencido" ? hora - 7200 : hora,
+				exp: dano === "vencido" ? hora - 3600 : hora + 3600,
+				auth_time: emitido.authTime ?? hora,
+				...(nonce === undefined ? {} : { nonce: dano === "nonce" ? `${nonce}-otro` : nonce }),
 			}),
 		);
-		const firma = createSign("RSA-SHA256").update(`${encabezado}.${contenido}`).sign(privateKey);
+		const firma = createSign("RSA-SHA256")
+			.update(`${encabezado}.${contenido}`)
+			.sign(dano === "firma" ? otraLlave : privateKey);
 		return `${encabezado}.${contenido}.${base64url(firma)}`;
 	}
 
@@ -145,7 +159,7 @@ export function crearSimuladorDeGoogle(
 				expires_in: 3599,
 				scope: "openid email profile",
 				token_type: "Bearer",
-				id_token: firmarIdToken(emitido.cuenta, emitido.nonce),
+				id_token: firmarIdToken(emitido),
 			});
 		}),
 	];
@@ -155,13 +169,19 @@ export function crearSimuladorDeGoogle(
 		/**
 		 * Emite el código que Google le daría a la app después de que la cuenta entra.
 		 * @param cuenta Una de `cuentasDeGoogle`.
-		 * @param pedido La dirección de vuelta, y el `nonce` y el reto PKCE (S256) con que la app pidió entrar.
+		 * @param pedido La dirección de vuelta, y el `nonce` y el reto PKCE (S256) con que la app pidió entrar;
+		 * `authTime` (segundos) si la prueba fija cuándo pasó por Google, y `dano` para un token que no debe entrar.
 		 */
-		emitirCodigo(cuenta: CuentaDeGoogle, pedido: { redireccion: string; nonce?: string; retoPkce?: string }): string {
+		emitirCodigo(
+			cuenta: CuentaDeGoogle,
+			pedido: { redireccion: string; nonce?: string; retoPkce?: string; authTime?: number; dano?: DanoDelToken },
+		): string {
 			const codigo = `4/${randomUUID()}`;
 			codigos.set(codigo, {
 				cuenta,
 				nonce: pedido.nonce,
+				authTime: pedido.authTime,
+				dano: pedido.dano,
 				retoPkce: pedido.retoPkce,
 				redireccion: pedido.redireccion,
 				usado: false,

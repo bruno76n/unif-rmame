@@ -58,6 +58,8 @@ export interface DescripcionConSueldos {
 
 /** Un renglón de bitácora que arma la acción (ver docs/modulos/admin/bitacora.md). */
 export interface RenglonDeBitacora {
+	/** `cambio` (por omisión) o `acceso`: entrar, salir, cerrar sesiones. */
+	tipo?: "cambio" | "acceso";
 	/** «Qué pasó», ya armado; si trae sueldos o tarifas, con su plantilla. */
 	descripcion: string | DescripcionConSueldos;
 	entidad?: string;
@@ -71,6 +73,12 @@ export interface RenglonDeBitacora {
 	mismaPersona?: boolean;
 	/** En las acciones que piden «Confirmar con Google»: cuándo se confirmó. */
 	confirmadoConGoogleEn?: string;
+	/** El departamento de donde salió, por su clave (los accesos son de `admin`). */
+	departamento?: string;
+	/** En un intento de entrar sin acceso: el correo con que se intentó. */
+	correoIntento?: string;
+	/** La IP de quien llamó. */
+	ip?: string;
 }
 
 /** Lo que recibe una acción y lo que reciben las internas que llama: todo dentro de su transacción. */

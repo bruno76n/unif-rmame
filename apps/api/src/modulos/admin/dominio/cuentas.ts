@@ -7,7 +7,8 @@
  * mientras se usa el correo.
  */
 
-import { and, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, ne, sql } from "drizzle-orm";
+import type { Base } from "../../../nucleo/base/conexion.ts";
 import type { Transaccion } from "../../../nucleo/base/transacciones.ts";
 import { ErrorDeApi, errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
@@ -81,7 +82,7 @@ export function cuentaQueLlama(contexto: ContextoDeAccion): string {
  * @param usuarioId La cuenta.
  */
 export async function departamentosVigentes(
-	transaccion: Transaccion,
+	transaccion: Base | Transaccion,
 	usuarioId: string,
 ): Promise<{ id: string; clave: string; ubicacionId: string | null }[]> {
 	return transaccion
@@ -98,7 +99,7 @@ export async function departamentosVigentes(
  * @param usuarioId La cuenta.
  */
 export async function permisosFinosVigentes(
-	transaccion: Transaccion,
+	transaccion: Base | Transaccion,
 	usuarioId: string,
 ): Promise<{ id: string; permiso: string }[]> {
 	return transaccion
@@ -130,6 +131,29 @@ export async function departamentosPorClave(
 }
 
 /**
+ * Guarda `sesion.cerrada` con las sesiones que se cerraron, para que les llegue `sesion_cerrada`.
+ * @param contexto El contexto de la acción.
+ * @param usuarioId La cuenta de las sesiones.
+ * @param cerradas Los ids de las sesiones.
+ * @param motivo Por qué se cerraron.
+ */
+export function avisarSesionesCerradas(
+	contexto: ContextoDeAccion,
+	usuarioId: string,
+	cerradas: readonly string[],
+	motivo: MotivoDeCierre,
+): void {
+	if (cerradas.length === 0) return;
+	contexto.guardarEvento({
+		tipo: "sesion.cerrada",
+		datos: { usuario_id: usuarioId, sesion_ids: cerradas.join(","), motivo },
+		tablas: ["sesiones"],
+		entidad: "usuarios",
+		entidadId: usuarioId,
+	});
+}
+
+/**
  * Revisa que ningún departamento sea la Puerta del taller, que se entra con PIN.
  * @param deptos Los departamentos que se dan.
  * @throws `422 departamento_no_asignable`.
@@ -141,16 +165,16 @@ export function revisarAsignables(deptos: Iterable<{ asignableEnAlta: boolean }>
 }
 
 /**
- * Cierra las sesiones abiertas de una cuenta.
+ * Cierra las sesiones abiertas de una cuenta: todas, solo una (`solo`) o todas menos una (`menos`).
  * @param transaccion La transacción.
  * @param usuarioId La cuenta.
- * @param cierre El motivo, quién la cierra (nulo si es el sistema) y la hora.
+ * @param cierre El motivo, quién la cierra (nulo si es el sistema), la hora y cuáles.
  * @returns Los ids de las sesiones que cerró.
  */
 export async function cerrarSesionesDe(
 	transaccion: Transaccion,
 	usuarioId: string,
-	cierre: { motivo: MotivoDeCierre; cerradaPor: string | null; ahora: string },
+	cierre: { motivo: MotivoDeCierre; cerradaPor: string | null; ahora: string; solo?: string; menos?: string },
 ): Promise<string[]> {
 	const cerradas = await transaccion
 		.update(sesiones)
@@ -160,7 +184,14 @@ export async function cerrarSesionesDe(
 			motivoCierre: cierre.motivo,
 			actualizadoEn: sql`now()`,
 		})
-		.where(and(eq(sesiones.usuarioId, usuarioId), isNull(sesiones.cerradaEn)))
+		.where(
+			and(
+				eq(sesiones.usuarioId, usuarioId),
+				isNull(sesiones.cerradaEn),
+				cierre.solo === undefined ? undefined : eq(sesiones.id, cierre.solo),
+				cierre.menos === undefined ? undefined : ne(sesiones.id, cierre.menos),
+			),
+		)
 		.returning({ id: sesiones.id });
 	return cerradas.map((sesion) => sesion.id);
 }

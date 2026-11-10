@@ -16,7 +16,7 @@ import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
 import type { ContextoDeAccion, DescripcionConSueldos, QuienEscribe } from "../../../nucleo/modulos.ts";
 import { leerParametro } from "../../../nucleo/parametros.ts";
-import { bitacora } from "../tablas.ts";
+import { bitacora, departamentos } from "../tablas.ts";
 
 /** Lo que va en lugar de un sueldo o una tarifa en la descripción recortada. */
 export const montoTapado = "••••";
@@ -41,6 +41,7 @@ const renglonAEscribir = z.object({
 	confirmadoConGoogleEn: z.string().optional(),
 	correoIntento: z.string().optional(),
 	ip: z.string().optional(),
+	departamento: z.string().optional(),
 });
 
 /**
@@ -133,6 +134,8 @@ export async function escribirBitacora(
 		throw new Error("un renglón con sueldos o tarifas tiene que dar su descripción como plantilla");
 	}
 	const sensible = recortada !== null || sueldosEnLoQueCambio;
+	const departamentoId =
+		renglon.departamento === undefined ? null : await idDelDepartamento(contexto, renglon.departamento);
 	const id = uuidv7();
 	await transaccion.insert(bitacora).values({
 		id,
@@ -141,6 +144,7 @@ export async function escribirBitacora(
 		esAlerta: renglon.esAlerta ?? false,
 		usuarioId,
 		sesionId: quien.tipo === "cuenta" ? quien.sesionId : null,
+		departamentoId,
 		personaId: quien.tipo === "aparato" ? (quien.personaId ?? null) : null,
 		dispositivoId: quien.tipo === "aparato" ? quien.dispositivoId : null,
 		comandoId: contexto.comandoId ?? null,
@@ -171,6 +175,19 @@ export async function escribirBitacora(
 		});
 	}
 	return { bitacora_id: id };
+}
+
+/**
+ * El id de un departamento por su clave.
+ * @throws Error del programa si la clave no existe.
+ */
+async function idDelDepartamento(contexto: ContextoDeAccion, clave: string): Promise<string> {
+	const [depto] = await contexto.transaccion
+		.select({ id: departamentos.id })
+		.from(departamentos)
+		.where(eq(departamentos.clave, clave));
+	if (depto === undefined) throw new Error(`no hay departamento ${clave}`);
+	return depto.id;
 }
 
 /**

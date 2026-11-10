@@ -6,7 +6,8 @@
  * `impresion.terminada` le avisa a la sesión que pidió imprimir (`impresion_terminada`).
  * Fase 5 · docs/modulos/admin/cuentas.md y docs/modulos/admin/permisos.md («Eventos»)
  *
- * `cuenta.acceso_quitado` les manda `sesion_cerrada` a las pantallas de esa cuenta; un cambio de
+ * `cuenta.acceso_quitado` les manda `sesion_cerrada` a las pantallas de esa cuenta, y `sesion.cerrada` a las
+ * de las sesiones que se cerraron (salir, cerrar las propias, cerrar las de otra cuenta); un cambio de
  * departamentos o de permisos finos, `permisos_cambiados`, para que su menú cambie al momento.
  */
 
@@ -26,6 +27,9 @@ const terminada = z.object({
 
 /** Los datos de los eventos de una cuenta. */
 const deUnaCuenta = z.object({ usuario_id: z.uuid() });
+
+/** Los datos de `sesion.cerrada`: las sesiones, separadas por coma, y el motivo. */
+const sesionesCerradas = z.object({ sesion_ids: z.string(), motivo: z.string() });
 
 /** A las sesiones de una cuenta: `permisos_cambiados`. */
 const permisosCambiados: EnVivo = (evento) => [
@@ -53,6 +57,12 @@ export const enVivoDeAdmin: Record<string, EnVivo> = {
 			datos: { motivo: "acceso_quitado" },
 		},
 	],
+	"sesion.cerrada": (evento) => {
+		const datos = sesionesCerradas.parse(evento.datos);
+		return datos.sesion_ids
+			.split(",")
+			.map((sesionId) => ({ para: { sesionId }, nombre: "sesion_cerrada", datos: { motivo: datos.motivo } }));
+	},
 	"cuenta.departamentos_cambiados": permisosCambiados,
 	"cuenta.permisos_cambiados": permisosCambiados,
 };

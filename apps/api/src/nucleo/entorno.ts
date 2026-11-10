@@ -28,6 +28,12 @@ const esquema = z.object({
 		.string()
 		.regex(/^age1[0-9a-z]+$/)
 		.optional(),
+	/** El proveedor de OpenID (Google, o el de desarrollo en local) y el cliente de la API. */
+	GOOGLE_EMISOR: z.url({ protocol: /^https?$/ }).optional(),
+	GOOGLE_CLIENTE_ID: z.string().min(1).optional(),
+	GOOGLE_CLIENTE_SECRETO: z.string().min(1).optional(),
+	/** La llave que cifra la cookie de la entrada con Google: al menos 32 letras al azar. */
+	COOKIE_SECRETO: z.string().min(32).optional(),
 	/** Solo en local: la dirección del almacén compatible con S3 en lugar de la de R2. */
 	R2_DIRECCION: z.url({ protocol: /^https?$/ }).optional(),
 });

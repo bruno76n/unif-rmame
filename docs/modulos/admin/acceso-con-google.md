@@ -182,4 +182,20 @@ Los dos primeros van en `parametro` (salen «Por decidir» hasta que la dueña l
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 5.*
+**Fase 5, parte 2.**
+
+- **Las tablas** `sesiones` e `intentos_recientes` están en `apps/api/src/modulos/admin/tablas.ts` (migración `0011_cuentas.sql`). `intentos_recientes` es `UNLOGGED` y la app la puede depurar; de una sesión, la app solo cambia su actividad, su confirmación con Google y su cierre.
+- **Google** (`apps/api/src/nucleo/acceso/google.ts`): `crearAccesoConGoogle` lee el documento de descubrimiento una vez, con `enableNonRepudiationChecks` para que openid-client revise la firma del `id_token` con las llaves públicas; él revisa también `iss`, `aud`, `exp`, `nonce`, `state`, el verificador de PKCE y, con `max_age`, el `auth_time`. Aquí se pide además `email_verified`. El correo se guarda en minúsculas.
+- **Las cookies** (`nucleo/acceso/cookies.ts`): `ua_sesion` y `ua_aparato` llevan 32 bytes al azar y la base guarda su SHA-256. `ua_google` lleva el `state`, el `nonce`, el verificador, el propósito y la ruta de regreso cifrados con AES-256-GCM, con una llave que sale de `COOKIE_SECRETO` por HKDF; vence a los 10 minutos.
+- **La ida y la vuelta** (`nucleo/acceso/entrada.ts`) son un plugin de Fastify que el servidor registra si tiene `entradaConGoogle`; no van por `/v1/acciones` (decisión 376).
+  - Las fallas regresan a la pantalla de acceso de la web con su error (`/acceso?error=google_fallo` o `sin_acceso`); el correo de la cuenta sin acceso va en el fragmento (`#correo=…`), que no llega a ningún servidor.
+  - La ruta de regreso solo puede ser de la web (`rutaInterna`).
+  - La cuenta sin acceso se anota como el sistema, sin cuenta, con `correo_intento` y alerta (decisión 381).
+  - Al entrar, la sesión no queda confirmada con Google: eso lo hace «Confirmar con Google» (decisión 377).
+- **Las sesiones** (`nucleo/acceso/sesion.ts`): `abrirSesion` dice si es la primera entrada de la cuenta y si el aparato es nuevo (ninguna sesión suya con esa huella). `revisarSesion` revisa en el orden de arriba, cierra con su motivo y escribe la actividad a lo más una vez por minuto. `describirAparato` arma «iPhone · Safari».
+- **Los intentos** (`nucleo/acceso/intentos.ts`): `anotarFalla` cuenta en una sola sentencia (dos instancias a la vez cuentan las dos) y bloquea hasta que pasa la ventana; `bloqueadaHasta` también quita lo que ya no cuenta.
+- **Las acciones** `admin.salir`, `admin.cerrar_mi_sesion` y `admin.cerrar_sesiones` (`modulos/admin/acciones/`), con sus contratos en `contratos/admin/cuentas.ts`. `admin.salir` dice en su contrato que cierra la sesión (`cierraLaSesion`), y el servidor borra `ua_sesion` al responder (decisión 378). `sesion.cerrada` manda `sesion_cerrada` a cada sesión cerrada.
+- **Los accesos en la bitácora** van con `tipo: "acceso"`, el departamento `admin` y la IP: el renglón acepta `tipo`, `departamento`, `correoIntento` e `ip` (decisión 379).
+- **Los parámetros** `admin.sesion_*`, `admin.reautenticacion_minutos`, `admin.intentos_entrada_max` y `admin.minutos_ventana_intentos` están en `modulos/admin/parametros.ts`.
+- **En local**, `nucleo/acceso/google-local.ts` es el Google de desarrollo con oidc-provider (`GOOGLE_EMISOR=http://localhost:4000`), que `pnpm local` arranca: su pantalla pide un correo, el `sub` es el correo, pide PKCE y pone el correo en el `id_token`. La API lo usa con `permitirHttp`.
+- **Las pruebas:** `modulos/admin/acciones/entrar-con-google.prueba.ts`, `confirmar-con-google.prueba.ts` y `cerrar-sesiones.prueba.ts`; `nucleo/acceso/intentos.prueba.ts` (con dos instancias) y `sesion.prueba.ts`. El simulador de Google pone `auth_time` y da tokens dañados.

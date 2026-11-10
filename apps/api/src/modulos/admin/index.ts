@@ -16,6 +16,8 @@ import { accionAgregarALista } from "./acciones/agregar-a-lista.ts";
 import { accionCambiarDepartamentos } from "./acciones/cambiar-departamentos.ts";
 import { accionCambiarParametro } from "./acciones/cambiar-parametro.ts";
 import { accionCambiarPermisoFino } from "./acciones/cambiar-permiso-fino.ts";
+import { accionCerrarMiSesion } from "./acciones/cerrar-mi-sesion.ts";
+import { accionCerrarSesiones } from "./acciones/cerrar-sesiones.ts";
 import { accionConfirmarImpresion } from "./acciones/confirmar-impresion.ts";
 import { accionCrearCuenta } from "./acciones/crear-cuenta.ts";
 import { accionEditarEmpresa } from "./acciones/editar-empresa.ts";
@@ -24,6 +26,7 @@ import { accionMarcarAlertaRevisada } from "./acciones/marcar-alerta-revisada.ts
 import { accionMarcarAvisoLeido } from "./acciones/marcar-aviso-leido.ts";
 import { accionQuitarAcceso } from "./acciones/quitar-acceso.ts";
 import { accionRegistrarRestauracion } from "./acciones/registrar-restauracion.ts";
+import { accionSalir } from "./acciones/salir.ts";
 import { accionTrabajosImpresion } from "./acciones/trabajos-impresion.ts";
 import { alEventoDeAdmin } from "./al-evento.ts";
 import { semillaDeContadores } from "./dominio/contadores.ts";
@@ -68,6 +71,9 @@ export default definirModulo({
 		accionQuitarAcceso,
 		accionCambiarDepartamentos,
 		accionCambiarPermisoFino,
+		accionSalir,
+		accionCerrarMiSesion,
+		accionCerrarSesiones,
 	],
 	internas: {
 		guardar_evento: guardarEvento,

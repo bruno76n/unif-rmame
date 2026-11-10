@@ -10,6 +10,7 @@
 import { clavesDeDepartamento, permisosFinosDeCuenta } from "@uniformame/compartido/contratos/admin/cuentas";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
+import type { Base } from "../../../nucleo/base/conexion.ts";
 import type { Transaccion } from "../../../nucleo/base/transacciones.ts";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
 import { departamentosVigentes, permisosFinosVigentes } from "../dominio/cuentas.ts";
@@ -35,7 +36,7 @@ export interface PermisosDeCuenta {
  * @returns Sus permisos, o `undefined` si la cuenta no existe.
  */
 export async function leerPermisosDe(
-	transaccion: Transaccion,
+	transaccion: Base | Transaccion,
 	usuarioId: string,
 ): Promise<PermisosDeCuenta | undefined> {
 	const [cuenta] = await transaccion

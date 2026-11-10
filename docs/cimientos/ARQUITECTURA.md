@@ -132,6 +132,7 @@ TypeScript 7 es el compilador nativo. Se usa solo para revisar tipos (`tsc --noE
 | Postgres real en las pruebas | testcontainers · @testcontainers/postgresql | 12.2.1 | https://node.testcontainers.org/ |
 | Simuladores de Google, correo y almacenamiento | MSW | 3.0.4 | https://mswjs.io/ |
 | Google de desarrollo para `pnpm local` | oidc-provider | 9.13.3 | https://github.com/panva/node-oidc-provider |
+| Tipos de oidc-provider para TypeScript | `@types/oidc-provider` | 9.13.1 | https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/oidc-provider |
 | Pruebas con datos al azar | fast-check | 4.10.2 | https://fast-check.dev/ |
 | Pruebas en el navegador y capturas | @playwright/test | 1.65.0 | https://playwright.dev/ |
 
@@ -182,3 +183,5 @@ Todo se construye y se prueba en local hasta la puesta en marcha (fase 23). «En
 **`pnpm local`** (fase 2): `apps/api/src/nucleo/base/local.ts` lee `.env` (con `ENTORNO=local`), levanta el servicio `base` de `compose.yaml` (Postgres 18, solo en `127.0.0.1:5432`, con el rol dueño `uniformame_dueno` y la base `uniformame`), aplica las migraciones y la siembra con `BASE_DATOS_URL_DUENO`, y le da entrada al rol `uniformame_app` con la clave que trae `BASE_DATOS_URL`. En `.env` van esas dos direcciones con su usuario, su clave y la base `uniformame` en `localhost`, y los tres dominios (`DOMINIO_WEB`, `DOMINIO_TALLER` y `DOMINIO_API`, por ejemplo `http://localhost:5173`, `http://localhost:5174` y `http://localhost:3000`), que la API pide desde la fase 3. Cada fase que suma una pieza (la API, el worker, la web, la tablet) la arranca aquí. Desde la fase 4, `pnpm local` también:
 - levanta el servicio `almacen` (versitygw v1.9.0, compatible con S3, en `127.0.0.1:7070`) y crea los cubos `uniformame-archivos` y `uniformame-respaldos`. En `.env` van `R2_DIRECCION=http://127.0.0.1:7070` y la credencial del contenedor en `R2_ARCHIVOS_*` y `R2_RESPALDOS_*`;
 - arranca el worker al final. Los correos no salen: quedan en su registro.
+
+Desde la fase 5, si `GOOGLE_EMISOR` es de `localhost`, `pnpm local` también arranca el Google de desarrollo (ver [acceso con Google](../modulos/admin/acceso-con-google.md#cómo-está-hecho)). En `.env` van `GOOGLE_EMISOR=http://localhost:4000`, un `GOOGLE_CLIENTE_ID` y un `GOOGLE_CLIENTE_SECRETO` cualesquiera, y `COOKIE_SECRETO` con al menos 32 letras al azar.

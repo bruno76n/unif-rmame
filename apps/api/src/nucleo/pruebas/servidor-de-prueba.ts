@@ -10,11 +10,14 @@
 import { join } from "node:path";
 import type { Permiso } from "@uniformame/compartido/contratos/definir";
 import { type BaseDePrueba, crearBaseDePrueba } from "@uniformame/pruebas/base";
+import { emisorDeGoogle } from "@uniformame/pruebas/simuladores/google";
 import { generateDrizzleJson, generateMigration } from "drizzle-kit/api";
 import { Temporal } from "temporal-polyfill";
 import { armarDescripciones } from "../../modulos/admin/internas/escribir-bitacora.ts";
 import { modulosDeLaBitacora } from "../../modulos/admin/tablas.ts";
 import { crearServidor, type ServiciosDelServidor } from "../../servidor.ts";
+import { llaveDeLaEntrada } from "../acceso/cookies.ts";
+import { crearAccesoConGoogle } from "../acceso/google.ts";
 import type { QuienLlama } from "../acceso/quien.ts";
 import { escribirBitacoraConAdmin, guardarEventosConAdmin } from "../acciones/corredor.ts";
 import type { Almacen } from "../almacen.ts";
@@ -30,6 +33,13 @@ import * as tablasDePrueba from "./modulos/prueba/tablas.ts";
 export const dominios = {
 	DOMINIO_WEB: "https://fabrica.prueba.invalid",
 	DOMINIO_TALLER: "https://taller.prueba.invalid",
+};
+
+/** El cliente de Google de las pruebas y su dirección de vuelta. */
+export const clienteDeGooglePrueba = {
+	id: "cliente-de-prueba.apps.googleusercontent.com",
+	secreto: "secreto-del-cliente-de-prueba",
+	vuelta: "https://api.prueba.invalid/v1/acceso/google/vuelta",
 };
 
 /** El permiso de prueba: la misma revisión que hará la fase 5, con los datos de `quienesDePrueba`. */
@@ -180,7 +190,8 @@ async function crearBaseConTablasDePrueba(semillas: readonly Semilla[]): Promise
  * Arma la API de prueba: una base copia con las tablas del módulo de prueba y el registro de esta carpeta.
  * @param opciones `entorno` (por omisión, `pruebas`); `avisosEnVivo` para tener `GET /v1/eventos` (con su
  * latido); `otraInstanciaDe` para levantar una segunda instancia sobre la base de otra, como en Render;
- * `almacen` para los archivos (el de R2, sobre su simulador).
+ * `almacen` para los archivos (el de R2, sobre su simulador); `conGoogle` para la entrada con Google, contra
+ * el simulador de Google (`clienteDeGooglePrueba`).
  */
 export async function crearServidorDePrueba(
 	opciones: {
@@ -188,6 +199,7 @@ export async function crearServidorDePrueba(
 		avisosEnVivo?: { latidoMs: number };
 		otraInstanciaDe?: ServidorDePrueba;
 		almacen?: Almacen;
+		conGoogle?: true;
 	} = {},
 ): Promise<ServidorDePrueba> {
 	const modulosDePrueba = await cargarModulos(join(import.meta.dirname, "modulos"));
@@ -248,6 +260,19 @@ export async function crearServidorDePrueba(
 		destinoDelRegistro,
 		...(avisosEnVivo === undefined ? {} : { avisosEnVivo }),
 		...(opciones.almacen === undefined ? {} : { almacen: opciones.almacen }),
+		...(opciones.conGoogle === undefined
+			? {}
+			: {
+					entradaConGoogle: {
+						google: crearAccesoConGoogle({
+							emisor: emisorDeGoogle,
+							clienteId: clienteDeGooglePrueba.id,
+							clienteSecreto: clienteDeGooglePrueba.secreto,
+							vuelta: clienteDeGooglePrueba.vuelta,
+						}),
+						llave: llaveDeLaEntrada("secreto-de-las-cookies-de-prueba"),
+					},
+				}),
 	});
 	await app.ready();
 	return {

@@ -7,6 +7,7 @@
  * en orden, quién llama, la versión de la app (y el `Origin`), la forma y el permiso; luego el corredor.
  */
 
+import cookie from "@fastify/cookie";
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
 import fastifySwagger from "@fastify/swagger";
@@ -21,6 +22,9 @@ import { jsonSchemaTransform, serializerCompiler, type ZodTypeProvider } from "f
 import pino, { type DestinationStream } from "pino";
 import { Temporal } from "temporal-polyfill";
 import { z } from "zod";
+import { cookies } from "./nucleo/acceso/cookies.ts";
+import { entradaConGoogle } from "./nucleo/acceso/entrada.ts";
+import type { AccesoConGoogle } from "./nucleo/acceso/google.ts";
 import { appDe, type QuienLlama } from "./nucleo/acceso/quien.ts";
 import {
 	type CuerpoDeAccion,
@@ -94,6 +98,8 @@ export interface DependenciasDelServidor {
 	almacen?: Almacen;
 	/** De dónde sale «ahora»; las pruebas la fijan. */
 	reloj?: () => Temporal.Instant;
+	/** La entrada con Google y la llave de `ua_google`; sin ella, `/v1/acceso/google` no existe. */
+	entradaConGoogle?: { google: AccesoConGoogle; llave: Buffer };
 }
 
 /**
@@ -121,6 +127,8 @@ export async function crearServidor(dependencias: DependenciasDelServidor) {
 			else listo(null, { origin: false });
 		},
 	});
+	// Lee las cookies de cada petición: la sesión de la web y la entrada con Google.
+	await app.register(cookie);
 	await app.register(helmet, {
 		contentSecurityPolicy: false,
 		hsts: { maxAge: 31_536_000, includeSubDomains: true },
@@ -199,7 +207,7 @@ export async function crearServidor(dependencias: DependenciasDelServidor) {
 			preHandler: async (peticion) => servicios.revisarPermiso(quienDe(peticion), contrato.permiso, reloj()),
 			handler: async (peticion, respuesta) => {
 				respuesta.header("cache-control", "no-store");
-				return correrAccion(
+				const resultado = await correrAccion(
 					{
 						base,
 						registro,
@@ -208,6 +216,9 @@ export async function crearServidor(dependencias: DependenciasDelServidor) {
 					},
 					{ accion, quien: quienDe(peticion), cuerpo: cuerpoValidado(peticion.body), ahora: reloj() },
 				);
+				// La que cierra la sesión de quien llama también borra su cookie.
+				if (contrato.cierraLaSesion) respuesta.clearCookie(cookies.sesion, { path: "/" });
+				return resultado;
 			},
 		});
 	}
@@ -317,6 +328,18 @@ export async function crearServidor(dependencias: DependenciasDelServidor) {
 	}
 
 	if (dependencias.avisosEnVivo !== undefined) registrarEventosEnVivo(dependencias.avisosEnVivo);
+	if (dependencias.entradaConGoogle !== undefined) {
+		await app.register(
+			entradaConGoogle({
+				...dependencias.entradaConGoogle,
+				dominioWeb: entorno.DOMINIO_WEB,
+				base,
+				registro,
+				servicios,
+				reloj,
+			}),
+		);
+	}
 
 	/**
 	 * `GET /v1/eventos`: la conexión de los avisos en vivo. El navegador no manda `X-App-Version` en un

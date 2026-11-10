@@ -131,3 +131,35 @@ export const cambiarPermisoFino = definirAccion({
 	],
 	edita: true,
 });
+
+/** Sale del sistema: cierra la sesión de quien llama. */
+export const salir = definirAccion({
+	nombre: "admin.salir",
+	descripcion: "Cierra la sesión de quien llama y borra su cookie",
+	entrada: z.object({}),
+	salida: z.object({}),
+	permiso: {},
+	cierraLaSesion: true,
+});
+
+/** Cierra sesiones de la propia cuenta: una, o todas las demás. */
+export const cerrarMiSesion = definirAccion({
+	nombre: "admin.cerrar_mi_sesion",
+	descripcion: "Cierra una sesión de la propia cuenta, o todas las demás",
+	entrada: z.object({
+		sesion_id: z.uuid().optional().describe("La sesión que se cierra"),
+		todas_las_demas: z.boolean().optional().describe("Cierra todas menos la de esta pantalla"),
+	}),
+	salida: z.object({ cerradas: z.number().int().describe("Cuántas sesiones cerró") }),
+	permiso: {},
+});
+
+/** Administración del sistema cierra las sesiones abiertas de otra cuenta; las de la dueña, solo ella. */
+export const cerrarSesiones = definirAccion({
+	nombre: "admin.cerrar_sesiones",
+	descripcion: "Cierra las sesiones abiertas de una cuenta; las de la dueña solo las cierra ella",
+	entrada: z.object({ usuario_id: z.uuid().describe("La cuenta") }),
+	salida: z.object({ cerradas: z.number().int().describe("Cuántas sesiones cerró") }),
+	permiso: { departamento: "admin" },
+	errores: [{ codigo: "sin_sesiones_abiertas", mensaje: "Esa cuenta no tiene sesiones abiertas." }],
+});

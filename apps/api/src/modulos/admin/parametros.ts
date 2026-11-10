@@ -5,6 +5,7 @@
  * docs/cimientos/EVENTOS-Y-TRABAJOS.md («Parámetros»), docs/modulos/admin/bitacora.md,
  * docs/modulos/admin/avisos.md, docs/modulos/admin/archivos.md, docs/modulos/admin/impresion.md y
  * docs/modulos/admin/respaldos.md («Parámetros»)
+ * Fase 5 · docs/modulos/admin/acceso-con-google.md («Parámetros»)
  */
 
 import { type DefinicionDeParametro, semillaDeParametros } from "../../nucleo/parametros.ts";
@@ -201,6 +202,61 @@ export const parametrosDeAdmin: readonly DefinicionDeParametro[] = [
 		tipo: "hora",
 		inicial: "09:00",
 		orden: 994,
+	},
+	{
+		clave: "admin.sesion_inactividad_min",
+		seccion: "parametro",
+		nombre: "Sesión: minutos sin actividad",
+		explicacion: "Sin actividad en ese tiempo, la sesión se cierra",
+		tipo: "entero",
+		unidad: "min",
+		inicial: 30,
+		minimo: 1,
+		porDecidir: true,
+		orden: 60,
+	},
+	{
+		clave: "admin.sesion_duracion_max_h",
+		seccion: "parametro",
+		nombre: "Sesión: duración máxima",
+		explicacion: "Lo más que dura una sesión, aunque tenga actividad",
+		tipo: "entero",
+		unidad: "h",
+		inicial: 12,
+		minimo: 1,
+		porDecidir: true,
+		orden: 61,
+	},
+	{
+		clave: "admin.reautenticacion_minutos",
+		seccion: "tecnico",
+		nombre: "Minutos que vale «Confirmar con Google»",
+		tipo: "entero",
+		unidad: "min",
+		inicial: 5,
+		minimo: 1,
+		orden: 943,
+	},
+	{
+		clave: "admin.intentos_entrada_max",
+		seccion: "tecnico",
+		nombre: "Entradas fallidas antes de bloquear",
+		explicacion: "Entradas fallidas desde una IP antes del 429",
+		tipo: "entero",
+		inicial: 10,
+		minimo: 1,
+		orden: 944,
+	},
+	{
+		clave: "admin.minutos_ventana_intentos",
+		seccion: "tecnico",
+		nombre: "Ventana de los intentos",
+		explicacion: "El tiempo en que se cuentan las entradas fallidas",
+		tipo: "entero",
+		unidad: "min",
+		inicial: 15,
+		minimo: 1,
+		orden: 945,
 	},
 	{
 		clave: "admin.dias_guardar_eventos",

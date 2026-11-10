@@ -50,6 +50,8 @@ export interface ContratoDeAccion<
 	edita: boolean;
 	/** Los campos del resultado que son secretos: se entregan una vez y nunca se guardan. */
 	secretos: readonly string[];
+	/** Si cierra la sesión de quien llama (`admin.salir`): el servidor borra su cookie al responder. */
+	cierraLaSesion: boolean;
 }
 
 /** El contrato de una consulta: algo que solo lee. */
@@ -100,7 +102,8 @@ type NombreDeContrato = `${string}.${string}`;
 
 /**
  * Define el contrato de una acción.
- * @param contrato Su nombre, descripción, entrada, salida, permiso y errores; `edita` y `secretos` son opcionales.
+ * @param contrato Su nombre, descripción, entrada, salida, permiso y errores; `edita`, `secretos` y
+ * `cierraLaSesion` son opcionales.
  * @returns El contrato, con el resultado que siempre lleva `mensaje` y, si edita, `version`.
  */
 export function definirAccion<
@@ -116,6 +119,7 @@ export function definirAccion<
 	errores?: readonly ErrorDeRegla[];
 	edita?: boolean;
 	secretos?: readonly string[];
+	cierraLaSesion?: boolean;
 }) {
 	// Un secreto se entrega una vez: en la respuesta repetida ya no viene, así que su campo es opcional.
 	for (const secreto of contrato.secretos ?? []) {
@@ -153,6 +157,7 @@ export function definirAccion<
 		errores: contrato.errores ?? [],
 		edita: contrato.edita ?? false,
 		secretos: contrato.secretos ?? [],
+		cierraLaSesion: contrato.cierraLaSesion ?? false,
 	} satisfies ContratoDeAccion<Nombre, EsquemaDeObjeto, typeof resultado>;
 }
 
