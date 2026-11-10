@@ -128,6 +128,7 @@ describe("el mismo problema da la misma firma con la salida real de cada herrami
 			const primera = revisionRapidaCapturada(raiz);
 			const segunda = revisionRapidaCapturada(raiz);
 			expect(primera.pasa).toBe(false);
+			expect(primera.salida).toContain("Revisión rápida en rojo: Pruebas relacionadas (Vitest)");
 			expect(firmaDelProblema(primera.salida)).toBe(firmaDelProblema(segunda.salida));
 		} finally {
 			borrarRepositorioDePrueba(raiz);

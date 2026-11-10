@@ -1,7 +1,7 @@
 # Fase 01: Repositorio, reglas y paquete compartido
 
 > **Etapa:** Cimientos.
-> **Estado:** Pendiente.
+> **Estado:** Terminada.
 > **Antes de empezar:** lee la [forma de trabajo](../trabajo/FORMA-DE-TRABAJO.md) y la [revisión de fase](../trabajo/REVISION-DE-FASE.md).
 > **Se conecta con:** [fases](FASES.md) · [fase 2](02-base-de-datos-y-pruebas.md)
 
@@ -28,7 +28,7 @@ El repositorio queda listo para trabajar como dice la forma de trabajo: el monor
 
 ### Parte 2 · Las revisiones, el sello y los ganchos de git
 
-**Construye:** `pnpm revision:rapida`, `pnpm revision` y `pnpm pruebas` en `scripts/`; la búsqueda de secretos de la revisión completa; el sello en `.revision/` con la huella de lo revisado sin `docs/registros/`; el gancho de git antes de cada commit en `.githooks/`, que `pnpm install` deja activo con `core.hooksPath`, con sus tres casos (solo registros, solo documentos, código).
+**Construye:** `pnpm revision:rapida`, `pnpm revision` y `pnpm pruebas` en `scripts/`; la búsqueda de secretos de la revisión completa; el sello en `.revision/` con la huella de lo revisado sin los registros (los `.md` de `docs/registros/`); el gancho de git antes de cada commit y de cada merge en `.githooks/`, que `pnpm install` deja activo con `core.hooksPath`, con sus tres casos (solo registros, solo documentos, código).
 
 **Leer:**
 - [forma de trabajo](../trabajo/FORMA-DE-TRABAJO.md#los-verdes) — qué revisa cada revisión, el sello y los registros que no cuentan como error.
@@ -79,7 +79,7 @@ El repositorio queda listo para trabajar como dice la forma de trabajo: el monor
 |---|---|
 | `pnpm install` instala exactamente las versiones de la arquitectura y ninguna lleva rango; el script del entorno de la nube pide las mismas de Node y pnpm | `scripts/versiones.prueba.ts`: compara `package.json` y el script del entorno con la tabla del stack, y falla si una versión lleva `^` o `~` o no coincide |
 | La revisión rápida falla con un error de tipos, un `any` o un error de estilo en lo cambiado, y pasa sin ellos | `scripts/revision-rapida.prueba.ts`, con archivos de ejemplo en un repositorio temporal |
-| La revisión completa en verde guarda el sello con la huella de lo revisado, y escribir en `docs/registros/` no cambia la huella | `scripts/sello.prueba.ts` |
+| La revisión completa en verde guarda el sello con la huella de lo revisado, y escribir los registros (los `.md` de `docs/registros/`) no cambia la huella | `scripts/sello.prueba.ts` |
 | El gancho de git rechaza un commit de código sin sello vigente, deja pasar uno con sello, uno de solo registros y uno de solo documentos con `pnpm docs:revisar` en verde, y rechaza uno de documentos con un enlace roto | `scripts/gancho-git.prueba.ts`, en un repositorio temporal con el gancho activado |
 | `pnpm docs:revisar` encuentra un encabezado incompleto, un enlace roto, un ancla que no existe, una conexión de un solo lado y un archivo fuera del índice; sobre los archivos reales sale en verde | `scripts/docs-revisar.prueba.ts`, con un archivo de ejemplo por cada error; y la corrida sobre `docs/` en la revisión completa |
 | El gancho de inicio, en la nube, instala las dependencias y deja `core.hooksPath` en `.githooks`; fuera de la nube no hace nada | `scripts/gancho-inicio.prueba.ts`, en un repositorio temporal, con y sin `CLAUDE_CODE_REMOTE=true` |

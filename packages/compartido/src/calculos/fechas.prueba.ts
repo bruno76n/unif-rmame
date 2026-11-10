@@ -49,11 +49,17 @@ describe("el día de negocio sale en hora de México: un momento de las 23:30 de
 		expect(diaDeNegocio(Temporal.Instant.from("2021-07-15T05:00:00Z")).toString()).toBe("2021-07-15");
 	});
 
-	it("siempre es la fecha del reloj de México en ese momento", () => {
+	it("siempre es la fecha que marca el reloj de México en ese momento, según Intl", () => {
+		// Se compara con Intl.DateTimeFormat, que no pasa por Temporal: así la prueba no repite la implementación.
+		const relojDeMexico = new Intl.DateTimeFormat("en-CA", {
+			timeZone: zonaDelNegocio,
+			year: "numeric",
+			month: "2-digit",
+			day: "2-digit",
+		});
 		fc.assert(
 			fc.property(momentos, (momento) => {
-				const enMexico = momento.toZonedDateTimeISO(zonaDelNegocio);
-				expect(diaDeNegocio(momento).equals(enMexico.toPlainDate())).toBe(true);
+				expect(diaDeNegocio(momento).toString()).toBe(relojDeMexico.format(momento.epochMilliseconds));
 			}),
 			{ numRuns: 3000 },
 		);

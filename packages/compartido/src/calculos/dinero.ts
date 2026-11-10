@@ -74,6 +74,8 @@ const formatoConCentavos = new Intl.NumberFormat("es-MX", {
  * @param monto Los centavos.
  * @param opciones `conCentavos` solo donde se aceptan centavos (efectivo contado, fondo y movimientos de caja).
  * @returns «$1,250» o, con centavos, «$1,250.50».
+ * @throws RangeError sin centavos, si el monto está a menos de medio peso del entero seguro más grande
+ * y redondearlo ya no cabe (más de 90 billones de pesos).
  * Al formato se le pasa el monto como texto decimal exacto, así que nunca pasa por un número con decimales.
  */
 export function centavosATexto(monto: Centavos, opciones: { conCentavos?: boolean } = {}): string {

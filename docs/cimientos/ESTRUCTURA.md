@@ -34,7 +34,7 @@ uniformame/
 │   ├── apps/                  la tablet y el puente de impresión
 │   ├── impresos/              hojas y etiquetas
 │   ├── flujos/fabrica/        los flujos de punta a punta
-│   └── registros/             bitácora, REGISTROS.md y sesiones/
+│   └── registros/             bitácora, REGISTROS.md, sesiones/ y auditorias/
 ├── apps/
 │   ├── api/                   la API y el worker
 │   ├── web/                   las pantallas de la fábrica
@@ -163,11 +163,13 @@ Todos se corren desde la raíz.
 | `pnpm puente:empaquetar` | Arma el ejecutable del puente de impresión para Windows y Linux |
 | `pnpm migracion:cargar` | Carga los datos de hoy en el arranque, por tiempos y con ensayo (ver [migración](../MIGRACION.md#el-comando)) |
 
-**El sello.** La huella es el contenido exacto de lo que se revisó, sin `docs/registros/`. El gancho de git antes de cada commit:
+**El sello.** La huella es el contenido exacto de lo que se revisó, sin los registros (los `.md` de `docs/registros/`). El gancho de git antes de cada commit y de cada merge:
 
-1. si el commit solo toca `docs/registros/`, pasa;
-2. si solo toca documentos (`*.md`), corre `pnpm docs:revisar` y pasa si sale en verde;
+1. si el commit solo toca registros, pasa;
+2. si solo toca documentos (`*.md`), pide que no quede nada sin agregar, corre `pnpm docs:revisar` y pasa si sale en verde;
 3. si toca código, pide que el sello sea de exactamente lo que se va a guardar.
+
+`git rebase`, `git cherry-pick` y `git revert` hacen commits sin pasar por los ganchos, así que no se usan: un cambio es un commit nuevo, y la historia de las ramas no se reescribe (decisión 329).
 
 Cómo encaja en el trabajo de cada parte está en la [forma de trabajo](../trabajo/FORMA-DE-TRABAJO.md#los-verdes).
 
@@ -230,7 +232,7 @@ uniformame/
 
 **La huella del sello** (`scripts/sello.ts`): por cada archivo que se guardaría (lo que git sigue y lo nuevo que `.gitignore` no deja fuera), su ruta y el hash de git de su contenido, ordenados y pasados por SHA-256. No incluye los registros: los `.md` de `docs/registros/` (cualquier otro archivo ahí se sella como código). Al revisar se calcula sobre el árbol (`git hash-object`); al hacer el commit, sobre el índice (`git ls-files -s`). Por eso el sello vale solo si se guarda exactamente lo revisado: con todo agregado (`git add -A`), las dos huellas son iguales. La revisión completa calcula la huella antes y después de sus pasos y no sella si algo cambió mientras corría. El sello vive en `.revision/sello.json`, fuera de git.
 
-**El gancho de git** (`.githooks/pre-commit` y `.githooks/pre-merge-commit` → `scripts/gancho-git.ts`) ve lo que cambia en el índice, también en un merge: si todo son registros, pasa; si todo es `*.md`, rechaza el commit si hay documentos cambiados sin agregar (porque `docs:revisar` lee el árbol de trabajo) y si no, corre `scripts/docs-revisar.ts`; si hay código, pide que el sello sea igual a la huella del índice. Un merge con código se hace con `git merge --no-commit`, `pnpm revision` y `git commit`.
+**El gancho de git** (`.githooks/pre-commit` y `.githooks/pre-merge-commit` → `scripts/gancho-git.ts`) ve lo que cambia en el índice, también en un merge: si todo son registros, pasa; si todo es `*.md`, rechaza el commit si queda cualquier archivo cambiado sin agregar (porque `docs:revisar` lee el árbol de trabajo, también los archivos a los que enlazan los documentos) y si no, corre `scripts/docs-revisar.ts`; si hay código, pide que el sello sea igual a la huella del índice. Un merge con código se hace con `git merge --no-commit`, `pnpm revision` y `git commit`.
 
 **La búsqueda de secretos** (`scripts/secretos.ts`) revisa lo que se va a guardar: llaves privadas, direcciones de Postgres con contraseña, el secreto de cliente y las llaves de API de Google, las llaves de Resend, un `.env` que `.gitignore` no deja fuera o que se va a guardar, y cualquier variable de `.env.ejemplo` escrita con un valor (`NOMBRE=algo`), que cubre también las credenciales de R2. Dice el archivo y el renglón, nunca el valor.
 

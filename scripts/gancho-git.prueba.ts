@@ -87,6 +87,15 @@ describe("el gancho de git rechaza un commit de código sin sello vigente, deja 
 		expect(`${resultado.stdout}${resultado.stderr}`).toContain("sin agregar");
 	});
 
+	it("rechaza un commit de documentos que enlaza a un archivo que no se va a guardar", () => {
+		escribirIndice(raiz, "Ver [el script](../scripts/nuevo.ts).\n");
+		escribir(raiz, "scripts/nuevo.ts", "export const a = 1;\n");
+		git(raiz, ["add", "docs/INDICE.md"]);
+		const resultado = spawnSync("git", ["commit", "-q", "-m", "prueba"], { cwd: raiz, encoding: "utf8" });
+		expect(resultado.status).not.toBe(0);
+		expect(`${resultado.stdout}${resultado.stderr}`).toContain("scripts/nuevo.ts");
+	});
+
 	it("un archivo que no es .md bajo docs/registros/ no cuenta como registro", () => {
 		escribir(raiz, "docs/registros/algo.prueba.ts", "export const a = 1;\n");
 		const { entra } = commit(raiz);

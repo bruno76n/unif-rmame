@@ -29,12 +29,13 @@ export function revisarCommit(raiz: string): Veredicto {
 		return { pasa: true, motivo: "Solo registros: no piden revisión." };
 	}
 	if (archivos.every((ruta) => ruta.endsWith(".md"))) {
-		// docs:revisar lee el árbol de trabajo: solo revisa lo que se guarda si no hay documentos sin agregar.
-		const sinAgregar = archivosSinAgregar(raiz).filter((ruta) => ruta.endsWith(".md") && !esRegistro(ruta));
+		// docs:revisar lee el árbol de trabajo (los documentos y los archivos a los que enlazan): solo revisa
+		// lo que se guarda si no hay nada sin agregar.
+		const sinAgregar = archivosSinAgregar(raiz);
 		if (sinAgregar.length > 0) {
 			return {
 				pasa: false,
-				motivo: `Hay documentos cambiados sin agregar (${sinAgregar.join(", ")}). Agrégalos con git add o guárdalos aparte, para que se revise lo mismo que se guarda.`,
+				motivo: `Hay archivos cambiados sin agregar (${sinAgregar.slice(0, 5).join(", ")}${sinAgregar.length > 5 ? "…" : ""}). Agrégalos con git add o guárdalos aparte, para que se revise lo mismo que se guarda.`,
 			};
 		}
 		const enVerde = correr(raiz, "node", ["scripts/docs-revisar.ts"]);

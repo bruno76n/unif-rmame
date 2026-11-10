@@ -73,7 +73,11 @@ function leerPaquetes(): { ruta: string; contenido: Record<string, unknown> }[] 
 	return rutas.map((ruta) => ({ ruta, contenido: JSON.parse(readFileSync(join(raiz, ruta), "utf8")) }));
 }
 
-/** Los pares de texto de un objeto leído de JSON; cualquier otra cosa da una lista vacía. */
+/**
+ * Los pares de texto de un objeto leído de JSON.
+ * @param valor Lo leído.
+ * @returns Sus pares cuyo valor es texto; cualquier otra cosa da una lista vacía.
+ */
 function textosDe(valor: unknown): [string, string][] {
 	if (typeof valor !== "object" || valor === null) return [];
 	return Object.entries(valor).filter((par): par is [string, string] => typeof par[1] === "string");

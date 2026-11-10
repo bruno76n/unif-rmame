@@ -61,13 +61,15 @@ export function firmaDelProblema(salida: string): string {
 }
 
 /**
- * Quita de un renglón lo que cambia entre corridas sin que cambie el problema: los colores, los
- * tiempos, los conteos de Vitest, el renglón y la columna.
+ * Quita de un renglón lo que cambia entre corridas sin que cambie el problema: los colores, el tiempo
+ * que Vitest pone al final, sus conteos, el renglón y la columna.
+ * @param renglon Un renglón de la salida.
+ * @returns El renglón sin eso, con los espacios juntos.
  */
 function limpiarRenglon(renglon: string): string {
 	return renglon
 		.replace(new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, "g"), "")
-		.replace(/\d+(\.\d+)?\s?m?s\b/g, "")
+		.replace(/\s\d+(\.\d+)?\s?m?s$/, "")
 		.replace(/\(\d+ tests?[^)]*\)/g, "")
 		.replace(/\(\d+,\d+\)|:\d+:\d+/g, "")
 		.replace(/\s+/g, " ")
@@ -76,6 +78,7 @@ function limpiarRenglon(renglon: string): string {
 
 /**
  * Lee el conteo de intentos guardado.
+ * @param rutaDeEstado La ruta de `.claude/estado/intentos.json`.
  * @returns El conteo por firma; si no existe o está dañado, vacío: el gancho nunca deja de vigilar por eso.
  */
 function leerIntentos(rutaDeEstado: string): Record<string, number> {

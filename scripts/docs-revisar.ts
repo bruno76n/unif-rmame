@@ -7,9 +7,8 @@
  * - que cada enlace relativo lleve a un archivo que existe, y su ancla, a un título de ese archivo;
  * - que cada «Se conecta con» esté en los dos archivos;
  * - que cada archivo esté en docs/INDICE.md.
- * De los registros solo revisa el encabezado de la bitácora y de REGISTROS.md; las carpetas de
- * registros (las sesiones y las auditorías) y el
- * contenido de los registros no se revisan (ver docs/trabajo/FORMA-DE-TRABAJO.md, «Los registros»).
+ * De los registros solo revisa el encabezado de la bitácora y de REGISTROS.md; ni las carpetas de
+ * registros (las sesiones y las auditorías) ni el contenido de los registros se revisan (ver docs/trabajo/FORMA-DE-TRABAJO.md, «Los registros»).
  */
 
 import { existsSync, readFileSync, statSync } from "node:fs";

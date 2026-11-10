@@ -42,7 +42,7 @@ Cada línea resume su archivo; el detalle está en el archivo. Un archivo nuevo 
 ## Las fases
 
 - [Las fases](fases/FASES.md) — el mapa de las 23 fases de Unifórmame: qué construye cada una en pocas líneas, si es delicada, su estado y su archivo.
-- [Fase 1: Repositorio, reglas y paquete compartido](fases/01-repositorio-reglas-y-paquete-compartido.md) — el monorepo con sus versiones fijas, los ganchos, el sello y el interruptor de modo; las reglas y los subagentes; el paquete compartido con el dinero, las fechas y el cliente de la API.
+- [Fase 1: Repositorio, reglas y paquete compartido](fases/01-repositorio-reglas-y-paquete-compartido.md) — el monorepo con sus versiones fijas, los ganchos, el sello y el interruptor de modo; las reglas y los subagentes; el paquete compartido con el dinero y las fechas.
 - [Fase 2: Base de datos y pruebas](fases/02-base-de-datos-y-pruebas.md) — las convenciones de la base hechas código: columnas comunes, versión, nada se borra, migraciones, siembra y datos de la muestra; la base de las pruebas con Postgres real y simuladores.
 - [Fase 3: API: protocolo e idempotencia](fases/03-api-protocolo-e-idempotencia.md) — el protocolo de acciones y consultas, los errores, la clave de idempotencia, el control de pisadas, la forma de un módulo y la documentación de la API.
 - [Fase 4: Servicios comunes](fases/04-servicios-comunes.md) — lo que usan todos los módulos: eventos y trabajos, folios, configuración, bitácora, avisos, archivos, impresión y respaldos.
