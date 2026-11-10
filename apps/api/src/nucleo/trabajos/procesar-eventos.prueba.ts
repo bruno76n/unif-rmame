@@ -41,7 +41,12 @@ describe("con dos workers, cada evento se procesa una vez; uno que falla se rein
 		avisos: string[] = [],
 		ahora = () => Temporal.Now.instant(),
 	): DependenciasDelProceso {
-		return { base, repartir, ahora, avisarFalla: async (texto) => void avisos.push(texto) };
+		return {
+			base,
+			repartir,
+			ahora,
+			avisarFalla: async (trabajo, error) => void avisos.push(`${trabajo} falló: ${error}`),
+		};
 	}
 
 	it("dos workers a la vez sobre 250 eventos: cada uno se reparte una sola vez y todos quedan procesados", async () => {
@@ -87,7 +92,7 @@ describe("con dos workers, cada evento se procesa una vez; uno que falla se rein
 		}
 		expect(esperas).toEqual([1, 5, 30, 120, 120, 120, 120, 120, 120, 120, 120]);
 		expect(avisos).toHaveLength(1);
-		expect(avisos[0]).toContain("10 veces");
+		expect(avisos[0]).toContain(`El evento nota.creada (${id}) falló: 10 intentos`);
 	});
 
 	it("si uno falla, los demás de la misma vuelta sí quedan procesados", async () => {

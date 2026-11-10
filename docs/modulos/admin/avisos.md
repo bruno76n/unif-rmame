@@ -114,4 +114,31 @@ Van en la sección `parametro`. Cada tipo que agregue otro módulo trae su propi
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 4.*
+**Fase 4, parte 4.**
+
+- **La tabla** `avisos` está en `apps/api/src/modulos/admin/tablas.ts` (migración `0006_avisos.sql`).
+  - Su CHECK lleva los tipos del núcleo (`tiposDeAvisoDelNucleo`).
+  - La app solo cambia `leido_en`, las columnas del correo y `actualizado_en`.
+- **Los parámetros** `avisos.correo_{tipo}` están en `modulos/admin/parametros.ts`.
+- **`admin.crear_aviso`** está en `modulos/admin/internas/crear-aviso.ts`.
+  - Resuelve la regla con la lectura `admin.cuentas_por_regla`, o recibe la lista de cuentas.
+  - Escribe uno por cuenta, con un candado por cuenta, tipo y documento, y no repite uno sin leer.
+  - Decide `por_correo` con su parámetro (`sinCorreo` lo apaga para el aviso de un correo que falló).
+  - Hace `pg_notify('ua_avisos', id)` y encola `admin.enviar_correos` si alguno va por correo.
+- **Las dos lecturas de cuentas** (`admin.cuentas_por_regla` y `admin.correo_de_cuenta`) las da `usuarios` en la fase 5. En esta fase las pone el servidor de prueba con sus cuentas (decisión 359).
+- **La alerta.** `alerta.registrada` se vuelve `alerta_seguridad` a la dueña en `modulos/admin/al-evento.ts`: lo que hace un módulo al llegar un tipo de evento (`alEvento`), dentro del proceso de la bandeja.
+- **`trabajo_fallido`** a soporte lo crea el worker con `admin.crear_aviso`, «{trabajo} falló: {error}» (`nucleo/trabajos/trabajador.ts`).
+- **`admin.marcar_aviso_leido`** está en `acciones/marcar-aviso-leido.ts`.
+  - Solo toca los avisos de quien llama.
+  - Sin `aviso_ids` ni `todos`, responde `400`.
+  - No deja bitácora (`sinBitacora`).
+  - Su contrato está en `contratos/admin/avisos.ts`.
+- **El correo:**
+  - **El trabajo** `admin.enviar_correos` (`trabajos/enviar-correos.ts`) toma de 20 en 20 con `FOR UPDATE SKIP LOCKED`, manda al correo de la cuenta con la clave de idempotencia `aviso:{id}` y espera como los eventos. Al décimo intento avisa a soporte sin correo y deja de reintentar. Al terminar, se encola para el siguiente reintento que toque (decisión 360).
+  - **La plantilla** (`dominio/plantilla-de-correo.ts`) se arma con los componentes de React Email y `renderToStaticMarkup`, sin JSX (decisión 358).
+  - **El envío** (`apps/api/src/nucleo/correo.ts`) va con Resend en producción (`RESEND_LLAVE`, remitente `avisos@uniformame.mx`). En local, el correo queda en el registro del worker.
+- **En vivo:** cada instancia escucha `ua_avisos` y manda `aviso` a las sesiones de la cuenta.
+- **Las pruebas:**
+  - `internas/crear-aviso.prueba.ts`;
+  - `trabajos/enviar-correos.prueba.ts` (con el simulador de Resend y el SDK de verdad);
+  - el caso de `aviso` en `nucleo/sincronizacion/eventos-en-vivo.prueba.ts`.

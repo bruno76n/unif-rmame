@@ -11,7 +11,8 @@ import { join } from "node:path";
 import { run } from "graphile-worker";
 import { escribirBitacoraConAdmin, guardarEventosConAdmin } from "./nucleo/acciones/corredor.ts";
 import { abrirConexiones, crearBase } from "./nucleo/base/conexion.ts";
-import { leerEntorno } from "./nucleo/entorno.ts";
+import { crearEnvioAlRegistro, crearEnvioConResend, type EnviarCorreo } from "./nucleo/correo.ts";
+import { type Entorno, leerEntorno } from "./nucleo/entorno.ts";
 import { cargarModulos } from "./nucleo/modulos.ts";
 import { esquemaDelWorker } from "./nucleo/trabajos/esquema.ts";
 import { crontabDelTrabajador, type DependenciasDelTrabajador, listaDeTareas } from "./nucleo/trabajos/trabajador.ts";
@@ -33,6 +34,18 @@ export async function arrancarTrabajador(
 	await corredor.promise;
 }
 
+/**
+ * Cómo sale el correo según el entorno: en local no sale y queda en el registro del worker; fuera de local
+ * va por Resend y sin su llave el worker no arranca.
+ * @param entorno Las variables de entorno.
+ */
+function envioDelEntorno(entorno: Entorno): EnviarCorreo {
+	if (entorno.ENTORNO === "local") return crearEnvioAlRegistro((linea) => process.stdout.write(`${linea}\n`));
+	if (entorno.RESEND_LLAVE === undefined)
+		throw new Error("Falta RESEND_LLAVE: el worker manda los correos con Resend.");
+	return crearEnvioConResend(entorno.RESEND_LLAVE);
+}
+
 if (import.meta.main) {
 	const entorno = leerEntorno();
 	const conexiones = abrirConexiones(entorno.BASE_DATOS_URL);
@@ -44,9 +57,7 @@ if (import.meta.main) {
 			guardarEventos: guardarEventosConAdmin,
 			escribirBitacora: escribirBitacoraConAdmin,
 		},
-		// El aviso `trabajo_fallido` a soporte llega con `admin.crear_aviso` (parte 4 de la fase 4).
-		avisarFalla: async (texto) => {
-			process.stderr.write(`${texto}\n`);
-		},
+		enviarCorreo: envioDelEntorno(entorno),
+		dominioWeb: entorno.DOMINIO_WEB,
 	});
 }

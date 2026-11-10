@@ -23,6 +23,8 @@ describe("depurar quita los eventos procesados de hace más de admin.dias_guarda
 			registro: await cargarModulos(join(import.meta.dirname, "../..")),
 			servicios: { guardarEventos: guardarEventosConAdmin, escribirBitacora: async () => undefined },
 			avisarFalla: async () => undefined,
+			enviarCorreo: async () => undefined,
+			dominioWeb: "https://fabrica.prueba.invalid",
 			reloj: () => Temporal.Instant.from("2026-11-10T18:00:00Z"),
 		};
 		// Las particiones de dos meses viejos, como las dejó el reloj en su momento.

@@ -28,3 +28,4 @@ La línea de la bitácora se escribe al final, con el resultado ya conocido. Esc
 | 10 nov 2026 | 4 | 1 · Eventos, worker y avisos en vivo | [2026-11-10-fase-04](sesiones/2026-11-10-fase-04.md) |
 | 10 nov 2026 | 4 | 2 · Folios, configuración y ubicaciones | [2026-11-10-fase-04](sesiones/2026-11-10-fase-04.md) |
 | 10 nov 2026 | 4 | 3 · Bitácora | [2026-11-10-fase-04](sesiones/2026-11-10-fase-04.md) |
+| 10 nov 2026 | 4 | 4 · Avisos y correo | [2026-11-10-fase-04](sesiones/2026-11-10-fase-04.md) |

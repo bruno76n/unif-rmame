@@ -8,6 +8,7 @@ import { Temporal } from "temporal-polyfill";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { crearBase } from "../base/conexion.ts";
 import { cargarModulos, registrarModulos } from "../modulos.ts";
+import { enAccionDePrueba } from "../pruebas/accion-de-prueba.ts";
 import { mandarAccion } from "../pruebas/llamadas.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../pruebas/servidor-de-prueba.ts";
 import { procesarEventos, repartirConLosModulos } from "../trabajos/procesar-eventos.ts";
@@ -67,7 +68,7 @@ async function esperarA(condicion: () => boolean): Promise<void> {
 	expect(condicion()).toBe(true);
 }
 
-describe("una sesión recibe cambios solo de las tablas que leen sus departamentos; ningún evento en vivo lleva montos; un NOTIFY llega a las conexiones de otra instancia", () => {
+describe("una sesión recibe cambios solo de las tablas que leen sus departamentos; ningún evento en vivo lleva montos; un NOTIFY llega a las conexiones de otra instancia; un aviso llega a las sesiones de su cuenta", () => {
 	let servidor: ServidorDePrueba;
 	let otra: ServidorDePrueba;
 	let direccion: string;
@@ -89,7 +90,9 @@ describe("una sesión recibe cambios solo de las tablas que leen sus departament
 		const deLasPruebas = await cargarModulos(join(import.meta.dirname, "../pruebas/modulos"));
 		await procesarEventos({
 			base: crearBase(servidor.base.app),
-			repartir: repartirConLosModulos(registrarModulos([...deLaApi.modulos, ...deLasPruebas.modulos])),
+			repartir: repartirConLosModulos(registrarModulos([...deLaApi.modulos, ...deLasPruebas.modulos]), () =>
+				Temporal.Now.instant(),
+			),
 			avisarFalla: async () => undefined,
 			ahora: () => Temporal.Now.instant(),
 		});
@@ -147,6 +150,37 @@ describe("una sesión recibe cambios solo de las tablas que leen sus departament
 		expect(tablet.eventos().filter((evento) => evento.nombre === "cambios")).toEqual([]);
 		tablet.cerrar();
 		ventas.cerrar();
+	});
+
+	it("un aviso nuevo llega como aviso a las sesiones de su cuenta, en las dos instancias; a otra cuenta no", async () => {
+		const duena = await escuchar(direccion, "duena");
+		const duenaEnLaOtra = await escuchar(direccionDeLaOtra, "duena");
+		const ventas = await escuchar(direccion, "ventas");
+		await esperarA(() => [duena, duenaEnLaOtra, ventas].every((conexion) => conexion.eventos().length > 0));
+		const { aviso_ids } = (await enAccionDePrueba(crearBase(servidor.base.app), servidor.modulos, (contexto) =>
+			contexto.interna("admin.crear_aviso", {
+				tipo: "alerta_direccion",
+				destinatarios: { regla: "duena" },
+				texto: "Hay 3 lotes atorados",
+				enlace: "direccion/alertas",
+			}),
+		)) as { aviso_ids: string[] };
+		const esperado = {
+			nombre: "aviso",
+			datos: {
+				aviso_id: aviso_ids[0],
+				tipo: "alerta_direccion",
+				texto: "Hay 3 lotes atorados",
+				enlace: "direccion/alertas",
+			},
+		};
+		for (const conexion of [duena, duenaEnLaOtra]) {
+			await esperarA(() => conexion.eventos().some((evento) => evento.nombre === "aviso"));
+			expect(conexion.eventos().filter((evento) => evento.nombre === "aviso")).toEqual([esperado]);
+		}
+		await new Promise((listo) => setTimeout(listo, 200));
+		expect(ventas.eventos().filter((evento) => evento.nombre === "aviso")).toEqual([]);
+		for (const conexion of [duena, duenaEnLaOtra, ventas]) conexion.cerrar();
 	});
 
 	it("a cada conexión le llega su latido", async () => {

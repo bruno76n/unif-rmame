@@ -23,6 +23,9 @@ allowBuilds:
   ssh2: false
 # Versiones corregidas de dependencias indirectas con avisos de pnpm audit (decisión 336): esbuild de
 # drizzle-kit (carga su configuración) y glob de archiver (Testcontainers, solo para copiar archivos).
+# Resend no instala su par opcional `@react-email/render` (decisión 358): el HTML del correo ya va armado,
+# y ese paquete trae `deepmerge` con un aviso sin parche.
 overrides:
   "@esbuild-kit/core-utils>esbuild": "0.25.12"
   "archiver-utils>glob": "14.0.4"
+  "resend>@react-email/render": "-"

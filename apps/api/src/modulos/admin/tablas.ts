@@ -380,3 +380,46 @@ export const bitacora = pgTable(
 		),
 	],
 );
+
+/** Los tipos de aviso del núcleo; cada módulo que agrega los suyos los suma al CHECK en su migración. */
+export const tiposDeAvisoDelNucleo = [
+	"autorizacion_pedida",
+	"autorizacion_decidida",
+	"alerta_seguridad",
+	"dispositivo_sin_sincronizar",
+	"alerta_direccion",
+	"restauracion_por_probar",
+	"respaldo_fallido",
+	"pin_bloqueado",
+	"trabajo_fallido",
+] as const;
+
+/** Lo que una persona tiene que saber: un aviso por cuenta, en su campana y, si su tipo lo pide, por correo. */
+export const avisos = pgTable(
+	"avisos",
+	{
+		id: uuid("id").primaryKey(),
+		/** @llavePendiente usuarios.id */
+		usuarioId: uuid("usuario_id").notNull(),
+		tipo: text("tipo").notNull(),
+		texto: text("texto").notNull(),
+		enlace: text("enlace"),
+		entidad: text("entidad"),
+		entidadId: uuid("entidad_id"),
+		eventoId: uuid("evento_id"),
+		leidoEn: momento("leido_en"),
+		porCorreo: boolean("por_correo").notNull(),
+		correoEnviadoEn: momento("correo_enviado_en"),
+		correoIntentos: smallint("correo_intentos").notNull().default(0),
+		correoError: text("correo_error"),
+		creadoEn: momento("creado_en").notNull().defaultNow(),
+		actualizadoEn: momento("actualizado_en"),
+	},
+	(tabla) => [
+		index("avisos_sin_leer").on(tabla.usuarioId, tabla.creadoEn.desc()).where(sql`${tabla.leidoEn} is null`),
+		index("avisos_correo_pendiente")
+			.on(tabla.creadoEn)
+			.where(sql`${tabla.porCorreo} and ${tabla.correoEnviadoEn} is null`),
+		check("avisos_tipo", sql.raw(`tipo in (${tiposDeAvisoDelNucleo.map((tipo) => `'${tipo}'`).join(", ")})`)),
+	],
+);

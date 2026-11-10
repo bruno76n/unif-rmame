@@ -7,6 +7,7 @@
  * trabajo que registró un módulo, la suya con su nombre (`admin.depurar_eventos`). Un trabajo programado
  * corre con el periodo de su vuelta: si esa vuelta ya terminó no hace nada; si termina bien la marca; si
  * falla anota el error, avisa a soporte la primera vez y la siguiente vuelta del reloj lo vuelve a encolar.
+ * El aviso a soporte es `trabajo_fallido`, con `admin.crear_aviso`.
  */
 
 import { and, eq, isNotNull, sql } from "drizzle-orm";
@@ -16,6 +17,7 @@ import { trabajosVueltas } from "../../modulos/admin/tablas.ts";
 import { crearContexto, type ServiciosDelCorredor } from "../acciones/corredor.ts";
 import type { Base } from "../base/conexion.ts";
 import { enTransaccion } from "../base/transacciones.ts";
+import type { EnviarCorreo } from "../correo.ts";
 import type { ContextoDeTrabajo, RegistroDeModulos, Trabajo } from "../modulos.ts";
 import { procesarEventos, repartirConLosModulos } from "./procesar-eventos.ts";
 import { correrReloj } from "./reloj.ts";
@@ -26,10 +28,33 @@ export interface DependenciasDelTrabajador {
 	registro: RegistroDeModulos;
 	/** La bitácora y los eventos de lo que escriben los trabajos, como en una acción. */
 	servicios: ServiciosDelCorredor;
-	/** Avisa a soporte que algo del worker falló. */
-	avisarFalla: (texto: string) => Promise<void>;
+	/** Avisa a soporte que algo del worker falló; por omisión, con el aviso `trabajo_fallido`. */
+	avisarFalla?: (trabajo: string, error: string) => Promise<void>;
+	/** Cómo sale un correo: Resend, o el registro en local. */
+	enviarCorreo: EnviarCorreo;
+	/** La dirección de la web, para los enlaces de los correos. */
+	dominioWeb: string;
 	/** La hora; en las pruebas, una controlada. */
 	reloj?: () => Temporal.Instant;
+}
+
+/**
+ * Avisa a soporte que algo del worker falló: el aviso `trabajo_fallido`, «{trabajo} falló: {error}».
+ * @param dependencias Lo que necesita el worker.
+ */
+function avisarFalla(dependencias: DependenciasDelTrabajador): (trabajo: string, error: string) => Promise<void> {
+	return (
+		dependencias.avisarFalla ??
+		(async (trabajo, error) => {
+			await contextoDeTrabajo(dependencias, "sistema.avisar_falla").enTransaccion((contexto) =>
+				contexto.interna("admin.crear_aviso", {
+					tipo: "trabajo_fallido",
+					destinatarios: { regla: "soporte" },
+					texto: `${trabajo} falló: ${error}`,
+				}),
+			);
+		})
+	);
 }
 
 /** El `crontab` de Graphile Worker: el reloj, cada minuto. */
@@ -52,6 +77,9 @@ export function contextoDeTrabajo(
 		ahora,
 		periodo: carga.periodo,
 		eventoId: carga.eventoId,
+		enviarCorreo: dependencias.enviarCorreo,
+		dominioWeb: dependencias.dominioWeb,
+		avisarFalla: avisarFalla(dependencias),
 		enTransaccion: (hacer) =>
 			enTransaccion(dependencias.base, async (transaccion) => {
 				const quien = { tipo: "sistema", trabajo } as const;
@@ -113,7 +141,12 @@ export async function correrTrabajo(
 			})
 			.where(vuelta)
 			.returning({ intentos: trabajosVueltas.intentos });
-		if (fallida?.intentos === 1) await dependencias.avisarFalla(`El trabajo ${trabajo.nombre} falló (${periodo})`);
+		if (fallida?.intentos === 1) {
+			await avisarFalla(dependencias)(
+				trabajo.nombre,
+				`${error instanceof Error ? error.message : String(error)} (${periodo})`,
+			);
+		}
 		throw error;
 	}
 	await dependencias.base.update(trabajosVueltas).set({ terminadoEn: sql`now()` }).where(vuelta);
@@ -129,8 +162,8 @@ export function listaDeTareas(dependencias: DependenciasDelTrabajador): TaskList
 		procesar_eventos: async () => {
 			await procesarEventos({
 				base: dependencias.base,
-				repartir: repartirConLosModulos(dependencias.registro),
-				avisarFalla: dependencias.avisarFalla,
+				repartir: repartirConLosModulos(dependencias.registro, ahora),
+				avisarFalla: avisarFalla(dependencias),
 				ahora,
 			});
 		},

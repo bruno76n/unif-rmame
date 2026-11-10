@@ -17,6 +17,8 @@ Lo que falta decidir o investigar, y en qué fase se resuelve. Lo del negocio ya
 - **Lo que lleva el `409` y la posición del cursor dependen de cada módulo** (fase 22, con la revisión de cada consulta): `tomarVersion` manda lo que le da la acción (`leerVisible`), sin revisar que venga recortado, y `cursorDe` guarda los campos que le pasa la consulta. Una revisión que compare el `409` y el cursor con los `recortables` de la consulta que lee ese registro.
 - **Una acción puede tomar la versión de otro registro** (fase 22): el corredor sabe que se tomó una versión, no cuál. Revisar que la versión tomada sea la del documento que la acción dice que tocó (`entidad`).
 - **El formato de los parámetros de texto** (fase 19, con la pantalla de Configuración): `admin.cambiar_parametro` revisa que un texto no venga vacío, pero no su forma (los días de trabajo, una versión). Decidir si cada definición lleva su patrón.
+- **Las lecturas de cuentas para los avisos** (fase 5): `admin.cuentas_por_regla` (`duena`, `soporte`, `departamento:{clave}`, con las cuentas activas) y `admin.correo_de_cuenta`. Hasta que existan, el worker no puede crear avisos fuera de las pruebas.
+- **El nivel de `pnpm audit`** (fase 22): SEGURIDAD dice que solo una vulnerabilidad alta o crítica detiene la revisión, pero `pnpm revision` corre `pnpm audit` sin nivel y se detiene con cualquiera. Se intentó alinearlo y el permiso del entorno lo negó; Bruno decide si la revisión pide `--audit-level high` o si SEGURIDAD dice «cualquiera».
 - **Un `\u0000` en la entrada o en la respuesta** (fase 22): Postgres no lo guarda en `text` ni en `jsonb`, y sale `500` en lugar de `400`. Rechazarlo en la validación del protocolo.
 - **El tipo del cliente no pide `version` cuando el contrato edita** (fase 19, con las pantallas): `definirAccion` tendría que conservar `edita` como literal para que el cliente lo exija; hoy el servidor responde `400`.
 - **La prueba al azar de la idempotencia corre 150 series contra Postgres** (fase 21, con la temporada simulada): la regla de pruebas pide miles; con la base real cada serie cuesta, y la temporada simulada es donde se corren muchas más.
@@ -95,4 +97,7 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 10 nov 2026 | 4 | Un renglón de bitácora por acción, exigido (decisión 355) | Confiar en cada acción · que el corredor lo exija | Que lo exija, con `sinBitacora` para las excepciones | No |
 | 10 nov 2026 | 4 | Los sueldos en la bitácora (decisión 356) | Dos descripciones · una plantilla | La plantilla | No |
 | 10 nov 2026 | 4 | Los permisos de las particiones (decisión 357) | Por omisión · solo por la madre | Solo por la madre | No |
+| 10 nov 2026 | 4 | Quitar `deepmerge` del correo (decisión 358) | Bajar el nivel de `pnpm audit` · los componentes sueltos y sin `@react-email/render` | Los componentes sueltos: el permiso para bajar el nivel se negó, y así no entra el paquete | No |
+| 10 nov 2026 | 4 | Las cuentas de los avisos antes de la fase 5 (decisión 359) | Una tabla provisional · dos lecturas que dará `usuarios` | Las dos lecturas | No |
+| 10 nov 2026 | 4 | Los reintentos del correo (decisión 360) | Que el reloj los encole · que el trabajo se encole solo | Que se encole solo | No |
 

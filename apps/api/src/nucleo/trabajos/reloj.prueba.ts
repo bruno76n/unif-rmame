@@ -29,7 +29,9 @@ describe("un trabajo corre a la hora de México de su parámetro, una sola vez p
 			base: crearBase(prueba.app),
 			registro: registrarModulos([...deLaApi.modulos, ...deLasPruebas.modulos]),
 			servicios: { guardarEventos: guardarEventosConAdmin, escribirBitacora: async () => undefined },
-			avisarFalla: async (texto) => void avisos.push(texto),
+			avisarFalla: async (trabajo, error) => void avisos.push(`${trabajo} falló: ${error}`),
+			enviarCorreo: async () => undefined,
+			dominioWeb: "https://fabrica.prueba.invalid",
 			reloj: () => ahora,
 		};
 	});
@@ -96,7 +98,7 @@ describe("un trabajo corre a la hora de México de su parámetro, una sola vez p
 		await correrLaCola();
 		await vueltaDelReloj();
 		await correrLaCola();
-		expect(avisos.slice(antes)).toEqual(["El trabajo prueba.resumen falló (2026-11-12)"]);
+		expect(avisos.slice(antes)).toEqual(["prueba.resumen falló: falla de prueba del trabajo (2026-11-12)"]);
 		const { rows } = await prueba.dueno.query(
 			"SELECT intentos, terminado_en FROM trabajos_vueltas WHERE trabajo = 'prueba.resumen' AND periodo = '2026-11-12'",
 		);

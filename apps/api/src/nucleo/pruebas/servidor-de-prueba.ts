@@ -68,6 +68,15 @@ export const quienesDePrueba: Record<string, QuienLlama> = {
 		permisosFinos: [],
 		confirmadoConGoogleEn: undefined,
 	},
+	soporte: {
+		tipo: "cuenta",
+		usuarioId: "01936f2e-0000-7000-8000-000000000005",
+		sesionId: "01936f2e-0000-7000-8000-000000000015",
+		esDuena: false,
+		departamentos: ["admin"],
+		permisosFinos: [],
+		confirmadoConGoogleEn: undefined,
+	},
 	tablet: {
 		tipo: "aparato",
 		dispositivoId: "01936f2e-0000-7000-8000-000000000021",
@@ -96,6 +105,49 @@ async function revisarPermisoDePrueba(quien: QuienLlama, permiso: Permiso, ahora
 			throw new ErrorDeApi("reautenticar", null, undefined, { proposito: permiso.confirmarConGoogle, minutos: 5 });
 		}
 	}
+}
+
+/** Las cuentas de prueba que son de soporte técnico. */
+const cuentasDeSoporte = ["soporte"];
+
+/**
+ * Las cuentas de prueba que cumplen una regla de destinatarios: la dueña, soporte o las que tienen un
+ * departamento. Es lo que dará la lectura de `usuarios` en la fase 5.
+ * @param regla `duena`, `soporte` o `departamento:{clave}`.
+ */
+export function cuentasDePruebaPorRegla(regla: string): string[] {
+	return Object.entries(quienesDePrueba).flatMap(([nombre, quien]) => {
+		if (quien.tipo !== "cuenta") return [];
+		const cumple =
+			regla === "duena"
+				? quien.esDuena
+				: regla === "soporte"
+					? cuentasDeSoporte.includes(nombre)
+					: quien.departamentos.includes(regla.replace("departamento:", ""));
+		return cumple ? [quien.usuarioId] : [];
+	});
+}
+
+/**
+ * El registro con las dos lecturas de cuentas que dará `usuarios` en la fase 5: las cuentas de una regla
+ * y el correo de una cuenta (`{nombre}@alameda.invalid`).
+ * @param registro Lo que registraron los módulos.
+ */
+export function conCuentasDePrueba(registro: RegistroDeModulos): RegistroDeModulos {
+	const lecturas = new Map(registro.lecturas);
+	lecturas.set("admin.cuentas_por_regla", async (_contexto, datos) => {
+		const regla = typeof datos === "object" && datos !== null && "regla" in datos ? String(datos.regla) : "";
+		return cuentasDePruebaPorRegla(regla);
+	});
+	lecturas.set("admin.correo_de_cuenta", async (_contexto, datos) => {
+		const id = typeof datos === "object" && datos !== null && "usuario_id" in datos ? datos.usuario_id : undefined;
+		const nombre = Object.entries(quienesDePrueba).find(
+			([, quien]) => quien.tipo === "cuenta" && quien.usuarioId === id,
+		)?.[0];
+		if (nombre === undefined) throw new Error(`no hay cuenta de prueba ${String(id)}`);
+		return `${nombre}@alameda.invalid`;
+	});
+	return { ...registro, lecturas };
 }
 
 /** Lo que guarda el servidor de prueba para que las pruebas lo revisen. */
@@ -165,7 +217,7 @@ export async function crearServidorDePrueba(
 	const modulosDePrueba = await cargarModulos(join(import.meta.dirname, "modulos"));
 	const base = opciones.otraInstanciaDe?.base ?? (await crearBaseConTablasDePrueba(modulosDePrueba.semillas));
 	const deLaApi = await cargarModulos(join(import.meta.dirname, "../../modulos"));
-	const registro = registrarModulos([...deLaApi.modulos, ...modulosDePrueba.modulos]);
+	const registro = conCuentasDePrueba(registrarModulos([...deLaApi.modulos, ...modulosDePrueba.modulos]));
 	const pedidos: ServidorDePrueba["pedidos"] = { bitacora: [], eventos: [] };
 	const lineas: string[] = [];
 	const parametros = { versionMinima: "1.0.0" };

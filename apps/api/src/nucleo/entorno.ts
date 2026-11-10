@@ -15,6 +15,8 @@ const esquema = z.object({
 	DOMINIO_API: z.url({ protocol: /^https?$/ }),
 	BASE_DATOS_URL: z.url({ protocol: /^postgres(ql)?$/ }),
 	BASE_DATOS_URL_DUENO: z.url({ protocol: /^postgres(ql)?$/ }).optional(),
+	/** La llave de Resend: la usa el worker para los correos; en local no hace falta. */
+	RESEND_LLAVE: z.string().min(1).optional(),
 });
 
 /** Las variables ya validadas. */

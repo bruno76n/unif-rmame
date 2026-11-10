@@ -23,6 +23,8 @@ export interface Encolado {
 	intentos?: number;
 	/** Si ya hay una pendiente con la misma clave, conserva su hora (`preserve_run_at`). */
 	conservarHora?: boolean;
+	/** Cuándo corre (ISO); por omisión, en cuanto se pueda. */
+	cuando?: string;
 }
 
 /**
@@ -35,6 +37,7 @@ export async function encolar(transaccion: Transaccion, encolado: Encolado): Pro
 		${encolado.tarea},
 		payload => ${JSON.stringify(encolado.carga ?? {})}::json,
 		queue_name => ${encolado.cola ?? null},
+		run_at => ${encolado.cuando ?? null}::timestamptz,
 		job_key => ${encolado.clave ?? null},
 		max_attempts => ${encolado.intentos ?? null}::integer,
 		job_key_mode => ${encolado.conservarHora === true ? "preserve_run_at" : "replace"}

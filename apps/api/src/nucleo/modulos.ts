@@ -17,6 +17,7 @@ import type { QuienLlama } from "./acceso/quien.ts";
 import type { Base } from "./base/conexion.ts";
 import type { Semilla } from "./base/siembra.ts";
 import type { Transaccion } from "./base/transacciones.ts";
+import type { EnviarCorreo } from "./correo.ts";
 
 /**
  * Un evento de dominio: `{entidad}.{hecho}`, con ids y claves para armar avisos y las tablas que cambiaron;
@@ -166,6 +167,12 @@ export interface ContextoDeTrabajo {
 	eventoId: string | undefined;
 	/** Abre una transacción corta con el contexto de una acción, con el sistema como quien escribe. */
 	enTransaccion: <T>(trabajo: (contexto: ContextoDeAccion) => Promise<T>) => Promise<T>;
+	/** Manda un correo (Resend, o el registro en local). */
+	enviarCorreo: EnviarCorreo;
+	/** La dirección de la web, para los enlaces. */
+	dominioWeb: string;
+	/** Avisa a soporte que algo falló: «{trabajo} falló: {error}». */
+	avisarFalla: (trabajo: string, error: string) => Promise<void>;
 }
 
 /** Un trabajo del worker: programado (con `horario`), después de un evento (`trasEventos`) o encolado por otro. */
@@ -180,6 +187,23 @@ export interface Trabajo {
 	correr: (contexto: ContextoDeTrabajo) => Promise<void>;
 }
 
+/** Un evento ya guardado en la bandeja, como lo ve quien lo atiende. */
+export interface EventoGuardado {
+	id: string;
+	tipo: string;
+	creadoEn: string;
+	intentos: number;
+	datos: unknown;
+	entidad: string | null;
+	entidadId: string | null;
+}
+
+/**
+ * Lo que un módulo hace al llegar un tipo de evento, dentro del proceso de la bandeja (en su `SAVEPOINT`):
+ * crear avisos a personas con sus internas. Si falla, el evento se reintenta.
+ */
+export type AlEvento = (contexto: ContextoDeAccion, evento: EventoGuardado) => Promise<void>;
+
 /** Un módulo, como lo exporta su `index.ts`. */
 export interface Modulo {
 	nombre: string;
@@ -192,6 +216,8 @@ export interface Modulo {
 	trabajos: readonly Trabajo[];
 	/** De su `permisos.ts`: qué departamentos leen cada una de sus tablas, para los avisos en vivo. */
 	lectores: Readonly<Record<string, readonly string[]>>;
+	/** Lo que hace al llegar cada tipo de evento (de cualquier módulo). */
+	alEvento: Readonly<Record<string, AlEvento>>;
 }
 
 /**
@@ -249,6 +275,7 @@ export function definirModulo(modulo: Pick<Modulo, "nombre"> & Partial<Modulo>):
 		semillas: [],
 		trabajos: [],
 		lectores: {},
+		alEvento: {},
 		...modulo,
 	};
 }
@@ -264,6 +291,8 @@ export interface RegistroDeModulos {
 	trabajos: ReadonlyMap<string, Trabajo>;
 	/** Por tabla, los departamentos que la leen. */
 	lectores: ReadonlyMap<string, readonly string[]>;
+	/** Por tipo de evento, lo que hacen los módulos al llegar. */
+	alEvento: ReadonlyMap<string, readonly AlEvento[]>;
 }
 
 /** Dice si lo que exportó un `index.ts` tiene la forma de un módulo. */
@@ -285,6 +314,7 @@ export function registrarModulos(modulos: readonly Modulo[]): RegistroDeModulos 
 	const lecturas = new Map<string, Lectura>();
 	const trabajos = new Map<string, Trabajo>();
 	const lectores = new Map<string, readonly string[]>();
+	const alEvento = new Map<string, AlEvento[]>();
 	const agregar = <T>(mapa: Map<string, T>, modulo: string, nombre: string, valor: T) => {
 		if (!nombre.startsWith(`${modulo}.`)) throw new Error(`${nombre} no es del módulo ${modulo}`);
 		if (mapa.has(nombre)) throw new Error(`${nombre} está registrado dos veces`);
@@ -299,6 +329,8 @@ export function registrarModulos(modulos: readonly Modulo[]): RegistroDeModulos 
 			agregar(lecturas, modulo.nombre, `${modulo.nombre}.${nombre}`, lectura);
 		for (const trabajo of modulo.trabajos) agregar(trabajos, modulo.nombre, trabajo.nombre, trabajo);
 		for (const [tabla, departamentos] of Object.entries(modulo.lectores)) lectores.set(tabla, departamentos);
+		for (const [tipo, hacer] of Object.entries(modulo.alEvento))
+			alEvento.set(tipo, [...(alEvento.get(tipo) ?? []), hacer]);
 	}
 	return {
 		modulos,
@@ -309,6 +341,7 @@ export function registrarModulos(modulos: readonly Modulo[]): RegistroDeModulos 
 		semillas: modulos.flatMap((modulo) => modulo.semillas),
 		trabajos,
 		lectores,
+		alEvento,
 	};
 }
 

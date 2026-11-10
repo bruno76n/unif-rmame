@@ -1,14 +1,39 @@
 /**
- * Los parámetros que declara `admin`: los generales que usan todos, las versiones mínimas de cada app,
- * cuánto se guardan los eventos y cada cuánto se apunta una consulta sensible.
+ * Los parámetros que declara `admin`: los generales que usan todos, si cada aviso va por correo, las
+ * versiones mínimas de cada app, cuánto se guardan los eventos y cada cuánto se apunta una consulta sensible.
  * Fase 4 · docs/modulos/admin/configuracion.md («Parámetros»), docs/cimientos/API.md,
- * docs/cimientos/EVENTOS-Y-TRABAJOS.md («Parámetros») y docs/modulos/admin/bitacora.md («Parámetros»)
+ * docs/cimientos/EVENTOS-Y-TRABAJOS.md («Parámetros»), docs/modulos/admin/bitacora.md y
+ * docs/modulos/admin/avisos.md («Parámetros»)
  */
 
 import { type DefinicionDeParametro, semillaDeParametros } from "../../nucleo/parametros.ts";
 
+/** Si cada tipo de aviso del núcleo va también por correo, al inicio (docs/modulos/admin/avisos.md). */
+const correoPorTipo: readonly [string, string, boolean][] = [
+	["autorizacion_pedida", "Autorización pedida", true],
+	["autorizacion_decidida", "Autorización decidida", false],
+	["alerta_seguridad", "Alerta de seguridad", true],
+	["dispositivo_sin_sincronizar", "Aparato sin sincronizar", true],
+	["alerta_direccion", "Alerta de Dirección", false],
+	["restauracion_por_probar", "Prueba de restauración", true],
+	["respaldo_fallido", "Respaldo fallido", true],
+	["pin_bloqueado", "PIN bloqueado", false],
+	["trabajo_fallido", "Trabajo fallido", true],
+];
+
 /** Los parámetros de `admin`, con su valor inicial. */
 export const parametrosDeAdmin: readonly DefinicionDeParametro[] = [
+	...correoPorTipo.map(
+		([tipo, nombre, inicial], i): DefinicionDeParametro => ({
+			clave: `avisos.correo_${tipo}`,
+			seccion: "parametro",
+			nombre: `Correo: ${nombre}`,
+			explicacion: "Si este aviso también llega por correo",
+			tipo: "booleano",
+			inicial,
+			orden: 100 + i,
+		}),
+	),
 	{
 		clave: "general.largo_minimo_motivo",
 		seccion: "parametro",

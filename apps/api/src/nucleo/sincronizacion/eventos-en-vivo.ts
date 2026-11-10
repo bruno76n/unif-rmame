@@ -6,18 +6,22 @@
  * con el id de cada evento que procesa; la instancia lee el evento y le manda `cambios` a sus conexiones a
  * las que les toca: a una cuenta, las tablas que lee alguno de sus departamentos (la dueña, todas); a un
  * aparato, las de su alcance y sus ubicaciones. Son pistas, no datos: nombres de tablas e ids, nunca
- * montos. A cada conexión le llega un latido cada 25 segundos.
+ * montos. También escucha `ua_avisos`: cada aviso nuevo sale como `aviso` a las sesiones de su cuenta. A
+ * cada conexión le llega un latido cada 25 segundos.
  */
 
 import { eq } from "drizzle-orm";
 import type pg from "pg";
-import { eventos } from "../../modulos/admin/tablas.ts";
+import { avisos, eventos } from "../../modulos/admin/tablas.ts";
 import type { AparatoQueLlama, QuienLlama } from "../acceso/quien.ts";
 import type { Base } from "../base/conexion.ts";
 import type { RegistroDeModulos } from "../modulos.ts";
 
-/** El canal de `LISTEN`/`NOTIFY`. */
+/** El canal de `LISTEN`/`NOTIFY` de los eventos. */
 export const canalDeEventos = "ua_eventos";
+
+/** El canal de los avisos nuevos (lo usa `admin.crear_aviso`). */
+export const canalDeAvisos = "ua_avisos";
 
 /** Cada cuánto va el latido, en milisegundos. */
 const latidoPorOmision = 25_000;
@@ -54,6 +58,8 @@ export interface SalidaDeEventos {
 /** Una conexión abierta, con lo que le toca. */
 interface Conexion {
 	salida: SalidaDeEventos;
+	/** La cuenta de la sesión, para sus avisos; un aparato no tiene. */
+	usuarioId: string | undefined;
 	/** De las tablas de un evento, las que le tocan (vacío si ninguna). */
 	tablasQueLeTocan: (tablas: readonly string[], ubicacionIds: readonly string[]) => string[];
 }
@@ -126,16 +132,31 @@ export function crearAvisosEnVivo(dependencias: DependenciasDeLosAvisosEnVivo) {
 		}
 	}
 
+	/** Lee el aviso nuevo y lo manda a las sesiones de su cuenta. */
+	async function avisar(avisoId: string): Promise<void> {
+		const [aviso] = await dependencias.base
+			.select({ usuarioId: avisos.usuarioId, tipo: avisos.tipo, texto: avisos.texto, enlace: avisos.enlace })
+			.from(avisos)
+			.where(eq(avisos.id, avisoId));
+		if (aviso === undefined) return;
+		for (const conexion of abiertas) {
+			if (conexion.usuarioId !== aviso.usuarioId) continue;
+			conexion.salida.escribir(
+				formatoDeEvento("aviso", { aviso_id: avisoId, tipo: aviso.tipo, texto: aviso.texto, enlace: aviso.enlace }),
+			);
+		}
+	}
+
 	return {
-		/** Empieza a escuchar `ua_eventos` y a mandar el latido. */
+		/** Empieza a escuchar `ua_eventos` y `ua_avisos`, y a mandar el latido. */
 		async iniciar(): Promise<void> {
 			escucha = await dependencias.conexiones.connect();
-			escucha.on("notification", (aviso) => {
-				if (aviso.channel === canalDeEventos && aviso.payload !== undefined) {
-					repartir(aviso.payload).catch(() => undefined);
-				}
+			escucha.on("notification", (llegada) => {
+				if (llegada.payload === undefined) return;
+				if (llegada.channel === canalDeEventos) repartir(llegada.payload).catch(() => undefined);
+				if (llegada.channel === canalDeAvisos) avisar(llegada.payload).catch(() => undefined);
 			});
-			await escucha.query(`LISTEN ${canalDeEventos}`);
+			await escucha.query(`LISTEN ${canalDeEventos}; LISTEN ${canalDeAvisos}`);
 			latido = setInterval(() => {
 				for (const conexion of abiertas) conexion.salida.escribir(": latido\n\n");
 			}, dependencias.latidoMs ?? latidoPorOmision);
@@ -159,7 +180,11 @@ export function crearAvisosEnVivo(dependencias: DependenciasDeLosAvisosEnVivo) {
 		 */
 		async conectar(quien: QuienLlama, salida: SalidaDeEventos, hola: Record<string, unknown>): Promise<() => void> {
 			const alcance = quien.tipo === "aparato" ? await dependencias.alcanceDelAparato(quien) : undefined;
-			const conexion: Conexion = { salida, tablasQueLeTocan: filtroDe(quien, dependencias.registro.lectores, alcance) };
+			const conexion: Conexion = {
+				salida,
+				usuarioId: quien.tipo === "cuenta" ? quien.usuarioId : undefined,
+				tablasQueLeTocan: filtroDe(quien, dependencias.registro.lectores, alcance),
+			};
 			salida.escribir(`retry: ${esperaParaReconectar}\n\n`);
 			salida.escribir(
 				formatoDeEvento("hola", { ...hola, intervalo_segundos: await dependencias.intervaloDeSincronizacion() }),

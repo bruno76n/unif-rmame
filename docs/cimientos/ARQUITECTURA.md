@@ -85,6 +85,7 @@ TypeScript 7 es el compilador nativo. Se usa solo para revisar tipos (`tsc --noE
 | Para qué | Librería | Versión | Documentación oficial |
 |---|---|---|---|
 | Interfaz | React · react-dom | 19.3.1 | https://react.dev/ |
+| Tipos de React para TypeScript | `@types/react` · `@types/react-dom` | 19.3.0 | https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/react |
 | Empaquetar y servidor de desarrollo | Vite · @vitejs/plugin-react | 8.3.6 · 6.3.0 | https://vite.dev/ |
 | Rutas, con pestañas y filtros en la dirección | @tanstack/react-router · @tanstack/router-plugin | 1.170.46 · 1.169.0 | https://tanstack.com/router/latest |
 | Datos del servidor | @tanstack/react-query | 5.107.1 | https://tanstack.com/query/latest |
@@ -120,7 +121,7 @@ TypeScript 7 es el compilador nativo. Se usa solo para revisar tipos (`tsc --noE
 | Código de barras en el PDF | bwip-js | 4.11.4 | https://github.com/metafloor/bwip-js |
 | Etiquetas en la Zebra | ZPL (Code 128 lo hace la impresora) | — | Guía de programación ZPL II de Zebra |
 | Exportar a Excel | ExcelJS | 4.4.0 | https://github.com/exceljs/exceljs |
-| Correo | Resend · @react-email/components | 6.37.0 · 1.0.12 | https://resend.com/docs · https://react.email/docs |
+| Correo | Resend · @react-email/html · @react-email/head · @react-email/body · @react-email/container · @react-email/text · @react-email/button · @react-email/preview · @react-email/hr | 6.37.0 · 0.0.12 · 0.0.13 · 0.3.0 · 0.0.16 · 0.1.6 · 0.2.1 · 0.0.14 · 0.0.12 | https://resend.com/docs · https://react.email/docs |
 | Archivos en R2 | @aws-sdk/client-s3 · @aws-sdk/s3-request-presigner | 3.1164.0 | https://developers.cloudflare.com/r2/ |
 
 ### Pruebas
