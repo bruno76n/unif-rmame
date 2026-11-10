@@ -1,0 +1,20 @@
+# Unifórmame · Postgres 18 en Docker para `pnpm local`.
+# Fase 2 · docs/cimientos/ARQUITECTURA.md («Cómo corre en local»). Solo escucha en esta máquina;
+# la clave del rol dueño es la de un contenedor local, no un secreto.
+services:
+  base:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: uniformame_dueno
+      POSTGRES_PASSWORD: dueno
+      POSTGRES_DB: uniformame
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - base:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "uniformame_dueno", "-d", "uniformame"]
+      interval: 2s
+      retries: 30
+volumes:
+  base:

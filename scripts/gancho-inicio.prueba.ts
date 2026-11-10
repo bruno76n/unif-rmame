@@ -7,15 +7,19 @@
  */
 
 import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
-import { join } from "node:path";
+import { chmodSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { delimiter, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { git } from "./archivos.ts";
 import { borrarRepositorioDePrueba, crearRepositorioDePrueba } from "./repositorio-de-prueba.ts";
 
 /** Corre el gancho de inicio como lo corre Claude Code, con o sin la marca de la nube. */
-function ganchoDeInicio(raiz: string, enLaNube: boolean): { codigo: number | null; salida: string } {
-	const entorno: NodeJS.ProcessEnv = { ...process.env, CLAUDE_PROJECT_DIR: raiz };
+function ganchoDeInicio(raiz: string, enLaNube: boolean, antesDelPath = ""): { codigo: number | null; salida: string } {
+	const entorno: NodeJS.ProcessEnv = {
+		...process.env,
+		CLAUDE_PROJECT_DIR: raiz,
+		PATH: `${antesDelPath}${antesDelPath ? delimiter : ""}${process.env.PATH ?? ""}`,
+	};
 	delete entorno.CLAUDE_CODE_REMOTE;
 	if (enLaNube) entorno.CLAUDE_CODE_REMOTE = "true";
 	const resultado = spawnSync(process.execPath, [join(raiz, "scripts/gancho-inicio.ts")], {
@@ -55,5 +59,28 @@ describe("el gancho de inicio, en la nube, instala las dependencias y deja core.
 		expect(codigo).toBe(0);
 		expect(existsSync(join(raiz, "node_modules"))).toBe(false);
 		expect(hooksPath(raiz)).toBe("");
+	});
+});
+
+describe("en la nube, si Docker no responde, el gancho de inicio arranca su daemon", () => {
+	let raiz = "";
+	beforeEach(() => {
+		raiz = crearRepositorioDePrueba({ dependencias: "por-instalar" });
+	});
+	afterEach(() => borrarRepositorioDePrueba(raiz));
+
+	it("arranca dockerd y espera a que Docker responda", { timeout: 120_000 }, () => {
+		// Un docker y un dockerd de mentira: docker responde solo después de que dockerd deja su marca.
+		const falsos = join(raiz, "falsos");
+		const marca = join(raiz, "dockerd-arranco");
+		mkdirSync(falsos);
+		writeFileSync(join(falsos, "docker"), `#!/bin/sh\n[ -f "${marca}" ]\n`);
+		writeFileSync(join(falsos, "dockerd"), `#!/bin/sh\ntouch "${marca}"\n`);
+		chmodSync(join(falsos, "docker"), 0o755);
+		chmodSync(join(falsos, "dockerd"), 0o755);
+		const { codigo, salida } = ganchoDeInicio(raiz, true, falsos);
+		expect(codigo, salida).toBe(0);
+		expect(existsSync(marca)).toBe(true);
+		expect(salida).toContain("Docker responde.");
 	});
 });

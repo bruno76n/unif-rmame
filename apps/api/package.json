@@ -1,0 +1,24 @@
+{
+	"name": "@uniformame/api",
+	"private": true,
+	"description": "La API y el worker de Unifórmame.",
+	"type": "module",
+	"dependencies": {
+		"@uniformame/compartido": "workspace:*",
+		"drizzle-orm": "0.45.4",
+		"pg": "8.23.1",
+		"zod": "4.6.7"
+	},
+	"devDependencies": {
+		"@testcontainers/postgresql": "12.2.1",
+		"@types/pg": "8.23.1",
+		"@uniformame/pruebas": "workspace:*",
+		"drizzle-kit": "0.31.11",
+		"testcontainers": "12.2.1"
+	},
+	"scripts": {
+		"base:generar": "drizzle-kit generate",
+		"base:migrar": "node --env-file-if-exists=../../.env src/nucleo/base/migrar.ts",
+		"local": "node --env-file-if-exists=../../.env src/nucleo/base/local.ts"
+	}
+}

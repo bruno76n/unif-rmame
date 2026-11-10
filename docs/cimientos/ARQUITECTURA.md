@@ -71,8 +71,9 @@ TypeScript 7 es el compilador nativo. Se usa solo para revisar tipos (`tsc --noE
 | OpenAPI desde los contratos | @fastify/swagger | 9.9.3 | https://github.com/fastify/fastify-swagger |
 | Documentación navegable de la API (solo en local) | @scalar/fastify-api-reference | 1.77.0 | https://github.com/scalar/scalar |
 | Cookies · CORS · encabezados de seguridad · límite de peticiones | @fastify/cookie · @fastify/cors · @fastify/helmet · @fastify/rate-limit | 11.1.5 · 11.4.1 · 13.2.0 · 11.2.2 | https://github.com/fastify |
-| Base de datos | Drizzle ORM · drizzle-kit | 0.45.4 · 0.31.11 | https://orm.drizzle.team/docs/overview |
+| Base de datos | Drizzle ORM (`drizzle-orm`) · drizzle-kit | 0.45.4 · 0.31.11 | https://orm.drizzle.team/docs/overview |
 | Conexión a Postgres | pg (node-postgres) | 8.23.1 | https://node-postgres.com/ |
+| Tipos de pg para TypeScript | `@types/pg` | 8.23.1 | https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/pg |
 | Base de datos | PostgreSQL | 18 | https://www.postgresql.org/docs/18/ |
 | Trabajos y colas | Graphile Worker | 0.18.0 | https://worker.graphile.org/ |
 | Entrar con Google | openid-client | 6.8.9 | https://github.com/panva/openid-client |
@@ -177,4 +178,4 @@ Todo se construye y se prueba en local hasta la puesta en marcha (fase 23). «En
 - **Vitest** (`vitest.config.ts`): una sola configuración para el monorepo, que toma los `*.prueba.ts` y `*.prueba.tsx` junto a su código.
 - **`.env.ejemplo`** lista las variables de [infraestructura](INFRAESTRUCTURA.md#las-variables-de-entorno), sin valores; `.gitignore` deja fuera `.env`, `.revision/`, `.claude/worktrees/`, `.claude/estado/` y `node_modules/`.
 
-Cómo arranca `pnpm local` lo agrega la fase 2, con la base, y lo completa cada fase que le suma una pieza.
+**`pnpm local`** (fase 2): `apps/api/src/nucleo/base/local.ts` lee `.env` (con `ENTORNO=local`), levanta el servicio `base` de `compose.yaml` (Postgres 18, solo en `127.0.0.1:5432`, con el rol dueño `uniformame_dueno` y la base `uniformame`), aplica las migraciones y la siembra con `BASE_DATOS_URL_DUENO`, y le da entrada al rol `uniformame_app` con la clave que trae `BASE_DATOS_URL`. En `.env` van esas dos direcciones con su usuario, su clave y la base `uniformame` en `localhost`. Cada fase que suma una pieza (la API, el worker, la web, la tablet) la arranca aquí.

@@ -1,0 +1,16 @@
+{
+	"name": "@uniformame/pruebas",
+	"private": true,
+	"description": "La base de las pruebas (Postgres real con una copia de la plantilla por archivo) y los simuladores de los servicios de fuera.",
+	"type": "module",
+	"exports": {
+		"./base": "./base/base-de-prueba.ts",
+		"./base/contexto": "./base/contexto.ts"
+	},
+	"dependencies": {
+		"pg": "8.23.1"
+	},
+	"devDependencies": {
+		"@types/pg": "8.23.1"
+	}
+}

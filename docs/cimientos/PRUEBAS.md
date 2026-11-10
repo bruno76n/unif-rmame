@@ -86,4 +86,11 @@ En la fase 21 se prueban los 11 flujos de la fábrica, cada uno con su archivo e
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 2: la configuración de Vitest, cómo arranca Testcontainers con la plantilla, dónde quedaron los simuladores y los ayudantes de prueba.*
+**Fase 2.**
+
+- **Vitest** (`vitest.config.ts`) tiene dos proyectos: `calculos` (`packages/**` y `scripts/**`, sin base) y `base` (`apps/**` y `pruebas/**`), que corre una vez por corrida el arranque `apps/api/src/nucleo/base/plantilla-de-pruebas.ts`.
+- **El arranque:** levanta `postgres:18` con Testcontainers (`@testcontainers/postgresql`), con el rol dueño y la base `plantilla`; aplica ahí las migraciones y la siembra (`migrarYSembrar`), le da entrada al rol de la app y le pasa a cada archivo, con `provide("baseDePruebas")`, dónde quedó el Postgres. Al terminar, apaga el contenedor.
+- **La base de cada archivo** (`pruebas/base/base-de-prueba.ts`, paquete `@uniformame/pruebas`): `crearBaseDePrueba()` hace `CREATE DATABASE … TEMPLATE plantilla` con un nombre al azar y regresa dos conexiones, `app` (el rol de la app, con el que trabaja la prueba) y `dueno` (para crear tablas de prueba), y `borrar()`. `enTransaccionDeshecha(pool, prueba)` corre una prueba dentro de `BEGIN` … `ROLLBACK`, pase lo que pase.
+- **En la nube** las pruebas de la base piden Docker corriendo: lo arranca el gancho de inicio.
+
+**Las pruebas de la base de pruebas:** `pruebas/base.prueba.ts` (cada copia es otra base con las migraciones; lo que escribe una no se ve en la otra; una prueba en su transacción deshecha deja la base igual, aunque falle).

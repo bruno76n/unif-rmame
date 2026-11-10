@@ -118,4 +118,10 @@ Todo contra un Postgres 18 real (ver [pruebas](PRUEBAS.md)):
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 2: dónde quedaron el disparador, los roles, el ayudante de transacciones con reintento, la siembra y los datos de la muestra.*
+**Fase 2.** Todo lo del núcleo de la base vive en `apps/api/src/nucleo/base/`.
+
+- **La conexión** (`conexion.ts`): `abrirConexiones(direccion)` abre un `pg.Pool`, y `crearBase(conexiones)` lo envuelve con Drizzle (`drizzle-orm/node-postgres`). Las variables las lee y valida `apps/api/src/nucleo/entorno.ts` con Zod (`ENTORNO`, `BASE_DATOS_URL`, `BASE_DATOS_URL_DUENO`); si falta una, dice su nombre y nunca su valor.
+- **Los roles:** el dueño es el que aplica las migraciones (`uniformame_dueno` en local y en las pruebas). La primera migración (`apps/api/migraciones/0000_base.sql`) crea `uniformame_app` sin entrada (decisión 335) y le pone `idle_in_transaction_session_timeout = 60s`; su entrada y su clave las pone cada máquina.
+- **Las transacciones con reintento** (`transacciones.ts`): `enTransaccion(base, trabajo)` corre `base.transaction(trabajo)` y, si el error (o el que envuelve Drizzle en su `cause`) trae `40P01` o `40001`, repite la transacción completa hasta `reintentosPorChoque` (3) veces; a la cuarta lanza el error. Cualquier otro error sale a la primera. `codigoDePostgres(error)` saca el código.
+
+**Las pruebas:** `transacciones.prueba.ts`, con dos conexiones a la vez: dos transacciones en orden fijo terminan sin reintentos; dos en orden cruzado chocan (`40P01`), la que pierde se repite sola y terminan las dos; una que siempre choca (`40001`) se intenta cuatro veces; un error que no es choque no se repite.

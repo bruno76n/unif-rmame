@@ -1,9 +1,11 @@
 # Unifórmame · el workspace de pnpm.
 # Fase 1 · docs/cimientos/ESTRUCTURA.md
-# Cada carpeta de apps/ y packages/ es un proyecto; las carpetas nacen en la fase que las llena.
+# Cada carpeta de apps/ y packages/ es un proyecto, y pruebas/ es el de la base de las pruebas y los
+# simuladores; las carpetas nacen en la fase que las llena.
 packages:
   - "apps/*"
   - "packages/*"
+  - "pruebas"
 
 # Las versiones se escriben exactas a mano (docs/cimientos/ARQUITECTURA.md); pnpm add también las guarda exactas.
 saveExact: true
@@ -12,3 +14,15 @@ engineStrict: true
 # Cada `pnpm install` corre el `prepare` de la raíz aunque node_modules ya esté al día,
 # así el gancho de git (core.hooksPath) siempre queda activo.
 optimisticRepeatInstall: false
+# Ningún paquete corre scripts al instalarse (decisión 330): esbuild usa el binario de su paquete
+# de plataforma, y ssh2 y cpu-features (de Testcontainers) son aceleraciones nativas opcionales.
+allowBuilds:
+  cpu-features: false
+  esbuild: false
+  protobufjs: false
+  ssh2: false
+# Versiones corregidas de dependencias indirectas con avisos de pnpm audit (decisión 336): esbuild de
+# drizzle-kit (carga su configuración) y glob de archiver (Testcontainers, solo para copiar archivos).
+overrides:
+  "@esbuild-kit/core-utils>esbuild": "0.25.12"
+  "archiver-utils>glob": "14.0.4"

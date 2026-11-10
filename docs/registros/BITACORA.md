@@ -17,3 +17,4 @@ La línea de la bitácora se escribe al final, con el resultado ya conocido. Esc
 | 10 nov 2026 | 1 | 4 · Claude Code: ganchos, modo y worktrees | [2026-11-10-fase-01](sesiones/2026-11-10-fase-01.md) |
 | 10 nov 2026 | 1 | 5 · El paquete compartido: dinero y fechas | [2026-11-10-fase-01](sesiones/2026-11-10-fase-01.md) |
 | 10 nov 2026 | 1 | Auditoría, correcciones y cierre: fase 1 terminada | [2026-11-10-fase-01](sesiones/2026-11-10-fase-01.md) |
+| 10 nov 2026 | 2 | 1 · Postgres en local y la conexión (con la base de las pruebas) | [2026-11-10-fase-02](sesiones/2026-11-10-fase-02.md) |

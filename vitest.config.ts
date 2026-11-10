@@ -1,15 +1,36 @@
 /**
  * Configuración de Vitest para todo el monorepo.
- * Fase 1 · docs/cimientos/ARQUITECTURA.md (el stack) y .claude/rules/pruebas.md
+ * Fase 1 y fase 2 · docs/cimientos/PRUEBAS.md y .claude/rules/pruebas.md
  *
  * Las pruebas van junto a su código con el nombre `*.prueba.ts` (ver docs/cimientos/ESTRUCTURA.md).
+ * Dos proyectos: «calculos», sin base, y «base», que levanta un Postgres 18 con Testcontainers una vez
+ * por corrida y le da a cada archivo su copia de la plantilla.
  */
 import { defineConfig } from "vitest/config";
 
+/** Nada dentro de node_modules, de git ni de los worktrees de los trabajadores. */
+const fuera = ["**/node_modules/**", "**/.git/**", ".claude/worktrees/**"];
+
 export default defineConfig({
 	test: {
-		// Solo los archivos de prueba con el nombre de Unifórmame; nada dentro de node_modules ni de los worktrees.
-		include: ["**/*.prueba.ts", "**/*.prueba.tsx"],
-		exclude: ["**/node_modules/**", "**/.git/**", ".claude/worktrees/**"],
+		projects: [
+			{
+				test: {
+					name: "calculos",
+					include: ["packages/**/*.prueba.ts", "scripts/**/*.prueba.ts"],
+					exclude: fuera,
+				},
+			},
+			{
+				test: {
+					name: "base",
+					include: ["apps/**/*.prueba.ts", "pruebas/**/*.prueba.ts"],
+					exclude: fuera,
+					globalSetup: ["apps/api/src/nucleo/base/plantilla-de-pruebas.ts"],
+					testTimeout: 30_000,
+					hookTimeout: 180_000,
+				},
+			},
+		],
 	},
 });

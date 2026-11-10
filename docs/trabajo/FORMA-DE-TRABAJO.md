@@ -71,13 +71,13 @@ echo "Unifórmame: Node $(node --version) · pnpm $(pnpm --version)"
 ```
 
 - **Si cambia la versión de Node o de pnpm** en la arquitectura, el script cambia en el mismo commit y Bruno lo pega otra vez en el entorno. Al cambiarlo, la nube vuelve a armar el entorno.
-- **Al empezar cada sesión en la nube,** el gancho de inicio de `.claude/settings.json` corre `pnpm install`, que deja activo el gancho de git. Fuera de la nube no hace nada.
+- **Al empezar cada sesión en la nube,** el gancho de inicio de `.claude/settings.json` corre `pnpm install`, que deja activo el gancho de git, y arranca el daemon de Docker si no responde: la máquina lo trae instalado pero sin correr (decisión 333). Fuera de la nube no hace nada.
 - **Lo que le falte a la máquina** (otra herramienta, la imagen de Postgres para no bajarla en cada sesión) se agrega a este script: Claude Code le da a Bruno las líneas exactas. Lo que se instala a mano dentro de una sesión se pierde con ella.
 - **Ningún secreto** va en el script ni en las variables del entorno: cualquiera que use el entorno los puede leer.
 
 ### Las ramas en la nube
 
-- **La rama de la fase** es la que la nube le da a la sesión que empieza la fase. Se anota en el archivo de la sesión.
+- **La rama de la fase** es la que la nube le da a la sesión que empieza la fase. Se anota en el archivo de la sesión. Si la misma sesión sigue con la fase siguiente, sigue en esa rama, y `main` avanza a su punta al cerrar cada fase (decisión 332).
 - **Si la fase sigue en otra sesión,** Bruno la abre sobre la rama de la fase, y el trabajo sigue en esa misma rama aunque la nube proponga otra.
 - **Cada commit se empuja a GitHub en seguida.** Cuando una sesión se queda quieta, la nube puede reciclar su máquina, y lo que no se empujó se pierde. Por eso el commit de cada parte se empuja antes de esperar el visto bueno de Bruno: él lo revisa en el panel de cambios de la sesión, y lo que pida va en otro commit de la misma parte.
 - **El cierre:** con el visto bueno de Bruno, Claude Code une la rama con `main` en la máquina de la sesión, con un merge que conserva los commits, corre la revisión completa sobre esa unión y empuja `main`. Nada llega a `main` sin ese visto bueno, ninguna rama se borra y nada se reescribe.
@@ -241,7 +241,7 @@ Las reglas completas están en la [regla de código](../../.claude/rules/codigo.
 
 | Gancho | Evento | Script | Qué hace |
 |---|---|---|---|
-| De inicio | `SessionStart` (`startup` y `resume`) | `scripts/gancho-inicio.ts` | Con `CLAUDE_CODE_REMOTE=true` (la nube), corre `pnpm install --frozen-lockfile`, que instala el lockfile tal cual y, con el `prepare`, deja `core.hooksPath` en `.githooks`. Fuera de la nube no hace nada |
+| De inicio | `SessionStart` (`startup` y `resume`) | `scripts/gancho-inicio.ts` | Con `CLAUDE_CODE_REMOTE=true` (la nube), corre `pnpm install --frozen-lockfile`, que instala el lockfile tal cual y, con el `prepare`, deja `core.hooksPath` en `.githooks`; si `docker info` falla, arranca `dockerd` aparte y espera hasta un minuto a que responda. Fuera de la nube no hace nada |
 | Después de editar | `PostToolUse` de `Edit`, `Write` y `NotebookEdit` | `scripts/gancho-edicion.ts` | Corre la revisión rápida; en rojo sale con el código 2 y Claude ve el final de la salida |
 | De fin | `Stop` | `scripts/gancho-fin.ts` | Corre la revisión rápida y cuenta los intentos por problema (abajo) |
 

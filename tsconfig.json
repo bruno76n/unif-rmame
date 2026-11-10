@@ -3,5 +3,12 @@
 	"compilerOptions": {
 		"types": ["node"]
 	},
-	"include": ["*.ts", "scripts/**/*.ts", "packages/*/src/**/*.ts"]
+	"include": [
+		"*.ts",
+		"scripts/**/*.ts",
+		"packages/*/src/**/*.ts",
+		"apps/*/*.ts",
+		"apps/*/src/**/*.ts",
+		"pruebas/**/*.ts"
+	]
 }

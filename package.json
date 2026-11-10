@@ -14,7 +14,10 @@
 		"pruebas": "vitest run",
 		"revision:rapida": "node scripts/revision-rapida.ts",
 		"revision": "node scripts/revision.ts",
-		"docs:revisar": "node scripts/docs-revisar.ts"
+		"docs:revisar": "node scripts/docs-revisar.ts",
+		"base:generar": "pnpm --filter @uniformame/api base:generar",
+		"base:migrar": "pnpm --filter @uniformame/api base:migrar",
+		"local": "pnpm --filter @uniformame/api local"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.6.6",

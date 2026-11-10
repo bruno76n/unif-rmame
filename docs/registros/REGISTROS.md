@@ -59,3 +59,10 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 10 nov 2026 | 1 | Cómo cuenta y avisa el gancho de fin (decisión 326) | Solo avisar · no dejar terminar en rojo y pedir el protocolo al tercer intento | La segunda: cada intento queda contado y el protocolo llega dentro del turno | No |
 | 10 nov 2026 | 1 | La mitad en los negativos (decisión 327) | Hacia +∞ (−0.5 → 0) · lejos del cero (−0.5 → −1) | Lejos del cero: una devolución regresa exactamente lo que se cobró y la pantalla coincide con lo que se guarda | No |
 | 10 nov 2026 | 1 | Cómo encontrar las credenciales de R2 (decisión 328) | Por formato (hexadecimal de 32 y 64) · por su variable con valor | Por su variable: por formato confundiría cualquier hash | No |
+| 10 nov 2026 | 2 | Ningún script al instalar (decisión 330) | Aprobarlos · negarlos | Negarlos: ninguno hace falta y es lo más seguro | No |
+| 10 nov 2026 | 2 | La rama de las fases siguientes (decisión 332) | Pedir otra rama · seguir en la de la sesión | Seguir: es la única que la nube deja empujar | No |
+| 10 nov 2026 | 2 | Docker en la nube (decisión 333) | Pedirlo en el script del entorno · arrancarlo en el gancho de inicio | El gancho: el script del entorno no debe dejar daemons, y el gancho ya es solo de la nube | No |
+| 10 nov 2026 | 2 | La base de las pruebas antes (decisión 334) | Probar las partes 1 a 3 sin base · traer la base de pruebas a la parte 1 | Traerla: las pruebas piden Postgres real | No |
+| 10 nov 2026 | 2 | El rol de la app y su clave (decisión 335) | Clave en la migración · rol sin entrada y clave por máquina | Sin entrada: ningún secreto en el código | No |
+| 10 nov 2026 | 2 | Tres avisos moderados de `pnpm audit` en dependencias indirectas (decisión 336) | Bajar el nivel del audit · `overrides` con las versiones corregidas | `overrides`: bajar el nivel sería debilitar la revisión | No |
+
