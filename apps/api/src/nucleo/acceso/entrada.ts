@@ -19,7 +19,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import type { FastifyInstance, FastifyPluginAsync, FastifyReply, FastifyRequest } from "fastify";
 import { Temporal } from "temporal-polyfill";
 import { z } from "zod";
-import { cerrarSesionesDe } from "../../modulos/admin/dominio/cuentas.ts";
+import { avisarSesionesCerradas, cerrarSesionesDe } from "../../modulos/admin/dominio/cuentas.ts";
 import { sesiones, usuarios } from "../../modulos/admin/tablas.ts";
 import { crearContexto, type ServiciosDelCorredor } from "../acciones/corredor.ts";
 import type { Base } from "../base/conexion.ts";
@@ -85,7 +85,8 @@ function traeCaracterDeControl(texto: string): boolean {
 export function rutaInterna(regresar: string | undefined, dominioWeb: string): string {
 	if (regresar === undefined || !regresar.startsWith("/") || traeCaracterDeControl(regresar)) return "/";
 	const resuelta = new URL(regresar, dominioWeb);
-	if (resuelta.origin !== new URL(dominioWeb).origin) return "/";
+	// Con segmentos de punto (`/.//otro.com`), la ruta resuelta puede empezar con `//`: tampoco vale.
+	if (resuelta.origin !== new URL(dominioWeb).origin || resuelta.pathname.startsWith("//")) return "/";
 	return `${resuelta.pathname}${resuelta.search}${resuelta.hash}`;
 }
 
@@ -103,7 +104,10 @@ function registrarEntrada(app: FastifyInstance, dependencias: DependenciasDeLaEn
 
 	/** La pantalla de la web a la que se regresa, con su error. */
 	const enLaWeb = (ruta: string, error?: string, fragmento?: string): string => {
-		const direccion = new URL(ruta, dependencias.dominioWeb);
+		// La ruta ya se revisó al guardarla; aun así, si la dirección no queda en la web, se regresa a su raíz.
+		const enLaMisma = new URL(ruta, dependencias.dominioWeb);
+		const direccion =
+			enLaMisma.origin === new URL(dependencias.dominioWeb).origin ? enLaMisma : new URL("/", dependencias.dominioWeb);
 		if (error !== undefined) direccion.searchParams.set("error", error);
 		if (fragmento !== undefined) direccion.hash = fragmento;
 		return direccion.toString();
@@ -271,14 +275,15 @@ function registrarEntrada(app: FastifyInstance, dependencias: DependenciasDeLaEn
 				});
 				return undefined;
 			}
-			if (anterior !== undefined) {
-				await cerrarSesionesDe(transaccion, anterior.usuarioId, {
-					motivo: "salio",
-					cerradaPor: anterior.usuarioId,
-					ahora: ahora.toString(),
-					solo: anterior.sesionId,
-				});
-			}
+			const cerradas =
+				anterior === undefined
+					? []
+					: await cerrarSesionesDe(transaccion, anterior.usuarioId, {
+							motivo: "salio",
+							cerradaPor: anterior.usuarioId,
+							ahora: ahora.toString(),
+							solo: anterior.sesionId,
+						});
 			const abierta = await abrirSesion(
 				transaccion,
 				usuarioId,
@@ -295,6 +300,8 @@ function registrarEntrada(app: FastifyInstance, dependencias: DependenciasDeLaEn
 			if (quien === undefined) throw new Error("la cuenta bloqueada para entrar dejó de estar activa");
 			await conContexto(transaccion, quien, ahora, (contexto) => {
 				contexto.bitacora({ tipo: "acceso", departamento: "admin", descripcion: "Entró al sistema", ip });
+				// La sesión que traía el navegador se cerró: a sus pantallas les llega `sesion_cerrada`.
+				if (anterior !== undefined) avisarSesionesCerradas(contexto, anterior.usuarioId, cerradas, "salio");
 				contexto.guardarEvento({
 					tipo: "sesion.abierta",
 					datos: { usuario_id: usuarioId, sesion_id: abierta.sesionId },

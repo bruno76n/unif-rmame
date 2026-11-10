@@ -75,6 +75,12 @@ interface Conexion {
 	tablasQueLeTocan: (tablas: readonly string[], ubicacionIds: readonly string[]) => string[];
 	/** Vuelve a identificar a quien se conectó, sin contar como actividad; `undefined` si ya no vale. */
 	revisar: (() => Promise<QuienLlama | undefined>) | undefined;
+	/** La última revisión que empezó: solo vale el resultado de la más nueva. */
+	revision: number;
+	/** Si hay una revisión en curso: el latido no empieza otra encima. */
+	enRevision: boolean;
+	/** Si ya le llegó `sesion_cerrada`, para no mandarlo dos veces. */
+	avisadaDelCierre: boolean;
 }
 
 /** Los eventos que cambian lo que puede una cuenta: tras ellos se revisan sus conexiones. */
@@ -134,30 +140,47 @@ export function crearAvisosEnVivo(dependencias: DependenciasDeLosAvisosEnVivo) {
 	}
 
 	/**
-	 * Vuelve a revisar una conexión: si su sesión ya no vale (cerrada, vencida, sin acceso), la corta; si
-	 * vale, rearma lo que le toca con sus departamentos de ahora.
+	 * Vuelve a revisar una conexión: si su sesión ya no vale (cerrada, vencida, sin acceso), le manda
+	 * `sesion_cerrada` con su motivo (si no le llegó ya) y la corta; si vale, rearma lo que le toca con sus
+	 * departamentos de ahora. La del latido no empieza si ya hay una en curso; la de un evento de la cuenta sí,
+	 * y entonces el resultado de la anterior se descarta: vale lo que hay después del evento.
+	 * @param conexion La conexión.
+	 * @param porEvento Si la pide un evento de su cuenta.
 	 */
-	async function revisarConexion(conexion: Conexion): Promise<void> {
+	async function revisarConexion(conexion: Conexion, porEvento: boolean): Promise<void> {
 		if (conexion.revisar === undefined || !abiertas.has(conexion)) return;
-		const quien = await conexion.revisar();
-		if (quien === undefined) {
-			abiertas.delete(conexion);
-			// La pantalla sabe por qué: el motivo con que se cerró su sesión.
-			const [cerrada] =
-				conexion.sesionId === undefined
-					? []
-					: await dependencias.base
-							.select({ motivo: sesiones.motivoCierre })
-							.from(sesiones)
-							.where(eq(sesiones.id, conexion.sesionId));
-			if (conexion.sesionId !== undefined) {
-				conexion.salida.escribir(formatoDeEvento("sesion_cerrada", { motivo: cerrada?.motivo ?? "sin_sesion" }));
+		if (conexion.enRevision && !porEvento) return;
+		conexion.revision += 1;
+		conexion.enRevision = true;
+		const esta = conexion.revision;
+		let quien: QuienLlama | undefined;
+		try {
+			quien = await conexion.revisar();
+		} finally {
+			if (conexion.revision === esta) conexion.enRevision = false;
+		}
+		if (!abiertas.has(conexion) || conexion.revision !== esta) return;
+		if (quien !== undefined) {
+			const alcance = quien.tipo === "aparato" ? await dependencias.alcanceDelAparato(quien) : undefined;
+			if (abiertas.has(conexion) && conexion.revision === esta) {
+				conexion.tablasQueLeTocan = filtroDe(quien, dependencias.registro.lectores, alcance);
 			}
-			conexion.salida.terminar();
 			return;
 		}
-		const alcance = quien.tipo === "aparato" ? await dependencias.alcanceDelAparato(quien) : undefined;
-		conexion.tablasQueLeTocan = filtroDe(quien, dependencias.registro.lectores, alcance);
+		// Sale de las abiertas antes de esperar: ninguna otra revisión la vuelve a cortar.
+		abiertas.delete(conexion);
+		try {
+			if (conexion.sesionId !== undefined && !conexion.avisadaDelCierre) {
+				// La pantalla sabe por qué: el motivo con que se cerró su sesión.
+				const [cerrada] = await dependencias.base
+					.select({ motivo: sesiones.motivoCierre })
+					.from(sesiones)
+					.where(eq(sesiones.id, conexion.sesionId));
+				conexion.salida.escribir(formatoDeEvento("sesion_cerrada", { motivo: cerrada?.motivo ?? "sin_sesion" }));
+			}
+		} finally {
+			conexion.salida.terminar();
+		}
 	}
 
 	/** Lee el evento que avisó el worker y manda `cambios` a quien le toca, y lo que declaren los módulos. */
@@ -179,7 +202,9 @@ export function crearAvisosEnVivo(dependencias: DependenciasDeLosAvisosEnVivo) {
 		);
 		for (const conexion of abiertas) {
 			for (const envio of envios) {
-				if (vaA(conexion, envio.para)) conexion.salida.escribir(formatoDeEvento(envio.nombre, envio.datos));
+				if (!vaA(conexion, envio.para)) continue;
+				conexion.salida.escribir(formatoDeEvento(envio.nombre, envio.datos));
+				if (envio.nombre === "sesion_cerrada") conexion.avisadaDelCierre = true;
 			}
 			const tablas = conexion.tablasQueLeTocan(evento.tablas, evento.ubicacionIds);
 			if (tablas.length === 0) continue;
@@ -197,8 +222,10 @@ export function crearAvisosEnVivo(dependencias: DependenciasDeLosAvisosEnVivo) {
 		// departamentos), sus conexiones se revisan ya: lo que la pantalla haga no cuenta como permiso.
 		const cuenta = deUnaCuenta.safeParse(evento.datos);
 		if (tocanALaCuenta.test(evento.tipo) && cuenta.success) {
-			for (const conexion of [...abiertas]) {
-				if (conexion.usuarioId === cuenta.data.usuario_id) await revisarConexion(conexion);
+			const suyas = [...abiertas].filter((conexion) => conexion.usuarioId === cuenta.data.usuario_id);
+			const revisadas = await Promise.allSettled(suyas.map((conexion) => revisarConexion(conexion, true)));
+			for (const revisada of revisadas) {
+				if (revisada.status === "rejected") dependencias.anotarError(revisada.reason);
 			}
 		}
 	}
@@ -232,7 +259,7 @@ export function crearAvisosEnVivo(dependencias: DependenciasDeLosAvisosEnVivo) {
 			latido = setInterval(() => {
 				for (const conexion of abiertas) {
 					conexion.salida.escribir(": latido\n\n");
-					revisarConexion(conexion).catch(dependencias.anotarError);
+					revisarConexion(conexion, false).catch(dependencias.anotarError);
 				}
 			}, dependencias.latidoMs ?? latidoPorOmision);
 		},
@@ -268,6 +295,9 @@ export function crearAvisosEnVivo(dependencias: DependenciasDeLosAvisosEnVivo) {
 				dispositivoId: quien.tipo === "aparato" ? quien.dispositivoId : undefined,
 				tablasQueLeTocan: filtroDe(quien, dependencias.registro.lectores, alcance),
 				revisar,
+				revision: 0,
+				enRevision: false,
+				avisadaDelCierre: false,
 			};
 			salida.escribir(`retry: ${esperaParaReconectar}\n\n`);
 			salida.escribir(

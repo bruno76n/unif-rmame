@@ -206,6 +206,9 @@ describe("una cuenta activa entra con Google y su sesión queda solo como hash; 
 			"/\r/malo.invalid",
 			"/\\malo.invalid",
 			"https://malo.invalid/",
+			"/.//malo.invalid/robar",
+			"/a/..//malo.invalid",
+			"/%2e//malo.invalid",
 		]) {
 			const vuelta = await entrarConGoogle(servidor, simulador, gloria, {
 				regresar,

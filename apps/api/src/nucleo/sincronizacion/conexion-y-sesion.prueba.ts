@@ -8,9 +8,10 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { hashDe, nuevoIdentificador } from "../acceso/cookies.ts";
 import { crearBase } from "../base/conexion.ts";
 import { enAccionDePrueba } from "../pruebas/accion-de-prueba.ts";
-import { cuentaDePrueba } from "../pruebas/cuentas-de-prueba.ts";
+import { cuentaDePrueba, quienesDePrueba } from "../pruebas/cuentas-de-prueba.ts";
 import { escuchar, esperarA, procesarComoElWorker } from "../pruebas/en-vivo.ts";
 import { crearServidorDePrueba, dominios, type ServidorDePrueba } from "../pruebas/servidor-de-prueba.ts";
+import { crearAvisosEnVivo } from "./eventos-en-vivo.ts";
 
 describe("quitar el acceso corta al momento las conexiones en vivo de la cuenta; cambiar sus departamentos cambia lo que les llega; una sesión inactiva se corta con el latido", () => {
 	let servidor: ServidorDePrueba;
@@ -93,9 +94,10 @@ describe("quitar el acceso corta al momento las conexiones en vivo de la cuenta;
 		await comoLaDuena("admin.quitar_acceso", { usuario_id: usuarioId }, await versionDe(usuarioId));
 		await procesarComoElWorker(servidor);
 		await esperarA(() => conexion.cortada());
-		expect(conexion.eventos().find((evento) => evento.nombre === "sesion_cerrada")?.datos).toEqual({
-			motivo: "acceso_quitado",
-		});
+		// Una sola vez, aunque la mande el evento y la revisión que corta la conexión.
+		expect(conexion.eventos().filter((evento) => evento.nombre === "sesion_cerrada")).toEqual([
+			{ nombre: "sesion_cerrada", datos: { motivo: "acceso_quitado" } },
+		]);
 		const antes = conexion.bloques.length;
 		await avisarA(usuarioId, "Un aviso que ya no le debe llegar");
 		await new Promise((listo) => setTimeout(listo, 200));
@@ -165,5 +167,36 @@ describe("quitar el acceso corta al momento las conexiones en vivo de la cuenta;
 		expect(despues[0]?.ultima_actividad_en).toEqual(antes[0]?.ultima_actividad_en);
 		expect(conexion.cortada()).toBe(false);
 		conexion.cerrar();
+	});
+
+	it("aunque las revisiones se encimen (un latido tras otro mientras la base tarda), la conexión se corta una sola vez", async () => {
+		let terminadas = 0;
+		const escritos: string[] = [];
+		const avisos = crearAvisosEnVivo({
+			conexiones: servidor.base.app,
+			base: crearBase(servidor.base.app),
+			registro: servidor.modulos,
+			alcanceDelAparato: async () => ({ tablas: [], ubicacionIds: [] }),
+			intervaloDeSincronizacion: async () => 30,
+			anotarError: () => undefined,
+			latidoMs: 5,
+		});
+		await avisos.iniciar();
+		try {
+			const quien = quienesDePrueba.ventas;
+			if (quien === undefined) throw new Error("falta la cuenta de prueba");
+			await avisos.conectar(
+				quien,
+				{ escribir: (texto) => escritos.push(texto), terminar: () => terminadas++ },
+				{},
+				() => new Promise((listo) => setTimeout(() => listo(undefined), 30)),
+			);
+			await esperarA(() => terminadas > 0);
+			await new Promise((listo) => setTimeout(listo, 100));
+			expect(terminadas).toBe(1);
+			expect(escritos.filter((texto) => texto.startsWith("event: sesion_cerrada"))).toHaveLength(1);
+		} finally {
+			await avisos.cerrar();
+		}
 	});
 });

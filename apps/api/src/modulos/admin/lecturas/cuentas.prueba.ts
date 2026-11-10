@@ -82,23 +82,30 @@ describe("los departamentos efectivos: la dueña, todos; las demás, los suyos s
 
 	it("a la cuenta de soporte no le valen Dirección, Contaduría ni «ven sueldos y tarifas», aunque tuviera esos renglones", async () => {
 		const soporte = cuentaDePrueba("soporte");
-		for (const clave of ["direccion", "contaduria"]) {
-			await servidor.base.dueno.query(
-				`INSERT INTO usuario_departamentos (id, usuario_id, departamento_id)
-				 SELECT gen_random_uuid(), $1, id FROM departamentos WHERE clave = $2`,
-				[soporte, clave],
-			);
-		}
-		await servidor.base.dueno.query(
-			"INSERT INTO permisos_finos (id, usuario_id, permiso) VALUES (gen_random_uuid(), $1, 'ven_sueldos_y_tarifas')",
+		const deDinero = await servidor.base.dueno.query(
+			`INSERT INTO usuario_departamentos (id, usuario_id, departamento_id)
+			 SELECT gen_random_uuid(), $1, id FROM departamentos WHERE clave IN ('direccion', 'contaduria')
+			 RETURNING id`,
 			[soporte],
 		);
-		expect(await leer("admin.permisos_de", { usuario_id: soporte })).toMatchObject({
-			es_soporte: true,
-			departamentos: [{ clave: "admin", ubicacion_id: null }],
-			permisos_finos: [],
-		});
-		expect(await leer("admin.cuentas_por_regla", { regla: "departamento:contaduria" })).not.toContain(soporte);
-		expect(await leer("admin.cuentas_por_regla", { regla: "departamento:direccion" })).not.toContain(soporte);
+		const sueldos = await servidor.base.dueno.query(
+			"INSERT INTO permisos_finos (id, usuario_id, permiso) VALUES (gen_random_uuid(), $1, 'ven_sueldos_y_tarifas') RETURNING id",
+			[soporte],
+		);
+		try {
+			expect(await leer("admin.permisos_de", { usuario_id: soporte })).toMatchObject({
+				es_soporte: true,
+				departamentos: [{ clave: "admin", ubicacion_id: null }],
+				permisos_finos: [],
+			});
+			expect(await leer("admin.cuentas_por_regla", { regla: "departamento:contaduria" })).not.toContain(soporte);
+			expect(await leer("admin.cuentas_por_regla", { regla: "departamento:direccion" })).not.toContain(soporte);
+		} finally {
+			// La base queda como estaba: esos renglones no los puede escribir la app.
+			await servidor.base.dueno.query("DELETE FROM usuario_departamentos WHERE id = ANY($1::uuid[])", [
+				deDinero.rows.map((renglon) => renglon.id),
+			]);
+			await servidor.base.dueno.query("DELETE FROM permisos_finos WHERE id = $1", [sueldos.rows[0]?.id]);
+		}
 	});
 });
