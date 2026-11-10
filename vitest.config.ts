@@ -3,8 +3,9 @@
  * Fase 1 y fase 2 · docs/cimientos/PRUEBAS.md y .claude/rules/pruebas.md
  *
  * Las pruebas van junto a su código con el nombre `*.prueba.ts` (ver docs/cimientos/ESTRUCTURA.md).
- * Dos proyectos: «calculos», sin base, y «base», que levanta un Postgres 18 con Testcontainers una vez
- * por corrida y le da a cada archivo su copia de la plantilla.
+ * Tres proyectos: «calculos», sin base; «base» (el núcleo de la base y la base de las pruebas) y «api»
+ * (el protocolo, el corredor y los módulos), que levantan cada uno un Postgres 18 con Testcontainers una
+ * vez por corrida y le dan a cada archivo su copia de la plantilla.
  */
 import { defineConfig } from "vitest/config";
 
@@ -24,8 +25,18 @@ export default defineConfig({
 			{
 				test: {
 					name: "base",
-					include: ["apps/**/*.prueba.{ts,tsx}", "pruebas/**/*.prueba.{ts,tsx}"],
+					include: ["apps/api/src/nucleo/base/**/*.prueba.{ts,tsx}", "pruebas/**/*.prueba.{ts,tsx}"],
 					exclude: fuera,
+					globalSetup: ["apps/api/src/nucleo/base/plantilla-de-pruebas.ts"],
+					testTimeout: 30_000,
+					hookTimeout: 180_000,
+				},
+			},
+			{
+				test: {
+					name: "api",
+					include: ["apps/**/*.prueba.{ts,tsx}"],
+					exclude: [...fuera, "apps/api/src/nucleo/base/**"],
 					globalSetup: ["apps/api/src/nucleo/base/plantilla-de-pruebas.ts"],
 					testTimeout: 30_000,
 					hookTimeout: 180_000,

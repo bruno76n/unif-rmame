@@ -4,3 +4,4 @@ node_modules
 .revision/
 .claude/worktrees/
 .claude/estado/
+apps/api/.modulos-de-prueba-*/

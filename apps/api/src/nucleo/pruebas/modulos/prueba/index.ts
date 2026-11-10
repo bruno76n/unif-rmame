@@ -1,0 +1,126 @@
+/**
+ * El módulo de prueba de la fase 3: una acción que crea, dos que editan, una interna, una lectura y dos
+ * consultas. Solo lo registran las pruebas (`cargarModulos` de esta carpeta), nunca la API.
+ * Fase 3 · docs/fases/03-api-protocolo-e-idempotencia.md («Cómo se construye»)
+ */
+
+import { asc, eq, gt } from "drizzle-orm";
+import { v7 as uuidv7 } from "uuid";
+import { tomarVersion, versionActual } from "../../../acciones/pisadas.ts";
+import { leerCursor, paginar, recortar } from "../../../http/consultas.ts";
+import { ErrorDeApi, errorDeRegla, noExiste } from "../../../http/errores.ts";
+import { definirModulo, implementarAccion, implementarConsulta } from "../../../modulos.ts";
+import { agregarRenglon, confirmar, crearNota, editarNota, listarNotas, provocar, verNota } from "./contratos.ts";
+import { conteos, notas, renglones } from "./tablas.ts";
+
+export default definirModulo({
+	nombre: "prueba",
+	acciones: [
+		implementarAccion(crearNota, async (contexto, datos) => {
+			if (datos.fallar === "con_regla") throw errorDeRegla("texto_prohibido", "Ese texto no se puede guardar");
+			const id = uuidv7();
+			await contexto.transaccion.insert(notas).values({ id, texto: datos.texto, montoCentavos: datos.monto_centavos });
+			await contexto.interna("prueba.contar", { notaId: id });
+			if (datos.fallar === "despues_de_la_interna") throw new Error("falla de prueba después de la interna");
+			contexto.bitacora({ descripcion: `Creó la nota ${datos.texto}`, entidad: "prueba_notas", entidadId: id });
+			contexto.guardarEvento({ nombre: "nota.creada", datos: { nota_id: id }, tablas: ["prueba_notas"] });
+			return {
+				resultado: { mensaje: `Nota ${datos.texto} creada`, id, ...(datos.con_pin === true ? { pin: "4821" } : {}) },
+				entidad: { nombre: "prueba_notas", id },
+			};
+		}),
+		implementarAccion(editarNota, async (contexto, datos, version) => {
+			await tomarVersion(contexto.transaccion, notas, datos.id, version, async () => {
+				const [actual] = await contexto.transaccion
+					.select({ texto: notas.texto })
+					.from(notas)
+					.where(eq(notas.id, datos.id));
+				return actual;
+			});
+			await contexto.transaccion.update(notas).set({ texto: datos.texto }).where(eq(notas.id, datos.id));
+			contexto.bitacora({
+				descripcion: `Cambió la nota a ${datos.texto}`,
+				entidad: "prueba_notas",
+				entidadId: datos.id,
+			});
+			return {
+				resultado: { mensaje: "Nota guardada", version: await versionActual(contexto.transaccion, notas, datos.id) },
+			};
+		}),
+		implementarAccion(agregarRenglon, async (contexto, datos, version) => {
+			await tomarVersion(contexto.transaccion, notas, datos.nota_id, version, async () => ({ nota_id: datos.nota_id }));
+			await contexto.transaccion
+				.insert(renglones)
+				.values({ id: uuidv7(), notaId: datos.nota_id, cantidad: datos.cantidad });
+			contexto.bitacora({ descripcion: `Agregó ${datos.cantidad} piezas` });
+			return {
+				resultado: {
+					mensaje: "Renglón agregado",
+					version: await versionActual(contexto.transaccion, notas, datos.nota_id),
+				},
+			};
+		}),
+		implementarAccion(confirmar, async () => ({ resultado: { mensaje: "Confirmado" } })),
+		implementarAccion(provocar, async (_contexto, datos) => {
+			if (datos.error === "demasiados_intentos") {
+				throw new ErrorDeApi("demasiados_intentos", null, "Demasiados intentos. Vuelve a intentar a las 10:35.", {
+					reintentar_en: "2026-11-10T16:35:00Z",
+				});
+			}
+			if (datos.error === "no_disponible")
+				throw new ErrorDeApi("no_disponible", null, undefined, { reintentar_en: "2026-11-10T17:00:00Z" });
+			throw new Error("la causa secreta: SELECT * FROM comandos_recibidos");
+		}),
+	],
+	consultas: [
+		implementarConsulta(listarNotas, async (contexto, parametros) => {
+			const limite = parametros.limite ?? 2;
+			const desde = leerCursor(parametros.cursor);
+			const leidas = await contexto.base
+				.select({ id: notas.id, texto: notas.texto, monto_centavos: notas.montoCentavos })
+				.from(notas)
+				.where(desde === undefined ? undefined : gt(notas.id, String(desde.id)))
+				.orderBy(asc(notas.id))
+				.limit(limite + 1);
+			const pagina = paginar(leidas, limite, (nota) => ({ id: nota.id }));
+			const veMontos =
+				contexto.quien.tipo === "cuenta" &&
+				(contexto.quien.esDuena || contexto.quien.permisosFinos.includes("ven_montos"));
+			const recortadas = pagina.renglones.map((nota) => recortar(nota, veMontos ? [] : ["monto_centavos"]));
+			return {
+				resultado: {
+					...pagina,
+					renglones: recortadas.map((r) => ({
+						id: String(r.objeto.id),
+						texto: String(r.objeto.texto),
+						...(typeof r.objeto.monto_centavos === "number" ? { monto_centavos: r.objeto.monto_centavos } : {}),
+					})),
+				},
+				recortado: [...new Set(recortadas.flatMap((r) => r.recortado))],
+			};
+		}),
+		implementarConsulta(verNota, async (contexto, parametros) => {
+			const [nota] = await contexto.base
+				.select({ id: notas.id, texto: notas.texto, version: notas.version })
+				.from(notas)
+				.where(eq(notas.id, parametros.id));
+			const esDuena = contexto.quien.tipo === "cuenta" && contexto.quien.esDuena;
+			if (nota === undefined || (nota.texto.startsWith("privada") && !esDuena)) throw noExiste();
+			return { resultado: nota };
+		}),
+	],
+	internas: {
+		contar: async (contexto, datos) => {
+			const notaId = typeof datos === "object" && datos !== null && "notaId" in datos ? String(datos.notaId) : "";
+			await contexto.transaccion.insert(conteos).values({ id: uuidv7(), notaId });
+			return undefined;
+		},
+	},
+	lecturas: {
+		texto: async (contexto, datos) => {
+			const id = typeof datos === "object" && datos !== null && "id" in datos ? String(datos.id) : "";
+			const [nota] = await contexto.transaccion.select({ texto: notas.texto }).from(notas).where(eq(notas.id, id));
+			return nota?.texto;
+		},
+	},
+});

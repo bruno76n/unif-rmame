@@ -18,7 +18,8 @@
 		"base:generar": "pnpm --filter @uniformame/api base:generar",
 		"base:migrar": "pnpm --filter @uniformame/api base:migrar",
 		"local": "pnpm --filter @uniformame/api local",
-		"base:sembrar": "pnpm --filter @uniformame/api base:sembrar"
+		"base:sembrar": "pnpm --filter @uniformame/api base:sembrar",
+		"api:documentar": "pnpm --filter @uniformame/api api:documentar"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.6.6",

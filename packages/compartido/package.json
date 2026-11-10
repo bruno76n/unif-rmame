@@ -6,10 +6,16 @@
 	"exports": {
 		"./tipos/base": "./src/tipos/base.ts",
 		"./calculos/dinero": "./src/calculos/dinero.ts",
-		"./calculos/fechas": "./src/calculos/fechas.ts"
+		"./calculos/fechas": "./src/calculos/fechas.ts",
+		"./contratos/definir": "./src/contratos/definir.ts",
+		"./contratos/protocolo": "./src/contratos/protocolo.ts",
+		"./contratos/versiones": "./src/contratos/versiones.ts",
+		"./cliente/cliente": "./src/cliente/cliente.ts"
 	},
 	"dependencies": {
-		"temporal-polyfill": "1.0.8"
+		"temporal-polyfill": "1.0.8",
+		"uuid": "14.0.3",
+		"zod": "4.6.7"
 	},
 	"devDependencies": {
 		"fast-check": "4.10.2"

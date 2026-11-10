@@ -1,0 +1,304 @@
+{
+	"id": "17de40f5-b794-40b1-b2a9-0bebfbf733bf",
+	"prevId": "d9874f65-bd6e-4a7a-b976-cc85ac58c305",
+	"version": "7",
+	"dialect": "postgresql",
+	"tables": {
+		"public.comandos_recibidos": {
+			"name": "comandos_recibidos",
+			"schema": "",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "uuid",
+					"primaryKey": true,
+					"notNull": true
+				},
+				"clave_idempotencia": {
+					"name": "clave_idempotencia",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"origen": {
+					"name": "origen",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"dispositivo_id": {
+					"name": "dispositivo_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"usuario_id": {
+					"name": "usuario_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"sesion_id": {
+					"name": "sesion_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"persona_id": {
+					"name": "persona_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"tipo_comando": {
+					"name": "tipo_comando",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"ocurrido_en": {
+					"name": "ocurrido_en",
+					"type": "timestamp with time zone",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"recibido_en": {
+					"name": "recibido_en",
+					"type": "timestamp with time zone",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				},
+				"carga_hash": {
+					"name": "carga_hash",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"carga": {
+					"name": "carga",
+					"type": "jsonb",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"resultado": {
+					"name": "resultado",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"motivo_apartado": {
+					"name": "motivo_apartado",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"espera_entidad_id": {
+					"name": "espera_entidad_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"dispositivo_revocado": {
+					"name": "dispositivo_revocado",
+					"type": "boolean",
+					"primaryKey": false,
+					"notNull": true,
+					"default": false
+				},
+				"excepcion_id": {
+					"name": "excepcion_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"entidad": {
+					"name": "entidad",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"entidad_id": {
+					"name": "entidad_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"respuesta": {
+					"name": "respuesta",
+					"type": "jsonb",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"reintentos": {
+					"name": "reintentos",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": true,
+					"default": 0
+				},
+				"ultimo_reintento_en": {
+					"name": "ultimo_reintento_en",
+					"type": "timestamp with time zone",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"descartado_en": {
+					"name": "descartado_en",
+					"type": "timestamp with time zone",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"descartado_por": {
+					"name": "descartado_por",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"motivo_descarte": {
+					"name": "motivo_descarte",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"retenido_aplicado_en": {
+					"name": "retenido_aplicado_en",
+					"type": "timestamp with time zone",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"retenido_aplicado_por": {
+					"name": "retenido_aplicado_por",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"actualizado_en": {
+					"name": "actualizado_en",
+					"type": "timestamp with time zone",
+					"primaryKey": false,
+					"notNull": false
+				}
+			},
+			"indexes": {
+				"comandos_recibidos_clave_idempotencia": {
+					"name": "comandos_recibidos_clave_idempotencia",
+					"columns": [
+						{
+							"expression": "clave_idempotencia",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": true,
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				},
+				"comandos_recibidos_dispositivo": {
+					"name": "comandos_recibidos_dispositivo",
+					"columns": [
+						{
+							"expression": "dispositivo_id",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						},
+						{
+							"expression": "recibido_en",
+							"isExpression": false,
+							"asc": false,
+							"nulls": "last"
+						}
+					],
+					"isUnique": false,
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				},
+				"comandos_recibidos_apartados": {
+					"name": "comandos_recibidos_apartados",
+					"columns": [
+						{
+							"expression": "recibido_en",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": false,
+					"where": "\"comandos_recibidos\".\"resultado\" = 'apartado' and \"comandos_recibidos\".\"descartado_en\" is null",
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				},
+				"comandos_recibidos_espera": {
+					"name": "comandos_recibidos_espera",
+					"columns": [
+						{
+							"expression": "espera_entidad_id",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": false,
+					"where": "\"comandos_recibidos\".\"espera_entidad_id\" is not null",
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				}
+			},
+			"foreignKeys": {},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {},
+			"policies": {},
+			"checkConstraints": {
+				"comandos_recibidos_origen": {
+					"name": "comandos_recibidos_origen",
+					"value": "\"comandos_recibidos\".\"origen\" in ('web', 'aparato', 'linea')"
+				},
+				"comandos_recibidos_resultado": {
+					"name": "comandos_recibidos_resultado",
+					"value": "\"comandos_recibidos\".\"resultado\" in ('aplicado', 'excepcion', 'apartado')"
+				},
+				"comandos_recibidos_dispositivo_obligatorio": {
+					"name": "comandos_recibidos_dispositivo_obligatorio",
+					"value": "\"comandos_recibidos\".\"origen\" = 'web' or \"comandos_recibidos\".\"dispositivo_id\" is not null"
+				},
+				"comandos_recibidos_cuenta_obligatoria": {
+					"name": "comandos_recibidos_cuenta_obligatoria",
+					"value": "\"comandos_recibidos\".\"origen\" <> 'web' or (\"comandos_recibidos\".\"usuario_id\" is not null and \"comandos_recibidos\".\"sesion_id\" is not null)"
+				},
+				"comandos_recibidos_motivo_apartado": {
+					"name": "comandos_recibidos_motivo_apartado",
+					"value": "\"comandos_recibidos\".\"resultado\" <> 'apartado' or \"comandos_recibidos\".\"motivo_apartado\" is not null"
+				}
+			},
+			"isRLSEnabled": false
+		}
+	},
+	"enums": {},
+	"schemas": {},
+	"sequences": {
+		"public.version_global": {
+			"name": "version_global",
+			"schema": "public",
+			"increment": "1",
+			"startWith": "1",
+			"minValue": "1",
+			"maxValue": "9223372036854775807",
+			"cache": "1",
+			"cycle": false
+		}
+	},
+	"roles": {},
+	"policies": {},
+	"views": {},
+	"_meta": {
+		"columns": {},
+		"schemas": {},
+		"tables": {}
+	}
+}

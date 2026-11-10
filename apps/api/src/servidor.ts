@@ -1,0 +1,231 @@
+/**
+ * El servidor de la API: Fastify con las rutas de las acciones y las consultas que registran los módulos.
+ * Fase 3 · docs/cimientos/API.md y docs/cimientos/MODULOS.md («Cómo corre una acción»)
+ *
+ * Cada acción es `POST /v1/acciones/{modulo}.{accion}` y cada consulta `GET /v1/consultas/{modulo}.{consulta}`,
+ * con su contrato como esquema: de ahí salen la validación y `openapi.json`. Antes de la acción corren,
+ * en orden, quién llama, la versión de la app (y el `Origin`), la forma y el permiso; luego el corredor.
+ */
+
+import cors from "@fastify/cors";
+import helmet from "@fastify/helmet";
+import fastifySwagger from "@fastify/swagger";
+import scalar from "@scalar/fastify-api-reference";
+import { diaDeNegocio } from "@uniformame/compartido/calculos/fechas";
+import type { Permiso } from "@uniformame/compartido/contratos/definir";
+import { cuerpoDeAccion, respuestaDeAccion, respuestaDeConsulta } from "@uniformame/compartido/contratos/protocolo";
+import { type App, compararVersiones, versionMinima } from "@uniformame/compartido/contratos/versiones";
+import { sql } from "drizzle-orm";
+import Fastify, { type FastifyBaseLogger, type FastifyRequest } from "fastify";
+import {
+	jsonSchemaTransform,
+	serializerCompiler,
+	validatorCompiler,
+	type ZodTypeProvider,
+} from "fastify-type-provider-zod";
+import { Temporal } from "temporal-polyfill";
+import { z } from "zod";
+import { appDe, type QuienLlama } from "./nucleo/acceso/quien.ts";
+import { type CuerpoDeAccion, correrAccion, type ServiciosDelCorredor } from "./nucleo/acciones/corredor.ts";
+import type { Base } from "./nucleo/base/conexion.ts";
+import type { Entorno } from "./nucleo/entorno.ts";
+import { ErrorDeApi, responderError } from "./nucleo/http/errores.ts";
+import type { RegistroDeModulos } from "./nucleo/modulos.ts";
+
+declare module "fastify" {
+	interface FastifyRequest {
+		/** Quién llama, cuando ya se identificó. */
+		quien: QuienLlama | undefined;
+	}
+}
+
+// Los mensajes de validación de Zod, en español.
+z.config(z.locales.es());
+
+/** El tamaño máximo del cuerpo de una petición (ver docs/cimientos/SEGURIDAD.md, «Los límites»). */
+const tamanoMaximoDelCuerpo = 1024 * 1024;
+
+/** Lo que el servidor pide a los módulos que todavía no llegan: quién llama, el permiso y la versión del parámetro. */
+export interface ServiciosDelServidor extends ServiciosDelCorredor {
+	/** La sesión o la llave del aparato (fases 5 y 6); `undefined` si no hay. */
+	identificar: (peticion: FastifyRequest) => Promise<QuienLlama | undefined>;
+	/** Revisa el permiso del contrato (fase 5); lanza `403` o `401` si falta. */
+	revisarPermiso: (quien: QuienLlama, permiso: Permiso, ahora: Temporal.Instant) => Promise<void>;
+	/** La versión mínima del parámetro de la dueña (fase 4). */
+	versionMinimaDelParametro: (app: App) => Promise<string>;
+}
+
+/** Lo que necesita el servidor. */
+export interface DependenciasDelServidor {
+	entorno: Pick<Entorno, "ENTORNO" | "DOMINIO_WEB" | "DOMINIO_TALLER">;
+	base: Base;
+	registro: RegistroDeModulos;
+	servicios: ServiciosDelServidor;
+	/** El registro técnico (pino); las pruebas pasan uno que guarda lo que escribe. */
+	registroTecnico?: FastifyBaseLogger;
+	/** De dónde sale «ahora»; las pruebas la fijan. */
+	reloj?: () => Temporal.Instant;
+}
+
+/**
+ * Arma el servidor con las rutas de todo lo registrado.
+ * @param dependencias La base, los módulos, los servicios y el entorno.
+ * @returns El servidor de Fastify, listo para `listen` o para `inject` en las pruebas.
+ */
+export async function crearServidor(dependencias: DependenciasDelServidor) {
+	const { entorno, base, registro, servicios } = dependencias;
+	const reloj = dependencias.reloj ?? (() => Temporal.Now.instant());
+	const app = Fastify({
+		bodyLimit: tamanoMaximoDelCuerpo,
+		...(dependencias.registroTecnico === undefined
+			? { logger: true }
+			: { loggerInstance: dependencias.registroTecnico }),
+	}).withTypeProvider<ZodTypeProvider>();
+	app.setValidatorCompiler(validatorCompiler);
+	app.setSerializerCompiler(serializerCompiler);
+	app.decorateRequest("quien", undefined);
+
+	// Los dos sitios del navegador: la web con su cookie y la tablet sin ella. Ningún comodín.
+	await app.register(cors, {
+		delegator: (peticion, listo) => {
+			const origen = peticion.headers.origin;
+			if (origen === entorno.DOMINIO_WEB) listo(null, { origin: origen, credentials: true });
+			else if (origen === entorno.DOMINIO_TALLER) listo(null, { origin: origen, credentials: false });
+			else listo(null, { origin: false });
+		},
+	});
+	await app.register(helmet, {
+		contentSecurityPolicy: false,
+		hsts: { maxAge: 31_536_000, includeSubDomains: true },
+		referrerPolicy: { policy: "no-referrer" },
+		crossOriginResourcePolicy: { policy: "same-site" },
+	});
+	await app.register(fastifySwagger, {
+		openapi: {
+			info: { title: "API de Unifórmame", version: "1.0.0", description: "Acciones y consultas de Unifórmame" },
+		},
+		transform: jsonSchemaTransform,
+	});
+	if (entorno.ENTORNO === "local") await app.register(scalar, { routePrefix: "/v1/documentacion" });
+
+	app.setErrorHandler((error, peticion, respuesta) => {
+		const { estado, cuerpo } = responderError(error, peticion.log);
+		return respuesta.code(estado).header("cache-control", "no-store").send(cuerpo);
+	});
+	app.setNotFoundHandler((_peticion, respuesta) => {
+		const error = new ErrorDeApi("no_existe");
+		return respuesta.code(error.estado).send(error.cuerpo());
+	});
+
+	/** Pasos 1 y 2: quién llama y la versión de su app. */
+	async function identificarYRevisarVersion(peticion: FastifyRequest): Promise<void> {
+		const quien = await servicios.identificar(peticion);
+		if (quien === undefined) throw new ErrorDeApi("sin_sesion", "sin_sesion");
+		peticion.quien = quien;
+		const app = appDe(quien);
+		const minima = versionMinima(app, await servicios.versionMinimaDelParametro(app));
+		const version = peticion.headers["x-app-version"];
+		if (typeof version !== "string" || (compararVersiones(version, minima) ?? -1) < 0) {
+			throw new ErrorDeApi("actualizar", null, undefined, { version_minima: minima });
+		}
+	}
+
+	/** En las acciones: el `Origin` del navegador tiene que ser el del sistema (ver docs/cimientos/SEGURIDAD.md). */
+	async function revisarOrigen(peticion: FastifyRequest): Promise<void> {
+		const origen = peticion.headers.origin;
+		const permitido =
+			peticion.quien?.tipo === "cuenta"
+				? origen === entorno.DOMINIO_WEB
+				: origen === undefined || origen === entorno.DOMINIO_TALLER;
+		if (!permitido) throw new ErrorDeApi("sin_permiso", "origen_no_valido", "Esta petición no viene del sistema.");
+	}
+
+	/** Quién llama, ya identificado en el paso 1. */
+	function quienDe(peticion: FastifyRequest): QuienLlama {
+		if (peticion.quien === undefined) throw new ErrorDeApi("sin_sesion", "sin_sesion");
+		return peticion.quien;
+	}
+
+	for (const accion of registro.acciones.values()) {
+		const { contrato } = accion;
+		app.route({
+			method: "POST",
+			url: `/v1/acciones/${contrato.nombre}`,
+			schema: {
+				description: contrato.descripcion,
+				tags: [contrato.nombre.split(".")[0] ?? ""],
+				body: cuerpoDeAccion(contrato),
+				response: { 200: respuestaDeAccion(contrato) },
+			},
+			preValidation: [identificarYRevisarVersion, revisarOrigen],
+			// Paso 4: el permiso, antes de abrir la transacción.
+			preHandler: async (peticion) => servicios.revisarPermiso(quienDe(peticion), contrato.permiso, reloj()),
+			handler: async (peticion, respuesta) => {
+				respuesta.header("cache-control", "no-store");
+				return correrAccion(
+					{ base, registro, servicios },
+					{ accion, quien: quienDe(peticion), cuerpo: cuerpoValidado(peticion.body), ahora: reloj() },
+				);
+			},
+		});
+	}
+
+	for (const consulta of registro.consultas.values()) {
+		const { contrato } = consulta;
+		app.route({
+			method: "GET",
+			url: `/v1/consultas/${contrato.nombre}`,
+			schema: {
+				description: contrato.descripcion,
+				tags: [contrato.nombre.split(".")[0] ?? ""],
+				querystring: contrato.entrada,
+				response: { 200: respuestaDeConsulta(contrato) },
+			},
+			preValidation: [identificarYRevisarVersion],
+			preHandler: async (peticion) => servicios.revisarPermiso(quienDe(peticion), contrato.permiso, reloj()),
+			handler: async (peticion, respuesta) => {
+				respuesta.header("cache-control", "no-store");
+				const ahora = reloj();
+				const leido = await consulta.leer(
+					{ base, quien: quienDe(peticion), ahora, diaDeNegocio: diaDeNegocio(ahora) },
+					peticion.query,
+				);
+				return { ok: true as const, resultado: leido.resultado, recortado: leido.recortado ?? [] };
+			},
+		});
+	}
+
+	// Que la API está viva y llega a la base, sin datos, para el balanceador.
+	app.get("/v1/salud", { schema: { hide: true } }, async (_peticion, respuesta) => {
+		respuesta.header("cache-control", "no-store");
+		try {
+			await base.execute(sql`SELECT 1`);
+		} catch {
+			throw new ErrorDeApi("no_disponible");
+		}
+		return { ok: true };
+	});
+
+	return app;
+}
+
+/**
+ * El cuerpo de una acción, ya validado por Fastify contra su contrato.
+ * @throws Error si no tiene la forma, que solo pasaría si el esquema de la ruta no corrió.
+ */
+function cuerpoValidado(cuerpo: unknown): CuerpoDeAccion {
+	if (
+		typeof cuerpo !== "object" ||
+		cuerpo === null ||
+		!("clave_idempotencia" in cuerpo) ||
+		typeof cuerpo.clave_idempotencia !== "string"
+	) {
+		throw new Error("el cuerpo de la acción no pasó por su validación");
+	}
+	const version = "version" in cuerpo && typeof cuerpo.version === "number" ? cuerpo.version : undefined;
+	return {
+		clave_idempotencia: cuerpo.clave_idempotencia,
+		datos: "datos" in cuerpo ? cuerpo.datos : undefined,
+		version,
+	};
+}
