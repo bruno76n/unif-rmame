@@ -26,6 +26,7 @@ import { cookies } from "./nucleo/acceso/cookies.ts";
 import { entradaConGoogle } from "./nucleo/acceso/entrada.ts";
 import type { AccesoConGoogle } from "./nucleo/acceso/google.ts";
 import { appDe, type QuienLlama } from "./nucleo/acceso/quien.ts";
+import { recorteComun } from "./nucleo/acceso/recorte.ts";
 import {
 	type CuerpoDeAccion,
 	correrAccion,
@@ -145,7 +146,17 @@ export async function crearServidor(dependencias: DependenciasDelServidor) {
 
 	app.setErrorHandler((error, peticion, respuesta) => {
 		const { estado, cuerpo } = responderError(error, peticion.log);
-		return respuesta.code(estado).header("cache-control", "no-store").send(cuerpo);
+		// Los datos de un `409` pasan por el recorte común, como cualquier respuesta.
+		const datos = cuerpo.datos;
+		const conRecorte =
+			peticion.quien !== undefined && typeof datos === "object" && datos !== null && !Array.isArray(datos)
+				? {
+						...cuerpo,
+						datos: recorteComun(peticion.quien, Object.fromEntries(Object.entries(datos)), registro.camposDeSueldo)
+							.objeto,
+					}
+				: cuerpo;
+		return respuesta.code(estado).header("cache-control", "no-store").send(conRecorte);
 	});
 	app.setNotFoundHandler((_peticion, respuesta) => {
 		const error = new ErrorDeApi("no_existe");
@@ -218,7 +229,10 @@ export async function crearServidor(dependencias: DependenciasDelServidor) {
 				);
 				// La que cierra la sesión de quien llama también borra su cookie.
 				if (contrato.cierraLaSesion) respuesta.clearCookie(cookies.sesion, { path: "/" });
-				return resultado;
+				return {
+					...resultado,
+					resultado: recorteComun(quienDe(peticion), resultado.resultado, registro.camposDeSueldo).objeto,
+				};
 			},
 		});
 	}
@@ -252,7 +266,12 @@ export async function crearServidor(dependencias: DependenciasDelServidor) {
 				);
 				const recortado = leido.recortado ?? [];
 				revisarRecorte(contrato.nombre, contrato.recortables, leido.resultado, recortado);
-				return { ok: true as const, resultado: leido.resultado, recortado };
+				const comun = recorteComun(quienDe(peticion), leido.resultado, registro.camposDeSueldo);
+				return {
+					ok: true as const,
+					resultado: comun.objeto,
+					recortado: [...new Set([...recortado, ...comun.recortado])],
+				};
 			},
 		});
 	}

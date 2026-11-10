@@ -15,6 +15,8 @@ export interface CuentaQueLlama {
 	usuarioId: string;
 	sesionId: string;
 	esDuena: boolean;
+	/** La cuenta de soporte técnico: nunca recibe montos. */
+	esSoporte: boolean;
 	/** Sus departamentos efectivos. */
 	departamentos: readonly string[];
 	permisosFinos: readonly string[];

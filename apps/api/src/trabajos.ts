@@ -10,7 +10,7 @@
 import { join } from "node:path";
 import { run } from "graphile-worker";
 import { escribirBitacoraConAdmin, guardarEventosConAdmin } from "./nucleo/acciones/corredor.ts";
-import { type Almacen, crearAlmacen, cubos, direccionDeR2 } from "./nucleo/almacen.ts";
+import { almacenDeArchivosDelEntorno, crearAlmacen, cubos, direccionDelAlmacen } from "./nucleo/almacen.ts";
 import { abrirConexiones, crearBase } from "./nucleo/base/conexion.ts";
 import { crearEnvioAlRegistro, crearEnvioConResend, type EnviarCorreo } from "./nucleo/correo.ts";
 import { type Entorno, leerEntorno } from "./nucleo/entorno.ts";
@@ -46,24 +46,6 @@ function envioDelEntorno(entorno: Entorno): EnviarCorreo {
 	if (entorno.RESEND_LLAVE === undefined)
 		throw new Error("Falta RESEND_LLAVE: el worker manda los correos con Resend.");
 	return crearEnvioConResend(entorno.RESEND_LLAVE);
-}
-
-/** La dirección del almacén: la de `pnpm local` o la de R2 de la cuenta. */
-function direccionDelAlmacen(entorno: Entorno): string | undefined {
-	const cuenta = entorno.R2_CUENTA;
-	return entorno.R2_DIRECCION ?? (cuenta === undefined ? undefined : direccionDeR2(cuenta));
-}
-
-/**
- * El almacén de archivos según el entorno, para lo que genera el worker (el ZIP del contador, las guías):
- * el cubo de archivos con su credencial. Sin ella, `admin.guardar_archivo` falla en el worker.
- */
-function almacenDeArchivosDelEntorno(entorno: Entorno): { almacen?: Almacen } {
-	const direccion = direccionDelAlmacen(entorno);
-	const llaveId = entorno.R2_ARCHIVOS_LLAVE_ID;
-	const secreto = entorno.R2_ARCHIVOS_SECRETO;
-	if (direccion === undefined || llaveId === undefined || secreto === undefined) return {};
-	return { almacen: crearAlmacen({ direccion, cubo: cubos.archivos, llaveId, secreto }) };
 }
 
 /**

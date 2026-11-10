@@ -3,7 +3,8 @@
  * siembra, deja entrar al rol de la app, crea los cubos y arranca el worker.
  * Fase 2 · docs/cimientos/ARQUITECTURA.md («Cómo corre en local»)
  * Fase 4 · docs/cimientos/EVENTOS-Y-TRABAJOS.md («El worker»)
- * Fase 5 · docs/modulos/admin/acceso-con-google.md («En local y en las pruebas»): el Google de desarrollo
+ * Fase 5 · docs/modulos/admin/acceso-con-google.md («En local y en las pruebas»): la API y el Google de
+ * desarrollo.
  *
  * Lee `.env` (copia de `.env.ejemplo`, con `ENTORNO=local`). La clave del rol de la app sale de
  * `BASE_DATOS_URL`, así que no vive en el código. La API, el worker, la web y la tablet se suman aquí
@@ -73,7 +74,11 @@ if (import.meta.main) {
 	}
 	await crearCubosLocales(entorno);
 	console.log("Local: Postgres y el almacén arriba, migraciones y siembra al día, y el rol de la app con entrada.");
-	// El worker y el Google de desarrollo corren en primer plano: Ctrl+C los detiene.
+	// La API, el worker y el Google de desarrollo corren en primer plano: Ctrl+C los detiene.
+	spawn(process.execPath, ["--env-file-if-exists=../../.env", "src/api.ts"], {
+		cwd: join(raiz, "apps/api"),
+		stdio: "inherit",
+	});
 	spawn(process.execPath, ["--env-file-if-exists=../../.env", "src/trabajos.ts"], {
 		cwd: join(raiz, "apps/api"),
 		stdio: "inherit",

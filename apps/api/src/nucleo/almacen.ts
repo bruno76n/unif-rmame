@@ -20,6 +20,7 @@ import {
 	UploadPartCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import type { Entorno } from "./entorno.ts";
 
 /** Lo que se declara de un archivo antes de subirlo. */
 export interface ObjetoDeclarado {
@@ -226,4 +227,23 @@ export function crearAlmacen(conexion: ConexionDelAlmacen): Almacen {
 			);
 		},
 	};
+}
+
+/** La dirección del almacén: la de `pnpm local` o la de R2 de la cuenta. */
+export function direccionDelAlmacen(entorno: Entorno): string | undefined {
+	const cuenta = entorno.R2_CUENTA;
+	return entorno.R2_DIRECCION ?? (cuenta === undefined ? undefined : direccionDeR2(cuenta));
+}
+
+/**
+ * El almacén de archivos según el entorno, para la API (las subidas y las descargas) y para lo que genera
+ * el worker (el ZIP del contador, las guías): el cubo de archivos con su credencial. Sin ella, las rutas de
+ * los archivos no existen y `admin.guardar_archivo` falla en el worker.
+ */
+export function almacenDeArchivosDelEntorno(entorno: Entorno): { almacen?: Almacen } {
+	const direccion = direccionDelAlmacen(entorno);
+	const llaveId = entorno.R2_ARCHIVOS_LLAVE_ID;
+	const secreto = entorno.R2_ARCHIVOS_SECRETO;
+	if (direccion === undefined || llaveId === undefined || secreto === undefined) return {};
+	return { almacen: crearAlmacen({ direccion, cubo: cubos.archivos, llaveId, secreto }) };
 }

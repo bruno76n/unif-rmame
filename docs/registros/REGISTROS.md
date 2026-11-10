@@ -18,6 +18,8 @@ Lo que falta decidir o investigar, y en qué fase se resuelve. Lo del negocio ya
 - **Una acción puede tomar la versión de otro registro** (fase 22): el corredor sabe que se tomó una versión, no cuál. Revisar que la versión tomada sea la del documento que la acción dice que tocó (`entidad`).
 - **El formato de los parámetros de texto** (fase 19, con la pantalla de Configuración): `admin.cambiar_parametro` revisa que un texto no venga vacío, pero no su forma (los días de trabajo, una versión). Decidir si cada definición lleva su patrón.
 - **La IP de verdad detrás de Render y Cloudflare** (fase 22, con la seguridad completa): los intentos y la bitácora usan la IP que ve Fastify; detrás de un proxy hace falta `trustProxy` con los saltos de confianza, o todas las entradas contarían como una sola IP.
+- **El intervalo de sincronización de los aparatos** (fase 6): `api.ts` usa 30 segundos mientras `sync.intervalo_segundos` llega con la sincronización.
+- **Las rutas fijas y el recorte común** (fase 20, con las etiquetas y los impresos): las respuestas JSON de las rutas fijas y lo que dibuja una etiqueta no pasan por `recorteComun`; cada tipo de etiqueta recibe los datos ya recortados por su módulo.
 - **El nombre y el puesto de una cuenta** (fase 7, con Personal): hoy los mensajes y la bitácora de las cuentas usan el correo y «Esa persona» (decisión 373).
 - **El nivel de `pnpm audit`** (fase 22): SEGURIDAD dice que solo una vulnerabilidad alta o crítica detiene la revisión, pero `pnpm revision` corre `pnpm audit` sin nivel y se detiene con cualquiera. Se intentó alinearlo y el permiso del entorno lo negó; Bruno decide si la revisión pide `--audit-level high` o si SEGURIDAD dice «cualquiera».
 - **Un rol solo para el respaldo** (fase 22): hoy el worker vuelca con el rol dueño (decisión 368). Revisar si Render deja un rol de lectura que salte la seguridad por renglón de Graphile Worker.
@@ -123,5 +125,7 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 10 nov 2026 | 5 | Cómo se nombra una cuenta antes de Personal (decisión 373) | Esperar a la fase 7 · el correo | El correo | No |
 | 10 nov 2026 | 5 | Si entrar deja la sesión confirmada con Google (decisión 377) | Sí, con el `auth_time` de la entrada · no, solo «Confirmar con Google» | No: la confirmación es explícita | No |
 | 10 nov 2026 | 5 | Dónde lleva el correo la pantalla de «sin acceso» (decisión 376) | En la búsqueda · en el fragmento | En el fragmento, que no llega a ningún servidor | No |
+| 10 nov 2026 | 5 | Si una cuenta puede llamar lo que solo nombra aparatos (decisión 382) | Sí · no | No: `403 fuera_de_alcance` | No |
+| 10 nov 2026 | 5 | Dónde se quitan los montos a soporte y los sueldos a quien no los ve (decisión 383) | En cada consulta · un recorte común en el servidor | El recorte común, y cada monto de un resultado es opcional | No |
 | 10 nov 2026 | 5 | La pantalla del Google de desarrollo | Una propia para escoger cuenta · la de desarrollo de oidc-provider, que pide el correo | La de oidc-provider; `pnpm local` escribe los correos de la muestra al arrancar | No |
 

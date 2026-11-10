@@ -36,3 +36,4 @@ La línea de la bitácora se escribe al final, con el resultado ya conocido. Esc
 | 10 nov 2026 | 4 | Revisión de las correcciones y cierre: fase 4 terminada | [2026-11-10-fase-04](sesiones/2026-11-10-fase-04.md) |
 | 10 nov 2026 | 5 | 1 y 3 · Tablas, cuentas y permisos finos | [2026-11-11-fase-05](sesiones/2026-11-11-fase-05.md) |
 | 10 nov 2026 | 5 | 2 · Entrar con Google y las sesiones | [2026-11-11-fase-05](sesiones/2026-11-11-fase-05.md) |
+| 10 nov 2026 | 5 | 4 · La revisión de cada llamada | [2026-11-11-fase-05](sesiones/2026-11-11-fase-05.md) |

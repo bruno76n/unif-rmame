@@ -1,5 +1,5 @@
 /**
- * Prueba de la revisión de la sesión en cada llamada.
+ * Prueba de la revisión de la sesión en cada llamada: directo y con la API.
  * Fase 5 · docs/fases/05-acceso-con-google-cuentas-y-permisos.md (parte 2)
  */
 
@@ -9,6 +9,7 @@ import { v7 as uuidv7 } from "uuid";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { type Base, crearBase } from "../base/conexion.ts";
 import { cuentaDePrueba } from "../pruebas/cuentas-de-prueba.ts";
+import { crearServidorDePrueba, dominios, type ServidorDePrueba } from "../pruebas/servidor-de-prueba.ts";
 import { hashDe, nuevoIdentificador } from "./cookies.ts";
 import { describirAparato, revisarSesion } from "./sesion.ts";
 
@@ -114,5 +115,59 @@ describe("una sesión cerrada, vencida, inactiva o de una cuenta sin acceso no p
 			"Mac · Chrome",
 		);
 		expect(describirAparato(undefined)).toBe("Otro aparato · otro navegador");
+	});
+});
+
+describe("con la API: una sesión cerrada, vencida, inactiva o de una cuenta sin acceso responde 401 sin_sesion y queda cerrada con su motivo", () => {
+	let servidor: ServidorDePrueba;
+	beforeAll(async () => {
+		servidor = await crearServidorDePrueba({ sesionReal: true });
+	});
+	afterAll(async () => {
+		await servidor.cerrar();
+	});
+
+	/** Abre una sesión de Ventas con esa actividad y ese vencimiento, y regresa su cookie y su id. */
+	async function sesionDeVentas(actividad: string, vence: string, usuarioId = cuentaDePrueba("ventas")) {
+		const id = uuidv7();
+		const identificador = nuevoIdentificador();
+		await servidor.base.dueno.query(
+			`INSERT INTO sesiones (id, usuario_id, token_hash, ultima_actividad_en, vence_en)
+			 VALUES ($1, $2, $3, now() - $4::interval, now() + $5::interval)`,
+			[id, usuarioId, hashDe(identificador), actividad, vence],
+		);
+		return { id, identificador };
+	}
+
+	/** Llama una consulta de Ventas con la cookie. */
+	const consultar = (identificador: string) =>
+		servidor.app.inject({
+			method: "GET",
+			url: "/v1/consultas/prueba.notas",
+			headers: { "x-app-version": "1.0.0", origin: dominios.DOMINIO_WEB },
+			cookies: { ua_sesion: identificador },
+		});
+
+	it("una sesión al día pasa; vencida, inactiva o de una cuenta sin acceso, 401 sin_sesion con su motivo; cerrada, sigue 401", async () => {
+		const buena = await sesionDeVentas("1 minute", "1 hour");
+		expect((await consultar(buena.identificador)).statusCode).toBe(200);
+		const usuarioId = uuidv7();
+		await servidor.base.dueno.query(
+			`INSERT INTO usuarios (id, persona_id, correo, estado, baja_en, baja_confirmado_con_google_en)
+			 VALUES ($1, $2, 'sin.acceso.api@alameda.invalid', 'sin_acceso', now(), now())`,
+			[usuarioId, uuidv7()],
+		);
+		const casos = [
+			[await sesionDeVentas("1 minute", "-1 minute"), "duracion_maxima"],
+			[await sesionDeVentas("31 minutes", "1 hour"), "inactividad"],
+			[await sesionDeVentas("1 minute", "1 hour", usuarioId), "acceso_quitado"],
+		] as const;
+		for (const [sesion, motivo] of casos) {
+			const respuesta = await consultar(sesion.identificador);
+			expect([respuesta.statusCode, respuesta.json().error]).toEqual([401, "sin_sesion"]);
+			const { rows } = await servidor.base.dueno.query("SELECT motivo_cierre FROM sesiones WHERE id = $1", [sesion.id]);
+			expect(rows[0]?.motivo_cierre).toBe(motivo);
+			expect((await consultar(sesion.identificador)).statusCode).toBe(401);
+		}
 	});
 });

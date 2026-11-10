@@ -3,12 +3,11 @@
  * Fase 3 · docs/fases/03-api-protocolo-e-idempotencia.md («Cómo se construye»)
  *
  * Quién llama sale del encabezado `x-prueba-quien`, que solo existe aquí, y su «Confirmar con Google», de
- * `x-prueba-google`: la sesión y la llave llegan en las fases 5 y 6. El permiso de prueba revisa el departamento, el permiso fino, `solo_duena` y
- * «Confirmar con Google»; la bitácora y los eventos de prueba cuentan cuántas veces se piden.
+ * `x-prueba-google`; con `sesionReal`, de la cookie de la sesión, como en la API. El permiso es la revisión
+ * de la API (`acceso/permisos.ts`); la bitácora y los eventos de prueba cuentan cuántas veces se piden.
  */
 
 import { join } from "node:path";
-import type { Permiso } from "@uniformame/compartido/contratos/definir";
 import { type BaseDePrueba, crearBaseDePrueba } from "@uniformame/pruebas/base";
 import { emisorDeGoogle } from "@uniformame/pruebas/simuladores/google";
 import { generateDrizzleJson, generateMigration } from "drizzle-kit/api";
@@ -18,12 +17,12 @@ import { modulosDeLaBitacora } from "../../modulos/admin/tablas.ts";
 import { crearServidor, type ServiciosDelServidor } from "../../servidor.ts";
 import { llaveDeLaEntrada } from "../acceso/cookies.ts";
 import { crearAccesoConGoogle } from "../acceso/google.ts";
-import type { QuienLlama } from "../acceso/quien.ts";
+import { identificarConSesion } from "../acceso/identificar.ts";
+import { revisionDePermisos } from "../acceso/permisos.ts";
 import { escribirBitacoraConAdmin, guardarEventosConAdmin } from "../acciones/corredor.ts";
 import type { Almacen } from "../almacen.ts";
 import { crearBase } from "../base/conexion.ts";
 import { type Semilla, sembrarSistema } from "../base/siembra.ts";
-import { ErrorDeApi } from "../http/errores.ts";
 import { cargarModulos, type RegistroDeModulos, registrarModulos } from "../modulos.ts";
 import { crearAvisosEnVivo } from "../sincronizacion/eventos-en-vivo.ts";
 import { quienesDePrueba } from "./cuentas-de-prueba.ts";
@@ -41,28 +40,6 @@ export const clienteDeGooglePrueba = {
 	secreto: "secreto-del-cliente-de-prueba",
 	vuelta: "https://api.prueba.invalid/v1/acceso/google/vuelta",
 };
-
-/** El permiso de prueba: la misma revisión que hará la fase 5, con los datos de `quienesDePrueba`. */
-async function revisarPermisoDePrueba(quien: QuienLlama, permiso: Permiso, ahora: Temporal.Instant): Promise<void> {
-	if (quien.tipo === "aparato") {
-		if (!(permiso.aparatos ?? []).includes(quien.tipoDeAparato))
-			throw new ErrorDeApi("sin_permiso", "fuera_de_alcance");
-		return;
-	}
-	if (permiso.departamento !== undefined && !quien.esDuena && !quien.departamentos.includes(permiso.departamento)) {
-		throw new ErrorDeApi("sin_permiso", "sin_departamento");
-	}
-	if (permiso.permisoFino !== undefined && !quien.esDuena && !quien.permisosFinos.includes(permiso.permisoFino)) {
-		throw new ErrorDeApi("sin_permiso", "sin_permiso_fino");
-	}
-	if (permiso.soloDuena === true && !quien.esDuena) throw new ErrorDeApi("sin_permiso", "solo_duena");
-	if (permiso.confirmarConGoogle !== undefined) {
-		const desde = quien.confirmadoConGoogleEn;
-		if (desde === undefined || Temporal.Instant.compare(desde.add({ minutes: 5 }), ahora) < 0) {
-			throw new ErrorDeApi("reautenticar", null, undefined, { proposito: permiso.confirmarConGoogle, minutos: 5 });
-		}
-	}
-}
 
 /**
  * El registro con la lectura que dará `dispositivos` (fase 6): los datos de un aparato. Las cuentas ya son
@@ -191,7 +168,8 @@ async function crearBaseConTablasDePrueba(semillas: readonly Semilla[]): Promise
  * @param opciones `entorno` (por omisión, `pruebas`); `avisosEnVivo` para tener `GET /v1/eventos` (con su
  * latido); `otraInstanciaDe` para levantar una segunda instancia sobre la base de otra, como en Render;
  * `almacen` para los archivos (el de R2, sobre su simulador); `conGoogle` para la entrada con Google, contra
- * el simulador de Google (`clienteDeGooglePrueba`).
+ * el simulador de Google (`clienteDeGooglePrueba`); `sesionReal` para identificar con la cookie `ua_sesion`
+ * en lugar de `x-prueba-quien`.
  */
 export async function crearServidorDePrueba(
 	opciones: {
@@ -200,6 +178,7 @@ export async function crearServidorDePrueba(
 		otraInstanciaDe?: ServidorDePrueba;
 		almacen?: Almacen;
 		conGoogle?: true;
+		sesionReal?: true;
 	} = {},
 ): Promise<ServidorDePrueba> {
 	const modulosDePrueba = await cargarModulos(join(import.meta.dirname, "modulos"));
@@ -213,6 +192,8 @@ export async function crearServidorDePrueba(
 	const fallas = { bitacora: false, bitacoraUnaVez: new Set<string>() };
 	const servicios: ServiciosDelServidor = {
 		identificar: async (peticion) => {
+			if (opciones.sesionReal === true)
+				return identificarConSesion(crearBase(base.app), () => Temporal.Now.instant())(peticion);
 			const valor = peticion.headers["x-prueba-quien"];
 			const quien = typeof valor === "string" ? quienesDePrueba[valor] : undefined;
 			// `x-prueba-google`: el momento en que la sesión de prueba confirmó con Google.
@@ -220,7 +201,7 @@ export async function crearServidorDePrueba(
 			if (quien?.tipo !== "cuenta" || typeof google !== "string") return quien;
 			return { ...quien, confirmadoConGoogleEn: Temporal.Instant.from(google) };
 		},
-		revisarPermiso: revisarPermisoDePrueba,
+		revisarPermiso: revisionDePermisos(crearBase(base.app)),
 		versionMinimaDelParametro: async () => parametros.versionMinima,
 		escribirBitacora: async (contexto, renglones) => {
 			if (fallas.bitacora) throw new Error("falla de prueba en la bitácora");

@@ -63,4 +63,11 @@ No se escribe a mano. Cada acción y cada consulta declara en su contrato quién
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 5.*
+**Fase 5, parte 4.**
+
+- **Quién llama** (`apps/api/src/nucleo/acceso/identificar.ts`): `identificarConSesion` revisa la cookie `ua_sesion` (`revisarSesion`, ver [acceso con Google](../modulos/admin/acceso-con-google.md#cómo-está-hecho)) y arma la cuenta con `cuentaDeLaSesion`: sus departamentos efectivos y sus permisos finos de `admin.permisos_de`, si es la dueña o soporte (`esSoporte`) y su última confirmación con Google. A la cuenta de soporte nunca le valen Dirección, Contaduría ni «ven sueldos y tarifas», aunque tuviera esos renglones. La llave de los aparatos llega en la fase 6.
+- **El permiso** (`nucleo/acceso/permisos.ts`): `revisionDePermisos(base)` revisa en el orden de arriba, con los minutos de `admin.reautenticacion_minutos`. Un contrato que nombra aparatos sin pedir departamento ni a la dueña es solo de aparatos: una cuenta recibe `403 fuera_de_alcance` (decisión 382). El servidor de prueba usa esta misma revisión.
+- **El recorte común** (`nucleo/acceso/recorte.ts`): `recorteComun` le quita a la cuenta de soporte todo campo `_centavos` y a quien no tiene «ven sueldos y tarifas» (sin ser la dueña) los `camposDeSueldo` de los módulos, a cualquier profundidad. El servidor lo pasa por el resultado de cada consulta (y suma lo quitado a `recortado`), de cada acción y por los `datos` de un `409` (decisión 383). Para que se pueda quitar, todo monto o sueldo de un resultado es opcional en su contrato.
+- **La API de verdad** (`apps/api/src/api.ts`) arma el servidor con esta identificación, esta revisión, los avisos en vivo, el almacén y la entrada con Google, y escucha en `PORT` (Render) o en el puerto de `DOMINIO_API`; `pnpm local` la arranca (decisión 384).
+- **En las pruebas** se identifica con `x-prueba-quien` (y `x-prueba-google`), o con la sesión de verdad (`sesionReal`).
+- **Las pruebas:** `nucleo/acceso/permisos.prueba.ts` recorre todos los contratos registrados: con datos que arma de la entrada de cada contrato, una cuenta sin su departamento, sin su permiso fino o que no es la dueña recibe su `403`; la dueña sin confirmación reciente, `401 reautenticar` con su propósito; y la cuenta de soporte no recibe montos ni en una consulta que no los recorta ni en un `409`. `nucleo/acceso/sesion.prueba.ts` y `modulos/admin/acciones/confirmar-con-google.prueba.ts` lo prueban con la sesión de verdad.

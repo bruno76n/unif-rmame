@@ -8,7 +8,7 @@ import { asc, eq, gt, sql } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
 import { tomarVersion, versionActual } from "../../../acciones/pisadas.ts";
 import { leerCursor, paginar, recortar } from "../../../http/consultas.ts";
-import { ErrorDeApi, errorDeRegla, noExiste } from "../../../http/errores.ts";
+import { conflictoDeVersion, ErrorDeApi, errorDeRegla, noExiste } from "../../../http/errores.ts";
 import {
 	type ContextoDeAccion,
 	definirModulo,
@@ -29,6 +29,7 @@ import {
 	listarNotas,
 	marcarDos,
 	provocar,
+	sinRecorte,
 	trampa,
 	verMontos,
 	verNota,
@@ -195,12 +196,18 @@ export default definirModulo({
 				});
 			}
 			if (datos.error === "base") await contexto.transaccion.execute(sql`SELECT ${datos.valor ?? ""}::integer`);
+			if (datos.error === "conflicto_con_monto") {
+				throw conflictoDeVersion(3, { texto: "La nota", monto_centavos: 125_000 });
+			}
 			if (datos.error === "no_disponible")
 				throw new ErrorDeApi("no_disponible", null, undefined, { reintentar_en: "2026-11-10T17:00:00Z" });
 			throw new Error("la causa secreta: SELECT * FROM comandos_recibidos");
 		}),
 	],
 	consultas: [
+		implementarConsulta(sinRecorte, async () => ({
+			resultado: { texto: "Con montos", monto_centavos: 125_000, renglones: [{ pago_dia_centavos: 45_000 }] },
+		})),
 		implementarConsulta(trampa, async () => ({
 			resultado: { monto_centavos: 125_000 },
 			recortado: ["monto_centavos"],

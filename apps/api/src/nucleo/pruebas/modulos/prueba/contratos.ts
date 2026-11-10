@@ -108,7 +108,9 @@ export const provocar = definirAccion({
 	nombre: "prueba.provocar",
 	descripcion: "Lanza un error de la tabla",
 	entrada: z.object({
-		error: z.enum(["demasiados_intentos", "no_disponible", "interno", "base"]).describe("El error que lanza"),
+		error: z
+			.enum(["demasiados_intentos", "no_disponible", "interno", "base", "conflicto_con_monto"])
+			.describe("El error que lanza"),
 		valor: z.string().optional().describe("Un valor que lleva la consulta que falla en la base"),
 	}),
 	salida: z.object({}),
@@ -145,6 +147,24 @@ export const trampa = definirConsulta({
 	salida: z.object({ monto_centavos: z.number().int().optional().describe("Un monto") }),
 	permiso: { departamento: "ventas" },
 	recortables: ["monto_centavos"],
+});
+
+/**
+ * Una consulta que no recorta su monto ni su sueldo, como un módulo que lo olvidara: el recorte común del
+ * servidor se los quita a quien no los ve.
+ */
+export const sinRecorte = definirConsulta({
+	nombre: "prueba.sin_recorte",
+	descripcion: "Una consulta que manda un monto y un sueldo sin recortarlos",
+	entrada: z.object({}),
+	salida: z.object({
+		texto: z.string().describe("Un texto"),
+		monto_centavos: z.number().int().optional().describe("Un monto"),
+		renglones: z
+			.array(z.object({ pago_dia_centavos: z.number().int().optional().describe("Un sueldo") }))
+			.describe("Renglones con sueldo"),
+	}),
+	permiso: { departamento: "ventas" },
 });
 
 /** Recibe un día de negocio que el contrato transforma en `Temporal.PlainDate`, como lo harán los módulos. */

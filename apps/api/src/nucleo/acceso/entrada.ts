@@ -19,7 +19,6 @@ import { eq } from "drizzle-orm";
 import type { FastifyInstance, FastifyPluginAsync, FastifyReply, FastifyRequest } from "fastify";
 import { Temporal } from "temporal-polyfill";
 import { z } from "zod";
-import { leerPermisosDe } from "../../modulos/admin/lecturas/permisos-de.ts";
 import { sesiones, usuarios } from "../../modulos/admin/tablas.ts";
 import { crearContexto, type ServiciosDelCorredor } from "../acciones/corredor.ts";
 import type { Base } from "../base/conexion.ts";
@@ -38,6 +37,7 @@ import {
 	opcionesDelAparato,
 } from "./cookies.ts";
 import type { AccesoConGoogle, CuentaQueEntro } from "./google.ts";
+import { cuentaDeLaSesion } from "./identificar.ts";
 import { anotarFalla, bloqueadaHasta, type LimiteDeIntentos } from "./intentos.ts";
 import { abrirSesion, parametroEntero, revisarSesion } from "./sesion.ts";
 
@@ -262,16 +262,8 @@ function registrarEntrada(app: FastifyInstance, dependencias: DependenciasDeLaEn
 				ahora,
 			),
 		);
-		const permisos = await leerPermisosDe(base, usuarioId);
-		const quien = {
-			tipo: "cuenta",
-			usuarioId,
-			sesionId: sesion.sesionId,
-			esDuena: permisos?.es_duena ?? false,
-			departamentos: permisos?.departamentos.map((depto) => depto.clave) ?? [],
-			permisosFinos: permisos?.permisos_finos ?? [],
-			confirmadoConGoogleEn: undefined,
-		} as const;
+		const quien = await cuentaDeLaSesion(base, { ...sesion, usuarioId, googleConfirmadoEn: undefined });
+		if (quien === undefined) throw new Error("la cuenta que acaba de entrar ya no está activa");
 		await conContexto(quien, ahora, async (contexto) => {
 			contexto.bitacora({ tipo: "acceso", departamento: "admin", descripcion: "Entró al sistema", ip });
 			contexto.guardarEvento({

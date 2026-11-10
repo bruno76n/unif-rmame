@@ -34,6 +34,8 @@ const esquema = z.object({
 	GOOGLE_CLIENTE_SECRETO: z.string().min(1).optional(),
 	/** La llave que cifra la cookie de la entrada con Google: al menos 32 letras al azar. */
 	COOKIE_SECRETO: z.string().min(32).optional(),
+	/** El puerto donde escucha la API en Render (lo pone Render); en local, el de `DOMINIO_API`. */
+	PORT: z.coerce.number().int().positive().optional(),
 	/** Solo en local: la dirección del almacén compatible con S3 en lugar de la de R2. */
 	R2_DIRECCION: z.url({ protocol: /^https?$/ }).optional(),
 });

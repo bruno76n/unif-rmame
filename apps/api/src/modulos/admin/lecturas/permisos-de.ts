@@ -4,10 +4,15 @@
  *
  * La dueña tiene todos los departamentos y todos los permisos finos, sin renglones; las demás cuentas, sus
  * departamentos y permisos sin baja, y solo si la cuenta está activa. Un departamento sin ubicación vale
- * para todas. Lo de los aparatos llega con ellos, en la fase 6.
+ * para todas. A la cuenta de soporte nunca le valen Dirección, Contaduría ni «ven sueldos y tarifas». Lo de
+ * los aparatos llega con ellos, en la fase 6.
  */
 
-import { clavesDeDepartamento, permisosFinosDeCuenta } from "@uniformame/compartido/contratos/admin/cuentas";
+import {
+	clavesDeDepartamento,
+	departamentosConDinero,
+	permisosFinosDeCuenta,
+} from "@uniformame/compartido/contratos/admin/cuentas";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import type { Base } from "../../../nucleo/base/conexion.ts";
@@ -54,13 +59,17 @@ export async function leerPermisosDe(
 			permisos_finos: [...permisosFinosDeCuenta],
 		};
 	}
+	// La cuenta de soporte nunca ve dinero: aunque tuviera esos renglones, no le valen.
+	const leVale = (clave: string) => !cuenta.esSoporte || !departamentosConDinero.includes(clave);
+	const permisoQueLeVale = (permiso: string) => !cuenta.esSoporte || permiso !== "ven_sueldos_y_tarifas";
 	return {
 		...base,
-		departamentos: (await departamentosVigentes(transaccion, usuarioId)).map((depto) => ({
-			clave: depto.clave,
-			ubicacion_id: depto.ubicacionId,
-		})),
-		permisos_finos: (await permisosFinosVigentes(transaccion, usuarioId)).map((renglon) => renglon.permiso),
+		departamentos: (await departamentosVigentes(transaccion, usuarioId))
+			.filter((depto) => leVale(depto.clave))
+			.map((depto) => ({ clave: depto.clave, ubicacion_id: depto.ubicacionId })),
+		permisos_finos: (await permisosFinosVigentes(transaccion, usuarioId))
+			.map((renglon) => renglon.permiso)
+			.filter(permisoQueLeVale),
 	};
 }
 
