@@ -77,6 +77,7 @@ describe("el PIN del taller se entrega una sola vez y solo queda su hash Argon2i
 		expect(texto).not.toContain('\\"pin\\"');
 		expect(texto).not.toMatch(new RegExp(`\\\\"${pin}\\\\"|"${pin}"`));
 		expect(texto).not.toMatch(new RegExp(`(?<![\\p{L}\\p{N}_.:+-])${pin}(?![\\p{L}\\p{N}_:+-])`, "u"));
+		expect(texto).not.toMatch(new RegExp(`pin[\\s:=-]*${pin}`, "i"));
 	}
 
 	/** Todo lo que guardó el sistema sobre la persona y sus PIN, como texto. */

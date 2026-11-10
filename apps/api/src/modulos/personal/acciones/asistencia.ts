@@ -24,7 +24,6 @@ import { type ContextoDeAccion, implementarAccion } from "../../../nucleo/modulo
 import {
 	abrirSemana,
 	diaDeBaja,
-	diasDeSemanaGuardada,
 	diasDeTrabajo,
 	diasSinCapturar,
 	formasConAsistencia,
@@ -82,19 +81,6 @@ export const accionCambiarDiaAsistencia = implementarAccion(cambiarDiaAsistencia
 			"semana_cerrada",
 			`La semana del ${textoDeSemana(semana.fechaInicio, semana.fechaFin)} ya está cerrada: la tiene contaduría`,
 		);
-	}
-	// Si la dueña sumó un día de trabajo a una semana ya abierta, la semana lo incluye desde ahora.
-	if (
-		Temporal.PlainDate.compare(fecha, semana.fechaInicio) < 0 ||
-		Temporal.PlainDate.compare(fecha, semana.fechaFin) > 0
-	) {
-		await transaccion
-			.update(asistenciaSemanas)
-			.set({
-				fechaInicio: Temporal.PlainDate.compare(fecha, semana.fechaInicio) < 0 ? datos.fecha : semana.fechaInicio,
-				fechaFin: Temporal.PlainDate.compare(fecha, semana.fechaFin) > 0 ? datos.fecha : semana.fechaFin,
-			})
-			.where(eq(asistenciaSemanas.id, semana.id));
 	}
 	const [antes] = await transaccion
 		.select()
@@ -180,15 +166,16 @@ export const accionCerrarSemanaAsistencia = implementarAccion(
 			return { asistencia_semana_id: leida.id, estado: leida.estado };
 		});
 		const semana = await leerSemana(contexto, datos.asistencia_semana_id);
+		// Sus días son los de trabajo de hoy dentro de su semana de lunes a domingo (decisión 435).
+		const dias = semanaDe(Temporal.PlainDate.from(semana.fechaInicio), await diasDeTrabajo(contexto));
 		const nombre = textoDeSemana(semana.fechaInicio, semana.fechaFin);
 		if (semana.estado === "cerrada") throw errorDeRegla("semana_ya_cerrada", `La semana del ${nombre} ya está cerrada`);
-		if (Temporal.PlainDate.compare(contexto.diaDeNegocio, semana.fechaFin) < 0) {
+		if (Temporal.PlainDate.compare(contexto.diaDeNegocio, dias.fin) < 0) {
 			throw errorDeRegla(
 				"semana_sin_terminar",
-				`La semana del ${nombre} termina el ${textoDeDia(semana.fechaFin)}: ciérrala desde ese día`,
+				`La semana del ${nombre} termina el ${textoDeDia(dias.fin)}: ciérrala desde ese día`,
 			);
 		}
-		const dias = diasDeSemanaGuardada(semana.fechaInicio, semana.fechaFin, await diasDeTrabajo(contexto));
 		const faltan = await diasSinCapturar(transaccion, dias);
 		const [primero] = faltan;
 		if (primero !== undefined) {

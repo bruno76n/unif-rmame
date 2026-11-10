@@ -81,7 +81,8 @@ export function semanaDe(fecha: Temporal.PlainDate, dias: readonly DiaDeLaSemana
  * La semana guardada de la semana de lunes a domingo de un día, o la abre si todavía no existe (el trabajo,
  * o la primera captura si el trabajo no la abrió). Se busca por su semana de lunes a domingo, no por el
  * inicio de hoy: si la dueña cambia `general.dias_de_trabajo`, la semana ya guardada sigue siendo la misma
- * y nunca se encima otra.
+ * y nunca se encima otra (la base no deja dos en la misma semana de lunes a domingo). Sus días son los de
+ * trabajo de hoy dentro de esa semana (`semanaDe` con su inicio).
  * @param transaccion La transacción.
  * @param semana La semana como la dan los días de trabajo de hoy.
  * @param creadoPor Quién la abre (nulo si es el trabajo).
@@ -94,7 +95,13 @@ export async function abrirSemana(transaccion: Transaccion, semana: DiasDeLaSema
 		lte(asistenciaSemanas.fechaInicio, lunes.add({ days: 6 }).toString()),
 	);
 	const leer = async () => {
-		const [guardada] = await transaccion.select().from(asistenciaSemanas).where(deEsaSemana).for("share");
+		const [guardada] = await transaccion
+			.select()
+			.from(asistenciaSemanas)
+			.where(deEsaSemana)
+			.orderBy(asistenciaSemanas.fechaInicio)
+			.limit(1)
+			.for("share");
 		return guardada;
 	};
 	const guardada = await leer();
@@ -107,26 +114,10 @@ export async function abrirSemana(transaccion: Transaccion, semana: DiasDeLaSema
 			fechaFin: semana.fin.toString(),
 			creadoPor,
 		})
-		.onConflictDoNothing({ target: asistenciaSemanas.fechaInicio });
+		.onConflictDoNothing();
 	const abierta = await leer();
 	if (abierta === undefined) throw new Error(`no se abrió la semana del ${semana.inicio.toString()}`);
 	return abierta;
-}
-
-/**
- * Los días de una semana guardada: los de trabajo de hoy dentro de su inicio y su fin guardados.
- * @param inicio Su inicio guardado.
- * @param fin Su fin guardado.
- * @param dias Los días de trabajo.
- */
-export function diasDeSemanaGuardada(inicio: string, fin: string, dias: readonly DiaDeLaSemana[]): DiasDeLaSemana {
-	const desde = Temporal.PlainDate.from(inicio);
-	const hasta = Temporal.PlainDate.from(fin);
-	const deTrabajo: Temporal.PlainDate[] = [];
-	for (let dia = desde; Temporal.PlainDate.compare(dia, hasta) <= 0; dia = dia.add({ days: 1 })) {
-		if (dias.some((deLaSemana) => deLaSemana === dia.dayOfWeek)) deTrabajo.push(dia);
-	}
-	return { inicio: desde, fin: hasta, dias: deTrabajo };
 }
 
 /** Cómo se escribe un día en los mensajes: «2 de noviembre». */

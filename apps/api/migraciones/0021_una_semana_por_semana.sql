@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "asistencia_semanas_lunes" ON "asistencia_semanas" USING btree (date_trunc('week', "fecha_inicio"::timestamp));

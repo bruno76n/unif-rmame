@@ -73,6 +73,13 @@ describe("el pago por día no viaja ni se cambia sin «ven sueldos y tarifas», 
 		expect(porPieza.cuerpo).toMatchObject({
 			resultado: { mensaje: "Lupe Garza dada de alta. Falta asignarle PIN del taller" },
 		});
+		// Por pieza no lleva pago por día: su renglón no queda como sueldo.
+		const deLupe = await servidor.base.dueno.query(
+			"SELECT sensible_sueldos, despues FROM bitacora WHERE entidad_id = $1",
+			[delAlta.parse(porPieza.cuerpo.resultado).persona_id],
+		);
+		expect(deLupe.rows[0]?.sensible_sueldos).toBe(false);
+		expect(deLupe.rows[0]?.despues).not.toHaveProperty("pago_dia_centavos");
 		const conPermiso = await mandarAccion(
 			servidor,
 			"personal.dar_alta_persona",
@@ -148,6 +155,22 @@ describe("el pago por día no viaja ni se cambia sin «ven sueldos y tarifas», 
 			sensible_sueldos: true,
 			antes: { pago_dia_centavos: 33_000 },
 			despues: { pago_dia_centavos: 35_000 },
+		});
+		// Pasarla a por pieza borra el pago: la bitácora lleva el de antes y el vacío, como sueldo.
+		await mandarAccion(
+			servidor,
+			"personal.editar_persona",
+			{ datos: { persona_id: id, ...sinPago, forma_pago: "pieza" }, version: Number((await leer(id))?.version) },
+			"personal_sueldos",
+		);
+		const aPieza = await servidor.base.dueno.query(
+			"SELECT sensible_sueldos, antes, despues FROM bitacora WHERE entidad_id = $1 ORDER BY ocurrido_en DESC LIMIT 1",
+			[id],
+		);
+		expect(aPieza.rows[0]).toEqual({
+			sensible_sueldos: true,
+			antes: { forma_pago: "tiempo", pago_dia_centavos: 35_000 },
+			despues: { forma_pago: "pieza", pago_dia_centavos: null },
 		});
 	});
 

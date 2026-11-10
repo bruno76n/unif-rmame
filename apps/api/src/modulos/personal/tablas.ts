@@ -124,6 +124,8 @@ export const asistenciaSemanas = pgTable(
 	},
 	(tabla) => [
 		uniqueIndex("asistencia_semanas_inicio").on(tabla.fechaInicio),
+		// Una sola semana por semana de lunes a domingo, aunque cambien los días de trabajo.
+		uniqueIndex("asistencia_semanas_lunes").on(sql`date_trunc('week', ${tabla.fechaInicio}::timestamp)`),
 		check("asistencia_semanas_estado", sql`${tabla.estado} in ('abierta', 'cerrada')`),
 		check("asistencia_semanas_fechas", sql`${tabla.fechaFin} >= ${tabla.fechaInicio}`),
 		check("asistencia_semanas_cierre", sql`(${tabla.estado} = 'cerrada') = (${tabla.cerradaEn} is not null)`),

@@ -4,8 +4,11 @@
  * Fase 7 · docs/fases/07-autorizaciones-y-personal.md (parte 5)
  */
 
+import { Temporal } from "temporal-polyfill";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
+import { crearBase } from "../../../nucleo/base/conexion.ts";
+import { enAccionDePrueba } from "../../../nucleo/pruebas/accion-de-prueba.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import { nuevaPersona } from "../../../nucleo/pruebas/personas-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
@@ -36,10 +39,10 @@ describe("la semana no se cierra con días exigidos sin capturar; cerrada no se 
 		);
 	}
 
-	/** La semana que empieza en un lunes, con su id y su versión. */
+	/** La semana guardada de la semana de lunes a domingo de un día, con su id y su versión. */
 	async function semana(inicio: string): Promise<{ id: string; version: number; estado: string }> {
 		const { rows } = await servidor.base.dueno.query(
-			"SELECT id, version::int AS version, estado FROM asistencia_semanas WHERE fecha_inicio = $1",
+			"SELECT id, version::int AS version, estado FROM asistencia_semanas WHERE date_trunc('week', fecha_inicio::timestamp) = date_trunc('week', $1::timestamp)",
 			[inicio],
 		);
 		return z.object({ id: z.uuid(), version: z.number(), estado: z.string() }).parse(rows[0]);
@@ -235,5 +238,43 @@ describe("la semana no se cierra con días exigidos sin capturar; cerrada no se 
 			[persona],
 		);
 		expect(rows[0]?.estado === "cerrada" ? rows[0]?.dia : 1).toBe(1);
+	});
+
+	it("si la dueña suma un día de trabajo a una semana abierta, la misma semana lo muestra y lo exige al cerrar", async () => {
+		const persona = await nuevaPersona(servidor.base.dueno, "oficina");
+		const dias = (valor: string) =>
+			servidor.base.dueno.query("UPDATE parametros SET valor_texto = $1 WHERE clave = 'general.dias_de_trabajo'", [
+				valor,
+			]);
+		await dias("2,3,4,5,6");
+		try {
+			for (const fecha of ["2026-10-06", "2026-10-07", "2026-10-08", "2026-10-09", "2026-10-10"])
+				await marcar(persona, fecha, "completo");
+			await capturarATodos("2026-10-05", "2026-10-10", [persona]);
+			await dias("1,2,3,4,5,6");
+			const leidos = await enAccionDePrueba(
+				crearBase(servidor.base.app),
+				servidor.modulos,
+				(contexto) => contexto.lectura("personal.dias_de_semana", { persona_id: persona }),
+				{ ahora: Temporal.Instant.from("2026-10-07T18:00:00Z") },
+			);
+			expect(leidos).toMatchObject({ inicio: "2026-10-05", estado: "abierta" });
+			expect((leidos as { dias: { fecha: string; valor: string | null }[] }).dias[0]).toEqual({
+				fecha: "2026-10-05",
+				valor: null,
+			});
+			expect((await cerrar("2026-10-06")).cuerpo).toMatchObject({
+				mensaje: "Falta 1 día por capturar",
+				datos: { persona_id: persona, fecha: "2026-10-05" },
+			});
+			expect((await marcar(persona, "2026-10-05", "completo")).estado).toBe(200);
+			const { rows } = await servidor.base.dueno.query(
+				"SELECT count(*)::int AS n FROM asistencia_semanas WHERE fecha_inicio BETWEEN '2026-10-05' AND '2026-10-11'",
+			);
+			expect(rows[0]).toEqual({ n: 1 });
+			expect((await cerrar("2026-10-06")).estado).toBe(200);
+		} finally {
+			await dias("1,2,3,4,5,6");
+		}
 	});
 });
