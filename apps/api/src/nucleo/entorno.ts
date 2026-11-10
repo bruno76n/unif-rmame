@@ -23,6 +23,11 @@ const esquema = z.object({
 	R2_ARCHIVOS_SECRETO: z.string().min(1).optional(),
 	R2_RESPALDOS_LLAVE_ID: z.string().min(1).optional(),
 	R2_RESPALDOS_SECRETO: z.string().min(1).optional(),
+	/** La llave pública de age con que el worker cifra el respaldo semanal. */
+	RESPALDO_LLAVE_PUBLICA: z
+		.string()
+		.regex(/^age1[0-9a-z]+$/)
+		.optional(),
 	/** Solo en local: la dirección del almacén compatible con S3 en lugar de la de R2. */
 	R2_DIRECCION: z.url({ protocol: /^https?$/ }).optional(),
 });

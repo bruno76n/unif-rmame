@@ -86,6 +86,9 @@ En la fase 21 se prueban los 11 flujos de la fábrica, cada uno con su archivo e
 
 ## Cómo está hecho
 
+**Fase 4.** La prueba del respaldo semanal corre `pg_dump` y `pg_restore` dentro del contenedor de Postgres 18 de las pruebas (`docker exec`, con el `contenedor` que reparte el arranque), y pide `age` y `age-keygen` en la máquina: están en el entorno de la nube y en la imagen del worker; en una Mac se instalan con Homebrew. El simulador de R2 también acepta la subida por partes.
+
+
 **Fase 2.**
 
 - **Vitest** (`vitest.config.ts`) tiene tres proyectos, con `*.prueba.ts` y `*.prueba.tsx`: `calculos` (`packages/**` y `scripts/**`, sin base), `base` (`apps/api/src/nucleo/base/**` y `pruebas/**`) y, desde la fase 3, `api` (lo demás de `apps/**`). Los dos últimos corren, cada uno una vez por corrida, el arranque `apps/api/src/nucleo/base/plantilla-de-pruebas.ts`.

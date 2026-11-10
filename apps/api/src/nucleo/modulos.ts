@@ -19,6 +19,7 @@ import type { Base } from "./base/conexion.ts";
 import type { Semilla } from "./base/siembra.ts";
 import type { Transaccion } from "./base/transacciones.ts";
 import type { EnviarCorreo } from "./correo.ts";
+import type { MediosDeRespaldo } from "./respaldo.ts";
 
 /**
  * Un evento de dominio: `{entidad}.{hecho}`, con ids y claves para armar avisos y las tablas que cambiaron;
@@ -178,6 +179,8 @@ export interface ContextoDeTrabajo {
 	dominioWeb: string;
 	/** Avisa a soporte que algo falló: «{trabajo} falló: {error}». */
 	avisarFalla: (trabajo: string, error: string) => Promise<void>;
+	/** Lo que necesita el respaldo semanal: su cubo, la llave pública y el volcado. */
+	respaldo: MediosDeRespaldo | undefined;
 }
 
 /** Un trabajo del worker: programado (con `horario`), después de un evento (`trasEventos`) o encolado por otro. */

@@ -15,6 +15,8 @@ export interface BaseDePruebasCompartida {
 	app: { usuario: string; clave: string };
 	/** La base con las migraciones y la siembra ya aplicadas, de la que se copia cada archivo. */
 	plantilla: string;
+	/** El contenedor de Postgres, para correr ahí `pg_dump` y `pg_restore` de su misma versión. */
+	contenedor: string;
 }
 
 declare module "vitest" {

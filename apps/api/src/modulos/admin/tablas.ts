@@ -507,3 +507,54 @@ export const trabajosImpresion = pgTable(
 		check("trabajos_impresion_copias", sql`${tabla.copias} >= 1`),
 	],
 );
+
+/** Cada respaldo semanal, correcto o fallido. Solo crece; lo escribe el sistema. */
+export const respaldos = pgTable(
+	"respaldos",
+	{
+		id: uuid("id").primaryKey(),
+		hechoEn: momento("hecho_en").notNull(),
+		estado: text("estado").notNull(),
+		tamanoBytes: bigint("tamano_bytes", { mode: "number" }),
+		cifrado: boolean("cifrado").notNull(),
+		destino: text("destino").notNull(),
+		sha256: text("sha256"),
+		error: text("error"),
+		creadoEn: momento("creado_en").notNull().defaultNow(),
+	},
+	(tabla) => [
+		index("respaldos_hecho").on(tabla.hechoEn.desc()),
+		check("respaldos_estado", sql`${tabla.estado} in ('correcto', 'fallido')`),
+	],
+);
+
+/** Cada prueba de restauración, con su evidencia. */
+export const restauracionesProbadas = pgTable(
+	"restauraciones_probadas",
+	{
+		id: uuid("id").primaryKey(),
+		probadaEn: momento("probada_en").notNull(),
+		tipo: text("tipo").notNull(),
+		respaldoId: uuid("respaldo_id").references(() => respaldos.id),
+		puntoRestauradoEn: momento("punto_restaurado_en"),
+		ambiente: text("ambiente").notNull().default("pruebas"),
+		conteosCuadraron: boolean("conteos_cuadraron").notNull(),
+		conteos: jsonb("conteos"),
+		evidenciaArchivoId: uuid("evidencia_archivo_id")
+			.notNull()
+			.references(() => archivos.id),
+		nota: text("nota"),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		index("restauraciones_probadas_probada").on(tabla.probadaEn.desc()),
+		check("restauraciones_probadas_tipo", sql`${tabla.tipo} in ('semanal_externo', 'punto_en_el_tiempo')`),
+		check("restauraciones_probadas_ambiente", sql`${tabla.ambiente} in ('pruebas')`),
+		check(
+			"restauraciones_probadas_de_su_tipo",
+			sql`(${tabla.tipo} = 'semanal_externo' and ${tabla.respaldoId} is not null)
+			or (${tabla.tipo} = 'punto_en_el_tiempo' and ${tabla.puntoRestauradoEn} is not null)`,
+		),
+		check("restauraciones_probadas_quien", sql`${tabla.creadoPor} is not null`),
+	],
+);

@@ -19,6 +19,7 @@ Lo que falta decidir o investigar, y en qué fase se resuelve. Lo del negocio ya
 - **El formato de los parámetros de texto** (fase 19, con la pantalla de Configuración): `admin.cambiar_parametro` revisa que un texto no venga vacío, pero no su forma (los días de trabajo, una versión). Decidir si cada definición lleva su patrón.
 - **Las lecturas de cuentas para los avisos** (fase 5): `admin.cuentas_por_regla` (`duena`, `soporte`, `departamento:{clave}`, con las cuentas activas) y `admin.correo_de_cuenta`. Hasta que existan, el worker no puede crear avisos fuera de las pruebas.
 - **El nivel de `pnpm audit`** (fase 22): SEGURIDAD dice que solo una vulnerabilidad alta o crítica detiene la revisión, pero `pnpm revision` corre `pnpm audit` sin nivel y se detiene con cualquiera. Se intentó alinearlo y el permiso del entorno lo negó; Bruno decide si la revisión pide `--audit-level high` o si SEGURIDAD dice «cualquiera».
+- **Un rol solo para el respaldo** (fase 22): hoy el worker vuelca con el rol dueño (decisión 368). Revisar si Render deja un rol de lectura que salte la seguridad por renglón de Graphile Worker.
 - **La lectura `admin.datos_de_aparato`** (fase 6): el tipo, si está revocado, el nombre, el último contacto y la versión de un aparato; sin ella, la impresión solo corre en las pruebas. También `rotar_llave` en `admin.trabajos_impresion`.
 - **Qué módulos puede usar un aparato al subir un archivo** (fase 6, con el alcance de cada aparato): hoy `POST /v1/archivos/subida` deja a un aparato subir a cualquier módulo.
 - **Un `\u0000` en la entrada o en la respuesta** (fase 22): Postgres no lo guarda en `text` ni en `jsonb`, y sale `500` en lugar de `400`. Rechazarlo en la validación del protocolo.
@@ -55,6 +56,7 @@ Lo que solo se comprueba con el servicio o el aparato de verdad. Se hace con la 
 |---|---|---|---|
 | 4 | El correo sale de verdad | Verificar el dominio en Resend, mandar un aviso a la cuenta de Bruno y ver que llegue | No |
 | 4 | Los archivos se guardan en R2 | Subir un comprobante con su enlace firmado, bajarlo y comprobar que el enlace vence | No |
+| 4 | El respaldo semanal llega a R2 por partes con su suma | Correr el trabajo con la credencial que solo escribe y la llave pública de Bruno; bajarlo con otra credencial, descifrarlo con `age -d` y restaurarlo | No |
 | 5 | Entrar con Google | Bruno crea el cliente en Google Cloud; entrar con la cuenta de la dueña, con una cuenta dada de alta y con una que no lo está | No |
 | 20 | Las etiquetas en las Zebra | Instalar el puente en la computadora de Aduana y en la del taller; imprimir una etiqueta de prenda, una de rollo, una de retazo, las de un lote recibido y una de bulto; revisar que el lector y la cámara de la tablet las lean; aprobar el ZPL guardado de cada etiqueta | No |
 | 20 | La tablet Android | Instalarla desde Chrome; leer la etiqueta de un bulto con la cámara; quitarle el wifi a media captura, apagarla y prenderla; comprobar que nada se duplica ni se pierde | No |
@@ -109,4 +111,6 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 10 nov 2026 | 4 | La versión de `guardar_impresora` (decisión 365) | Dos acciones · la versión en los datos | En los datos | No |
 | 10 nov 2026 | 4 | Lo que se manda en vivo por cada evento (decisión 366) | Un canal por tema · `enVivo` en cada módulo | `enVivo` | No |
 | 10 nov 2026 | 4 | Los tipos de etiqueta (decisión 367) | Una lista en `admin` · cada módulo registra los suyos | Cada módulo | No |
+| 10 nov 2026 | 4 | Con qué rol se vuelca el respaldo (decisión 368) | El de la app · uno de lectura · el dueño | El dueño: es el único que lee todo sin ser superusuario | Sí |
+| 10 nov 2026 | 4 | Si se reintenta un respaldo que falló (decisión 369) | Cada minuto · una vez, con el recordatorio diario | Una vez | No |
 

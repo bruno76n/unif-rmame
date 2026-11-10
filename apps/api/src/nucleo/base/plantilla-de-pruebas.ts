@@ -43,6 +43,7 @@ export default async function arrancar(proyecto: TestProject): Promise<() => Pro
 		puerto: contenedor.getPort(),
 		...roles,
 		plantilla: "plantilla",
+		contenedor: contenedor.getId(),
 	};
 	proyecto.provide("baseDePruebas", compartida);
 	return async () => {

@@ -20,6 +20,7 @@ import type { Base } from "../base/conexion.ts";
 import { enTransaccion } from "../base/transacciones.ts";
 import type { EnviarCorreo } from "../correo.ts";
 import type { ContextoDeTrabajo, RegistroDeModulos, Trabajo } from "../modulos.ts";
+import type { MediosDeRespaldo } from "../respaldo.ts";
 import { procesarEventos, repartirConLosModulos } from "./procesar-eventos.ts";
 import { correrReloj } from "./reloj.ts";
 
@@ -37,6 +38,8 @@ export interface DependenciasDelTrabajador {
 	dominioWeb: string;
 	/** El almacén de archivos (R2), para lo que genera el worker. */
 	almacen?: Almacen;
+	/** Lo que necesita el respaldo semanal. */
+	respaldo?: MediosDeRespaldo;
 	/** La hora; en las pruebas, una controlada. */
 	reloj?: () => Temporal.Instant;
 }
@@ -83,6 +86,7 @@ export function contextoDeTrabajo(
 		enviarCorreo: dependencias.enviarCorreo,
 		dominioWeb: dependencias.dominioWeb,
 		avisarFalla: avisarFalla(dependencias),
+		respaldo: dependencias.respaldo,
 		enTransaccion: (hacer) =>
 			enTransaccion(dependencias.base, async (transaccion) => {
 				const quien = { tipo: "sistema", trabajo } as const;

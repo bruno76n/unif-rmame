@@ -9,10 +9,11 @@
  * llamada sin dirección firmada pide `Authorization` con SigV4. Si la subida trae su suma
  * (`x-amz-checksum-sha256`, que la dirección firmada obliga a mandar), el contenido tiene que darla; la
  * revisión con `HEAD` regresa el tamaño y la suma, y el `ETag` es el MD5 del contenido, como en S3. Sus
- * errores son los XML de S3.
+ * errores son los XML de S3. También la subida por partes (`POST ?uploads`, `PUT ?partNumber&uploadId`,
+ * `POST ?uploadId`), con la suma de cada parte, que usa el respaldo semanal.
  */
 
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { HttpResponse, http } from "msw";
 import { aplicarFalla, type ModoDeFalla } from "./fallas.ts";
 
@@ -61,6 +62,8 @@ function vencimientoDeLaFirma(url: URL): number | undefined {
  */
 export function crearSimuladorDeR2(cuenta: string, ahora: () => number = Date.now) {
 	const objetos = new Map<string, Objeto>();
+	/** Las subidas por partes abiertas, por su `uploadId`. */
+	const subidas = new Map<string, { llave: string; tipo: string; partes: Map<number, Uint8Array> }>();
 	let modo: ModoDeFalla = "ninguna";
 	const direccion = `https://${cuenta}.r2.cloudflarestorage.com/:cubo/*`;
 
@@ -85,12 +88,59 @@ export function crearSimuladorDeR2(cuenta: string, ahora: () => number = Date.no
 	/** La llave del objeto: `cubo/llave`, sin la cuenta. */
 	const llaveDe = (request: Request) => decodeURIComponent(new URL(request.url).pathname.slice(1));
 
+	/** Una respuesta XML de S3. */
+	const xml = (cuerpo: string) => HttpResponse.xml(`<?xml version="1.0" encoding="UTF-8"?>${cuerpo}`);
+
 	const manejadores = [
+		http.post(direccion, async ({ request }) => {
+			const negado = await revisar(request);
+			if (negado) return negado;
+			const url = new URL(request.url);
+			const llave = llaveDe(request);
+			const [cubo = "", ...resto] = llave.split("/");
+			if (url.searchParams.has("uploads")) {
+				const uploadId = randomUUID();
+				subidas.set(uploadId, {
+					llave,
+					tipo: request.headers.get("content-type") ?? "application/octet-stream",
+					partes: new Map(),
+				});
+				return xml(
+					`<InitiateMultipartUploadResult><Bucket>${cubo}</Bucket><Key>${resto.join("/")}</Key><UploadId>${uploadId}</UploadId></InitiateMultipartUploadResult>`,
+				);
+			}
+			const subida = subidas.get(url.searchParams.get("uploadId") ?? "");
+			if (subida === undefined) return errorDeS3(404, "NoSuchUpload", "The specified upload does not exist.");
+			const orden = [...subida.partes.keys()].sort((a, b) => a - b);
+			const total = orden.reduce((suma, numero) => suma + (subida.partes.get(numero)?.byteLength ?? 0), 0);
+			const contenido = new Uint8Array(total);
+			let desde = 0;
+			for (const numero of orden) {
+				const parte = subida.partes.get(numero) ?? new Uint8Array();
+				contenido.set(parte, desde);
+				desde += parte.byteLength;
+			}
+			objetos.set(subida.llave, { contenido, tipo: subida.tipo, suma: undefined });
+			subidas.delete(url.searchParams.get("uploadId") ?? "");
+			return xml(
+				`<CompleteMultipartUploadResult><Bucket>${cubo}</Bucket><Key>${resto.join("/")}</Key><ETag>${etagDe(contenido)}</ETag></CompleteMultipartUploadResult>`,
+			);
+		}),
 		http.put(direccion, async ({ request }) => {
 			const negado = await revisar(request);
 			if (negado) return negado;
 			const contenido = new Uint8Array(await request.arrayBuffer());
 			const suma = request.headers.get("x-amz-checksum-sha256") ?? undefined;
+			const url = new URL(request.url);
+			const subida = subidas.get(url.searchParams.get("uploadId") ?? "");
+			if (url.searchParams.has("partNumber")) {
+				if (subida === undefined) return errorDeS3(404, "NoSuchUpload", "The specified upload does not exist.");
+				if (suma !== undefined && createHash("sha256").update(contenido).digest("base64") !== suma) {
+					return errorDeS3(400, "BadDigest", "The SHA256 you specified did not match the calculated checksum.");
+				}
+				subida.partes.set(Number(url.searchParams.get("partNumber")), contenido);
+				return new HttpResponse(null, { status: 200, headers: { ETag: etagDe(contenido) } });
+			}
 			const firmados = new URL(request.url).searchParams.get("X-Amz-SignedHeaders") ?? "";
 			if (suma === undefined && firmados.split(";").includes("x-amz-checksum-sha256")) {
 				return errorDeS3(400, "InvalidRequest", "Missing required header for this request: x-amz-checksum-sha256");

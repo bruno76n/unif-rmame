@@ -7,7 +7,7 @@
  * Lo que tiene hoy: `comandos_recibidos` (que usa el corredor de acciones); la bandeja de `eventos` con
  * `admin.guardar_evento` y su depuración; las vueltas de los trabajos programados; los folios; los
  * parámetros, las listas y la empresa; la bitácora con sus alertas; los avisos con su correo; los
- * archivos en R2; las impresoras y sus trabajos. Lo demás llega con las partes de la fase 4 y con la fase 5.
+ * archivos en R2; las impresoras y sus trabajos; los respaldos y sus pruebas de restauración. Lo demás llega con las partes de la fase 4 y con la fase 5.
  */
 
 import { definirModulo } from "../../nucleo/modulos.ts";
@@ -18,6 +18,7 @@ import { accionEditarEmpresa } from "./acciones/editar-empresa.ts";
 import { accionGuardarImpresora } from "./acciones/guardar-impresora.ts";
 import { accionMarcarAlertaRevisada } from "./acciones/marcar-alerta-revisada.ts";
 import { accionMarcarAvisoLeido } from "./acciones/marcar-aviso-leido.ts";
+import { accionRegistrarRestauracion } from "./acciones/registrar-restauracion.ts";
 import { accionTrabajosImpresion } from "./acciones/trabajos-impresion.ts";
 import { alEventoDeAdmin } from "./al-evento.ts";
 import { semillaDeContadores } from "./dominio/contadores.ts";
@@ -28,6 +29,7 @@ import { guardarArchivo } from "./internas/guardar-archivo.ts";
 import { guardarEvento } from "./internas/guardar-evento.ts";
 import { ligarArchivo } from "./internas/ligar-archivo.ts";
 import { mandarAImprimir } from "./internas/mandar-a-imprimir.ts";
+import { registrarRespaldo } from "./internas/registrar-respaldo.ts";
 import { tomarFolio } from "./internas/tomar-folio.ts";
 import { parametro } from "./lecturas/parametro.ts";
 import { siguienteFolio } from "./lecturas/siguiente-folio.ts";
@@ -37,6 +39,8 @@ import { rutasDeArchivos } from "./rutas/archivos.ts";
 import { rutasDeEtiquetas } from "./rutas/etiquetas.ts";
 import { depurarEventos } from "./trabajos/depurar-eventos.ts";
 import { enviarCorreos } from "./trabajos/enviar-correos.ts";
+import { recordatorioRestauracion } from "./trabajos/recordatorio-restauracion.ts";
+import { respaldoSemanal } from "./trabajos/respaldo-semanal.ts";
 
 export default definirModulo({
 	nombre: "admin",
@@ -49,6 +53,7 @@ export default definirModulo({
 		accionGuardarImpresora,
 		accionTrabajosImpresion,
 		accionConfirmarImpresion,
+		accionRegistrarRestauracion,
 	],
 	internas: {
 		guardar_evento: guardarEvento,
@@ -58,10 +63,11 @@ export default definirModulo({
 		ligar_archivo: ligarArchivo,
 		guardar_archivo: guardarArchivo,
 		mandar_a_imprimir: mandarAImprimir,
+		registrar_respaldo: registrarRespaldo,
 	},
 	lecturas: { parametro, siguiente_folio: siguienteFolio },
 	semillas: [semillaDeContadores, semillaDeParametrosDeAdmin],
-	trabajos: [depurarEventos, enviarCorreos],
+	trabajos: [depurarEventos, enviarCorreos, respaldoSemanal, recordatorioRestauracion],
 	lectores: lectoresDeAdmin,
 	alEvento: alEventoDeAdmin,
 	rutas: [...rutasDeArchivos, ...rutasDeEtiquetas],

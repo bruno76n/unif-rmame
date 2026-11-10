@@ -10,10 +10,12 @@
 import { join } from "node:path";
 import { run } from "graphile-worker";
 import { escribirBitacoraConAdmin, guardarEventosConAdmin } from "./nucleo/acciones/corredor.ts";
+import { crearAlmacen, cubos, direccionDeR2 } from "./nucleo/almacen.ts";
 import { abrirConexiones, crearBase } from "./nucleo/base/conexion.ts";
 import { crearEnvioAlRegistro, crearEnvioConResend, type EnviarCorreo } from "./nucleo/correo.ts";
 import { type Entorno, leerEntorno } from "./nucleo/entorno.ts";
 import { cargarModulos } from "./nucleo/modulos.ts";
+import { type MediosDeRespaldo, volcadoDeLaBase } from "./nucleo/respaldo.ts";
 import { esquemaDelWorker } from "./nucleo/trabajos/esquema.ts";
 import { crontabDelTrabajador, type DependenciasDelTrabajador, listaDeTareas } from "./nucleo/trabajos/trabajador.ts";
 
@@ -46,6 +48,36 @@ function envioDelEntorno(entorno: Entorno): EnviarCorreo {
 	return crearEnvioConResend(entorno.RESEND_LLAVE);
 }
 
+/**
+ * Lo que necesita el respaldo semanal según el entorno: el cubo de respaldos con su credencial que solo
+ * escribe, la llave pública y el volcado con el rol dueño. Sin todo eso no hay respaldo, y el trabajo lo
+ * registra como fallido y avisa.
+ */
+function respaldoDelEntorno(entorno: Entorno): { respaldo?: MediosDeRespaldo } {
+	const cuenta = entorno.R2_CUENTA;
+	const direccion = entorno.R2_DIRECCION ?? (cuenta === undefined ? undefined : direccionDeR2(cuenta));
+	const llaveId = entorno.R2_RESPALDOS_LLAVE_ID;
+	const secreto = entorno.R2_RESPALDOS_SECRETO;
+	const llavePublica = entorno.RESPALDO_LLAVE_PUBLICA;
+	const dueno = entorno.BASE_DATOS_URL_DUENO;
+	if (
+		direccion === undefined ||
+		llaveId === undefined ||
+		secreto === undefined ||
+		llavePublica === undefined ||
+		dueno === undefined
+	) {
+		return {};
+	}
+	return {
+		respaldo: {
+			almacen: crearAlmacen({ direccion, cubo: cubos.respaldos, llaveId, secreto }),
+			llavePublica,
+			...volcadoDeLaBase(dueno),
+		},
+	};
+}
+
 if (import.meta.main) {
 	const entorno = leerEntorno();
 	const conexiones = abrirConexiones(entorno.BASE_DATOS_URL);
@@ -58,6 +90,7 @@ if (import.meta.main) {
 			escribirBitacora: escribirBitacoraConAdmin,
 		},
 		enviarCorreo: envioDelEntorno(entorno),
+		...respaldoDelEntorno(entorno),
 		dominioWeb: entorno.DOMINIO_WEB,
 	});
 }

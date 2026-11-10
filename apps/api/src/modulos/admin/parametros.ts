@@ -3,8 +3,8 @@
  * versiones mínimas de cada app, cuánto se guardan los eventos y cada cuánto se apunta una consulta sensible.
  * Fase 4 · docs/modulos/admin/configuracion.md («Parámetros»), docs/cimientos/API.md,
  * docs/cimientos/EVENTOS-Y-TRABAJOS.md («Parámetros»), docs/modulos/admin/bitacora.md,
- * docs/modulos/admin/avisos.md, docs/modulos/admin/archivos.md y docs/modulos/admin/impresion.md
- * («Parámetros»)
+ * docs/modulos/admin/avisos.md, docs/modulos/admin/archivos.md, docs/modulos/admin/impresion.md y
+ * docs/modulos/admin/respaldos.md («Parámetros»)
  */
 
 import { type DefinicionDeParametro, semillaDeParametros } from "../../nucleo/parametros.ts";
@@ -135,6 +135,72 @@ export const parametrosDeAdmin: readonly DefinicionDeParametro[] = [
 		inicial: 5,
 		minimo: 1,
 		orden: 980,
+	},
+	{
+		clave: "admin.restauracion_cada_dias",
+		seccion: "parametro",
+		nombre: "Cada cuánto se prueba una restauración",
+		tipo: "entero",
+		unidad: "días",
+		inicial: 92,
+		minimo: 1,
+		orden: 200,
+	},
+	{
+		clave: "admin.restauracion_aviso_dias",
+		seccion: "parametro",
+		nombre: "Días sin probar antes del aviso",
+		explicacion: "Desde cuántos días sin probar una restauración sale «Por probar» y el aviso",
+		tipo: "entero",
+		unidad: "días",
+		inicial: 81,
+		minimo: 1,
+		orden: 210,
+	},
+	{
+		clave: "admin.dias_repetir_recordatorio",
+		seccion: "tecnico",
+		nombre: "Cada cuánto se repite el recordatorio de respaldos",
+		tipo: "entero",
+		unidad: "días",
+		inicial: 7,
+		minimo: 1,
+		orden: 990,
+	},
+	{
+		clave: "admin.dias_respaldo_vencido",
+		seccion: "tecnico",
+		nombre: "Días sin un respaldo correcto antes del aviso",
+		tipo: "entero",
+		unidad: "días",
+		inicial: 8,
+		minimo: 1,
+		orden: 991,
+	},
+	{
+		clave: "admin.dia_respaldo_semanal",
+		seccion: "tecnico",
+		nombre: "Día del respaldo semanal",
+		tipo: "opcion",
+		inicial: "domingo",
+		opciones: ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"],
+		orden: 992,
+	},
+	{
+		clave: "admin.hora_respaldo_semanal",
+		seccion: "tecnico",
+		nombre: "Hora del respaldo semanal",
+		tipo: "hora",
+		inicial: "02:00",
+		orden: 993,
+	},
+	{
+		clave: "admin.hora_recordatorio_respaldo",
+		seccion: "tecnico",
+		nombre: "Hora del recordatorio de respaldos",
+		tipo: "hora",
+		inicial: "09:00",
+		orden: 994,
 	},
 	{
 		clave: "admin.dias_guardar_eventos",

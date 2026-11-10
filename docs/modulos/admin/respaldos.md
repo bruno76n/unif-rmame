@@ -142,4 +142,28 @@ Los dos primeros van en `parametro`; los demás, en `tecnico`.
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 4.*
+**Fase 4, parte 7.**
+
+- **Las tablas** están en `apps/api/src/modulos/admin/tablas.ts` (migración `0009_respaldos.sql`):
+  - `respaldos`, que solo crece;
+  - `restauraciones_probadas`, con su disparador común y los CHECK de su tipo (el respaldo o el momento), su ambiente y quién la hizo.
+- **El volcado cifrado** (`apps/api/src/nucleo/respaldo.ts`):
+  - `pg_dump --format=custom` pasa directo a `age -r {RESPALDO_LLAVE_PUBLICA}`, sin tocar disco, y sale como flujo. Si cualquiera de los dos no sale con 0, falla con lo que dijo.
+  - En producción vuelca con el rol dueño (`BASE_DATOS_URL_DUENO`), con la clave en `PGPASSWORD` y no en los argumentos: solo el dueño lee todo, las particiones, las tablas de Graphile Worker con su seguridad por renglón y el registro de las migraciones (decisión 368).
+- **La subida** (`guardarFlujo` en `nucleo/almacen.ts`) va por partes de 8 MB, cada una con su suma SHA-256, al cubo `uniformame-respaldos` con su credencial que solo escribe. Da el tamaño y la suma de todo, que quedan en el registro.
+- **El trabajo `admin.respaldo_semanal`** (`trabajos/respaldo-semanal.ts`):
+  - su horario sale de `admin.dia_respaldo_semanal` y `admin.hora_respaldo_semanal`;
+  - no corre si ya hay uno correcto esa semana (desde su lunes en México);
+  - si falla (o al worker le falta la llave, la credencial o el rol dueño), lo registra como fallido y avisa, sin reintentarlo cada minuto (decisión 369).
+- **`admin.registrar_respaldo`** (`internas/registrar-respaldo.ts`) escribe el registro y `respaldo.hecho`; si falló, `respaldo_fallido` a la dueña y a soporte.
+- **El trabajo `admin.recordatorio_restauracion`** (`trabajos/recordatorio-restauracion.ts`), cada día a su hora:
+  - cuenta desde la última prueba que cuadró, o desde el primer respaldo;
+  - avisa `restauracion_por_probar`, y `respaldo_fallido` si el último falló o no hay uno correcto en `admin.dias_respaldo_vencido`;
+  - no repite un aviso antes de `admin.dias_repetir_recordatorio`.
+- **`admin.registrar_restauracion`** (`acciones/registrar-restauracion.ts`):
+  - pide la evidencia, una fecha que no sea futura y un respaldo correcto (`422 respaldo_fallido`);
+  - liga la evidencia con `admin.ligar_archivo`;
+  - su contrato está en `contratos/admin/respaldos.ts`.
+- **Las pruebas:**
+  - `trabajos/respaldo-semanal.prueba.ts`: vuelca la base copia con el `pg_dump` del contenedor de Postgres 18, cifra con una llave de `age-keygen`, sube por partes al simulador de R2, revisa la suma, descifra con `age -d`, restaura con `pg_restore` en otra base y compara los renglones de cada tabla. También que no corra dos veces en la semana, y la falla con sus avisos.
+  - `trabajos/recordatorio-restauracion.prueba.ts`: los días, la repetición, el respaldo vencido o fallido y el registro de la restauración.

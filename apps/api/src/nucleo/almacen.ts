@@ -9,7 +9,16 @@
  */
 
 import { createHash } from "node:crypto";
-import { GetObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import {
+	AbortMultipartUploadCommand,
+	CompleteMultipartUploadCommand,
+	CreateMultipartUploadCommand,
+	GetObjectCommand,
+	HeadObjectCommand,
+	PutObjectCommand,
+	S3Client,
+	UploadPartCommand,
+} from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 /** Lo que se declara de un archivo antes de subirlo. */
@@ -41,7 +50,19 @@ export interface Almacen {
 	revisar(clave: string): Promise<ObjetoGuardado | undefined>;
 	/** Guarda un objeto que generó el servidor, con su suma. */
 	guardar(clave: string, contenido: Uint8Array, tipo: string): Promise<void>;
+	/**
+	 * Guarda lo que va saliendo de un flujo, por partes y sin pasar por disco, cada parte con su suma.
+	 * @returns El tamaño y la suma SHA-256 (hexadecimal) de todo lo que se subió.
+	 */
+	guardarFlujo(
+		clave: string,
+		flujo: AsyncIterable<Uint8Array>,
+		tipo: string,
+	): Promise<ObjetoGuardado & { sha256: string }>;
 }
+
+/** El tamaño de cada parte de una subida por partes: S3 pide al menos 5 MB, salvo la última. */
+const tamanoDeParte = 8 * 1024 * 1024;
 
 /** Cómo se conecta el almacén. */
 export interface ConexionDelAlmacen {
@@ -148,6 +169,45 @@ export function crearAlmacen(conexion: ConexionDelAlmacen): Almacen {
 				if (noEsta(error)) return undefined;
 				throw error;
 			}
+		},
+		async guardarFlujo(clave, flujo, tipo) {
+			const { UploadId } = await cliente.send(
+				new CreateMultipartUploadCommand({ Bucket, Key: clave, ContentType: tipo, ChecksumAlgorithm: "SHA256" }),
+			);
+			const suma = createHash("sha256");
+			const partes: { PartNumber: number; ETag: string | undefined; ChecksumSHA256: string }[] = [];
+			let pendiente: Uint8Array[] = [];
+			let enEspera = 0;
+			let tamano = 0;
+			/** Sube lo que va juntado como una parte. */
+			const subirParte = async () => {
+				const parte = Buffer.concat(pendiente);
+				pendiente = [];
+				enEspera = 0;
+				const ChecksumSHA256 = createHash("sha256").update(parte).digest("base64");
+				const PartNumber = partes.length + 1;
+				const subida = await cliente.send(
+					new UploadPartCommand({ Bucket, Key: clave, UploadId, PartNumber, Body: parte, ChecksumSHA256 }),
+				);
+				partes.push({ PartNumber, ETag: subida.ETag, ChecksumSHA256 });
+			};
+			try {
+				for await (const pedazo of flujo) {
+					suma.update(pedazo);
+					tamano += pedazo.byteLength;
+					pendiente.push(pedazo);
+					enEspera += pedazo.byteLength;
+					if (enEspera >= tamanoDeParte) await subirParte();
+				}
+				if (enEspera > 0 || partes.length === 0) await subirParte();
+				await cliente.send(
+					new CompleteMultipartUploadCommand({ Bucket, Key: clave, UploadId, MultipartUpload: { Parts: partes } }),
+				);
+			} catch (error) {
+				await cliente.send(new AbortMultipartUploadCommand({ Bucket, Key: clave, UploadId })).catch(() => undefined);
+				throw error;
+			}
+			return { tamano, sha256: suma.digest("hex") };
 		},
 		async guardar(clave, contenido, tipo) {
 			await cliente.send(

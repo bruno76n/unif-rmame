@@ -19,6 +19,8 @@ export interface BaseDePrueba {
 	app: pg.Pool;
 	/** Con el rol dueño: para crear lo que la prueba necesita (tablas de prueba, permisos). */
 	dueno: pg.Pool;
+	/** El contenedor de Postgres, para `docker exec` con `pg_dump` y `pg_restore` de su versión. */
+	contenedor: string;
 	/** Cierra las conexiones y borra la copia. */
 	borrar: () => Promise<void>;
 }
@@ -61,6 +63,7 @@ export async function crearBaseDePrueba(): Promise<BaseDePrueba> {
 		nombre,
 		app,
 		dueno,
+		contenedor: compartida.contenedor,
 		borrar: async () => {
 			await Promise.all([app.end(), dueno.end()]);
 			const cierre = new pg.Client(conexion(compartida, "dueno", "postgres"));

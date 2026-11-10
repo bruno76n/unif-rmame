@@ -14,6 +14,7 @@
 		"./contratos/admin/bitacora": "./src/contratos/admin/bitacora.ts",
 		"./contratos/admin/avisos": "./src/contratos/admin/avisos.ts",
 		"./contratos/admin/impresion": "./src/contratos/admin/impresion.ts",
+		"./contratos/admin/respaldos": "./src/contratos/admin/respaldos.ts",
 		"./cliente/cliente": "./src/cliente/cliente.ts"
 	},
 	"dependencies": {
