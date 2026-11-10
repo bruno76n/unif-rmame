@@ -24,6 +24,7 @@ Lo que falta decidir o investigar, y en qué fase se resuelve. Lo del negocio ya
 - **Las rutas fijas y el recorte común** (fase 20, con las etiquetas y los impresos): las respuestas JSON de las rutas fijas y lo que dibuja una etiqueta no pasan por `recorteComun`; cada tipo de etiqueta recibe los datos ya recortados por su módulo.
 - **El teléfono para escanear y la credencial de uniformame.mx con su llave** (fases 11 y 18): hoy entran con llave la tablet y el puente; el teléfono entra con la sesión de quien escanea más su llave, y la credencial nace con uniformame.mx.
 - **El tope detenido solo ve las transacciones del rol de la app y de su base** (fase 22, con la seguridad completa): `pg_stat_activity` no le enseña al rol de la app el inicio de las del dueño (una migración, alguien en psql), ni se miran las de otras bases ni las transacciones preparadas, aunque el tope es de todo el servidor. El respaldo no frena el tope (solo lee). Decidir si el worker lee con `pg_read_all_stats` o si se guarda el tope visto de cada minuto.
+- **Un CHECK para `falta_documento`** (fase 22): que la base exija `espera_entidad_id` cuando el motivo es `falta_documento`; hoy lo cumple solo el código.
 - **`permiso.cola` en las acciones de la tablet** (fases 12 y 20): lo que su archivo dice «Quién: La tablet, por su cola» tiene que llevar `cola: true` en su contrato; si no, la subida lo aparta con `fuera_de_alcance`. Nada lo compara todavía.
 - **El recorte de los aparatos** (fase 12, con las acciones de la tablet): `recorteComun` no le quita nada a un aparato. La tablet nunca recibe precios, costos ni sueldos, y las tarifas solo según `produccion.tarifa_visible_tablet`: definir su recorte, con su prueba, con la primera acción de la tablet que regrese montos.
 - **La misma carrera del `429` en la entrada con Google** (fase 22): `entrada:{ip}` revisa el bloqueo antes y cuenta la falla después, como el canje antes de la decisión 408.
@@ -159,5 +160,13 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 10 nov 2026 | 6 | Si se reintenta lo de un aparato revocado (decisión 403) | Sí, a mano · no | No: `dispositivo_revocado` | No |
 | 10 nov 2026 | 6 | De dónde sale el aviso `resincronizar` (decisión 404) | De `parametro.cambiado` · de un evento `dispositivo.foto_pedida` | De `dispositivo.foto_pedida` | No |
 | 10 nov 2026 | 6 | Cómo se sabe que el tope está detenido (decisión 405) | Guardar el tope cada minuto · la transacción abierta más vieja | La transacción abierta más vieja, una vez por episodio | No |
+| 10 nov 2026 | 6 | Qué sube un aparato por su cola (decisión 406) | Todo lo de su alcance · lo que el contrato marca con `permiso.cola` | `permiso.cola`: rotar la llave y lo del puente quedan solo en línea | No |
+| 10 nov 2026 | 6 | Cómo se guarda la carga de un comando de aparato (decisión 407) | Como llegó · sin campos con nombre de secreto | Sin campos con nombre de secreto | No |
+| 10 nov 2026 | 6 | Cómo cuenta el canje los códigos equivocados (decisión 408) | Contar antes cada intento · un candado por IP | Un candado por IP | No |
+| 10 nov 2026 | 6 | Qué pasa si falla el reintento solo de los apartados (decisión 409) | Dejar sin respuesta al comando · contestarlo y reintentar al empezar cada subida | Contestarlo y reintentar al empezar cada subida | No |
+| 10 nov 2026 | 6 | Cómo cuenta la alerta de un revocado (decisión 410) | Desde la alerta anterior por hora o id · todo lo llegado menos lo ya alertado | Todo lo llegado menos lo ya alertado, con candado | No |
+| 10 nov 2026 | 6 | Qué entra en la versión del esquema (decisión 411) | Tablas, orden y columnas · también el filtro y sus parámetros | También el filtro y sus parámetros | No |
+| 10 nov 2026 | 6 | Cuándo revisa la tablet sus llaves foráneas (decisión 412) | Al terminar cada ventana · cuando queda al día | Cuando queda al día | No |
+| 10 nov 2026 | 6 | Qué guarda un apartado que se vuelve a apartar por otro motivo (decisión 413) | Nada · el motivo nuevo y lo que espera | El motivo nuevo y lo que espera | No |
 | 10 nov 2026 | 5 | La pantalla del Google de desarrollo | Una propia para escoger cuenta · la de desarrollo de oidc-provider, que pide el correo | La de oidc-provider; `pnpm local` escribe los correos de la muestra al arrancar | No |
 

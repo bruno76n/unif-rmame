@@ -425,7 +425,8 @@ export async function reintentarLosQueYaTienenSuDocumento(
 	base: Base,
 	dispositivoId: string,
 ): Promise<void> {
-	// Los documentos, en el orden en que pasó el primer apartado que espera cada uno.
+	// Documento por documento, en el orden en que pasó el primer apartado que espera cada uno (y, si empatan,
+	// en el que llegó); los de cada documento van en el orden en que pasaron.
 	const { rows } = await base.execute(sql`
 		SELECT a.espera_entidad_id::text AS entidad FROM comandos_recibidos a
 		WHERE a.dispositivo_id = ${dispositivoId}::uuid AND a.resultado = 'apartado'
@@ -435,7 +436,7 @@ export async function reintentarLosQueYaTienenSuDocumento(
 				WHERE c.dispositivo_id = a.dispositivo_id AND c.entidad_id = a.espera_entidad_id AND c.resultado <> 'apartado'
 			)
 		GROUP BY a.espera_entidad_id
-		ORDER BY min(a.ocurrido_en)`);
+		ORDER BY min(a.ocurrido_en), min(a.recibido_en)`);
 	for (const { entidad } of z.array(z.object({ entidad: z.string() })).parse(rows)) {
 		await reintentarLosQueEsperaban(dependencias, base, dispositivoId, entidad);
 	}

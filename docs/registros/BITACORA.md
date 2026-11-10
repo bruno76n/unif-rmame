@@ -47,3 +47,4 @@ La línea de la bitácora se escribe al final, con el resultado ya conocido. Esc
 | 10 nov 2026 | 6 | Auditoría (tres auditores y desmentidor) y sus correcciones | [2026-11-10-fase-06](sesiones/2026-11-10-fase-06.md) |
 | 10 nov 2026 | 6 | Revisión de las correcciones y su segunda vuelta | [2026-11-10-fase-06](sesiones/2026-11-10-fase-06.md) |
 | 10 nov 2026 | 6 | Segunda revisión de las correcciones | [2026-11-10-fase-06](sesiones/2026-11-10-fase-06.md) |
+| 10 nov 2026 | 6 | Tercera revisión y cierre: fase 6 terminada | [2026-11-10-fase-06](sesiones/2026-11-10-fase-06.md) |

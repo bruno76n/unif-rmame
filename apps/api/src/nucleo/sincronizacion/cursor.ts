@@ -121,8 +121,8 @@ export function leerCursorDeFoto(llave: Buffer, opaco: string): CursorDeFoto | u
 	return leido.success ? leido.data : undefined;
 }
 
-/** La versión ya calculada de cada lista de tablas (las del registro no cambian mientras corre el proceso). */
-const yaCalculados = new WeakMap<readonly TablaQueBaja[], number>();
+/** La versión ya calculada de cada lista de tablas, por tipo (las del registro no cambian mientras corre el proceso). */
+const yaCalculados = new WeakMap<readonly TablaQueBaja[], Map<string, number>>();
 
 /**
  * La versión del esquema de sincronización de un tipo de aparato: sale de sus tablas, su orden, sus columnas,
@@ -135,7 +135,9 @@ const yaCalculados = new WeakMap<readonly TablaQueBaja[], number>();
  * @returns Un entero de 28 bits (cabe en `dispositivos_sync.esquema_sync`).
  */
 export function esquemaDe(tablas: readonly TablaQueBaja[], tipo: string): number {
-	const calculado = yaCalculados.get(tablas);
+	const deLaLista = yaCalculados.get(tablas) ?? new Map<string, number>();
+	yaCalculados.set(tablas, deLaLista);
+	const calculado = deLaLista.get(tipo);
 	if (calculado !== undefined) return calculado;
 	const dialecto = new PgDialect();
 	const sinUbicacion: AparatoQueBaja = {
@@ -154,6 +156,6 @@ export function esquemaDe(tablas: readonly TablaQueBaja[], tipo: string): number
 		]),
 	);
 	const esquema = Number.parseInt(createHash("sha256").update(forma).digest("hex").slice(0, 7), 16);
-	yaCalculados.set(tablas, esquema);
+	deLaLista.set(tipo, esquema);
 	return esquema;
 }

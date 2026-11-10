@@ -44,8 +44,20 @@ describe("la versión del esquema cambia cuando cambia lo que baja, y solo enton
 		);
 		const segunElTipo = tabla({ filtro: (aparato) => (aparato.tipo === "tablet_taller" ? sql`true` : sql`false`) });
 		expect(esquemaDe([segunElTipo], "tablet_taller")).not.toBe(esquemaDe([segunElTipo], "computadora_tienda"));
-		// La misma lista se calcula una vez: la segunda vez regresa lo mismo.
-		const lista = [tabla()];
+		// La misma lista y el mismo tipo se calculan una vez: el filtro se arma dos veces (con ubicación y sin ella),
+		// no cuatro; otro tipo con la misma lista se calcula aparte.
+		let armados = 0;
+		const lista = [
+			tabla({
+				filtro: () => {
+					armados++;
+					return sql`true`;
+				},
+			}),
+		];
 		expect(esquemaDe(lista, "tablet_taller")).toBe(esquemaDe(lista, "tablet_taller"));
+		expect(armados).toBe(2);
+		esquemaDe(lista, "computadora_tienda");
+		expect(armados).toBe(4);
 	});
 });
