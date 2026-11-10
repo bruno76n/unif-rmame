@@ -115,4 +115,5 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 10 nov 2026 | 4 | Los tipos de etiqueta (decisión 367) | Una lista en `admin` · cada módulo registra los suyos | Cada módulo | No |
 | 10 nov 2026 | 4 | Con qué rol se vuelca el respaldo (decisión 368) | El de la app · uno de lectura · el dueño | El dueño: es el único que lee todo sin ser superusuario | Sí |
 | 10 nov 2026 | 4 | Si se reintenta un respaldo que falló (decisión 369) | Cada minuto · una vez, con el recordatorio diario | Una vez | No |
+| 10 nov 2026 | 4 | Cómo sabe la bitácora qué es un sueldo (decisión 370) | Por el nombre · una lista que declara cada módulo | La lista de cada módulo | No |
 

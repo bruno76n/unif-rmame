@@ -73,11 +73,11 @@ describe("toda acción deja su renglón de bitácora; uno con un secreto falla; 
 
 	it("un sueldo en antes o despues marca el renglón sensible; con la descripción en texto suelto es un error del programa", async () => {
 		await expect(
-			escribir({ descripcion: "Cambió el pago de Ana: $1,350", despues: { pago_por_dia_centavos: 135_000 } }),
+			escribir({ descripcion: "Cambió el pago de Ana: $1,350", despues: { pago_dia_centavos: 135_000 } }),
 		).rejects.toThrow("plantilla");
 		const { bitacora_id } = (await escribir({
 			descripcion: { plantilla: "Cambió el pago de {persona}", valores: { persona: "Ana" } },
-			despues: { persona: { sueldo_centavos: 135_000 } },
+			despues: { persona: { pago_dia_centavos: 135_000 }, nomina_id: "01936f2e-0000-7000-8000-0000000000c5" },
 		})) as { bitacora_id: string };
 		const { rows } = await servidor.base.dueno.query(
 			"SELECT descripcion_recortada, sensible_sueldos FROM bitacora WHERE id = $1",

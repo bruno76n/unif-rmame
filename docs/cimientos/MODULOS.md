@@ -125,4 +125,5 @@ Las formas fijas en que los módulos se hablan, para que nadie invente otra:
   - Un módulo puede registrar rutas fijas (`RutaFija`: nombre, método, dirección y cómo se atienden), como las de los archivos. El servidor las atiende después de identificar y revisar la versión (y el `Origin` en un `POST`).
   - El contexto lleva el `almacen` de archivos y `hayLectura(nombre)`, para las lecturas que un módulo puede no tener (`{modulo}.ve_documento`).
   - Lo que un módulo hace al llegar un tipo de evento va en `alEvento`.
+  - Un módulo declara sus campos de sueldo o de tarifa (`camposDeSueldo`, de su `permisos.ts`), que la bitácora usa para marcar sensible un renglón; el contexto los lleva todos.
 - **Las pruebas:** `nucleo/acciones/atomica.prueba.ts` (una acción que falla antes de escribir, después de su interna o en la bitácora no deja nada), `nucleo/acciones/pisadas.prueba.ts` y `nucleo/modulos.prueba.ts` (un módulo nuevo en su carpeta se registra solo; uno mal nombrado se rechaza).

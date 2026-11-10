@@ -89,6 +89,25 @@ describe("sin puente conectado responde impresora_sin_puente; con él, el trabaj
 		).toBe(200);
 	});
 
+	it("dos impresoras guardadas a la vez con el mismo puente: una entra y la otra responde puente_ocupado", async () => {
+		const puenteLibre = "01936f2e-0000-7000-8000-000000000033";
+		servidor.aparatos.set(puenteLibre, {
+			tipo: "puente_impresion",
+			revocado: false,
+			nombre: "Puente nuevo",
+			ultimo_contacto_en: new Date().toISOString(),
+			version_app: "1.0.0",
+		});
+		const [una, otra] = await Promise.all([
+			guardar({ nombre: "Zebra A", modelo: "ZD421", ubicacion_id: ubicacion.BOD, dispositivo_id: puenteLibre }),
+			guardar({ nombre: "Zebra B", modelo: "ZD421", ubicacion_id: ubicacion.BOD, dispositivo_id: puenteLibre }),
+		]);
+		expect([una.estado, otra.estado].sort()).toEqual([200, 422]);
+		expect([una, otra].find((respuesta) => respuesta.estado === 422)?.cuerpo).toMatchObject({
+			codigo: "puente_ocupado",
+		});
+	});
+
 	it("con su puente conectado, el trabajo nace por imprimir con quién lo pidió y su evento", async () => {
 		const respuesta = await imprimir("ADU", 3);
 		expect(respuesta.estado).toBe(200);

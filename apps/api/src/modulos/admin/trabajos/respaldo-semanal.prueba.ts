@@ -123,6 +123,12 @@ describe("el respaldo semanal sale cifrado, llega con su SHA-256 y, descifrado y
 			password: compartida.dueno.clave,
 			database: restaurada,
 		});
+		// Al borrarla con FORCE, Postgres corta lo que quede del grupo (57P01): solo ese error se calla.
+		const callarElCorte = (error: Error) => {
+			if (!("code" in error && error.code === "57P01")) throw error;
+		};
+		enLaRestaurada.on("error", callarElCorte);
+		enLaRestaurada.on("connect", (conexion) => conexion.on("error", callarElCorte));
 		try {
 			const restauracion = spawnSync(
 				"docker",
@@ -178,7 +184,7 @@ describe("el respaldo semanal sale cifrado, llega con su SHA-256 y, descifrado y
 		expect(simulador.objetos.has("uniformame-respaldos/2026/2026-11-29.dump.age")).toBe(false);
 	});
 
-	it("si R2 falla mientras el volcado sigue, el trabajo termina y para el volcado y el cifrado", async () => {
+	it("si R2 falla desde el principio, el trabajo termina y para el volcado y el cifrado", async () => {
 		ahora = Temporal.Instant.from("2026-12-06T08:00:00Z");
 		const { respaldo } = dependencias;
 		if (respaldo === undefined) throw new Error("falta el respaldo de prueba");
@@ -195,6 +201,29 @@ describe("el respaldo semanal sale cifrado, llega con su SHA-256 y, descifrado y
 		}
 		const { rows } = await prueba.dueno.query("SELECT estado FROM respaldos ORDER BY hecho_en DESC LIMIT 1");
 		expect(rows[0]?.estado).toBe("fallido");
+		await new Promise((listo) => setTimeout(listo, 200));
+		expect(spawnSync("pgrep", ["-f", "^yes respaldo$"]).status).toBe(1);
+	});
+
+	it("si una parte falla a medio flujo, la subida se cancela, el trabajo termina y para el volcado", async () => {
+		ahora = Temporal.Instant.from("2026-12-13T08:00:00Z");
+		const { respaldo } = dependencias;
+		if (respaldo === undefined) throw new Error("falta el respaldo de prueba");
+		// R2 empieza bien: falla ya con la subida abierta, cuando las partes van saliendo.
+		const fallar = setTimeout(() => simulador.ponerAFallar("error_del_servidor"), 300);
+		try {
+			await correrTrabajo(
+				{ ...dependencias, respaldo: { ...respaldo, volcado: ["yes", "respaldo"] } },
+				respaldoSemanal,
+				{},
+			);
+		} finally {
+			clearTimeout(fallar);
+			simulador.ponerAFallar("ninguna");
+		}
+		const { rows } = await prueba.dueno.query("SELECT estado FROM respaldos ORDER BY hecho_en DESC LIMIT 1");
+		expect(rows[0]?.estado).toBe("fallido");
+		expect(simulador.objetos.has("uniformame-respaldos/2026/2026-12-13.dump.age")).toBe(false);
 		await new Promise((listo) => setTimeout(listo, 200));
 		expect(spawnSync("pgrep", ["-f", "^yes respaldo$"]).status).toBe(1);
 	});

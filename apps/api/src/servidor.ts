@@ -326,6 +326,13 @@ export async function crearServidor(dependencias: DependenciasDelServidor) {
 		app.addHook("onReady", () => avisos.iniciar());
 		app.addHook("onClose", () => avisos.cerrar());
 		app.get("/v1/eventos", { schema: { hide: true }, preValidation: identificar }, async (peticion, respuesta) => {
+			// Se escucha el cierre antes de cualquier espera: si el cliente se va mientras se conecta, igual se quita.
+			let quitar: (() => void) | undefined;
+			let cerrada = peticion.raw.destroyed;
+			respuesta.raw.on("close", () => {
+				cerrada = true;
+				quitar?.();
+			});
 			const quien = quienDe(peticion);
 			const hola = { servidor_en: reloj().toString(), version_minima: await minimaDe(quien) };
 			// Fastify ya no escribe la respuesta: pasan los encabezados que pusieron CORS y helmet, y los del SSE.
@@ -341,15 +348,8 @@ export async function crearServidor(dependencias: DependenciasDelServidor) {
 			}
 			respuesta.raw.writeHead(200);
 			const salida = { escribir: (texto: string) => respuesta.raw.write(texto), terminar: () => respuesta.raw.end() };
-			// Se escucha el cierre antes de esperar: si el cliente se va mientras se conecta, igual se quita.
-			let quitar: (() => void) | undefined;
-			let cerrada = false;
-			peticion.raw.on("close", () => {
-				cerrada = true;
-				quitar?.();
-			});
 			quitar = await avisos.conectar(quien, salida, hola);
-			if (cerrada) quitar();
+			if (cerrada || respuesta.raw.destroyed) quitar();
 		});
 	}
 

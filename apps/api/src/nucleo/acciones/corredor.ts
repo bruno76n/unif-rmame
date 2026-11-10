@@ -114,6 +114,7 @@ export function crearContexto(
 			return lectura(contexto, datos);
 		},
 		hayLectura: (nombre) => registro.lecturas.has(nombre),
+		camposDeSueldo: registro.camposDeSueldo,
 		guardarEvento: (evento) => {
 			eventos.push(evento);
 		},

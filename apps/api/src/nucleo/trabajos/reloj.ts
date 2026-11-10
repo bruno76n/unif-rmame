@@ -70,7 +70,10 @@ export async function correrReloj(trabajos: Iterable<Trabajo>, contexto: Context
 				sql`SELECT asegurar_particiones(${`public.${tabla}`}::regclass, ${mesesDeParticionesAdelante})`,
 			);
 		} catch (error) {
-			await contexto.avisarFalla(`Las particiones de ${tabla}`, error instanceof Error ? error.message : String(error));
+			await contexto.avisarFalla(
+				`Crear las particiones de ${tabla}`,
+				error instanceof Error ? error.message : String(error),
+			);
 		}
 	}
 	await enTransaccion(contexto.base, async (transaccion) => {

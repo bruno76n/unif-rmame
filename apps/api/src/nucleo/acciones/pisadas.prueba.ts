@@ -135,6 +135,7 @@ describe("una edición con versión vieja recibe 409 con la versión actual y su
 				guardarEvento: () => {},
 				bitacora: () => {},
 				almacen: undefined,
+				camposDeSueldo: new Set(),
 			};
 			return tomarVersion(contexto, notas, id, version, async () => {
 				// Otra persona intenta cambiarla justo mientras se lee: tiene que esperar (aquí, rendirse).

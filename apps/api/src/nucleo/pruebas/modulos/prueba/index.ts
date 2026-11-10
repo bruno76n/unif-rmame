@@ -66,6 +66,8 @@ export default definirModulo({
 	nombre: "prueba",
 	lectores: { prueba_notas: ["ventas"] },
 	semillas: semillasDePrueba,
+	// Como lo hará Personal con el pago por día: un campo de sueldo que hace sensible la bitácora.
+	camposDeSueldo: ["pago_dia_centavos"],
 	// La etiqueta de prueba: la piden Ventas o un puente con su trabajo; dice las notas y las copias.
 	tiposDeEtiqueta: [
 		{

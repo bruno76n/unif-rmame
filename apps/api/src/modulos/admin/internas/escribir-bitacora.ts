@@ -4,8 +4,8 @@
  *
  * Quién, el comando, el módulo, el origen y la acción salen del contexto. Falla como error del programa si
  * `antes` o `despues` traen un campo de secreto. Si la descripción trae sueldos o tarifas, o `antes` o
- * `despues` traen un campo de sueldo o de tarifa, guarda también la descripción con «••••» en su lugar y
- * marca `sensible_sueldos`. Una consulta sensible no se vuelve a
+ * `despues` traen uno de los campos de sueldo o de tarifa que declaran los módulos en su `permisos.ts`,
+ * guarda también la descripción con «••••» en su lugar y marca `sensible_sueldos`. Una consulta sensible no se vuelve a
  * apuntar si la misma cuenta ya la apuntó sobre el mismo documento en los últimos
  * `admin.minutos_consulta_sensible`. Una alerta guarda `alerta.registrada`.
  */
@@ -58,17 +58,18 @@ function campoSecreto(valor: unknown): string | undefined {
 	return undefined;
 }
 
-/** Los nombres de campo de un sueldo o una tarifa (el pago por día, la tarifa por pieza, la nómina). */
-const nombresDeSueldo = /(^|_)(sueldo|sueldos|tarifa|tarifas|pago_por_dia|nomina)(_|$)/;
-
 /**
- * Dice si un valor trae un campo de sueldo o de tarifa, a cualquier profundidad.
+ * Dice si un valor trae uno de los campos de sueldo o de tarifa que declaran los módulos, a cualquier
+ * profundidad.
  * @param valor El `antes` o el `despues` de un renglón.
+ * @param camposDeSueldo Los campos de sueldo o de tarifa.
  */
-function traeCampoDeSueldo(valor: unknown): boolean {
-	if (Array.isArray(valor)) return valor.some(traeCampoDeSueldo);
+function traeCampoDeSueldo(valor: unknown, camposDeSueldo: ReadonlySet<string>): boolean {
+	if (Array.isArray(valor)) return valor.some((interior) => traeCampoDeSueldo(interior, camposDeSueldo));
 	if (typeof valor !== "object" || valor === null) return false;
-	return Object.entries(valor).some(([campo, interior]) => nombresDeSueldo.test(campo) || traeCampoDeSueldo(interior));
+	return Object.entries(valor).some(
+		([campo, interior]) => camposDeSueldo.has(campo) || traeCampoDeSueldo(interior, camposDeSueldo),
+	);
 }
 
 /**
@@ -125,7 +126,9 @@ export async function escribirBitacora(
 	const { completa, recortada } = armarDescripciones(renglon.descripcion);
 	// Un sueldo o una tarifa en antes o despues hace sensible el renglón, aunque la descripción no lo diga;
 	// si la descripción va en texto suelto no se puede tapar nada: es un error del programa.
-	const sueldosEnLoQueCambio = traeCampoDeSueldo(renglon.antes) || traeCampoDeSueldo(renglon.despues);
+	const sueldosEnLoQueCambio =
+		traeCampoDeSueldo(renglon.antes, contexto.camposDeSueldo) ||
+		traeCampoDeSueldo(renglon.despues, contexto.camposDeSueldo);
 	if (sueldosEnLoQueCambio && typeof renglon.descripcion === "string") {
 		throw new Error("un renglón con sueldos o tarifas tiene que dar su descripción como plantilla");
 	}

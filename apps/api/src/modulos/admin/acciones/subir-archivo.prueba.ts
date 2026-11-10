@@ -98,6 +98,13 @@ describe("un archivo de otro tipo o más grande no se acepta; la dirección firm
 		expect((await pedirSubida({ modulo: "no_existe" }, "duena")).cuerpo).toMatchObject({
 			campos: { modulo: "Ese módulo no existe." },
 		});
+		for (const deJavaScript of ["constructor", "toString", "__proto__"]) {
+			for (const quien of ["ventas", "duena"]) {
+				expect((await pedirSubida({ modulo: deJavaScript }, quien)).cuerpo).toMatchObject({
+					campos: { modulo: "Ese módulo no existe." },
+				});
+			}
+		}
 	});
 
 	it("la dirección firmada vence a los 5 minutos", async () => {

@@ -7,6 +7,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { moduloDe } from "./acciones/corredor.ts";
 import { cargarModulos } from "./modulos.ts";
 
 describe("una carpeta nueva en modulos/ registra sus acciones, consultas, internas y lecturas sin tocar ningún otro archivo", () => {
@@ -70,5 +71,12 @@ export default definirModulo({
 export default definirModulo({ nombre: "ajeno", acciones: [implementarAccion(x, async () => ({ resultado: { mensaje: "x" } }))] });`,
 		);
 		await expect(cargarModulos(carpeta)).rejects.toThrow("no es del módulo ajeno");
+	});
+});
+
+describe("el módulo de una acción o de un trabajo sale de su nombre", () => {
+	it("lo de antes del punto; sin punto, el nombre entero", () => {
+		expect(moduloDe("ventas.confirmar_pedido")).toBe("ventas");
+		expect(moduloDe("reloj")).toBe("reloj");
 	});
 });

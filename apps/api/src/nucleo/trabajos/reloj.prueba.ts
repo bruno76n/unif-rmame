@@ -180,7 +180,7 @@ describe("un trabajo corre a la hora de México de su parámetro, una sola vez p
 		trabajoDePrueba.horario = { cada: "minutos", minutos: 5 };
 		ahora = Temporal.Instant.from("2026-11-23T18:00:00Z");
 		await vueltaDelReloj();
-		expect(avisos.slice(antes)).toEqual([expect.stringMatching(/^Las particiones de eventos falló: /)]);
+		expect(avisos.slice(antes)).toEqual([expect.stringMatching(/^Crear las particiones de eventos falló: /)]);
 		expect(await pendientes()).toContainEqual({ key: "prueba.resumen:2026-11-23T12:00", queue_name: "prueba.resumen" });
 	});
 });

@@ -48,7 +48,7 @@ function almacenDe(contexto: ContextoDeRuta) {
  */
 function revisarDepartamento(quien: QuienLlama, modulo: string): void {
 	if (quien.tipo !== "cuenta" || quien.esDuena) return;
-	const delModulo = departamentosDelModulo[modulo] ?? [];
+	const delModulo = Object.hasOwn(departamentosDelModulo, modulo) ? (departamentosDelModulo[modulo] ?? []) : [];
 	if (!delModulo.some((departamento) => quien.departamentos.includes(departamento))) {
 		throw new ErrorDeApi("sin_permiso", "sin_departamento");
 	}
@@ -66,7 +66,7 @@ const subirArchivo: RutaFija = {
 		const pedido = leido.data;
 		// Un módulo del sistema (aunque su carpeta llegue en otra fase) o uno registrado.
 		const conocido =
-			pedido.modulo in departamentosDelModulo ||
+			Object.hasOwn(departamentosDelModulo, pedido.modulo) ||
 			contexto.registro.modulos.some((modulo) => modulo.nombre === pedido.modulo);
 		if (!conocido) {
 			throw new ErrorDeApi("validacion", null, undefined, { campos: { modulo: "Ese módulo no existe." } });

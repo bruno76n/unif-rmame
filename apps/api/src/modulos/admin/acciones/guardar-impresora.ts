@@ -7,7 +7,7 @@
  */
 
 import { guardarImpresora } from "@uniformame/compartido/contratos/admin/impresion";
-import { and, eq, isNull, ne } from "drizzle-orm";
+import { and, eq, isNull, ne, sql } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
 import { tomarVersion, versionActual } from "../../../nucleo/acciones/pisadas.ts";
 import { errorDeCampo, errorDeRegla } from "../../../nucleo/http/errores.ts";
@@ -21,6 +21,8 @@ import { impresoras } from "../tablas.ts";
  * @throws `422 puente_no_valido` o `422 puente_ocupado`.
  */
 async function revisarPuente(contexto: ContextoDeAccion, dispositivoId: string, impresoraId: string): Promise<void> {
+	// Un candado por puente: dos impresoras guardadas a la vez con el mismo puente no pasan las dos.
+	await contexto.transaccion.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`puente:${dispositivoId}`}))`);
 	const aparato = await datosDelAparato(contexto, dispositivoId);
 	if (aparato === undefined || aparato.tipo !== tipoPuente || aparato.revocado) {
 		throw errorDeRegla("puente_no_valido", "Ese aparato no es un programa de impresión.");

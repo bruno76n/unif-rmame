@@ -155,6 +155,16 @@ describe("el recordatorio avisa a su tiempo y no antes", () => {
 		expect(registrada.cuerpo.resultado).toMatchObject({
 			mensaje: "Restauración registrada. La siguiente toca el 2027-02-09",
 		});
+		// La evidencia ligada la abre quien tiene Administración del sistema; nadie más.
+		const abrir = (quien: string) =>
+			servidor.app.inject({
+				method: "GET",
+				url: `/v1/archivos/${resultado.archivo_id}`,
+				headers: encabezadosDeLaWeb(quien),
+			});
+		expect((await abrir("duena")).statusCode).toBe(302);
+		expect((await abrir("admin")).statusCode).toBe(302);
+		expect((await abrir("ventas")).statusCode).toBe(404);
 		await servidor.base.dueno.query("DELETE FROM avisos");
 		ahora = Temporal.Instant.from("2026-11-30T15:00:00Z");
 		await recordar();

@@ -96,6 +96,8 @@ export interface ContextoDeAccion {
 	bitacora: (renglon: RenglonDeBitacora) => void;
 	/** El almacén de archivos (R2), si quien abrió la transacción lo tiene. */
 	almacen: Almacen | undefined;
+	/** Los campos de sueldo o de tarifa que declaran los módulos, para la bitácora. */
+	camposDeSueldo: ReadonlySet<string>;
 }
 
 /** Una consulta sensible que se apunta en la bitácora: qué se consultó y de qué documento. */
@@ -297,6 +299,11 @@ export interface Modulo {
 	tiposDeEtiqueta: readonly TipoDeEtiqueta[];
 	/** Por tipo de evento, lo que manda en vivo además de `cambios`. */
 	enVivo: Readonly<Record<string, EnVivo>>;
+	/**
+	 * De su `permisos.ts`: los campos que son sueldo o tarifa (`pago_dia_centavos`, `tarifa_centavos`). Si
+	 * uno viaja en el `antes` o el `despues` de un renglón de bitácora, el renglón queda sensible.
+	 */
+	camposDeSueldo: readonly string[];
 }
 
 /**
@@ -358,6 +365,7 @@ export function definirModulo(modulo: Pick<Modulo, "nombre"> & Partial<Modulo>):
 		rutas: [],
 		tiposDeEtiqueta: [],
 		enVivo: {},
+		camposDeSueldo: [],
 		...modulo,
 	};
 }
@@ -381,6 +389,8 @@ export interface RegistroDeModulos {
 	tiposDeEtiqueta: ReadonlyMap<string, TipoDeEtiqueta>;
 	/** Por tipo de evento, lo que mandan en vivo los módulos. */
 	enVivo: ReadonlyMap<string, readonly EnVivo[]>;
+	/** Los campos de sueldo o de tarifa de todos los módulos. */
+	camposDeSueldo: ReadonlySet<string>;
 }
 
 /** Dice si lo que exportó un `index.ts` tiene la forma de un módulo. */
@@ -447,6 +457,7 @@ export function registrarModulos(modulos: readonly Modulo[]): RegistroDeModulos 
 		}),
 		tiposDeEtiqueta,
 		enVivo,
+		camposDeSueldo: new Set(modulos.flatMap((modulo) => modulo.camposDeSueldo)),
 	};
 }
 
