@@ -104,4 +104,11 @@ Las formas fijas en que los módulos se hablan, para que nadie invente otra:
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 3: dónde quedó el corredor de acciones, el contexto que recibe cada acción y cómo se registran los módulos.*
+**Fase 3.**
+
+- **Un módulo** exporta en su `index.ts` `definirModulo({ nombre, acciones, consultas, internas, lecturas, semillas })` (`apps/api/src/nucleo/modulos.ts`). Una acción se une a su contrato con `implementarAccion(contrato, ejecutar)` y una consulta con `implementarConsulta(contrato, leer)`: los datos y el resultado tienen el tipo del contrato. Las internas y las lecturas van por nombre corto (`contar` se registra como `prueba.contar`).
+- **El registro:** `cargarModulos(carpeta)` importa el `index.ts` de cada carpeta y `registrarModulos` junta todo por nombre completo; falla si un `index.ts` no exporta el módulo de su carpeta, si un nombre no empieza con el de su módulo o si se repite. El módulo `admin` ya existe, con `comandos_recibidos`.
+- **El corredor** (`apps/api/src/nucleo/acciones/corredor.ts`, `correrAccion`): pasos 5 a 10 dentro de `enTransaccion` (que repite la transacción completa ante `40P01` o `40001`): aparta la clave, corre la acción, pide `escribirBitacora` y `guardarEventos` una sola vez con lo que juntó la acción, guarda la respuesta sin secretos y confirma. Los pasos 1 a 4 los hace el servidor (ver [API](API.md#cómo-está-hecho)). Los servicios de bitácora y eventos son de `admin` desde la fase 4; aquí los recibe el servidor.
+- **El contexto** de la acción (`ContextoDeAccion`): `transaccion`, `quien`, `ahora` (una sola hora), `diaDeNegocio`, `comandoId`, `interna(nombre, datos)` y `lectura(nombre, datos)` (corren en la misma transacción, con el mismo contexto), `guardarEvento` y `bitacora`. La lectura de parámetros se suma en la fase 4.
+- **Las pisadas** (`apps/api/src/nucleo/acciones/pisadas.ts`): `tomarVersion(transaccion, tabla, id, versionLeida, datosActuales)` hace `UPDATE … SET actualizado_en = now() WHERE id AND version` y, si no tocó nada, lanza `409` con la versión actual y los datos que da la acción, ya recortados (o `404` si no existe); `versionActual` da la versión para `resultado.version`. En un agregado se toma la del encabezado.
+- **Las pruebas:** `nucleo/acciones/atomica.prueba.ts` (una acción que falla antes de escribir, después de su interna o en la bitácora no deja nada), `nucleo/acciones/pisadas.prueba.ts` y `nucleo/modulos.prueba.ts` (un módulo nuevo en su carpeta se registra solo; uno mal nombrado se rechaza).

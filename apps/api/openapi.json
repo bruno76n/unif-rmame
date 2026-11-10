@@ -1,0 +1,12 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "API de Unifórmame",
+    "version": "1.0.0",
+    "description": "Acciones y consultas de Unifórmame"
+  },
+  "components": {
+    "schemas": {}
+  },
+  "paths": {}
+}

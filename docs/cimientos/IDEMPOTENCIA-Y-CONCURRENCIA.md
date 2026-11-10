@@ -90,4 +90,12 @@ Cómo se reintenta, se descarta o se aplica un comando apartado o retenido está
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 3: dónde se aparta la clave, cómo se calcula la huella, cómo se arma el `409` y sus pruebas.*
+**Fase 3.**
+
+- **La tabla** `comandos_recibidos` es de `admin` (`apps/api/src/modulos/admin/tablas.ts`, migración `0002_comandos_recibidos.sql`), con sus CHECK, sus índices y sus `@llavePendiente`. La migración le quita a la app el `UPDATE` de la tabla y le da solo el de `resultado`, `respuesta`, `entidad`, `entidad_id`, `excepcion_id`, las columnas de reintento, descarte y retenido, y `actualizado_en`.
+- **Apartar la clave** (`apps/api/src/nucleo/idempotencia/claves.ts`, `apartarClave`): `INSERT … ON CONFLICT (clave_idempotencia) DO NOTHING RETURNING id` dentro de la transacción de la acción. Si otra transacción la apartó y no terminó, Postgres espera en el índice único; cuando confirma, esta lee su `carga_hash` y su `respuesta`.
+- **La huella** (`huellaDeCarga`): SHA-256 del JSON de `{ accion, datos, version }` con las llaves de cada objeto en orden. La misma huella contesta la respuesta guardada; otra, `422 clave_usada`.
+- **Los secretos:** el contrato los declara en `secretos` y su campo tiene que ser opcional (`definirAccion` lo revisa). `sinSecretos` los quita de la respuesta que se guarda y le pone `secreto_entregado: true`, que llega así en el reintento (decisión 341).
+- **El `409`** lo arma `tomarVersion` (ver [módulos](MODULOS.md#cómo-está-hecho)).
+- **El cliente** reintenta con la misma clave (ver [paquete compartido](PAQUETE-COMPARTIDO.md#cómo-está-hecho)).
+- **Las pruebas:** `nucleo/idempotencia/idempotencia.prueba.ts` (dos veces, dos a la vez, `clave_usada`, el reintento después de fallar), `secretos.prueba.ts`, `azar.prueba.ts` (fast-check: intenciones mandadas de una a tres veces, al mismo tiempo o una tras otra, después de una falla pasajera; al final una nota por intención y la misma respuesta a cada envío) y `apps/api/src/modulos/admin/comandos-recibidos.prueba.ts` (lo que la app cambia y lo que no, sus CHECK y la clave única).

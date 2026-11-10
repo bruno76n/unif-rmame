@@ -8,8 +8,7 @@ import { raizReal } from "./repositorio-de-prueba.ts";
 import { pasosDeLaRevision } from "./revision.ts";
 
 describe("la revisión completa corre los pasos que ya existen, en el orden de ESTRUCTURA.md", () => {
-	it("Biome, tipos, todas las pruebas, migraciones, secretos, dependencias y archivos de creación", () => {
-		// openapi.json entra en la fase 3 («Excepciones permitidas» de la fase 1).
+	it("Biome, tipos, todas las pruebas, migraciones, secretos, dependencias, archivos de creación y openapi.json", () => {
 		expect(pasosDeLaRevision(raizReal).map((paso) => paso.nombre)).toEqual([
 			"Estilo (Biome)",
 			"Tipos (tsc)",
@@ -18,6 +17,7 @@ describe("la revisión completa corre los pasos que ya existen, en el orden de E
 			"Secretos",
 			"Dependencias (pnpm audit)",
 			"Archivos de creación (docs:revisar)",
+			"openapi.json al día con los contratos",
 		]);
 	});
 });

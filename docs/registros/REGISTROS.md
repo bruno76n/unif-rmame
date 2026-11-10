@@ -70,4 +70,7 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 10 nov 2026 | 2 | Tres avisos moderados de `pnpm audit` en dependencias indirectas (decisión 336) | Bajar el nivel del audit · `overrides` con las versiones corregidas | `overrides`: bajar el nivel sería debilitar la revisión | No |
 | 10 nov 2026 | 2 | El tercer proyecto de Vitest (decisión 337) | Crearlo vacío · que entre con la API | Con la API: un proyecto sin pruebas no demuestra nada | No |
 | 10 nov 2026 | 2 | El disparador y los objetos temporales (decisión 338) | Solo el `REVOKE TEMPORARY` · solo el `search_path` · los dos, con la migración fallando si no pudo quitar el permiso | Los dos: una base restaurada o copiada pierde el permiso, y el `search_path` sigue cuidando | No |
+| 10 nov 2026 | 3 | La API sin CSP (decisión 339) | CSP estricta · sin CSP en la API | Sin CSP: la API no sirve páginas, salvo la documentación local | No |
+| 10 nov 2026 | 3 | El `Origin` de los aparatos (decisión 340) | Pedirlo siempre · aceptarlo ausente o el de la tablet | El segundo: un aparato que no es navegador no lo manda | No |
+| 10 nov 2026 | 3 | Dónde va `secreto_entregado` (decisión 341) | Dentro del resultado · junto a `ok` | Junto a `ok`: el resultado sigue cumpliendo su contrato | No |
 

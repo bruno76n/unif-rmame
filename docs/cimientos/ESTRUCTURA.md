@@ -202,9 +202,19 @@ uniformame/
 │       ├── drizzle.config.ts
 │       ├── migraciones/       las migraciones en orden y meta/
 │       ├── semillas/          sembrar.ts (los datos de la muestra)
-│       └── src/nucleo/
-│           ├── entorno.ts
-│           └── base/          conexion, transacciones, columnas, tablas, siembra, migrar, local y el arranque de las pruebas
+│       ├── openapi.json       generado desde los contratos (pnpm api:documentar)
+│       └── src/
+│           ├── servidor.ts    Fastify con las rutas de lo registrado
+│           ├── documentar.ts  pnpm api:documentar
+│           ├── modulos/admin/ comandos_recibidos
+│           └── nucleo/
+│               ├── entorno.ts · modulos.ts
+│               ├── base/      conexion, transacciones, columnas, tablas, siembra, migrar, local y el arranque de las pruebas
+│               ├── http/      errores y consultas
+│               ├── acceso/    quién llama
+│               ├── acciones/  el corredor y las pisadas
+│               ├── idempotencia/ la clave y la respuesta guardada
+│               └── pruebas/   el módulo de prueba y el servidor de prueba
 ├── pruebas/                   @uniformame/pruebas
 │   ├── base/                  la copia de la plantilla por archivo
 │   └── simuladores/           google, resend, r2 y sus fallas
@@ -213,7 +223,9 @@ uniformame/
 │       ├── package.json
 │       └── src/
 │           ├── tipos/base.ts          Centavos, Uuid, DiaNegocio, Momento
-│           └── calculos/              dinero.ts y fechas.ts, con sus *.prueba.ts
+│           ├── calculos/              dinero.ts y fechas.ts, con sus *.prueba.ts
+│           ├── contratos/             definir, protocolo y versiones
+│           └── cliente/               el cliente de la API con tipos
 └── scripts/
     ├── archivos.ts            qué se revisa: lo que se va a guardar, lo cambiado y lo del commit
     ├── comandos.ts            corre Biome, tsc, Vitest, node y pnpm
@@ -239,9 +251,9 @@ uniformame/
 | `pnpm estilo` · `pnpm tipos` | `biome check .` · `tsc -p tsconfig.json` |
 | `pnpm pruebas` | `vitest run`: todas las pruebas, sin sellar |
 | `pnpm revision:rapida` | `scripts/revision-rapida.ts`: Biome sobre los archivos cambiados desde el último commit, `tsc` si cambió un `.ts` o un `tsconfig`, y `vitest related` sobre los `.ts` cambiados |
-| `pnpm revision` | `scripts/revision.ts`: Biome, tipos, todas las pruebas (también las migraciones desde cero, con Postgres real), las migraciones y las llaves pendientes, secretos, `pnpm audit` y `pnpm docs:revisar`, en ese orden; se detiene en el primero en rojo. `openapi.json` entra en la fase 3 |
+| `pnpm revision` | `scripts/revision.ts`: Biome, tipos, todas las pruebas (también las migraciones desde cero, con Postgres real), las migraciones y las llaves pendientes, secretos, `pnpm audit`, `pnpm docs:revisar` y que `openapi.json` esté al día, en ese orden; se detiene en el primero en rojo |
 | `pnpm docs:revisar` | `scripts/docs-revisar.ts`: los archivos de creación (abajo) |
-| `pnpm local` · `pnpm base:generar` · `pnpm base:migrar` · `pnpm base:sembrar` | Los de `apps/api` (ver [base de datos](BASE-DE-DATOS.md#cómo-está-hecho) y [arquitectura](ARQUITECTURA.md#cómo-está-hecho)); leen `.env` con `--env-file-if-exists` |
+| `pnpm local` · `pnpm base:generar` · `pnpm base:migrar` · `pnpm base:sembrar` · `pnpm api:documentar` | Los de `apps/api` (ver [base de datos](BASE-DE-DATOS.md#cómo-está-hecho) y [arquitectura](ARQUITECTURA.md#cómo-está-hecho)); leen `.env` con `--env-file-if-exists` |
 
 **El workspace** (`pnpm-workspace.yaml`): `apps/*`, `packages/*` y `pruebas`; ningún paquete corre scripts al instalarse (`allowBuilds`, decisión 330) y dos dependencias indirectas van con `overrides` (decisión 336).
 

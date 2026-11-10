@@ -3,8 +3,8 @@
  * Fase 1 · docs/cimientos/ESTRUCTURA.md («Comandos») y docs/trabajo/FORMA-DE-TRABAJO.md («Los verdes»)
  *
  * Corre cada paso en orden y se detiene en el primero en rojo. En verde, guarda el sello con la
- * huella de lo revisado. Los pasos que todavía no existen entran en su fase (ver «Excepciones
- * permitidas» de la fase 1): `openapi.json` en la fase 3. Que las migraciones apliquen desde cero lo
+ * huella de lo revisado. Los pasos entraron en su fase (ver «Excepciones
+ * permitidas» de la fase 1); hoy están todos. Que las migraciones apliquen desde cero lo
  * prueba `migraciones.prueba.ts` de la base, dentro de «Todas las pruebas».
  */
 
@@ -55,6 +55,10 @@ export function pasosDeLaRevision(raiz: string): Paso[] {
 		{ nombre: "Secretos", correr: () => correr(raiz, "node", ["scripts/secretos.ts"]) },
 		{ nombre: "Dependencias (pnpm audit)", correr: () => correr(raiz, "pnpm", ["audit"]) },
 		{ nombre: "Archivos de creación (docs:revisar)", correr: () => correr(raiz, "node", ["scripts/docs-revisar.ts"]) },
+		{
+			nombre: "openapi.json al día con los contratos",
+			correr: () => correr(raiz, "node", ["apps/api/src/documentar.ts", "--revisar"]),
+		},
 	];
 }
 

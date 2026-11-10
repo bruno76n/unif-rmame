@@ -453,3 +453,11 @@ Decisiones técnicas que salieron al escribir los archivos, siguiendo lo ya deci
 | 337 | El proyecto `api` de Vitest entra en la fase 3, con Fastify; la fase 2 deja `calculos` y `base` | Sin servidor todavía no tiene qué probar | La fase 2 pedía los tres | [pruebas](cimientos/PRUEBAS.md#cómo-está-hecho) |
 | 338 | El disparador de las columnas comunes corre con `search_path = pg_catalog, public` y nombra su secuencia con esquema; la base le quita a todos el permiso de crear objetos temporales; el argumento del disparador se llama `baja_a_aparatos` | La auditoría de la fase 2: con una secuencia temporal del mismo nombre, la app podía poner la versión a mano; «baja» se confundía con «dar de baja» | `nextval('version_global')` sin esquema; el argumento `baja` | [base de datos](cimientos/BASE-DE-DATOS.md#cómo-está-hecho) |
 
+## 10 de noviembre de 2026 · La fase 3
+
+| # | Decisión | Por qué | Antes | Detalle |
+|---|---|---|---|---|
+| 339 | La API va con helmet sin `Content-Security-Policy`: la CSP es de los sitios estáticos de la web y la tablet | La API responde JSON, y la documentación de Scalar en local necesita sus propios scripts | — | [API](cimientos/API.md#cómo-está-hecho) |
+| 340 | En las acciones, la web tiene que mandar el `Origin` de la web; un aparato puede no mandar `Origin` o mandar el de la tablet | Un aparato que no es navegador no manda `Origin`; la tablet sí, con el suyo | — | [API](cimientos/API.md#cómo-está-hecho) |
+| 341 | Un secreto se declara en el contrato y su campo es opcional; la respuesta repetida lleva `secreto_entregado: true` junto a `ok`, no dentro del resultado | Así el resultado repetido sigue cumpliendo su contrato | — | [idempotencia](cimientos/IDEMPOTENCIA-Y-CONCURRENCIA.md#cómo-está-hecho) |
+
