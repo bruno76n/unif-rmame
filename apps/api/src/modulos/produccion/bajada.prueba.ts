@@ -49,7 +49,9 @@ describe("A la tablet bajan los lotes en proceso y terminados, sus bultos, sus r
 			id: corte?.operacionId,
 			datos: { nombre: "Corte", es_corte: true },
 		});
-		expect(JSON.stringify(cambios)).not.toContain("tarifa");
+		// Nunca baja un monto de tarifa: ni su columna ni la tabla de tarifas.
+		expect(JSON.stringify(cambios)).not.toContain("tarifa_centavos");
+		expect(cambios.some((cambio) => cambio.tabla === "tarifas_operacion")).toBe(false);
 		const { rows } = await servidor.base.dueno.query("SELECT version::int AS v FROM flujos WHERE id = $1", [
 			flujo.flujoId,
 		]);

@@ -84,3 +84,4 @@ La línea de la bitácora se escribe al final, con el resultado ya conocido. Esc
 | 11 nov 2026 | 12 | 1 · Operaciones y flujos | [2026-11-11-fase-12](sesiones/2026-11-11-fase-12.md) |
 | 11 nov 2026 | 12 | 2 · Órdenes de producción y lotes | [2026-11-11-fase-12](sesiones/2026-11-11-fase-12.md) |
 | 11 nov 2026 | 12 | 3 · Entregas a corte, corte y bultos | [2026-11-11-fase-12](sesiones/2026-11-11-fase-12.md) |
+| 11 nov 2026 | 12 | 4 · Registros de la tablet (primera mitad) | [2026-11-11-fase-12](sesiones/2026-11-11-fase-12.md) |

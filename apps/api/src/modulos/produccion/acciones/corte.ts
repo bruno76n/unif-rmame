@@ -6,7 +6,7 @@
  *
  * Las cuentas de la tela son las del paquete compartido (`usoDeLaTela`), con lo que pide la receta y el piso del
  * patrón de `patronaje.calcular_material`. Los rollos se bloquean con `inventario.rollos_para_corte` antes de contar.
- * El registro por bulto de la operación de corte llega con los registros de la tablet (parte 4, decisión 602).
+ * Al cerrar nace un registro por bulto en la operación de corte, a nombre de quien cortó.
  */
 
 import { usoDeLaTela } from "@uniformame/compartido/calculos/corte";
@@ -24,6 +24,7 @@ import { ubicaciones } from "../../inventario/tablas.ts";
 import { personas } from "../../personal/tablas.ts";
 import { armarBultos, folioDeBulto } from "../dominio/bultos.ts";
 import { prendaQueSeFabrica } from "../dominio/lotes.ts";
+import { registrosDelCorte } from "../dominio/registros.ts";
 import { bultos, corteRollos, cortes, corteTelas, lotes, loteTallas } from "../tablas.ts";
 
 /** Lo que pide la receta de cada material, con sus decimales. */
@@ -344,6 +345,14 @@ export const accionCerrarCorte = implementarAccion(cerrarCorte, async (contexto,
 			creadoPor: quien,
 		})),
 	);
+	// Un registro por bulto en la operación de corte, a nombre de quien cortó: cuenta para la nómina por pieza.
+	await registrosDelCorte(contexto, {
+		id: corteId,
+		loteId: lote.id,
+		flujoId: conFlujo?.flujoId ?? "",
+		personaId: datos.corto_persona_id,
+		bultos: nuevos,
+	});
 	const metrosPrincipal = principal === undefined ? 0n : principal.usado;
 	const porPieza = cortadas === 0 ? 0n : metrosPrincipal / BigInt(cortadas);
 	contexto.bitacora({
@@ -372,7 +381,7 @@ export const accionCerrarCorte = implementarAccion(cerrarCorte, async (contexto,
 	contexto.guardarEvento({
 		tipo: "lote.cortado",
 		datos: { lote_id: lote.id, piezas: cortadas, bultos: nuevos.length },
-		tablas: ["lotes", "lote_tallas", "bultos", "cortes"],
+		tablas: ["lotes", "lote_tallas", "bultos", "cortes", "registros_operacion"],
 		entidad: "lotes",
 		entidadId: lote.id,
 		entidadFolio: lote.folio,

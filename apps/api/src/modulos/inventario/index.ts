@@ -28,6 +28,7 @@ import { accionSurtirAAduana } from "./acciones/surtir-a-aduana.ts";
 import { devolverEntregaCorte, lotesConTelaEntregada } from "./internas/entregas-corte.ts";
 import { marcarExcepcionResuelta, registrarExcepcion, tomarVersionExcepcion } from "./internas/excepciones.ts";
 import { actualizarCostoRollos, aplicarDecisionRecepcionDeMas, tomarConsumible } from "./internas/material.ts";
+import { registrarMermaProduccion, revertirMermaProduccion } from "./internas/merma-produccion.ts";
 import { registrarCorte } from "./internas/registrar-corte.ts";
 import {
 	apartarParaNota,
@@ -112,6 +113,8 @@ export default definirModulo({
 		recalcular_rollos_sugeridos: recalcularRollosSugeridos,
 		devolver_entrega_corte: devolverEntregaCorte,
 		registrar_corte: registrarCorte,
+		registrar_merma_produccion: registrarMermaProduccion,
+		revertir_merma_produccion: revertirMermaProduccion,
 		registrar_excepcion: registrarExcepcion,
 		marcar_excepcion_resuelta: marcarExcepcionResuelta,
 		tomar_version_excepcion: tomarVersionExcepcion,

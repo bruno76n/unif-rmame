@@ -6,10 +6,13 @@
 
 import type pg from "pg";
 import { v7 as uuidv7 } from "uuid";
+import { z } from "zod";
 import { escribirMovimiento } from "../../modulos/inventario/dominio/escribir-movimiento.ts";
 import { crearBase } from "../base/conexion.ts";
 import { enAccionDePrueba } from "./accion-de-prueba.ts";
 import { nuevoProducto, type SiembraDelCatalogo } from "./catalogo-de-prueba.ts";
+import { llaveDePrueba } from "./cuentas-de-prueba.ts";
+import { mandarAccion } from "./llamadas.ts";
 import {
 	guardarRecetaDePrueba,
 	type MaterialesDeReceta,
@@ -202,4 +205,113 @@ export async function rolloEnBodega(
 		}),
 	);
 	return { id, folio };
+}
+
+/** Un lote ya cortado, en proceso, con sus bultos y el flujo de su prenda. */
+export interface LoteCortado {
+	prenda: PrendaParaCortar;
+	loteId: string;
+	folio: string;
+	/** Quien hace de base las operaciones del flujo (y cortó): una persona del Taller. */
+	personaId: string;
+	bultos: { id: string; folio: string; piezas: number; varianteId: string }[];
+}
+
+/**
+ * Un lote de una prenda para cortar, levantado para Bodega y cortado con su receta: queda en proceso con sus bultos.
+ * @param servidor El servidor de prueba.
+ * @param siembra Los ids de la siembra del catálogo.
+ * @param piezas Las piezas de las tallas 4, 6 y 8.
+ */
+export async function loteCortado(
+	servidor: ServidorDePrueba,
+	siembra: SiembraDelCatalogo,
+	piezas: [number, number, number] = [24, 10, 0],
+): Promise<LoteCortado> {
+	const prenda = await prendaParaCortar(servidor, siembra);
+	const rollo = await rolloEnBodega(servidor, prenda.materiales.gabardina, "200");
+	const { rows: bodega } = await servidor.base.dueno.query("SELECT id FROM ubicaciones WHERE codigo = 'BOD'");
+	const tallas = ["4", "6", "8"].map((talla, i) => ({ variante_id: prenda.variantes[talla], piezas: piezas[i] ?? 0 }));
+	const orden = await mandarAccion(
+		servidor,
+		"produccion.crear_orden",
+		{
+			datos: {
+				ubicacion_destino_id: bodega[0]?.id,
+				producto_id: prenda.productoId,
+				tallas,
+				fecha_entrega: new Date(Date.now() + 20 * 86_400_000).toISOString().slice(0, 10),
+			},
+		},
+		"produccion",
+	);
+	const { lote_id: loteId, lote_folio: folio } = z
+		.object({ lote_id: z.uuid(), lote_folio: z.string() })
+		.parse(orden.cuerpo.resultado);
+	const { rows: version } = await servidor.base.dueno.query("SELECT version::int AS v FROM lotes WHERE id = $1", [
+		loteId,
+	]);
+	const cerrado = await mandarAccion(
+		servidor,
+		"produccion.cerrar_corte",
+		{
+			datos: {
+				lote_id: loteId,
+				receta_version_id: prenda.recetaVersionId,
+				telas: [{ material_id: prenda.materiales.gabardina, rollos: [{ rollo_id: rollo.id }] }],
+				tallas: tallas.filter((talla) => talla.piezas > 0),
+				corto_persona_id: prenda.flujo.personaId,
+			},
+			version: version[0]?.v,
+		},
+		"produccion",
+	);
+	if (cerrado.estado !== 200) throw new Error(`no se cerró el corte: ${JSON.stringify(cerrado.cuerpo)}`);
+	const { rows } = await servidor.base.dueno.query(
+		"SELECT id, folio, piezas, variante_id FROM bultos WHERE lote_id = $1 ORDER BY numero",
+		[loteId],
+	);
+	return {
+		prenda,
+		loteId,
+		folio,
+		personaId: prenda.flujo.personaId,
+		bultos: rows.map((fila) => ({
+			id: String(fila.id),
+			folio: String(fila.folio),
+			piezas: Number(fila.piezas),
+			varianteId: String(fila.variante_id),
+		})),
+	};
+}
+
+/**
+ * La tablet sube un comando con la persona que entró con su PIN.
+ * @param servidor El servidor de prueba.
+ * @param accion La acción.
+ * @param datos Sus datos.
+ * @param personaId La persona.
+ * @param ocurridoEn Cuándo pasó; si no, ahora.
+ * @returns La respuesta de ese comando.
+ */
+export async function subirDeLaTablet(
+	servidor: ServidorDePrueba,
+	accion: string,
+	datos: unknown,
+	personaId: string,
+	ocurridoEn = new Date().toISOString(),
+): Promise<Record<string, unknown>> {
+	const respuesta = await servidor.app.inject({
+		method: "POST",
+		url: "/v1/sync/subir",
+		headers: { authorization: llaveDePrueba("tablet"), "x-app-version": "1.0.0" },
+		payload: {
+			enviado_en: new Date().toISOString(),
+			pendientes_por_subir: 1,
+			comandos: [{ clave_idempotencia: uuidv7(), accion, datos, ocurrido_en: ocurridoEn, persona_id: personaId }],
+		},
+	});
+	return (
+		z.object({ respuestas: z.array(z.record(z.string(), z.unknown())) }).parse(respuesta.json()).respuestas[0] ?? {}
+	);
 }

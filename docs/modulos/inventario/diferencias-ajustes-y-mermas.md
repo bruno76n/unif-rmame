@@ -245,3 +245,5 @@ Ninguno propio: el largo del motivo es `general.largo_minimo_motivo` (ver [confi
 ## Cómo está hecho
 
 *Lo escribe Claude Code al terminar la fase 14.*
+
+**Fase 12, parte 4.** `inventario.registrar_merma_produccion` e `inventario.revertir_merma_produccion` viven en `modulos/inventario/internas/merma-produccion.ts`: el movimiento `merma_produccion` con el lote, la persona y la tablet, y su reversión con `revertirMovimiento`; la clave de cada uno sale del registro. Las prueba `produccion/acciones/registrar-operacion.prueba.ts`.

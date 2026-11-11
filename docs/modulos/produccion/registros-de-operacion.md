@@ -182,4 +182,15 @@ Usa también `general.largo_minimo_motivo` y, de Personal, `personal.pin_intento
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 12.*
+**Fase 12, parte 4.**
+
+- **La tabla** `registros_operacion` es de `produccion` (`tablas.ts`, migración `0041`), con sus CHECK (el origen y su corte, la tablet en lo de la tablet, las piezas, la cancelación) y `xid_escritura`.
+- **Lo que sube la tablet** está en `acciones/registros.ts`, con sus contratos en `packages/compartido/src/contratos/produccion/registros.ts` (permiso de la cola de la tablet). Lo mal formado es un `422` en la cola, que la subida aparta: el bulto que no existe, la operación ajena o de corte, sin piezas, la persona que no es del Taller (decisión 611).
+  - `registrar_operacion` bloquea el lote, cuenta el tope con `topeDelBulto` del paquete compartido (`packages/compartido/src/calculos/tope-bulto.ts`), abre `pasa_tope_bulto` o `lote_no_en_proceso` con `inventario.registrar_excepcion`, congela la tarifa que valía a la hora de la tablet (`personal.tarifa_vigente`), mueve la talla y, si queda completo, termina el lote. Las dañadas salen con `inventario.registrar_merma_produccion`.
+  - `tomar_consumible` pasa cada cantidad a la unidad de inventario (÷ el factor, hacia arriba al milésimo) y llama `inventario.tomar_consumible`; `registrar_bloqueo_pin` revisa que el PIN sea de la persona y llama `personal.bloquear_pin`.
+- **`cancelar_registro`** toma la versión del registro y revisa sus candados; regresa la talla, revierte la merma (`inventario.revertir_merma_produccion`) y reabre el lote terminado. Su bitácora lleva la tarifa, así que va como plantilla (decisión 612).
+- **Lo común** (`dominio/registros.ts`): el flujo del lote, lo hecho en un bulto, la tarifa que valía, mover la talla, el lote completo y los registros del corte, que nacen al cerrarlo, uno por bulto.
+- **`poner_tarifa_a_registros`** y **`registros_para_nomina`** (`internas/registros.ts`); `personal.poner_tarifa_operacion` la llama con la primera tarifa y avisa cuántos la tomaron. Los de semanas pagadas llegan con la nómina (fase 17).
+- **Lo que baja a la tablet:** los registros de los lotes en proceso y terminados y los de la semana, sin la tarifa.
+- **Los parámetros** `produccion.tarifa_visible_tablet`, `produccion.bultos_para_ti_max` y `produccion.consumible_max_por_vez`.
+- **Pruebas:** `acciones/registrar-operacion.prueba.ts` (la hora y la tarifa, lo que se aparta, el tope, terminar y reabrir, los registros del corte, la tarifa que llega después), `acciones/tomar-consumible.prueba.ts` (también el PIN) y `tope-bulto.prueba.ts` con fast-check.

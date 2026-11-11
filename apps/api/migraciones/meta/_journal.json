@@ -288,6 +288,13 @@
 			"when": 1794410130459,
 			"tag": "0040_entregas_corte_y_cortes",
 			"breakpoints": true
+		},
+		{
+			"idx": 41,
+			"version": "7",
+			"when": 1794430014282,
+			"tag": "0041_registros_operacion",
+			"breakpoints": true
 		}
 	]
 }

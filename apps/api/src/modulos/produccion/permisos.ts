@@ -14,4 +14,10 @@ export const lectoresDeProduccion: Record<string, readonly string[]> = {
 	ordenes_produccion: ["produccion", "ventas", "bodega", "direccion"],
 	lotes: ["produccion", "ventas", "calidad", "aduana", "bodega", "patronaje", "direccion"],
 	lote_tallas: ["produccion", "ventas", "calidad", "aduana", "bodega", "patronaje", "direccion"],
+	bultos: ["produccion", "calidad"],
+	cortes: ["produccion", "bodega", "patronaje"],
+	corte_telas: ["produccion", "bodega", "patronaje"],
+	corte_rollos: ["produccion", "bodega", "patronaje"],
+	// La tarifa de cada registro solo viaja a quien ve sueldos y tarifas: es campo de sueldo en Personal.
+	registros_operacion: ["produccion", "personal", "contaduria"],
 };

@@ -3,7 +3,7 @@
  * Fase 12 · docs/modulos/produccion/operaciones-y-flujos.md («La tabla `operaciones`», «La tabla `flujos`» y
  * «La tabla `flujo_operaciones`»); parte 2 · ordenes-de-produccion.md («La tabla `ordenes_produccion`») y lotes.md
  * («La tabla `lotes`», «La tabla `lote_tallas`»); parte 3 · corte-y-bultos.md («La tabla `cortes`», `corte_telas`,
- * `corte_rollos` y `bultos`)
+ * `corte_rollos` y `bultos`); parte 4 · registros-de-operacion.md («La tabla `registros_operacion`»)
  *
  * Las tres bajan a la tablet del taller, así que llevan `xid_escritura`. El único del orden de un flujo se revisa al
  * final de la transacción: es una exclusión diferida que escribe la migración a mano, porque al agregar o quitar una
@@ -13,6 +13,7 @@
 import { sql } from "drizzle-orm";
 import {
 	type AnyPgColumn,
+	bigint,
 	boolean,
 	check,
 	date,
@@ -33,12 +34,12 @@ import {
 	momento,
 	valores,
 } from "../../nucleo/base/columnas.ts";
-import { usuarios } from "../admin/tablas.ts";
+import { dispositivos, usuarios } from "../admin/tablas.ts";
 import { productos, variantes } from "../catalogo/tablas.ts";
 import { materiales } from "../compras/tablas.ts";
-import { apartadosRollo, retazos, rollos, ubicaciones } from "../inventario/tablas.ts";
+import { apartadosRollo, excepciones, retazos, rollos, ubicaciones } from "../inventario/tablas.ts";
 import { recetaVersiones } from "../patronaje/tablas.ts";
-import { personas } from "../personal/tablas.ts";
+import { personas, tarifasOperacion } from "../personal/tablas.ts";
 
 /** El catálogo de operaciones que comparten los flujos; el corte es una sola. */
 export const operaciones = pgTable(
@@ -354,5 +355,67 @@ export const bultos = pgTable(
 		index("bultos_xid_escritura").on(tabla.xidEscritura),
 		check("bultos_piezas", sql`${tabla.piezas} > 0`),
 		check("bultos_numero_positivo", sql`${tabla.numero} > 0`),
+	],
+);
+
+/** Lo que registra cada persona en la tablet, o lo que nace por bulto al cerrar el corte. */
+export const registrosOperacion = pgTable(
+	"registros_operacion",
+	{
+		id: uuid("id").primaryKey(),
+		origen: text("origen", { enum: ["tablet", "corte"] })
+			.notNull()
+			.default("tablet"),
+		corteId: uuid("corte_id").references(() => cortes.id),
+		bultoId: uuid("bulto_id")
+			.notNull()
+			.references(() => bultos.id),
+		loteId: uuid("lote_id")
+			.notNull()
+			.references(() => lotes.id),
+		flujoOperacionId: uuid("flujo_operacion_id")
+			.notNull()
+			.references(() => flujoOperaciones.id),
+		personaId: uuid("persona_id")
+			.notNull()
+			.references(() => personas.id),
+		dispositivoId: uuid("dispositivo_id").references((): AnyPgColumn => dispositivos.id),
+		piezasBuenas: integer("piezas_buenas").notNull(),
+		piezasDanadas: integer("piezas_danadas").notNull(),
+		tarifaCentavos: bigint("tarifa_centavos", { mode: "number" }),
+		tarifaOperacionId: uuid("tarifa_operacion_id").references((): AnyPgColumn => tarifasOperacion.id),
+		tarifaPuestaEn: momento("tarifa_puesta_en"),
+		claveIdempotencia: uuid("clave_idempotencia").notNull(),
+		hechoEn: momento("hecho_en").notNull(),
+		fecha: date("fecha", { mode: "string" }).notNull(),
+		recibidoEn: momento("recibido_en").notNull().defaultNow(),
+		sinInternet: boolean("sin_internet").notNull(),
+		excepcionId: uuid("excepcion_id").references((): AnyPgColumn => excepciones.id),
+		estado: text("estado", { enum: ["vigente", "cancelado"] })
+			.notNull()
+			.default("vigente"),
+		...columnasDeCancelacion(),
+		...columnasComunes(),
+		...columnaXidEscritura(),
+	},
+	(tabla) => [
+		uniqueIndex("registros_operacion_clave").on(tabla.claveIdempotencia),
+		index("registros_operacion_lote").on(tabla.loteId, tabla.flujoOperacionId).where(sql`${tabla.estado} = 'vigente'`),
+		index("registros_operacion_bulto").on(tabla.bultoId, tabla.flujoOperacionId),
+		index("registros_operacion_persona").on(tabla.personaId, tabla.fecha),
+		index("registros_operacion_fecha").on(tabla.fecha),
+		index("registros_operacion_sin_tarifa")
+			.on(tabla.flujoOperacionId)
+			.where(sql`${tabla.tarifaCentavos} is null and ${tabla.estado} = 'vigente'`),
+		index("registros_operacion_xid_escritura").on(tabla.xidEscritura),
+		check("registros_operacion_origen", sql`${tabla.origen} in ('tablet', 'corte')`),
+		check("registros_operacion_corte", sql`(${tabla.origen} = 'corte') = (${tabla.corteId} is not null)`),
+		check("registros_operacion_tablet", sql`${tabla.origen} <> 'tablet' or ${tabla.dispositivoId} is not null`),
+		check(
+			"registros_operacion_piezas",
+			sql`${tabla.piezasBuenas} >= 0 and ${tabla.piezasDanadas} >= 0 and ${tabla.piezasBuenas} + ${tabla.piezasDanadas} > 0`,
+		),
+		check("registros_operacion_estado", sql`${tabla.estado} in ('vigente', 'cancelado')`),
+		check("registros_operacion_cancelado", sql`(${tabla.estado} = 'cancelado') = (${tabla.canceladoEn} is not null)`),
 	],
 );

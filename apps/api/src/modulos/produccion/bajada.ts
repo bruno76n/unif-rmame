@@ -1,6 +1,6 @@
 /**
  * Lo que baja de `produccion` a la tablet del taller: las operaciones, los flujos y sus operaciones vigentes, y los
- * lotes en proceso y terminados con sus tallas.
+ * lotes en proceso y terminados con sus tallas, sus bultos y sus registros.
  * Fase 12 · docs/modulos/produccion/operaciones-y-flujos.md y lotes.md («Lo que baja a la tablet»)
  *
  * Con ellos la tablet arma «Sus operaciones» y «Bultos para ti». Lo que sale del filtro (una operación dada de baja,
@@ -63,5 +63,24 @@ export const bajadaDeProduccion: readonly TablaQueBaja[] = [
 		columnas: ["folio", "lote_id", "variante_id", "numero", "piezas"],
 		filtro: () =>
 			sql`EXISTS (SELECT 1 FROM lotes l WHERE l.id = t.lote_id AND l.estado IN ('en_proceso', 'terminado'))`,
+	},
+	{
+		tabla: "registros_operacion",
+		aparatos: ["tablet_taller"],
+		orden: 5,
+		columnas: [
+			"bulto_id",
+			"lote_id",
+			"flujo_operacion_id",
+			"persona_id",
+			"piezas_buenas",
+			"piezas_danadas",
+			"hecho_en",
+			"estado",
+			"origen",
+		],
+		// Los de los lotes en proceso y terminados, y los de la semana en curso de cualquier lote; nunca la tarifa.
+		filtro: () => sql`EXISTS (SELECT 1 FROM lotes l WHERE l.id = t.lote_id AND l.estado IN ('en_proceso', 'terminado'))
+			OR t.fecha >= date_trunc('week', (now() AT TIME ZONE 'America/Mexico_City'))::date`,
 	},
 ];

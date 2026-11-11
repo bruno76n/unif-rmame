@@ -6,8 +6,8 @@
  * Fase 12 · docs/fases/12-produccion.md (parte 1): el nombre de la operación y de su flujo, y `operacion_de_baja`
  *
  * Cierra la vigente y abre la nueva desde ahora; la misma tarifa no escribe nada (solo revisa la versión). Un candado
- * por operación hace que dos a la vez esperen una a la otra. La bitácora va como sueldo. Los registros que esperaban
- * su tarifa llegan con los registros de la tablet (parte 4).
+ * por operación hace que dos a la vez esperen una a la otra. La bitácora va como sueldo. La primera tarifa llega a los
+ * registros de la tablet que la esperaban (`produccion.poner_tarifa_a_registros`).
  */
 
 import { centavosATexto } from "@uniformame/compartido/calculos/dinero";
@@ -15,6 +15,7 @@ import { ponerTarifaOperacion } from "@uniformame/compartido/contratos/personal/
 import { centavos } from "@uniformame/compartido/tipos/base";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
+import { z } from "zod";
 import { revisarVersion, tomarVersion, versionActual } from "../../../nucleo/acciones/pisadas.ts";
 import { errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeAccion, implementarAccion } from "../../../nucleo/modulos.ts";
@@ -104,6 +105,18 @@ export const accionPonerTarifaOperacion = implementarAccion(ponerTarifaOperacion
 		antes: { tarifa_centavos: vigente?.tarifaCentavos ?? null },
 		despues: { tarifa_centavos: datos.tarifa_centavos },
 	});
+	// La primera tarifa de la operación llega a los registros que la esperaban.
+	const avisos: string[] = [];
+	if (vigente === undefined && contexto.hayLectura("produccion.registros_para_nomina")) {
+		const { tomaron } = z.object({ tomaron: z.number() }).parse(
+			await contexto.interna("produccion.poner_tarifa_a_registros", {
+				flujo_operacion_id: datos.flujo_operacion_id,
+				tarifa_operacion_id: id,
+				tarifa_centavos: datos.tarifa_centavos,
+			}),
+		);
+		if (tomaron > 0) avisos.push(`${tomaron} registros sin tarifa ya la tomaron`);
+	}
 	contexto.guardarEvento({
 		tipo: "tarifa.puesta",
 		datos: { flujo_operacion_id: datos.flujo_operacion_id },
@@ -117,6 +130,7 @@ export const accionPonerTarifaOperacion = implementarAccion(ponerTarifaOperacion
 			version: await versionActual(transaccion, tarifasOperacion, id),
 			mensaje: `${operacion}: ${nueva} por pieza desde ahora`,
 		},
+		avisos,
 		entidad: { nombre: "tarifas_operacion", id },
 	};
 });
