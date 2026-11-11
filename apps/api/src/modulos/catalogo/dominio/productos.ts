@@ -114,10 +114,10 @@ export async function revisarPrecioMaximo(
 	contexto: ContextoDeAccion,
 	campo: string,
 	precio: number,
-	mensaje: string,
+	mensaje: (tope: string) => string,
 ): Promise<void> {
 	const maximo = Number(await contexto.lectura("admin.parametro", { clave: "catalogo.precio_max_centavos" }));
-	if (precio > maximo) throw errorDeCampo(campo, mensaje);
+	if (precio > maximo) throw errorDeCampo(campo, mensaje(textoDePrecio(maximo)));
 }
 
 /**

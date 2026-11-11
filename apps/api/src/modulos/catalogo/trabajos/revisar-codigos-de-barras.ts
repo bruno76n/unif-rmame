@@ -19,8 +19,8 @@ const tipoDeAviso = "codigos_por_acabarse";
 /** Los días que pasan antes de repetir el aviso. */
 const diasEntreAvisos = 7;
 
-/** Lo que regresa `admin.siguiente_folio` de los códigos: su contador tiene máximo. */
-const folioDeCodigos = z.object({ quedan: z.number().int() });
+/** Lo que regresa `admin.siguiente_folio` de los códigos: el siguiente y, como su contador tiene máximo, cuántos quedan. */
+const folioDeCodigos = z.object({ folio: z.string(), quedan: z.number().int() });
 
 /**
  * Si ya hubo un aviso de este tipo en los últimos 7 días, a cualquier cuenta.
@@ -41,13 +41,16 @@ export const revisarCodigosDeBarras: Trabajo = {
 	horario: async () => ({ cada: "dia", hora: "04:00" }),
 	correr: async (contexto) => {
 		await contexto.enTransaccion(async (accion) => {
-			const { quedan } = folioDeCodigos.parse(await accion.lectura("admin.siguiente_folio", { tipo: "codigo_barras" }));
+			const { folio, quedan } = folioDeCodigos.parse(
+				await accion.lectura("admin.siguiente_folio", { tipo: "codigo_barras" }),
+			);
 			const minimo = Number(await accion.lectura("admin.parametro", { clave: "catalogo.codigos_restantes_aviso" }));
 			if (quedan >= minimo || (await yaSeAviso(accion))) return;
 			await accion.interna("admin.crear_aviso", {
 				tipo: tipoDeAviso,
 				destinatarios: { regla: "duena" },
-				texto: `Quedan ${quedan.toLocaleString("es-MX")} códigos de barras de fábrica (hasta 499999).`,
+				// El último código es el siguiente más los que quedan, menos uno: el máximo del contador.
+				texto: `Quedan ${quedan.toLocaleString("es-MX")} códigos de barras de fábrica (hasta ${Number(folio) + quedan - 1}).`,
 			});
 		});
 	},

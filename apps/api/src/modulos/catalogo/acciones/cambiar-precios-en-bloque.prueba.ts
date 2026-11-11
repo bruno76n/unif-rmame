@@ -7,7 +7,11 @@
 import { type CambioEnBloque, precioDelCambioEnBloque } from "@uniformame/compartido/calculos/precios";
 import { centavos } from "@uniformame/compartido/tipos/base";
 import fc from "fast-check";
+import { v7 as uuidv7 } from "uuid";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { z } from "zod";
+import { crearBase } from "../../../nucleo/base/conexion.ts";
+import { enAccionDePrueba } from "../../../nucleo/pruebas/accion-de-prueba.ts";
 import {
 	nuevoProducto,
 	type SiembraDelCatalogo,
@@ -42,6 +46,24 @@ describe("el precio de un cambio en bloque, con datos al azar", () => {
 				}
 			}),
 		);
+	});
+
+	it("con un redondeo que no es de pesos enteros ($2.50), toma el múltiplo de peso que le sigue: sigue en peso entero", () => {
+		fc.assert(
+			fc.property(precio, cambio, fc.integer({ min: 1, max: 2_000 }), (antes, deBloque, redondeo) => {
+				const nuevo = precioDelCambioEnBloque(centavos(antes), deBloque, redondeo);
+				expect(Number.isInteger(nuevo / 100)).toBe(true);
+				if (deBloque.redondear)
+					expect(Number.isInteger(nuevo / Math.max(100, Math.ceil(redondeo / 100) * 100))).toBe(true);
+			}),
+		);
+		expect(
+			precioDelCambioEnBloque(
+				centavos(41_100),
+				{ direccion: "subir", modo: "pesos", cantidad: 1, redondear: true },
+				250,
+			),
+		).toBe(41_100);
 	});
 
 	it("subir y bajar en pesos son simétricos sin redondear", () => {
@@ -144,6 +166,86 @@ describe("el cambio en bloque pide Google, respeta sus topes y no cambia ninguno
 			[uno.producto_id],
 		);
 		expect(rows).toEqual([{ descripcion: "Precio de Mostrador: $250 → $275 +10%" }]);
+	});
+
+	it("dos productos que cambian: un renglón por producto, los dos con el mismo comando", async () => {
+		const uno = await nuevoProducto(servidor, siembra);
+		const otro = await nuevoProducto(servidor, siembra);
+		expect((await bloque([uno.producto_id, otro.producto_id], {})).estado).toBe(200);
+		const { rows } = await servidor.base.dueno.query(
+			"SELECT entidad_id, comando_id FROM bitacora WHERE accion = 'catalogo.cambiar_precios_en_bloque' AND entidad_id = ANY($1::uuid[])",
+			[[uno.producto_id, otro.producto_id]],
+		);
+		expect(rows.map((renglon) => renglon.entidad_id).sort()).toEqual([uno.producto_id, otro.producto_id].sort());
+		expect(new Set(rows.map((renglon) => renglon.comando_id)).size).toBe(1);
+	});
+
+	it("con catalogo.etiqueta_lleva_precio, subir Mostrador pasa a por_reimprimir las impresas; sin él, ninguna", async () => {
+		const producto = await nuevoProducto(servidor, siembra);
+		const [cuatro, seis] = producto.variantes;
+		await servidor.base.dueno.query(
+			"UPDATE variantes SET estado_etiqueta = 'impresa', etiqueta_impresa_en = now() WHERE id = ANY($1::uuid[])",
+			[[cuatro?.variante_id, seis?.variante_id]],
+		);
+		const porReimprimir = async () =>
+			(
+				await servidor.base.dueno.query(
+					"SELECT id FROM variantes WHERE producto_id = $1 AND estado_etiqueta = 'por_reimprimir' ORDER BY id",
+					[producto.producto_id],
+				)
+			).rows.map((fila) => fila.id);
+		expect((await bloque([producto.producto_id], {})).estado).toBe(200);
+		expect(await porReimprimir()).toEqual([]);
+		await servidor.base.dueno.query(
+			"UPDATE parametros SET valor_booleano = true WHERE clave = 'catalogo.etiqueta_lleva_precio'",
+		);
+		try {
+			expect((await bloque([producto.producto_id], {})).estado).toBe(200);
+			expect(await porReimprimir()).toEqual([cuatro?.variante_id, seis?.variante_id].sort());
+		} finally {
+			await servidor.base.dueno.query(
+				"UPDATE parametros SET valor_booleano = false WHERE clave = 'catalogo.etiqueta_lleva_precio'",
+			);
+		}
+	});
+
+	it("un producto repetido o una lista dada de baja son 400; un descontinuado, producto_descontinuado", async () => {
+		const producto = await nuevoProducto(servidor, siembra);
+		expect((await bloque([producto.producto_id, producto.producto_id], {})).estado).toBe(400);
+		const descontinuado = await nuevoProducto(servidor, siembra);
+		await mandarAccion(
+			servidor,
+			"catalogo.descontinuar_productos",
+			{
+				datos: {
+					productos: [
+						{
+							producto_id: descontinuado.producto_id,
+							version: await versionDelProducto(servidor, descontinuado.producto_id),
+						},
+					],
+					motivo: "Ya no se surte",
+				},
+			},
+			"catalogo",
+		);
+		expect((await bloque([descontinuado.producto_id], {})).cuerpo).toMatchObject({ codigo: "producto_descontinuado" });
+		// La lista de un cliente que se dio de baja.
+		const base = crearBase(servidor.base.app);
+		const cliente = uuidv7();
+		const { lista_id } = z
+			.object({ lista_id: z.uuid() })
+			.parse(
+				await enAccionDePrueba(base, servidor.modulos, (contexto) =>
+					contexto.interna("catalogo.crear_lista_cliente", { cliente_id: cliente, nombre: "Uniformes de Sahuayo" }),
+				),
+			);
+		await enAccionDePrueba(base, servidor.modulos, (contexto) =>
+			contexto.interna("catalogo.dar_baja_lista_cliente", { cliente_id: cliente, motivo: "Cerró" }),
+		);
+		expect((await bloque([producto.producto_id], {}, true, lista_id)).cuerpo).toMatchObject({
+			campos: { lista_id: "Escoge una lista de precios activa." },
+		});
 	});
 
 	it("los dos topes; ningún precio en esa lista; y si uno saldría del rango no cambia ninguno", async () => {

@@ -23,8 +23,25 @@ const tipoDeEtiquetaDePrenda = "prenda";
 /** Lo que regresa `admin.guardar_archivo`. */
 const archivoGuardado = z.object({ archivo_id: z.uuid(), url: z.string() });
 
-/** Las variantes con lo que hace falta para etiquetarlas. */
+/**
+ * Las variantes con lo que hace falta para etiquetarlas. Primero bloquea sus productos, en orden por id, y luego
+ * las variantes: el mismo orden que siguen las tallas, el alta y «Aplicar cambios».
+ */
 async function leerVariantes(contexto: ContextoDeAccion, donde: ReturnType<typeof and>) {
+	const suyos = await contexto.transaccion.selectDistinct({ id: variantes.productoId }).from(variantes).where(donde);
+	if (suyos.length > 0) {
+		await contexto.transaccion
+			.select({ id: productos.id })
+			.from(productos)
+			.where(
+				inArray(
+					productos.id,
+					suyos.map((producto) => producto.id),
+				),
+			)
+			.orderBy(productos.id)
+			.for("update");
+	}
 	return contexto.transaccion
 		.select({
 			id: variantes.id,

@@ -44,6 +44,7 @@ Lo que falta decidir o investigar, y en qué fase se resuelve. Lo del negocio ya
 - **La prueba al azar de la idempotencia corre 150 series contra Postgres** (fase 21, con la temporada simulada): la regla de pruebas pide miles; con la base real cada serie cuesta, y la temporada simulada es donde se corren muchas más.
 - **Un commit de solo registros no corre `docs:revisar`** (fase 22): el encabezado de la bitácora o de `REGISTROS.md` se puede romper ahí y solo lo ve la siguiente revisión completa. Se decide al revisar la seguridad completa si el gancho también revisa esos dos encabezados.
 - **La red del entorno «Unifórmame»** (antes de la fase 2): Claude Code lo creó con red limitada (`nodejs.org` y los registros de paquetes); la [forma de trabajo](../trabajo/FORMA-DE-TRABAJO.md#el-entorno-de-la-nube) pide «Trusted», que también deja pasar las documentaciones oficiales y Docker Hub. Bruno lo cambia en Settings → Environments y abre las sesiones que siguen en ese entorno.
+- **Los tipos de aviso de cada módulo en el CHECK de `avisos.tipo`** (antes de la fase 9): Catálogo reescribió el CHECK con la lista completa (decisión 454), y el esquema de Drizzle de `admin` sigue con los del núcleo. Cada módulo que sume un tipo tiene que repetir la lista; falta decidir si los módulos declaran sus tipos de aviso en su registro y una prueba compara el CHECK con ellos.
 
 ## Para después
 
@@ -215,5 +216,11 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 11 nov 2026 | 8 | Productos con escuela marcados en línea en la muestra (decisión 457) | Saltarse la regla · quitarles el canal | Quitarles el canal: manda la regla | No |
 | 11 nov 2026 | 8 | Las etiquetas impresas de la muestra (decisión 458) | Todas por imprimir · marcarlas directo | Marcarlas directo hasta la fase 20 | No |
 | 11 nov 2026 | 8 | Los eventos de la muestra en la base de pruebas (decisión 459) | Que cada prueba los ignore · procesarlos en la plantilla | Procesarlos en la plantilla, como el worker | No |
+| 11 nov 2026 | 8 | Parámetros de dinero que no son de pesos enteros (decisión 460) | Un paso en Configuración · llevarlos a peso al usarlos | Llevarlos a peso al usarlos | No |
+| 11 nov 2026 | 8 | Qué copia el alta a partir de otro (decisión 461) | Tallas y canales en el servidor · tallas en el servidor y canales de la pantalla | Tallas en el servidor, canales de la pantalla | No |
+| 11 nov 2026 | 8 | El mensaje del tope del precio (decisión 462) | Fijo · armado con el parámetro | Armado con el parámetro | No |
+| 11 nov 2026 | 8 | Lo que rechaza el cambio en bloque (decisión 463) | Nada más · repetidos, lista de baja y descontinuados | Repetidos, lista de baja y descontinuados | No |
+| 11 nov 2026 | 8 | Candados del alta y de las etiquetas (decisión 464) | La llave foránea · `FOR SHARE` y un orden fijo | `FOR SHARE` y un orden fijo | No |
+| 11 nov 2026 | 8 | Qué se revisa del tipo de prenda (decisión 465) | La misma sección · que exista y que la sección lleve receta | Que exista y que la sección lleve receta | No |
 | 10 nov 2026 | 5 | La pantalla del Google de desarrollo | Una propia para escoger cuenta · la de desarrollo de oidc-provider, que pide el correo | La de oidc-provider; `pnpm local` escribe los correos de la muestra al arrancar | No |
 

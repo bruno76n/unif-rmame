@@ -24,7 +24,8 @@ export interface CambioEnBloque {
  * `redondear`, al múltiplo más cercano de `redondeo` (la mitad, hacia arriba); siempre a peso entero.
  * @param antes El precio de antes, en centavos.
  * @param cambio La dirección, el modo, la cantidad y si redondea.
- * @param redondeo `catalogo.bloque_redondeo_centavos`: el múltiplo, en centavos (un múltiplo de 100).
+ * @param redondeo `catalogo.bloque_redondeo_centavos`: el múltiplo, en centavos. Si no es de pesos enteros, se toma
+ * el múltiplo de peso que le sigue ($2.50 redondea a $3), para que el precio siempre sea de pesos enteros.
  * @returns El precio nuevo. Puede salir del rango: eso lo revisa quien lo aplica, sin recortarlo.
  */
 export function precioDelCambioEnBloque(antes: Centavos, cambio: CambioEnBloque, redondeo: number): number {
@@ -33,7 +34,7 @@ export function precioDelCambioEnBloque(antes: Centavos, cambio: CambioEnBloque,
 		cambio.modo === "pesos" ? cambio.cantidad * 100 : Number(aplicarPorcentaje(antes, cambio.cantidad));
 	const exacto = antes + signo * diferencia;
 	if (!cambio.redondear) return aPesoEntero(centavos(exacto));
-	const multiplo = Math.max(100, redondeo);
+	const multiplo = Math.max(100, Math.ceil(redondeo / 100) * 100);
 	return Math.floor((exacto + multiplo / 2) / multiplo) * multiplo;
 }
 

@@ -159,3 +159,9 @@ Los cambia solo la dueña, en Configuración (ver [configuración](../admin/conf
 - **`catalogo.cambiar_precio_en_linea`** (`internas/cambiar-precio-en-linea.ts`): cierra y crea el base de En línea con su origen y sube la versión del producto; un producto descontinuado o sin el canal responde `canal_en_linea_apagado` (decisión 449).
 - **Las lecturas** (`lecturas/precios.ts`): `catalogo.precio_talla` (el suyo o el base; en pedido especial, el base más el recargo y vacío en En línea y Mayoreo) y `catalogo.precio_sugerido` (los pasos de `precioSugerido`, con el recargo aparte).
 - **Las pruebas:** `modulos/catalogo/tablas.prueba.ts` (dos vigentes chocan; la app solo cierra un precio y uno cerrado no cambia), `acciones/cambiar-precios-en-bloque.prueba.ts` (con datos al azar; Google, los topes, el redondeo a $5, el rango, los que se dejan igual), `lecturas/precio-talla.prueba.ts`, `lecturas/precio-sugerido.prueba.ts` (con datos al azar y con la base) e `internas/cambiar-precio-en-linea.prueba.ts`.
+
+**Fase 8, correcciones de la auditoría.**
+
+- **El redondeo del bloque** toma el múltiplo de peso que sigue al parámetro, para que el precio siempre sea de pesos enteros (decisión 460); la prueba al azar lo revisa con redondeos de 1 a 2,000 centavos.
+- **El bloque** rechaza un producto repetido y una lista dada de baja (`400`), y un producto descontinuado (`422 producto_descontinuado`) (decisión 463).
+- **Pruebas nuevas** en `cambiar-precios-en-bloque.prueba.ts`: dos productos con un renglón cada uno y el mismo `comando_id`; las etiquetas por reimprimir con `catalogo.etiqueta_lleva_precio` prendido y apagado; los repetidos, la lista de baja y el descontinuado.

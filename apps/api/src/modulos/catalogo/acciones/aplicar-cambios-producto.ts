@@ -35,7 +35,7 @@ import {
 	textoDePrecio,
 	tomarVersionDelProducto,
 } from "../dominio/productos.ts";
-import { categoriasMayoreo, listasPrecios, productos, tallas, tiposPrenda, variantes } from "../tablas.ts";
+import { categoriasMayoreo, listasPrecios, productos, secciones, tallas, tiposPrenda, variantes } from "../tablas.ts";
 
 /** Lo que recibe. */
 type Cambios = z.infer<typeof aplicarCambiosProducto.entrada>;
@@ -118,7 +118,7 @@ async function revisarPrecios(
 				contexto,
 				"precios",
 				precio.precio_centavos,
-				`El precio de ${lista.nombre} va de $1 a $99,999.`,
+				(tope) => `El precio de ${lista.nombre} va de $1 a ${tope}.`,
 			);
 		}
 	}
@@ -170,6 +170,9 @@ export const accionAplicarCambiosProducto = implementarAccion(
 	aplicarCambiosProducto,
 	async (contexto, datos, version) => {
 		const { transaccion } = contexto;
+		// Cada precio una sola vez: dos cambios al mismo precio no se pueden aplicar los dos.
+		const llaves = (datos.precios ?? []).map((precio) => `${precio.lista_id}|${precio.variante_id}`);
+		if (new Set(llaves).size !== llaves.length) throw errorDeCampo("precios", "Cada precio va una sola vez.");
 		const producto = await leerProducto(transaccion, datos.producto_id);
 		await tomarVersionDelProducto(contexto, producto, version);
 		revisarQueEstaActivo(producto);
@@ -257,6 +260,14 @@ export const accionAplicarCambiosProducto = implementarAccion(
 			});
 		}
 		if (datos.tipo_prenda_id !== undefined && datos.tipo_prenda_id !== producto.tipoPrendaId) {
+			// Solo un producto de una sección con receta lleva tipo de prenda.
+			const [seccion] = await transaccion
+				.select({ llevaReceta: secciones.llevaReceta })
+				.from(secciones)
+				.where(eq(secciones.id, producto.seccionId));
+			if (seccion?.llevaReceta !== true) {
+				throw errorDeCampo("tipo_prenda_id", "Esa sección no lleva receta: sus productos no tienen tipo de prenda.");
+			}
 			const ids = [datos.tipo_prenda_id, ...(producto.tipoPrendaId === null ? [] : [producto.tipoPrendaId])];
 			const nombres = await transaccion
 				.select({ id: tiposPrenda.id, nombre: tiposPrenda.nombre })

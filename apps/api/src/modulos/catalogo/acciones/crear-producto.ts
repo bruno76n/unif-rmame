@@ -9,7 +9,9 @@
  * (fase 10); hasta entonces las medidas se descartan con su aviso.
  */
 
+import { aPesoEntero } from "@uniformame/compartido/calculos/dinero";
 import { crearProducto } from "@uniformame/compartido/contratos/catalogo/productos";
+import { centavos } from "@uniformame/compartido/tipos/base";
 import { and, eq, inArray, isNotNull, isNull } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
 import type { z } from "zod";
@@ -31,6 +33,7 @@ import {
 	productos,
 	secciones,
 	tallas,
+	tiposPrenda,
 	variantes,
 } from "../tablas.ts";
 
@@ -65,11 +68,13 @@ async function leerBase(contexto: ContextoDeAccion, datos: DatosDelAlta): Promis
 }
 
 /**
- * Las tallas del alta, que existan y sigan en su grupo; desde cero, solo normales.
+ * Las tallas del alta, que existan y sigan en su grupo; desde cero, solo normales. A partir de otro son las del
+ * base (normales y de pedido especial, sin las descontinuadas ni las dadas de baja) que caen en los grupos de las
+ * tallas marcadas. Se leen con `FOR SHARE`: mientras el alta no confirme, nadie las quita ni las renombra.
  * @returns Por talla, su id, su nombre y si es de pedido especial, en el orden de sus grupos.
  * @throws `400` si una se repite; `422 especial_desde_cero` o `talla_no_disponible`.
  */
-async function tallasDelAlta(contexto: ContextoDeAccion, datos: DatosDelAlta) {
+async function tallasDelAlta(contexto: ContextoDeAccion, datos: DatosDelAlta, base: Producto | undefined) {
 	if (datos.modo === "desde_cero" && datos.tallas.some((talla) => talla.es_pedido_especial)) {
 		throw errorDeRegla(
 			"especial_desde_cero",
@@ -78,23 +83,47 @@ async function tallasDelAlta(contexto: ContextoDeAccion, datos: DatosDelAlta) {
 	}
 	const ids = datos.tallas.map((talla) => talla.talla_id);
 	if (new Set(ids).size !== ids.length) throw errorDeCampo("tallas", "Una talla va una sola vez.");
-	const leidas = await contexto.transaccion
-		.select({
-			id: tallas.id,
-			nombre: tallas.nombre,
-			bajaEn: tallas.bajaEn,
-			grupo: tallas.grupoTallaId,
-			orden: tallas.orden,
-		})
-		.from(tallas)
-		.where(inArray(tallas.id, ids))
-		.orderBy(tallas.grupoTallaId, tallas.orden);
-	if (leidas.length !== ids.length) throw errorDeCampo("tallas", "Marca al menos un grupo de tallas.");
-	const quitada = leidas.find((talla) => talla.bajaEn !== null);
+	const pedidas = await leerTallas(contexto, ids);
+	if (pedidas.length !== ids.length) throw errorDeCampo("tallas", "Marca al menos un grupo de tallas.");
+	const especial = new Set(datos.tallas.filter((talla) => talla.es_pedido_especial).map((talla) => talla.talla_id));
+	const elegidas =
+		base === undefined
+			? pedidas.map((talla) => ({ ...talla, esPedidoEspecial: especial.has(talla.id) }))
+			: await tallasDelBase(contexto, base, new Set(pedidas.map((talla) => talla.grupo)));
+	const quitada = elegidas.find((talla) => talla.bajaEn !== null);
 	if (quitada !== undefined)
 		throw errorDeRegla("talla_no_disponible", `La talla ${quitada.nombre} ya no está en su grupo.`);
-	const especial = new Set(datos.tallas.filter((talla) => talla.es_pedido_especial).map((talla) => talla.talla_id));
-	return leidas.map((talla) => ({ id: talla.id, nombre: talla.nombre, esPedidoEspecial: especial.has(talla.id) }));
+	if (elegidas.length === 0) throw errorDeCampo("tallas", "Marca al menos un grupo de tallas.");
+	return elegidas.map((talla) => ({ id: talla.id, nombre: talla.nombre, esPedidoEspecial: talla.esPedidoEspecial }));
+}
+
+/**
+ * Lee unas tallas con `FOR SHARE`, en el orden de sus grupos.
+ * @param ids Las tallas.
+ */
+async function leerTallas(contexto: ContextoDeAccion, ids: readonly string[]) {
+	return contexto.transaccion
+		.select({ id: tallas.id, nombre: tallas.nombre, bajaEn: tallas.bajaEn, grupo: tallas.grupoTallaId })
+		.from(tallas)
+		.where(inArray(tallas.id, [...ids]))
+		.orderBy(tallas.grupoTallaId, tallas.orden)
+		.for("share");
+}
+
+/**
+ * Las tallas vivas del producto base que caen en esos grupos, con si son de pedido especial.
+ * @param grupos Los grupos de las tallas marcadas.
+ */
+async function tallasDelBase(contexto: ContextoDeAccion, base: Producto, grupos: ReadonlySet<string>) {
+	const delBase = await contexto.transaccion
+		.select({ tallaId: variantes.tallaId, esPedidoEspecial: variantes.esPedidoEspecial })
+		.from(variantes)
+		.where(and(eq(variantes.productoId, base.id), isNull(variantes.bajaEn), isNull(variantes.descontinuadaEn)));
+	const especial = new Map(delBase.map((variante) => [variante.tallaId, variante.esPedidoEspecial]));
+	const leidas = await leerTallas(contexto, [...especial.keys()]);
+	return leidas
+		.filter((talla) => grupos.has(talla.grupo))
+		.map((talla) => ({ ...talla, esPedidoEspecial: especial.get(talla.id) === true }));
 }
 
 /**
@@ -128,10 +157,12 @@ async function preciosDelAlta(contexto: ContextoDeAccion, datos: DatosDelAlta): 
 		.from(listasPrecios)
 		.where(isNull(listasPrecios.bajaEn));
 	const porLista = new Map<string, number>();
+	const deListas = datos.precios.map((precio) => precio.lista_id);
+	if (new Set(deListas).size !== deListas.length) throw errorDeCampo("precios", "Cada lista va una sola vez.");
 	for (const { lista_id, precio_centavos } of datos.precios) {
 		if (!listas.some((lista) => lista.id === lista_id))
 			throw errorDeCampo("precios", "Escoge una lista de precios activa.");
-		await revisarPrecioMaximo(contexto, "precios", precio_centavos, "Un precio entero, de $1 a $99,999.");
+		await revisarPrecioMaximo(contexto, "precios", precio_centavos, (tope) => `Un precio entero, de $1 a ${tope}.`);
 		porLista.set(lista_id, precio_centavos);
 	}
 	const deTipo = (tipo: string) => listas.find((lista) => lista.tipo === tipo);
@@ -159,18 +190,23 @@ async function preciosDelAlta(contexto: ContextoDeAccion, datos: DatosDelAlta): 
 /**
  * La sección, la escuela y la categoría; y el tipo de prenda que le toca: el que viene, el del base o el de la
  * sección. En una sección sin receta no lleva.
- * @throws `400` si una no existe; `422 falta_tipo_prenda`.
+ * @throws `400` si una no existe; `422 escuela_dada_de_baja` o `falta_tipo_prenda`.
  */
 async function loQueLoUbica(contexto: ContextoDeAccion, datos: DatosDelAlta, base: Producto | undefined) {
 	const { transaccion } = contexto;
 	const [seccion] = await transaccion.select().from(secciones).where(eq(secciones.id, datos.seccion_id));
 	if (seccion === undefined) throw errorDeCampo("seccion_id", "Escoge la sección.");
 	if (datos.escuela_id !== null) {
+		// Con `FOR SHARE`: mientras el alta no confirme, la escuela no se da de baja.
 		const [escuela] = await transaccion
-			.select({ id: escuelas.id })
+			.select({ id: escuelas.id, nombre: escuelas.nombre, bajaEn: escuelas.bajaEn })
 			.from(escuelas)
-			.where(eq(escuelas.id, datos.escuela_id));
+			.where(eq(escuelas.id, datos.escuela_id))
+			.for("share");
 		if (escuela === undefined) throw errorDeCampo("escuela_id", "Escoge la escuela.");
+		if (escuela.bajaEn !== null) {
+			throw errorDeRegla("escuela_dada_de_baja", `${escuela.nombre} está dada de baja: reactívala antes.`);
+		}
 	}
 	const [categoria] = await transaccion
 		.select({ id: categoriasMayoreo.id })
@@ -182,6 +218,13 @@ async function loQueLoUbica(contexto: ContextoDeAccion, datos: DatosDelAlta, bas
 		: null;
 	if (seccion.llevaReceta && tipoPrendaId === null)
 		throw errorDeRegla("falta_tipo_prenda", "Escoge el tipo de prenda.");
+	if (tipoPrendaId !== null) {
+		const [tipo] = await transaccion
+			.select({ id: tiposPrenda.id })
+			.from(tiposPrenda)
+			.where(eq(tiposPrenda.id, tipoPrendaId));
+		if (tipo === undefined) throw errorDeCampo("tipo_prenda_id", "Escoge el tipo de prenda.");
+	}
 	return { tipoPrendaId };
 }
 
@@ -217,12 +260,19 @@ export const accionCrearProducto = implementarAccion(crearProducto, async (conte
 	const base = await leerBase(contexto, datos);
 	revisarCanales(datos);
 	const { tipoPrendaId } = await loQueLoUbica(contexto, datos, base);
-	const deLasTallas = await tallasDelAlta(contexto, datos);
+	const deLasTallas = await tallasDelAlta(contexto, datos, base);
 	const porLista = await preciosDelAlta(contexto, datos);
+	// El recargo inicial es un parámetro en centavos: se lleva a peso entero, como todo precio.
 	const recargo =
 		datos.recargo_pedido_especial_centavos ??
 		base?.recargoPedidoEspecialCentavos ??
-		Number(await contexto.lectura("admin.parametro", { clave: "catalogo.recargo_pedido_especial_inicial_centavos" }));
+		aPesoEntero(
+			centavos(
+				Number(
+					await contexto.lectura("admin.parametro", { clave: "catalogo.recargo_pedido_especial_inicial_centavos" }),
+				),
+			),
+		);
 	const quien = quienCambia(contexto);
 	const productoId = uuidv7();
 	const [creado] = await transaccion

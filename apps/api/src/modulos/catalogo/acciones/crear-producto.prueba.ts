@@ -15,6 +15,7 @@ import {
 	productoCreado,
 	type SiembraDelCatalogo,
 	siembraDelCatalogo,
+	versionDelProducto,
 } from "../../../nucleo/pruebas/catalogo-de-prueba.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
@@ -259,5 +260,101 @@ describe("un alta toma sus códigos seguidos, resuelve lo que no viene y, desde 
 		const sinPedido = await alta(altaDesdeCero(siembra), "ventas");
 		expect(sinPedido.estado).toBe(403);
 		expect((await alta(altaDesdeCero(siembra), "aduana")).estado).toBe(403);
+	});
+
+	it("a partir de otro, las tallas son las del base (también las de pedido especial) en los grupos marcados", async () => {
+		const base = await nuevoProducto(servidor, siembra);
+		await mandarAccion(
+			servidor,
+			"catalogo.agregar_talla",
+			{
+				datos: { producto_id: base.producto_id, talla_id: siembra.tallas.Infantil?.["10"], es_pedido_especial: true },
+				version: await versionDelProducto(servidor, base.producto_id),
+			},
+			"catalogo",
+		);
+		// La pantalla marca el grupo Infantil con una sola de sus tallas: el alta toma las cuatro del base.
+		const copia = await alta({
+			...altaDesdeCero(siembra, {
+				nombre: "Playera copiada",
+				tallas: [{ talla_id: siembra.tallas.Infantil?.["4"], es_pedido_especial: false }],
+			}),
+			modo: "a_partir_de",
+			producto_base_id: base.producto_id,
+		});
+		const creado = productoCreado.parse(copia.cuerpo.resultado);
+		const { rows } = await servidor.base.dueno.query(
+			`SELECT t.nombre AS talla, v.es_pedido_especial AS especial FROM variantes v JOIN tallas t ON t.id = v.talla_id
+			 WHERE v.producto_id = $1 ORDER BY t.orden`,
+			[creado.producto_id],
+		);
+		expect(rows).toEqual([
+			{ talla: "4", especial: false },
+			{ talla: "6", especial: false },
+			{ talla: "8", especial: false },
+			{ talla: "10", especial: true },
+		]);
+	});
+
+	it("una escuela dada de baja no recibe productos nuevos; una lista repetida o un tipo de prenda que no existe son 400", async () => {
+		const escuela = z
+			.object({ escuela_id: z.uuid() })
+			.parse(
+				(
+					await mandarAccion(
+						servidor,
+						"catalogo.agregar_escuela",
+						{ datos: { nombre: "Colegio Cuauhtémoc", municipio: "Tangancícuaro" } },
+						"catalogo",
+					)
+				).cuerpo.resultado,
+			).escuela_id;
+		const version = Number(
+			(await servidor.base.dueno.query("SELECT version::int AS v FROM escuelas WHERE id = $1", [escuela])).rows[0]?.v,
+		);
+		expect(
+			(
+				await mandarAccion(
+					servidor,
+					"catalogo.dar_baja_escuela",
+					{ datos: { escuela_id: escuela, motivo: "Ya no trabaja con nosotros" }, version },
+					"catalogo",
+				)
+			).estado,
+		).toBe(200);
+		expect((await alta(altaDesdeCero(siembra, { escuela_id: escuela }))).cuerpo).toMatchObject({
+			codigo: "escuela_dada_de_baja",
+			mensaje: "Colegio Cuauhtémoc está dada de baja: reactívala antes.",
+		});
+		const repetida = await alta(
+			altaDesdeCero(siembra, {
+				precios: [
+					{ lista_id: siembra.listas.mostrador, precio_centavos: 25_000 },
+					{ lista_id: siembra.listas.mostrador, precio_centavos: 26_000 },
+				],
+			}),
+		);
+		expect(repetida.cuerpo).toMatchObject({ campos: { precios: "Cada lista va una sola vez." } });
+		expect((await alta(altaDesdeCero(siembra, { tipo_prenda_id: uuidv7() }))).cuerpo).toMatchObject({
+			campos: { tipo_prenda_id: "Escoge el tipo de prenda." },
+		});
+	});
+
+	it("el recargo inicial de un parámetro con centavos se lleva a peso entero", async () => {
+		await servidor.base.dueno.query(
+			"UPDATE parametros SET valor_entero = 5050 WHERE clave = 'catalogo.recargo_pedido_especial_inicial_centavos'",
+		);
+		try {
+			const creado = await nuevoProducto(servidor, siembra);
+			const { rows } = await servidor.base.dueno.query(
+				"SELECT recargo_pedido_especial_centavos::int AS recargo FROM productos WHERE id = $1",
+				[creado.producto_id],
+			);
+			expect(rows[0]?.recargo).toBe(5_100);
+		} finally {
+			await servidor.base.dueno.query(
+				"UPDATE parametros SET valor_entero = 5000 WHERE clave = 'catalogo.recargo_pedido_especial_inicial_centavos'",
+			);
+		}
 	});
 });

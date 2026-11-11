@@ -246,4 +246,23 @@ describe("«Aplicar cambios» aplica todo junto, cierra y crea cada precio y sub
 			],
 		});
 	});
+
+	it("un precio repetido es 400; un producto de una sección sin receta no lleva tipo de prenda", async () => {
+		const producto = await nuevoProducto(servidor, siembra);
+		const repetido = await aplicar(producto.producto_id, {
+			precios: [
+				{ lista_id: siembra.listas.mostrador, variante_id: null, precio_centavos: 26_000 },
+				{ lista_id: siembra.listas.mostrador, variante_id: null, precio_centavos: 27_000 },
+			],
+		});
+		expect(repetido.cuerpo).toMatchObject({ campos: { precios: "Cada precio va una sola vez." } });
+		const accesorio = await nuevoProducto(servidor, siembra, {
+			nombre: `Calcetas ${Math.random().toString(36).slice(2, 8)}`,
+			seccion_id: siembra.secciones["Accesorios y servicios"],
+			tipo_prenda_id: undefined,
+		});
+		expect((await aplicar(accesorio.producto_id, { tipo_prenda_id: siembra.tipoPrenda })).cuerpo).toMatchObject({
+			campos: { tipo_prenda_id: "Esa sección no lleva receta: sus productos no tienen tipo de prenda." },
+		});
+	});
 });

@@ -82,5 +82,6 @@ export const cambiarPreciosEnBloque = definirAccion({
 		{ codigo: "sin_cambio", mensaje: "Con ese cambio no se mueve ningún precio." },
 		{ codigo: "sin_precio_en_lista", mensaje: "Ninguno de esos productos tiene precio en esa lista." },
 		{ codigo: "precio_fuera_de_rango", mensaje: "Un precio quedaría fuera del rango: quítalo de la selección." },
+		{ codigo: "producto_descontinuado", mensaje: "El producto está descontinuado: reactívalo para cambiarlo." },
 	],
 });

@@ -167,3 +167,8 @@ Los cambia solo la dueña, en Configuración (ver [configuración](../admin/conf
 - **El trabajo** `catalogo.revisar_codigos_de_barras` (`trabajos/revisar-codigos-de-barras.ts`) corre a las 04:00, lee `quedan` de `admin.siguiente_folio` y, abajo de `catalogo.codigos_restantes_aviso`, avisa a la dueña si no hubo un aviso igual en los últimos 7 días (decisión 453).
 - **El aviso** `codigos_por_acabarse` entra al CHECK de `avisos.tipo` con la migración `0025`, y su correo con `avisos.correo_codigos_por_acabarse` (decisión 454).
 - **Pruebas:** `acciones/imprimir-etiquetas.prueba.ts` (las nuevas de un producto, reimprimir sin tocar, las tallas que no se etiquetan, «Sin etiquetas» y el máximo, y sin almacén nada queda marcado) y `trabajos/revisar-codigos-de-barras.prueba.ts` (el aviso una vez por semana y su horario).
+
+**Fase 8, correcciones de la auditoría.**
+
+- **`catalogo.imprimir_etiquetas`** bloquea primero los productos, en orden por id, y luego las variantes: el mismo orden que el alta, las tallas y «Aplicar cambios» (decisión 464).
+- **El aviso de códigos** dice el último código con lo que da `admin.siguiente_folio` (el siguiente más los que quedan), no con un número fijo.

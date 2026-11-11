@@ -17,7 +17,7 @@ import { cambiarPreciosEnBloque } from "@uniformame/compartido/contratos/catalog
 import { centavos } from "@uniformame/compartido/tipos/base";
 import { eq } from "drizzle-orm";
 import { revisarVersion } from "../../../nucleo/acciones/pisadas.ts";
-import { errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
+import { errorDeCampo, errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeAccion, implementarAccion } from "../../../nucleo/modulos.ts";
 import { confirmadoConGoogle } from "../../admin/dominio/cuentas.ts";
 import {
@@ -27,7 +27,7 @@ import {
 	mostradorPorTalla,
 	preciosVigentes,
 } from "../dominio/precios.ts";
-import { leerProducto, textoDePrecio, tomarVersionDelProducto } from "../dominio/productos.ts";
+import { leerProducto, revisarQueEstaActivo, textoDePrecio, tomarVersionDelProducto } from "../dominio/productos.ts";
 import { listasPrecios, productos } from "../tablas.ts";
 
 /** Lee un parámetro entero (centavos o por ciento). */
@@ -54,8 +54,11 @@ export const accionCambiarPreciosEnBloque = implementarAccion(cambiarPreciosEnBl
 			`Más de ${textoDePrecio(await numero(contexto, "catalogo.bloque_tope_centavos"))} se cambia producto por producto.`,
 		);
 	}
+	const ids = datos.productos.map((producto) => producto.producto_id);
+	if (new Set(ids).size !== ids.length) throw errorDeCampo("productos", "Cada producto va una sola vez.");
 	const [lista] = await transaccion.select().from(listasPrecios).where(eq(listasPrecios.id, datos.lista_id));
 	if (lista === undefined) throw noExiste();
+	if (lista.bajaEn !== null) throw errorDeCampo("lista_id", "Escoge una lista de precios activa.");
 	const redondeo = await numero(contexto, "catalogo.bloque_redondeo_centavos");
 	const maximo = await numero(contexto, "catalogo.precio_max_centavos");
 	// En orden por id: dos cambios en bloque a la vez bloquean los productos en el mismo orden.
@@ -63,6 +66,7 @@ export const accionCambiarPreciosEnBloque = implementarAccion(cambiarPreciosEnBl
 	const planes = [];
 	for (const { producto_id, version } of ordenados) {
 		const producto = await leerProducto(transaccion, producto_id);
+		revisarQueEstaActivo(producto);
 		const vigentes = await preciosVigentes(transaccion, [producto.id], lista.id);
 		const cambios = vigentes
 			.map((vigente) => ({

@@ -9,12 +9,15 @@
 import { z } from "zod";
 import { definirAccion } from "../definir.ts";
 
-/** Un precio de lista: pesos enteros, en centavos. */
+/**
+ * Un precio de lista: pesos enteros, en centavos. El tope (`catalogo.precio_max_centavos`) lo revisa la acción,
+ * con el mensaje que lo nombra.
+ */
 export const precioDeLista = z
-	.number("Un precio entero, de $1 a $99,999.")
-	.int("Un precio entero, de $1 a $99,999.")
-	.positive("Un precio entero, de $1 a $99,999.")
-	.refine((centavos) => centavos % 100 === 0, "Un precio entero, de $1 a $99,999.")
+	.number("Un precio entero, de $1 en adelante.")
+	.int("Un precio entero, de $1 en adelante.")
+	.positive("Un precio entero, de $1 en adelante.")
+	.refine((centavos) => centavos % 100 === 0, "Un precio entero, de $1 en adelante.")
 	.describe("Pesos enteros, en centavos");
 
 /** El recargo de pedido especial: pesos enteros, en centavos, de cero en adelante. */
@@ -101,6 +104,7 @@ export const crearProducto = definirAccion({
 	permiso: {},
 	errores: [
 		{ codigo: "nombre_repetido", mensaje: "Ya existe una prenda con ese nombre para ese modelo." },
+		{ codigo: "escuela_dada_de_baja", mensaje: "Su escuela está dada de baja: reactívala antes." },
 		{ codigo: "falta_precio_mostrador", mensaje: "Falta el precio de mostrador." },
 		{ codigo: "falta_precio_en_linea", mensaje: "Falta el precio de la tienda en línea." },
 		{ codigo: "falta_precio_cliente", mensaje: "Falta el precio del cliente." },

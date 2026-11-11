@@ -243,122 +243,128 @@ export async function cargarCatalogoDeLaMuestra(base: Base): Promise<void> {
 		agente: "Carga de la muestra",
 	});
 	const hacer = crearHacer(base, registro);
-
-	const escuelaIds = new Map<string, string>();
-	for (const [clave, escuela] of Object.entries(escuelasDeLaMuestra)) {
-		escuelaIds.set(clave, idDe(await hacer("catalogo.agregar_escuela", escuela), "escuela_id"));
-	}
-	const seccionIds = new Map(
-		(await base.select({ id: secciones.id, nombre: secciones.nombre }).from(secciones)).map((s) => [s.nombre, s.id]),
-	);
-	const tipoIds = new Map<string, string>();
-	for (const [nombre, seccion] of Object.entries(tiposDeLaMuestra)) {
-		const resultado = await hacer("catalogo.guardar_tipo_prenda", {
-			nombre,
-			seccion_id: seccionIds.get(seccion),
-			medidas: [],
-		});
-		tipoIds.set(nombre, idDe(resultado, "tipo_prenda_id"));
-	}
-	const categoriaIds = new Map(
-		(await base.select({ id: categoriasMayoreo.id, nombre: categoriasMayoreo.nombre }).from(categoriasMayoreo)).map(
-			(c) => [c.nombre, c.id],
-		),
-	);
-	const listaIds = new Map(
-		(
-			await base
-				.select({ id: listasPrecios.id, tipo: listasPrecios.tipo })
-				.from(listasPrecios)
-				.where(isNull(listasPrecios.clienteId))
-		).map((l) => [l.tipo, l.id]),
-	);
-	const tallasPorGrupo = new Map<string, { id: string; nombre: string }[]>();
-	for (const talla of await base
-		.select({ id: tallas.id, nombre: tallas.nombre, grupo: gruposTalla.nombre })
-		.from(tallas)
-		.innerJoin(gruposTalla, eq(gruposTalla.id, tallas.grupoTallaId))
-		.orderBy(tallas.orden)) {
-		tallasPorGrupo.set(talla.grupo, [...(tallasPorGrupo.get(talla.grupo) ?? []), talla]);
-	}
-
-	const descontinuar: string[] = [];
-	const impresos: string[] = [];
-	const productoIds = new Map<string, string>();
-	for (const producto of productosDeLaMuestra) {
-		// Solo un producto sin escuela se vende en línea: la muestra lo marca en algunos con escuela.
-		const canales = [
-			...(producto.canales.includes("m") ? ["mostrador"] : []),
-			...(producto.canales.includes("l") && producto.escuela === null ? ["en_linea"] : []),
-			...(producto.canales.includes("x") ? ["externos"] : []),
-		];
-		const precios = (
-			[
-				["mostrador", producto.precios.mos],
-				["mayoreo", producto.precios.may],
-				["en_linea", canales.includes("en_linea") ? producto.precios.lin : undefined],
-			] as const
-		).flatMap(([tipo, pesos]) =>
-			pesos === undefined ? [] : [{ lista_id: listaIds.get(tipo), precio_centavos: pesos * 100 }],
+	try {
+		const escuelaIds = new Map<string, string>();
+		for (const [clave, escuela] of Object.entries(escuelasDeLaMuestra)) {
+			escuelaIds.set(clave, idDe(await hacer("catalogo.agregar_escuela", escuela), "escuela_id"));
+		}
+		const seccionIds = new Map(
+			(await base.select({ id: secciones.id, nombre: secciones.nombre }).from(secciones)).map((s) => [s.nombre, s.id]),
 		);
-		const creado = await hacer("catalogo.crear_producto", {
-			modo: "desde_cero",
-			origen: "catalogo",
-			nombre: producto.nombre,
-			seccion_id: seccionIds.get(producto.seccion),
-			escuela_id: producto.escuela === null ? null : escuelaIds.get(producto.escuela),
-			...(producto.tipo === null ? {} : { tipo_prenda_id: tipoIds.get(producto.tipo) }),
-			categoria_mayoreo_id: categoriaIds.get(categorias[producto.categoria] ?? ""),
-			...(producto.servicio === true ? { es_servicio: true } : {}),
-			tallas: tallasDe(producto.normales, tallasPorGrupo).map((talla_id) => ({ talla_id, es_pedido_especial: false })),
-			canales,
-			precios,
-		});
-		const productoId = idDe(creado, "producto_id");
-		productoIds.set(`${producto.nombre}|${producto.escuela ?? ""}`, productoId);
-		// Las de pedido especial se agregan en la ficha: un alta desde cero no las lleva.
-		for (const talla_id of tallasDe(producto.especiales, tallasPorGrupo)) {
+		const tipoIds = new Map<string, string>();
+		for (const [nombre, seccion] of Object.entries(tiposDeLaMuestra)) {
+			const resultado = await hacer("catalogo.guardar_tipo_prenda", {
+				nombre,
+				seccion_id: seccionIds.get(seccion),
+				medidas: [],
+			});
+			tipoIds.set(nombre, idDe(resultado, "tipo_prenda_id"));
+		}
+		const categoriaIds = new Map(
+			(await base.select({ id: categoriasMayoreo.id, nombre: categoriasMayoreo.nombre }).from(categoriasMayoreo)).map(
+				(c) => [c.nombre, c.id],
+			),
+		);
+		const listaIds = new Map(
+			(
+				await base
+					.select({ id: listasPrecios.id, tipo: listasPrecios.tipo })
+					.from(listasPrecios)
+					.where(isNull(listasPrecios.clienteId))
+			).map((l) => [l.tipo, l.id]),
+		);
+		const tallasPorGrupo = new Map<string, { id: string; nombre: string }[]>();
+		for (const talla of await base
+			.select({ id: tallas.id, nombre: tallas.nombre, grupo: gruposTalla.nombre })
+			.from(tallas)
+			.innerJoin(gruposTalla, eq(gruposTalla.id, tallas.grupoTallaId))
+			.orderBy(tallas.orden)) {
+			tallasPorGrupo.set(talla.grupo, [...(tallasPorGrupo.get(talla.grupo) ?? []), talla]);
+		}
+
+		const descontinuar: string[] = [];
+		const impresos: string[] = [];
+		const productoIds = new Map<string, string>();
+		for (const producto of productosDeLaMuestra) {
+			// Solo un producto sin escuela se vende en línea: la muestra lo marca en algunos con escuela.
+			const canales = [
+				...(producto.canales.includes("m") ? ["mostrador"] : []),
+				...(producto.canales.includes("l") && producto.escuela === null ? ["en_linea"] : []),
+				...(producto.canales.includes("x") ? ["externos"] : []),
+			];
+			const precios = (
+				[
+					["mostrador", producto.precios.mos],
+					["mayoreo", producto.precios.may],
+					["en_linea", canales.includes("en_linea") ? producto.precios.lin : undefined],
+				] as const
+			).flatMap(([tipo, pesos]) =>
+				pesos === undefined ? [] : [{ lista_id: listaIds.get(tipo), precio_centavos: pesos * 100 }],
+			);
+			const creado = await hacer("catalogo.crear_producto", {
+				modo: "desde_cero",
+				origen: "catalogo",
+				nombre: producto.nombre,
+				seccion_id: seccionIds.get(producto.seccion),
+				escuela_id: producto.escuela === null ? null : escuelaIds.get(producto.escuela),
+				...(producto.tipo === null ? {} : { tipo_prenda_id: tipoIds.get(producto.tipo) }),
+				categoria_mayoreo_id: categoriaIds.get(categorias[producto.categoria] ?? ""),
+				...(producto.servicio === true ? { es_servicio: true } : {}),
+				tallas: tallasDe(producto.normales, tallasPorGrupo).map((talla_id) => ({
+					talla_id,
+					es_pedido_especial: false,
+				})),
+				canales,
+				precios,
+			});
+			const productoId = idDe(creado, "producto_id");
+			productoIds.set(`${producto.nombre}|${producto.escuela ?? ""}`, productoId);
+			// Las de pedido especial se agregan en la ficha: un alta desde cero no las lleva.
+			for (const talla_id of tallasDe(producto.especiales, tallasPorGrupo)) {
+				await hacer(
+					"catalogo.agregar_talla",
+					{ producto_id: productoId, talla_id, es_pedido_especial: true },
+					await versionDe(base, productoId),
+				);
+			}
+			if (producto.descontinuado === true) descontinuar.push(productoId);
+			if (producto.nuevo !== true) impresos.push(productoId);
+		}
+
+		for (const baja of bajasDeLaMuestra) {
+			const productoId = productoIds.get(`${baja.producto}|${baja.escuela ?? ""}`) ?? "";
+			const [variante] = await base
+				.select({ id: variantes.id })
+				.from(variantes)
+				.innerJoin(tallas, eq(tallas.id, variantes.tallaId))
+				.where(and(eq(variantes.productoId, productoId), eq(tallas.nombre, baja.talla)));
 			await hacer(
-				"catalogo.agregar_talla",
-				{ producto_id: productoId, talla_id, es_pedido_especial: true },
+				"catalogo.dar_baja_talla",
+				{ variante_id: variante?.id, motivo: "Talla fuera de rango que ya no se pide" },
 				await versionDe(base, productoId),
 			);
 		}
-		if (producto.descontinuado === true) descontinuar.push(productoId);
-		if (producto.nuevo !== true) impresos.push(productoId);
-	}
-
-	for (const baja of bajasDeLaMuestra) {
-		const productoId = productoIds.get(`${baja.producto}|${baja.escuela ?? ""}`) ?? "";
-		const [variante] = await base
-			.select({ id: variantes.id })
-			.from(variantes)
-			.innerJoin(tallas, eq(tallas.id, variantes.tallaId))
-			.where(and(eq(variantes.productoId, productoId), eq(tallas.nombre, baja.talla)));
-		await hacer(
-			"catalogo.dar_baja_talla",
-			{ variante_id: variante?.id, motivo: "Talla fuera de rango que ya no se pide" },
-			await versionDe(base, productoId),
+		const versiones = await Promise.all(
+			descontinuar.map(async (id) => ({ producto_id: id, version: await versionDe(base, id) })),
 		);
-	}
-	const versiones = await Promise.all(
-		descontinuar.map(async (id) => ({ producto_id: id, version: await versionDe(base, id) })),
-	);
-	await hacer("catalogo.descontinuar_productos", { productos: versiones, motivo: "Ya no se surte" });
+		await hacer("catalogo.descontinuar_productos", { productos: versiones, motivo: "Ya no se surte" });
 
-	// Las etiquetas de los que no son nuevos ya están impresas.
-	await base
-		.update(variantes)
-		.set({ estadoEtiqueta: "impresa", etiquetaImpresaEn: ahora, etiquetaImpresaPor: rosa.usuarioId })
-		.where(
-			and(
-				inArray(variantes.productoId, impresos),
-				eq(variantes.estadoEtiqueta, "por_imprimir"),
-				isNull(variantes.bajaEn),
-			),
-		);
-	await base
-		.update(sesiones)
-		.set({ cerradaEn: sql`now()`, motivoCierre: "salio" })
-		.where(eq(sesiones.id, rosa.sesionId));
+		// Las etiquetas de los que no son nuevos ya están impresas.
+		await base
+			.update(variantes)
+			.set({ estadoEtiqueta: "impresa", etiquetaImpresaEn: ahora, etiquetaImpresaPor: rosa.usuarioId })
+			.where(
+				and(
+					inArray(variantes.productoId, impresos),
+					eq(variantes.estadoEtiqueta, "por_imprimir"),
+					isNull(variantes.bajaEn),
+				),
+			);
+	} finally {
+		// La sesión de la carga se cierra aunque algo falle.
+		await base
+			.update(sesiones)
+			.set({ cerradaEn: sql`now()`, motivoCierre: "salio" })
+			.where(eq(sesiones.id, rosa.sesionId));
+	}
 }
