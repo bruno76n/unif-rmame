@@ -254,6 +254,16 @@ export const accionDarBajaTalla = implementarAccion(darBajaTalla, async (context
 	if (variante.bajaEn !== null)
 		throw errorDeRegla("talla_dada_de_baja", `La talla ${variante.talla} ya está dada de baja.`);
 	revisarQueNadaLaRetiene(variante.talla, retiene);
+	// Con la versión del producto tomada, un lote nuevo de esta prenda (que la lee con `FOR SHARE`) ya terminó o espera.
+	const enLotes = z
+		.object({ folios: z.array(z.string()) })
+		.parse(await contexto.lectura("produccion.lotes_sin_terminar_de_variante", { variante_id: variante.id }));
+	if (enLotes.folios.length > 0) {
+		throw errorDeRegla(
+			"talla_con_lotes",
+			`La talla ${variante.talla} está en lotes sin terminar: ${enLotes.folios.join(", ")}.`,
+		);
+	}
 	await contexto.transaccion
 		.update(variantes)
 		.set({ bajaEn: contexto.ahora.toString(), bajaPor: quienCambia(contexto), motivoBaja: datos.motivo })

@@ -223,4 +223,12 @@ Usa también `general.dias_de_trabajo`, que también baja a la tablet.
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 12.*
+**Fase 12, parte 2.**
+
+- **Las tablas** `lotes` y `lote_tallas` son de `produccion` (`tablas.ts`, migración `0039`), con sus CHECK (la etapa, el destino, el flujo y la versión de receta llenos desde el corte, el pedido con destino `pedido`, la ubicación con tienda o temporada, las piezas que van a Bodega sin pasar de las cortadas) y `xid_escritura`. Con ellas, las columnas que apuntaban a los lotes (movimientos, traspasos, recepciones y `recetas.verificada_lote_id`) ya son llaves. La migración suma `lote_atorado` al CHECK de `avisos.tipo`.
+- **Las internas** `marcar_lote_revisado` y `marcar_lote_en_aduana` (`internas/lotes.ts`) avanzan la etapa con su momento; fuera de orden es un error del programa (decisión 600). Al revisarse, sus tallas se tocan para que bajen como `quitar`.
+- **Las lecturas** (`lecturas/lotes.ts`): `piezas_en_produccion` por variante (regla 9, sin reprocesos hasta la fase 13), `lotes_por_cortar` con sus tallas y si su prenda tiene receta, y `lotes_sin_terminar_de_variante`. Con ella, `catalogo.dar_baja_talla` responde `talla_con_lotes` (decisión 599), y un flujo con lotes en proceso o terminados no cambia (`flujo_con_lotes`).
+- **La salud** es `saludDeLote` del paquete compartido (`packages/compartido/src/calculos/salud-lote.ts`), con `diasSinAvance`; la prueban `salud-lote.prueba.ts` con los casos de la regla 7 y fast-check (el orden de la regla, y que un día sin subir nunca vuelve atorado un lote). El trabajo «Vigilar lotes atorados» la usa con los registros, en la parte 4 (decisión 597).
+- **Lo que baja a la tablet** (`bajada.ts`): los lotes en proceso y terminados con «para quién» (de un pedido dice «Pedido» hasta la fase 16, decisión 598) y sus tallas.
+- **Los parámetros** de la salud están en `parametros.ts`; `lote_atorado_dias` y `riesgo_atraso_dias` bajan a la tablet.
+- **Pruebas:** `internas/pasar-pedido-a-temporada.prueba.ts` (las etapas y los candados) y `bajada.prueba.ts`.

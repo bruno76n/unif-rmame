@@ -4,8 +4,8 @@
  * Fase 12 · docs/modulos/produccion/operaciones-y-flujos.md (reglas 2, 3, 6, 7, 8 y 9, «Acciones»)
  *
  * El flujo es un agregado: agregar o quitar una operación toma su versión, y las siguientes recorren su orden (el
- * único del orden se revisa al final de la transacción). El candado de los lotes en proceso llega con los lotes, en la
- * parte 2 de la fase (decisión 591).
+ * único del orden se revisa al final de la transacción). Con lotes en proceso o terminados sin revisar, el flujo no
+ * cambia (regla 5): cancelar un registro puede reabrir un lote terminado.
  */
 
 import {
@@ -13,7 +13,7 @@ import {
 	crearFlujo,
 	quitarOperacionFlujo,
 } from "@uniformame/compartido/contratos/produccion/flujos";
-import { and, eq, gt, gte, isNull, sql } from "drizzle-orm";
+import { and, count, eq, gt, gte, inArray, isNull, sql } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
 import type { z } from "zod";
 import { quienCambia } from "../../../nucleo/acciones/comunes.ts";
@@ -28,7 +28,7 @@ import {
 	operacionPorNombre,
 	revisarPersonaDelTaller,
 } from "../dominio/flujos.ts";
-import { flujoOperaciones, flujos } from "../tablas.ts";
+import { flujoOperaciones, flujos, lotes } from "../tablas.ts";
 
 /** Lo que pide crear un flujo. */
 type PedidoDeFlujo = z.infer<typeof crearFlujo.entrada>;
@@ -153,13 +153,23 @@ export const accionCrearFlujo = implementarAccion(crearFlujo, async (contexto, d
 });
 
 /**
- * Toma la versión de un flujo y lo lee.
- * @throws `404` si no existe; `409` si alguien lo cambió.
+ * Toma la versión de un flujo y lo lee; revisa el candado de sus lotes (regla 5).
+ * @throws `404` si no existe; `409` si alguien lo cambió; `422 flujo_con_lotes`.
  */
 async function tomarFlujo(contexto: ContextoDeAccion, flujoId: string, version: number | undefined) {
 	const [flujo] = await contexto.transaccion.select().from(flujos).where(eq(flujos.id, flujoId));
 	if (flujo === undefined) throw noExiste();
 	await tomarVersion(contexto, flujos, flujo.id, version, async () => ({ flujo_id: flujo.id, nombre: flujo.nombre }));
+	const [conLotes] = await contexto.transaccion
+		.select({ n: count() })
+		.from(lotes)
+		.where(and(eq(lotes.flujoId, flujo.id), inArray(lotes.estado, ["en_proceso", "terminado"])));
+	if ((conLotes?.n ?? 0) > 0) {
+		throw errorDeRegla(
+			"flujo_con_lotes",
+			`${conLotes?.n} lotes en proceso usan este flujo: cámbialo cuando terminen o haz un flujo nuevo`,
+		);
+	}
 	return flujo;
 }
 

@@ -238,3 +238,5 @@ Este archivo no tiene parámetros propios. Usa:
 **Fase 10, parte 2.** `catalogo.agregar_talla` pregunta a `patronaje.receta_cubre_tallas` al agregar una talla normal: si la prenda tiene receta y no la cubre, regresa el aviso «La receta de {producto} no tiene la talla {t}: Patronaje la completa.». Lo prueba `acciones/agregar-talla.prueba.ts`.
 
 **Fase 12, parte 1.** `catalogo.guardar_tipo_prenda` recibe `flujo_defecto_id`, que tiene que estar vigente (`produccion.flujo_vigente`), y lo anota en la bitácora; `tipos_prenda.flujo_defecto_id` ya es llave. Lo prueba `acciones/flujo-del-producto.prueba.ts`.
+
+**Fase 12, parte 2.** `catalogo.dar_baja_talla` pregunta `produccion.lotes_sin_terminar_de_variante` después de tomar la versión del producto: un lote nuevo lee la prenda con `FOR SHARE`, así que la baja lo ve o él ve la baja (decisión 599). Lo prueba `produccion/internas/pasar-pedido-a-temporada.prueba.ts`.

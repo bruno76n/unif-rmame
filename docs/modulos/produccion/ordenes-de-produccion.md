@@ -147,4 +147,10 @@ Los cambia solo la dueña, en Configuración (ver [configuración](../admin/conf
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 12.*
+**Fase 12, parte 2.**
+
+- **La tabla** `ordenes_produccion` es de `produccion` (`tablas.ts`, migración `0039`), con sus CHECK: el motivo, el pedido lleno solo con `cliente_externo`, el destino con temporada, reabasto y pedido especial, la entrega no antes de la fecha y `creado_por` siempre lleno. `pedido_id`, `pedido_version_id` y `pedido_especial_tienda_id` llevan su `@llavePendiente`.
+- **`produccion.crear_orden`** (`acciones/ordenes.ts`, contrato en `packages/compartido/src/contratos/produccion/ordenes.ts`): Bodega es temporada y una tienda, reabasto; la fecha de corte es la menor entre hoy + `produccion.orden_corte_dias` y la entrega. Lo común con las internas está en `dominio/lotes.ts`: la prenda que se fabrica (activa, sin ser servicio, con flujo; leída con `FOR SHARE`), sus tallas (de la prenda, ni descontinuadas ni dadas de baja), y la orden y el lote que nacen con sus folios y sus eventos. Sin receta, el mensaje sigue con «. Falta la receta…».
+- **Las internas** (`internas/lotes.ts`): `mandar_a_produccion` suma por prenda al lote por cortar del pedido (la talla nueva nace) o abre una orden `cliente_externo` con un lote por prenda, corte en hoy + `produccion.dias_corte_lote_nuevo`; `pasar_pedido_a_temporada` y `cambiar_fecha_entrega_pedido`, como dicen sus reglas. Saber si un lote ya tiene tela entregada y recalcular los rollos sugeridos llegan con las entregas a corte, en la parte 3 (decisión 596).
+- **Los parámetros** de la orden están en `parametros.ts`.
+- **Pruebas:** `acciones/crear-orden.prueba.ts`, `internas/mandar-a-produccion.prueba.ts` (también lo que el pedido tiene en producción y los lotes por cortar) e `internas/pasar-pedido-a-temporada.prueba.ts`.

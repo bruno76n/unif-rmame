@@ -1,0 +1,111 @@
+/**
+ * Las lecturas de los lotes: lo que un pedido tiene en producción, los lotes por cortar y los lotes sin terminar de
+ * una talla.
+ * Fase 12 · docs/modulos/produccion/lotes.md («Lecturas», regla 9)
+ *
+ * Ninguna lleva tarifas ni costos. Lo que un pedido tiene en reproceso se suma con Calidad (fase 13).
+ */
+
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { z } from "zod";
+import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
+import { lotes, loteTallas } from "../tablas.ts";
+
+/** Las etapas en que un lote ya se cortó y sigue en el taller. */
+const cortadoEnElTaller = ["en_proceso", "terminado", "revisado"] as const;
+
+/**
+ * `produccion.piezas_en_produccion`: por talla, lo que el pedido tiene en producción: las planeadas de sus lotes por
+ * cortar y las cortadas − merma − las que van a Bodega de los que ya se cortaron, sin los que llegaron a aduana o se
+ * cancelaron (regla 9).
+ * @param contexto El contexto de quien lee (Ventas).
+ * @param datos `pedido_id`.
+ * @returns Por variante, sus piezas.
+ */
+export async function piezasEnProduccion(contexto: ContextoDeAccion, datos: unknown) {
+	const { pedido_id } = z.object({ pedido_id: z.uuid() }).parse(datos);
+	const filas = await contexto.transaccion
+		.select({
+			variante_id: loteTallas.varianteId,
+			piezas: sql<number>`sum(CASE WHEN ${lotes.estado} = 'por_cortar' THEN ${loteTallas.piezasPlaneadas}
+				ELSE coalesce(${loteTallas.piezasCortadas}, 0) - ${loteTallas.piezasMerma} - ${loteTallas.piezasABodega} END)::int`,
+		})
+		.from(loteTallas)
+		.innerJoin(lotes, eq(lotes.id, loteTallas.loteId))
+		.where(and(eq(lotes.pedidoId, pedido_id), inArray(lotes.estado, ["por_cortar", ...cortadoEnElTaller])))
+		.groupBy(loteTallas.varianteId)
+		.orderBy(asc(loteTallas.varianteId));
+	return { variantes: filas };
+}
+
+/**
+ * `produccion.lotes_por_cortar`: los lotes por cortar con su prenda, sus piezas planeadas por talla, su fecha de corte,
+ * para quién y si su prenda tiene receta.
+ * @param contexto El contexto de quien lee (Compras y Bodega).
+ * @returns Los lotes, por fecha de corte.
+ */
+export async function lotesPorCortar(contexto: ContextoDeAccion) {
+	const porCortar = await contexto.transaccion
+		.select({
+			lote_id: lotes.id,
+			folio: lotes.folio,
+			producto_id: lotes.productoId,
+			fecha_corte: lotes.fechaCorte,
+			destino: lotes.destino,
+			pedido_id: lotes.pedidoId,
+			ubicacion_destino_id: lotes.ubicacionDestinoId,
+		})
+		.from(lotes)
+		.where(eq(lotes.estado, "por_cortar"))
+		.orderBy(asc(lotes.fechaCorte), asc(lotes.folio));
+	const tallas =
+		porCortar.length === 0
+			? []
+			: await contexto.transaccion
+					.select({
+						loteId: loteTallas.loteId,
+						variante_id: loteTallas.varianteId,
+						piezas_planeadas: loteTallas.piezasPlaneadas,
+					})
+					.from(loteTallas)
+					.where(
+						inArray(
+							loteTallas.loteId,
+							porCortar.map((lote) => lote.lote_id),
+						),
+					);
+	const conReceta = new Map<string, boolean>();
+	for (const productoId of new Set(porCortar.map((lote) => lote.producto_id))) {
+		const receta = z
+			.object({ tiene_receta: z.boolean() })
+			.parse(await contexto.lectura("patronaje.receta_cubre_tallas", { producto_id: productoId, talla_ids: [] }));
+		conReceta.set(productoId, receta.tiene_receta);
+	}
+	return {
+		lotes: porCortar.map((lote) => ({
+			...lote,
+			tiene_receta: conReceta.get(lote.producto_id) ?? false,
+			tallas: tallas
+				.filter((talla) => talla.loteId === lote.lote_id)
+				.map(({ variante_id, piezas_planeadas }) => ({ variante_id, piezas_planeadas })),
+		})),
+	};
+}
+
+/**
+ * `produccion.lotes_sin_terminar_de_variante`: los folios de los lotes por cortar, en proceso, terminados o revisados
+ * que llevan esa talla. Catálogo la usa para no dar de baja una talla que se está fabricando.
+ * @param contexto El contexto de quien lee.
+ * @param datos `variante_id`.
+ * @returns Los folios.
+ */
+export async function lotesSinTerminarDeVariante(contexto: ContextoDeAccion, datos: unknown) {
+	const { variante_id } = z.object({ variante_id: z.uuid() }).parse(datos);
+	const filas = await contexto.transaccion
+		.select({ folio: lotes.folio })
+		.from(lotes)
+		.innerJoin(loteTallas, eq(loteTallas.loteId, lotes.id))
+		.where(and(eq(loteTallas.varianteId, variante_id), inArray(lotes.estado, ["por_cortar", ...cortadoEnElTaller])))
+		.orderBy(asc(lotes.folio));
+	return { folios: filas.map((fila) => fila.folio) };
+}

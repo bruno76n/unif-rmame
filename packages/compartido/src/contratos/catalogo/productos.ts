@@ -194,6 +194,7 @@ export const darBajaTalla = definirAccion({
 		{ codigo: "talla_dada_de_baja", mensaje: "Esa talla ya está dada de baja." },
 		{ codigo: "talla_con_existencia", mensaje: "Todavía hay piezas de esa talla: descontinúala." },
 		{ codigo: "talla_con_reservas", mensaje: "Esa talla tiene piezas apartadas." },
+		{ codigo: "talla_con_lotes", mensaje: "La talla {t} está en lotes sin terminar: {lotes}." },
 	],
 	edita: true,
 });

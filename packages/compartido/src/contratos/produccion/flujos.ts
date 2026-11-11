@@ -63,6 +63,10 @@ export const agregarOperacionFlujo = definirAccion({
 	salida: z.object({ flujo_operacion_id: z.uuid().describe("La operación nueva en el flujo") }),
 	permiso: { departamento: "produccion" },
 	errores: [
+		{
+			codigo: "flujo_con_lotes",
+			mensaje: "{n} lotes en proceso usan este flujo: cámbialo cuando terminen o haz un flujo nuevo",
+		},
 		{ codigo: "operacion_ya_en_flujo", mensaje: "Ya está en este flujo." },
 		{ codigo: "corte_va_primero", mensaje: "El corte siempre va primero" },
 		{ codigo: "persona_no_valida", mensaje: "¿Quién la hace?" },
@@ -78,6 +82,10 @@ export const quitarOperacionFlujo = definirAccion({
 	salida: z.object({}),
 	permiso: { departamento: "produccion" },
 	errores: [
+		{
+			codigo: "flujo_con_lotes",
+			mensaje: "{n} lotes en proceso usan este flujo: cámbialo cuando terminen o haz un flujo nuevo",
+		},
 		{ codigo: "corte_va_primero", mensaje: "El corte siempre va primero" },
 		{ codigo: "flujo_minimo", mensaje: "Un flujo lleva al menos el corte y una operación" },
 	],

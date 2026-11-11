@@ -23,6 +23,7 @@ import {
 	prendaConReceta,
 	recetaDeEjemplo,
 } from "../../../nucleo/pruebas/patronaje-de-prueba.ts";
+import { loteDePrueba } from "../../../nucleo/pruebas/produccion-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 
 describe("Un producto de una sección con receta nace con la suya; a partir de otro, con la versión vigente del base, solo sus tallas y las medidas del alta", () => {
@@ -154,9 +155,10 @@ describe("Un producto de una sección con receta nace con la suya; a partir de o
 
 	it("el primer corte la verifica una sola vez; sin receta, sin_receta", async () => {
 		const prenda = await prendaConReceta(servidor, siembra);
+		const lote = await loteDePrueba(servidor.base.dueno, prenda.productoId);
 		const verificar = () =>
 			enAccionDePrueba(crearBase(servidor.base.app), servidor.modulos, (contexto) =>
-				contexto.interna("patronaje.verificar_receta", { producto_id: prenda.productoId, lote_id: prenda.recetaId }),
+				contexto.interna("patronaje.verificar_receta", { producto_id: prenda.productoId, lote_id: lote }),
 			).catch((error: unknown) => (error instanceof ErrorDeApi ? error.cuerpo() : Promise.reject(error)));
 		expect(await verificar()).toMatchObject({
 			codigo: "sin_receta",

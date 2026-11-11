@@ -27,6 +27,7 @@ import { usuarios } from "../admin/tablas.ts";
 import { escuelas, productos, tallas } from "../catalogo/tablas.ts";
 import { materiales } from "../compras/tablas.ts";
 import { autorizaciones } from "../direccion/tablas.ts";
+import { lotes } from "../produccion/tablas.ts";
 
 /** Los estados de una receta. */
 export const estadosDeReceta = ["sin_receta", "sin_verificar", "verificada"] as const;
@@ -51,8 +52,7 @@ export const recetas = pgTable(
 		estado: text("estado").notNull().default("sin_receta"),
 		versionVigenteId: uuid("version_vigente_id"),
 		verificadaEn: momento("verificada_en"),
-		/** @llavePendiente lotes.id */
-		verificadaLoteId: uuid("verificada_lote_id"),
+		verificadaLoteId: uuid("verificada_lote_id").references((): AnyPgColumn => lotes.id),
 		...columnasComunes(),
 	},
 	(tabla) => [

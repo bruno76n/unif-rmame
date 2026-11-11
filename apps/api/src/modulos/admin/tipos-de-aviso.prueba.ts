@@ -10,6 +10,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../nucleo/pruebas/servidor-de-prueba.ts";
 import { tiposDeAvisoDeCatalogo } from "../catalogo/tablas.ts";
 import { tiposDeAvisoDeInventario } from "../inventario/tablas.ts";
+import { tiposDeAvisoDeProduccion } from "../produccion/tablas.ts";
 import { tiposDeAvisoDelNucleo } from "./tablas.ts";
 
 describe("el CHECK de avisos.tipo deja todos los tipos que se declaran", () => {
@@ -26,7 +27,12 @@ describe("el CHECK de avisos.tipo deja todos los tipos que se declaran", () => {
 			"SELECT pg_get_constraintdef(oid) AS definicion FROM pg_constraint WHERE conname = 'avisos_tipo'",
 		);
 		const definicion = String(rows[0]?.definicion);
-		for (const tipo of [...tiposDeAvisoDelNucleo, ...tiposDeAvisoDeCatalogo, ...tiposDeAvisoDeInventario]) {
+		for (const tipo of [
+			...tiposDeAvisoDelNucleo,
+			...tiposDeAvisoDeCatalogo,
+			...tiposDeAvisoDeInventario,
+			...tiposDeAvisoDeProduccion,
+		]) {
 			expect(definicion).toContain(`'${tipo}'`);
 		}
 	});

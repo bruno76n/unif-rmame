@@ -45,6 +45,7 @@ import { comandosRecibidos, usuarios } from "../admin/tablas.ts";
 import { variantes } from "../catalogo/tablas.ts";
 import { materiales, ordenCompraLineas, ordenesCompra, proveedores } from "../compras/tablas.ts";
 import { personas } from "../personal/tablas.ts";
+import { lotes } from "../produccion/tablas.ts";
 
 /** Cada lugar donde puede estar una pieza: Aduana, Bodega, las tiendas, el Taller y los dos de paso. */
 export const ubicaciones = pgTable(
@@ -181,8 +182,7 @@ export const movimientoLineas = pgTable(
 		varianteId: uuid("variante_id").references(() => variantes.id),
 		materialId: uuid("material_id").references(() => materiales.id),
 		rolloId: uuid("rollo_id").references((): AnyPgColumn => rollos.id),
-		/** @llavePendiente lotes.id */
-		loteId: uuid("lote_id"),
+		loteId: uuid("lote_id").references((): AnyPgColumn => lotes.id),
 		piezas: integer("piezas"),
 		cantidad: numeric("cantidad", { precision: 12, scale: 3 }),
 		traspasoId: uuid("traspaso_id").references((): AnyPgColumn => traspasos.id),
@@ -338,8 +338,7 @@ export const traspasos = pgTable(
 		notaEntregaId: uuid("nota_entrega_id"),
 		/** @llavePendiente pedidos_especiales_tienda.id */
 		pedidoEspecialTiendaId: uuid("pedido_especial_tienda_id"),
-		/** @llavePendiente lotes.id */
-		loteId: uuid("lote_id"),
+		loteId: uuid("lote_id").references((): AnyPgColumn => lotes.id),
 		/** @llavePendiente reprocesos.id */
 		reprocesoId: uuid("reproceso_id"),
 		ordenCompraId: uuid("orden_compra_id").references(() => ordenesCompra.id),
@@ -424,8 +423,7 @@ export const traspasoLineas = pgTable(
 		varianteId: uuid("variante_id").references(() => variantes.id),
 		materialId: uuid("material_id").references(() => materiales.id),
 		rolloId: uuid("rollo_id").references((): AnyPgColumn => rollos.id),
-		/** @llavePendiente lotes.id */
-		loteId: uuid("lote_id"),
+		loteId: uuid("lote_id").references((): AnyPgColumn => lotes.id),
 		piezasEnviadas: integer("piezas_enviadas"),
 		piezasRecibidasAduana: integer("piezas_recibidas_aduana"),
 		piezasRepartidas: integer("piezas_repartidas").notNull().default(0),
@@ -782,8 +780,7 @@ export const recepciones = pgTable(
 		ordenCompraId: uuid("orden_compra_id").references(() => ordenesCompra.id),
 		traspasoId: uuid("traspaso_id").references((): AnyPgColumn => traspasos.id),
 		despachoId: uuid("despacho_id").references((): AnyPgColumn => despachos.id),
-		/** @llavePendiente lotes.id */
-		loteId: uuid("lote_id"),
+		loteId: uuid("lote_id").references((): AnyPgColumn => lotes.id),
 		/** @llavePendiente revisiones.id */
 		revisionId: uuid("revision_id"),
 		/** @llavePendiente reprocesos.id */
@@ -829,8 +826,7 @@ export const recepcionLineas = pgTable(
 		materialId: uuid("material_id").references(() => materiales.id),
 		rolloId: uuid("rollo_id").references(() => rollos.id),
 		partidaTelaId: uuid("partida_tela_id").references(() => partidasTela.id),
-		/** @llavePendiente lotes.id */
-		loteId: uuid("lote_id"),
+		loteId: uuid("lote_id").references((): AnyPgColumn => lotes.id),
 		piezasEsperadas: integer("piezas_esperadas"),
 		piezasContadas: integer("piezas_contadas"),
 		diferenciaPiezas: integer("diferencia_piezas").generatedAlwaysAs(sql`piezas_contadas - piezas_esperadas`),
