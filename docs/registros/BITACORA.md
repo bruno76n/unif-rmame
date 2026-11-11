@@ -57,3 +57,4 @@ La línea de la bitácora se escribe al final, con el resultado ya conocido. Esc
 | 11 nov 2026 | 8 | 1 · Escuelas, secciones, tallas y tipos de prenda | [2026-11-11-fase-08](sesiones/2026-11-11-fase-08.md) |
 | 11 nov 2026 | 8 | 2 · Listas de precios y categorías de mayoreo | [2026-11-11-fase-08](sesiones/2026-11-11-fase-08.md) |
 | 11 nov 2026 | 8 | 3 · Productos y sus tallas | [2026-11-11-fase-08](sesiones/2026-11-11-fase-08.md) |
+| 11 nov 2026 | 8 | 4 · Precios | [2026-11-11-fase-08](sesiones/2026-11-11-fase-08.md) |

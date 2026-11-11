@@ -201,5 +201,10 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 11 nov 2026 | 8 | Cómo cuida la base que un precio solo se cierre (decisión 443) | El permiso por columna · y un disparador | Los dos | No |
 | 11 nov 2026 | 8 | Los únicos con un vacío (decisión 444) | El índice a mano · `coalesce` | `coalesce` | No |
 | 11 nov 2026 | 8 | Qué precios de talla copia el alta a partir de otro (decisión 445) | Todos · los de las listas con precio base | Los de las listas con precio base | No |
+| 11 nov 2026 | 8 | Dónde viven las cuentas de los precios (decisión 446) | La API · el paquete compartido | El paquete compartido | No |
+| 11 nov 2026 | 8 | Los productos que el bloque deja igual (decisión 447) | Saltarlos · revisar su versión | Revisar su versión | No |
+| 11 nov 2026 | 8 | Cómo se deciden las etiquetas por reimprimir (decisión 448) | Una regla por cambio · comparar el precio de cada talla | Comparar | No |
+| 11 nov 2026 | 8 | El precio en línea de un descontinuado (decisión 449) | Cambiarlo · `canal_en_linea_apagado` | `canal_en_linea_apagado` | No |
+| 11 nov 2026 | 8 | Quitar el precio de un canal apagado (decisión 450) | Rechazarlo · dejarlo | Dejarlo | No |
 | 10 nov 2026 | 5 | La pantalla del Google de desarrollo | Una propia para escoger cuenta · la de desarrollo de oidc-provider, que pide el correo | La de oidc-provider; `pnpm local` escribe los correos de la muestra al arrancar | No |
 

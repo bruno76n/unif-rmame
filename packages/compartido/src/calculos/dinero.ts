@@ -125,6 +125,24 @@ export function aplicarPorcentaje(monto: Centavos, porcentaje: number | string):
 }
 
 /**
+ * Descuenta un porcentaje de un monto y lo redondea a peso entero en un solo paso: monto × (1 − % ÷ 100), al
+ * peso más cercano y con la mitad lejos del cero.
+ * @param monto Los centavos.
+ * @param porcentaje Como lo guarda la base (`numeric(6,3)`), de 0 a 100.
+ * @returns Un múltiplo de 100. Es el precio sugerido con el porcentaje de un cliente: nunca redondea dos veces.
+ * @throws RangeError si el porcentaje no es de 0 a 100 con hasta tres decimales, o si el resultado no cabe en
+ * un entero seguro.
+ */
+export function descontarPorcentajeAPesoEntero(monto: Centavos, porcentaje: number | string): Centavos {
+	const partes = formaDePorcentaje.exec(String(porcentaje));
+	if (partes === null) throw new RangeError(`${porcentaje} no es un porcentaje con hasta tres decimales`);
+	const [, enteros = "", decimales = ""] = partes;
+	const milesimas = BigInt(enteros) * 1000n + BigInt(decimales.padEnd(3, "0"));
+	if (milesimas > 100_000n) throw new RangeError(`${porcentaje} pasa de 100 %`);
+	return deBigInt(dividirRedondeando(BigInt(monto) * (100_000n - milesimas), 10_000_000n) * 100n);
+}
+
+/**
  * Reparte un monto entre renglones en proporción, sin perder ni sobrar un centavo
  * (por ejemplo, el IVA proporcional de lo recibido).
  * @param total Los centavos que se reparten; pueden ser negativos.

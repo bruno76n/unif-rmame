@@ -1,14 +1,16 @@
 /**
- * El módulo `catalogo`: escuelas, secciones, grupos de tallas, tipos de prenda, listas de precios, productos y
- * sus tallas.
+ * El módulo `catalogo`: escuelas, secciones, grupos de tallas, tipos de prenda, listas de precios, productos,
+ * sus tallas y sus precios.
  * Fase 8 · docs/modulos/catalogo/
  *
- * Los cambios de precios y las etiquetas llegan en las partes 4 y 5 de la fase.
+ * Las etiquetas llegan en la parte 5 de la fase.
  */
 
 import { definirModulo } from "../../nucleo/modulos.ts";
 import { accionAgregarSeccion } from "./acciones/agregar-seccion.ts";
+import { accionAplicarCambiosProducto } from "./acciones/aplicar-cambios-producto.ts";
 import { accionCambiarPorcentajesCliente } from "./acciones/cambiar-porcentajes-cliente.ts";
+import { accionCambiarPreciosEnBloque } from "./acciones/cambiar-precios-en-bloque.ts";
 import { accionCrearProducto } from "./acciones/crear-producto.ts";
 import {
 	accionAgregarEscuela,
@@ -26,6 +28,7 @@ import {
 	accionReactivarTalla,
 } from "./acciones/tallas-del-producto.ts";
 import { bajadaDeCatalogo } from "./bajada.ts";
+import { cambiarPrecioEnLinea } from "./internas/cambiar-precio-en-linea.ts";
 import { crearEscuelaParaCliente } from "./internas/crear-escuela-para-cliente.ts";
 import {
 	crearListaCliente,
@@ -33,6 +36,7 @@ import {
 	reactivarListaCliente,
 	sincronizarNombreCliente,
 } from "./internas/listas-de-cliente.ts";
+import { precioSugerido, precioTalla } from "./lecturas/precios.ts";
 import { semillaDeParametrosDeCatalogo } from "./parametros.ts";
 import { lectoresDeCatalogo } from "./permisos.ts";
 import {
@@ -61,6 +65,8 @@ export default definirModulo({
 		accionSubirFotoProducto,
 		accionDescontinuarProductos,
 		accionReactivarProducto,
+		accionAplicarCambiosProducto,
+		accionCambiarPreciosEnBloque,
 	],
 	internas: {
 		crear_escuela_para_cliente: crearEscuelaParaCliente,
@@ -68,7 +74,9 @@ export default definirModulo({
 		sincronizar_nombre_cliente: sincronizarNombreCliente,
 		dar_baja_lista_cliente: darBajaListaCliente,
 		reactivar_lista_cliente: reactivarListaCliente,
+		cambiar_precio_en_linea: cambiarPrecioEnLinea,
 	},
+	lecturas: { precio_talla: precioTalla, precio_sugerido: precioSugerido },
 	semillas: [
 		semillaDeSecciones,
 		semillaDeGruposTalla,
