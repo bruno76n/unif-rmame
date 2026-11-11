@@ -331,4 +331,6 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 11 nov 2026 | 11 | Las pruebas del libro que mueven tela por rollo crean rollos de carga inicial; el cuadre al azar usa un rollo por ubicación (decisión 568) | Ids inventados · lo elegido | Lo elegido: con la llave a `rollos` un id inventado ya no entra, y un rollo en dos lugares es la excepción del paso 2 | No |
 | 11 nov 2026 | 11 | Si todo lo que llega es cero, `400` «Escribe lo que llegó» (decisión 569) | Aceptarla · lo elegido | Lo elegido: una recepción sin nada no mueve nada ni deja papel útil | No |
 | 11 nov 2026 | 11 | `inventario.tomar_consumible` usa el id de la tablet como clave del movimiento (decisión 570) | La clave del comando · lo elegido | Lo elegido: la misma toma que sube dos veces no descuenta dos veces | No |
+| 11 nov 2026 | 11 | El primer traspaso de un despacho es el de menor folio (decisión 571) | Guardar el orden en que se escogieron · lo elegido | Lo elegido: lo de más y lo que no venía salen de su tramo, y el despacho no guarda un orden propio | No |
+| 11 nov 2026 | 11 | Hasta la fase 13, un traspaso `devolucion_defecto` siempre espera a Calidad y no sale por despacho (decisión 572) | Dejarlo salir · lo elegido | Lo elegido: la revisión de Calidad todavía no existe | No |
 

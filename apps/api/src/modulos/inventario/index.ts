@@ -12,6 +12,13 @@
 import { v7 as uuidv7 } from "uuid";
 import { todosLosDepartamentos } from "../../nucleo/acceso/departamentos.ts";
 import { definirModulo } from "../../nucleo/modulos.ts";
+import {
+	accionDespachar,
+	accionEntregarATiendaSinCaja,
+	accionMarcarEtiquetasImpresas,
+	accionRecibirDespacho,
+	accionRecordarDespacho,
+} from "./acciones/despachos.ts";
 import { accionRecibirDeProveedor } from "./acciones/recibir-de-proveedor.ts";
 import { accionResolverExcepcion } from "./acciones/resolver-excepcion.ts";
 import { marcarExcepcionResuelta, registrarExcepcion, tomarVersionExcepcion } from "./internas/excepciones.ts";
@@ -76,8 +83,17 @@ export default definirModulo({
 		partidas_tela: [...lectoresDelLibro, "compras"],
 		recepciones: [...lectoresDelLibro, "compras"],
 		recepcion_lineas: [...lectoresDelLibro, "compras"],
+		despachos: lectoresDelLibro,
 	},
-	acciones: [accionResolverExcepcion, accionRecibirDeProveedor],
+	acciones: [
+		accionResolverExcepcion,
+		accionRecibirDeProveedor,
+		accionDespachar,
+		accionRecordarDespacho,
+		accionMarcarEtiquetasImpresas,
+		accionRecibirDespacho,
+		accionEntregarATiendaSinCaja,
+	],
 	internas: {
 		registrar_excepcion: registrarExcepcion,
 		marcar_excepcion_resuelta: marcarExcepcionResuelta,

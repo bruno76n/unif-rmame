@@ -10,12 +10,15 @@ import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
 import { ubicaciones } from "../tablas.ts";
 
 /**
- * El id de la ubicación de un tipo que solo tiene una (Aduana, Bodega, el Taller).
+ * El id de la ubicación de un tipo que solo tiene una (Aduana, Bodega, el Taller, Tránsito).
  * @param transaccion La transacción.
- * @param tipo `aduana`, `bodega` o `taller`.
+ * @param tipo `aduana`, `bodega`, `taller` o `transito`.
  * @throws Error si no existe: la siembra la crea.
  */
-export async function ubicacionDeTipo(transaccion: Transaccion, tipo: "aduana" | "bodega" | "taller"): Promise<string> {
+export async function ubicacionDeTipo(
+	transaccion: Transaccion,
+	tipo: "aduana" | "bodega" | "taller" | "transito",
+): Promise<string> {
 	const [ubicacion] = await transaccion
 		.select({ id: ubicaciones.id })
 		.from(ubicaciones)

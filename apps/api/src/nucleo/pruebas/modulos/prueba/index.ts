@@ -99,6 +99,8 @@ export default definirModulo({
 		// La hoja de la orden de compra, para `compras.marcar_orden_enviada`; la real llega en la fase 20. Con una
 		// nota `falla:hoja` falla, para probar que la orden no queda enviada si su PDF no se genera.
 		{ tipo: "orden_compra", departamentos: ["compras"], dibujar: hojaDePrueba },
+		// Las etiquetas de un traspaso, para `inventario.marcar_etiquetas_impresas`; las reales llegan en la fase 20.
+		{ tipo: "traspaso", departamentos: ["aduana"], dibujar: dibujoDePrueba },
 	],
 	trabajos: [
 		{

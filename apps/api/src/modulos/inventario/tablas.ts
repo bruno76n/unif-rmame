@@ -6,7 +6,8 @@
  * traspasos.md («La tabla `traspasos`», «La tabla `traspaso_lineas`»), reservas.md («La tabla `reservas`»),
  * excepciones.md («La tabla `excepciones`») y existencias-y-cuadre.md («La tabla `cuadres`»)
  * Fase 11 · docs/modulos/inventario/material-en-bodega.md («La tabla `rollos`», «La tabla `partidas_tela`») y
- * recepciones-en-aduana.md («La tabla `recepciones`», «La tabla `recepcion_lineas`»)
+ * recepciones-en-aduana.md («La tabla `recepciones`», «La tabla `recepcion_lineas`») y surtido-y-despachos.md («La
+ * tabla `despachos`»)
  *
  * `ubicaciones` nace en la fase 4 con su siembra porque antes la usan los parámetros, las impresoras, las
  * cuentas, los aparatos y las personas. El libro solo crece: el rol de la app no lo puede cambiar.
@@ -348,8 +349,7 @@ export const traspasos = pgTable(
 		notaCreditoId: uuid("nota_credito_id"),
 		traspasoPadreId: uuid("traspaso_padre_id").references((): AnyPgColumn => traspasos.id),
 		recepcionAduanaId: uuid("recepcion_aduana_id").references((): AnyPgColumn => recepciones.id),
-		/** @llavePendiente despachos.id */
-		despachoId: uuid("despacho_id"),
+		despachoId: uuid("despacho_id").references((): AnyPgColumn => despachos.id),
 		recepcionDestinoId: uuid("recepcion_destino_id").references((): AnyPgColumn => recepciones.id),
 		fechaSalidaEsperada: date("fecha_salida_esperada", { mode: "string" }),
 		enviadoEn: momento("enviado_en"),
@@ -781,8 +781,7 @@ export const recepciones = pgTable(
 		modo: text("modo").notNull(),
 		ordenCompraId: uuid("orden_compra_id").references(() => ordenesCompra.id),
 		traspasoId: uuid("traspaso_id").references((): AnyPgColumn => traspasos.id),
-		/** @llavePendiente despachos.id */
-		despachoId: uuid("despacho_id"),
+		despachoId: uuid("despacho_id").references((): AnyPgColumn => despachos.id),
 		/** @llavePendiente lotes.id */
 		loteId: uuid("lote_id"),
 		/** @llavePendiente revisiones.id */
@@ -860,5 +859,44 @@ export const recepcionLineas = pgTable(
 			sql`coalesce(${tabla.piezasContadas}, 0) >= 0 and coalesce(${tabla.piezasEsperadas}, 0) >= 0
 				and coalesce(${tabla.cantidadContada}, 0) >= 0 and coalesce(${tabla.cantidadEsperada}, 0) >= 0`,
 		),
+	],
+);
+
+/** Los estados de un despacho (docs/modulos/inventario/surtido-y-despachos.md, «Estados del despacho»). */
+export const estadosDeDespacho = ["en_transito", "recibido", "con_diferencia"] as const;
+
+/** El despacho D-: un viaje que junta los traspasos de un mismo destino y sale de aduana. */
+export const despachos = pgTable(
+	"despachos",
+	{
+		id: uuid("id").primaryKey(),
+		folio: text("folio").notNull(),
+		destinoUbicacionId: uuid("destino_ubicacion_id").references(() => ubicaciones.id),
+		destinoExterno: text("destino_externo"),
+		/** @llavePendiente clientes.id */
+		clienteId: uuid("cliente_id"),
+		/** @llavePendiente notas_entrega.id */
+		notaEntregaId: uuid("nota_entrega_id"),
+		estado: text("estado").notNull(),
+		despachadoEn: momento("despachado_en").notNull(),
+		despachadoPor: uuid("despachado_por")
+			.notNull()
+			.references(() => usuarios.id),
+		recordatorios: integer("recordatorios").notNull().default(0),
+		ultimoRecordatorioEn: momento("ultimo_recordatorio_en"),
+		recibidoEn: momento("recibido_en"),
+		recepcionId: uuid("recepcion_id").references((): AnyPgColumn => recepciones.id),
+		recibioNombre: text("recibio_nombre"),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		uniqueIndex("despachos_folio").on(tabla.folio),
+		index("despachos_destino_estado").on(tabla.destinoUbicacionId, tabla.estado),
+		index("despachos_en_transito").on(tabla.estado).where(sql`${tabla.estado} = 'en_transito'`),
+		check("despachos_estado", sql`${tabla.estado} in (${valores(estadosDeDespacho)})`),
+		check("despachos_destino_externo", sql`${tabla.destinoExterno} in ('cliente_externo')`),
+		check("despachos_un_destino", sql`(${tabla.destinoUbicacionId} is null) <> (${tabla.destinoExterno} is null)`),
+		check("despachos_recibido", sql`(${tabla.estado} = 'en_transito') = (${tabla.recibidoEn} is null)`),
+		check("despachos_recibio_nombre", sql`${tabla.recibioNombre} is null or char_length(${tabla.recibioNombre}) >= 3`),
 	],
 );

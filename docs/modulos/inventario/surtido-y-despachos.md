@@ -147,4 +147,13 @@ Todas son de la web: surtir, con el departamento Bodega; despachar, recordar y l
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 11.*
+**Fase 11, parte 2.**
+
+- **La tabla** `despachos` está en `apps/api/src/modulos/inventario/tablas.ts` (migración `0037`), con sus CHECK: el estado, un solo destino, recibido si y solo si ya no está en tránsito, y quien firmó con 3 letras o más. Con ella, `traspasos.despacho_id` y `recepciones.despacho_id` ya son llaves; `cliente_id` y `nota_entrega_id` llevan su `@llavePendiente` hasta la fase 16.
+- **Las acciones** están en `acciones/despachos.ts`, con sus contratos en `packages/compartido/src/contratos/inventario/despachos.ts`. Antes de tocar nada toman los candados del inventario en el orden fijo (las variantes de sus renglones y luego los traspasos):
+  - `despachar` revisa la versión de cada traspaso y lo que no sale por despacho (regla 4; la devolución con defecto siempre espera a Calidad hasta la fase 13, decisión 572), pone su despacho y su destino antes de pasarlo a tránsito, y saca de Aduana a Tránsito, por renglón, lo recibido en aduana menos lo repartido;
+  - `recordar_despacho` suma el recordatorio y guarda `despacho.recordado`;
+  - `marcar_etiquetas_impresas` solo con un lote, un reproceso o el material de un proveedor; con la impresora llama `admin.mandar_a_imprimir` (tipo `traspaso`, el de prueba hasta la fase 20) y anota el traspaso y sus rollos;
+  - `recibir_despacho` (Bodega) y `entregar_a_tienda_sin_caja` (Aduana, con la firma) comparten `confirmarLlegada`: la recepción `destino_despacho` y sus renglones, el movimiento desde Tránsito (al destino o a Fuera), lo que confirmó el destino en cada renglón, cada traspaso y el despacho. De cada renglón sale con su traspaso lo que llegó hasta lo esperado; lo de más y lo que no venía, del tramo del primer traspaso del despacho (por folio, decisión 571). Las reservas viajan con su pieza con `escribirMovimiento`.
+- **Todavía no nace ninguna DF-:** lo que falta o sobra se queda en su tramo (fase 14).
+- **Pruebas:** `acciones/despachar.prueba.ts`, `recibir-despacho.prueba.ts` (también las reservas, la tienda sin caja y las etiquetas) y `recordar-despacho.prueba.ts`; las ayudas están en `nucleo/pruebas/aduana-de-prueba.ts`.

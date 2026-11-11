@@ -4,7 +4,9 @@
  */
 
 import { v7 as uuidv7 } from "uuid";
+import type { TipoDeTraspaso } from "../../modulos/inventario/tablas.ts";
 import { altaDeMaterial, altaDeProveedor, levantarDePrueba, ordenEnEstado } from "./compras-de-prueba.ts";
+import { meterPiezas, nuevoTraspaso, ubicacionesPorCodigo, variantesLibres } from "./inventario-de-prueba.ts";
 import { conGoogle, mandarAccion } from "./llamadas.ts";
 import type { ServidorDePrueba } from "./servidor-de-prueba.ts";
 
@@ -93,4 +95,74 @@ export async function decidirDePrueba(
 		"direccion",
 		conGoogle(),
 	);
+}
+
+/**
+ * Un traspaso de prendas que ya está en aduana, con sus piezas en Aduana: dos variantes, de 5 y 3 piezas.
+ * @param servidor El servidor de prueba.
+ * @param destino El código de su destino (`BOD`, `T1`…), o `null` si se decide al despachar.
+ * @param tipo Su tipo.
+ * @returns Su id, su folio, sus variantes y su versión.
+ */
+export async function traspasoEnAduana(
+	servidor: ServidorDePrueba,
+	destino: string | null,
+	tipo: TipoDeTraspaso = "solicitud_tienda",
+) {
+	const ubicacion = await ubicacionesPorCodigo(servidor);
+	const variantes = await variantesLibres(servidor, 2);
+	const piezas = [5, 3];
+	for (const [i, variante] of variantes.entries())
+		await meterPiezas(servidor, ubicacion.ADU ?? "", variante, piezas[i] ?? 0);
+	const creado = await nuevoTraspaso(servidor, {
+		tipo,
+		estado: "en_aduana",
+		origen: { ubicacionId: ubicacion.T2 ?? "" },
+		destino: destino === null ? null : { ubicacionId: ubicacion[destino] ?? "" },
+		renglones: variantes.map((varianteId, i) => ({ varianteId, piezas: piezas[i] ?? 0 })),
+	});
+	return {
+		id: creado.traspasoId,
+		folio: creado.folio,
+		variantes,
+		version: await versionDeTraspaso(servidor, creado.traspasoId),
+	};
+}
+
+/**
+ * La versión de un traspaso.
+ * @param servidor El servidor de prueba.
+ * @param id El traspaso.
+ */
+export async function versionDeTraspaso(servidor: ServidorDePrueba, id: string): Promise<number> {
+	const { rows } = await servidor.base.dueno.query("SELECT version::int AS v FROM traspasos WHERE id = $1", [id]);
+	return Number(rows[0]?.v);
+}
+
+/**
+ * Aduana despacha unos traspasos con su versión de ahora.
+ * @param servidor El servidor de prueba.
+ * @param ids Los traspasos.
+ * @param destino El destino, si se decide al despachar.
+ */
+export async function despacharDePrueba(servidor: ServidorDePrueba, ids: string[], destino?: string) {
+	const traspasos = [];
+	for (const traspaso_id of ids)
+		traspasos.push({ traspaso_id, version: await versionDeTraspaso(servidor, traspaso_id) });
+	return mandarAccion(
+		servidor,
+		"inventario.despachar",
+		{ datos: { traspasos, ...(destino === undefined ? {} : { destino_ubicacion_id: destino }) } },
+		"aduana",
+	);
+}
+
+/**
+ * La versión de un despacho.
+ * @param servidor El servidor de prueba.
+ * @param id El despacho.
+ */
+export async function versionDeDespacho(servidor: ServidorDePrueba, id: string): Promise<number> {
+	const { rows } = await servidor.base.dueno.query("SELECT version::int AS v FROM despachos WHERE id = $1", [id]);
+	return Number(rows[0]?.v);
 }
