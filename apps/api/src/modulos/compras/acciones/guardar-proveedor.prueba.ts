@@ -6,17 +6,38 @@
  * Que la condición nueva no cambie la de las órdenes ya enviadas se prueba con las órdenes, en la parte 4.
  */
 
+import { crearSimuladorDeR2 } from "@uniformame/pruebas/simuladores/r2";
+import { setupServer } from "msw/node";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { altaDeProveedor, versionDe } from "../../../nucleo/pruebas/compras-de-prueba.ts";
+import { crearAlmacen, direccionDeR2 } from "../../../nucleo/almacen.ts";
+import {
+	altaDeMaterial,
+	altaDeProveedor,
+	enviarDePrueba,
+	levantarDePrueba,
+	versionDe,
+} from "../../../nucleo/pruebas/compras-de-prueba.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 
-describe("Renombrar un proveedor renombra su tercero", () => {
+const cuenta = "cuentaprueba";
+const simulador = crearSimuladorDeR2(cuenta);
+const red = setupServer(...simulador.manejadores);
+const almacen = crearAlmacen({
+	direccion: direccionDeR2(cuenta),
+	cubo: "uniformame-archivos",
+	llaveId: "llave-de-prueba",
+	secreto: "secreto-de-prueba",
+});
+
+describe("Renombrar un proveedor renombra su tercero; su condición nueva no cambia la de las órdenes ya enviadas", () => {
 	let servidor: ServidorDePrueba;
 	beforeAll(async () => {
-		servidor = await crearServidorDePrueba();
+		red.listen({ onUnhandledFrame: "error" });
+		servidor = await crearServidorDePrueba({ almacen });
 	});
 	afterAll(async () => {
+		red.close();
 		await servidor.cerrar();
 	});
 
@@ -85,5 +106,24 @@ describe("Renombrar un proveedor renombra su tercero", () => {
 				)
 			).estado,
 		).toBe(409);
+	});
+
+	it("la condición nueva del proveedor no cambia la de la orden ya enviada; el borrador la toma al enviarse", async () => {
+		const id = await altaDeProveedor(servidor, { nombre: "Hilos de Occidente", dias_credito: 15 });
+		const material = await altaDeMaterial(servidor, id);
+		const linea = { material_id: material, proveedor_id: id, cantidad: 10, precio_centavos: 38 };
+		const enviada = await levantarDePrueba(servidor, [linea]);
+		expect((await enviarDePrueba(servidor, enviada.id)).estado).toBe(200);
+		expect((await guardar(id, { dias_credito: 45 })).estado).toBe(200);
+		const borrador = await levantarDePrueba(servidor, [linea]);
+		expect((await enviarDePrueba(servidor, borrador.id)).estado).toBe(200);
+		const { rows } = await servidor.base.dueno.query(
+			"SELECT folio, dias_credito FROM ordenes_compra WHERE id IN ($1, $2) ORDER BY folio",
+			[enviada.id, borrador.id],
+		);
+		expect(rows).toEqual([
+			{ folio: enviada.folio, dias_credito: 15 },
+			{ folio: borrador.folio, dias_credito: 45 },
+		]);
 	});
 });

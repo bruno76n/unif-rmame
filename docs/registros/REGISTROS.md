@@ -298,4 +298,11 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 11 nov 2026 | 10 | El alta desde un desarrollo sin su id (decisión 537) | 422 · 400 | 400 | No |
 | 11 nov 2026 | 10 | La receta de un producto de un desarrollo (decisión 538) | Versión 1 con la tela · Sin receta | Sin receta; la pantalla propone la tela | No |
 | 10 nov 2026 | 5 | La pantalla del Google de desarrollo | Una propia para escoger cuenta · la de desarrollo de oidc-provider, que pide el correo | La de oidc-provider; `pnpm local` escribe los correos de la muestra al arrancar | No |
+| 11 nov 2026 | 10 | El borrador de dos personas a la vez (decisión 539) | Reintentar al chocar con el único · un candado por proveedor | El candado: el segundo espera y ve el borrador del primero | No |
+| 11 nov 2026 | 10 | Lo recibido antes de Aduana (decisión 540) | Un cero fijo · preguntar a `inventario.recibido_de_ordenes` si existe | Preguntar si existe: la fase 11 no toca Compras | No |
+| 11 nov 2026 | 10 | `textoDeDia` y `contextoDeDibujo` (decisión 541) | Copiarlos · moverlos al paquete compartido y al núcleo | Moverlos: nada duplicado | No |
+| 11 nov 2026 | 10 | Cómo probar el PDF que falla (decisión 542) | Un almacén que falla · una hoja de prueba que falla | La hoja de prueba: la de verdad es de la fase 20 | No |
+| 11 nov 2026 | 10 | El precio sin anterior en la bitácora (decisión 543) | «— → $84» · «$84» | «$84»: no hay antes | No |
+| 11 nov 2026 | 10 | El precio en la respuesta del envío (decisión 544) | Obligatorio · opcional | Opcional, para que el servidor lo recorte a soporte | No |
+| 11 nov 2026 | 10 | El estado de la orden en las pruebas (decisión 545) | Enviar cada una con su PDF · ponerlo en la base | Ponerlo en la base: la recepción llega en la fase 11 | No |
 

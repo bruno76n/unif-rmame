@@ -12,4 +12,7 @@ export const lectoresDeCompras: Record<string, readonly string[]> = {
 	materiales: ["compras", "contaduria", "patronaje", "bodega", "aduana", "produccion"],
 	material_proveedores: ["compras", "contaduria"],
 	precios_compra: ["compras", "contaduria"],
+	// Las órdenes llevan precios: Compras y Contaduría. Aduana las ve sin precios con `compras.ordenes_por_recibir`.
+	ordenes_compra: ["compras", "contaduria"],
+	orden_compra_lineas: ["compras", "contaduria"],
 };

@@ -136,3 +136,5 @@ Cada fase que crea un tipo de documento agrega su liga (quita su `@llavePendient
 - **Las pruebas:** `modulos/direccion/acciones/decidir-autorizacion.prueba.ts` (una sola vez, con Google, sin Dirección no; el rechazo con su motivo; el efecto que falla o que escribe bitácora no deja nada; «Pedida por ti» en la pantalla y en la bitácora; desde Bodega y Administración; el alta solo la dueña) y `modulos/direccion/internas/pedir-autorizacion.prueba.ts` (su folio y su evento; los avisos; dos a la vez del mismo documento; el documento que se cancela). Usan el efecto de prueba de `aprobar_desarrollo` del módulo de prueba (`nucleo/pruebas/modulos/prueba/autorizaciones.ts`), y una cuenta de prueba de Dirección.
 
 **Fase 10, parte 3.** `patronaje` registra el efecto de `aprobar_desarrollo` (`patronaje.aplicar_decision_desarrollo`) y la migración `0034` pone la llave de `desarrollo_id`. El efecto de prueba del módulo de prueba pasó a `pago_fuera_de_lo_normal`, cuyo módulo llega en la fase 17 (decisión 533).
+
+**Fase 10, parte 4.** La migración `0035` pone la llave de `orden_compra_linea_id`; el tipo `recepcion_de_mas` registra su efecto en la fase 11.

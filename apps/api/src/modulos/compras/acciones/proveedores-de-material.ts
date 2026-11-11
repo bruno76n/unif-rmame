@@ -4,7 +4,7 @@
  * Fase 10 · docs/modulos/compras/proveedores-y-precios.md (reglas 7, 9 y 11, «Acciones») y materiales.md (regla 11)
  *
  * El material es un agregado con sus proveedores: cada una toma la versión del material, así que quien lo ve en el
- * cajón Material choca si alguien más lo cambió. El candado `en_borrador` llega con las órdenes (parte 4).
+ * cajón Material choca si alguien más lo cambió.
  */
 
 import {
@@ -26,6 +26,7 @@ import {
 	revisarPrecio,
 	revisarProveedorActivo,
 } from "../dominio/comunes.ts";
+import { foliosDeOrdenesAbiertas } from "../dominio/ordenes.ts";
 import { materiales, materialProveedores } from "../tablas.ts";
 
 /**
@@ -102,6 +103,18 @@ export const accionQuitarProveedorMaterial = implementarAccion(
 			throw errorDeRegla(
 				"proveedor_habitual",
 				`${proveedor.nombre} es el habitual de ${material.nombre}: haz habitual a otro antes de quitarlo.`,
+			);
+		}
+		// Ni en un borrador con ese proveedor.
+		const [borrador] = await foliosDeOrdenesAbiertas(contexto, {
+			proveedorId: proveedor.id,
+			materialId: material.id,
+			estados: ["borrador"],
+		});
+		if (borrador !== undefined) {
+			throw errorDeRegla(
+				"en_borrador",
+				`${material.nombre} está en el borrador ${borrador} con ${proveedor.nombre}: descártalo o cámbialo antes.`,
 			);
 		}
 		// La baja del par; el historial de precios se queda.

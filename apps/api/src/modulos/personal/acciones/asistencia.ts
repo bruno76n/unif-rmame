@@ -9,6 +9,7 @@
  * (cuando Contaduría lo ofrece: fase 17).
  */
 
+import { textoDeDia } from "@uniformame/compartido/calculos/fechas";
 import {
 	cambiarDiaAsistencia,
 	cerrarSemanaAsistencia,
@@ -28,7 +29,6 @@ import {
 	diasSinCapturar,
 	formasConAsistencia,
 	semanaDe,
-	textoDeDia,
 	textoDeSemana,
 } from "../dominio/asistencia.ts";
 import { leerPersona } from "../dominio/personas.ts";

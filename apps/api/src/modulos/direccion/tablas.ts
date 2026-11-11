@@ -22,6 +22,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { columnasComunes, columnasDeAparato, columnasDeCancelacion, momento } from "../../nucleo/base/columnas.ts";
 import { departamentos, usuarios } from "../admin/tablas.ts";
+import { ordenCompraLineas } from "../compras/tablas.ts";
 import { desarrollos } from "../patronaje/tablas.ts";
 
 /** Las ligas de cada tipo: la que lleva (no nula) y, por omisión, las demás vacías. */
@@ -69,8 +70,7 @@ export const autorizaciones = pgTable(
 		ajusteId: uuid("ajuste_id"),
 		/** @llavePendiente recepciones.id */
 		recepcionId: uuid("recepcion_id"),
-		/** @llavePendiente orden_compra_lineas.id */
-		ordenCompraLineaId: uuid("orden_compra_linea_id"),
+		ordenCompraLineaId: uuid("orden_compra_linea_id").references((): AnyPgColumn => ordenCompraLineas.id),
 		/** @llavePendiente notas_entrega.id */
 		notaEntregaId: uuid("nota_entrega_id"),
 		/** @llavePendiente notas_credito.id */

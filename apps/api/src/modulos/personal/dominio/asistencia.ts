@@ -11,6 +11,7 @@ import {
 	type DiaDeLaSemana,
 	diaDeNegocio,
 	inicioDeSemana,
+	textoDeDia,
 	zonaDelNegocio,
 } from "@uniformame/compartido/calculos/fechas";
 import { and, gte, inArray, isNull, lte, or, sql } from "drizzle-orm";
@@ -118,11 +119,6 @@ export async function abrirSemana(transaccion: Transaccion, semana: DiasDeLaSema
 	const abierta = await leer();
 	if (abierta === undefined) throw new Error(`no se abrió la semana del ${semana.inicio.toString()}`);
 	return abierta;
-}
-
-/** Cómo se escribe un día en los mensajes: «2 de noviembre». */
-export function textoDeDia(fecha: Temporal.PlainDate | string): string {
-	return Temporal.PlainDate.from(fecha).toLocaleString("es-MX", { day: "numeric", month: "long" });
 }
 
 /**

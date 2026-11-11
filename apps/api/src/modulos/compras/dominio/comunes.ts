@@ -112,9 +112,11 @@ export function cambioPorcentaje(anterior: number, nuevo: number): string {
 
 /**
  * Guarda un precio en el historial y lo copia como el último del par: el renglón del par nace, se reactiva o se
- * actualiza en la misma transacción. Compara contra el último precio de ese proveedor con ese material.
+ * actualiza en la misma transacción. Compara contra el último precio de ese proveedor con ese material, o contra el
+ * que se dé (el de la línea, en una nota).
  * @param contexto El contexto de la acción.
- * @param precio El material, el proveedor, el precio y su origen.
+ * @param precio El material, el proveedor, el precio y su origen; con `orden` o `nota`, su orden y su línea.
+ * @returns El precio contra el que se comparó, o nada si no había.
  */
 export async function registrarPrecio(
 	contexto: ContextoDeAccion,
@@ -123,8 +125,10 @@ export async function registrarPrecio(
 		proveedorId: string;
 		precioCentavos: number;
 		origen: (typeof origenesDePrecio)[number];
+		orden?: { id: string; lineaId: string };
+		anterior?: number;
 	},
-): Promise<void> {
+): Promise<number | null> {
 	const { transaccion } = contexto;
 	const [par] = await transaccion
 		.select()
@@ -136,13 +140,15 @@ export async function registrarPrecio(
 			),
 		)
 		.for("update");
-	const anterior = par?.ultimoPrecioCentavos ?? null;
+	const anterior = precio.anterior ?? par?.ultimoPrecioCentavos ?? null;
 	await transaccion.insert(preciosCompra).values({
 		id: uuidv7(),
 		materialId: precio.materialId,
 		proveedorId: precio.proveedorId,
 		precioCentavos: precio.precioCentavos,
 		origen: precio.origen,
+		ordenCompraId: precio.orden?.id ?? null,
+		ordenCompraLineaId: precio.orden?.lineaId ?? null,
 		precioAnteriorCentavos: anterior,
 		cambioPorcentaje: anterior === null ? null : cambioPorcentaje(anterior, precio.precioCentavos),
 		fecha: contexto.diaDeNegocio.toString(),
@@ -156,7 +162,7 @@ export async function registrarPrecio(
 			ultimoPrecioCentavos: precio.precioCentavos,
 			creadoPor: quienCambia(contexto),
 		});
-		return;
+		return anterior;
 	}
 	await transaccion
 		.update(materialProveedores)
@@ -167,6 +173,7 @@ export async function registrarPrecio(
 				: { bajaEn: null, bajaPor: null, motivoBaja: null, reactivadoEn: contexto.ahora.toString() }),
 		})
 		.where(eq(materialProveedores.id, par.id));
+	return anterior;
 }
 
 /**

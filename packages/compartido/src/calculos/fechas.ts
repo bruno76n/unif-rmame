@@ -7,6 +7,7 @@
  * `general.dias_de_trabajo` ya leído (lunes a sábado al inicio, ver docs/modulos/admin/configuracion.md).
  */
 
+import { Temporal } from "temporal-polyfill";
 import type { DiaNegocio, Momento } from "../tipos/base.ts";
 
 /** La zona del negocio: siempre la hora de México, nunca la hora local del servidor. */
@@ -91,4 +92,12 @@ export function sumarDiasHabiles(
 		if (dias.has(resultado.dayOfWeek)) faltan--;
 	}
 	return resultado;
+}
+
+/**
+ * Cómo se escribe un día en los mensajes: «2 de noviembre».
+ * @param dia El día de negocio, o su texto ISO («2026-11-02»).
+ */
+export function textoDeDia(dia: DiaNegocio | string): string {
+	return Temporal.PlainDate.from(dia).toLocaleString("es-MX", { day: "numeric", month: "long" });
 }

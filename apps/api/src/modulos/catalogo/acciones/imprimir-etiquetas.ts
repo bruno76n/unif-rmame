@@ -11,9 +11,9 @@
 import { imprimirEtiquetas } from "@uniformame/compartido/contratos/catalogo/etiquetas";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { z } from "zod";
-import { quienCambia } from "../../../nucleo/acciones/comunes.ts";
+import { contextoDeDibujo, quienCambia } from "../../../nucleo/acciones/comunes.ts";
 import { errorDeCampo, errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
-import { type ContextoDeAccion, type ContextoDeConsulta, implementarAccion } from "../../../nucleo/modulos.ts";
+import { type ContextoDeAccion, implementarAccion } from "../../../nucleo/modulos.ts";
 import { subirVersionDelProducto } from "../dominio/precios.ts";
 import { productos, tallas, variantes } from "../tablas.ts";
 
@@ -125,23 +125,6 @@ async function queEntra(contexto: ContextoDeAccion, datos: z.infer<typeof imprim
 			return { variante, cuantas: renglon.cuantas };
 		})
 		.filter(({ variante }) => datos.solo_pendientes !== true || pendiente(variante.estado));
-}
-
-/**
- * El contexto con que se dibuja la etiqueta: el de la acción, como lo ve quien la pide. Dibujar no apunta
- * consultas sensibles: la etiqueta de prenda no lleva ninguna.
- * @throws Si la pide el sistema: las etiquetas siempre las pide una cuenta.
- */
-function contextoDeDibujo(contexto: ContextoDeAccion): ContextoDeConsulta {
-	const { quien } = contexto;
-	if (quien.tipo === "sistema") throw new Error("las etiquetas las pide una cuenta");
-	return {
-		base: contexto.transaccion,
-		quien,
-		ahora: contexto.ahora,
-		diaDeNegocio: contexto.diaDeNegocio,
-		apuntarConsultaSensible: async () => undefined,
-	};
 }
 
 export const accionImprimirEtiquetas = implementarAccion(imprimirEtiquetas, async (contexto, datos) => {

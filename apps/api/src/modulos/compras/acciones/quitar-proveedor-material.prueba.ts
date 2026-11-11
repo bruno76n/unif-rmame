@@ -7,7 +7,13 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { altaDeMaterial, altaDeProveedor, versionDe } from "../../../nucleo/pruebas/compras-de-prueba.ts";
+import {
+	altaDeMaterial,
+	altaDeProveedor,
+	levantarDePrueba,
+	ordenEnEstado,
+	versionDe,
+} from "../../../nucleo/pruebas/compras-de-prueba.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 
@@ -79,5 +85,23 @@ describe("El habitual no deja de surtir; agregar o quitar un proveedor sube la v
 			[material, otro],
 		);
 		expect(par).toEqual([{ n: 1, activo: true, precio: 45 }]);
+	});
+
+	it("en un borrador con ese proveedor no se quita: nombra el borrador; enviada la orden, se quita", async () => {
+		const habitual = await altaDeProveedor(servidor);
+		const otro = await altaDeProveedor(servidor, { nombre: "Mercería del Centro" });
+		const material = await altaDeMaterial(servidor, habitual, { nombre: "Botón azul 12 mm" });
+		await sobreMaterial("agregar_proveedor_material", material, { proveedor_id: otro, precio_centavos: 40 });
+		const orden = await levantarDePrueba(servidor, [
+			{ material_id: material, proveedor_id: otro, cantidad: 10, precio_centavos: 40 },
+		]);
+		const quitar = () =>
+			sobreMaterial("quitar_proveedor_material", material, { proveedor_id: otro, motivo: "Ya no lo tiene" });
+		expect((await quitar()).cuerpo).toMatchObject({
+			codigo: "en_borrador",
+			mensaje: `Botón azul 12 mm está en el borrador ${orden.folio} con Mercería del Centro: descártalo o cámbialo antes.`,
+		});
+		await ordenEnEstado(servidor, orden.id, "enviada");
+		expect((await quitar()).estado).toBe(200);
 	});
 });

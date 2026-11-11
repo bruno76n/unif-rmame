@@ -1,10 +1,11 @@
 /**
- * Lo que comparten las acciones de los módulos: quién cambia y el motivo de una baja.
+ * Lo que comparten las acciones de los módulos: quién cambia, el motivo de una baja y el contexto con que se dibuja
+ * una etiqueta o una hoja.
  * Fase 8 · docs/modulos/catalogo/ (las acciones con motivo); desde la fase 10, también Compras
  */
 
 import { errorDeCampo } from "../http/errores.ts";
-import type { ContextoDeAccion } from "../modulos.ts";
+import type { ContextoDeAccion, ContextoDeConsulta } from "../modulos.ts";
 
 /**
  * La cuenta que hace el cambio, o nada si es el sistema.
@@ -23,4 +24,22 @@ export function quienCambia(contexto: ContextoDeAccion): string | null {
 export async function revisarMotivo(contexto: ContextoDeAccion, motivo: string): Promise<void> {
 	const minimo = Number(await contexto.lectura("admin.parametro", { clave: "general.largo_minimo_motivo" }));
 	if (motivo.trim().length < minimo) throw errorDeCampo("motivo", `Escribe al menos ${minimo} letras.`);
+}
+
+/**
+ * El contexto con que se dibuja una etiqueta o una hoja desde una acción: el de la acción, como lo ve quien la
+ * pide. Dibujar no apunta consultas sensibles: las etiquetas y las hojas de una acción no llevan ninguna.
+ * @param contexto El contexto de la acción.
+ * @throws Si la pide el sistema: las etiquetas y las hojas siempre las pide una cuenta.
+ */
+export function contextoDeDibujo(contexto: ContextoDeAccion): ContextoDeConsulta {
+	const { quien } = contexto;
+	if (quien.tipo === "sistema") throw new Error("las etiquetas y las hojas las pide una cuenta");
+	return {
+		base: contexto.transaccion,
+		quien,
+		ahora: contexto.ahora,
+		diaDeNegocio: contexto.diaDeNegocio,
+		apuntarConsultaSensible: async () => undefined,
+	};
 }

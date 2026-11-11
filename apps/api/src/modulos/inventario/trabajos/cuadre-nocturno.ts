@@ -9,8 +9,8 @@
  * proceso se cortó), lo deja en `fallo` y avisa igual. Al terminar, su evento encola la depuración de eventos.
  */
 
+import { textoDeDia } from "@uniformame/compartido/calculos/fechas";
 import { eq } from "drizzle-orm";
-import { Temporal } from "temporal-polyfill";
 import type { Horario, Trabajo } from "../../../nucleo/modulos.ts";
 import { leerParametro } from "../../../nucleo/parametros.ts";
 import { correrCuadre, diaQueTermino, marcarCuadreCortado } from "../internas/correr-cuadre.ts";
@@ -29,7 +29,7 @@ export const cuadreNocturno: Trabajo = {
 		const fecha = diaQueTermino(contexto.ahora);
 		// El aviso va ligado a su cuadre: cada noche que no termina avisa, aunque el de otra noche siga sin leer.
 		const avisar = () => {
-			const dia = Temporal.PlainDate.from(fecha).toLocaleString("es-MX", { day: "numeric", month: "long" });
+			const dia = textoDeDia(fecha);
 			return contexto.enTransaccion(async (accion) => {
 				const [cuadre] = await accion.transaccion
 					.select({ id: cuadres.id })

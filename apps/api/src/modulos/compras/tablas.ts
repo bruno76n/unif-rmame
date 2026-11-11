@@ -1,7 +1,8 @@
 /**
- * Las tablas de `compras`: proveedores, materiales, qué proveedores surten cada material y el historial de precios
- * de compra.
- * Fase 10 · docs/modulos/compras/proveedores-y-precios.md y materiales.md (la tabla de cada archivo)
+ * Las tablas de `compras`: proveedores, materiales, qué proveedores surten cada material, el historial de precios
+ * de compra y las órdenes de compra con sus líneas.
+ * Fase 10 · docs/modulos/compras/proveedores-y-precios.md, materiales.md y ordenes-de-compra.md (la tabla de cada
+ * archivo)
  *
  * Nada se borra: un proveedor, un material o un par se dan de baja. El historial de precios solo crece: el rol de
  * la app no lo puede cambiar. Los materiales bajan a la tablet (los consumibles), así que llevan `xid_escritura`.
@@ -9,8 +10,28 @@
 
 import { tiposDeMaterial, unidadesDeReceta } from "@uniformame/compartido/contratos/compras/materiales";
 import { sql } from "drizzle-orm";
-import { bigint, check, date, index, integer, numeric, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
-import { columnasComunes, columnasDeBaja, columnaXidEscritura, valores } from "../../nucleo/base/columnas.ts";
+import {
+	type AnyPgColumn,
+	bigint,
+	check,
+	date,
+	index,
+	integer,
+	numeric,
+	pgTable,
+	text,
+	uniqueIndex,
+	uuid,
+} from "drizzle-orm/pg-core";
+import {
+	columnasComunes,
+	columnasDeBaja,
+	columnasDeCancelacion,
+	columnaXidEscritura,
+	momento,
+	valores,
+} from "../../nucleo/base/columnas.ts";
+import { archivos, usuarios } from "../admin/tablas.ts";
 import { terceros } from "../contaduria/tablas.ts";
 
 /** De dónde sale un precio del historial. */
@@ -127,10 +148,8 @@ export const preciosCompra = pgTable(
 			.references(() => proveedores.id),
 		precioCentavos: bigint("precio_centavos", { mode: "number" }).notNull(),
 		origen: text("origen").notNull(),
-		/** @llavePendiente ordenes_compra.id */
-		ordenCompraId: uuid("orden_compra_id"),
-		/** @llavePendiente orden_compra_lineas.id */
-		ordenCompraLineaId: uuid("orden_compra_linea_id"),
+		ordenCompraId: uuid("orden_compra_id").references((): AnyPgColumn => ordenesCompra.id),
+		ordenCompraLineaId: uuid("orden_compra_linea_id").references((): AnyPgColumn => ordenCompraLineas.id),
 		precioAnteriorCentavos: bigint("precio_anterior_centavos", { mode: "number" }),
 		cambioPorcentaje: numeric("cambio_porcentaje", { precision: 6, scale: 3 }),
 		/** Día de negocio. */
@@ -150,5 +169,93 @@ export const preciosCompra = pgTable(
 			"precios_compra_cambio",
 			sql`(${tabla.precioAnteriorCentavos} is null) = (${tabla.cambioPorcentaje} is null)`,
 		),
+	],
+);
+
+/** Los estados de una orden de compra. */
+export const estadosDeOrden = [
+	"borrador",
+	"enviada",
+	"recibida_en_parte",
+	"recibida",
+	"cerrada",
+	"cerrada_con_faltante",
+	"cancelada",
+] as const;
+
+/** Lo que se le pide a un proveedor (OC-). Un solo borrador por proveedor. */
+export const ordenesCompra = pgTable(
+	"ordenes_compra",
+	{
+		id: uuid("id").primaryKey(),
+		folio: text("folio").notNull(),
+		proveedorId: uuid("proveedor_id")
+			.notNull()
+			.references(() => proveedores.id),
+		estado: text("estado").notNull().default("borrador"),
+		/** El día en que se levantó. */
+		fecha: date("fecha", { mode: "string" }).notNull(),
+		fechaPrometida: date("fecha_prometida", { mode: "string" }),
+		enviadaEn: momento("enviada_en"),
+		enviadaPor: uuid("enviada_por").references((): AnyPgColumn => usuarios.id),
+		/** La condición del proveedor, copiada al enviarla. */
+		diasCredito: integer("dias_credito"),
+		pdfArchivoId: uuid("pdf_archivo_id").references(() => archivos.id),
+		cerradaEn: momento("cerrada_en"),
+		/** Vacío: la cerró el sistema al quedar pagada. */
+		cerradaPor: uuid("cerrada_por").references((): AnyPgColumn => usuarios.id),
+		motivoCierre: text("motivo_cierre"),
+		...columnasDeCancelacion(),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		uniqueIndex("ordenes_compra_folio").on(tabla.folio),
+		uniqueIndex("ordenes_compra_un_borrador").on(tabla.proveedorId).where(sql`${tabla.estado} = 'borrador'`),
+		index("ordenes_compra_estado").on(tabla.estado, tabla.fechaPrometida),
+		index("ordenes_compra_proveedor").on(tabla.proveedorId, tabla.enviadaEn.desc()),
+		check("ordenes_compra_estado", sql`${tabla.estado} in (${valores(estadosDeOrden)})`),
+		check(
+			"ordenes_compra_enviada",
+			sql`${tabla.enviadaEn} is null or (${tabla.fechaPrometida} is not null and ${tabla.diasCredito} is not null)`,
+		),
+		check(
+			"ordenes_compra_cerrada_con_faltante",
+			sql`${tabla.estado} <> 'cerrada_con_faltante' or (${tabla.cerradaEn} is not null and ${tabla.motivoCierre} is not null)`,
+		),
+		check("ordenes_compra_cerrada", sql`${tabla.estado} <> 'cerrada' or ${tabla.cerradaEn} is not null`),
+		check(
+			"ordenes_compra_cancelada",
+			sql`(${tabla.estado} = 'cancelada') = (${tabla.canceladoEn} is not null and ${tabla.motivoCancelacion} is not null)`,
+		),
+	],
+);
+
+/** Cada material de una orden. Es parte de la orden: un cambio sube su versión. */
+export const ordenCompraLineas = pgTable(
+	"orden_compra_lineas",
+	{
+		id: uuid("id").primaryKey(),
+		ordenCompraId: uuid("orden_compra_id")
+			.notNull()
+			.references(() => ordenesCompra.id),
+		materialId: uuid("material_id")
+			.notNull()
+			.references(() => materiales.id),
+		/** Lo pedido, en la unidad de inventario. */
+		cantidad: numeric("cantidad", { precision: 12, scale: 3 }).notNull(),
+		/** El precio escrito, que se congela al enviarla. */
+		precioOrdenCentavos: bigint("precio_orden_centavos", { mode: "number" }).notNull(),
+		precioNotaCentavos: bigint("precio_nota_centavos", { mode: "number" }),
+		precioNotaEn: momento("precio_nota_en"),
+		precioNotaPor: uuid("precio_nota_por").references((): AnyPgColumn => usuarios.id),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		uniqueIndex("orden_compra_lineas_material").on(tabla.ordenCompraId, tabla.materialId),
+		index("orden_compra_lineas_material_pedido").on(tabla.materialId),
+		check("orden_compra_lineas_cantidad", sql`${tabla.cantidad} > 0`),
+		check("orden_compra_lineas_precio", sql`${tabla.precioOrdenCentavos} > 0`),
+		check("orden_compra_lineas_precio_nota", sql`${tabla.precioNotaCentavos} > 0`),
+		check("orden_compra_lineas_nota", sql`(${tabla.precioNotaCentavos} is null) = (${tabla.precioNotaEn} is null)`),
 	],
 );

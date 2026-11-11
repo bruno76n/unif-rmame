@@ -159,6 +159,7 @@ export const darBajaMaterial = definirAccion({
 		{ codigo: "material_dado_de_baja", mensaje: "Ya está dado de baja." },
 		{ codigo: "material_con_existencia", mensaje: "Todavía hay de ese material en el inventario." },
 		{ codigo: "material_en_receta", mensaje: "Está en la receta vigente de una prenda: cámbiala en Patronaje antes." },
+		{ codigo: "material_en_orden", mensaje: "Está en una orden abierta: termínala o cancélala antes." },
 	],
 	edita: true,
 });
@@ -207,6 +208,7 @@ export const quitarProveedorMaterial = definirAccion({
 	errores: [
 		{ codigo: "proveedor_habitual", mensaje: "Es el habitual: haz habitual a otro antes de quitarlo." },
 		{ codigo: "no_lo_surte", mensaje: "Ese proveedor no surte el material." },
+		{ codigo: "en_borrador", mensaje: "Está en un borrador con ese proveedor: descártalo o cámbialo antes." },
 	],
 	edita: true,
 });

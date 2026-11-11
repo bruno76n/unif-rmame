@@ -10,7 +10,14 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { crearBase } from "../../../nucleo/base/conexion.ts";
 import { enAccionDePrueba } from "../../../nucleo/pruebas/accion-de-prueba.ts";
 import { siembraDelCatalogo } from "../../../nucleo/pruebas/catalogo-de-prueba.ts";
-import { altaDeMaterial, altaDeProveedor, versionDe } from "../../../nucleo/pruebas/compras-de-prueba.ts";
+import {
+	altaDeMaterial,
+	altaDeProveedor,
+	conMotivoSobreOrden,
+	levantarDePrueba,
+	ordenEnEstado,
+	versionDe,
+} from "../../../nucleo/pruebas/compras-de-prueba.ts";
 import { ubicacionesPorCodigo } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import {
@@ -22,7 +29,7 @@ import {
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 import { escribirMovimiento } from "../../inventario/dominio/escribir-movimiento.ts";
 
-describe("Un material con existencia o en la receta vigente de una prenda no se da de baja", () => {
+describe("Un material con existencia, en una orden abierta o en la receta vigente de una prenda no se da de baja", () => {
 	let servidor: ServidorDePrueba;
 	let ubicacion: Record<string, string>;
 	let proveedor: string;
@@ -94,5 +101,19 @@ describe("Un material con existencia o en la receta vigente de una prenda no se 
 		});
 		// La popelina no está en ninguna receta: se da de baja.
 		expect((await darBaja(materiales.popelina)).estado).toBe(200);
+	});
+
+	it("en una orden abierta no se da de baja: nombra la orden; cancelada la orden, se da de baja", async () => {
+		const material = await altaDeMaterial(servidor, proveedor, { nombre: "Hilo poliéster negro" });
+		const orden = await levantarDePrueba(servidor, [
+			{ material_id: material, proveedor_id: proveedor, cantidad: 10, precio_centavos: 38 },
+		]);
+		await ordenEnEstado(servidor, orden.id, "enviada");
+		expect((await darBaja(material)).cuerpo).toMatchObject({
+			codigo: "material_en_orden",
+			mensaje: `Hilo poliéster negro está en ${orden.folio}: termina o cancela la orden antes.`,
+		});
+		await conMotivoSobreOrden(servidor, "cancelar_orden", orden.id, "Ya no hace falta");
+		expect((await darBaja(material)).estado).toBe(200);
 	});
 });

@@ -100,7 +100,8 @@ CREATE INDEX "receta_lineas_material_usado" ON "receta_lineas" USING btree ("mat
 CREATE UNIQUE INDEX "receta_medidas_talla" ON "receta_medidas" USING btree ("receta_version_id",lower("medida"),"talla_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "receta_versiones_numero" ON "receta_versiones" USING btree ("receta_id","numero");--> statement-breakpoint
 CREATE UNIQUE INDEX "recetas_producto" ON "recetas" USING btree ("producto_id");--> statement-breakpoint
-CREATE INDEX "recetas_estado" ON "recetas" USING btree ("estado");--> statement-breakpoint-- Escrito a mano (docs/cimientos/BASE-DE-DATOS.md): las columnas comunes; las versiones y lo que cuelga de ellas
+CREATE INDEX "recetas_estado" ON "recetas" USING btree ("estado");--> statement-breakpoint
+-- Escrito a mano (docs/cimientos/BASE-DE-DATOS.md): las columnas comunes; las versiones y lo que cuelga de ellas
 -- solo crecen.
 SELECT poner_disparador_comun('recetas', baja_a_aparatos => false);--> statement-breakpoint
 SELECT poner_disparador_comun('receta_versiones', baja_a_aparatos => false);--> statement-breakpoint

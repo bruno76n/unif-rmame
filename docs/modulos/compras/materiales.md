@@ -167,7 +167,7 @@ Usa también `compras.precio_max_centavos` ([proveedores y precios](proveedores-
 - **Las acciones** (`acciones/materiales.ts`):
   - `crear_material` revisa el costo y los días contra los parámetros, la unidad en la lista y la conversión; toma el proveedor compartido y deja el material, su par y el primer precio en una transacción.
   - `guardar_material` compara lo que llegó con lo guardado (los enteros como `numeric` con tres decimales) y escribe un renglón de bitácora por campo.
-  - `dar_baja_material` revisa también las recetas vigentes con `patronaje.recetas_con_material` (`material_en_receta`, desde la parte 2). Bloquea el material antes de leer su existencia: un movimiento a medias que lo usa comparte su renglón por la llave foránea, así que la baja espera a que termine y ve lo que dejó (decisión 515). La existencia, por ubicación, la da `inventario.existencia_material` (decisión 513).
+  - `dar_baja_material` revisa también las órdenes abiertas (`material_en_orden`, con el folio, desde la parte 4) y las recetas vigentes con `patronaje.recetas_con_material` (`material_en_receta`, desde la parte 2). Bloquea el material antes de leer su existencia: un movimiento a medias que lo usa comparte su renglón por la llave foránea, así que la baja espera a que termine y ve lo que dejó (decisión 515). La existencia, por ubicación, la da `inventario.existencia_material` (decisión 513).
   - `reactivar_material` revisa que su proveedor habitual siga activo.
 - **Lo que baja** está en `modulos/compras/bajada.ts`: los consumibles activos con `nombre`, `unidad`, `unidad_tablet` y `factor_tablet` (que baja como número).
 - **Quién lee** cada tabla, para los avisos en vivo, está en `permisos.ts`: los precios, solo Compras y Contaduría.

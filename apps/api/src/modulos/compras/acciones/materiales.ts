@@ -4,8 +4,7 @@
  * Fase 10 · docs/modulos/compras/materiales.md (reglas 1 a 10, «Acciones»)
  *
  * El alta deja en una transacción el material sin existencia, su proveedor habitual con su último precio y el
- * primer precio del historial. La baja mira la existencia y las recetas vigentes; el candado `material_en_orden`
- * llega con las órdenes (parte 4).
+ * primer precio del historial. La baja mira la existencia, las órdenes abiertas y las recetas vigentes.
  */
 
 import {
@@ -33,6 +32,7 @@ import {
 	revisarPrecio,
 	revisarProveedorActivo,
 } from "../dominio/comunes.ts";
+import { foliosDeOrdenesAbiertas } from "../dominio/ordenes.ts";
 import { listaDeUnidades } from "../siembra.ts";
 import { materiales } from "../tablas.ts";
 
@@ -273,6 +273,11 @@ export const accionDarBajaMaterial = implementarAccion(darBajaMaterial, async (c
 			"material_con_existencia",
 			`Todavía hay ${Number(hay.cantidad)} ${material.unidad} de ${material.nombre} en ${donde}.`,
 		);
+	}
+	// En ninguna orden abierta (en borrador, enviada o recibida en parte).
+	const [orden] = await foliosDeOrdenesAbiertas(contexto, { materialId: material.id });
+	if (orden !== undefined) {
+		throw errorDeRegla("material_en_orden", `${material.nombre} está en ${orden}: termina o cancela la orden antes.`);
 	}
 	// Ninguna receta vigente lo lleva.
 	const { prendas } = conMaterial.parse(

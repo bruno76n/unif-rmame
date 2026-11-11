@@ -7,11 +7,18 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { altaDeMaterial, altaDeProveedor, versionDe } from "../../../nucleo/pruebas/compras-de-prueba.ts";
+import {
+	altaDeMaterial,
+	altaDeProveedor,
+	conMotivoSobreOrden,
+	levantarDePrueba,
+	ordenEnEstado,
+	versionDe,
+} from "../../../nucleo/pruebas/compras-de-prueba.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 
-describe("Un proveedor habitual no se da de baja", () => {
+describe("Un proveedor habitual o con órdenes abiertas no se da de baja", () => {
 	let servidor: ServidorDePrueba;
 	beforeAll(async () => {
 		servidor = await crearServidorDePrueba();
@@ -79,5 +86,27 @@ describe("Un proveedor habitual no se da de baja", () => {
 			codigo: "proveedor_activo",
 			mensaje: "Textiles Aurora ya está activo.",
 		});
+	});
+
+	it("con órdenes abiertas no se da de baja: las nombra; canceladas, se da de baja", async () => {
+		const habitual = await altaDeProveedor(servidor);
+		const bajio = await altaDeProveedor(servidor, { nombre: "Telas del Bajío" });
+		const [uno, dos] = [await altaDeMaterial(servidor, habitual), await altaDeMaterial(servidor, habitual)];
+		const enviada = await levantarDePrueba(servidor, [
+			{ material_id: uno, proveedor_id: bajio, cantidad: 1, precio_centavos: 38 },
+		]);
+		await ordenEnEstado(servidor, enviada.id, "enviada");
+		const borrador = await levantarDePrueba(servidor, [
+			{ material_id: dos, proveedor_id: bajio, cantidad: 1, precio_centavos: 38 },
+		]);
+		const darBaja = () => sobreProveedor("dar_baja_proveedor", bajio, { motivo: "Ya no surte" });
+		expect((await darBaja()).cuerpo).toMatchObject({
+			codigo: "proveedor_con_ordenes",
+			mensaje: `Telas del Bajío tiene órdenes abiertas: ${[enviada.folio, borrador.folio].sort().join(", ")}. Termínalas o cancélalas antes.`,
+		});
+		for (const orden of [enviada, borrador]) {
+			await conMotivoSobreOrden(servidor, "cancelar_orden", orden.id, "Ya no hace falta");
+		}
+		expect((await darBaja()).estado).toBe(200);
 	});
 });

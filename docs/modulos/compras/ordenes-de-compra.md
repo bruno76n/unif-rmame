@@ -234,4 +234,18 @@ Usa también `compras.umbral_cambio_precio_pct` y `compras.precio_max_centavos` 
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 10.*
+**Fase 10, parte 4.**
+
+- **Las tablas** `ordenes_compra` y `orden_compra_lineas` están en `apps/api/src/modulos/compras/tablas.ts` (migración `0035`), con sus CHECK por estado (enviada con fecha y condición, cancelada con su motivo, cerrada con su fecha), el folio único, un único parcial de un borrador por proveedor y un único (orden, material) en las líneas. La misma migración pone las llaves de `precios_compra` hacia la orden y la línea, la de `autorizaciones.orden_compra_linea_id` y la de `traspasos.orden_compra_id`.
+- **Lo común** (`dominio/ordenes.ts`): leer la orden con candado y el nombre de su proveedor, sus líneas con su material, el precio vigente (el de la nota o el de la orden), la cantidad (`cantidad_demasiada`, `no_es_multiplo` con la cantidad más cercana) y la fecha prometida, lo recibido y lo que falta, la versión del agregado, sus eventos y los folios de las órdenes abiertas que usan los candados.
+- **Lo recibido** lo da `inventario.recibido_de_ordenes`, que llega con Aduana en la fase 11. Mientras esa lectura no existe (`contexto.hayLectura`), nada está recibido (decisión 540).
+- **Las acciones** (`acciones/ordenes.ts`, contratos en `packages/compartido/src/contratos/compras/ordenes.ts`):
+  - `levantar_orden` agrupa por proveedor y busca su borrador o lo crea con un candado por proveedor: dos personas a la vez dejan un solo borrador (decisión 539). Un material que ya estaba cambia su cantidad y su precio. Avisa el precio distinto del último («Agujas 14/90: sube 4 % · antes $250»).
+  - `guardar_borrador_orden` guarda lo del cajón sin bitácora, con su versión.
+  - `marcar_orden_enviada` congela, copia `dias_credito` del proveedor, guarda el PDF antes de confirmar (la hoja `orden_compra` registrada y `admin.guardar_archivo` con `pdf_documento`), escribe el historial de precios (solo los que cambian, con su renglón de bitácora) y deja al proveedor entre los que surten el material (el par nace o se reactiva). Su `precios_nuevos[].precio_centavos` es opcional, para que el servidor lo recorte (decisión 544).
+  - `cancelar_orden` descarta un borrador (sin fecha prometida) o cancela una enviada; una recibida en parte responde `orden_recibida_en_parte`.
+  - `cerrar_orden_con_faltante`, solo la recibida en parte, con su motivo y quién.
+- **Las internas** (`internas/ordenes.ts`): `recalcular_estado_orden`, `cerrar_orden_pagada` (sin quién: la cerró el sistema), `reabrir_orden_pagada` (solo la cerrada sin quién) y `registrar_precios_nota`. Las usan Aduana y Contaduría; se prueban directo.
+- **Las lecturas** (`lecturas/ordenes.ts`): `ordenes_por_recibir`, sin precios, con lo que falta, la llegada esperada (si ya pasó la fecha, hoy más `compras.dias_espera_orden_atrasada`) y los días de atraso; y `precio_vigente_lineas`, para el costo de los rollos.
+- **Los parámetros** `compras.cantidad_maxima_linea`, `compras.dias_max_fecha_prometida` y `compras.dias_espera_orden_atrasada` (`parametros.ts`).
+- **Pruebas:** `acciones/levantar-orden.prueba.ts` (con dos a la vez, cinco rondas), `marcar-orden-enviada.prueba.ts` (con el simulador de R2; el PDF que falla deja el borrador), `cancelar-orden.prueba.ts`, `cerrar-orden-con-faltante.prueba.ts`, `internas/cerrar-orden-pagada.prueba.ts` (también `recalcular_estado_orden`), `reabrir-orden-pagada.prueba.ts`, `registrar-precios-nota.prueba.ts` y `lecturas/ordenes-por-recibir.prueba.ts`. Las que no prueban el envío ponen el estado de la orden en la base con `ordenEnEstado` (`nucleo/pruebas/compras-de-prueba.ts`). La hoja se prueba con la de prueba del módulo de prueba, que falla a propósito (decisión 542).

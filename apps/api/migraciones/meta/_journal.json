@@ -246,6 +246,13 @@
 			"when": 1794380146576,
 			"tag": "0034_desarrollos",
 			"breakpoints": true
+		},
+		{
+			"idx": 35,
+			"version": "7",
+			"when": 1794382829057,
+			"tag": "0035_ordenes_de_compra",
+			"breakpoints": true
 		}
 	]
 }

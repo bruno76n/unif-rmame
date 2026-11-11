@@ -1,8 +1,9 @@
 /**
- * El módulo `compras`: proveedores, materiales, sus precios de compra y los consumibles que bajan a la tablet.
+ * El módulo `compras`: proveedores, materiales, sus precios de compra, las órdenes de compra y los consumibles que
+ * bajan a la tablet.
  * Fase 10 · docs/modulos/compras/
  *
- * Las órdenes de compra llegan en la parte 4 y la proyección de material, en la 5.
+ * La proyección de material llega en la parte 5.
  */
 
 import { definirModulo } from "../../nucleo/modulos.ts";
@@ -12,6 +13,13 @@ import {
 	accionGuardarMaterial,
 	accionReactivarMaterial,
 } from "./acciones/materiales.ts";
+import {
+	accionCancelarOrden,
+	accionCerrarOrdenConFaltante,
+	accionGuardarBorradorOrden,
+	accionLevantarOrden,
+	accionMarcarOrdenEnviada,
+} from "./acciones/ordenes.ts";
 import {
 	accionCrearProveedor,
 	accionDarBajaProveedor,
@@ -24,7 +32,14 @@ import {
 	accionQuitarProveedorMaterial,
 } from "./acciones/proveedores-de-material.ts";
 import { bajadaDeCompras } from "./bajada.ts";
+import {
+	cerrarOrdenPagada,
+	reabrirOrdenPagada,
+	recalcularEstadoOrden,
+	registrarPreciosNota,
+} from "./internas/ordenes.ts";
 import { costoMaterial } from "./lecturas/costo-material.ts";
+import { ordenesPorRecibir, precioVigenteLineas } from "./lecturas/ordenes.ts";
 import { semillaDeParametrosDeCompras } from "./parametros.ts";
 import { lectoresDeCompras } from "./permisos.ts";
 import { semillaDeUnidades } from "./siembra.ts";
@@ -43,8 +58,23 @@ export default definirModulo({
 		accionAgregarProveedorMaterial,
 		accionQuitarProveedorMaterial,
 		accionHacerHabitual,
+		accionLevantarOrden,
+		accionGuardarBorradorOrden,
+		accionMarcarOrdenEnviada,
+		accionCancelarOrden,
+		accionCerrarOrdenConFaltante,
 	],
-	lecturas: { costo_material: costoMaterial },
+	internas: {
+		recalcular_estado_orden: recalcularEstadoOrden,
+		cerrar_orden_pagada: cerrarOrdenPagada,
+		reabrir_orden_pagada: reabrirOrdenPagada,
+		registrar_precios_nota: registrarPreciosNota,
+	},
+	lecturas: {
+		costo_material: costoMaterial,
+		ordenes_por_recibir: ordenesPorRecibir,
+		precio_vigente_lineas: precioVigenteLineas,
+	},
 	semillas: [semillaDeUnidades, semillaDeParametrosDeCompras],
 	bajada: bajadaDeCompras,
 	lectores: lectoresDeCompras,

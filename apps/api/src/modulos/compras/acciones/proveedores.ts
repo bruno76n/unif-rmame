@@ -21,6 +21,7 @@ import { tomarVersion, versionActual } from "../../../nucleo/acciones/pisadas.ts
 import { ErrorDeApi, errorDeCampo, errorDeRegla } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeAccion, implementarAccion } from "../../../nucleo/modulos.ts";
 import { eventoDeProveedor, leerProveedor, parametroNumero, revisarProveedorActivo } from "../dominio/comunes.ts";
+import { foliosDeOrdenesAbiertas } from "../dominio/ordenes.ts";
 import { materiales, proveedores } from "../tablas.ts";
 
 /** Lo que regresa `contaduria.crear_tercero`. */
@@ -197,6 +198,14 @@ export const accionDarBajaProveedor = implementarAccion(darBajaProveedor, async 
 		baja_en: proveedor.bajaEn,
 	}));
 	revisarProveedorActivo(proveedor);
+	// Sin órdenes abiertas.
+	const abiertas = await foliosDeOrdenesAbiertas(contexto, { proveedorId: proveedor.id });
+	if (abiertas.length > 0) {
+		throw errorDeRegla(
+			"proveedor_con_ordenes",
+			`${proveedor.nombre} tiene órdenes abiertas: ${abiertas.join(", ")}. Termínalas o cancélalas antes.`,
+		);
+	}
 	// No es el habitual de ningún material activo (el candado del proveedor espera a quien lo hace habitual).
 	const habitualDe = await contexto.transaccion
 		.select({ nombre: materiales.nombre })

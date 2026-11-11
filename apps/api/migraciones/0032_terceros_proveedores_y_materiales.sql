@@ -148,7 +148,8 @@ CREATE UNIQUE INDEX "terceros_nombre_busqueda" ON "terceros" USING btree ("nombr
 CREATE INDEX "terceros_rfc" ON "terceros" USING btree ("rfc");--> statement-breakpoint
 ALTER TABLE "existencias_material" ADD CONSTRAINT "existencias_material_material_id_materiales_id_fk" FOREIGN KEY ("material_id") REFERENCES "public"."materiales"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "movimiento_lineas" ADD CONSTRAINT "movimiento_lineas_material_id_materiales_id_fk" FOREIGN KEY ("material_id") REFERENCES "public"."materiales"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "traspaso_lineas" ADD CONSTRAINT "traspaso_lineas_material_id_materiales_id_fk" FOREIGN KEY ("material_id") REFERENCES "public"."materiales"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint-- Escrito a mano (docs/cimientos/BASE-DE-DATOS.md): las columnas comunes. Los materiales bajan a la tablet (los
+ALTER TABLE "traspaso_lineas" ADD CONSTRAINT "traspaso_lineas_material_id_materiales_id_fk" FOREIGN KEY ("material_id") REFERENCES "public"."materiales"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+-- Escrito a mano (docs/cimientos/BASE-DE-DATOS.md): las columnas comunes. Los materiales bajan a la tablet (los
 -- consumibles) con su `xid_escritura`; el historial de precios solo crece.
 SELECT poner_disparador_comun('terceros', baja_a_aparatos => false);--> statement-breakpoint
 SELECT poner_disparador_comun('proveedores', baja_a_aparatos => false);--> statement-breakpoint

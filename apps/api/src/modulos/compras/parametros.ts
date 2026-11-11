@@ -1,6 +1,6 @@
 /**
  * Los parámetros que declara `compras`, con su valor inicial.
- * Fase 10 · docs/modulos/compras/proveedores-y-precios.md y materiales.md («Parámetros»)
+ * Fase 10 · docs/modulos/compras/proveedores-y-precios.md, materiales.md y ordenes-de-compra.md («Parámetros»)
  *
  * Los cambia solo la dueña, en Configuración.
  */
@@ -60,5 +60,36 @@ export const semillaDeParametrosDeCompras = semillaDeParametros("compras", [
 		inicial: 365,
 		minimo: 1,
 		orden: 5,
+	},
+	{
+		clave: "compras.cantidad_maxima_linea",
+		seccion: "parametro",
+		nombre: "Cantidad más grande en una línea de una orden",
+		explicacion: "Más que esto en una línea es «Es demasiado: revisa la cantidad»",
+		tipo: "entero",
+		inicial: 999_999,
+		minimo: 1,
+		orden: 6,
+	},
+	{
+		clave: "compras.dias_max_fecha_prometida",
+		seccion: "parametro",
+		nombre: "Lo más lejos que puede prometer llegar una orden",
+		tipo: "entero",
+		unidad: "días",
+		inicial: 120,
+		minimo: 1,
+		orden: 7,
+	},
+	{
+		clave: "compras.dias_espera_orden_atrasada",
+		seccion: "parametro",
+		nombre: "Días en que se espera una orden atrasada",
+		explicacion: "Una orden atrasada se espera en estos días: en Compras, en Aduana y en la revisión de Ventas",
+		tipo: "entero",
+		unidad: "días",
+		inicial: 3,
+		minimo: 0,
+		orden: 8,
 	},
 ]);

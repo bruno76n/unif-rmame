@@ -65,7 +65,8 @@ CREATE INDEX "desarrollo_eventos_desarrollo" ON "desarrollo_eventos" USING btree
 CREATE UNIQUE INDEX "desarrollos_folio" ON "desarrollos" USING btree ("folio");--> statement-breakpoint
 CREATE UNIQUE INDEX "desarrollos_producto" ON "desarrollos" USING btree ("producto_id") WHERE "desarrollos"."producto_id" is not null;--> statement-breakpoint
 CREATE INDEX "desarrollos_en_proceso" ON "desarrollos" USING btree ("etapa") WHERE "desarrollos"."etapa" not in ('en_catalogo', 'cancelado');--> statement-breakpoint
-ALTER TABLE "autorizaciones" ADD CONSTRAINT "autorizaciones_desarrollo_id_desarrollos_id_fk" FOREIGN KEY ("desarrollo_id") REFERENCES "public"."desarrollos"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint-- Escrito a mano (docs/cimientos/BASE-DE-DATOS.md): las columnas comunes; el historial de un desarrollo solo crece.
+ALTER TABLE "autorizaciones" ADD CONSTRAINT "autorizaciones_desarrollo_id_desarrollos_id_fk" FOREIGN KEY ("desarrollo_id") REFERENCES "public"."desarrollos"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+-- Escrito a mano (docs/cimientos/BASE-DE-DATOS.md): las columnas comunes; el historial de un desarrollo solo crece.
 SELECT poner_disparador_comun('desarrollos', baja_a_aparatos => false);--> statement-breakpoint
 SELECT poner_disparador_comun('desarrollo_eventos', baja_a_aparatos => false);--> statement-breakpoint
 SELECT marcar_solo_crece('desarrollo_eventos');

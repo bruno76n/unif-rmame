@@ -39,7 +39,7 @@ import {
 } from "../../nucleo/base/columnas.ts";
 import { comandosRecibidos, usuarios } from "../admin/tablas.ts";
 import { variantes } from "../catalogo/tablas.ts";
-import { materiales } from "../compras/tablas.ts";
+import { materiales, ordenesCompra } from "../compras/tablas.ts";
 import { personas } from "../personal/tablas.ts";
 
 /** Cada lugar donde puede estar una pieza: Aduana, Bodega, las tiendas, el Taller y los dos de paso. */
@@ -340,8 +340,7 @@ export const traspasos = pgTable(
 		loteId: uuid("lote_id"),
 		/** @llavePendiente reprocesos.id */
 		reprocesoId: uuid("reproceso_id"),
-		/** @llavePendiente ordenes_compra.id */
-		ordenCompraId: uuid("orden_compra_id"),
+		ordenCompraId: uuid("orden_compra_id").references(() => ordenesCompra.id),
 		/** @llavePendiente devoluciones_linea.id */
 		devolucionLineaId: uuid("devolucion_linea_id"),
 		/** @llavePendiente notas_credito.id */

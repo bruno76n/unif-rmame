@@ -86,7 +86,7 @@ export const guardarProveedor = definirAccion({
 /** Compras da de baja un proveedor que nada usa. */
 export const darBajaProveedor = definirAccion({
 	nombre: "compras.dar_baja_proveedor",
-	descripcion: "Da de baja un proveedor que no es el habitual de ningún material; su tercero no cambia",
+	descripcion: "Da de baja un proveedor sin órdenes abiertas que no es el habitual de ningún material",
 	entrada: z.object({
 		proveedor_id: z.uuid().describe("El proveedor"),
 		motivo: z.string().trim().max(200).describe("Por qué, al menos `general.largo_minimo_motivo` letras"),
@@ -95,6 +95,7 @@ export const darBajaProveedor = definirAccion({
 	permiso: { departamento: "compras" },
 	errores: [
 		{ codigo: "proveedor_dado_de_baja", mensaje: "Ya está dado de baja." },
+		{ codigo: "proveedor_con_ordenes", mensaje: "Tiene órdenes abiertas: termínalas o cancélalas antes." },
 		{ codigo: "proveedor_habitual_de", mensaje: "Es el habitual de un material: haz habitual a otro antes." },
 	],
 	edita: true,

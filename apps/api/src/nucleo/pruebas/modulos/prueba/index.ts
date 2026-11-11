@@ -75,6 +75,13 @@ const dibujoDePrueba: TipoDeEtiqueta["dibujar"] = async (_contexto, pedido) =>
 		? `^XA^FD${pedido.ids.join(",")}^FS^PQ${pedido.copias}^XZ`
 		: new TextEncoder().encode(`%PDF-prueba ${pedido.ids.join(",")}`);
 
+/** La hoja de prueba de la orden de compra: el dibujo de prueba, o una falla si hay una nota `falla:hoja`. */
+const hojaDePrueba: TipoDeEtiqueta["dibujar"] = async (contexto, pedido) => {
+	const [falla] = await contexto.base.select({ id: notas.id }).from(notas).where(eq(notas.texto, "falla:hoja"));
+	if (falla !== undefined) throw new Error("la hoja de prueba falló a propósito");
+	return dibujoDePrueba(contexto, pedido);
+};
+
 export default definirModulo({
 	nombre: "prueba",
 	lectores: { prueba_notas: ["ventas"] },
@@ -89,6 +96,9 @@ export default definirModulo({
 		{ tipo: "prueba", departamentos: ["ventas"], dibujar: dibujoDePrueba },
 		// La etiqueta de prenda con el mismo dibujo, para `catalogo.imprimir_etiquetas`; la real llega en la fase 20.
 		{ tipo: "prenda", departamentos: ["catalogo"], dibujar: dibujoDePrueba },
+		// La hoja de la orden de compra, para `compras.marcar_orden_enviada`; la real llega en la fase 20. Con una
+		// nota `falla:hoja` falla, para probar que la orden no queda enviada si su PDF no se genera.
+		{ tipo: "orden_compra", departamentos: ["compras"], dibujar: hojaDePrueba },
 	],
 	trabajos: [
 		{
