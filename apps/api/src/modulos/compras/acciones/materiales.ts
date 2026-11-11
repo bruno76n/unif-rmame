@@ -4,8 +4,8 @@
  * Fase 10 · docs/modulos/compras/materiales.md (reglas 1 a 10, «Acciones»)
  *
  * El alta deja en una transacción el material sin existencia, su proveedor habitual con su último precio y el
- * primer precio del historial. Los candados `material_en_receta` y `material_en_orden` llegan con las recetas
- * (parte 2) y las órdenes (parte 4).
+ * primer precio del historial. La baja mira la existencia y las recetas vigentes; el candado `material_en_orden`
+ * llega con las órdenes (parte 4).
  */
 
 import {
@@ -254,6 +254,9 @@ const existencia = z.object({
 	por_ubicacion: z.array(z.object({ ubicacion: z.string(), cantidad: z.string() })),
 });
 
+/** Lo que regresa `patronaje.recetas_con_material`. */
+const conMaterial = z.object({ prendas: z.array(z.object({ producto_id: z.uuid(), nombre: z.string() })) });
+
 export const accionDarBajaMaterial = implementarAccion(darBajaMaterial, async (contexto, datos, version) => {
 	await revisarMotivo(contexto, datos.motivo);
 	// El candado del material espera a un movimiento a medias que lo usa: la existencia que se lee ya lo trae.
@@ -269,6 +272,18 @@ export const accionDarBajaMaterial = implementarAccion(darBajaMaterial, async (c
 		throw errorDeRegla(
 			"material_con_existencia",
 			`Todavía hay ${Number(hay.cantidad)} ${material.unidad} de ${material.nombre} en ${donde}.`,
+		);
+	}
+	// Ninguna receta vigente lo lleva.
+	const { prendas } = conMaterial.parse(
+		await contexto.lectura("patronaje.recetas_con_material", { material_id: material.id }),
+	);
+	const [primera] = prendas;
+	if (primera !== undefined) {
+		const mas = prendas.length > 1 ? ` y ${prendas.length - 1} más` : "";
+		throw errorDeRegla(
+			"material_en_receta",
+			`${material.nombre} está en la receta vigente de ${primera.nombre}${mas}: cámbiala en Patronaje antes.`,
 		);
 	}
 	await contexto.transaccion

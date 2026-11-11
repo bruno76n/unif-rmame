@@ -158,6 +158,7 @@ export const darBajaMaterial = definirAccion({
 	errores: [
 		{ codigo: "material_dado_de_baja", mensaje: "Ya está dado de baja." },
 		{ codigo: "material_con_existencia", mensaje: "Todavía hay de ese material en el inventario." },
+		{ codigo: "material_en_receta", mensaje: "Está en la receta vigente de una prenda: cámbiala en Patronaje antes." },
 	],
 	edita: true,
 });

@@ -1,22 +1,28 @@
 /**
- * Prueba de la baja de un material: con existencia no se da de baja; sin ella, sí, y sale de la tablet.
- * Fase 10 · docs/fases/10-patronaje-y-compras.md (parte 1)
+ * Prueba de la baja de un material: con existencia o en la receta vigente de una prenda no se da de baja.
+ * Fase 10 · docs/fases/10-patronaje-y-compras.md (partes 1 y 2)
  *
- * Los candados `material_en_receta` y `material_en_orden` se prueban con las recetas (parte 2) y las órdenes
- * (parte 4).
+ * El candado `material_en_orden` se prueba con las órdenes (parte 4).
  */
 
 import { v7 as uuidv7 } from "uuid";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { crearBase } from "../../../nucleo/base/conexion.ts";
 import { enAccionDePrueba } from "../../../nucleo/pruebas/accion-de-prueba.ts";
+import { siembraDelCatalogo } from "../../../nucleo/pruebas/catalogo-de-prueba.ts";
 import { altaDeMaterial, altaDeProveedor, versionDe } from "../../../nucleo/pruebas/compras-de-prueba.ts";
 import { ubicacionesPorCodigo } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
+import {
+	guardarRecetaDePrueba,
+	materialesDeReceta,
+	prendaConReceta,
+	recetaDeEjemplo,
+} from "../../../nucleo/pruebas/patronaje-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 import { escribirMovimiento } from "../../inventario/dominio/escribir-movimiento.ts";
 
-describe("Un material con existencia no se da de baja", () => {
+describe("Un material con existencia o en la receta vigente de una prenda no se da de baja", () => {
 	let servidor: ServidorDePrueba;
 	let ubicacion: Record<string, string>;
 	let proveedor: string;
@@ -73,5 +79,20 @@ describe("Un material con existencia no se da de baja", () => {
 		);
 		expect(rows).toEqual([{ de_baja: true, motivo_baja: "Ya no se usa" }]);
 		expect((await darBaja(material)).cuerpo).toMatchObject({ codigo: "material_dado_de_baja" });
+	});
+
+	it("en la receta vigente de una prenda no se da de baja: nombra la prenda", async () => {
+		const siembra = await siembraDelCatalogo(servidor);
+		const materiales = await materialesDeReceta(servidor);
+		const prenda = await prendaConReceta(servidor, siembra);
+		await guardarRecetaDePrueba(servidor, prenda, recetaDeEjemplo(prenda, materiales));
+		expect((await darBaja(materiales.cierre)).cuerpo).toMatchObject({
+			codigo: "material_en_receta",
+			mensaje: expect.stringMatching(
+				/^Cierre 14 cm .+ está en la receta vigente de Playera .+: cámbiala en Patronaje antes\.$/,
+			),
+		});
+		// La popelina no está en ninguna receta: se da de baja.
+		expect((await darBaja(materiales.popelina)).estado).toBe(200);
 	});
 });

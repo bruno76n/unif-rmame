@@ -8,6 +8,7 @@
 		"./calculos/dinero": "./src/calculos/dinero.ts",
 		"./calculos/fechas": "./src/calculos/fechas.ts",
 		"./calculos/precios": "./src/calculos/precios.ts",
+		"./calculos/cuenta-material": "./src/calculos/cuenta-material.ts",
 		"./contratos/definir": "./src/contratos/definir.ts",
 		"./contratos/protocolo": "./src/contratos/protocolo.ts",
 		"./contratos/versiones": "./src/contratos/versiones.ts",
@@ -33,7 +34,8 @@
 		"./contratos/sincronizacion": "./src/contratos/sincronizacion.ts",
 		"./cliente/cliente": "./src/cliente/cliente.ts",
 		"./contratos/compras/proveedores": "./src/contratos/compras/proveedores.ts",
-		"./contratos/compras/materiales": "./src/contratos/compras/materiales.ts"
+		"./contratos/compras/materiales": "./src/contratos/compras/materiales.ts",
+		"./contratos/patronaje/recetas": "./src/contratos/patronaje/recetas.ts"
 	},
 	"dependencies": {
 		"temporal-polyfill": "1.0.8",

@@ -280,5 +280,16 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 11 nov 2026 | 10 | Los avisos de las internas de terceros (decisión 519) | Descartarlos · regresarlos | Regresarlos para la acción | No |
 | 11 nov 2026 | 10 | Qué materiales detienen la baja de un proveedor (decisión 520) | Todos · los activos | Los activos | No |
 | 11 nov 2026 | 10 | El costo antes de las órdenes (decisión 521) | Esperar · el del alta | El del alta | No |
+| 11 nov 2026 | 10 | Los 400 de la receta (decisión 522) | Solo el primero · todos por renglón | Todos por renglón | No |
+| 11 nov 2026 | 10 | El consumible en la receta (decisión 523) | Rechazarlo · aceptarlo como avío | Aceptarlo como avío | No |
+| 11 nov 2026 | 10 | Qué tallas pide la receta (decisión 524) | Las que se venden · las que no están de baja | Las que no están de baja | No |
+| 11 nov 2026 | 10 | La receta de los productos de antes (decisión 525) | Crearla al guardar · darla en la migración | Darla en la migración | No |
+| 11 nov 2026 | 10 | Cómo sabe Catálogo si hay receta (decisión 526) | Leer recetas · que lo diga la lectura | Que lo diga la lectura | No |
+| 11 nov 2026 | 10 | La forma de desperdicio_prenda (decisión 527) | Dos formas · una lista siempre | Una lista siempre | No |
+| 11 nov 2026 | 10 | Qué regresa verificar_receta (decisión 528) | La versión · la versión y si la verificó | Las dos | No |
+| 11 nov 2026 | 10 | Con qué cuenta se prueba Patronaje (decisión 529) | La dueña · una cuenta de Patronaje | Una cuenta de Patronaje | No |
+| 11 nov 2026 | 10 | Cómo cuenta la cuenta de material (decisión 530) | Decimales · milésimos con BigInt | Milésimos con BigInt | No |
+| 11 nov 2026 | 10 | El largo del motivo de una versión (decisión 531) | 120 · 200 | 200: la copia puede pasar de 120 | No |
+| 11 nov 2026 | 10 | La receta contra la baja de un material (decisión 532) | Sin candado · FOR SHARE | FOR SHARE | No |
 | 10 nov 2026 | 5 | La pantalla del Google de desarrollo | Una propia para escoger cuenta · la de desarrollo de oidc-provider, que pide el correo | La de oidc-provider; `pnpm local` escribe los correos de la muestra al arrancar | No |
 

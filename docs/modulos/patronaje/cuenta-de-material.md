@@ -59,4 +59,9 @@ Las lecturas no tienen dinero y las usan los módulos que dice su tabla. Quien v
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 10.*
+**Fase 10, parte 2.**
+
+- **La cuenta** es `cuentaDeMaterial` (`packages/compartido/src/calculos/cuenta-material.ts`): recibe los materiales de la versión (con su conversión congelada y si su unidad se cuenta entera), las piezas por talla y el desperdicio como texto decimal. Cuenta en milésimos con `BigInt`: Σ piezas × cantidad × (100 000 + desperdicio) ÷ (100 000 × conversión), hacia arriba. Un material que se cuenta entero lleva al menos uno si hay piezas (decisión 530).
+- **`patronaje.calcular_material`** (`modulos/patronaje/lecturas/recetas.ts`) lee la versión (la vigente, o la que se pida), si cada unidad se cuenta entera (de «Unidades de material») y el desperdicio, y corre la misma función. Sin receta regresa la versión vacía y ningún material.
+- **`patronaje.desperdicio_prenda`** regresa siempre `prendas`: con una prenda, su estimado (`patronaje.desperdicio_estimado_pct`), no medido, sin lotes y dato flojo; sin prenda, ninguna. El medido llega con los cortes de la fase 12 (decisión 527).
+- **Pruebas:** `packages/compartido/src/calculos/cuenta-material.prueba.ts` (el corte de la muestra, la combinación y los centímetros, la talla sin valor, el mínimo de uno, y 2,000 casos al azar: siempre el entero de arriba de la cuenta exacta, y más desperdicio nunca da menos) y `modulos/patronaje/lecturas/calcular-material.prueba.ts` (la API da lo mismo que la función con los mismos insumos).

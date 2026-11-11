@@ -63,6 +63,26 @@ async function respuestaDeTalla(contexto: ContextoDeAccion, producto: Producto, 
 	};
 }
 
+/** Lo que regresa `patronaje.receta_cubre_tallas`. */
+const cubre = z.object({ tiene_receta: z.boolean(), cubre: z.boolean(), faltan: z.array(z.uuid()) });
+
+/**
+ * El aviso que no bloquea al agregar una talla normal a una prenda con receta que no la tiene.
+ * @returns «La receta de {producto} no tiene la talla {t}: Patronaje la completa.», o ninguno.
+ */
+async function avisoDeLaReceta(
+	contexto: ContextoDeAccion,
+	producto: { id: string; nombre: string },
+	talla: { id: string; nombre: string },
+): Promise<string[]> {
+	const respuesta = cubre.parse(
+		await contexto.lectura("patronaje.receta_cubre_tallas", { producto_id: producto.id, talla_ids: [talla.id] }),
+	);
+	// Una prenda sin receta (o de una sección que no lleva) no tiene qué completar.
+	if (!respuesta.tiene_receta || respuesta.cubre) return [];
+	return [`La receta de ${producto.nombre} no tiene la talla ${talla.nombre}: Patronaje la completa.`];
+}
+
 export const accionAgregarTalla = implementarAccion(agregarTalla, async (contexto, datos, version) => {
 	const { transaccion } = contexto;
 	const producto = await leerProducto(transaccion, datos.producto_id);
@@ -108,6 +128,7 @@ export const accionAgregarTalla = implementarAccion(agregarTalla, async (context
 	});
 	eventoDeProducto(contexto, "variante.agregada", producto, ["variantes"]);
 	return {
+		avisos: especial ? [] : await avisoDeLaReceta(contexto, producto, talla),
 		resultado: {
 			variante_id: id,
 			codigo,

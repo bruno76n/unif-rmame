@@ -184,4 +184,16 @@ Los cambia solo la dueña, en Configuración (ver [configuración](../admin/conf
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 10.*
+**Fase 10, parte 2.**
+
+- **Las tablas** están en `modulos/patronaje/tablas.ts` (migración `0033`), con los CHECK de este archivo. La versión vigente usa la llave compuesta (`version_vigente_id`, `id`) → `receta_versiones` (`id`, `receta_id`). Las versiones, sus líneas, sus tallas y sus medidas solo crecen (`marcar_solo_crece`). El motivo de una versión va de 5 a 200 letras en la base: el de una copia («Copiada de {base} · {escuela}, versión {v}») puede pasar de 120 (decisión 531). La misma migración da su receta, en «Sin receta», a los productos que ya existían en una sección con receta (decisión 525).
+- **Lo común** (`dominio/recetas.ts`): la prenda con sus tallas vivas, la receta con candado, leer y escribir el contenido de una versión, y compararlo: todo para «Sin cambios», o solo los materiales (sin su orden) para saber si se pierde la verificación.
+- **`patronaje.guardar_receta`** (`acciones/guardar-receta.ts`, con su contrato en `packages/compartido/src/contratos/patronaje/recetas.ts`):
+  - Revisa primero lo que es `422` (las tallas ajenas y cada material contra el suyo) y después junta los `400` por renglón (`medidas.{i}`, `lineas.{i}`, `motivo`, `lineas`), con los textos de la muestra; el mensaje es el primero (decisión 522). Las tallas que se piden son las normales del producto que no están dadas de baja (decisión 524).
+  - Un consumible puede ir como avío; solo la tela tiene su tabla (decisión 523).
+  - Lee los materiales con `FOR SHARE`: nadie los da de baja mientras entran a la receta (decisión 532).
+  - Congela la conversión: 1 en la misma unidad (`m` o `pza`), 100 de `cm` a `m`, o el `factor_receta` del material.
+- **Las internas** (`internas/recetas.ts`): `iniciar_receta` la crea en «Sin receta» y, a partir de otro con receta, copia su versión vigente como versión 1 solo con las tallas del producto nuevo y con las medidas del alta (o las copiadas, si el alta no trae). `verificar_receta` regresa la versión vigente y si la verificó (decisión 528).
+- **Las lecturas** (`lecturas/recetas.ts`): `receta_cubre_tallas` dice también si la prenda tiene receta, para que Catálogo no la lea (decisión 526); `recetas_con_material` regresa las prendas activas por nombre.
+- **Quién la usa ya:** `catalogo.crear_producto` llama `iniciar_receta` y regresa `receta_id` y `receta_estado`; `catalogo.agregar_talla` avisa si la receta no tiene la talla normal nueva; `compras.dar_baja_material` responde `material_en_receta`.
+- **Pruebas:** `acciones/guardar-receta.prueba.ts` (la versión que no cambia y su conversión congelada, la verificación, las reglas de captura y de los materiales, la sección sin receta, `409` y `403`), `internas/iniciar-receta.prueba.ts` (desde cero, la copia del base con sus tallas y las medidas del alta, la base sin receta, y la verificación), `catalogo/acciones/agregar-talla.prueba.ts` y `compras/acciones/dar-baja-material.prueba.ts`. Las ayudas están en `nucleo/pruebas/patronaje-de-prueba.ts`, con una cuenta de prueba de Patronaje (decisión 529).

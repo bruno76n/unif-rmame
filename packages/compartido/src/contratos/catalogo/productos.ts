@@ -99,6 +99,11 @@ export const crearProducto = definirAccion({
 		variantes: z.array(varianteNueva).describe("Sus tallas con su código"),
 		codigo_desde: z.string().describe("El primer código"),
 		codigo_hasta: z.string().describe("El último código"),
+		receta_id: z.uuid().nullable().describe("Su receta, si su sección lleva receta"),
+		receta_estado: z
+			.enum(["sin_receta", "sin_verificar", "verificada"])
+			.nullable()
+			.describe("El estado de su receta: «Crear y seguir con la receta» abre Patronaje"),
 	}),
 	// Catálogo, con cualquier origen; Ventas a externos, solo desde un pedido: lo revisa la acción (decisión 440).
 	permiso: {},

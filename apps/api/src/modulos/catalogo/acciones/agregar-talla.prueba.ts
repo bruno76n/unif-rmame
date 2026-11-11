@@ -13,6 +13,12 @@ import {
 	versionDelProducto,
 } from "../../../nucleo/pruebas/catalogo-de-prueba.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
+import {
+	guardarRecetaDePrueba,
+	materialesDeReceta,
+	prendaConReceta,
+	recetaDeEjemplo,
+} from "../../../nucleo/pruebas/patronaje-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 
 /** Lo que regresa agregar una talla. */
@@ -124,5 +130,31 @@ describe("agregar una talla toma el siguiente código y sube la versión del pro
 			{ codigo: cuatro?.codigo, de_baja: true },
 			{ codigo: otra.codigo, de_baja: false },
 		]);
+	});
+
+	it("Fase 10: una talla normal que la receta no tiene avisa que Patronaje la completa; la de pedido especial, no", async () => {
+		const materiales = await materialesDeReceta(servidor);
+		const prenda = await prendaConReceta(servidor, siembra);
+		await guardarRecetaDePrueba(servidor, prenda, recetaDeEjemplo(prenda, materiales));
+		const antes = await versionDelProducto(servidor, prenda.productoId);
+		const diez = await agregar(prenda.productoId, siembra.tallas.Infantil?.["10"], antes);
+		expect(diez.cuerpo.avisos).toEqual([
+			expect.stringMatching(/^La receta de Playera .+ no tiene la talla 10: Patronaje la completa\.$/),
+		]);
+		const especial = await agregar(
+			prenda.productoId,
+			siembra.tallas.Infantil?.["18"],
+			await versionDelProducto(servidor, prenda.productoId),
+			true,
+		);
+		expect(especial.cuerpo.avisos).toEqual([]);
+		// Sin receta no hay qué completar.
+		const sinReceta = await nuevoProducto(servidor, siembra);
+		const doce = await agregar(
+			sinReceta.producto_id,
+			siembra.tallas.Infantil?.["12"],
+			await versionDelProducto(servidor, sinReceta.producto_id),
+		);
+		expect(doce.cuerpo.avisos).toEqual([]);
 	});
 });

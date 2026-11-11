@@ -234,3 +234,5 @@ Este archivo no tiene parámetros propios. Usa:
 - **`talla_con_existencia`** suma las piezas sin signo y nombra las ubicaciones.
 - **`talla_con_reservas`** nombra el tipo de cada documento hasta que cada fase dé su folio (decisión 483).
 - **Pruebas:** `dar-baja-talla.prueba.ts`. Incluye una baja que espera a un movimiento abierto y luego ve su existencia.
+
+**Fase 10, parte 2.** `catalogo.agregar_talla` pregunta a `patronaje.receta_cubre_tallas` al agregar una talla normal: si la prenda tiene receta y no la cubre, regresa el aviso «La receta de {producto} no tiene la talla {t}: Patronaje la completa.». Lo prueba `acciones/agregar-talla.prueba.ts`.

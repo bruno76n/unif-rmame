@@ -226,3 +226,5 @@ Usa también `general.largo_minimo_motivo` ([configuración](../admin/configurac
 - **El alta** rechaza una escuela dada de baja (`422 escuela_dada_de_baja`) y lee la escuela y las tallas con `FOR SHARE`, para que no se den de baja mientras confirma; revisa que el tipo de prenda exista y que cada lista vaya una vez (`400`). El recargo inicial del parámetro se lleva a peso entero (decisión 460).
 - **El tope del precio** sale en el mensaje con `catalogo.precio_max_centavos`; el contrato solo pide pesos enteros de $1 en adelante (decisión 462).
 - **«Aplicar cambios»** rechaza un precio repetido (`400`) y un tipo de prenda en una sección sin receta (decisión 465).
+
+**Fase 10, parte 2.** En una sección que lleva receta (y que no es un servicio), `catalogo.crear_producto` llama `patronaje.iniciar_receta` después de dar de alta las variantes, y regresa `receta_id` y `receta_estado` para «Crear y seguir con la receta». A partir de otro con receta, las medidas del alta van a la versión 1 copiada; si el base no tiene receta, se descartan con su aviso (ver [recetas](../patronaje/recetas.md#cómo-está-hecho)).

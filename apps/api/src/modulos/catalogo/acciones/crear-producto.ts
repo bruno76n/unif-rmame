@@ -1,12 +1,13 @@
 /**
  * `catalogo.crear_producto`: el alta de un producto desde cero, a partir de otro o desde un pedido de Ventas.
  * Fase 8 · docs/modulos/catalogo/productos.md («`catalogo.crear_producto`») y variantes-codigos-y-etiquetas.md
- * (reglas 1 y 2)
+ * (reglas 1 y 2); fase 10 · la receta (docs/modulos/patronaje/recetas.md, reglas 1 y 9)
  *
  * Toma un bloque de códigos seguidos, uno por talla, en un solo paso; sin códigos suficientes no crea nada.
  * Resuelve el tipo de prenda, el recargo y el precio en línea que no vienen. A partir de otro copia también los
- * precios propios de talla del base. El origen `desarrollo`, la receta y las medidas llegan con Patronaje
- * (fase 10); hasta entonces las medidas se descartan con su aviso.
+ * precios propios de talla del base. En una sección que lleva receta, la receta nace con el producto
+ * (`patronaje.iniciar_receta`): a partir de otro, copiada del base con las medidas del alta. Sin receta en el base,
+ * las medidas se descartan con su aviso. El origen `desarrollo` llega con los desarrollos (parte 3).
  */
 
 import { aPesoEntero } from "@uniformame/compartido/calculos/dinero";
@@ -14,7 +15,7 @@ import { crearProducto } from "@uniformame/compartido/contratos/catalogo/product
 import { centavos } from "@uniformame/compartido/tipos/base";
 import { and, eq, inArray, isNotNull, isNull } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
-import type { z } from "zod";
+import { z } from "zod";
 import { quienCambia } from "../../../nucleo/acciones/comunes.ts";
 import { ErrorDeApi, errorDeCampo, errorDeRegla } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeAccion, implementarAccion } from "../../../nucleo/modulos.ts";
@@ -230,7 +231,7 @@ async function loQueLoUbica(contexto: ContextoDeAccion, datos: DatosDelAlta, bas
 			.where(eq(tiposPrenda.id, tipoPrendaId));
 		if (tipo === undefined) throw errorDeCampo("tipo_prenda_id", "Escoge el tipo de prenda.");
 	}
-	return { tipoPrendaId };
+	return { tipoPrendaId, llevaReceta: seccion.llevaReceta && datos.es_servicio !== true };
 }
 
 /**
@@ -256,6 +257,13 @@ async function preciosDeTallaDelBase(
 	});
 }
 
+/** Lo que regresa `patronaje.iniciar_receta`. */
+const recetaIniciada = z.object({
+	receta_id: z.uuid(),
+	estado: z.enum(["sin_receta", "sin_verificar", "verificada"]),
+	avisos: z.array(z.string()),
+});
+
 export const accionCrearProducto = implementarAccion(crearProducto, async (contexto, datos) => {
 	const { transaccion } = contexto;
 	revisarQuienDaElAlta(contexto, datos.origen);
@@ -264,7 +272,7 @@ export const accionCrearProducto = implementarAccion(crearProducto, async (conte
 		throw errorDeCampo("cliente_id", "Escoge el cliente.");
 	const base = await leerBase(contexto, datos);
 	revisarCanales(datos);
-	const { tipoPrendaId } = await loQueLoUbica(contexto, datos, base);
+	const { tipoPrendaId, llevaReceta } = await loQueLoUbica(contexto, datos, base);
 	const deLasTallas = await tallasDelAlta(contexto, datos, base);
 	const porLista = await preciosDelAlta(contexto, datos);
 	// El recargo inicial es un parámetro en centavos: se lleva a peso entero, como todo precio.
@@ -367,7 +375,17 @@ export const accionCrearProducto = implementarAccion(crearProducto, async (conte
 		},
 	});
 	eventoDeProducto(contexto, "producto.creado", { id: productoId }, ["productos", "variantes", "precios"]);
-	const medidasDescartadas = (datos.medidas ?? []).length > 0;
+	// La receta nace con el producto; a partir de otro, como copia de la del base, con las medidas del alta.
+	const receta = llevaReceta
+		? recetaIniciada.parse(
+				await contexto.interna("patronaje.iniciar_receta", {
+					producto_id: productoId,
+					...(base === undefined ? {} : { producto_base_id: base.id }),
+					...(datos.medidas === undefined ? {} : { medidas: datos.medidas }),
+				}),
+			)
+		: undefined;
+	const medidasDescartadas = receta === undefined && (datos.medidas ?? []).length > 0;
 	return {
 		resultado: {
 			producto_id: productoId,
@@ -379,12 +397,17 @@ export const accionCrearProducto = implementarAccion(crearProducto, async (conte
 			})),
 			codigo_desde: primero,
 			codigo_hasta: ultimo,
+			receta_id: receta?.receta_id ?? null,
+			receta_estado: receta?.estado ?? null,
 			mensaje:
 				datos.origen === "pedido"
 					? `${datos.nombre} creado en Catálogo y agregado al pedido`
 					: `${datos.nombre} creado con ${nuevas.length} variantes, códigos ${primero} a ${ultimo}`,
 		},
-		avisos: medidasDescartadas ? ["Las medidas se capturan con la receta en Patronaje"] : [],
+		avisos: [
+			...(receta?.avisos ?? []),
+			...(medidasDescartadas ? ["Las medidas se capturan con la receta en Patronaje"] : []),
+		],
 		entidad: { nombre: "productos", id: productoId },
 	};
 });
