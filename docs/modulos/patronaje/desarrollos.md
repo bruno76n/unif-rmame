@@ -201,4 +201,12 @@ Usa `general.largo_minimo_motivo` ([configuración](../admin/configuracion.md)).
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 10.*
+**Fase 10, parte 3.**
+
+- **Las tablas** `desarrollos` y `desarrollo_eventos` están en `modulos/patronaje/tablas.ts` (migración `0034`), con sus CHECK; el historial solo crece. La misma migración pone la llave de `autorizaciones.desarrollo_id`.
+- **Lo común** (`dominio/desarrollos.ts`): leer con candado, revisar la etapa (`etapa_no_permite` con el nombre de pantalla de la etapa) y `avanzar`, que cambia la etapa, escribe el paso y guarda `desarrollo.cambiado`.
+- **Las acciones** (`acciones/desarrollos.ts`, con sus contratos en `packages/compartido/src/contratos/patronaje/desarrollos.ts`): cada una toma la versión del desarrollo. Una tela de la solicitud dada de baja también es `tela_no_es_tela` (decisión 534). `entregar_muestra` sin escuela pide la AU- y regresa su id (decisión 536); pedir cambios o descartar con la AU- esperando la cancela por su id.
+- **Las internas** (`internas/desarrollos.ts`): `aplicar_decision_desarrollo` es el efecto de `aprobar_desarrollo` (`efectosDeAutorizacion` en `index.ts`); si el desarrollo ya no está en aprobación, no hace nada. `ligar_producto_desarrollo` la llama `catalogo.crear_producto` con `origen = desarrollo`.
+- **La lectura** `desarrollos_en_proceso_de_escuela` (`lecturas/desarrollos.ts`) regresa los folios en orden; la usa `catalogo.dar_baja_escuela`.
+- **La receta del producto nuevo** nace como la de cualquier alta, en «Sin receta»: la tela de la solicitud la propone la pantalla de la receta (fase 19, decisión 538).
+- **Pruebas:** `acciones/pedir-cambios-muestra.prueba.ts` (con escuela, de la solicitud a la ficha técnica con su historial; la tela y el descarte), `internas/aplicar-decision-desarrollo.prueba.ts` (sin escuela: la AU-, `aprueba_direccion`, autorizar, rechazar, y la AU- cancelada al pedir cambios o descartar), `catalogo/acciones/crear-producto.prueba.ts` (desde un desarrollo) y `catalogo/acciones/dar-baja-escuela.prueba.ts` (`escuela_con_desarrollos`).

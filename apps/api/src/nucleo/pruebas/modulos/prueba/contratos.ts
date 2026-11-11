@@ -281,23 +281,23 @@ export const cerrarLote = definirAccion({
 	permiso: { departamento: "ventas" },
 });
 
-/** Patronaje (aquí, Ventas) pide a Dirección aprobar un desarrollo de prueba: el tipo que su módulo aún no tiene. */
+/** Contaduría (aquí, Ventas) pide a Dirección un pago fuera de lo normal de prueba: el tipo que su módulo aún no tiene. */
 export const pedirAprobacion = definirAccion({
 	nombre: "prueba.pedir_aprobacion",
-	descripcion: "Pide a Dirección aprobar un desarrollo de prueba",
+	descripcion: "Pide a Dirección autorizar un pago de prueba",
 	entrada: z.object({
-		desarrollo_id: z.uuid().describe("El desarrollo"),
+		factura_id: z.uuid().describe("La factura de prueba"),
 		resumen: z.string().min(1).describe("Qué se pide"),
 	}),
 	salida: z.object({ autorizacion_id: z.uuid(), folio: z.string() }),
 	permiso: { departamento: "ventas" },
 });
 
-/** El desarrollo de prueba se cancela, y con él su autorización que espera. */
-export const cancelarDesarrollo = definirAccion({
-	nombre: "prueba.cancelar_desarrollo",
-	descripcion: "Cancela un desarrollo de prueba y la autorización que espera",
-	entrada: z.object({ desarrollo_id: z.uuid().describe("El desarrollo") }),
+/** La factura de prueba se cancela, y con ella su autorización que espera. */
+export const cancelarFactura = definirAccion({
+	nombre: "prueba.cancelar_factura",
+	descripcion: "Cancela una factura de prueba y la autorización que espera",
+	entrada: z.object({ factura_id: z.uuid().describe("La factura de prueba") }),
 	salida: z.object({}),
 	permiso: { departamento: "ventas" },
 });

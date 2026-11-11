@@ -63,6 +63,7 @@ export const darBajaEscuela = definirAccion({
 	errores: [
 		{ codigo: "ya_dada_de_baja", mensaje: "Ya está dada de baja." },
 		{ codigo: "escuela_con_modelos", mensaje: "Tiene modelos activos: descontinúalos antes de darla de baja." },
+		{ codigo: "escuela_con_desarrollos", mensaje: "Tiene desarrollos en proceso." },
 	],
 	edita: true,
 });

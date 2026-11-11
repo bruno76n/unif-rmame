@@ -71,3 +71,4 @@ La línea de la bitácora se escribe al final, con el resultado ya conocido. Esc
 | 11 nov 2026 | 9 | Cierre · revisor, fase terminada y en `main` | [2026-11-11-fase-09](sesiones/2026-11-11-fase-09.md) |
 | 11 nov 2026 | 10 | 1 · Terceros, proveedores y materiales | [2026-11-11-fase-10](sesiones/2026-11-11-fase-10.md) |
 | 11 nov 2026 | 10 | 2 · Recetas y cuenta de material | [2026-11-11-fase-10](sesiones/2026-11-11-fase-10.md) |
+| 11 nov 2026 | 10 | 3 · Desarrollos | [2026-11-11-fase-10](sesiones/2026-11-11-fase-10.md) |

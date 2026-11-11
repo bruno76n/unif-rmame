@@ -291,5 +291,11 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 11 nov 2026 | 10 | Cómo cuenta la cuenta de material (decisión 530) | Decimales · milésimos con BigInt | Milésimos con BigInt | No |
 | 11 nov 2026 | 10 | El largo del motivo de una versión (decisión 531) | 120 · 200 | 200: la copia puede pasar de 120 | No |
 | 11 nov 2026 | 10 | La receta contra la baja de un material (decisión 532) | Sin candado · FOR SHARE | FOR SHARE | No |
+| 11 nov 2026 | 10 | El efecto de prueba de las autorizaciones (decisión 533) | Seguir con aprobar_desarrollo · pasarlo a pago_fuera_de_lo_normal | Pasarlo: aprobar_desarrollo ya es de verdad | No |
+| 11 nov 2026 | 10 | La tela dada de baja en una solicitud (decisión 534) | Aceptarla · tela_no_es_tela | tela_no_es_tela | No |
+| 11 nov 2026 | 10 | El rechazo de Dirección sin motivo (decisión 535) | Vacío · «Dirección lo rechazó» | «Dirección lo rechazó» | No |
+| 11 nov 2026 | 10 | Qué regresa entregar la muestra (decisión 536) | Nada · el id de la AU- | El id de la AU- | No |
+| 11 nov 2026 | 10 | El alta desde un desarrollo sin su id (decisión 537) | 422 · 400 | 400 | No |
+| 11 nov 2026 | 10 | La receta de un producto de un desarrollo (decisión 538) | Versión 1 con la tela · Sin receta | Sin receta; la pantalla propone la tela | No |
 | 10 nov 2026 | 5 | La pantalla del Google de desarrollo | Una propia para escoger cuenta · la de desarrollo de oidc-provider, que pide el correo | La de oidc-provider; `pnpm local` escribe los correos de la muestra al arrancar | No |
 

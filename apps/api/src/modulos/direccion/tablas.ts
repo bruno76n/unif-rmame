@@ -22,6 +22,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { columnasComunes, columnasDeAparato, columnasDeCancelacion, momento } from "../../nucleo/base/columnas.ts";
 import { departamentos, usuarios } from "../admin/tablas.ts";
+import { desarrollos } from "../patronaje/tablas.ts";
 
 /** Las ligas de cada tipo: la que lleva (no nula) y, por omisión, las demás vacías. */
 const ligasDelTipo: Readonly<Record<(typeof tiposDeAutorizacion)[number], readonly string[]>> = {
@@ -76,8 +77,7 @@ export const autorizaciones = pgTable(
 		notaCreditoId: uuid("nota_credito_id"),
 		/** @llavePendiente facturas_proveedor.id */
 		facturaProveedorId: uuid("factura_proveedor_id"),
-		/** @llavePendiente desarrollos.id */
-		desarrolloId: uuid("desarrollo_id"),
+		desarrolloId: uuid("desarrollo_id").references((): AnyPgColumn => desarrollos.id),
 		usuarioSolicitadoId: uuid("usuario_solicitado_id").references((): AnyPgColumn => usuarios.id),
 		decididaEn: momento("decidida_en"),
 		decididaPor: uuid("decidida_por").references((): AnyPgColumn => usuarios.id),

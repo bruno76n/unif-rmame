@@ -28,18 +28,18 @@ describe("una autorización se decide una sola vez, con Google, con el efecto de
 		await servidor.cerrar();
 	});
 
-	/** Ventas (o quien se diga) pide aprobar un desarrollo nuevo. */
-	async function pedir(quien = "ventas", resumen = "Aprobar la muestra de la Escuela Sol") {
-		const desarrollo = uuidv7();
+	/** Ventas (o quien se diga) pide autorizar el pago de una factura nueva. */
+	async function pedir(quien = "ventas", resumen = "Pagar lo recibido de Textiles Aurora") {
+		const factura = uuidv7();
 		const pedida = await mandarAccion(
 			servidor,
 			"prueba.pedir_aprobacion",
-			{ datos: { desarrollo_id: desarrollo, resumen } },
+			{ datos: { factura_id: factura, resumen } },
 			quien,
 		);
 		expect(pedida.estado).toBe(200);
 		const { autorizacion_id: id, folio } = laPedida.parse(pedida.cuerpo.resultado);
-		return { id, folio, desarrollo, version: await version(id) };
+		return { id, folio, factura, version: await version(id) };
 	}
 
 	/** La versión de una autorización. */
@@ -84,9 +84,9 @@ describe("una autorización se decide una sola vez, con Google, con el efecto de
 	}
 
 	/** Las notas que dejó el efecto de prueba. */
-	async function efectos(desarrollo: string): Promise<string[]> {
+	async function efectos(factura: string): Promise<string[]> {
 		const { rows } = await servidor.base.dueno.query("SELECT texto FROM prueba_notas WHERE texto LIKE $1", [
-			`efecto:%:${desarrollo}`,
+			`efecto:%:${factura}`,
 		]);
 		return rows.map((renglon) => String(renglon.texto));
 	}
@@ -102,8 +102,8 @@ describe("una autorización se decide una sola vez, con Google, con el efecto de
 			resultado: {
 				estado: "autorizada",
 				folio: au.folio,
-				datos: { desarrollo: au.desarrollo },
-				mensaje: "Autorizado por Dirección: aprobar desarrollo",
+				datos: { factura: au.factura },
+				mensaje: "Autorizado por Dirección: pago fuera de lo normal",
 			},
 		});
 		expect(await leer(au.id)).toMatchObject({
@@ -112,15 +112,15 @@ describe("una autorización se decide una sola vez, con Google, con el efecto de
 			misma_persona: false,
 			confirmado_con_google_en: expect.any(Date),
 		});
-		expect(await efectos(au.desarrollo)).toEqual([`efecto:autorizar:${au.desarrollo}`]);
+		expect(await efectos(au.factura)).toEqual([`efecto:autorizar:${au.factura}`]);
 		expect(await bitacoraDe(au.id)).toEqual([
 			{
-				descripcion: "Autorizó: Aprobar la muestra de la Escuela Sol",
+				descripcion: "Autorizó: Pagar lo recibido de Textiles Aurora",
 				modulo: "direccion",
 				departamento: "direccion",
 				misma_persona: false,
-				antes: { estado: "por_autorizar", documento: { estado: "muestra" } },
-				despues: { estado: "autorizada", documento: { estado: "ficha_tecnica" } },
+				antes: { estado: "por_autorizar", documento: { estado: "detenida" } },
+				despues: { estado: "autorizada", documento: { estado: "por_pagar" } },
 			},
 		]);
 		const otraVez = await decidir(
@@ -136,7 +136,7 @@ describe("una autorización se decide una sola vez, con Google, con el efecto de
 			{
 				datos: {
 					autorizacion_id: au.id,
-					tipo: "aprobar_desarrollo",
+					tipo: "pago_fuera_de_lo_normal",
 					decision: "autorizar",
 					pedida_por: cuentaDePrueba("ventas"),
 				},
@@ -152,14 +152,14 @@ describe("una autorización se decide una sola vez, con Google, con el efecto de
 			campos: { motivo: "Escribe el motivo: le llega a quien lo pidió" },
 		});
 		expect((await decidir(au, { decision: "rechazar", motivo: "No" })).cuerpo).toMatchObject({ error: "validacion" });
-		const rechazada = await decidir(au, { decision: "rechazar", motivo: "Falta la talla 16" });
+		const rechazada = await decidir(au, { decision: "rechazar", motivo: "No cuadra con la nota" });
 		expect(rechazada.cuerpo).toMatchObject({
-			resultado: { estado: "rechazada", mensaje: "Rechazado: aprobar desarrollo" },
+			resultado: { estado: "rechazada", mensaje: "Rechazado: pago fuera de lo normal" },
 		});
-		expect(await leer(au.id)).toMatchObject({ estado: "rechazada", motivo_rechazo: "Falta la talla 16" });
-		expect(await efectos(au.desarrollo)).toEqual([`efecto:rechazar:${au.desarrollo}`]);
+		expect(await leer(au.id)).toMatchObject({ estado: "rechazada", motivo_rechazo: "No cuadra con la nota" });
+		expect(await efectos(au.factura)).toEqual([`efecto:rechazar:${au.factura}`]);
 		expect((await bitacoraDe(au.id))[0]).toMatchObject({
-			descripcion: "Rechazó: Aprobar la muestra de la Escuela Sol · Falta la talla 16",
+			descripcion: "Rechazó: Pagar lo recibido de Textiles Aurora · No cuadra con la nota",
 		});
 	});
 
@@ -167,27 +167,27 @@ describe("una autorización se decide una sola vez, con Google, con el efecto de
 		const au = await pedir();
 		await servidor.base.dueno.query(
 			"INSERT INTO prueba_notas (id, texto, monto_centavos) VALUES (gen_random_uuid(), $1, 0)",
-			[`bloquea:${au.desarrollo}`],
+			[`bloquea:${au.factura}`],
 		);
 		const fallida = await decidir(au, { decision: "autorizar" });
 		expect(fallida.cuerpo).toMatchObject({
-			codigo: "desarrollo_bloqueado",
-			mensaje: "Ese desarrollo no se puede decidir.",
+			codigo: "factura_bloqueada",
+			mensaje: "Esa factura no se puede decidir.",
 		});
 		expect(await leer(au.id)).toMatchObject({ estado: "por_autorizar", decidida_por: null });
 		expect(await bitacoraDe(au.id)).toEqual([]);
 		const otra = await pedir();
 		await servidor.base.dueno.query(
 			"INSERT INTO prueba_notas (id, texto, monto_centavos) VALUES (gen_random_uuid(), $1, 0)",
-			[`escribe:${otra.desarrollo}`],
+			[`escribe:${otra.factura}`],
 		);
 		expect((await decidir(otra, { decision: "autorizar" })).estado).toBe(500);
 		expect(await leer(otra.id)).toMatchObject({ estado: "por_autorizar" });
-		expect(await efectos(otra.desarrollo)).toEqual([]);
+		expect(await efectos(otra.factura)).toEqual([]);
 	});
 
 	it("«Pedida por ti»: quien la pide la ve marcada; si la decide, la bitácora lo dice", async () => {
-		const au = await pedir("duena", "Aprobar la muestra que pidió la dueña");
+		const au = await pedir("duena", "Pagar lo que pidió la dueña");
 		const pantalla = await servidor.app.inject({
 			method: "GET",
 			url: "/v1/consultas/direccion.autorizaciones",
@@ -197,16 +197,16 @@ describe("una autorización se decide una sola vez, con Google, con el efecto de
 		const tarjeta = resultado.por_autorizar.find((una: { id: string }) => una.id === au.id);
 		expect(tarjeta).toMatchObject({
 			folio: au.folio,
-			tipo: "aprobar_desarrollo",
-			departamento: "Patronaje",
+			tipo: "pago_fuera_de_lo_normal",
+			departamento: "Contaduría",
 			pedida_por_ti: true,
 			puede_decidir: true,
-			documento_id: au.desarrollo,
+			documento_id: au.factura,
 			version: au.version,
 		});
 		expect(resultado.filtros[0]).toMatchObject({ tipo: null, nombre: "Todas" });
 		expect(resultado.filtros).toContainEqual(
-			expect.objectContaining({ tipo: "aprobar_desarrollo", nombre: "Aprobar desarrollo" }),
+			expect.objectContaining({ tipo: "pago_fuera_de_lo_normal", nombre: "Pago fuera de lo normal" }),
 		);
 		// Para otra cuenta de Dirección no es suya.
 		const otra = await servidor.app.inject({
@@ -226,7 +226,7 @@ describe("una autorización se decide una sola vez, con Google, con el efecto de
 		await decidir(au, { decision: "autorizar" });
 		expect(await leer(au.id)).toMatchObject({ misma_persona: true });
 		expect((await bitacoraDe(au.id))[0]).toMatchObject({
-			descripcion: "Autorizó: Aprobar la muestra que pidió la dueña · pedida y autorizada por la misma persona",
+			descripcion: "Autorizó: Pagar lo que pidió la dueña · pedida y autorizada por la misma persona",
 			misma_persona: true,
 		});
 		const resueltas = await servidor.app.inject({

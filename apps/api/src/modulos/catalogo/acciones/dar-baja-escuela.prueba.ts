@@ -1,12 +1,14 @@
 /**
- * Prueba de dar de baja y reactivar una escuela: con su motivo, una sola vez, y sin perder sus datos.
- * Fase 8 · docs/fases/08-catalogo.md (partes 1 y 3)
+ * Prueba de dar de baja y reactivar una escuela: con su motivo, una sola vez, y sin perder sus datos; con
+ * desarrollos en proceso, no.
+ * Fase 8 · docs/fases/08-catalogo.md (partes 1 y 3); fase 10 · docs/fases/10-patronaje-y-compras.md (parte 3)
  */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { nuevoProducto, siembraDelCatalogo } from "../../../nucleo/pruebas/catalogo-de-prueba.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
+import { materialesDeReceta, nuevoDesarrollo, pasoDelDesarrollo } from "../../../nucleo/pruebas/patronaje-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 
 describe("una escuela con modelos activos no se da de baja; sin ellos, con motivo, y se reactiva", () => {
@@ -106,5 +108,30 @@ describe("una escuela con modelos activos no se da de baja; sin ellos, con motiv
 			codigo: "escuela_con_modelos",
 			mensaje: "Instituto Juan Pablo II tiene 2 modelos activos: descontinúalos antes de darla de baja.",
 		});
+	});
+
+	it("Fase 10: una escuela con desarrollos en proceso no se da de baja; descartados, sí", async () => {
+		const alta = await mandarAccion(
+			servidor,
+			"catalogo.agregar_escuela",
+			{ datos: { nombre: "Escuela con desarrollos", municipio: "Zamora" } },
+			"catalogo",
+		);
+		const id = z.object({ escuela_id: z.uuid() }).parse(alta.cuerpo.resultado).escuela_id;
+		const materiales = await materialesDeReceta(servidor);
+		const ds = await nuevoDesarrollo(servidor, materiales.gabardina, id);
+		const darBaja = async () =>
+			mandarAccion(
+				servidor,
+				"catalogo.dar_baja_escuela",
+				{ datos: { escuela_id: id, motivo: "Cerró la escuela" }, version: await version(id) },
+				"catalogo",
+			);
+		expect((await darBaja()).cuerpo).toMatchObject({
+			codigo: "escuela_con_desarrollos",
+			mensaje: `Escuela con desarrollos tiene desarrollos en proceso: ${ds.folio}.`,
+		});
+		await pasoDelDesarrollo(servidor, "descartar_desarrollo", ds.id, { motivo: "Ya no lo quieren" });
+		expect((await darBaja()).estado).toBe(200);
 	});
 });

@@ -2,7 +2,8 @@
  * Los permisos de `patronaje`: quién lee sus tablas, para los avisos en vivo.
  * Fase 10 · docs/modulos/patronaje/recetas.md («Permisos»)
  *
- * La receta no tiene dinero: la leen Patronaje, Compras, Bodega, Producción, Ventas y Catálogo.
+ * La receta no tiene dinero: la leen Patronaje, Compras, Bodega, Producción, Ventas y Catálogo. Los desarrollos,
+ * Patronaje, Catálogo y Dirección.
  */
 
 /** Los que leen la receta. */
@@ -15,4 +16,7 @@ export const lectoresDePatronaje: Record<string, readonly string[]> = {
 	receta_lineas: leenLaReceta,
 	receta_linea_tallas: leenLaReceta,
 	receta_medidas: leenLaReceta,
+	// Los desarrollos: Patronaje, y Catálogo, que los da de alta; Dirección decide los que no tienen escuela.
+	desarrollos: ["patronaje", "catalogo", "direccion"],
+	desarrollo_eventos: ["patronaje", "catalogo", "direccion"],
 };

@@ -54,7 +54,7 @@ export const crearProducto = definirAccion({
 		origen: z.enum(["catalogo", "pedido", "desarrollo"]).describe("De qué pantalla viene"),
 		producto_base_id: z.uuid("Escoge el producto base.").optional().describe("Con `a_partir_de`"),
 		cliente_id: z.uuid().optional().describe("Con `origen = pedido`: da la lista del cliente"),
-		desarrollo_id: z.uuid().optional().describe("Con `origen = desarrollo` (fase 10)"),
+		desarrollo_id: z.uuid().optional().describe("Con `origen = desarrollo`: el desarrollo en ficha técnica"),
 		nombre: z
 			.string("Escribe el nombre de la prenda.")
 			.trim()
@@ -124,6 +124,10 @@ export const crearProducto = definirAccion({
 		{ codigo: "talla_no_disponible", mensaje: "Esa talla ya no está en su grupo." },
 		{ codigo: "base_no_disponible", mensaje: "Ese producto ya no está activo: escoge otro producto base." },
 		{ codigo: "sin_codigos", mensaje: "No quedan códigos de barras de fábrica. Avisa a soporte." },
+		{
+			codigo: "desarrollo_no_disponible",
+			mensaje: "Ese desarrollo ya no está en Ficha técnica: revisa el desarrollo.",
+		},
 	],
 });
 

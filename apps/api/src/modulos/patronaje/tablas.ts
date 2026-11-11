@@ -1,12 +1,13 @@
 /**
  * Las tablas de `patronaje`: la receta de cada prenda, sus versiones y lo que cuelga de ellas (los materiales, sus
- * cantidades por talla y las medidas).
- * Fase 10 · docs/modulos/patronaje/recetas.md (las tablas)
+ * cantidades por talla y las medidas); y los desarrollos de productos nuevos con su historial.
+ * Fase 10 · docs/modulos/patronaje/recetas.md y desarrollos.md (las tablas)
  *
- * Una versión guardada no cambia: las versiones, sus líneas, sus tallas y sus medidas solo crecen. La receta es el
- * agregado: guardar cualquier parte sube su versión.
+ * Una versión guardada no cambia: las versiones, sus líneas, sus tallas y sus medidas solo crecen, igual que el
+ * historial de un desarrollo. La receta es el agregado: guardar cualquier parte sube su versión.
  */
 
+import { etapasDeDesarrollo } from "@uniformame/compartido/contratos/patronaje/desarrollos";
 import { sql } from "drizzle-orm";
 import {
 	type AnyPgColumn,
@@ -21,9 +22,11 @@ import {
 	uniqueIndex,
 	uuid,
 } from "drizzle-orm/pg-core";
-import { columnasComunes, momento, valores } from "../../nucleo/base/columnas.ts";
-import { productos, tallas } from "../catalogo/tablas.ts";
+import { columnasComunes, columnasDeCancelacion, momento, valores } from "../../nucleo/base/columnas.ts";
+import { usuarios } from "../admin/tablas.ts";
+import { escuelas, productos, tallas } from "../catalogo/tablas.ts";
 import { materiales } from "../compras/tablas.ts";
+import { autorizaciones } from "../direccion/tablas.ts";
 
 /** Los estados de una receta. */
 export const estadosDeReceta = ["sin_receta", "sin_verificar", "verificada"] as const;
@@ -164,5 +167,90 @@ export const recetaMedidas = pgTable(
 	(tabla) => [
 		uniqueIndex("receta_medidas_talla").on(tabla.recetaVersionId, sql`lower(${tabla.medida})`, tabla.tallaId),
 		check("receta_medidas_medida", sql`char_length(${tabla.medida}) >= 3`),
+	],
+);
+
+/** Los pasos del historial de un desarrollo. */
+export const accionesDeDesarrollo = [
+	"solicitud_registrada",
+	"muestra_empezada",
+	"muestra_entregada",
+	"cambios_pedidos",
+	"aprobado",
+	"alta_en_catalogo",
+	"cancelado",
+] as const;
+
+/** El desarrollo de un producto nuevo (DS-), de la solicitud al alta en catálogo. */
+export const desarrollos = pgTable(
+	"desarrollos",
+	{
+		id: uuid("id").primaryKey(),
+		folio: text("folio").notNull(),
+		etapa: text("etapa").notNull().default("solicitud"),
+		escuelaId: uuid("escuela_id").references(() => escuelas.id),
+		prenda: text("prenda").notNull(),
+		telaMaterialId: uuid("tela_material_id")
+			.notNull()
+			.references(() => materiales.id),
+		tallas: text("tallas").notNull(),
+		descripcion: text("descripcion"),
+		muestraTalla: text("muestra_talla"),
+		muestraEmpezadaEn: momento("muestra_empezada_en"),
+		muestraEntregadaEn: momento("muestra_entregada_en"),
+		motivoCambios: text("motivo_cambios"),
+		autorizacionId: uuid("autorizacion_id").references((): AnyPgColumn => autorizaciones.id),
+		aprobadoEn: momento("aprobado_en"),
+		aprobadoPor: uuid("aprobado_por").references((): AnyPgColumn => usuarios.id),
+		aprobadoPorTipo: text("aprobado_por_tipo"),
+		productoId: uuid("producto_id").references(() => productos.id),
+		enCatalogoEn: momento("en_catalogo_en"),
+		...columnasDeCancelacion(),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		uniqueIndex("desarrollos_folio").on(tabla.folio),
+		uniqueIndex("desarrollos_producto").on(tabla.productoId).where(sql`${tabla.productoId} is not null`),
+		index("desarrollos_en_proceso").on(tabla.etapa).where(sql`${tabla.etapa} not in ('en_catalogo', 'cancelado')`),
+		check("desarrollos_etapa", sql`${tabla.etapa} in (${valores(etapasDeDesarrollo)})`),
+		check("desarrollos_prenda", sql`char_length(${tabla.prenda}) between 4 and 60`),
+		check("desarrollos_tallas", sql`char_length(${tabla.tallas}) between 1 and 30`),
+		check("desarrollos_descripcion", sql`char_length(${tabla.descripcion}) <= 200`),
+		check("desarrollos_muestra_talla", sql`char_length(${tabla.muestraTalla}) <= 10`),
+		check("desarrollos_aprobado_por_tipo", sql`${tabla.aprobadoPorTipo} in ('cliente', 'direccion')`),
+		check(
+			"desarrollos_aprueba_direccion",
+			sql`${tabla.aprobadoPorTipo} is null or (${tabla.aprobadoPorTipo} = 'direccion') = (${tabla.escuelaId} is null)`,
+		),
+		check("desarrollos_en_catalogo", sql`${tabla.etapa} <> 'en_catalogo' or ${tabla.productoId} is not null`),
+		check(
+			"desarrollos_cancelado",
+			sql`(${tabla.etapa} = 'cancelado') = (${tabla.canceladoEn} is not null and ${tabla.motivoCancelacion} is not null)`,
+		),
+	],
+);
+
+/** El historial de un desarrollo: quién hizo cada paso, cuándo y por qué. Solo crece. */
+export const desarrolloEventos = pgTable(
+	"desarrollo_eventos",
+	{
+		id: uuid("id").primaryKey(),
+		desarrolloId: uuid("desarrollo_id")
+			.notNull()
+			.references(() => desarrollos.id),
+		accion: text("accion").notNull(),
+		etapaAntes: text("etapa_antes"),
+		etapaDespues: text("etapa_despues").notNull(),
+		motivo: text("motivo"),
+		autorizacionId: uuid("autorizacion_id").references((): AnyPgColumn => autorizaciones.id),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		index("desarrollo_eventos_desarrollo").on(tabla.desarrolloId, tabla.creadoEn.desc()),
+		check("desarrollo_eventos_accion", sql`${tabla.accion} in (${valores(accionesDeDesarrollo)})`),
+		check(
+			"desarrollo_eventos_motivo",
+			sql`(${tabla.motivo} is not null) = (${tabla.accion} in ('cambios_pedidos', 'cancelado'))`,
+		),
 	],
 );

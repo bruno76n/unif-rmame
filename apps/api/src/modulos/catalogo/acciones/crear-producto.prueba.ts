@@ -18,6 +18,7 @@ import {
 	versionDelProducto,
 } from "../../../nucleo/pruebas/catalogo-de-prueba.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
+import { materialesDeReceta, nuevoDesarrollo } from "../../../nucleo/pruebas/patronaje-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 
 describe("un alta toma sus códigos seguidos, resuelve lo que no viene y, desde un pedido, exige Ventas a externos y el precio del cliente", () => {
@@ -356,5 +357,37 @@ describe("un alta toma sus códigos seguidos, resuelve lo que no viene y, desde 
 				"UPDATE parametros SET valor_entero = 5000 WHERE clave = 'catalogo.recargo_pedido_especial_inicial_centavos'",
 			);
 		}
+	});
+
+	it("Fase 10: desde un desarrollo en ficha técnica, lo liga y el desarrollo queda en catálogo; uno que no está ahí, desarrollo_no_disponible", async () => {
+		const materiales = await materialesDeReceta(servidor);
+		const ds = await nuevoDesarrollo(servidor, materiales.gabardina, null);
+		const desdeElDesarrollo = (nombre: string) =>
+			alta({ ...altaDesdeCero(siembra, { nombre }), origen: "desarrollo", desarrollo_id: ds.id });
+		expect((await desdeElDesarrollo("Chamarra antes de tiempo")).cuerpo).toMatchObject({
+			codigo: "desarrollo_no_disponible",
+			mensaje: `${ds.folio} ya no está en Ficha técnica: revisa el desarrollo.`,
+		});
+		// Nada quedó a medias: el producto no se creó.
+		const { rows: antes } = await servidor.base.dueno.query(
+			"SELECT count(*)::int AS n FROM productos WHERE nombre = $1",
+			["Chamarra antes de tiempo"],
+		);
+		expect(antes[0]?.n).toBe(0);
+		await servidor.base.dueno.query(
+			"UPDATE desarrollos SET etapa = 'ficha_tecnica', aprobado_por_tipo = 'direccion', aprobado_en = now() WHERE id = $1",
+			[ds.id],
+		);
+		const creado = await desdeElDesarrollo("Chamarra con escudo nueva");
+		expect(creado.estado).toBe(200);
+		const productoId = productoCreado.parse(creado.cuerpo.resultado).producto_id;
+		const { rows } = await servidor.base.dueno.query(
+			"SELECT etapa, producto_id, en_catalogo_en IS NOT NULL AS con_fecha FROM desarrollos WHERE id = $1",
+			[ds.id],
+		);
+		expect(rows).toEqual([{ etapa: "en_catalogo", producto_id: productoId, con_fecha: true }]);
+		expect((await alta({ ...altaDesdeCero(siembra), origen: "desarrollo" })).cuerpo).toMatchObject({
+			campos: { desarrollo_id: "Escoge el desarrollo." },
+		});
 	});
 });

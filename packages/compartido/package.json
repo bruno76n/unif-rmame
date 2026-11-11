@@ -35,7 +35,8 @@
 		"./cliente/cliente": "./src/cliente/cliente.ts",
 		"./contratos/compras/proveedores": "./src/contratos/compras/proveedores.ts",
 		"./contratos/compras/materiales": "./src/contratos/compras/materiales.ts",
-		"./contratos/patronaje/recetas": "./src/contratos/patronaje/recetas.ts"
+		"./contratos/patronaje/recetas": "./src/contratos/patronaje/recetas.ts",
+		"./contratos/patronaje/desarrollos": "./src/contratos/patronaje/desarrollos.ts"
 	},
 	"dependencies": {
 		"temporal-polyfill": "1.0.8",

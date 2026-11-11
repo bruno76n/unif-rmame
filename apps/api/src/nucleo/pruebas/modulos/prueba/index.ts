@@ -17,7 +17,7 @@ import {
 	implementarConsulta,
 	type TipoDeEtiqueta,
 } from "../../../modulos.ts";
-import { accionesDeAutorizaciones, aplicarDecisionDesarrollo } from "./autorizaciones.ts";
+import { accionesDeAutorizaciones, aplicarDecisionPago } from "./autorizaciones.ts";
 import { bajadaDePrueba } from "./bajada.ts";
 import {
 	adjuntar,
@@ -81,7 +81,7 @@ export default definirModulo({
 	semillas: semillasDePrueba,
 	bajada: bajadaDePrueba,
 	// El efecto de prueba de una autorización: el de un tipo cuyo módulo todavía no existe.
-	efectosDeAutorizacion: { aprobar_desarrollo: "aplicar_decision_desarrollo" },
+	efectosDeAutorizacion: { pago_fuera_de_lo_normal: "aplicar_decision_pago" },
 	// Como lo hará Personal con el pago por día: un campo de sueldo que hace sensible la bitácora.
 	camposDeSueldo: ["pago_dia_centavos"],
 	// La etiqueta de prueba: la piden Ventas o un puente con su trabajo; dice las notas y las copias.
@@ -276,7 +276,7 @@ export default definirModulo({
 		}),
 	],
 	internas: {
-		aplicar_decision_desarrollo: aplicarDecisionDesarrollo,
+		aplicar_decision_pago: aplicarDecisionPago,
 		contar: async (contexto, datos) => {
 			const notaId = typeof datos === "object" && datos !== null && "notaId" in datos ? String(datos.notaId) : "";
 			await contexto.transaccion.insert(conteos).values({ id: uuidv7(), notaId });

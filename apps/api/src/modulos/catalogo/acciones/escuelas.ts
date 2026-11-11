@@ -4,7 +4,8 @@
  * Fase 8 · docs/modulos/catalogo/escuelas-y-secciones.md (reglas 1 a 4, «Acciones»)
  *
  * Una escuela es única por nombre y municipio, sin importar acentos ni mayúsculas (lo cuida un índice único
- * de la base). Darla de baja conserva sus modelos y su historial.
+ * de la base). Darla de baja conserva sus modelos y su historial; no se da de baja con modelos activos ni con
+ * desarrollos en proceso (desde la fase 10).
  */
 
 import {
@@ -14,6 +15,7 @@ import {
 	reactivarEscuela,
 } from "@uniformame/compartido/contratos/catalogo/escuelas";
 import { and, count, eq, isNull, ne, sql } from "drizzle-orm";
+import { z } from "zod";
 import { quienCambia, revisarMotivo } from "../../../nucleo/acciones/comunes.ts";
 import { tomarVersion, versionActual } from "../../../nucleo/acciones/pisadas.ts";
 import { errorDeRegla } from "../../../nucleo/http/errores.ts";
@@ -79,6 +81,9 @@ export const accionEditarEscuela = implementarAccion(editarEscuela, async (conte
 	};
 });
 
+/** Lo que regresa `patronaje.desarrollos_en_proceso_de_escuela`. */
+const enProceso = z.object({ folios: z.array(z.string()) });
+
 export const accionDarBajaEscuela = implementarAccion(darBajaEscuela, async (contexto, datos, version) => {
 	const { transaccion } = contexto;
 	await revisarMotivo(contexto, datos.motivo);
@@ -96,6 +101,16 @@ export const accionDarBajaEscuela = implementarAccion(darBajaEscuela, async (con
 		throw errorDeRegla(
 			"escuela_con_modelos",
 			`${escuela.nombre} tiene ${modelos?.activos} modelos activos: descontinúalos antes de darla de baja.`,
+		);
+	}
+	// Sin desarrollos en proceso (Patronaje).
+	const { folios } = enProceso.parse(
+		await contexto.lectura("patronaje.desarrollos_en_proceso_de_escuela", { escuela_id: escuela.id }),
+	);
+	if (folios.length > 0) {
+		throw errorDeRegla(
+			"escuela_con_desarrollos",
+			`${escuela.nombre} tiene desarrollos en proceso: ${folios.join(", ")}.`,
 		);
 	}
 	await transaccion

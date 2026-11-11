@@ -1,7 +1,7 @@
 /**
- * Ayudas para probar la receta: los materiales de ejemplo (la gabardina, el cierre y el hilo), una prenda nueva con
- * su receta, y guardarla como Patronaje.
- * Fase 10 · docs/fases/10-patronaje-y-compras.md (parte 2)
+ * Ayudas para probar Patronaje: los materiales de ejemplo (la gabardina, el cierre y el hilo), una prenda nueva con
+ * su receta y guardarla; y los desarrollos, con sus pasos.
+ * Fase 10 · docs/fases/10-patronaje-y-compras.md (partes 2 y 3)
  */
 
 import { v7 as uuidv7 } from "uuid";
@@ -144,4 +144,53 @@ export function recetaDeEjemplo(
 			{ papel: "avio", material_id: materiales.hilo, modo: "igual", unidad_receta: "m", cantidad: "45", orden: 2 },
 		],
 	};
+}
+
+/**
+ * Patronaje registra una solicitud de desarrollo.
+ * @param servidor El servidor de prueba.
+ * @param tela La tela de la solicitud.
+ * @param escuelaId La escuela, o `null` para «Ninguna escuela» (aprueba Dirección).
+ * @returns Su id y su folio.
+ */
+export async function nuevoDesarrollo(
+	servidor: ServidorDePrueba,
+	tela: string,
+	escuelaId: string | null,
+): Promise<{ id: string; folio: string }> {
+	const respuesta = await mandarAccion(
+		servidor,
+		"patronaje.registrar_solicitud",
+		{ datos: { escuela_id: escuelaId, prenda: "Chamarra con escudo", tela_material_id: tela, tallas: "10 a 16" } },
+		"patronaje",
+	);
+	if (respuesta.estado !== 200) throw new Error(`no se registró la solicitud: ${JSON.stringify(respuesta.cuerpo)}`);
+	const resultado = respuesta.cuerpo.resultado as { desarrollo_id: string; folio: string };
+	return { id: resultado.desarrollo_id, folio: resultado.folio };
+}
+
+/**
+ * Patronaje da un paso del desarrollo con su versión de ahora.
+ * @param servidor El servidor de prueba.
+ * @param accion El paso (`empezar_muestra`, `entregar_muestra`…).
+ * @param desarrolloId El desarrollo.
+ * @param datos Lo demás que recibe (el motivo).
+ * @param quien Quien lo da.
+ */
+export async function pasoDelDesarrollo(
+	servidor: ServidorDePrueba,
+	accion: string,
+	desarrolloId: string,
+	datos: Record<string, unknown> = {},
+	quien = "patronaje",
+) {
+	const { rows } = await servidor.base.dueno.query("SELECT version::int AS version FROM desarrollos WHERE id = $1", [
+		desarrolloId,
+	]);
+	return mandarAccion(
+		servidor,
+		`patronaje.${accion}`,
+		{ datos: { desarrollo_id: desarrolloId, ...datos }, version: Number(rows[0]?.version) },
+		quien,
+	);
 }

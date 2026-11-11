@@ -7,7 +7,8 @@
  * Resuelve el tipo de prenda, el recargo y el precio en línea que no vienen. A partir de otro copia también los
  * precios propios de talla del base. En una sección que lleva receta, la receta nace con el producto
  * (`patronaje.iniciar_receta`): a partir de otro, copiada del base con las medidas del alta. Sin receta en el base,
- * las medidas se descartan con su aviso. El origen `desarrollo` llega con los desarrollos (parte 3).
+ * las medidas se descartan con su aviso. Desde un desarrollo, `patronaje.ligar_producto_desarrollo` lo deja en
+ * catálogo.
  */
 
 import { aPesoEntero } from "@uniformame/compartido/calculos/dinero";
@@ -267,7 +268,9 @@ const recetaIniciada = z.object({
 export const accionCrearProducto = implementarAccion(crearProducto, async (contexto, datos) => {
 	const { transaccion } = contexto;
 	revisarQuienDaElAlta(contexto, datos.origen);
-	if (datos.origen === "desarrollo") throw errorDeCampo("origen", "El alta desde un desarrollo llega con Patronaje.");
+	if (datos.origen === "desarrollo" && datos.desarrollo_id === undefined) {
+		throw errorDeCampo("desarrollo_id", "Escoge el desarrollo.");
+	}
 	if (datos.origen === "pedido" && datos.cliente_id === undefined)
 		throw errorDeCampo("cliente_id", "Escoge el cliente.");
 	const base = await leerBase(contexto, datos);
@@ -386,6 +389,13 @@ export const accionCrearProducto = implementarAccion(crearProducto, async (conte
 			)
 		: undefined;
 	const medidasDescartadas = receta === undefined && (datos.medidas ?? []).length > 0;
+	// Desde un desarrollo, el producto lo deja en catálogo; si ya no está en ficha técnica, no se crea nada.
+	if (datos.origen === "desarrollo" && datos.desarrollo_id !== undefined) {
+		await contexto.interna("patronaje.ligar_producto_desarrollo", {
+			desarrollo_id: datos.desarrollo_id,
+			producto_id: productoId,
+		});
+	}
 	return {
 		resultado: {
 			producto_id: productoId,
