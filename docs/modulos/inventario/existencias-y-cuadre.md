@@ -198,3 +198,7 @@ Las existencias las leen las pantallas de Aduana, Bodega, Dirección, Catálogo 
   - `inventario.piezas_de_variante` regresa por ubicación lo que no es cero. Con `bloquear`, toma antes el candado de la variante y sus existencias en el orden fijo. Las reservas se le suman en la parte 3.
 - **Quién lee:** Aduana, Bodega y Dirección leen el libro y el material; las existencias, además Catálogo y Tienda en línea (`index.ts`).
 - **Pruebas:** `dominio/escribir-movimiento.prueba.ts` (las lecturas y el material) y `escribir-movimiento.azar.prueba.ts` (la existencia guardada siempre es la suma del libro).
+
+**Fase 9, parte 3.**
+- **`inventario.piezas_de_variante`** regresa también las reservas activas de la variante, con su motivo y su documento.
+- **`inventario.libres`** está en `lecturas/reservas.ts`.

@@ -233,5 +233,15 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 11 nov 2026 | 9 | Dónde se calcula el color de una partida en aduana (decisión 474) | En cada consulta · en la vista | En la vista | No |
 | 11 nov 2026 | 9 | Más CHECK en `traspasos` (decisión 475) | Solo en el código · también en la base | También en la base | No |
 | 11 nov 2026 | 9 | A qué tabla apunta la recepción del destino (decisión 476) | Una nueva · `recepciones` | `recepciones` | No |
+| 11 nov 2026 | 9 | Una reserva que cambia en parte (decisión 477) | Cambiarle las piezas · partirla en dos nuevas | Partirla en dos nuevas | No |
+| 11 nov 2026 | 9 | Qué reservas viajan en un movimiento (decisión 478) | Todas las de la variante · las del traspaso del renglón | Las del traspaso del renglón | No |
+| 11 nov 2026 | 9 | Qué reservas se lleva un reparto (decisión 479) | Las del padre por variante · las que pasa quien reparte | Las que pasa quien reparte | No |
+| 11 nov 2026 | 9 | Cómo se guarda el orden de surtido en línea (decisión 480) | En el código · un texto con los pasos | Un texto con los pasos | No |
+| 11 nov 2026 | 9 | Cómo se dice que un W- tiene pago pendiente (decisión 481) | Siempre con `vence_en` · con `pago_pendiente` | Con `pago_pendiente` | No |
+| 11 nov 2026 | 9 | Las excepciones de reservas antes de su tabla (decisión 482) | Adelantar la tabla · abrirlas en la parte 4 | Abrirlas en la parte 4 | No |
+| 11 nov 2026 | 9 | Los mensajes de la baja de una talla sin folios (decisión 483) | Ids · el tipo de documento | El tipo de documento | No |
+| 11 nov 2026 | 9 | El orden de candados de la baja de una talla (decisión 484) | Variante primero · inventario primero | Inventario primero | No |
+| 11 nov 2026 | 9 | El mensaje de una nota que ya salió sin D- (decisión 485) | Sin folios · el de Ventas y el del traspaso | El de Ventas y el del traspaso | No |
+| 11 nov 2026 | 9 | Cómo regresa una nota cancelada a su pedido (decisión 486) | Por el traspaso · la reserva lleva su pedido | La reserva lleva su pedido | No |
 | 10 nov 2026 | 5 | La pantalla del Google de desarrollo | Una propia para escoger cuenta · la de desarrollo de oidc-provider, que pide el correo | La de oidc-provider; `pnpm local` escribe los correos de la muestra al arrancar | No |
 

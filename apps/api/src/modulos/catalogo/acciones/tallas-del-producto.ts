@@ -16,6 +16,7 @@ import {
 } from "@uniformame/compartido/contratos/catalogo/productos";
 import { and, eq, isNull } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
+import { z } from "zod";
 import { versionActual } from "../../../nucleo/acciones/pisadas.ts";
 import { errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeAccion, implementarAccion } from "../../../nucleo/modulos.ts";
@@ -180,11 +181,58 @@ export const accionReactivarTalla = implementarAccion(reactivarTalla, async (con
 	return respuestaDeTalla(contexto, producto, `Talla ${variante.talla} vuelve a fabricarse`);
 });
 
+/** Lo que regresa `inventario.piezas_de_variante`. */
+const loQueRetiene = z.object({
+	existencias: z.array(z.object({ ubicacion: z.string(), piezas: z.number() })),
+	reservas: z.array(z.object({ piezas: z.number(), motivo: z.string() })),
+});
+
+/** Cómo se nombra el documento de una reserva en un mensaje, hasta que cada fase dé su folio. */
+const documentoDeReserva: Readonly<Record<string, string>> = {
+	pedido_externo: "pedido externo",
+	nota_entrega: "nota de entrega",
+	pedido_linea: "pedido en línea",
+	apartado_tienda: "apartado",
+	pedido_especial_tienda: "pedido especial",
+};
+
+/**
+ * Los candados de inventario de la baja: ninguna existencia distinta de cero (también negativa, en Tránsito o
+ * En camino a aduana) y ninguna reserva activa.
+ * @throws `422 talla_con_existencia` o `talla_con_reservas`.
+ */
+function revisarQueNadaLaRetiene(talla: string, retiene: z.infer<typeof loQueRetiene>): void {
+	if (retiene.existencias.length > 0) {
+		const piezas = retiene.existencias.reduce((suma, existencia) => suma + Math.abs(existencia.piezas), 0);
+		const donde = retiene.existencias.map((existencia) => existencia.ubicacion).join(", ");
+		throw errorDeRegla(
+			"talla_con_existencia",
+			`Todavía hay ${piezas} piezas de la talla ${talla} en ${donde}. Descontinúala: se vende hasta acabarla.`,
+		);
+	}
+	if (retiene.reservas.length > 0) {
+		const piezas = retiene.reservas.reduce((suma, reserva) => suma + reserva.piezas, 0);
+		const documentos = [
+			...new Set(retiene.reservas.map((reserva) => documentoDeReserva[reserva.motivo] ?? reserva.motivo)),
+		];
+		throw errorDeRegla(
+			"talla_con_reservas",
+			`La talla ${talla} tiene ${piezas} piezas apartadas (${documentos.join(", ")}). Espera a que se entreguen o se liberen.`,
+		);
+	}
+}
+
 export const accionDarBajaTalla = implementarAccion(darBajaTalla, async (contexto, datos, version) => {
 	await revisarMotivo(contexto, datos.motivo);
+	// Primero el candado de inventario de la variante (el mismo orden que un movimiento): ningún movimiento ni
+	// reserva se cruza con la baja.
+	const retiene = loQueRetiene.parse(
+		await contexto.lectura("inventario.piezas_de_variante", { variante_id: datos.variante_id, bloquear: true }),
+	);
 	const { variante, producto } = await tallaConSuProducto(contexto, datos.variante_id, version);
 	if (variante.bajaEn !== null)
 		throw errorDeRegla("talla_dada_de_baja", `La talla ${variante.talla} ya está dada de baja.`);
+	revisarQueNadaLaRetiene(variante.talla, retiene);
 	await contexto.transaccion
 		.update(variantes)
 		.set({ bajaEn: contexto.ahora.toString(), bajaPor: quienCambia(contexto), motivoBaja: datos.motivo })

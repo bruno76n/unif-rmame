@@ -182,3 +182,27 @@ Ninguno propio. Cada acción que llama a estas revisa el suyo: por ejemplo, «Su
 ## Cómo está hecho
 
 *Lo escribe Claude Code al terminar la fase 9: dónde quedó el código, qué decidió al construirlo y cómo se prueba.*
+
+**Fase 9, parte 3.**
+
+- **La tabla** `reservas` está en `modulos/inventario/tablas.ts` (migración `0028`), con los CHECK de este archivo:
+  - el documento de su motivo;
+  - activa si y solo si no tiene `terminada_en` ni `motivo_fin`;
+  - `transferida` con su reemplazo y `consumida` con su movimiento.
+- **Sus llaves** a tablas de fases posteriores llevan su `@llavePendiente`.
+- **Por dentro** (`dominio/reservas.ts`):
+  - **Crear, terminar y partir:** una reserva que cambia solo en parte se parte en dos nuevas, y la original queda `transferida` a la que sigue igual (decisión 477). `tomarDeReservas` toma de las más viejas primero.
+  - **Las libres:** las cuenta `libresEn`.
+  - **El paso 5 de `escribirMovimiento`:** las reservas activas ligadas al traspaso del renglón pasan a su destino. Al llegar al destino del traspaso se les quita el traspaso, y si salen a Fuera se cumplen con el movimiento (decisión 478).
+- **Las internas** (`internas/reservas.ts`) toman primero el candado de cada variante y bloquean sus existencias en el orden fijo. Después vuelven a leer lo que deciden.
+  - **`reservar`** aparta en Bodega un PE-, nunca de más (`sin_libres`). Un apartado de tienda nunca se rechaza.
+  - **Un W-** sigue `inventario.orden_surtido_linea`, un texto con los pasos `bodega`, `aduana_a_bodega` y `tiendas` (decisión 480). Lo de aduana se reparte en un hijo `pedido_linea`, y lo que falta queda en Bodega, en negativo, con `sin_pieza`. Con `pago_pendiente`, vence a las `inventario.horas_reserva_pago_pendiente` (decisión 481). La excepción de un W- sin pieza se abre en la parte 4 (decisión 482).
+  - **`liberar_reservas`** libera todo o, con `piezas`, solo una parte. Con el documento cancelado, lo de aduana se reparte en un `regresa` a su origen: Bodega si vino del Taller o de fuera.
+  - **`confirmar_pago_reserva`** quita el vencimiento o, si el pago llegó tarde, vuelve a apartar lo vencido.
+  - **`apartar_para_nota` y `devolver_de_nota`** reparten, uno por padre, y transfieren las reservas a las del hijo. Las de una nota llevan también su pedido (decisión 486). `nota_ya_salio` nombra el folio que pasa Ventas y el del traspaso, hasta que existan los D- (decisión 485).
+- **Las lecturas** `libres` y `listo_en_aduana` están en `lecturas/reservas.ts`.
+- **El reparto** se lleva las reservas que le pasa quien reparte (`reservaIds`, decisión 479).
+- **Pruebas:**
+  - `internas/reservar.prueba.ts`: dos conexiones a la vez, en diez rondas. Se vio en rojo quitando el candado.
+  - `internas/liberar-reservas.prueba.ts`, `internas/apartar-para-nota.prueba.ts` y `internas/devolver-de-nota.prueba.ts`.
+  - `dominio/escribir-movimiento.prueba.ts` (la reserva que viaja) y `dominio/repartir-traspaso.prueba.ts` (la que pasa al hijo).

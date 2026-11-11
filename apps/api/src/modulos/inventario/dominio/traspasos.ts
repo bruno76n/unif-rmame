@@ -7,7 +7,7 @@
  * no es un movimiento: las piezas no cambian de lugar; solo pasan de un traspaso a otro.
  */
 
-import { and, count, eq, sql } from "drizzle-orm";
+import { and, count, eq, inArray, sql } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
@@ -15,10 +15,12 @@ import {
 	type EstadoDeTraspaso,
 	estadosDeTraspaso,
 	estadosFinalesDeTraspaso,
+	reservas,
 	type TipoDeTraspaso,
 	traspasoLineas,
 	traspasos,
 } from "../tablas.ts";
+import { candadoDeVariantes } from "./candados.ts";
 
 /** Los estados con que nace un traspaso. */
 export type EstadoInicial = "en_camino_aduana" | "en_aduana" | "esperado";
@@ -275,6 +277,8 @@ export interface RenglonARepartir {
 export interface PedidoDeReparto {
 	padreId: string;
 	renglones: readonly RenglonARepartir[];
+	/** Las reservas activas del padre que se llevan esas piezas: pasan al hijo. */
+	reservaIds?: readonly string[];
 	hijo: {
 		tipo: TipoDeTraspaso;
 		destino: LadoDeTraspaso | null;
@@ -282,6 +286,21 @@ export interface PedidoDeReparto {
 		fechaSalidaEsperada?: string | null;
 		nota?: string | null;
 	};
+}
+
+/**
+ * Las reservas que se lleva un reparto: activas y del padre.
+ * @throws Error (un `500`) si una no es una reserva activa del padre.
+ */
+async function reservasDelPadre(contexto: ContextoDeAccion, pedido: PedidoDeReparto) {
+	const ids = pedido.reservaIds ?? [];
+	if (ids.length === 0) return [];
+	const suyas = await contexto.transaccion
+		.select({ id: reservas.id, varianteId: reservas.varianteId })
+		.from(reservas)
+		.where(and(inArray(reservas.id, [...ids]), eq(reservas.estado, "activa"), eq(reservas.traspasoId, pedido.padreId)));
+	if (suyas.length !== new Set(ids).size) throw new Error("una reserva del reparto no es una reserva activa del padre");
+	return suyas;
 }
 
 /** Un reparto hecho: el hijo, su folio y si el padre quedó `repartido`. */
@@ -294,8 +313,8 @@ export interface RepartoHecho extends TraspasoCreado {
 /**
  * Reparte parte de lo que queda en aduana de un traspaso a un hijo nuevo, sin mover nada. El padre suma lo
  * repartido y, si ya no le queda nada en aduana, pasa a `repartido`. El hijo nace en aduana con folio
- * `{padre}-{n}`, el origen del padre y su misma hora de llegada (su antigüedad sigue contando). Guarda el evento
- * `traspaso.repartido`.
+ * `{padre}-{n}`, el origen del padre y su misma hora de llegada (su antigüedad sigue contando); las reservas que
+ * se llevan esas piezas pasan al hijo. Guarda el evento `traspaso.repartido`.
  * @param contexto El contexto de la acción que reparte.
  * @param pedido El padre, lo que se reparte de cada renglón y el tipo, el destino y las referencias del hijo.
  * @returns El hijo, su folio, si el padre quedó repartido y qué renglón del hijo lleva cada uno del padre.
@@ -303,6 +322,12 @@ export interface RepartoHecho extends TraspasoCreado {
  */
 export async function repartirTraspaso(contexto: ContextoDeAccion, pedido: PedidoDeReparto): Promise<RepartoHecho> {
 	const { transaccion } = contexto;
+	// El candado de la variante antes de mover reservas, y antes del padre: el mismo orden que un movimiento.
+	const llevadas = await reservasDelPadre(contexto, pedido);
+	await candadoDeVariantes(
+		transaccion,
+		llevadas.map((reserva) => reserva.varianteId),
+	);
 	const padre = await bloquearTraspaso(contexto, pedido.padreId);
 	if (padre.estado !== "en_aduana") throw new Error(`el traspaso ${padre.folio} no está en aduana: ${padre.estado}`);
 	const lineas = await transaccion
@@ -388,10 +413,22 @@ export async function repartirTraspaso(contexto: ContextoDeAccion, pedido: Pedid
 	const lineasDelHijo = new Map(
 		renglones.map(({ linea }, indice) => [linea.id, delHijo.find((suya) => suya.renglon === indice + 1)?.id ?? ""]),
 	);
+	// Las reservas de esas piezas pasan al hijo.
+	if (llevadas.length > 0) {
+		await transaccion
+			.update(reservas)
+			.set({ traspasoId: hijo.traspasoId })
+			.where(
+				inArray(
+					reservas.id,
+					llevadas.map((reserva) => reserva.id),
+				),
+			);
+	}
 	contexto.guardarEvento({
 		tipo: "traspaso.repartido",
 		datos: { padre_id: padre.id, hijo_id: hijo.traspasoId, padre_repartido: padreRepartido },
-		tablas: ["traspasos", "traspaso_lineas"],
+		tablas: ["traspasos", "traspaso_lineas", ...(llevadas.length > 0 ? ["reservas"] : [])],
 		entidad: "traspasos",
 		entidadId: hijo.traspasoId,
 	});

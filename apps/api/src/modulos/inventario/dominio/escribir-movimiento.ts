@@ -4,8 +4,8 @@
  * y 9)
  *
  * Corren en la transacción de quien las llama (una interna o una acción de inventario). Revisan cada renglón
- * contra su tipo, toman los candados en el orden fijo, escriben el movimiento con su clave y suman la
- * existencia. Nunca rechazan por falta de existencia: queda negativa. Lo que no cumple es un error del programa:
+ * contra su tipo, toman los candados en el orden fijo, escriben el movimiento con su clave, suman la
+ * existencia y mueven las reservas con su pieza. Nunca rechazan por falta de existencia: queda negativa. Lo que no cumple es un error del programa:
  * quien llama ya validó lo que llegó. No guardan eventos ni bitácora: los guarda la acción que las llamó.
  */
 
@@ -31,6 +31,7 @@ import {
 	type LugarDeMaterial,
 	type LugarDePrenda,
 } from "./candados.ts";
+import { moverReservasConSuPieza } from "./reservas.ts";
 import { type Lado, reglasDeTipo, vaPorSuCamino } from "./tipos-de-movimiento.ts";
 
 /** Un renglón: de prenda (variante y piezas) o de material (material, su rollo y la cantidad, con tres decimales). */
@@ -308,6 +309,8 @@ async function escribir(
 				sql`${existenciasMaterial.ubicacionId} = ${lugar.ubicacionId} AND ${existenciasMaterial.materialId} = ${lugar.materialId} AND ${existenciasMaterial.rolloId} IS NOT DISTINCT FROM ${lugar.rolloId}::uuid`,
 			);
 	}
+	// Paso 5: las reservas de las piezas de un traspaso viajan con ellas (el candado de la variante ya está).
+	const viajaron = await moverReservasConSuPieza(contexto, movimientoId, prendas);
 	return {
 		movimientoId,
 		nuevo: true,
@@ -316,6 +319,7 @@ async function escribir(
 			"movimiento_lineas",
 			...(deExistencias.length > 0 ? ["existencias"] : []),
 			...(deMaterial.length > 0 ? ["existencias_material"] : []),
+			...(viajaron ? ["reservas"] : []),
 		],
 	};
 }

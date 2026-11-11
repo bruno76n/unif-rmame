@@ -8,7 +8,7 @@ import { and, eq, ne, sql } from "drizzle-orm";
 import { z } from "zod";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
 import { bloquearExistencias, candadoDeVariantes } from "../dominio/candados.ts";
-import { existencias, existenciasMaterial, ubicaciones } from "../tablas.ts";
+import { existencias, existenciasMaterial, reservas, ubicaciones } from "../tablas.ts";
 
 /** Lo que recibe `inventario.existencia_material`. */
 const pedidoDeMaterial = z.object({ material_id: z.uuid(), ubicacion_id: z.uuid().optional() });
@@ -42,12 +42,17 @@ const pedidoDeVariante = z.object({ variante_id: z.uuid(), bloquear: z.boolean()
  * quien la llama (la baja de una talla).
  * @param contexto El contexto de la acción.
  * @param datos `variante_id` y `bloquear`.
- * @returns Por ubicación, la existencia que no es cero (también negativa, en Tránsito o En camino a aduana).
+ * @returns Por ubicación, la existencia que no es cero (también negativa, en Tránsito o En camino a aduana), y
+ * las reservas activas con sus piezas y su documento. El folio del documento lo pone quien lo muestra, con la
+ * fase de su módulo.
  */
 export async function piezasDeVariante(
 	contexto: ContextoDeAccion,
 	datos: unknown,
-): Promise<{ existencias: { ubicacion_id: string; ubicacion: string; piezas: number }[] }> {
+): Promise<{
+	existencias: { ubicacion_id: string; ubicacion: string; piezas: number }[];
+	reservas: { reserva_id: string; ubicacion_id: string; piezas: number; motivo: string; documento_id: string | null }[];
+}> {
 	const { variante_id, bloquear } = pedidoDeVariante.parse(datos);
 	const { transaccion } = contexto;
 	if (bloquear === true) {
@@ -67,5 +72,18 @@ export async function piezasDeVariante(
 		.innerJoin(ubicaciones, eq(ubicaciones.id, existencias.ubicacionId))
 		.where(and(eq(existencias.varianteId, variante_id), ne(existencias.piezas, 0)))
 		.orderBy(ubicaciones.orden);
-	return { existencias: hay };
+	const apartadas = await transaccion
+		.select({
+			reserva_id: reservas.id,
+			ubicacion_id: reservas.ubicacionId,
+			piezas: reservas.piezas,
+			motivo: reservas.motivo,
+			documento_id: sql<
+				string | null
+			>`coalesce(${reservas.pedidoId}, ${reservas.notaEntregaId}, ${reservas.pedidoLineaId}, ${reservas.apartadoTiendaId}, ${reservas.pedidoEspecialTiendaId})`,
+		})
+		.from(reservas)
+		.where(and(eq(reservas.varianteId, variante_id), eq(reservas.estado, "activa")))
+		.orderBy(reservas.creadoEn);
+	return { existencias: hay, reservas: apartadas };
 }

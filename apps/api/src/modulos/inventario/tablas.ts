@@ -2,8 +2,8 @@
  * Las tablas del módulo `inventario`: las ubicaciones, el libro de movimientos y las existencias.
  * Fase 4 · docs/modulos/inventario/libro-de-movimientos.md («La tabla `ubicaciones`»)
  * Fase 9 · docs/modulos/inventario/libro-de-movimientos.md («La tabla `movimientos`», «La tabla
- * `movimiento_lineas`»), existencias-y-cuadre.md («La tabla `existencias`», «La tabla `existencias_material`») y
- * traspasos.md («La tabla `traspasos`», «La tabla `traspaso_lineas`»)
+ * `movimiento_lineas`»), existencias-y-cuadre.md («La tabla `existencias`», «La tabla `existencias_material`»),
+ * traspasos.md («La tabla `traspasos`», «La tabla `traspaso_lineas`») y reservas.md («La tabla `reservas`»)
  *
  * `ubicaciones` nace en la fase 4 con su siembra porque antes la usan los parámetros, las impresoras, las
  * cuentas, los aparatos y las personas. El libro solo crece: el rol de la app no lo puede cambiar.
@@ -467,6 +467,101 @@ export const traspasoLineas = pgTable(
 				and coalesce(${tabla.cantidadEnviada}, 0) >= 0 and coalesce(${tabla.cantidadRecibidaAduana}, 0) >= 0
 				and ${tabla.cantidadRepartida} >= 0 and coalesce(${tabla.cantidadRecibidaDestino}, 0) >= 0`,
 		),
+	],
+);
+
+/** Los motivos de una reserva, con la llave de su documento. */
+export const motivosDeReserva = [
+	"pedido_externo",
+	"nota_entrega",
+	"pedido_linea",
+	"apartado_tienda",
+	"pedido_especial_tienda",
+] as const;
+
+/** El motivo de una reserva. */
+export type MotivoDeReserva = (typeof motivosDeReserva)[number];
+
+/** Por qué dejó de estar activa una reserva. */
+export const motivosDeFinDeReserva = [
+	"cumplida",
+	"documento_cancelado",
+	"vencio_pago",
+	"quitada_del_pedido",
+	"nota_cancelada",
+	"pasa_a_nota",
+	"reasignada",
+	"no_la_encontro",
+] as const;
+
+/** Piezas apartadas para un documento, sin moverlas: viajan con su pieza. */
+export const reservas = pgTable(
+	"reservas",
+	{
+		id: uuid("id").primaryKey(),
+		ubicacionId: uuid("ubicacion_id")
+			.notNull()
+			.references(() => ubicaciones.id),
+		varianteId: uuid("variante_id")
+			.notNull()
+			.references(() => variantes.id),
+		piezas: integer("piezas").notNull(),
+		motivo: text("motivo").notNull(),
+		/** @llavePendiente pedidos.id */
+		pedidoId: uuid("pedido_id"),
+		/** @llavePendiente notas_entrega.id */
+		notaEntregaId: uuid("nota_entrega_id"),
+		/** @llavePendiente pedidos_linea.id */
+		pedidoLineaId: uuid("pedido_linea_id"),
+		/** @llavePendiente pedido_linea_renglones.id */
+		pedidoLineaRenglonId: uuid("pedido_linea_renglon_id"),
+		/** @llavePendiente apartados_tienda.id */
+		apartadoTiendaId: uuid("apartado_tienda_id"),
+		/** @llavePendiente pedidos_especiales_tienda.id */
+		pedidoEspecialTiendaId: uuid("pedido_especial_tienda_id"),
+		traspasoId: uuid("traspaso_id").references(() => traspasos.id),
+		estado: text("estado").notNull(),
+		venceEn: momento("vence_en"),
+		separadaEn: momento("separada_en"),
+		transferidaAReservaId: uuid("transferida_a_reserva_id").references((): AnyPgColumn => reservas.id),
+		consumidaPorMovimientoId: uuid("consumida_por_movimiento_id").references(() => movimientos.id),
+		terminadaEn: momento("terminada_en"),
+		motivoFin: text("motivo_fin"),
+		notaFin: text("nota_fin"),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		index("reservas_activas").on(tabla.ubicacionId, tabla.varianteId).where(sql`${tabla.estado} = 'activa'`),
+		index("reservas_vencen").on(tabla.venceEn).where(sql`${tabla.estado} = 'activa' and ${tabla.venceEn} is not null`),
+		index("reservas_pedido_linea").on(tabla.pedidoLineaId),
+		index("reservas_nota_entrega").on(tabla.notaEntregaId),
+		index("reservas_pedido").on(tabla.pedidoId),
+		index("reservas_traspaso").on(tabla.traspasoId),
+		index("reservas_version").on(tabla.version),
+		check("reservas_piezas", sql`${tabla.piezas} > 0`),
+		check("reservas_motivo", sql`${tabla.motivo} in (${valores(motivosDeReserva)})`),
+		check("reservas_estado", sql`${tabla.estado} in ('activa', 'consumida', 'liberada', 'transferida')`),
+		check("reservas_motivo_fin", sql`${tabla.motivoFin} in (${valores(motivosDeFinDeReserva)})`),
+		// La llave del documento de su motivo va llena.
+		check(
+			"reservas_documento",
+			sql`case ${tabla.motivo}
+				when 'pedido_externo' then ${tabla.pedidoId} is not null
+				when 'nota_entrega' then ${tabla.notaEntregaId} is not null
+				when 'pedido_linea' then ${tabla.pedidoLineaId} is not null
+				when 'apartado_tienda' then ${tabla.apartadoTiendaId} is not null
+				when 'pedido_especial_tienda' then ${tabla.pedidoEspecialTiendaId} is not null
+			end`,
+		),
+		check(
+			"reservas_terminada",
+			sql`(${tabla.estado} <> 'activa') = (${tabla.terminadaEn} is not null and ${tabla.motivoFin} is not null)`,
+		),
+		check(
+			"reservas_transferida",
+			sql`(${tabla.estado} = 'transferida') = (${tabla.transferidaAReservaId} is not null)`,
+		),
+		check("reservas_consumida", sql`(${tabla.estado} = 'consumida') = (${tabla.consumidaPorMovimientoId} is not null)`),
 	],
 );
 

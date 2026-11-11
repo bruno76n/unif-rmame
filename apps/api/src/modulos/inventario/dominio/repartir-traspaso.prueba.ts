@@ -2,8 +2,6 @@
  * Prueba de `repartirTraspaso`: nunca pasa de lo que queda en aduana, no mueve existencia, el hijo nace con su
  * folio y la antigüedad del padre, y el padre queda `repartido` cuando no le queda nada.
  * Fase 9 · docs/fases/09-inventario-libro-existencias-reservas-y-traspasos.md (parte 2)
- *
- * Que las reservas pasen al hijo se prueba en la parte 3, con las reservas.
  */
 
 import { v7 as uuidv7 } from "uuid";
@@ -14,7 +12,7 @@ import { nuevoTraspaso, ubicacionesPorCodigo } from "../../../nucleo/pruebas/inv
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 import { type PedidoDeReparto, repartirTraspaso } from "./traspasos.ts";
 
-describe("Repartir nunca pasa de lo que queda en aduana, no mueve existencia y deja al padre `repartido` cuando no le queda nada", () => {
+describe("Repartir nunca pasa de lo que queda en aduana, no mueve existencia, lleva las reservas al hijo y deja al padre `repartido` cuando no le queda nada", () => {
 	let servidor: ServidorDePrueba;
 	let ubicacion: Record<string, string>;
 	let variante: string;
@@ -173,5 +171,34 @@ describe("Repartir nunca pasa de lo que queda en aduana, no mueve existencia y d
 				hijo: { tipo: "regresa", destino: { ubicacionId: ubicacion.BOD ?? "" } },
 			}),
 		).rejects.toThrow("no está en aduana: repartido");
+	});
+
+	it("lleva al hijo las reservas que se le piden, y solo reservas activas del padre", async () => {
+		const lote = await loteEnAduana();
+		const pedido = uuidv7();
+		const reserva = uuidv7();
+		await servidor.base.dueno.query(
+			`INSERT INTO reservas (id, ubicacion_id, variante_id, piezas, motivo, pedido_id, traspaso_id, estado)
+			 VALUES ($1, $2, $3, 4, 'pedido_externo', $4, $5, 'activa')`,
+			[reserva, ubicacion.ADU, variante, pedido, lote.traspasoId],
+		);
+		await expect(
+			repartir({
+				padreId: lote.traspasoId,
+				renglones: [{ lineaId: lote.prenda, piezas: 4 }],
+				reservaIds: [uuidv7()],
+				hijo: { tipo: "nota_entrega", destino: { externo: "cliente_externo" } },
+			}),
+		).rejects.toThrow("no es una reserva activa del padre");
+		const hijo = await repartir({
+			padreId: lote.traspasoId,
+			renglones: [{ lineaId: lote.prenda, piezas: 4 }],
+			reservaIds: [reserva],
+			hijo: { tipo: "nota_entrega", destino: { externo: "cliente_externo" } },
+		});
+		const { rows } = await servidor.base.dueno.query("SELECT traspaso_id, estado FROM reservas WHERE id = $1", [
+			reserva,
+		]);
+		expect(rows).toEqual([{ traspaso_id: hijo.traspasoId, estado: "activa" }]);
 	});
 });

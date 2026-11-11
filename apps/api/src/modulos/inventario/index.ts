@@ -11,7 +11,15 @@
 import { v7 as uuidv7 } from "uuid";
 import { todosLosDepartamentos } from "../../nucleo/acceso/departamentos.ts";
 import { definirModulo } from "../../nucleo/modulos.ts";
+import {
+	apartarParaNota,
+	confirmarPagoReserva,
+	devolverDeNota,
+	liberarReservas,
+	reservar,
+} from "./internas/reservas.ts";
 import { existenciaMaterial, piezasDeVariante } from "./lecturas/existencias.ts";
+import { libres, listoEnAduana } from "./lecturas/reservas.ts";
 import { semillaDeParametrosDeInventario } from "./parametros.ts";
 import { ubicaciones } from "./tablas.ts";
 
@@ -50,8 +58,22 @@ export default definirModulo({
 		// Los traspasos los leen las pantallas de Aduana, Bodega y Tienda en línea, y «¿Dónde está?».
 		traspasos: [...lectoresDelLibro, "linea"],
 		traspaso_lineas: [...lectoresDelLibro, "linea"],
+		// Las reservas las leen Bodega y Aduana; Ventas y Tienda en línea, las de sus documentos.
+		reservas: [...lectoresDelLibro, "ventas", "linea"],
 	},
-	lecturas: { existencia_material: existenciaMaterial, piezas_de_variante: piezasDeVariante },
+	internas: {
+		reservar,
+		liberar_reservas: liberarReservas,
+		confirmar_pago_reserva: confirmarPagoReserva,
+		apartar_para_nota: apartarParaNota,
+		devolver_de_nota: devolverDeNota,
+	},
+	lecturas: {
+		existencia_material: existenciaMaterial,
+		piezas_de_variante: piezasDeVariante,
+		libres,
+		listo_en_aduana: listoEnAduana,
+	},
 	semillas: [
 		{ tabla: ubicaciones, filas: ubicacionesDeLaSiembra.map((ubicacion) => ({ id: uuidv7(), ...ubicacion })) },
 		semillaDeParametrosDeInventario,

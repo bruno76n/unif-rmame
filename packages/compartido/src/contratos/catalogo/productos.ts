@@ -177,7 +177,11 @@ export const darBajaTalla = definirAccion({
 	entrada: z.object(conMotivo),
 	salida: z.object({}),
 	permiso: { departamento: "catalogo" },
-	errores: [{ codigo: "talla_dada_de_baja", mensaje: "Esa talla ya está dada de baja." }],
+	errores: [
+		{ codigo: "talla_dada_de_baja", mensaje: "Esa talla ya está dada de baja." },
+		{ codigo: "talla_con_existencia", mensaje: "Todavía hay piezas de esa talla: descontinúala." },
+		{ codigo: "talla_con_reservas", mensaje: "Esa talla tiene piezas apartadas." },
+	],
 	edita: true,
 });
 

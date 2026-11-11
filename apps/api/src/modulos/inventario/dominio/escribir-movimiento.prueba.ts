@@ -11,7 +11,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { crearBase } from "../../../nucleo/base/conexion.ts";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
 import { enAccionDePrueba } from "../../../nucleo/pruebas/accion-de-prueba.ts";
-import { nuevoTraspaso } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
+import { nuevoTraspaso, variantesLibres } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 import { claveDerivada, escribirMovimiento, revertirMovimiento } from "./escribir-movimiento.ts";
@@ -316,6 +316,70 @@ describe("el libro de movimientos", () => {
 				{ ubicacion_id: ubicacion.ADU, ubicacion: "Aduana", piezas: 3 },
 				{ ubicacion_id: ubicacion.BOD, ubicacion: "Bodega", piezas: 10 },
 			],
+			reservas: [],
 		});
+	});
+
+	it("Una reserva viaja con su pieza en cada movimiento: cambia de lugar, deja su traspaso al llegar y se cumple al salir", async () => {
+		const [suya = ""] = await variantesLibres(servidor, 1);
+		const { traspasoId } = await nuevoTraspaso(servidor, {
+			tipo: "reabasto",
+			estado: "en_aduana",
+			origen: { ubicacionId: ubicacion.BOD ?? "" },
+			destino: { ubicacionId: ubicacion.T1 ?? "" },
+			renglones: [{ varianteId: suya, piezas: 5 }],
+		});
+		const pedido = uuidv7();
+		await servidor.base.dueno.query(
+			`INSERT INTO reservas (id, ubicacion_id, variante_id, piezas, motivo, pedido_id, traspaso_id, estado)
+			 VALUES ($1, $2, $3, 5, 'pedido_externo', $4, $5, 'activa')`,
+			[uuidv7(), ubicacion.ADU, suya, pedido, traspasoId],
+		);
+		const mover = (
+			tipo: "despacho" | "recepcion_despacho" | "entrega_cliente_externo",
+			de: string,
+			a: string | null,
+			piezas: number,
+		) =>
+			enAccion((contexto) =>
+				escribirMovimiento(contexto, {
+					tipo,
+					documento: { tipo: "traspaso", id: traspasoId },
+					renglones: [
+						{
+							origen: ubicacion[de] ?? "",
+							destino: a === null ? null : (ubicacion[a] ?? ""),
+							varianteId: suya,
+							piezas,
+							traspasoId,
+						},
+					],
+					clave: uuidv7(),
+				}),
+			);
+		const activas = async () =>
+			(
+				await servidor.base.dueno.query(
+					`SELECT u.codigo, r.piezas, r.traspaso_id IS NOT NULL AS con_traspaso FROM reservas r JOIN ubicaciones u ON u.id = r.ubicacion_id
+					 WHERE r.pedido_id = $1 AND r.estado = 'activa' ORDER BY u.codigo`,
+					[pedido],
+				)
+			).rows;
+		expect((await mover("despacho", "ADU", "TRA", 5)).tablas).toContain("reservas");
+		expect(await activas()).toEqual([{ codigo: "TRA", piezas: 5, con_traspaso: true }]);
+		// Llegan 3 a la tienda, el destino del traspaso: esas dejan el traspaso; 2 siguen en Tránsito.
+		await mover("recepcion_despacho", "TRA", "T1", 3);
+		expect(await activas()).toEqual([
+			{ codigo: "T1", piezas: 3, con_traspaso: false },
+			{ codigo: "TRA", piezas: 2, con_traspaso: true },
+		]);
+		// Las 2 que quedaban salen a Fuera: se cumplen con el movimiento.
+		const salida = await mover("entrega_cliente_externo", "TRA", null, 2);
+		expect(await activas()).toEqual([{ codigo: "T1", piezas: 3, con_traspaso: false }]);
+		const { rows } = await servidor.base.dueno.query(
+			"SELECT piezas, motivo_fin FROM reservas WHERE pedido_id = $1 AND estado = 'consumida' AND consumida_por_movimiento_id = $2",
+			[pedido, salida.movimientoId],
+		);
+		expect(rows).toEqual([{ piezas: 2, motivo_fin: "cumplida" }]);
 	});
 });
