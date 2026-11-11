@@ -193,4 +193,5 @@ Usa también `general.largo_minimo_motivo` y, de Personal, `personal.pin_intento
 - **`poner_tarifa_a_registros`** y **`registros_para_nomina`** (`internas/registros.ts`); `personal.poner_tarifa_operacion` la llama con la primera tarifa y avisa cuántos la tomaron. Los de semanas pagadas llegan con la nómina (fase 17).
 - **Lo que baja a la tablet:** los registros de los lotes en proceso y terminados y los de la semana, sin la tarifa.
 - **Los parámetros** `produccion.tarifa_visible_tablet`, `produccion.bultos_para_ti_max` y `produccion.consumible_max_por_vez`.
+- **«Bultos para ti»** es `bultosParaTi` del paquete compartido (`packages/compartido/src/calculos/bultos-para-ti.ts`): recibe los bultos con su tope, su salud y su fecha de entrega, y los ordena y corta hasta el máximo; la prueba `bultos-para-ti.prueba.ts`, también con fast-check.
 - **Pruebas:** `acciones/registrar-operacion.prueba.ts` (la hora y la tarifa, lo que se aparta, el tope, terminar y reabrir, los registros del corte, la tarifa que llega después), `acciones/tomar-consumible.prueba.ts` (también el PIN) y `tope-bulto.prueba.ts` con fast-check.

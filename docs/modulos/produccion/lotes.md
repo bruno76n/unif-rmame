@@ -232,3 +232,9 @@ Usa también `general.dias_de_trabajo`, que también baja a la tablet.
 - **Lo que baja a la tablet** (`bajada.ts`): los lotes en proceso y terminados con «para quién» (de un pedido dice «Pedido» hasta la fase 16, decisión 598) y sus tallas.
 - **Los parámetros** de la salud están en `parametros.ts`; `lote_atorado_dias` y `riesgo_atraso_dias` bajan a la tablet.
 - **Pruebas:** `internas/pasar-pedido-a-temporada.prueba.ts` (las etapas y los candados) y `bajada.prueba.ts`.
+
+**Fase 12, parte 4.**
+
+- **«Vigilar lotes atorados»** (`trabajos/vigilar-lotes-atorados.ts`) corre cada hora y no hace nada fuera de `general.dias_de_trabajo`. Arma la salud de cada lote en proceso con `saludDeLote`: el último avance es el día del último registro vigente de la tablet (o el del corte); la última sincronización, la última subida de las tablets del taller; los días sin subir, los días hasta ayer sin ningún registro de la tablet (decisión 614); el cuello de botella, la operación con más piezas esperando. Avisa de nuevo solo si llegó un registro del lote después de su último `lote.atorado` (decisión 613); el aviso no se repite mientras la dueña no lea el anterior, como todos.
+- **«Recalcular proyecciones de Producción»** es la interna `produccion.recalcular_proyecciones` (`internas/proyecciones.ts`): un tramo de lotes cortados por llamada, en orden de id, con el siguiente para la próxima. Corrige cada talla hacia sus registros vigentes, con su bitácora y `lote_tallas.corregidas`, y termina el lote que con eso queda completo. El cuadre la llama antes de sus pasos, 50 lotes por transacción (decisión 615).
+- **Pruebas:** `trabajos/vigilar-lotes-atorados.prueba.ts` (una vez hasta que algo cambia, «Sin datos de la tablet» y los días de trabajo) e `internas/recalcular-proyecciones.prueba.ts` (descuadres al azar con fast-check, y el lote que se termina).

@@ -223,3 +223,9 @@ Las existencias las leen las pantallas de Aduana, Bodega, Dirección, Catálogo 
 **Fase 10, parte 5.** Para la cuenta de cada material de Compras, `lecturas/materiales.ts` lee muchos materiales en una consulta: `inventario.existencias_de_materiales` (por material, lo que hay en Bodega y en Aduana) e `inventario.salidas_de_materiales` (por material, sus salidas por día desde un día y su primera salida; ver [proyección de material](../compras/proyeccion-de-material.md#cómo-está-hecho)). Su prueba es `lecturas/materiales.prueba.ts` (decisión 548).
 
 **Fase 11, parte 1.** El paso 2 del cuadre (`rollosEnUnLugar`): ver [material en bodega](material-en-bodega.md#cómo-está-hecho).
+
+**Fase 12, parte 4.**
+
+- **Antes de sus pasos,** `correrCuadre` llama `produccion.recalcular_proyecciones` por tramos de 50 lotes, cada tramo en su transacción (ver [lotes](../produccion/lotes.md#cómo-está-hecho)).
+- **Paso 4** (`tallerPorLote`): por lote y variante, las piezas en el Taller según el libro (`movimiento_lineas` con su lote) contra cortadas − merma de `lote_tallas`, para los lotes en proceso, terminados y revisados; los que ya llegaron a aduana salieron del Taller (decisión 616). Abre una `cuadre_proyeccion` por diferencia, con los dos valores.
+- **Prueba:** el caso del paso 4 en `internas/correr-cuadre.prueba.ts`: tres piezas del lote fuera del Taller abren la excepción; al regresar, ya cuadra.

@@ -6,7 +6,8 @@
  *
  * Corre en tandas, cada una en su propia transacción corta, para no frenar las ventas: el paso 1 una por
  * ubicación, y cada paso que sigue en la suya. Nunca toca el libro: si una existencia no es la del libro, la corrige
- * y deja la excepción con los dos valores. El paso 4 llega con los lotes (12), el 5 con las DF- (14); en el paso 6,
+ * y deja la excepción con los dos valores. Antes de los pasos corre, por tramos, el recálculo de las proyecciones de
+ * Producción (fase 12); el paso 4 compara el Taller por lote (12), el 5 llega con las DF- (14); en el paso 6,
  * cada documento con su fase.
  */
 
@@ -159,6 +160,55 @@ async function rollosEnUnLugar(contexto: ContextoDeAccion, cuadreId: string): Pr
 		});
 	}
 	return enDosLugares.length;
+}
+
+/** Cuántos lotes recalcula cada tramo de las proyecciones de Producción. */
+const lotesPorTramo = 50;
+
+/**
+ * Paso 4: las piezas de cada lote cortado en el Taller (las que entraron con su lote menos las que salieron) contra lo
+ * que lleva Producción en `lote_tallas` (cortadas − merma). Lo recibido en aduana llega con la fase 14. Abre
+ * `cuadre_proyeccion` por talla que no cuadra, con los dos valores.
+ * @returns Las excepciones que abrió.
+ */
+async function tallerPorLote(contexto: ContextoDeAccion, cuadreId: string): Promise<number> {
+	const { rows } = await contexto.transaccion.execute(sql`
+		WITH en_taller AS (
+			SELECT l.lote_id, l.variante_id,
+				sum(CASE WHEN l.destino_ubicacion_id = u.id THEN l.piezas ELSE 0 END)
+				- sum(CASE WHEN l.origen_ubicacion_id = u.id THEN l.piezas ELSE 0 END) AS piezas
+			FROM movimiento_lineas l CROSS JOIN ubicaciones u
+			WHERE u.tipo = 'taller' AND l.lote_id IS NOT NULL AND l.variante_id IS NOT NULL
+				AND (l.destino_ubicacion_id = u.id OR l.origen_ubicacion_id = u.id)
+			GROUP BY l.lote_id, l.variante_id
+		)
+		SELECT lt.lote_id, lt.variante_id, lo.folio,
+			(coalesce(lt.piezas_cortadas, 0) - lt.piezas_merma)::int AS produccion,
+			coalesce(t.piezas, 0)::int AS taller
+		FROM lote_tallas lt
+		JOIN lotes lo ON lo.id = lt.lote_id AND lo.estado IN ('en_proceso', 'terminado', 'revisado')
+		LEFT JOIN en_taller t ON t.lote_id = lt.lote_id AND t.variante_id = lt.variante_id
+		WHERE coalesce(lt.piezas_cortadas, 0) - lt.piezas_merma <> coalesce(t.piezas, 0)`);
+	const diferencias = z
+		.array(
+			z.object({
+				lote_id: z.uuid(),
+				variante_id: z.uuid(),
+				folio: z.string(),
+				produccion: z.number(),
+				taller: z.number(),
+			}),
+		)
+		.parse(rows);
+	for (const diferencia of diferencias) {
+		await abrir(contexto, cuadreId, {
+			tipo: "cuadre_proyeccion",
+			descripcion: `${diferencia.folio}: Producción lleva ${diferencia.produccion} piezas de la talla en el Taller y el inventario dice ${diferencia.taller}`,
+			variante_id: diferencia.variante_id,
+			datos: diferencia,
+		});
+	}
+	return diferencias.length;
 }
 
 /**
@@ -384,6 +434,19 @@ export async function correrCuadre(
 	}
 	const cuenta: Cuenta = { revisados: 0, corregidas: 0, excepciones: 0 };
 	try {
+		// Primero, las proyecciones de Producción: un tramo de lotes por transacción.
+		for (let despuesDe: string | null | undefined; despuesDe !== null; ) {
+			const desde = despuesDe;
+			const tramo = z.object({ siguiente: z.uuid().nullable() }).parse(
+				await contexto.enTransaccion((accion) =>
+					accion.interna("produccion.recalcular_proyecciones", {
+						...(desde === undefined ? {} : { despues_de: desde }),
+						limite: lotesPorTramo,
+					}),
+				),
+			);
+			despuesDe = tramo.siguiente;
+		}
 		const lugares = await contexto.enTransaccion((accion) =>
 			accion.transaccion
 				.select({ id: ubicaciones.id, nombre: ubicaciones.nombre, codigo: ubicaciones.codigo })
@@ -400,6 +463,7 @@ export async function correrCuadre(
 		for (const paso of [
 			(accion: ContextoDeAccion) => rollosEnUnLugar(accion, cuadreId),
 			(accion: ContextoDeAccion) => tramosDeCamino(accion, cuadreId, fecha),
+			(accion: ContextoDeAccion) => tallerPorLote(accion, cuadreId),
 			(accion: ContextoDeAccion) => reservasSinDocumento(accion, cuadreId),
 			(accion: ContextoDeAccion) => sinConfirmar(accion, cuadreId),
 			(accion: ContextoDeAccion) => elTotal(accion, cuadreId),

@@ -14,6 +14,7 @@ import { guardarEventosConAdmin } from "../../../nucleo/acciones/corredor.ts";
 import { crearBase } from "../../../nucleo/base/conexion.ts";
 import { cargarModulos } from "../../../nucleo/modulos.ts";
 import { enAccionDePrueba } from "../../../nucleo/pruebas/accion-de-prueba.ts";
+import { siembraDelCatalogo } from "../../../nucleo/pruebas/catalogo-de-prueba.ts";
 import { materialesDePrueba, rollosDePrueba } from "../../../nucleo/pruebas/compras-de-prueba.ts";
 import {
 	meterPiezas,
@@ -22,6 +23,7 @@ import {
 	variantesLibres,
 } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
 import { documentosAbiertosDePrueba } from "../../../nucleo/pruebas/modulos/ventas/index.ts";
+import { loteCortado } from "../../../nucleo/pruebas/produccion-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 import { correrTrabajo } from "../../../nucleo/trabajos/trabajador.ts";
 import { escribirMovimiento } from "../dominio/escribir-movimiento.ts";
@@ -259,5 +261,50 @@ describe("el cuadre de la noche", () => {
 		]);
 		await ajuste("ADU", "2.500", false);
 		expect(await cuadrar("2026-12-02")).toMatchObject({ estado: "cuadro" });
+	});
+
+	it("El cuadre compara las piezas de cada lote en el Taller contra lo que lleva Producción (paso 4); al cuadrar, ya no abre nada", async () => {
+		const lote = await loteCortado(servidor, await siembraDelCatalogo(servidor));
+		const [bulto] = lote.bultos;
+		if (bulto === undefined) throw new Error("el lote no tiene bultos");
+		const { rows: taller } = await servidor.base.dueno.query("SELECT id FROM ubicaciones WHERE tipo = 'taller'");
+		const tallerId = String(taller[0]?.id);
+		/** Un ajuste de tres piezas del lote que sale del Taller o regresa. */
+		const ajuste = (sale: boolean) =>
+			enAccionDePrueba(crearBase(servidor.base.app), servidor.modulos, (contexto) =>
+				escribirMovimiento(contexto, {
+					tipo: "ajuste",
+					documento: { tipo: "ajuste", id: uuidv7() },
+					renglones: [
+						{
+							origen: sale ? tallerId : null,
+							destino: sale ? null : tallerId,
+							varianteId: bulto.varianteId,
+							piezas: 3,
+							loteId: lote.loteId,
+						},
+					],
+					clave: uuidv7(),
+				}),
+			);
+		expect(await cuadrar("2027-01-01")).toMatchObject({ estado: "cuadro" });
+		await ajuste(true);
+		const cuadre = await cuadrar("2027-01-02");
+		expect(await excepcionesDe(cuadre)).toEqual([
+			{
+				tipo: "cuadre_proyeccion",
+				variante_id: bulto.varianteId,
+				documento_id: null,
+				datos: {
+					lote_id: lote.loteId,
+					variante_id: bulto.varianteId,
+					folio: lote.folio,
+					produccion: 24,
+					taller: 21,
+				},
+			},
+		]);
+		await ajuste(false);
+		expect(await cuadrar("2027-01-03")).toMatchObject({ estado: "cuadro" });
 	});
 });

@@ -21,12 +21,14 @@ import {
 	marcarLoteRevisado,
 	pasarPedidoATemporada,
 } from "./internas/lotes.ts";
+import { recalcularProyecciones } from "./internas/proyecciones.ts";
 import { ponerTarifaARegistros, registrosParaNomina } from "./internas/registros.ts";
 import { flujoVigente } from "./lecturas/flujos.ts";
 import { cortesDePrenda, lotesPorCortar, lotesSinTerminarDeVariante, piezasEnProduccion } from "./lecturas/lotes.ts";
 import { semillaDeParametrosDeProduccion } from "./parametros.ts";
 import { lectoresDeProduccion } from "./permisos.ts";
 import { semillaDeCorte } from "./siembra.ts";
+import { vigilarLotesAtorados } from "./trabajos/vigilar-lotes-atorados.ts";
 
 export default definirModulo({
 	nombre: "produccion",
@@ -49,6 +51,7 @@ export default definirModulo({
 		marcar_lote_revisado: marcarLoteRevisado,
 		marcar_lote_en_aduana: marcarLoteEnAduana,
 		poner_tarifa_a_registros: ponerTarifaARegistros,
+		recalcular_proyecciones: recalcularProyecciones,
 	},
 	lecturas: {
 		flujo_vigente: flujoVigente,
@@ -58,6 +61,7 @@ export default definirModulo({
 		cortes_de_prenda: cortesDePrenda,
 		registros_para_nomina: registrosParaNomina,
 	},
+	trabajos: [vigilarLotesAtorados],
 	semillas: [semillaDeCorte, semillaDeParametrosDeProduccion],
 	lectores: lectoresDeProduccion,
 	bajada: bajadaDeProduccion,
