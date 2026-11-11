@@ -30,9 +30,9 @@ describe("Un proveedor tiene un solo borrador: lo que se levanta se suma ahí, t
 	}
 
 	it("nace en borrador con su folio y la fecha prometida de lo que dice que tarda; lo siguiente se suma, y un material que ya estaba cambia", async () => {
-		const ochoa = await altaDeProveedor(servidor, { nombre: "Refacciones Ochoa", dias_dice_tardar: 4 });
+		const ochoa = await altaDeProveedor(servidor, { nombre: "Refacciones Olvera", dias_dice_tardar: 4 });
 		const agujas = await altaDeMaterial(servidor, ochoa, {
-			nombre: "Agujas 14/90",
+			nombre: "Agujas 16/100",
 			tipo: "consumible",
 			unidad: "cajas",
 			costo_centavos: 25_000,
@@ -46,10 +46,10 @@ describe("Un proveedor tiene un solo borrador: lo que se levanta se suma ahí, t
 		);
 		expect(primera.cuerpo).toMatchObject({
 			resultado: {
-				ordenes: [{ proveedor: "Refacciones Ochoa", resultado: "nueva", folio: expect.stringMatching(/^OC-\d{4}$/) }],
-				mensaje: expect.stringMatching(/^OC-\d{4} quedó en borrador con Refacciones Ochoa$/),
+				ordenes: [{ proveedor: "Refacciones Olvera", resultado: "nueva", folio: expect.stringMatching(/^OC-\d{4}$/) }],
+				mensaje: expect.stringMatching(/^OC-\d{4} quedó en borrador con Refacciones Olvera$/),
 			},
-			avisos: ["Agujas 14/90: sube 4 % · antes $250"],
+			avisos: ["Agujas 16/100: sube 4 % · antes $250"],
 		});
 		const segunda = await levantarDePrueba(servidor, [
 			{ material_id: bandas, proveedor_id: ochoa, cantidad: 6, precio_centavos: 9_500 },
@@ -96,9 +96,9 @@ describe("Un proveedor tiene un solo borrador: lo que se levanta se suma ahí, t
 	});
 
 	it("la cantidad: múltiplo de lo que se compra junto y hasta el tope; el material repetido, el material y el proveedor de baja", async () => {
-		const proveedor = await altaDeProveedor(servidor, { nombre: "Textiles Aurora" });
+		const proveedor = await altaDeProveedor(servidor, { nombre: "Textiles Alborada" });
 		const gabardina = await altaDeMaterial(servidor, proveedor, {
-			nombre: "Gabardina azul marino",
+			nombre: "Gabardina azul noche",
 			tipo: "tela",
 			unidad: "m",
 			multiplo_compra: 50,
@@ -124,7 +124,7 @@ describe("Un proveedor tiene un solo borrador: lo que se levanta se suma ahí, t
 		expect((await levantar([])).cuerpo).toMatchObject({ error: "validacion" });
 		expect((await levantar([linea(100), linea(150)])).cuerpo).toMatchObject({
 			codigo: "material_repetido",
-			mensaje: "Gabardina azul marino está dos veces con Textiles Aurora.",
+			mensaje: "Gabardina azul noche está dos veces con Textiles Alborada.",
 		});
 		const { rows } = await servidor.base.dueno.query(
 			"SELECT count(*)::int AS n FROM ordenes_compra WHERE proveedor_id = $1",

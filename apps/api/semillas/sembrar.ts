@@ -11,6 +11,7 @@ import { abrirConexiones, type Base, crearBase } from "../src/nucleo/base/conexi
 import { migrarYSembrar } from "../src/nucleo/base/migrar.ts";
 import { leerEntorno } from "../src/nucleo/entorno.ts";
 import { cargarCatalogoDeLaMuestra } from "./catalogo.ts";
+import { cargarComprasYPatronajeDeLaMuestra } from "./compras-y-patronaje.ts";
 import { cargarCuentasDeLaMuestra } from "./cuentas.ts";
 import { cargarPersonasDeLaMuestra } from "./personas.ts";
 
@@ -22,6 +23,7 @@ export const cargasDeLaMuestra: readonly CargaDeLaMuestra[] = [
 	cargarPersonasDeLaMuestra,
 	cargarCuentasDeLaMuestra,
 	cargarCatalogoDeLaMuestra,
+	cargarComprasYPatronajeDeLaMuestra,
 ];
 
 if (import.meta.main) {

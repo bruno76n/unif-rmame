@@ -313,4 +313,6 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 11 nov 2026 | 10 | La memoria de la cuenta (decisión 550) | Calcular cada vez · una vez por transacción | Una vez: todos leen los mismos números | No |
 | 11 nov 2026 | 10 | Un solo día sin material (decisión 551) | «1 días» · «1 día» | «1 día» | No |
 | 11 nov 2026 | 10 | Las salidas que se revierten (decisión 552) | Ignorarlas · contarlas al revés | Al revés: una entrega deshecha no es consumo | No |
+| 11 nov 2026 | 10 | Lo de la muestra que el sistema todavía no hace (decisión 553) | Esperar a sus fases · ajustarlo y cargar lo demás con las acciones | Ajustarlo: la muestra de Compras y Patronaje ya se ve en local | No |
+| 11 nov 2026 | 10 | Correr acciones desde una carga (decisión 554) | Copiar el código · un archivo común | Un archivo común | No |
 

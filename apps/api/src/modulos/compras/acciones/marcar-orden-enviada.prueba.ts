@@ -42,10 +42,10 @@ describe("Enviar congela cantidades y precios, copia la condición, guarda el PD
 	});
 
 	it("enviada: congelada, con la condición del proveedor, su PDF, el precio nuevo en el historial y el proveedor entre los que surten", async () => {
-		const aurora = await altaDeProveedor(servidor, { nombre: "Textiles Aurora", dias_credito: 30 });
+		const aurora = await altaDeProveedor(servidor, { nombre: "Textiles Alborada", dias_credito: 30 });
 		const otro = await altaDeProveedor(servidor, { nombre: "Telas del Bajío", dias_credito: 15 });
 		const gabardina = await altaDeMaterial(servidor, aurora, {
-			nombre: "Gabardina azul marino",
+			nombre: "Gabardina azul noche",
 			tipo: "tela",
 			unidad: "m",
 			multiplo_compra: 50,
@@ -61,11 +61,11 @@ describe("Enviar congela cantidades y precios, copia la condición, guarda el PD
 		const enviada = await enviarDePrueba(servidor, orden.id, { fecha_prometida: fecha });
 		expect(enviada.estado).toBe(200);
 		expect(enviada.cuerpo.resultado).toMatchObject({
-			precios_nuevos: [{ material: "Gabardina azul marino", precio_centavos: 8_400 }],
+			precios_nuevos: [{ material: "Gabardina azul noche", precio_centavos: 8_400 }],
 			pdf_url: expect.any(String),
 			mensaje: expect.stringMatching(
 				new RegExp(
-					`^${orden.folio} enviada a Telas del Bajío\\. Promete llegar el \\d+ de \\w+\\. Precio nuevo: Gabardina azul marino a \\$84$`,
+					`^${orden.folio} enviada a Telas del Bajío\\. Promete llegar el \\d+ de \\w+\\. Precio nuevo: Gabardina azul noche a \\$84$`,
 				),
 			),
 		});

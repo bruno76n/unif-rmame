@@ -36,26 +36,26 @@ describe("Un proveedor nuevo con el nombre de un cliente se liga a su tercero en
 	}
 
 	it("nace con su rol; con otro rol y `ligar_si_existe` se liga sin importar acentos, mayúsculas ni espacios; con el mismo rol, rol_ya_existe", async () => {
-		const cliente = (await interna("crear_tercero", { nombre: "Textiles Aurora", rol: "cliente" })) as {
+		const cliente = (await interna("crear_tercero", { nombre: "Textiles Alborada", rol: "cliente" })) as {
 			tercero_id: string;
 			ya_existia: boolean;
 		};
 		expect(cliente).toMatchObject({ ya_existia: false });
 		const ligado = await interna("crear_tercero", {
-			nombre: "  TEXTILES   aurorá ",
+			nombre: "  TEXTILES   alboradá ",
 			rol: "proveedor",
 			ligar_si_existe: true,
 		});
 		expect(ligado).toEqual({ tercero_id: cliente.tercero_id, ya_existia: true, avisos: [] });
 		expect(await roles(cliente.tercero_id)).toEqual({ es_cliente: true, es_proveedor: true, es_acreedor: false });
 		expect(
-			await interna("crear_tercero", { nombre: "Textiles Aurora", rol: "proveedor", ligar_si_existe: true }),
+			await interna("crear_tercero", { nombre: "Textiles Alborada", rol: "proveedor", ligar_si_existe: true }),
 		).toMatchObject({
 			codigo: "rol_ya_existe",
 			mensaje: "Ya está en la lista.",
 		});
 		const { rows } = await servidor.base.dueno.query(
-			"SELECT count(*)::int AS n FROM terceros WHERE nombre_busqueda = 'textiles aurora'",
+			"SELECT count(*)::int AS n FROM terceros WHERE nombre_busqueda = 'textiles alborada'",
 		);
 		expect(rows[0]?.n).toBe(1);
 	});
@@ -82,18 +82,18 @@ describe("Un proveedor nuevo con el nombre de un cliente se liga a su tercero en
 	});
 
 	it("el RFC: 12 o 13 letras y números, en mayúsculas; uno que ya tiene otro avisa sin detener", async () => {
-		expect(await interna("crear_tercero", { nombre: "Hilos del Centro", rol: "proveedor", rfc: "ABC" })).toMatchObject({
+		expect(await interna("crear_tercero", { nombre: "Hilos del Norte", rol: "proveedor", rfc: "ABC" })).toMatchObject({
 			error: "validacion",
 			campos: { rfc: "El RFC lleva 12 o 13 letras y números" },
 		});
-		await interna("crear_tercero", { nombre: "Hilos del Centro", rol: "proveedor", rfc: "hce010101ab1" });
-		const { rows } = await servidor.base.dueno.query("SELECT rfc FROM terceros WHERE nombre = 'Hilos del Centro'");
+		await interna("crear_tercero", { nombre: "Hilos del Norte", rol: "proveedor", rfc: "hce010101ab1" });
+		const { rows } = await servidor.base.dueno.query("SELECT rfc FROM terceros WHERE nombre = 'Hilos del Norte'");
 		expect(rows).toEqual([{ rfc: "HCE010101AB1" }]);
 		expect(
 			await interna("crear_tercero", { nombre: "Botones Reyes", rol: "proveedor", rfc: "HCE010101AB1" }),
 		).toMatchObject({
 			ya_existia: false,
-			avisos: ["Ese RFC ya lo tiene Hilos del Centro"],
+			avisos: ["Ese RFC ya lo tiene Hilos del Norte"],
 		});
 	});
 

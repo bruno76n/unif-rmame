@@ -94,9 +94,9 @@ describe("La proyección da los números del ejemplo de la gabardina azul marino
 	}
 
 	it("la gabardina: se acaba el 21 oct, faltan 4 días y pide 1,700 m; igual que la función que corre la pantalla", async () => {
-		const aurora = await altaDeProveedor(servidor, { nombre: "Textiles Aurora", dias_dice_tardar: 14 });
+		const aurora = await altaDeProveedor(servidor, { nombre: "Textiles Alborada", dias_dice_tardar: 14 });
 		const gabardina = await altaDeMaterial(servidor, aurora, {
-			nombre: "Gabardina azul marino",
+			nombre: "Gabardina azul noche",
 			tipo: "tela",
 			unidad: "m",
 			multiplo_compra: 50,

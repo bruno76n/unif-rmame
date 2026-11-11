@@ -31,10 +31,14 @@ describe("Un proveedor nuevo con el nombre de un cliente se liga a su tercero en
 	}
 
 	it("nace con su tercero, sus 10 dígitos y su bitácora; el mismo nombre con otros acentos o mayúsculas es proveedor_repetido", async () => {
-		const respuesta = await crear({ nombre: "Textiles Aurora", rfc: "tau010101ab1", surte: "Gabardinas y popelinas" });
+		const respuesta = await crear({
+			nombre: "Textiles Alborada",
+			rfc: "tau010101ab1",
+			surte: "Gabardinas y popelinas",
+		});
 		expect(respuesta.estado).toBe(200);
 		expect(respuesta.cuerpo).toMatchObject({
-			resultado: { mensaje: "Textiles Aurora ya está en Proveedores" },
+			resultado: { mensaje: "Textiles Alborada ya está en Proveedores" },
 			avisos: [],
 		});
 		const id = (respuesta.cuerpo.resultado as { proveedor_id: string }).proveedor_id;
@@ -48,7 +52,7 @@ describe("Un proveedor nuevo con el nombre de un cliente se liga a su tercero en
 				telefono: "4775550100",
 				dias_credito: 30,
 				dias_dice_tardar: 12,
-				nombre: "Textiles Aurora",
+				nombre: "Textiles Alborada",
 				rfc: "TAU010101AB1",
 				es_proveedor: true,
 				es_cliente: false,
@@ -58,8 +62,8 @@ describe("Un proveedor nuevo con el nombre de un cliente se liga a su tercero en
 			"SELECT descripcion FROM bitacora WHERE entidad_id = $1",
 			[id],
 		);
-		expect(bitacora).toEqual([{ descripcion: "Proveedor nuevo: Textiles Aurora, León" }]);
-		expect((await crear({ nombre: "TEXTILES  AURORÁ" })).cuerpo).toMatchObject({
+		expect(bitacora).toEqual([{ descripcion: "Proveedor nuevo: Textiles Alborada, León" }]);
+		expect((await crear({ nombre: "TEXTILES  ALBORADÁ" })).cuerpo).toMatchObject({
 			codigo: "proveedor_repetido",
 			mensaje: "Ya existe un proveedor con ese nombre",
 		});

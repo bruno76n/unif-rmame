@@ -41,13 +41,13 @@ describe("Un proveedor habitual o con órdenes abiertas no se da de baja", () =>
 	}
 
 	it("el habitual de dos materiales nombra el primero y cuántos más; al dejar de serlo se da de baja y su tercero queda", async () => {
-		const aurora = await altaDeProveedor(servidor, { nombre: "Textiles Aurora" });
+		const aurora = await altaDeProveedor(servidor, { nombre: "Textiles Alborada" });
 		const otro = await altaDeProveedor(servidor, { nombre: "Telas del Norte" });
-		const gabardina = await altaDeMaterial(servidor, aurora, { nombre: "Gabardina azul marino" });
-		const popelina = await altaDeMaterial(servidor, aurora, { nombre: "Popelina blanca" });
+		const gabardina = await altaDeMaterial(servidor, aurora, { nombre: "Gabardina azul noche" });
+		const popelina = await altaDeMaterial(servidor, aurora, { nombre: "Popelina perla" });
 		expect((await sobreProveedor("dar_baja_proveedor", aurora, { motivo: "Cerró la fábrica" })).cuerpo).toMatchObject({
 			codigo: "proveedor_habitual_de",
-			mensaje: "Textiles Aurora es el habitual de Gabardina azul marino y 1 más: haz habitual a otro antes.",
+			mensaje: "Textiles Alborada es el habitual de Gabardina azul noche y 1 más: haz habitual a otro antes.",
 		});
 		for (const material of [gabardina, popelina]) {
 			await mandarAccion(
@@ -70,7 +70,7 @@ describe("Un proveedor habitual o con órdenes abiertas no se da de baja", () =>
 			);
 		}
 		const baja = await sobreProveedor("dar_baja_proveedor", aurora, { motivo: "Cerró la fábrica" });
-		expect(baja.cuerpo.resultado).toMatchObject({ mensaje: "Textiles Aurora dado de baja" });
+		expect(baja.cuerpo.resultado).toMatchObject({ mensaje: "Textiles Alborada dado de baja" });
 		const { rows } = await servidor.base.dueno.query(
 			"SELECT p.baja_en IS NOT NULL AS de_baja, t.es_proveedor FROM proveedores p JOIN terceros t ON t.id = p.tercero_id WHERE p.id = $1",
 			[aurora],
@@ -80,11 +80,11 @@ describe("Un proveedor habitual o con órdenes abiertas no se da de baja", () =>
 			codigo: "proveedor_dado_de_baja",
 		});
 		expect((await sobreProveedor("reactivar_proveedor", aurora)).cuerpo.resultado).toMatchObject({
-			mensaje: "Textiles Aurora vuelve a estar activo",
+			mensaje: "Textiles Alborada vuelve a estar activo",
 		});
 		expect((await sobreProveedor("reactivar_proveedor", aurora)).cuerpo).toMatchObject({
 			codigo: "proveedor_activo",
-			mensaje: "Textiles Aurora ya está activo.",
+			mensaje: "Textiles Alborada ya está activo.",
 		});
 	});
 

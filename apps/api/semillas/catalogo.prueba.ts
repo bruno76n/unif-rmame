@@ -88,7 +88,9 @@ describe("los datos de la muestra del catálogo se cargan con estas mismas accio
 			{ accion: "catalogo.guardar_tipo_prenda" },
 		]);
 		expect(
-			await consultar("SELECT cerrada_en IS NOT NULL AS cerrada FROM sesiones WHERE agente = 'Carga de la muestra'"),
+			await consultar(
+				"SELECT cerrada_en IS NOT NULL AS cerrada FROM sesiones WHERE id = '01936f2e-0000-7000-8000-0000000000f1'",
+			),
 		).toEqual([{ cerrada: true }]);
 		await cargarCatalogoDeLaMuestra(crearBase(servidor.base.dueno));
 		expect(await consultar("SELECT count(*)::int AS n FROM escuelas")).toEqual([{ n: 6 }]);

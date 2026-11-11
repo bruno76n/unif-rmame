@@ -15,7 +15,7 @@ describe("El alta de un material deja, en una transacción, el material sin exis
 	let aurora: string;
 	beforeAll(async () => {
 		servidor = await crearServidorDePrueba();
-		aurora = await altaDeProveedor(servidor, { nombre: "Textiles Aurora" });
+		aurora = await altaDeProveedor(servidor, { nombre: "Textiles Alborada" });
 	});
 	afterAll(async () => {
 		await servidor.cerrar();
@@ -28,7 +28,7 @@ describe("El alta de un material deja, en una transacción, el material sin exis
 			"compras.crear_material",
 			{
 				datos: {
-					nombre: "Gabardina azul marino",
+					nombre: "Gabardina azul noche",
 					tipo: "tela",
 					unidad: "m",
 					presentacion: "Ancho 1.50 m",
@@ -48,7 +48,7 @@ describe("El alta de un material deja, en una transacción, el material sin exis
 		const respuesta = await crear({});
 		expect(respuesta.cuerpo).toMatchObject({
 			resultado: {
-				mensaje: "Gabardina azul marino ya está en Materiales. Lo que haya hoy lo registra Bodega como carga inicial",
+				mensaje: "Gabardina azul noche ya está en Materiales. Lo que haya hoy lo registra Bodega como carga inicial",
 			},
 		});
 		const id = (respuesta.cuerpo.resultado as { material_id: string }).material_id;
@@ -91,11 +91,11 @@ describe("El alta de un material deja, en una transacción, el material sin exis
 			"SELECT descripcion FROM bitacora WHERE entidad_id = $1",
 			[id],
 		);
-		expect(bitacora).toEqual([{ descripcion: "Material nuevo: Gabardina azul marino, m, con Textiles Aurora a $78" }]);
+		expect(bitacora).toEqual([{ descripcion: "Material nuevo: Gabardina azul noche, m, con Textiles Alborada a $78" }]);
 	});
 
 	it("el nombre es único sin acentos ni mayúsculas; la tela solo en metros; la unidad sale de la lista", async () => {
-		await crear({ nombre: "Popelina blanca" });
+		await crear({ nombre: "Popelina perla" });
 		expect((await crear({ nombre: "POPELINA BLANCÁ" })).cuerpo).toMatchObject({
 			codigo: "nombre_repetido",
 			mensaje: "Ya existe un material con ese nombre",
@@ -120,12 +120,12 @@ describe("El alta de un material deja, en una transacción, el material sin exis
 
 	it("la conversión: cada unidad con su factor, y la de la tablet solo en un consumible", async () => {
 		expect(
-			(await crear({ nombre: "Hilo poliéster marino", tipo: "avio", unidad: "conos", unidad_receta: "m" })).cuerpo,
+			(await crear({ nombre: "Hilo poliéster gris", tipo: "avio", unidad: "conos", unidad_receta: "m" })).cuerpo,
 		).toMatchObject({ codigo: "falta_conversion", mensaje: "Escribe cuántas m trae un conos." });
 		expect(
 			(
 				await crear({
-					nombre: "Hilo poliéster marino",
+					nombre: "Hilo poliéster gris",
 					tipo: "avio",
 					unidad: "conos",
 					unidad_receta: "m",

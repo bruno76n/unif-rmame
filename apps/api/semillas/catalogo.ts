@@ -9,13 +9,9 @@
  * precios de las listas de clientes llegan con Ventas (fase 16). Si las escuelas ya están, no hace nada.
  */
 
-import { createHash, randomBytes } from "node:crypto";
 import { join } from "node:path";
-import { and, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 import { Temporal } from "temporal-polyfill";
-import { v7 as uuidv7 } from "uuid";
-import { z } from "zod";
-import { sesiones } from "../src/modulos/admin/tablas.ts";
 import {
 	categoriasMayoreo,
 	escuelas,
@@ -27,9 +23,9 @@ import {
 	variantes,
 } from "../src/modulos/catalogo/tablas.ts";
 import type { CuentaQueLlama } from "../src/nucleo/acceso/quien.ts";
-import { correrAccion, escribirBitacoraConAdmin, guardarEventosConAdmin } from "../src/nucleo/acciones/corredor.ts";
 import type { Base } from "../src/nucleo/base/conexion.ts";
-import { cargarModulos, type RegistroDeModulos } from "../src/nucleo/modulos.ts";
+import { cargarModulos } from "../src/nucleo/modulos.ts";
+import { enSesionDeCarga, idDe } from "./correr.ts";
 
 /** Rosa Méndez, la cuenta de la oficina que lleva Catálogo (`cuentas.ts`), en la sesión de la carga. */
 const rosa: CuentaQueLlama = {
@@ -44,7 +40,7 @@ const rosa: CuentaQueLlama = {
 };
 
 /** Las escuelas de la muestra, por su clave corta. */
-const escuelasDeLaMuestra: Record<string, { nombre: string; municipio: string }> = {
+export const escuelasDeLaMuestra: Record<string, { nombre: string; municipio: string }> = {
 	cm: { nombre: "Colegio Morelos", municipio: "Yurécuaro" },
 	jp: { nombre: "Instituto Juan Pablo II", municipio: "La Piedad" },
 	st: { nombre: "Secundaria Técnica 12", municipio: "Zamora" },
@@ -91,7 +87,7 @@ const categorias: Record<string, string> = {
  * normales y de pedido especial (`inf 4-16|adu CH-XG`, `inf 3,18`) y precios en pesos de Mostrador, Mayoreo
  * y En línea.
  */
-interface ProductoDeLaMuestra {
+export interface ProductoDeLaMuestra {
 	nombre: string;
 	seccion: string;
 	escuela: string | null;
@@ -124,7 +120,7 @@ function p(
 
 /** Los productos de la muestra, uno por renglón como en ella. */
 // biome-ignore format: una tabla se lee mejor con un producto por renglón
-const productosDeLaMuestra: readonly ProductoDeLaMuestra[] = [
+export const productosDeLaMuestra: readonly ProductoDeLaMuestra[] = [
 	p("Playera polo blanca lisa", "Playeras", null, "Playera", "basico", "mlx", "inf 4-16|adu CH-XG", "inf 3,18|adu XXG", { mos: 175, may: 150, lin: 175 }),
 	p("Playera polo blanca con escudo", "Playeras", "cm", "Playera", "especial", "mlx", "inf 4-16|adu CH-XG", "inf 3,18|adu XXG", { mos: 235, may: 220, lin: 235 }),
 	p("Playera polo blanca con escudo", "Playeras", "jp", "Playera", "especial", "mlx", "inf 4-16|adu CH-XG", "inf 3,18|adu XXG", { mos: 230, may: 215, lin: 230 }),
@@ -188,28 +184,6 @@ function tallasDe(texto: string, tallasPorGrupo: Map<string, { id: string; nombr
 		});
 }
 
-/** Corre las acciones de la carga como Rosa, una por una. */
-function crearHacer(base: Base, registro: RegistroDeModulos) {
-	return async (nombre: string, datos: unknown, version?: number): Promise<Record<string, unknown>> => {
-		const accion = registro.acciones.get(nombre);
-		if (accion === undefined) throw new Error(`no existe la acción ${nombre}`);
-		const respuesta = await correrAccion(
-			{
-				base,
-				registro,
-				servicios: { guardarEventos: guardarEventosConAdmin, escribirBitacora: escribirBitacoraConAdmin },
-			},
-			{
-				accion,
-				quien: rosa,
-				cuerpo: { clave_idempotencia: uuidv7(), datos, version },
-				ahora: Temporal.Now.instant(),
-			},
-		);
-		return respuesta.resultado;
-	};
-}
-
 /** La versión de un producto. */
 async function versionDe(base: Base, productoId: string): Promise<number> {
 	const [producto] = await base
@@ -217,11 +191,6 @@ async function versionDe(base: Base, productoId: string): Promise<number> {
 		.from(productos)
 		.where(eq(productos.id, productoId));
 	return Number(producto?.version);
-}
-
-/** Lee un id de lo que regresó una acción. */
-function idDe(resultado: Record<string, unknown>, campo: string): string {
-	return z.uuid().parse(resultado[campo]);
 }
 
 /**
@@ -233,17 +202,7 @@ export async function cargarCatalogoDeLaMuestra(base: Base): Promise<void> {
 	if (yaEsta !== undefined) return;
 	const registro = await cargarModulos(join(import.meta.dirname, "../src/modulos"));
 	const ahora = Temporal.Now.instant().toString();
-	// La sesión de la carga: nadie tiene su token, y se cierra al terminar.
-	await base.insert(sesiones).values({
-		id: rosa.sesionId,
-		usuarioId: rosa.usuarioId,
-		tokenHash: createHash("sha256").update(randomBytes(32)).digest("hex"),
-		ultimaActividadEn: ahora,
-		venceEn: ahora,
-		agente: "Carga de la muestra",
-	});
-	const hacer = crearHacer(base, registro);
-	try {
+	await enSesionDeCarga(base, registro, rosa, async (hacer) => {
 		const escuelaIds = new Map<string, string>();
 		for (const [clave, escuela] of Object.entries(escuelasDeLaMuestra)) {
 			escuelaIds.set(clave, idDe(await hacer("catalogo.agregar_escuela", escuela), "escuela_id"));
@@ -360,11 +319,5 @@ export async function cargarCatalogoDeLaMuestra(base: Base): Promise<void> {
 					isNull(variantes.bajaEn),
 				),
 			);
-	} finally {
-		// La sesión de la carga se cierra aunque algo falle.
-		await base
-			.update(sesiones)
-			.set({ cerradaEn: sql`now()`, motivoCierre: "salio" })
-			.where(eq(sesiones.id, rosa.sesionId));
-	}
+	});
 }
