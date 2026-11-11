@@ -8,8 +8,8 @@
  * cierra al terminar. Lo que el sistema todavía no puede hacer se ajusta (decisión 553):
  * - las recetas entran en su versión vigente, sin verificar: la verificación llega con el corte (fase 12);
  * - las órdenes se levantan con su acción y se marcan enviadas directo, porque enviar guarda su PDF con la hoja de
- *   la fase 20; la que la muestra tiene recibida en parte entra enviada, y su recepción llega con Aduana (fase 11);
- *   las recibidas y cerradas llegan con sus recepciones y sus pagos (fases 11 y 17);
+ *   la fase 20; las que la muestra tiene recibidas (y la recibida en parte) entran enviadas, y sus recepciones las
+ *   carga Aduana y Bodega (fase 11); las cerradas se cierran con sus pagos (fase 17);
  * - el desarrollo que ya está en catálogo se liga con la interna que llama el alta del producto, porque su
  *   producto ya lo dio de alta el catálogo de la muestra.
  * Si los proveedores ya están, no hace nada.
@@ -223,6 +223,63 @@ interface OrdenDeLaMuestra {
 	envio: { enviada: string; prometida: string } | null;
 	lineas: [string, number, number][];
 }
+
+/** Una orden de la muestra que ya llegó: proveedor, envío, día en que Aduana la recibió y sus líneas. */
+export interface OrdenRecibidaDeLaMuestra {
+	proveedor: string;
+	enviada: string;
+	prometida: string;
+	recibida: string;
+	lineas: [string, number, number][];
+}
+
+/**
+ * Las órdenes de la muestra que ya llegaron (OC-0218 a OC-0223), del envío más viejo al más nuevo, con el día en que
+ * Aduana las recibió: aquí se levantan y se marcan enviadas; las recibe la carga de Aduana y Bodega (fase 11).
+ */
+export const recibidasDeLaMuestra: readonly OrdenRecibidaDeLaMuestra[] = [
+	{
+		proveedor: "p5",
+		enviada: "2026-09-02",
+		prometida: "2026-09-07",
+		recibida: "2026-09-07",
+		lineas: [["m10", 500, 9.8]],
+	},
+	{
+		proveedor: "p1",
+		enviada: "2026-09-10",
+		prometida: "2026-09-22",
+		recibida: "2026-09-28",
+		lineas: [["m01", 500, 78]],
+	},
+	{
+		proveedor: "p3",
+		enviada: "2026-09-12",
+		prometida: "2026-09-24",
+		recibida: "2026-10-02",
+		lineas: [["m04", 400, 96]],
+	},
+	{
+		proveedor: "p6",
+		enviada: "2026-09-14",
+		prometida: "2026-09-21",
+		recibida: "2026-09-29",
+		lineas: [["m13", 24, 118]],
+	},
+	{
+		proveedor: "p3",
+		enviada: "2026-09-22",
+		prometida: "2026-10-02",
+		recibida: "2026-10-04",
+		lineas: [["m07", 600, 68]],
+	},
+];
+
+/** El nombre de un proveedor de la muestra por su clave. */
+export const nombreDeProveedor = (clave: string) => proveedoresDeLaMuestra[clave]?.[0] ?? clave;
+
+/** El nombre de un material de la muestra por su clave. */
+export const nombreDeMaterial = (clave: string) => materialesDeLaMuestra[clave]?.nombre ?? clave;
 
 /** Las órdenes abiertas de la muestra (OC-0224 a OC-0229), en su orden. Precio en pesos. */
 const ordenesDeLaMuestra: readonly OrdenDeLaMuestra[] = [
@@ -479,7 +536,15 @@ async function cargarOrdenes(
 	proveedorIds: ReadonlyMap<string, string>,
 	materialIds: ReadonlyMap<string, string>,
 ): Promise<void> {
-	for (const orden of ordenesDeLaMuestra) {
+	// Primero las que ya llegaron, como enviadas en su día; después las abiertas.
+	const todas = [
+		...recibidasDeLaMuestra.map((orden) => ({
+			...orden,
+			envio: { enviada: orden.enviada, prometida: orden.prometida },
+		})),
+		...ordenesDeLaMuestra,
+	];
+	for (const orden of todas) {
 		const proveedorId = proveedorIds.get(orden.proveedor) ?? "";
 		const levantada = await hacer("compras.levantar_orden", {
 			renglones: orden.lineas.map(([material, cantidad, pesos]) => ({

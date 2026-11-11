@@ -16,8 +16,16 @@ import { correrAccion, escribirBitacoraConAdmin, guardarEventosConAdmin } from "
 import type { Base } from "../src/nucleo/base/conexion.ts";
 import type { RegistroDeModulos } from "../src/nucleo/modulos.ts";
 
-/** Corre una acción con sus datos y, si edita, su versión; regresa su resultado. */
-export type Hacer = (nombre: string, datos: unknown, version?: number) => Promise<Record<string, unknown>>;
+/**
+ * Corre una acción con sus datos y, si edita, su versión; regresa su resultado. Con `ahora`, la corre a esa hora (lo
+ * que la muestra dice que pasó en un día).
+ */
+export type Hacer = (
+	nombre: string,
+	datos: unknown,
+	version?: number,
+	ahora?: Temporal.Instant,
+) => Promise<Record<string, unknown>>;
 
 /**
  * Corre lo que hace una carga en una sesión de `quien` que nadie tiene: la abre antes y la cierra al terminar,
@@ -43,7 +51,7 @@ export async function enSesionDeCarga(
 		agente: "Carga de la muestra",
 	});
 	try {
-		await cargar(async (nombre, datos, version) => {
+		await cargar(async (nombre, datos, version, ahora) => {
 			const accion = registro.acciones.get(nombre);
 			if (accion === undefined) throw new Error(`no existe la acción ${nombre}`);
 			const respuesta = await correrAccion(
@@ -56,7 +64,7 @@ export async function enSesionDeCarga(
 					accion,
 					quien,
 					cuerpo: { clave_idempotencia: uuidv7(), datos, version },
-					ahora: Temporal.Now.instant(),
+					ahora: ahora ?? Temporal.Now.instant(),
 				},
 			);
 			return respuesta.resultado;

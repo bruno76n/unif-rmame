@@ -90,7 +90,7 @@ describe("los datos de la muestra de Patronaje y Compras se cargan con estas mis
 		).toEqual([{ unidad_receta: "m", cantidad: "20.000" }]);
 	});
 
-	it("los cinco desarrollos en su etapa, el de catálogo ligado a su producto; las órdenes abiertas y el borrador", async () => {
+	it("los cinco desarrollos en su etapa, el de catálogo ligado a su producto; las órdenes abiertas y el borrador (las que llegaron las recibe la carga de Aduana)", async () => {
 		expect(
 			await consultar(
 				"SELECT d.prenda, d.etapa, p.nombre AS producto FROM desarrollos d LEFT JOIN productos p ON p.id = d.producto_id ORDER BY d.folio",
@@ -107,12 +107,13 @@ describe("los datos de la muestra de Patronaje y Compras se cargan con estas mis
 				`SELECT t.nombre AS proveedor, o.estado, o.fecha_prometida::text AS prometida, o.dias_credito,
 				        (SELECT count(*)::int FROM orden_compra_lineas l WHERE l.orden_compra_id = o.id) AS lineas
 				 FROM ordenes_compra o JOIN proveedores p ON p.id = o.proveedor_id JOIN terceros t ON t.id = p.tercero_id
-				 ORDER BY o.folio`,
+				 WHERE o.estado IN ('borrador', 'enviada', 'recibida_en_parte') ORDER BY o.folio`,
 			),
 		).toEqual([
 			{ proveedor: "Textiles Aurora", estado: "enviada", prometida: "2026-10-06", dias_credito: 30, lineas: 2 },
 			{ proveedor: "Refacciones Ochoa", estado: "enviada", prometida: "2026-10-12", dias_credito: 0, lineas: 2 },
-			{ proveedor: "Telas Jalisco", estado: "enviada", prometida: "2026-10-20", dias_credito: 15, lineas: 1 },
+			// La carga de Aduana y Bodega (fase 11) le recibe 300 m.
+			{ proveedor: "Telas Jalisco", estado: "recibida_en_parte", prometida: "2026-10-20", dias_credito: 15, lineas: 1 },
 			{ proveedor: "Textiles San Marcos", estado: "enviada", prometida: "2026-10-15", dias_credito: 30, lineas: 1 },
 			{ proveedor: "Mercería La Central", estado: "enviada", prometida: "2026-10-13", dias_credito: 0, lineas: 2 },
 			{

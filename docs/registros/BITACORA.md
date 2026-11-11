@@ -79,3 +79,4 @@ La línea de la bitácora se escribe al final, con el resultado ya conocido. Esc
 | 11 nov 2026 | 11 | 1 · Rollos y recepción de proveedor | [2026-11-11-fase-11](sesiones/2026-11-11-fase-11.md) |
 | 11 nov 2026 | 11 | 2 · Despachos | [2026-11-11-fase-11](sesiones/2026-11-11-fase-11.md) |
 | 11 nov 2026 | 11 | 3 · Surtir, recibir en aduana y devolver al proveedor | [2026-11-11-fase-11](sesiones/2026-11-11-fase-11.md) |
+| 11 nov 2026 | 11 | Cierre · datos de la muestra | [2026-11-11-fase-11](sesiones/2026-11-11-fase-11.md) |

@@ -10,6 +10,7 @@
 import { abrirConexiones, type Base, crearBase } from "../src/nucleo/base/conexion.ts";
 import { migrarYSembrar } from "../src/nucleo/base/migrar.ts";
 import { leerEntorno } from "../src/nucleo/entorno.ts";
+import { cargarAduanaYBodegaDeLaMuestra } from "./aduana-y-bodega.ts";
 import { cargarCatalogoDeLaMuestra } from "./catalogo.ts";
 import { cargarComprasYPatronajeDeLaMuestra } from "./compras-y-patronaje.ts";
 import { cargarCuentasDeLaMuestra } from "./cuentas.ts";
@@ -24,6 +25,7 @@ export const cargasDeLaMuestra: readonly CargaDeLaMuestra[] = [
 	cargarCuentasDeLaMuestra,
 	cargarCatalogoDeLaMuestra,
 	cargarComprasYPatronajeDeLaMuestra,
+	cargarAduanaYBodegaDeLaMuestra,
 ];
 
 if (import.meta.main) {
