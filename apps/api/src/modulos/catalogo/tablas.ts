@@ -1,6 +1,7 @@
 /**
- * Las tablas de `catalogo`: escuelas, secciones, grupos de tallas, tallas, tipos de prenda y sus medidas.
- * Fase 8 · docs/modulos/catalogo/escuelas-y-secciones.md y tallas-y-tipos-de-prenda.md (sus tablas)
+ * Las tablas de `catalogo`: escuelas, secciones, grupos de tallas, tallas, tipos de prenda y sus medidas,
+ * listas de precios y categorías de mayoreo.
+ * Fase 8 · docs/modulos/catalogo/escuelas-y-secciones.md, tallas-y-tipos-de-prenda.md y listas-de-precios.md
  *
  * Nada se borra: lo que se quita queda con su baja. Las tallas bajan a la tablet, así que llevan
  * `xid_escritura`.
@@ -153,5 +154,63 @@ export const tipoPrendaMedidas = pgTable(
 			.on(tabla.tipoPrendaId, sql`lower(${tabla.medida})`, tabla.tallaId)
 			.where(sql`${tabla.bajaEn} is null`),
 		check("tipo_prenda_medidas_medida", sql`char_length(${tabla.medida}) >= 3`),
+	],
+);
+
+/** Una lista de precios: las tres generales (Mostrador, Mayoreo, En línea) y una por cliente externo. */
+export const listasPrecios = pgTable(
+	"listas_precios",
+	{
+		id: uuid("id").primaryKey(),
+		tipo: text("tipo").notNull(),
+		nombre: text("nombre").notNull(),
+		nombreCorto: text("nombre_corto"),
+		descripcion: text("descripcion"),
+		/** @llavePendiente clientes.id */
+		clienteId: uuid("cliente_id"),
+		pctBasicos: numeric("pct_basicos", { precision: 6, scale: 3 }),
+		pctEspeciales: numeric("pct_especiales", { precision: 6, scale: 3 }),
+		orden: integer("orden").notNull(),
+		...columnasDeBaja(),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		uniqueIndex("listas_precios_nombre").on(sql`lower(${tabla.nombre})`),
+		uniqueIndex("listas_precios_general")
+			.on(tabla.tipo)
+			.where(sql`${tabla.tipo} <> 'cliente' and ${tabla.bajaEn} is null`),
+		uniqueIndex("listas_precios_cliente").on(tabla.clienteId).where(sql`${tabla.clienteId} is not null`),
+		index("listas_precios_version").on(tabla.version),
+		check("listas_precios_tipo", sql`${tabla.tipo} in ('mostrador', 'mayoreo', 'en_linea', 'cliente')`),
+		check("listas_precios_cliente", sql`(${tabla.tipo} = 'cliente') = (${tabla.clienteId} is not null)`),
+		check(
+			"listas_precios_porcentajes",
+			sql`(${tabla.tipo} = 'cliente' or (${tabla.pctBasicos} is null and ${tabla.pctEspeciales} is null)) and (${tabla.pctBasicos} is null or ${tabla.pctBasicos} between 0 and 100) and (${tabla.pctEspeciales} is null or ${tabla.pctEspeciales} between 0 and 100)`,
+		),
+	],
+);
+
+/** Una categoría de mayoreo: qué porcentaje del cliente le toca a un producto. */
+export const categoriasMayoreo = pgTable(
+	"categorias_mayoreo",
+	{
+		id: uuid("id").primaryKey(),
+		nombre: text("nombre").notNull(),
+		descripcion: text("descripcion").notNull(),
+		porcentajeQueAplica: text("porcentaje_que_aplica").notNull(),
+		defectoPara: text("defecto_para"),
+		orden: integer("orden").notNull(),
+		...columnasDeBaja(),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		uniqueIndex("categorias_mayoreo_nombre").on(sql`lower(${tabla.nombre})`),
+		uniqueIndex("categorias_mayoreo_defecto").on(tabla.defectoPara).where(sql`${tabla.defectoPara} is not null`),
+		index("categorias_mayoreo_version").on(tabla.version),
+		check("categorias_mayoreo_aplica", sql`${tabla.porcentajeQueAplica} in ('basicos', 'especiales', 'ninguno')`),
+		check(
+			"categorias_mayoreo_defecto",
+			sql`${tabla.defectoPara} is null or ${tabla.defectoPara} in ('con_escuela', 'sin_escuela')`,
+		),
 	],
 );

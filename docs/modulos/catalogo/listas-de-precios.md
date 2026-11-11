@@ -149,4 +149,9 @@ Las llama Ventas a externos dentro de sus propias acciones (ver [clientes](../ve
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 8.*
+**Fase 8, parte 2.**
+
+- **Las tablas** `listas_precios` y `categorias_mayoreo` son de `catalogo` (`tablas.ts`, migración `0023_listas_de_precios.sql`), con sus CHECK (el tipo, el cliente solo en las de cliente, los porcentajes solo en las de cliente y entre 0 y 100, a qué porcentaje aplica, el por omisión) y sus únicos (el nombre, una general de cada tipo, una lista por cliente, una categoría por omisión de cada clase). `cliente_id` lleva su `@llavePendiente`. Las tres listas generales y las cuatro categorías son parte de la siembra (`siembra.ts`).
+- **`catalogo.cambiar_porcentajes_cliente`** (`acciones/cambiar-porcentajes-cliente.ts`, contrato en `packages/compartido/src/contratos/catalogo/listas.ts`): con la versión de la lista; `lista_no_es_de_cliente`, `lista_dada_de_baja`; la bitácora dice el antes y el después de cada porcentaje («sin %» si no tenía).
+- **Las internas** (`internas/listas-de-cliente.ts`), sin bitácora propia: `crear_lista_cliente` (vacía, sin porcentajes, con el nombre del cliente; `lista_repetida`), `sincronizar_nombre_cliente` (la lista y su nombre corto si era igual; la escuela solo si se llamaba igual, revisando antes que no choque en su municipio; otra lista con ese nombre responde `lista_repetida`, decisión 439), `dar_baja_lista_cliente` y `reactivar_lista_cliente` (sus precios se conservan).
+- **Las pruebas:** `modulos/catalogo/internas/crear-lista-cliente.prueba.ts` (la siembra, nace vacía, una por cliente, los porcentajes con su bitácora, el `400`, la general, la de baja y la reactivada) y `sincronizar-nombre-cliente.prueba.ts` (se llamaban igual, la escuela con otro nombre, el choque de escuelas).

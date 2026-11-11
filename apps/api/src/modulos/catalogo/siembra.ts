@@ -1,7 +1,8 @@
 /**
- * La siembra del catálogo: las siete secciones y los cuatro grupos de tallas, parte de la siembra del sistema.
- * Fase 8 · docs/modulos/catalogo/escuelas-y-secciones.md («La siembra») y tallas-y-tipos-de-prenda.md («La
- * siembra»)
+ * La siembra del catálogo, parte de la siembra del sistema: las siete secciones, los cuatro grupos de tallas, las
+ * tres listas de precios generales y las cuatro categorías de mayoreo.
+ * Fase 8 · docs/modulos/catalogo/escuelas-y-secciones.md, tallas-y-tipos-de-prenda.md y listas-de-precios.md
+ * («La siembra»)
  *
  * Agrega lo que falte y nunca cambia lo que ya existe: si Catálogo ya agregó o reordenó tallas, se quedan así.
  */
@@ -11,7 +12,7 @@ import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
 import type { Base } from "../../nucleo/base/conexion.ts";
 import type { Semilla } from "../../nucleo/base/siembra.ts";
-import { gruposTalla, secciones, tallas } from "./tablas.ts";
+import { categoriasMayoreo, gruposTalla, listasPrecios, secciones, tallas } from "./tablas.ts";
 
 /** Las secciones, en su orden, y si llevan receta. */
 const lasSecciones: readonly [string, boolean][] = [
@@ -66,3 +67,47 @@ async function sembrarGrupos(base: Base): Promise<number> {
 
 /** La siembra de los grupos de tallas con sus tallas. */
 export const semillaDeGruposTalla: Semilla = { sembrar: sembrarGrupos };
+
+/** La siembra de las tres listas generales. */
+export const semillaDeListasPrecios: Semilla = {
+	tabla: listasPrecios,
+	filas: [
+		["mostrador", "Mostrador", "La que cobran las dos tiendas en el mostrador."],
+		[
+			"mayoreo",
+			"Mayoreo",
+			"Mayoreo en mostrador: el descuento de cada cliente se aplica según la categoría de cada prenda.",
+		],
+		["en_linea", "En línea", "La que ve la tienda en línea. Los pedidos especiales no se publican."],
+	].map(([tipo, nombre, descripcion], i) => ({
+		id: uuidv7(),
+		tipo,
+		nombre,
+		nombreCorto: nombre,
+		descripcion,
+		orden: i + 1,
+	})),
+};
+
+/** La siembra de las cuatro categorías de mayoreo. */
+export const semillaDeCategoriasMayoreo: Semilla = {
+	tabla: categoriasMayoreo,
+	filas: [
+		["Básico", "basicos", "sin_escuela", "Prenda lisa, sin escudo. Lleva el % de básicos de cada cliente de mayoreo."],
+		["Especial", "especiales", "con_escuela", "Con escudo o modelo de escuela. Lleva el % de especiales."],
+		["Accesorio", "basicos", null, "Lleva el % de básicos."],
+		[
+			"Sin descuento",
+			"ninguno",
+			null,
+			"Escudos, pegado de escudo y bordado de nombre: no llevan descuento de mayoreo.",
+		],
+	].map(([nombre, porcentajeQueAplica, defectoPara, descripcion], i) => ({
+		id: uuidv7(),
+		nombre,
+		porcentajeQueAplica,
+		defectoPara,
+		descripcion,
+		orden: i + 1,
+	})),
+};

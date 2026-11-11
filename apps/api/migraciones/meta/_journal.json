@@ -162,6 +162,13 @@
 			"when": 1794360682022,
 			"tag": "0022_catalogo_escuelas_y_tallas",
 			"breakpoints": true
+		},
+		{
+			"idx": 23,
+			"version": "7",
+			"when": 1794361205663,
+			"tag": "0023_listas_de_precios",
+			"breakpoints": true
 		}
 	]
 }
