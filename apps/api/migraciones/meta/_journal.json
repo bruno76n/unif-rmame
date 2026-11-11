@@ -169,6 +169,13 @@
 			"when": 1794361205663,
 			"tag": "0023_listas_de_precios",
 			"breakpoints": true
+		},
+		{
+			"idx": 24,
+			"version": "7",
+			"when": 1794361800011,
+			"tag": "0024_productos_variantes_y_precios",
+			"breakpoints": true
 		}
 	]
 }

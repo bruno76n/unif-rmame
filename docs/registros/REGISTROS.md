@@ -195,5 +195,11 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 11 nov 2026 | 8 | Cómo se escoge el color de una escuela (decisión 437) | Un contador · cuántas hay | Cuántas hay, con candado | No |
 | 11 nov 2026 | 8 | La talla que vuelve con el nombre de una quitada (decisión 438) | Otra talla · la misma, reactivada | La misma | No |
 | 11 nov 2026 | 8 | Renombrar al cliente a un nombre de otra lista (decisión 439) | Que choque en la base · `lista_repetida` | `lista_repetida` | No |
+| 11 nov 2026 | 8 | Quién da el alta de un producto (decisión 440) | Dos acciones · el contrato sin departamento y la revisión en la acción | La revisión en la acción | No |
+| 11 nov 2026 | 8 | Cómo revisa Catálogo la foto (decisión 441) | Leer `archivos` · una lectura de Administración | La lectura `admin.datos_de_archivo` | No |
+| 11 nov 2026 | 8 | El alta desde un desarrollo antes de la fase 10 (decisión 442) | Aceptarla · `400` | `400` | No |
+| 11 nov 2026 | 8 | Cómo cuida la base que un precio solo se cierre (decisión 443) | El permiso por columna · y un disparador | Los dos | No |
+| 11 nov 2026 | 8 | Los únicos con un vacío (decisión 444) | El índice a mano · `coalesce` | `coalesce` | No |
+| 11 nov 2026 | 8 | Qué precios de talla copia el alta a partir de otro (decisión 445) | Todos · los de las listas con precio base | Los de las listas con precio base | No |
 | 10 nov 2026 | 5 | La pantalla del Google de desarrollo | Una propia para escoger cuenta · la de desarrollo de oidc-provider, que pide el correo | La de oidc-provider; `pnpm local` escribe los correos de la muestra al arrancar | No |
 

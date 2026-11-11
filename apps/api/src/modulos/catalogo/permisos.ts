@@ -31,4 +31,9 @@ export const lectoresDeCatalogo: Record<string, readonly string[]> = {
 	// Las listas y sus porcentajes son precios: solo los departamentos que ven precios.
 	listas_precios: ["catalogo", "ventas", "linea", "contaduria", "direccion"],
 	categorias_mayoreo: ["catalogo", "ventas", "linea"],
+	// Los productos y sus tallas los leen casi todos; el recargo y los precios los quita el recorte de quien no
+	// ve precios.
+	productos: casiTodos,
+	variantes: casiTodos,
+	precios: ["catalogo", "ventas", "linea", "contaduria", "direccion"],
 };

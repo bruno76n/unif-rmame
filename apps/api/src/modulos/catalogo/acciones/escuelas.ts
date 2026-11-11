@@ -13,13 +13,13 @@ import {
 	editarEscuela,
 	reactivarEscuela,
 } from "@uniformame/compartido/contratos/catalogo/escuelas";
-import { and, eq, ne, sql } from "drizzle-orm";
+import { and, count, eq, isNull, ne, sql } from "drizzle-orm";
 import { tomarVersion, versionActual } from "../../../nucleo/acciones/pisadas.ts";
 import { errorDeRegla } from "../../../nucleo/http/errores.ts";
 import { implementarAccion } from "../../../nucleo/modulos.ts";
 import { quienCambia, revisarMotivo } from "../dominio/comunes.ts";
 import { crearEscuela, escuelaCambiada, leerEscuela } from "../dominio/escuelas.ts";
-import { escuelas } from "../tablas.ts";
+import { escuelas, productos } from "../tablas.ts";
 
 export const accionAgregarEscuela = implementarAccion(agregarEscuela, async (contexto, datos) => {
 	const escuela = await crearEscuela(contexto, datos, "Esa escuela ya existe.");
@@ -88,6 +88,16 @@ export const accionDarBajaEscuela = implementarAccion(darBajaEscuela, async (con
 		baja_en: escuela.bajaEn,
 	}));
 	if (escuela.bajaEn !== null) throw errorDeRegla("ya_dada_de_baja", `${escuela.nombre} ya está dada de baja.`);
+	const [modelos] = await transaccion
+		.select({ activos: count() })
+		.from(productos)
+		.where(and(eq(productos.escuelaId, escuela.id), isNull(productos.bajaEn)));
+	if ((modelos?.activos ?? 0) > 0) {
+		throw errorDeRegla(
+			"escuela_con_modelos",
+			`${escuela.nombre} tiene ${modelos?.activos} modelos activos: descontinúalos antes de darla de baja.`,
+		);
+	}
 	await transaccion
 		.update(escuelas)
 		.set({ bajaEn: contexto.ahora.toString(), bajaPor: quienCambia(contexto), motivoBaja: datos.motivo })

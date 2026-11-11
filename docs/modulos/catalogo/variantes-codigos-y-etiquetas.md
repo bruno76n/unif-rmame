@@ -154,4 +154,8 @@ Los cambia solo la dueña, en Configuración (ver [configuración](../admin/conf
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 8.*
+**Fase 8, parte 3.**
+
+- **La tabla** `variantes` es de `catalogo` (migración `0024`), con sus CHECK (el código de 6 dígitos y su rango según si vino de tienda, el estado de la etiqueta, `al_fabricar` solo en pedido especial, la impresión y el reimprimir con su fecha, el motivo de descontinuar y de la baja), su único de código, el de (`id`, `producto_id`) para la llave de `precios`, el de la talla viva por producto y `xid_escritura`.
+- **Los códigos** salen del contador `codigo_barras` en un solo paso por alta (`tomarCodigos`, en `dominio/productos.ts`): seguidos aunque haya dos altas a la vez, y nunca se reciclan.
+- **Lo que baja a la tablet** (`bajada.ts`): todas las variantes, solo con su producto y su talla, después de las tallas y los productos; nunca el código.

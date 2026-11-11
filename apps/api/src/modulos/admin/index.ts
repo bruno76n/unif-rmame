@@ -53,6 +53,7 @@ import { tomarFolio } from "./internas/tomar-folio.ts";
 import { correoDeCuenta } from "./lecturas/correo-de-cuenta.ts";
 import { cuentasPorRegla } from "./lecturas/cuentas-por-regla.ts";
 import { datosDeAparato } from "./lecturas/datos-de-aparato.ts";
+import { datosDeArchivo } from "./lecturas/datos-de-archivo.ts";
 import { parametro } from "./lecturas/parametro.ts";
 import { permisosDe } from "./lecturas/permisos-de.ts";
 import { siguienteFolio } from "./lecturas/siguiente-folio.ts";
@@ -118,6 +119,7 @@ export default definirModulo({
 		cuentas_por_regla: cuentasPorRegla,
 		correo_de_cuenta: correoDeCuenta,
 		datos_de_aparato: datosDeAparato,
+		datos_de_archivo: datosDeArchivo,
 	},
 	semillas: [semillaDeDepartamentos, semillaDeContadores, semillaDeParametrosDeAdmin],
 	trabajos: [depurarEventos, enviarCorreos, respaldoSemanal, recordatorioRestauracion, aparatosSinSincronizar],

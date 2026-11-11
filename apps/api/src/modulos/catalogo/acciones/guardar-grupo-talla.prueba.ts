@@ -1,11 +1,12 @@
 /**
  * Prueba de guardar un grupo de tallas: nuevo, sin repetir el grupo ni una talla, y con tallas que se
  * renombran, se reordenan, se quitan y vuelven.
- * Fase 8 · docs/fases/08-catalogo.md (partes 1 y 3: una talla en uso llega con los productos)
+ * Fase 8 · docs/fases/08-catalogo.md (partes 1 y 3)
  */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
+import { nuevoProducto, siembraDelCatalogo } from "../../../nucleo/pruebas/catalogo-de-prueba.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 
@@ -116,5 +117,40 @@ describe("un grupo de tallas se guarda completo: sus tallas nuevas, sus nombres,
 			orden: 3,
 			quitada: false,
 		});
+	});
+
+	it("una talla que ya usa un producto no se renombra ni se quita: talla_en_uso; su orden sí cambia", async () => {
+		const siembra = await siembraDelCatalogo(servidor);
+		await nuevoProducto(servidor, siembra);
+		const { rows } = await servidor.base.dueno.query(
+			"SELECT g.id AS grupo, g.version::int AS version FROM grupos_talla g WHERE g.nombre = 'Infantil'",
+		);
+		const grupo = rows[0];
+		const deInfantil = await tallasDe(grupo.grupo);
+		const tallas = deInfantil.map((talla) => ({ talla_id: talla.id, nombre: talla.nombre, orden: talla.orden }));
+		const renombrar = await guardar({
+			grupo_talla_id: grupo.grupo,
+			nombre: "Infantil",
+			version: grupo.version,
+			tallas: tallas.map((talla) => (talla.nombre === "4" ? { ...talla, nombre: "4A" } : talla)),
+		});
+		expect(renombrar.cuerpo).toMatchObject({
+			codigo: "talla_en_uso",
+			mensaje: expect.stringMatching(/^La talla 4 ya la usan \d+ productos: no se renombra ni se quita\.$/),
+		});
+		const quitar = await guardar({
+			grupo_talla_id: grupo.grupo,
+			nombre: "Infantil",
+			version: grupo.version,
+			tallas: tallas.filter((talla) => talla.nombre !== "6"),
+		});
+		expect(quitar.cuerpo).toMatchObject({ codigo: "talla_en_uso" });
+		const reordenar = await guardar({
+			grupo_talla_id: grupo.grupo,
+			nombre: "Infantil",
+			version: grupo.version,
+			tallas: tallas.map((talla) => ({ ...talla, orden: 100 - talla.orden })),
+		});
+		expect(reordenar.estado).toBe(200);
 	});
 });

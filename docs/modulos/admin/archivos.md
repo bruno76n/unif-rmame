@@ -120,6 +120,8 @@ Los dos van en la sección `tecnico`.
 
 ## Cómo está hecho
 
+- **Fase 8:** la lectura `admin.datos_de_archivo` (`lecturas/datos-de-archivo.ts`) da el tipo y el tamaño de un archivo para que el módulo que lo recibe revise sus propios topes antes de ligarlo, como la foto de un producto (decisión 441).
+
 **Fase 4, parte 5.**
 
 - **La tabla** `archivos` está en `apps/api/src/modulos/admin/tablas.ts` (migración `0007_archivos.sql`), con su disparador común. Quien la subió va en `creado_por` (una cuenta) o en `dispositivo_id` y `persona_id` (un aparato).

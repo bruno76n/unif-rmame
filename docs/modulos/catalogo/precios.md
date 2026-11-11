@@ -146,4 +146,8 @@ Los cambia solo la dueña, en Configuración (ver [configuración](../admin/conf
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 8.*
+**Fase 8, parte 3.**
+
+- **La tabla** `precios` es de `catalogo` (migración `0024`), con sus CHECK (pesos enteros, el fin con su motivo, el origen, la confirmación del bloque y el usuario del panel), la llave compuesta (`variante_id`, `producto_id`) hacia `variantes`, y el único del vigente por lista, producto y talla (la talla vacía, como un valor más, decisión 444). `usuario_panel_id` lleva su `@llavePendiente`.
+- **El rol de la app solo cierra un precio:** su `UPDATE` solo alcanza `vigente_hasta`, `fin_motivo` y `actualizado_en`, y el disparador `solo_cerrar_precio` no deja cambiar un precio ya cerrado (decisión 443).
+- **El alta** escribe los precios base con origen `alta_producto` (ver [productos](productos.md#cómo-está-hecho)).

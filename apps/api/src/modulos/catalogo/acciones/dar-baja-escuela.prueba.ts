@@ -1,14 +1,15 @@
 /**
  * Prueba de dar de baja y reactivar una escuela: con su motivo, una sola vez, y sin perder sus datos.
- * Fase 8 · docs/fases/08-catalogo.md (partes 1 y 3: el candado de los modelos activos llega con los productos)
+ * Fase 8 · docs/fases/08-catalogo.md (partes 1 y 3)
  */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
+import { nuevoProducto, siembraDelCatalogo } from "../../../nucleo/pruebas/catalogo-de-prueba.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 
-describe("una escuela se da de baja con motivo y se reactiva; sus datos se conservan", () => {
+describe("una escuela con modelos activos no se da de baja; sin ellos, con motivo, y se reactiva", () => {
 	let servidor: ServidorDePrueba;
 	beforeAll(async () => {
 		servidor = await crearServidorDePrueba();
@@ -81,5 +82,29 @@ describe("una escuela se da de baja con motivo y se reactiva; sus datos se conse
 		expect(bitacora.rows).toEqual([
 			{ descripcion: "Colegio Morelos vuelve a estar activa", antes: { activa: false, motivo: "Cerró la escuela" } },
 		]);
+	});
+
+	it("con modelos activos no se da de baja: escuela_con_modelos, con cuántos", async () => {
+		const siembra = await siembraDelCatalogo(servidor);
+		const alta = await mandarAccion(
+			servidor,
+			"catalogo.agregar_escuela",
+			{ datos: { nombre: "Instituto Juan Pablo II", municipio: "Zamora" } },
+			"catalogo",
+		);
+		const id = z.object({ escuela_id: z.uuid() }).parse(alta.cuerpo.resultado).escuela_id;
+		for (const _ of [1, 2]) {
+			await nuevoProducto(servidor, siembra, { escuela_id: id, categoria_mayoreo_id: siembra.categorias.Especial });
+		}
+		const respuesta = await mandarAccion(
+			servidor,
+			"catalogo.dar_baja_escuela",
+			{ datos: { escuela_id: id, motivo: "Cerró la escuela" }, version: await version(id) },
+			"catalogo",
+		);
+		expect(respuesta.cuerpo).toMatchObject({
+			codigo: "escuela_con_modelos",
+			mensaje: "Instituto Juan Pablo II tiene 2 modelos activos: descontinúalos antes de darla de baja.",
+		});
 	});
 });
