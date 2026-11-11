@@ -11,6 +11,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { crearBase } from "../../../nucleo/base/conexion.ts";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
 import { enAccionDePrueba } from "../../../nucleo/pruebas/accion-de-prueba.ts";
+import { nuevoTraspaso } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 import { claveDerivada, escribirMovimiento, revertirMovimiento } from "./escribir-movimiento.ts";
@@ -19,6 +20,7 @@ describe("el libro de movimientos", () => {
 	let servidor: ServidorDePrueba;
 	let ubicacion: Record<string, string>;
 	let variantes: string[];
+	let traspaso: string;
 	beforeAll(async () => {
 		servidor = await crearServidorDePrueba();
 		ubicacion = Object.fromEntries(
@@ -31,6 +33,14 @@ describe("el libro de movimientos", () => {
 		variantes = (await servidor.base.dueno.query("SELECT id FROM variantes ORDER BY codigo LIMIT 6")).rows.map(
 			(fila) => fila.id,
 		);
+		// El traspaso que llevan los renglones que tocan Tránsito.
+		({ traspasoId: traspaso } = await nuevoTraspaso(servidor, {
+			tipo: "solicitud_tienda",
+			estado: "en_camino_aduana",
+			origen: { ubicacionId: ubicacion.BOD ?? "" },
+			destino: { ubicacionId: ubicacion.T1 ?? "" },
+			renglones: [{ varianteId: variante(1), piezas: 2 }],
+		}));
 	});
 	afterAll(async () => {
 		await servidor.cerrar();
@@ -126,7 +136,7 @@ describe("el libro de movimientos", () => {
 				destino: ubicacion.TRA ?? "",
 				varianteId: variante(1),
 				piezas: 1,
-				traspasoId: uuidv7(),
+				traspasoId: traspaso,
 			}),
 		).rejects.toThrow("despacho no va de bodega a transito");
 		// A Tránsito, sin su traspaso.
@@ -166,7 +176,7 @@ describe("el libro de movimientos", () => {
 			destino: ubicacion.TRA ?? "",
 			varianteId: variante(1),
 			piezas: 2,
-			traspasoId: uuidv7(),
+			traspasoId: traspaso,
 		});
 		expect(await existencia("TRA", variante(1))).toBe(2);
 	});
@@ -228,7 +238,7 @@ describe("el libro de movimientos", () => {
 						destino: ubicacion.TRA ?? "",
 						varianteId: variante(4),
 						piezas: 7,
-						traspasoId: uuidv7(),
+						traspasoId: traspaso,
 					},
 				],
 				clave: uuidv7(),

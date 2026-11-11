@@ -229,5 +229,9 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 11 nov 2026 | 9 | El origen de `consumible_tomado` antes de su parámetro (decisión 470) | Bodega · Bodega, Taller o Aduana | Bodega, Taller o Aduana | No |
 | 11 nov 2026 | 9 | Cómo se suma el material (decisión 471) | En JavaScript · en Postgres | En Postgres | No |
 | 11 nov 2026 | 9 | El `actualizado_en` del libro (decisión 472) | Vacío con otro disparador · el del disparador común | El del disparador común | No |
+| 11 nov 2026 | 9 | El origen del hijo de un reparto (decisión 473) | Vacío · el del padre | El del padre | No |
+| 11 nov 2026 | 9 | Dónde se calcula el color de una partida en aduana (decisión 474) | En cada consulta · en la vista | En la vista | No |
+| 11 nov 2026 | 9 | Más CHECK en `traspasos` (decisión 475) | Solo en el código · también en la base | También en la base | No |
+| 11 nov 2026 | 9 | A qué tabla apunta la recepción del destino (decisión 476) | Una nueva · `recepciones` | `recepciones` | No |
 | 10 nov 2026 | 5 | La pantalla del Google de desarrollo | Una propia para escoger cuenta · la de desarrollo de oidc-provider, que pide el correo | La de oidc-provider; `pnpm local` escribe los correos de la muestra al arrancar | No |
 
