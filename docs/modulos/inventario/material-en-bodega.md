@@ -143,3 +143,5 @@ Los cambia solo la dueña, en Configuración (ver [configuración](../admin/conf
 - **El paso 2 del cuadre** (`internas/correr-cuadre.ts`, `rollosEnUnLugar`) corre después del paso 1 y abre `rollo_en_dos_lugares` por rollo con metros en dos ubicaciones, o entregado o por recibir fuera del Taller, con dónde tiene metros.
 - **Los parámetros** `inventario.ubicacion_consumibles` y `inventario.metros_frontera_rollo` (`parametros.ts`).
 - **Pruebas:** `internas/actualizar-costo-rollos.prueba.ts`, `internas/tomar-consumible.prueba.ts` y el caso nuevo de `correr-cuadre.prueba.ts`. Las pruebas del libro que mueven tela por rollo crean rollos de carga inicial con `rollosDePrueba` (`nucleo/pruebas/compras-de-prueba.ts`); el cuadre al azar usa un rollo por ubicación (decisión 568).
+
+**Fase 12, parte 3.** La tabla `retazos` (migración `0040`): nace al cerrar el corte con su folio RZ- (`inventario.registrar_corte`) y pasa a `recibido` con la recepción de Bodega (`inventario.recibir_del_corte`). Los rollos pasan por `entregado`, `agotado` y `por_recibir` con el corte (ver [entregas a corte](entregas-a-corte.md#cómo-está-hecho)).

@@ -592,6 +592,17 @@ async function confirmarLlegada(
 			...(pedido.recibioNombre === undefined ? {} : { recibioNombre: pedido.recibioNombre }),
 		})
 		.where(eq(despachos.id, despacho.id));
+	// La tela que llega a Bodega queda libre para el corte: se recalculan sus rollos sugeridos.
+	if (haciaDestino !== null) {
+		const telas = new Set(
+			pedido.contados.flatMap(({ linea, llego }) =>
+				linea.rolloId !== null && linea.materialId !== null && llego.milesimos > 0n ? [linea.materialId] : [],
+			),
+		);
+		for (const materialId of telas) {
+			await contexto.interna("inventario.recalcular_rollos_sugeridos", { material_id: materialId });
+		}
+	}
 	contexto.guardarEvento({
 		tipo: "despacho.recibido",
 		datos: { despacho_id: despacho.id, recepcion_id: recepcionId },

@@ -167,4 +167,13 @@ Los cambia solo la dueña, en Configuración (ver [configuración](../admin/conf
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 12.*
+**Fase 12, parte 3.**
+
+- **Las tablas** `entregas_corte`, `apartados_rollo` y `retazos` son de `inventario` (`tablas.ts`, migración `0040`), con sus CHECK y el único del apartado vivo por rollo.
+- **Los rollos sugeridos:** la regla es la función pura `sugerirRollos` (`dominio/rollos-sugeridos.ts`); la primera partida que alcanza sola es la de menor folio (decisión 603). `inventario.recalcular_rollos_sugeridos` (`internas/rollos-sugeridos.ts`) la corre con un candado por nombre, con lo que pide cada tela de cada lote por cortar (`patronaje.calcular_material`) que todavía no la recibe, y crea o libera los sugeridos. La llaman Producción al nacer o crecer un lote, la recepción de tela en Bodega, entregar y recibir del corte, y el trabajo «Rollos sugeridos» tras `cuadre.terminado` (`trabajos/rollos-sugeridos.ts`).
+- **`entregar_al_corte`** (`acciones/entregas-corte.ts`, contratos en `packages/compartido/src/contratos/inventario/corte.ts`): bloquea los rollos en orden de id (`rollosEnUso` de `dominio/corte.ts`), revisa el lote por cortar y su receta vigente, y escribe la entrega, el movimiento, los apartados y los rollos. Un rollo que no está entregado a otro lote pero no está disponible dice «{rollo} no está disponible para {lote}» (decisión 604). Los avisos de mezcla y de tela que falta no se repiten para una tela que el lote ya recibió en otra entrega (decisión 608).
+- **`recibir_del_corte`** toma la versión del rollo, escribe la recepción `bodega_regreso_corte` con el lote de su último apartado y el movimiento `regreso_rollo` o `regreso_retazo`.
+- **`registrar_corte`** (`internas/registrar-corte.ts`): entrega en el mismo cierre lo que Bodega no entregó, y escribe el consumo, la merma, el retazo con su folio RZ- y las piezas cortadas, cada movimiento con su número; los rollos que no se usaron quedan por recibir. **`rollos_para_corte`** (`lecturas/rollos-para-corte.ts`) bloquea los rollos para que el cierre cuente con lo mismo que después mueve (decisión 606).
+- **`lotes_con_tela_entregada`** y **`devolver_entrega_corte`** (`internas/entregas-corte.ts`); los avíos de una entrega devuelta regresan con la fase 16 (decisión 601).
+- **El parámetro** `inventario.dias_entrega_corte`.
+- **Pruebas:** `acciones/entregar-al-corte.prueba.ts`, `internas/recalcular-rollos-sugeridos.prueba.ts` (con fast-check) e `internas/devolver-entrega-corte.prueba.ts` (también recibir del corte, el comprometido y el desperdicio medido).

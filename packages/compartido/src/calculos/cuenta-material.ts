@@ -85,40 +85,40 @@ function haciaArriba(numerador: bigint, denominador: bigint): bigint {
 }
 
 /**
- * Lo que lleva cada material de una versión de la receta para unas piezas por talla.
+ * Lo que pide la receta de cada material para unas piezas por talla, con sus decimales: en milésimos de su unidad de
+ * inventario, hacia arriba al milésimo. Es lo que se usa al cerrar un corte; la cuenta de material lo redondea al
+ * entero.
  *
  * Por material: la suma por talla de piezas × cantidad de la talla (o piezas totales × cantidad, si va igual), la
- * tela principal × (1 + desperdicio ÷ 100), todo entre la conversión de la versión, y hacia arriba al entero de su
- * unidad de inventario. Un material que se cuenta entero lleva al menos uno.
+ * tela principal × (1 + desperdicio ÷ 100), todo entre la conversión de la versión.
  * @param lineas Los materiales de la versión.
  * @param piezasPorTalla Cuántas piezas lleva cada talla (las de cero no cuentan).
- * @param desperdicioPct El desperdicio de la prenda, en por ciento, como texto decimal («6», «6.250»).
- * @returns Por material, cuánto lleva en su unidad de inventario; `null` («—») si a una talla con piezas le falta
- * su valor.
+ * @param desperdicioPct El desperdicio de la prenda, en por ciento («6», «6.250»); «0» da el piso del patrón.
+ * @returns Por material, sus milésimos; `null` si a una talla con piezas le falta su valor.
  */
-export function cuentaDeMaterial(
+export function pideLaReceta(
 	lineas: readonly LineaDeLaCuenta[],
 	piezasPorTalla: Readonly<Record<string, number>>,
 	desperdicioPct: string,
-): Record<string, number | null> {
+): Record<string, bigint | null> {
 	const conPiezas = Object.entries(piezasPorTalla).filter(([, piezas]) => piezas > 0);
 	const totalDePiezas = conPiezas.reduce((suma, [, piezas]) => suma + BigInt(piezas), 0n);
 	const desperdicio = aMilesimos(desperdicioPct);
 	return Object.fromEntries(
-		lineas.map((linea) => [linea.materialId, cuentaDeUnaLinea(linea, conPiezas, totalDePiezas, desperdicio)]),
+		lineas.map((linea) => [linea.materialId, milesimosDeUnaLinea(linea, conPiezas, totalDePiezas, desperdicio)]),
 	);
 }
 
 /**
- * Lo que lleva un material (ver `cuentaDeMaterial`).
- * @returns Las unidades de inventario, o `null` si falta un dato.
+ * Lo que pide un material (ver `pideLaReceta`).
+ * @returns Los milésimos de su unidad de inventario, o `null` si falta un dato.
  */
-function cuentaDeUnaLinea(
+function milesimosDeUnaLinea(
 	linea: LineaDeLaCuenta,
 	conPiezas: readonly [string, number][],
 	totalDePiezas: bigint,
 	desperdicioMilesimos: bigint,
-): number | null {
+): bigint | null {
 	// Σ piezas × cantidad, en milésimos de la unidad de la receta.
 	let porPrenda = 0n;
 	if (linea.cantidad !== null) {
@@ -130,12 +130,39 @@ function cuentaDeUnaLinea(
 			porPrenda += BigInt(piezas) * aMilesimos(cantidad);
 		}
 	}
-	// Con desperdicio, × (100 000 + desperdicio en milésimos) ÷ 100 000; y la conversión, en milésimos.
+	// Con desperdicio, × (100 000 + desperdicio en milésimos) ÷ 100 000; la conversión, en milésimos; y × 1000 para
+	// quedar en milésimos de la unidad de inventario.
 	const desperdicio = linea.esTelaPrincipal ? desperdicioMilesimos : 0n;
-	const cuenta = haciaArriba(
-		porPrenda * (100_000n + desperdicio),
+	return haciaArriba(
+		porPrenda * (100_000n + desperdicio) * 1000n,
 		100_000n * aMilesimos(linea.recetaPorUnidadInventario),
 	);
-	const conMinimo = linea.seCuentaEntera && totalDePiezas > 0n && cuenta < 1n ? 1n : cuenta;
-	return Number(conMinimo);
+}
+
+/**
+ * Lo que lleva cada material de una versión de la receta para unas piezas por talla.
+ *
+ * Es lo que pide la receta (`pideLaReceta`) hacia arriba al entero de su unidad de inventario. Un material que se
+ * cuenta entero lleva al menos uno.
+ * @param lineas Los materiales de la versión.
+ * @param piezasPorTalla Cuántas piezas lleva cada talla (las de cero no cuentan).
+ * @param desperdicioPct El desperdicio de la prenda, en por ciento, como texto decimal («6», «6.250»).
+ * @returns Por material, cuánto lleva en su unidad de inventario; `null` («—») si a una talla con piezas le falta
+ * su valor.
+ */
+export function cuentaDeMaterial(
+	lineas: readonly LineaDeLaCuenta[],
+	piezasPorTalla: Readonly<Record<string, number>>,
+	desperdicioPct: string,
+): Record<string, number | null> {
+	const hayPiezas = Object.values(piezasPorTalla).some((piezas) => piezas > 0);
+	const pide = pideLaReceta(lineas, piezasPorTalla, desperdicioPct);
+	return Object.fromEntries(
+		lineas.map((linea) => {
+			const milesimos = pide[linea.materialId] ?? null;
+			if (milesimos === null) return [linea.materialId, null];
+			const cuenta = haciaArriba(milesimos, 1000n);
+			return [linea.materialId, Number(linea.seCuentaEntera && hayPiezas && cuenta < 1n ? 1n : cuenta)];
+		}),
+	);
 }

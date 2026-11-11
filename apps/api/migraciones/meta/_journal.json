@@ -281,6 +281,13 @@
 			"when": 1794408569396,
 			"tag": "0039_ordenes_y_lotes",
 			"breakpoints": true
+		},
+		{
+			"idx": 40,
+			"version": "7",
+			"when": 1794410130459,
+			"tag": "0040_entregas_corte_y_cortes",
+			"breakpoints": true
 		}
 	]
 }

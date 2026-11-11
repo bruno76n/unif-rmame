@@ -44,8 +44,9 @@ import {
 import { comandosRecibidos, usuarios } from "../admin/tablas.ts";
 import { variantes } from "../catalogo/tablas.ts";
 import { materiales, ordenCompraLineas, ordenesCompra, proveedores } from "../compras/tablas.ts";
+import { recetaVersiones } from "../patronaje/tablas.ts";
 import { personas } from "../personal/tablas.ts";
-import { lotes } from "../produccion/tablas.ts";
+import { cortes, lotes } from "../produccion/tablas.ts";
 
 /** Cada lugar donde puede estar una pieza: Aduana, Bodega, las tiendas, el Taller y los dos de paso. */
 export const ubicaciones = pgTable(
@@ -894,5 +895,96 @@ export const despachos = pgTable(
 		check("despachos_un_destino", sql`(${tabla.destinoUbicacionId} is null) <> (${tabla.destinoExterno} is null)`),
 		check("despachos_recibido", sql`(${tabla.estado} = 'en_transito') = (${tabla.recibidoEn} is null)`),
 		check("despachos_recibio_nombre", sql`${tabla.recibioNombre} is null or char_length(${tabla.recibioNombre}) >= 3`),
+	],
+);
+
+/** El retazo RZ-: el rollo que el corte dejó con menos de la frontera y todavía sirve. */
+export const retazos = pgTable(
+	"retazos",
+	{
+		id: uuid("id").primaryKey(),
+		folio: text("folio").notNull(),
+		rolloId: uuid("rollo_id")
+			.notNull()
+			.references(() => rollos.id),
+		corteId: uuid("corte_id")
+			.notNull()
+			.references((): AnyPgColumn => cortes.id),
+		loteId: uuid("lote_id")
+			.notNull()
+			.references((): AnyPgColumn => lotes.id),
+		metros: numeric("metros", { precision: 12, scale: 3 }).notNull(),
+		estado: text("estado", { enum: ["por_recibir", "recibido"] }).notNull(),
+		recepcionId: uuid("recepcion_id").references(() => recepciones.id),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		uniqueIndex("retazos_folio").on(tabla.folio),
+		uniqueIndex("retazos_rollo").on(tabla.rolloId),
+		check("retazos_metros", sql`${tabla.metros} > 0`),
+		check("retazos_estado", sql`${tabla.estado} in ('por_recibir', 'recibido')`),
+		check("retazos_recibido", sql`(${tabla.estado} = 'recibido') = (${tabla.recepcionId} is not null)`),
+	],
+);
+
+/** Las entregas a corte: lo que Bodega entrega al Taller para un lote. */
+export const entregasCorte = pgTable(
+	"entregas_corte",
+	{
+		id: uuid("id").primaryKey(),
+		loteId: uuid("lote_id")
+			.notNull()
+			.references((): AnyPgColumn => lotes.id),
+		recetaVersionId: uuid("receta_version_id")
+			.notNull()
+			.references((): AnyPgColumn => recetaVersiones.id),
+		estado: text("estado", { enum: ["entregada", "cerrada", "devuelta"] }).notNull(),
+		entregadaEn: momento("entregada_en").notNull(),
+		entregadaPor: uuid("entregada_por")
+			.notNull()
+			.references(() => usuarios.id),
+		recibioPersonaId: uuid("recibio_persona_id").references(() => personas.id),
+		movimientoId: uuid("movimiento_id")
+			.notNull()
+			.references(() => movimientos.id),
+		corteId: uuid("corte_id").references((): AnyPgColumn => cortes.id),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		index("entregas_corte_lote").on(tabla.loteId),
+		index("entregas_corte_estado").on(tabla.estado),
+		check("entregas_corte_estado", sql`${tabla.estado} in ('entregada', 'cerrada', 'devuelta')`),
+		check("entregas_corte_cerrada", sql`(${tabla.estado} = 'cerrada') = (${tabla.corteId} is not null)`),
+	],
+);
+
+/** Los estados de un apartado de rollo. */
+export const estadosDeApartado = ["sugerido", "entregado", "usado", "liberado"] as const;
+
+/** El apartado de un rollo para un lote: sugerido por la regla de las partidas, o ya entregado. */
+export const apartadosRollo = pgTable(
+	"apartados_rollo",
+	{
+		id: uuid("id").primaryKey(),
+		rolloId: uuid("rollo_id")
+			.notNull()
+			.references(() => rollos.id),
+		loteId: uuid("lote_id")
+			.notNull()
+			.references((): AnyPgColumn => lotes.id),
+		fechaCorte: date("fecha_corte", { mode: "string" }).notNull(),
+		estado: text("estado", { enum: estadosDeApartado }).notNull(),
+		entregaCorteId: uuid("entrega_corte_id").references(() => entregasCorte.id),
+		corteId: uuid("corte_id").references((): AnyPgColumn => cortes.id),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		uniqueIndex("apartados_rollo_vivo").on(tabla.rolloId).where(sql`${tabla.estado} in ('sugerido', 'entregado')`),
+		index("apartados_rollo_lote").on(tabla.loteId, tabla.estado),
+		check("apartados_rollo_estado", sql`${tabla.estado} in (${valores(estadosDeApartado)})`),
+		check(
+			"apartados_rollo_entregado",
+			sql`${tabla.estado} not in ('entregado', 'usado') or ${tabla.entregaCorteId} is not null`,
+		),
 	],
 );

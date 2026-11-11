@@ -9,7 +9,8 @@
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
-import { lotes, loteTallas } from "../tablas.ts";
+import { variantes } from "../../catalogo/tablas.ts";
+import { cortes, corteTelas, lotes, loteTallas } from "../tablas.ts";
 
 /** Las etapas en que un lote ya se cortó y sigue en el taller. */
 const cortadoEnElTaller = ["en_proceso", "terminado", "revisado"] as const;
@@ -65,9 +66,11 @@ export async function lotesPorCortar(contexto: ContextoDeAccion) {
 					.select({
 						loteId: loteTallas.loteId,
 						variante_id: loteTallas.varianteId,
+						talla_id: variantes.tallaId,
 						piezas_planeadas: loteTallas.piezasPlaneadas,
 					})
 					.from(loteTallas)
+					.innerJoin(variantes, eq(variantes.id, loteTallas.varianteId))
 					.where(
 						inArray(
 							loteTallas.loteId,
@@ -87,7 +90,7 @@ export async function lotesPorCortar(contexto: ContextoDeAccion) {
 			tiene_receta: conReceta.get(lote.producto_id) ?? false,
 			tallas: tallas
 				.filter((talla) => talla.loteId === lote.lote_id)
-				.map(({ variante_id, piezas_planeadas }) => ({ variante_id, piezas_planeadas })),
+				.map(({ variante_id, talla_id, piezas_planeadas }) => ({ variante_id, talla_id, piezas_planeadas })),
 		})),
 	};
 }
@@ -108,4 +111,52 @@ export async function lotesSinTerminarDeVariante(contexto: ContextoDeAccion, dat
 		.where(and(eq(loteTallas.varianteId, variante_id), inArray(lotes.estado, ["por_cortar", ...cortadoEnElTaller])))
 		.orderBy(asc(lotes.folio));
 	return { folios: filas.map((fila) => fila.folio) };
+}
+
+/**
+ * `produccion.cortes_de_prenda`: los cortes cerrados de una prenda (o de todas), con la versión de receta con que se
+ * cortó cada lote, sus piezas cortadas por talla y los metros que usó su tela principal: lo que pidió la receta, o la
+ * suma de sus rollos si se cambió lo que quedó. Patronaje la usa para el desperdicio medido.
+ * Fase 12 · docs/modulos/patronaje/cuenta-de-material.md (reglas 5 y 6)
+ * @param contexto El contexto de quien lee.
+ * @param datos `producto_id`, opcional.
+ */
+export async function cortesDePrenda(contexto: ContextoDeAccion, datos: unknown) {
+	const { producto_id } = z.object({ producto_id: z.uuid().optional() }).parse(datos);
+	const { transaccion } = contexto;
+	const deLosCortes = await transaccion
+		.select({
+			lote_id: lotes.id,
+			producto_id: lotes.productoId,
+			receta_version_id: lotes.recetaVersionId,
+			metros_usados: sql<string>`CASE WHEN ${corteTelas.quedaronCambiado}
+				THEN (SELECT sum(r.metros_usados) FROM corte_rollos r WHERE r.corte_tela_id = ${corteTelas.id})
+				ELSE ${corteTelas.metrosReceta} END::numeric(12, 3)::text`,
+		})
+		.from(cortes)
+		.innerJoin(lotes, eq(lotes.id, cortes.loteId))
+		.innerJoin(corteTelas, and(eq(corteTelas.corteId, cortes.id), eq(corteTelas.papel, "tela_principal")))
+		.where(producto_id === undefined ? undefined : eq(lotes.productoId, producto_id))
+		.orderBy(asc(cortes.cerradoEn));
+	const tallas =
+		deLosCortes.length === 0
+			? []
+			: await transaccion
+					.select({ loteId: loteTallas.loteId, talla_id: variantes.tallaId, piezas: loteTallas.piezasCortadas })
+					.from(loteTallas)
+					.innerJoin(variantes, eq(variantes.id, loteTallas.varianteId))
+					.where(
+						inArray(
+							loteTallas.loteId,
+							deLosCortes.map((corte) => corte.lote_id),
+						),
+					);
+	return {
+		cortes: deLosCortes.map((corte) => ({
+			...corte,
+			tallas: tallas
+				.filter((talla) => talla.loteId === corte.lote_id && (talla.piezas ?? 0) > 0)
+				.map((talla) => ({ talla_id: talla.talla_id, piezas: talla.piezas ?? 0 })),
+		})),
+	};
 }

@@ -4,8 +4,9 @@
  * petición: quien la lee dos veces en la misma transacción ve los mismos números. No se guarda.
  * Fase 10 · docs/modulos/compras/proyeccion-de-material.md (reglas 1 a 16, «El consumo», «Lecturas»)
  *
- * Lo comprometido con los lotes por cortar llega con Producción en la fase 12: hasta entonces es cero. El plazo es el
- * plazo real del proveedor habitual: el promedio de sus entregas, o lo que dice que tarda si no tiene.
+ * Lo comprometido son los lotes por cortar de Producción (fase 12), lo que pide su receta de lo que todavía no
+ * reciben de Bodega. El plazo es el plazo real del proveedor habitual: el promedio de sus entregas, o lo que dice que
+ * tarda si no tiene.
  */
 
 import { aMilesimos, aMilesimosConSigno, deMilesimos } from "@uniformame/compartido/calculos/cuenta-material";
@@ -177,6 +178,64 @@ async function borradores(
 	return porMaterial;
 }
 
+/** Lo que regresa `produccion.lotes_por_cortar`, en lo que se usa aquí. */
+const porCortar = z.object({
+	lotes: z.array(
+		z.object({
+			lote_id: z.uuid(),
+			producto_id: z.uuid(),
+			tiene_receta: z.boolean(),
+			tallas: z.array(z.object({ talla_id: z.uuid(), piezas_planeadas: z.number() })),
+		}),
+	),
+});
+
+/** Lo que regresa `inventario.lotes_con_tela_entregada`, en lo que se usa aquí. */
+const conTela = z.object({
+	lotes: z.array(z.object({ lote_id: z.uuid(), telas: z.array(z.uuid()), avios_entregados: z.boolean() })),
+});
+
+/** Lo que regresa `patronaje.calcular_material`, en lo que se usa aquí. */
+const deLaReceta = z.object({
+	materiales: z.array(z.object({ material_id: z.uuid(), papel: z.string(), cantidad: z.number().nullable() })),
+});
+
+/**
+ * Lo comprometido de cada material con los lotes por cortar (regla 2): lo que pide la receta de cada lote, en su
+ * unidad, de lo que todavía no recibe; una tela ya entregada, o los avíos ya entregados, dejan de contar. Un lote sin
+ * receta no compromete nada.
+ * @returns Por material, su total en milésimos y lo de cada lote.
+ */
+async function comprometidoPorMaterial(contexto: ContextoDeAccion) {
+	const porMaterial = new Map<string, { total: bigint; porLote: { lote_id: string; cantidad: string }[] }>();
+	if (!contexto.hayLectura("produccion.lotes_por_cortar")) return porMaterial;
+	const { lotes } = porCortar.parse(await contexto.lectura("produccion.lotes_por_cortar", {}));
+	const conReceta = lotes.filter((lote) => lote.tiene_receta);
+	const entregados = conTela.parse(
+		await contexto.lectura("inventario.lotes_con_tela_entregada", { lote_ids: conReceta.map((lote) => lote.lote_id) }),
+	);
+	for (const lote of conReceta) {
+		const recibio = entregados.lotes.find((suyo) => suyo.lote_id === lote.lote_id);
+		const receta = deLaReceta.parse(
+			await contexto.lectura("patronaje.calcular_material", {
+				producto_id: lote.producto_id,
+				piezas_por_talla: lote.tallas.map((talla) => ({ talla_id: talla.talla_id, piezas: talla.piezas_planeadas })),
+			}),
+		);
+		for (const material of receta.materiales) {
+			if (material.cantidad === null || material.cantidad <= 0) continue;
+			const esTela = ["tela_principal", "combinacion", "forro"].includes(material.papel);
+			if (esTela ? recibio?.telas.includes(material.material_id) : recibio?.avios_entregados === true) continue;
+			const cantidad = aMilesimos(String(material.cantidad));
+			const suyo = porMaterial.get(material.material_id) ?? { total: 0n, porLote: [] };
+			suyo.total += cantidad;
+			suyo.porLote.push({ lote_id: lote.lote_id, cantidad: deMilesimos(cantidad) });
+			porMaterial.set(material.material_id, suyo);
+		}
+	}
+	return porMaterial;
+}
+
 /**
  * Calcula la cuenta de unos materiales, o de todos los activos.
  * @param contexto El contexto de quien lee.
@@ -221,13 +280,13 @@ async function calcular(
 		[...habituales].map(([id, diasDiceTardar]) => ({ id, diasDiceTardar })),
 	);
 	const enBorrador = await borradores(contexto, materialIds);
+	const comprometidos = await comprometidoPorMaterial(contexto);
 	for (const material of suyos) {
 		const plazo = plazos.get(material.proveedorId)?.plazo ?? material.diasDiceTardar;
 		const hay = existencias[material.id] ?? { bodega: "0.000", aduana: "0.000" };
 		const bodega = aMilesimosConSigno(hay.bodega);
 		const aduana = aMilesimosConSigno(hay.aduana);
-		// Lo comprometido con los lotes por cortar llega con Producción (fase 12).
-		const comprometido = 0n;
+		const comprometido = comprometidos.get(material.id)?.total ?? 0n;
 		const viene = enCamino.get(material.id) ?? [];
 		const llegadas: Llegada[] = viene.map((suya) => ({
 			dia: suya.llegada_esperada,
@@ -265,7 +324,7 @@ async function calcular(
 			hay_bodega: deMilesimos(bodega),
 			hay_aduana: deMilesimos(aduana),
 			comprometido: deMilesimos(comprometido),
-			comprometido_por_lote: [],
+			comprometido_por_lote: comprometidos.get(material.id)?.porLote ?? [],
 			en_camino: viene,
 			libre_para_comprar: deMilesimos(libre),
 			libre_para_corte: deMilesimos(bodega - comprometido),

@@ -4,10 +4,16 @@
  * Fase 10 · docs/modulos/patronaje/recetas.md y cuenta-de-material.md («Lecturas»)
  *
  * La cuenta es la del paquete compartido (`cuentaDeMaterial`): la API nunca confía en lo que calculó la pantalla. El
- * desperdicio medido llega con los cortes (fase 12): hasta entonces, toda prenda usa el estimado.
+ * desperdicio de una prenda es el medido con sus cortes (`produccion.cortes_de_prenda`, fase 12) o, sin cortes, el
+ * estimado.
  */
 
-import { cuentaDeMaterial } from "@uniformame/compartido/calculos/cuenta-material";
+import {
+	aMilesimos,
+	cuentaDeMaterial,
+	deMilesimos,
+	pideLaReceta,
+} from "@uniformame/compartido/calculos/cuenta-material";
 import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import { z } from "zod";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
@@ -84,20 +90,91 @@ export async function recetasConMaterial(
 	return { prendas };
 }
 
+/** Lo que regresa `produccion.cortes_de_prenda`, en lo que se usa aquí. */
+const deLosCortes = z.object({
+	cortes: z.array(
+		z.object({
+			producto_id: z.uuid(),
+			receta_version_id: z.uuid().nullable(),
+			metros_usados: z.string().nullable(),
+			tallas: z.array(z.object({ talla_id: z.uuid(), piezas: z.number() })),
+		}),
+	),
+});
+
+/** El desperdicio de una prenda: en por ciento con tres decimales, si es medido, su respaldo, si es alto y si es flojo. */
+interface Desperdicio {
+	desperdicio_pct: string;
+	medido: boolean;
+	lotes: number;
+	alto: boolean;
+	dato_flojo: boolean;
+}
+
 /**
- * El desperdicio estimado de una prenda, con sus marcas.
- * @param contexto El contexto de quien lee.
+ * El desperdicio de unas prendas (regla 6): Σ metros reales de su tela principal ÷ Σ metros del patrón − 1, cada
+ * lote contra su propia versión; un lote abajo del piso del patrón no cuenta. Sin lotes medidos, el estimado.
+ * @param productoId Una prenda, o todas las que tienen cortes.
+ * @returns Por prenda, su desperdicio.
  */
-async function desperdicioEstimado(contexto: ContextoDeAccion) {
+async function desperdicioDePrendas(
+	contexto: ContextoDeAccion,
+	productoId?: string,
+): Promise<Map<string, Desperdicio>> {
 	const numero = async (clave: string) => Number(await contexto.lectura("admin.parametro", { clave }));
 	const estimado = await numero("patronaje.desperdicio_estimado_pct");
-	return {
-		desperdicio_pct: estimado.toFixed(3),
-		medido: false,
-		lotes: 0,
-		alto: estimado > (await numero("patronaje.desperdicio_alto_pct")),
-		dato_flojo: 0 < (await numero("patronaje.dato_flojo_lotes")),
-	};
+	const alto = await numero("patronaje.desperdicio_alto_pct");
+	const flojo = await numero("patronaje.dato_flojo_lotes");
+	const sumas = new Map<string, { real: bigint; patron: bigint; lotes: number }>();
+	if (productoId !== undefined) sumas.set(productoId, { real: 0n, patron: 0n, lotes: 0 });
+	if (contexto.hayLectura("produccion.cortes_de_prenda")) {
+		const { cortes } = deLosCortes.parse(
+			await contexto.lectura(
+				"produccion.cortes_de_prenda",
+				productoId === undefined ? {} : { producto_id: productoId },
+			),
+		);
+		for (const corte of cortes) {
+			if (corte.receta_version_id === null || corte.metros_usados === null) continue;
+			const { lineas } = await contenidoDeVersion(contexto.transaccion, corte.receta_version_id);
+			const principal = lineas.find((linea) => linea.papel === "tela_principal");
+			if (principal === undefined) continue;
+			const piso = pideLaReceta(
+				[
+					{
+						materialId: principal.materialId,
+						esTelaPrincipal: true,
+						cantidad: principal.cantidad,
+						porTalla: Object.fromEntries(principal.tallas.map((talla) => [talla.tallaId, talla.cantidad])),
+						recetaPorUnidadInventario: principal.recetaPorUnidadInventario,
+						seCuentaEntera: false,
+					},
+				],
+				Object.fromEntries(corte.tallas.map((talla) => [talla.talla_id, talla.piezas])),
+				"0",
+			)[principal.materialId];
+			const real = aMilesimos(corte.metros_usados);
+			// Un lote abajo del piso del patrón no cuenta.
+			if (piso === null || piso === undefined || piso === 0n || real < piso) continue;
+			const suya = sumas.get(corte.producto_id) ?? { real: 0n, patron: 0n, lotes: 0 };
+			sumas.set(corte.producto_id, { real: suya.real + real, patron: suya.patron + piso, lotes: suya.lotes + 1 });
+		}
+	}
+	const resultado = new Map<string, Desperdicio>();
+	for (const [id, suma] of sumas) {
+		// En milésimos de por ciento: (real ÷ patrón − 1) × 100 000, redondeado.
+		const pct =
+			suma.lotes === 0 ? null : Number(((suma.real - suma.patron) * 100_000n + suma.patron / 2n) / suma.patron) / 1000;
+		const desperdicio = pct ?? estimado;
+		resultado.set(id, {
+			desperdicio_pct: desperdicio.toFixed(3),
+			medido: pct !== null,
+			lotes: suma.lotes,
+			alto: desperdicio > alto,
+			dato_flojo: suma.lotes < flojo,
+		});
+	}
+	return resultado;
 }
 
 /**
@@ -105,24 +182,15 @@ async function desperdicioEstimado(contexto: ContextoDeAccion) {
  * @param contexto El contexto de quien lee.
  * @param datos La prenda, o ninguna.
  * @returns Por prenda: el desperdicio en por ciento (texto con tres decimales), si es medido, su respaldo (cuántos
- * lotes), si es alto y si es dato flojo. Sin cortes (hasta la fase 12), el estimado; y sin prenda, ninguna.
+ * lotes), si es alto y si es dato flojo. Sin cortes, el estimado.
  */
 export async function desperdicioPrenda(
 	contexto: ContextoDeAccion,
 	datos: unknown,
-): Promise<{
-	prendas: {
-		producto_id: string;
-		desperdicio_pct: string;
-		medido: boolean;
-		lotes: number;
-		alto: boolean;
-		dato_flojo: boolean;
-	}[];
-}> {
+): Promise<{ prendas: ({ producto_id: string } & Desperdicio)[] }> {
 	const { producto_id } = pedidoDeDesperdicio.parse(datos);
-	if (producto_id === undefined) return { prendas: [] };
-	return { prendas: [{ producto_id, ...(await desperdicioEstimado(contexto)) }] };
+	const porPrenda = await desperdicioDePrendas(contexto, producto_id);
+	return { prendas: [...porPrenda].map(([id, desperdicio]) => ({ producto_id: id, ...desperdicio })) };
 }
 
 /**
@@ -149,8 +217,9 @@ async function seCuentaEntera(
  * del paquete compartido.
  * @param contexto El contexto de quien lee.
  * @param datos La prenda, las piezas por talla y, si se pide, una versión (si no, la vigente).
- * @returns La versión con que se contó (nada si no tiene receta), el desperdicio que usó y, por material, cuánto
- * lleva en su unidad de inventario, o `null` («—») si falta un dato.
+ * @returns La versión con que se contó (nada si no tiene receta), el desperdicio que usó y, por material, su papel,
+ * cuánto lleva en su unidad de inventario (entero), y con sus decimales lo que pide la receta y el piso del patrón (el
+ * corte, fase 12); `null` («—») si falta un dato.
  */
 export async function calcularMaterial(
 	contexto: ContextoDeAccion,
@@ -158,10 +227,17 @@ export async function calcularMaterial(
 ): Promise<{
 	receta_version_id: string | null;
 	desperdicio_pct: string;
-	materiales: { material_id: string; cantidad: number | null }[];
+	materiales: {
+		material_id: string;
+		papel: string;
+		cantidad: number | null;
+		pide: string | null;
+		piso: string | null;
+	}[];
 }> {
 	const pedido = pedidoDeCalcular.parse(datos);
-	const { desperdicio_pct } = await desperdicioEstimado(contexto);
+	const desperdicio_pct =
+		(await desperdicioDePrendas(contexto, pedido.producto_id)).get(pedido.producto_id)?.desperdicio_pct ?? "0";
 	const [receta] = await contexto.transaccion
 		.select({ id: recetas.id, versionId: recetas.versionVigenteId })
 		.from(recetas)
@@ -183,21 +259,30 @@ export async function calcularMaterial(
 		contexto,
 		lineas.map((linea) => linea.materialId),
 	);
-	const cuenta = cuentaDeMaterial(
-		lineas.map((linea) => ({
-			materialId: linea.materialId,
-			esTelaPrincipal: linea.papel === "tela_principal",
-			cantidad: linea.cantidad,
-			porTalla: Object.fromEntries(linea.tallas.map((talla) => [talla.tallaId, talla.cantidad])),
-			recetaPorUnidadInventario: linea.recetaPorUnidadInventario,
-			seCuentaEntera: enteros.get(linea.materialId) ?? false,
-		})),
-		Object.fromEntries(pedido.piezas_por_talla.map((talla) => [talla.talla_id, talla.piezas])),
-		desperdicio_pct,
-	);
+	const deLaCuenta = lineas.map((linea) => ({
+		materialId: linea.materialId,
+		esTelaPrincipal: linea.papel === "tela_principal",
+		cantidad: linea.cantidad,
+		porTalla: Object.fromEntries(linea.tallas.map((talla) => [talla.tallaId, talla.cantidad])),
+		recetaPorUnidadInventario: linea.recetaPorUnidadInventario,
+		seCuentaEntera: enteros.get(linea.materialId) ?? false,
+	}));
+	const piezas = Object.fromEntries(pedido.piezas_por_talla.map((talla) => [talla.talla_id, talla.piezas]));
+	const cuenta = cuentaDeMaterial(deLaCuenta, piezas, desperdicio_pct);
+	// Con sus decimales: lo que pide la receta (con el desperdicio de la principal) y el piso del patrón (sin él).
+	const pide = pideLaReceta(deLaCuenta, piezas, desperdicio_pct);
+	const piso = pideLaReceta(deLaCuenta, piezas, "0");
+	const enTexto = (milesimos: bigint | null | undefined) =>
+		milesimos === null || milesimos === undefined ? null : deMilesimos(milesimos);
 	return {
 		receta_version_id: versionId,
 		desperdicio_pct,
-		materiales: lineas.map((linea) => ({ material_id: linea.materialId, cantidad: cuenta[linea.materialId] ?? null })),
+		materiales: lineas.map((linea) => ({
+			material_id: linea.materialId,
+			papel: linea.papel,
+			cantidad: cuenta[linea.materialId] ?? null,
+			pide: enTexto(pide[linea.materialId]),
+			piso: enTexto(piso[linea.materialId]),
+		})),
 	};
 }

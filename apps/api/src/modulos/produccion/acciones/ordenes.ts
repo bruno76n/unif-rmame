@@ -4,7 +4,7 @@
  * Fase 12 · docs/modulos/produccion/ordenes-de-produccion.md (reglas 1, 4 y 5, «`produccion.crear_orden`»)
  *
  * La fecha de corte es la menor entre hoy + `produccion.orden_corte_dias` y la entrega. Las tallas en 0 no se guardan.
- * Los rollos sugeridos de su tela se recalculan con las entregas a corte, en la parte 3 de la fase (decisión 596).
+ * Al nacer el lote se recalculan los rollos sugeridos (regla 8).
  */
 
 import { crearOrden } from "@uniformame/compartido/contratos/produccion/ordenes";
@@ -54,6 +54,7 @@ export const accionCrearOrden = implementarAccion(crearOrden, async (contexto, d
 		fechaEntrega: entrega.toString(),
 		tallas,
 	});
+	await contexto.interna("inventario.recalcular_rollos_sugeridos", {});
 	const piezas = tallas.reduce((suma, talla) => suma + talla.piezas, 0);
 	contexto.bitacora({
 		descripcion: `Levantó ${orden.folio} para ${esTemporada ? "temporada" : destino.nombre}: ${prenda.nombre}, ${piezas} piezas`,

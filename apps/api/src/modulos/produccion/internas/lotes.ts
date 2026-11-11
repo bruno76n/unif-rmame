@@ -4,8 +4,8 @@
  * Fase 12 · docs/modulos/produccion/ordenes-de-produccion.md («Acciones internas») y lotes.md («Acciones internas»)
  *
  * Ventas (fase 16), Calidad (fase 13) y Aduana (fase 14) las llaman en su transacción; aquí se prueban directo. Cada
- * cambio a un lote o a sus tallas sube su versión (regla 12). Saber si un lote ya tiene tela entregada y recalcular
- * los rollos sugeridos llegan con las entregas a corte, en la parte 3 (decisión 596).
+ * cambio a un lote o a sus tallas sube su versión (regla 12). Las piezas se suman solo a un lote sin tela entregada
+ * (`inventario.lotes_con_tela_entregada`), y al nacer o crecer un lote se recalculan los rollos sugeridos (regla 8).
  */
 
 import { and, eq, inArray, notInArray, sql } from "drizzle-orm";
@@ -25,7 +25,7 @@ import {
 	prendaQueSeFabrica,
 	tallasQueSeFabrican,
 } from "../dominio/lotes.ts";
-import { lotes, loteTallas, ordenesProduccion } from "../tablas.ts";
+import { bultos, lotes, loteTallas, ordenesProduccion } from "../tablas.ts";
 
 /** Lo que recibe `produccion.mandar_a_produccion`. */
 const pedidoAProduccion = z.object({
@@ -90,7 +90,14 @@ export async function mandarAProduccion(contexto: ContextoDeAccion, datos: unkno
 			{ varianteId: renglon.variante_id, piezas: renglon.piezas },
 		]);
 	}
-	const porCortar = await lotesDelPedido(contexto, pedido.pedido_id, ["por_cortar"]);
+	const delPedido = await lotesDelPedido(contexto, pedido.pedido_id, ["por_cortar"]);
+	// Las piezas se suman solo a un lote que todavía no tiene tela entregada.
+	const conTela = z.object({ lotes: z.array(z.object({ lote_id: z.uuid() })) }).parse(
+		await contexto.lectura("inventario.lotes_con_tela_entregada", {
+			lote_ids: delPedido.map((lote) => lote.id),
+		}),
+	);
+	const porCortar = delPedido.filter((lote) => !conTela.lotes.some((suyo) => suyo.lote_id === lote.id));
 	const lotesTocados: LoteDelPedido[] = [];
 	const avisos: string[] = [];
 	const nuevos: { prendaId: string; tallas: PiezasDeTalla[] }[] = [];
@@ -136,6 +143,7 @@ export async function mandarAProduccion(contexto: ContextoDeAccion, datos: unkno
 			lotesTocados.push({ lote_id: lote.id, folio: lote.folio, nuevo: true });
 		}
 	}
+	await contexto.interna("inventario.recalcular_rollos_sugeridos", {});
 	return {
 		...(orden === undefined ? {} : { orden_produccion_id: orden.id, folio: orden.folio }),
 		lotes: lotesTocados,
@@ -247,12 +255,14 @@ async function pasarDeEtapa(
 		.where(and(eq(lotes.id, loteId), eq(lotes.estado, cambio.de)))
 		.returning({ id: lotes.id, folio: lotes.folio });
 	if (lote === undefined) throw new Error(`el lote ${loteId} no está ${cambio.de}`);
-	// Sus tallas dejan de bajar a la tablet por algo que vive en el lote: se tocan, para que bajen como `quitar`.
+	// Sus tallas y sus bultos dejan de bajar a la tablet por algo que vive en el lote: se tocan, para que bajen como
+	// `quitar`.
 	if (cambio.a === "revisado") {
 		await contexto.transaccion
 			.update(loteTallas)
 			.set({ actualizadoEn: sql`now()` })
 			.where(eq(loteTallas.loteId, lote.id));
+		await contexto.transaccion.update(bultos).set({ actualizadoEn: sql`now()` }).where(eq(bultos.loteId, lote.id));
 	}
 	contexto.guardarEvento({
 		tipo: cambio.evento,

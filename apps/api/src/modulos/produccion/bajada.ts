@@ -56,4 +56,12 @@ export const bajadaDeProduccion: readonly TablaQueBaja[] = [
 		filtro: () =>
 			sql`EXISTS (SELECT 1 FROM lotes l WHERE l.id = t.lote_id AND l.estado IN ('en_proceso', 'terminado'))`,
 	},
+	{
+		tabla: "bultos",
+		aparatos: ["tablet_taller"],
+		orden: 4,
+		columnas: ["folio", "lote_id", "variante_id", "numero", "piezas"],
+		filtro: () =>
+			sql`EXISTS (SELECT 1 FROM lotes l WHERE l.id = t.lote_id AND l.estado IN ('en_proceso', 'terminado'))`,
+	},
 ];

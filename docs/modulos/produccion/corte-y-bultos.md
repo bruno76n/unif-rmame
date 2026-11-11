@@ -148,4 +148,11 @@ Usa también `inventario.metros_frontera_rollo` ([material en bodega](../inventa
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 12.*
+**Fase 12, parte 3.**
+
+- **Las tablas** `cortes`, `corte_telas`, `corte_rollos` y `bultos` son de `produccion` (`tablas.ts`, migración `0040`); las tres del corte solo crecen. Los bultos llevan `xid_escritura` y bajan a la tablet con su lote (`bajada.ts`).
+- **Las cuentas** son del paquete compartido: `laTelaAlcanza`, `rollosAutomaticos` y `usoDeLaTela` (`packages/compartido/src/calculos/corte.ts`), con lo que pide la receta y el piso del patrón, con sus decimales, que da `patronaje.calcular_material` (`pideLaReceta`, decisión 605). Las prueba `corte.prueba.ts` con fast-check.
+- **`produccion.cerrar_corte`** (`acciones/corte.ts`, contrato en `packages/compartido/src/contratos/produccion/corte.ts`): toma la versión del lote, revisa quién cortó, las piezas, la receta y las telas; bloquea los rollos con `inventario.rollos_para_corte`; decide a dónde va lo que quedó con `inventario.metros_frontera_rollo`; verifica la receta si estaba sin verificar; escribe el corte; llama `inventario.registrar_corte`; congela el flujo y la receta del lote, y arma los bultos (`dominio/bultos.ts`). El registro por bulto de la operación de corte llega con los registros de la tablet, en la parte 4 (decisión 602).
+- **`imprimir_etiquetas_bulto`** manda la etiqueta `bulto` (la de prueba hasta la fase 20) a la impresora del Taller; sin ella, `sin_impresora_taller` (decisión 609).
+- **Los parámetros** `produccion.bulto_max_piezas`, `produccion.rendimiento_rojo_porcentaje` y `produccion.tela_por_entregar_rojo_dias`.
+- **Pruebas:** `acciones/cerrar-corte.prueba.ts` (con lo que pide la receta, retazo, merma, lo que no deja cerrar, las etiquetas).

@@ -123,6 +123,13 @@ export async function crearServidorDePrueba(
 ): Promise<ServidorDePrueba> {
 	const modulosDePrueba = await cargarModulos(join(import.meta.dirname, "modulos"));
 	const base = opciones.otraInstanciaDe?.base ?? (await crearBaseConTablasDePrueba(modulosDePrueba.semillas));
+	// Los aparatos de prueba hablaron con el servidor al copiarse la plantilla, no hace minutos: así un puente cuenta
+	// como conectado aunque la plantilla se haya hecho al empezar la corrida.
+	if (opciones.otraInstanciaDe === undefined) {
+		await base.dueno.query(
+			"UPDATE dispositivos_sync SET ultimo_contacto_en = now() WHERE ultimo_contacto_en IS NOT NULL",
+		);
+	}
 	const deLaApi = await cargarModulos(join(import.meta.dirname, "../../modulos"));
 	const registro = registrarModulos([...deLaApi.modulos, ...modulosDePrueba.modulos]);
 	const pedidos: ServidorDePrueba["pedidos"] = { bitacora: [], eventos: [] };

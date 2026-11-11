@@ -20,12 +20,15 @@ import {
 	accionRecordarDespacho,
 } from "./acciones/despachos.ts";
 import { accionDevolverAProveedor } from "./acciones/devolver-a-proveedor.ts";
+import { accionEntregarAlCorte, accionRecibirDelCorte } from "./acciones/entregas-corte.ts";
 import { accionRecibirDeProveedor } from "./acciones/recibir-de-proveedor.ts";
 import { accionRecibirEnAduana } from "./acciones/recibir-en-aduana.ts";
 import { accionResolverExcepcion } from "./acciones/resolver-excepcion.ts";
 import { accionSurtirAAduana } from "./acciones/surtir-a-aduana.ts";
+import { devolverEntregaCorte, lotesConTelaEntregada } from "./internas/entregas-corte.ts";
 import { marcarExcepcionResuelta, registrarExcepcion, tomarVersionExcepcion } from "./internas/excepciones.ts";
 import { actualizarCostoRollos, aplicarDecisionRecepcionDeMas, tomarConsumible } from "./internas/material.ts";
+import { registrarCorte } from "./internas/registrar-corte.ts";
 import {
 	apartarParaNota,
 	confirmarPagoReserva,
@@ -33,13 +36,16 @@ import {
 	liberarReservas,
 	reservar,
 } from "./internas/reservas.ts";
+import { recalcularRollosSugeridos } from "./internas/rollos-sugeridos.ts";
 import { existenciaMaterial, piezasDeVariante } from "./lecturas/existencias.ts";
 import { existenciasDeMateriales, salidasDeMateriales } from "./lecturas/materiales.ts";
 import { recibidoDeOrdenes } from "./lecturas/recibido-de-ordenes.ts";
 import { libres, listoEnAduana } from "./lecturas/reservas.ts";
+import { rollosParaCorte } from "./lecturas/rollos-para-corte.ts";
 import { semillaDeParametrosDeInventario } from "./parametros.ts";
 import { ubicaciones } from "./tablas.ts";
 import { cuadreNocturno } from "./trabajos/cuadre-nocturno.ts";
+import { rollosSugeridos } from "./trabajos/rollos-sugeridos.ts";
 
 /** Los departamentos que leen el libro y el material. */
 const lectoresDelLibro = ["aduana", "bodega", "direccion"];
@@ -89,6 +95,8 @@ export default definirModulo({
 		despachos: lectoresDelLibro,
 	},
 	acciones: [
+		accionEntregarAlCorte,
+		accionRecibirDelCorte,
 		accionResolverExcepcion,
 		accionRecibirDeProveedor,
 		accionDespachar,
@@ -101,6 +109,9 @@ export default definirModulo({
 		accionDevolverAProveedor,
 	],
 	internas: {
+		recalcular_rollos_sugeridos: recalcularRollosSugeridos,
+		devolver_entrega_corte: devolverEntregaCorte,
+		registrar_corte: registrarCorte,
 		registrar_excepcion: registrarExcepcion,
 		marcar_excepcion_resuelta: marcarExcepcionResuelta,
 		tomar_version_excepcion: tomarVersionExcepcion,
@@ -115,6 +126,8 @@ export default definirModulo({
 	},
 	efectosDeAutorizacion: { recepcion_de_mas: "aplicar_decision_recepcion_de_mas" },
 	lecturas: {
+		lotes_con_tela_entregada: lotesConTelaEntregada,
+		rollos_para_corte: rollosParaCorte,
 		existencia_material: existenciaMaterial,
 		existencias_de_materiales: existenciasDeMateriales,
 		salidas_de_materiales: salidasDeMateriales,
@@ -123,7 +136,7 @@ export default definirModulo({
 		listo_en_aduana: listoEnAduana,
 		recibido_de_ordenes: recibidoDeOrdenes,
 	},
-	trabajos: [cuadreNocturno],
+	trabajos: [cuadreNocturno, rollosSugeridos],
 	semillas: [
 		{ tabla: ubicaciones, filas: ubicacionesDeLaSiembra.map((ubicacion) => ({ id: uuidv7(), ...ubicacion })) },
 		semillaDeParametrosDeInventario,

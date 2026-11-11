@@ -4,6 +4,7 @@
  */
 
 import { definirModulo } from "../../nucleo/modulos.ts";
+import { accionCerrarCorte, accionImprimirEtiquetasBulto } from "./acciones/corte.ts";
 import { accionAgregarOperacionFlujo, accionCrearFlujo, accionQuitarOperacionFlujo } from "./acciones/flujos.ts";
 import { accionCrearOrden } from "./acciones/ordenes.ts";
 import { bajadaDeProduccion } from "./bajada.ts";
@@ -15,14 +16,21 @@ import {
 	pasarPedidoATemporada,
 } from "./internas/lotes.ts";
 import { flujoVigente } from "./lecturas/flujos.ts";
-import { lotesPorCortar, lotesSinTerminarDeVariante, piezasEnProduccion } from "./lecturas/lotes.ts";
+import { cortesDePrenda, lotesPorCortar, lotesSinTerminarDeVariante, piezasEnProduccion } from "./lecturas/lotes.ts";
 import { semillaDeParametrosDeProduccion } from "./parametros.ts";
 import { lectoresDeProduccion } from "./permisos.ts";
 import { semillaDeCorte } from "./siembra.ts";
 
 export default definirModulo({
 	nombre: "produccion",
-	acciones: [accionCrearFlujo, accionAgregarOperacionFlujo, accionQuitarOperacionFlujo, accionCrearOrden],
+	acciones: [
+		accionCrearFlujo,
+		accionAgregarOperacionFlujo,
+		accionQuitarOperacionFlujo,
+		accionCrearOrden,
+		accionCerrarCorte,
+		accionImprimirEtiquetasBulto,
+	],
 	internas: {
 		mandar_a_produccion: mandarAProduccion,
 		pasar_pedido_a_temporada: pasarPedidoATemporada,
@@ -35,6 +43,7 @@ export default definirModulo({
 		piezas_en_produccion: piezasEnProduccion,
 		lotes_por_cortar: lotesPorCortar,
 		lotes_sin_terminar_de_variante: lotesSinTerminarDeVariante,
+		cortes_de_prenda: cortesDePrenda,
 	},
 	semillas: [semillaDeCorte, semillaDeParametrosDeProduccion],
 	lectores: lectoresDeProduccion,

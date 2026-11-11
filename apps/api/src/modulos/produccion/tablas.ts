@@ -2,7 +2,8 @@
  * Las tablas de `produccion`: las operaciones del taller, los flujos y las operaciones de cada flujo.
  * Fase 12 · docs/modulos/produccion/operaciones-y-flujos.md («La tabla `operaciones`», «La tabla `flujos`» y
  * «La tabla `flujo_operaciones`»); parte 2 · ordenes-de-produccion.md («La tabla `ordenes_produccion`») y lotes.md
- * («La tabla `lotes`», «La tabla `lote_tallas`»)
+ * («La tabla `lotes`», «La tabla `lote_tallas`»); parte 3 · corte-y-bultos.md («La tabla `cortes`», `corte_telas`,
+ * `corte_rollos` y `bultos`)
  *
  * Las tres bajan a la tablet del taller, así que llevan `xid_escritura`. El único del orden de un flujo se revisa al
  * final de la transacción: es una exclusión diferida que escribe la migración a mano, porque al agregar o quitar una
@@ -17,6 +18,7 @@ import {
 	date,
 	index,
 	integer,
+	numeric,
 	pgTable,
 	smallint,
 	text,
@@ -33,7 +35,8 @@ import {
 } from "../../nucleo/base/columnas.ts";
 import { usuarios } from "../admin/tablas.ts";
 import { productos, variantes } from "../catalogo/tablas.ts";
-import { ubicaciones } from "../inventario/tablas.ts";
+import { materiales } from "../compras/tablas.ts";
+import { apartadosRollo, retazos, rollos, ubicaciones } from "../inventario/tablas.ts";
 import { recetaVersiones } from "../patronaje/tablas.ts";
 import { personas } from "../personal/tablas.ts";
 
@@ -242,3 +245,114 @@ export const loteTallas = pgTable(
 
 /** Los tipos de aviso que suma `produccion` al CHECK de `avisos.tipo` (con su migración). */
 export const tiposDeAvisoDeProduccion = ["lote_atorado"] as const;
+
+/** El corte de un lote: se captura cerrado, uno por lote, y nunca cambia. */
+export const cortes = pgTable(
+	"cortes",
+	{
+		id: uuid("id").primaryKey(),
+		loteId: uuid("lote_id")
+			.notNull()
+			.references(() => lotes.id),
+		fecha: date("fecha", { mode: "string" }).notNull(),
+		cerradoEn: momento("cerrado_en").notNull(),
+		cortoPersonaId: uuid("corto_persona_id")
+			.notNull()
+			.references(() => personas.id),
+		verificoReceta: boolean("verifico_receta").notNull(),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		uniqueIndex("cortes_lote").on(tabla.loteId),
+		index("cortes_fecha").on(tabla.fecha),
+		check("cortes_quien", sql`${tabla.creadoPor} is not null`),
+	],
+);
+
+/** Los papeles de una tela en la receta. */
+export const papelesDeTela = ["tela_principal", "combinacion", "forro"] as const;
+
+/** Cada tela de la receta que llevó un corte: lo que pidió la receta, lo que quedó y a dónde fue. */
+export const corteTelas = pgTable(
+	"corte_telas",
+	{
+		id: uuid("id").primaryKey(),
+		corteId: uuid("corte_id")
+			.notNull()
+			.references(() => cortes.id),
+		materialId: uuid("material_id")
+			.notNull()
+			.references(() => materiales.id),
+		papel: text("papel", { enum: papelesDeTela }).notNull(),
+		metrosReceta: numeric("metros_receta", { precision: 12, scale: 3 }).notNull(),
+		metrosQuedaron: numeric("metros_quedaron", { precision: 12, scale: 3 }).notNull(),
+		quedaronCambiado: boolean("quedaron_cambiado").notNull(),
+		destinoSobrante: text("destino_sobrante", { enum: ["ninguno", "rollo", "retazo", "merma"] }).notNull(),
+		retazoId: uuid("retazo_id").references((): AnyPgColumn => retazos.id),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		uniqueIndex("corte_telas_material").on(tabla.corteId, tabla.materialId),
+		uniqueIndex("corte_telas_principal").on(tabla.corteId).where(sql`${tabla.papel} = 'tela_principal'`),
+		check("corte_telas_papel", sql`${tabla.papel} in (${valores(papelesDeTela)})`),
+		check("corte_telas_receta", sql`${tabla.metrosReceta} > 0`),
+		check("corte_telas_quedaron", sql`${tabla.metrosQuedaron} >= 0`),
+		check("corte_telas_destino", sql`${tabla.destinoSobrante} in ('ninguno', 'rollo', 'retazo', 'merma')`),
+		check("corte_telas_retazo", sql`(${tabla.destinoSobrante} = 'retazo') = (${tabla.retazoId} is not null)`),
+	],
+);
+
+/** Los rollos de cada tela del corte, en el orden en que se usaron. */
+export const corteRollos = pgTable(
+	"corte_rollos",
+	{
+		id: uuid("id").primaryKey(),
+		corteTelaId: uuid("corte_tela_id")
+			.notNull()
+			.references(() => corteTelas.id),
+		rolloId: uuid("rollo_id")
+			.notNull()
+			.references((): AnyPgColumn => rollos.id),
+		orden: smallint("orden").notNull(),
+		esUltimo: boolean("es_ultimo").notNull(),
+		apartadoRolloId: uuid("apartado_rollo_id").references((): AnyPgColumn => apartadosRollo.id),
+		metrosAlCortar: numeric("metros_al_cortar", { precision: 12, scale: 3 }).notNull(),
+		metrosUsados: numeric("metros_usados", { precision: 12, scale: 3 }).notNull(),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		uniqueIndex("corte_rollos_rollo").on(tabla.rolloId, tabla.corteTelaId),
+		uniqueIndex("corte_rollos_orden").on(tabla.corteTelaId, tabla.orden),
+		uniqueIndex("corte_rollos_ultimo").on(tabla.corteTelaId).where(sql`${tabla.esUltimo}`),
+		index("corte_rollos_de_rollo").on(tabla.rolloId),
+		check("corte_rollos_al_cortar", sql`${tabla.metrosAlCortar} > 0`),
+		check("corte_rollos_usados", sql`${tabla.metrosUsados} > 0 and ${tabla.metrosUsados} <= ${tabla.metrosAlCortar}`),
+	],
+);
+
+/** El bulto B-: piezas de una talla de un lote que avanzan juntas por el taller. */
+export const bultos = pgTable(
+	"bultos",
+	{
+		id: uuid("id").primaryKey(),
+		folio: text("folio").notNull(),
+		loteId: uuid("lote_id")
+			.notNull()
+			.references(() => lotes.id),
+		varianteId: uuid("variante_id")
+			.notNull()
+			.references(() => variantes.id),
+		numero: smallint("numero").notNull(),
+		piezas: integer("piezas").notNull(),
+		...columnasComunes(),
+		...columnaXidEscritura(),
+	},
+	(tabla) => [
+		uniqueIndex("bultos_folio").on(sql`upper(${tabla.folio})`),
+		uniqueIndex("bultos_numero").on(tabla.loteId, tabla.numero),
+		index("bultos_lote_variante").on(tabla.loteId, tabla.varianteId),
+		index("bultos_xid_escritura").on(tabla.xidEscritura),
+		check("bultos_piezas", sql`${tabla.piezas} > 0`),
+		check("bultos_numero_positivo", sql`${tabla.numero} > 0`),
+	],
+);

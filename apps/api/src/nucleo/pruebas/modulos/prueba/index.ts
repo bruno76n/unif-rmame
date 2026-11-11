@@ -101,6 +101,8 @@ export default definirModulo({
 		{ tipo: "orden_compra", departamentos: ["compras"], dibujar: hojaDePrueba },
 		// Las etiquetas de un traspaso, para `inventario.marcar_etiquetas_impresas`; las reales llegan en la fase 20.
 		{ tipo: "traspaso", departamentos: ["aduana"], dibujar: dibujoDePrueba },
+		// Las etiquetas de bulto, para `produccion.imprimir_etiquetas_bulto`; las reales llegan en la fase 20.
+		{ tipo: "bulto", departamentos: ["produccion"], dibujar: dibujoDePrueba },
 	],
 	trabajos: [
 		{
