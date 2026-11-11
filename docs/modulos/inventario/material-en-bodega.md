@@ -134,4 +134,12 @@ Los cambia solo la dueña, en Configuración (ver [configuración](../admin/conf
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 11.*
+**Fase 11, parte 1.**
+
+- **Las tablas** `partidas_tela` y `rollos` están en `apps/api/src/modulos/inventario/tablas.ts` (migración `0036`), con sus CHECK: los metros y el costo mayores que 0, el estado, la partida (vacía solo en una carga inicial) y la orden, la línea y la recepción en todo rollo de proveedor; el código de la partida, de 1 a 20 y en mayúsculas. Con ellas, `existencias_material.rollo_id`, `movimiento_lineas.rollo_id` y `traspaso_lineas.rollo_id` ya son llaves.
+- **Los rollos y las partidas nacen** al recibir (ver [recepciones en aduana](recepciones-en-aduana.md#cómo-está-hecho)): la partida se busca por proveedor, material y código con un candado por proveedor y material, y si no está nace con su folio P-.
+- **`inventario.actualizar_costo_rollos`** (`internas/material.ts`) cambia el costo de todos los rollos de la línea; la llama `compras.registrar_precios_nota` por cada línea que cobró otro precio.
+- **`inventario.tomar_consumible`** (`internas/material.ts`) revisa con `compras.datos_materiales` que cada material sea consumible (`no_es_consumible`), lo saca de la ubicación de `inventario.ubicacion_consumibles` (el tipo: `bodega`, `taller` o `aduana`, decisión 564) con el movimiento `consumible_tomado` y la persona, y usa el id de la tablet como clave: la misma toma no se repite (decisión 570). `compras.datos_materiales` se adelantó de la fase 12 para esto (decisión 563).
+- **El paso 2 del cuadre** (`internas/correr-cuadre.ts`, `rollosEnUnLugar`) corre después del paso 1 y abre `rollo_en_dos_lugares` por rollo con metros en dos ubicaciones, o entregado o por recibir fuera del Taller, con dónde tiene metros.
+- **Los parámetros** `inventario.ubicacion_consumibles` y `inventario.metros_frontera_rollo` (`parametros.ts`).
+- **Pruebas:** `internas/actualizar-costo-rollos.prueba.ts`, `internas/tomar-consumible.prueba.ts` y el caso nuevo de `correr-cuadre.prueba.ts`. Las pruebas del libro que mueven tela por rollo crean rollos de carga inicial con `rollosDePrueba` (`nucleo/pruebas/compras-de-prueba.ts`); el cuadre al azar usa un rollo por ubicación (decisión 568).

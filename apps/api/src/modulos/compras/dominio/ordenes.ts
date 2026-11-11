@@ -3,17 +3,20 @@
  * sus líneas con su material, revisar una línea y la fecha prometida, lo recibido y sus eventos.
  * Fase 10 · docs/modulos/compras/ordenes-de-compra.md (reglas 3, 6, 7, 8, 10 y 16)
  *
- * Lo recibido de cada línea no se guarda aquí: lo da `inventario.recibido_de_ordenes`, que llega con Aduana en la
- * fase 11. Hasta entonces nada está recibido.
+ * Lo recibido de cada línea no se guarda aquí: lo da `inventario.recibido_de_ordenes` (fase 11). Sin esa lectura
+ * (un servidor sin el módulo de inventario), nada está recibido.
  */
 
 import { aMilesimosConSigno } from "@uniformame/compartido/calculos/cuenta-material";
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { diaDeNegocio } from "@uniformame/compartido/calculos/fechas";
+import { and, asc, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import { Temporal } from "temporal-polyfill";
 import { z } from "zod";
 import type { Transaccion } from "../../../nucleo/base/transacciones.ts";
 import { errorDeCampo, errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
+import { listas, listaValores } from "../../admin/tablas.ts";
+import { listaDeUnidades } from "../siembra.ts";
 import { materiales, ordenCompraLineas, ordenesCompra } from "../tablas.ts";
 import { leerMaterial, leerProveedor, parametroNumero } from "./comunes.ts";
 
@@ -26,14 +29,21 @@ export interface LineaDeOrden {
 	materialId: string;
 	material: string;
 	unidad: string;
+	/** `tela`, `avio` o `consumible`. */
+	tipo: string;
+	/** Si su unidad se cuenta entera (conos, piezas). */
+	seCuentaEntera: boolean;
 	multiploCompra: string;
 	cantidad: string;
 	precioOrdenCentavos: number;
 	precioNotaCentavos: number | null;
 }
 
-/** Lo que regresa `inventario.recibido_de_ordenes`: por línea, lo recibido menos lo devuelto. */
-const recibido = z.record(z.string(), z.string());
+/** Lo que regresa `inventario.recibido_de_ordenes`: por línea, lo recibido menos lo devuelto; por orden, sus recepciones. */
+export const recibidoDeOrdenes = z.object({
+	lineas: z.record(z.string(), z.string()),
+	recepciones: z.record(z.string(), z.array(z.object({ recepcion_id: z.uuid(), dia: z.iso.date() }))),
+});
 
 /**
  * Lee una orden con el nombre de su proveedor y la bloquea.
@@ -63,6 +73,8 @@ export async function lineasDeOrdenes(
 			materialId: ordenCompraLineas.materialId,
 			material: materiales.nombre,
 			unidad: materiales.unidad,
+			tipo: materiales.tipo,
+			seCuentaEntera: sql<boolean>`coalesce(${listaValores.seCuentaEntera}, false)`,
 			multiploCompra: materiales.multiploCompra,
 			cantidad: ordenCompraLineas.cantidad,
 			precioOrdenCentavos: ordenCompraLineas.precioOrdenCentavos,
@@ -70,6 +82,8 @@ export async function lineasDeOrdenes(
 		})
 		.from(ordenCompraLineas)
 		.innerJoin(materiales, eq(materiales.id, ordenCompraLineas.materialId))
+		.innerJoin(listas, eq(listas.clave, listaDeUnidades))
+		.leftJoin(listaValores, and(eq(listaValores.listaId, listas.id), eq(listaValores.clave, materiales.unidad)))
 		.where(inArray(ordenCompraLineas.ordenCompraId, [...ordenIds]))
 		.orderBy(asc(materiales.nombre));
 }
@@ -125,7 +139,7 @@ export async function revisarFechaPrometida(contexto: ContextoDeAccion, fecha: s
 
 /**
  * Lo recibido de unas líneas: lo que Aduana recibió menos lo que se devolvió al proveedor, de
- * `inventario.recibido_de_ordenes`. Mientras esa lectura no existe (hasta la fase 11), nada está recibido.
+ * `inventario.recibido_de_ordenes`. Sin esa lectura, nada está recibido.
  * @param contexto El contexto de quien pregunta.
  * @param lineaIds Las líneas.
  * @returns Por línea, lo recibido en milésimos de su unidad.
@@ -136,10 +150,10 @@ export async function recibidoDeLineas(
 ): Promise<Map<string, bigint>> {
 	const nada = new Map(lineaIds.map((id) => [id, 0n]));
 	if (lineaIds.length === 0 || !contexto.hayLectura("inventario.recibido_de_ordenes")) return nada;
-	const leido = recibido.parse(
+	const { lineas } = recibidoDeOrdenes.parse(
 		await contexto.lectura("inventario.recibido_de_ordenes", { orden_compra_linea_ids: lineaIds }),
 	);
-	return new Map(lineaIds.map((id) => [id, aMilesimosConSigno(leido[id] ?? "0")]));
+	return new Map(lineaIds.map((id) => [id, aMilesimosConSigno(lineas[id] ?? "0")]));
 }
 
 /**
@@ -232,4 +246,62 @@ export async function foliosDeOrdenesAbiertas(
 		)
 		.orderBy(asc(ordenesCompra.folio));
 	return filas.map((fila) => fila.folio);
+}
+
+/** Una entrega de un proveedor: una recepción de una de sus órdenes y los días que tardó desde que se envió. */
+export interface Entrega {
+	ordenCompraId: string;
+	recepcionId: string;
+	dias: number;
+}
+
+/**
+ * Las entregas y el plazo real de unos proveedores: cada recepción de sus órdenes es una entrega, y tardó el día
+ * de la recepción menos el día (en hora de México) en que se envió su orden. El plazo real es el promedio redondeado;
+ * sin entregas, lo que dice que tarda.
+ * Fase 11 · docs/modulos/compras/proveedores-y-precios.md (reglas 5 y 6)
+ * @param contexto El contexto de quien lee.
+ * @param proveedores Los proveedores, con lo que dice cada uno que tarda.
+ * @returns Por proveedor, su plazo real y sus entregas.
+ */
+export async function plazosReales(
+	contexto: ContextoDeAccion,
+	proveedores: readonly { id: string; diasDiceTardar: number }[],
+): Promise<Map<string, { plazo: number; entregas: Entrega[] }>> {
+	const resultado = new Map(
+		proveedores.map((proveedor) => [proveedor.id, { plazo: proveedor.diasDiceTardar, entregas: [] as Entrega[] }]),
+	);
+	if (proveedores.length === 0 || !contexto.hayLectura("inventario.recibido_de_ordenes")) return resultado;
+	const enviadas = await contexto.transaccion
+		.select({ id: ordenesCompra.id, proveedorId: ordenesCompra.proveedorId, enviadaEn: ordenesCompra.enviadaEn })
+		.from(ordenesCompra)
+		.where(
+			and(
+				inArray(
+					ordenesCompra.proveedorId,
+					proveedores.map((proveedor) => proveedor.id),
+				),
+				isNotNull(ordenesCompra.enviadaEn),
+			),
+		);
+	if (enviadas.length === 0) return resultado;
+	const { recepciones } = recibidoDeOrdenes.parse(
+		await contexto.lectura("inventario.recibido_de_ordenes", { orden_compra_ids: enviadas.map((orden) => orden.id) }),
+	);
+	for (const orden of enviadas) {
+		if (orden.enviadaEn === null) continue;
+		const enviadaEl = diaDeNegocio(Temporal.Instant.from(orden.enviadaEn));
+		for (const recepcion of recepciones[orden.id] ?? []) {
+			const dias = enviadaEl.until(Temporal.PlainDate.from(recepcion.dia)).days;
+			resultado
+				.get(orden.proveedorId)
+				?.entregas.push({ ordenCompraId: orden.id, recepcionId: recepcion.recepcion_id, dias });
+		}
+	}
+	for (const suyo of resultado.values()) {
+		if (suyo.entregas.length === 0) continue;
+		const total = suyo.entregas.reduce((suma, entrega) => suma + entrega.dias, 0);
+		suyo.plazo = Math.round(total / suyo.entregas.length);
+	}
+	return resultado;
 }

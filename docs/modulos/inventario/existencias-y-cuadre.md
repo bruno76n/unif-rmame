@@ -221,3 +221,5 @@ Las existencias las leen las pantallas de Aduana, Bodega, Dirección, Catálogo 
   - `trabajos/cuadre-nocturno.prueba.ts`: el horario, la depuración encolada, el aviso del cuadre que falla y el del cuadre que se quedó `corriendo`.
 
 **Fase 10, parte 5.** Para la cuenta de cada material de Compras, `lecturas/materiales.ts` lee muchos materiales en una consulta: `inventario.existencias_de_materiales` (por material, lo que hay en Bodega y en Aduana) e `inventario.salidas_de_materiales` (por material, sus salidas por día desde un día y su primera salida; ver [proyección de material](../compras/proyeccion-de-material.md#cómo-está-hecho)). Su prueba es `lecturas/materiales.prueba.ts` (decisión 548).
+
+**Fase 11, parte 1.** El paso 2 del cuadre (`rollosEnUnLugar`): ver [material en bodega](material-en-bodega.md#cómo-está-hecho).

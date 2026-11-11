@@ -14,7 +14,7 @@ import { crearContexto, guardarEventosConAdmin } from "../../../nucleo/acciones/
 import { type Base, crearBase } from "../../../nucleo/base/conexion.ts";
 import { codigoDePostgres } from "../../../nucleo/base/transacciones.ts";
 import { cargarModulos } from "../../../nucleo/modulos.ts";
-import { materialesDePrueba } from "../../../nucleo/pruebas/compras-de-prueba.ts";
+import { materialesDePrueba, rollosDePrueba } from "../../../nucleo/pruebas/compras-de-prueba.ts";
 import { ubicacionesPorCodigo, variantesLibres } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 import { correrTrabajo } from "../../../nucleo/trabajos/trabajador.ts";
@@ -55,7 +55,9 @@ describe("El cuadre corrige desde el libro toda existencia alterada, aunque al m
 	let variantes: string[];
 	let dia = Temporal.PlainDate.from("2031-01-01");
 	/** Dos materiales, uno con rollo y otro sin él. */
-	let materiales: { materialId: string; rolloId: string | null }[];
+	let materiales: { materialId: string; conRollo: boolean }[];
+	/** El rollo de cada ubicación: un rollo tiene metros en un solo lugar (el paso 2 del cuadre lo revisa). */
+	const rolloDe: Record<string, string> = {};
 	beforeAll(async () => {
 		servidor = await crearServidorDePrueba();
 		base = crearBase(servidor.base.app);
@@ -63,9 +65,10 @@ describe("El cuadre corrige desde el libro toda existencia alterada, aunque al m
 		variantes = await variantesLibres(servidor, 3);
 		const [conRollo = "", sinRollo = ""] = await materialesDePrueba(servidor, 2, "tela");
 		materiales = [
-			{ materialId: conRollo, rolloId: uuidv7() },
-			{ materialId: sinRollo, rolloId: null },
+			{ materialId: conRollo, conRollo: true },
+			{ materialId: sinRollo, conRollo: false },
 		];
+		for (const codigo of codigos) rolloDe[codigo] = (await rollosDePrueba(servidor, conRollo, 1))[0] ?? "";
 		// Cada lugar empieza con algo, para que la alteración tenga existencia que alterar.
 		for (const codigo of codigos)
 			for (const cosa of [0, 1, 2, 3, 4]) await mover({ lugar: { cosa, ubicacion: codigo }, entra: true, cuanto: 50 });
@@ -85,7 +88,12 @@ describe("El cuadre corrige desde el libro toda existencia alterada, aunque al m
 				varianteId: variantes[suyo.lugar.cosa] ?? "",
 				piezas: suyo.cuanto,
 			} satisfies RenglonDeMovimiento;
-		return { ...lados, ...material, cantidad: (suyo.cuanto / 1000).toFixed(3) } satisfies RenglonDeMovimiento;
+		return {
+			...lados,
+			materialId: material.materialId,
+			rolloId: material.conRollo ? (rolloDe[suyo.lugar.ubicacion] ?? null) : null,
+			cantidad: (suyo.cuanto / 1000).toFixed(3),
+		} satisfies RenglonDeMovimiento;
 	}
 
 	/** Escribe un ajuste en su propia transacción, sin el reintento del núcleo. */
@@ -121,7 +129,7 @@ describe("El cuadre corrige desde el libro toda existencia alterada, aunque al m
 			await servidor.base.dueno.query(
 				`UPDATE existencias_material SET cantidad = cantidad + $4::numeric / 1000
 				 WHERE ubicacion_id = $1 AND material_id = $2 AND rollo_id IS NOT DISTINCT FROM $3`,
-				[id, material.materialId, material.rolloId, suya.diferencia],
+				[id, material.materialId, material.conRollo ? (rolloDe[suya.lugar.ubicacion] ?? null) : null, suya.diferencia],
 			);
 	}
 

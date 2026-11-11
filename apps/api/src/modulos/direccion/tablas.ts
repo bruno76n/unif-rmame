@@ -23,6 +23,7 @@ import {
 import { columnasComunes, columnasDeAparato, columnasDeCancelacion, momento } from "../../nucleo/base/columnas.ts";
 import { departamentos, usuarios } from "../admin/tablas.ts";
 import { ordenCompraLineas } from "../compras/tablas.ts";
+import { recepciones } from "../inventario/tablas.ts";
 import { desarrollos } from "../patronaje/tablas.ts";
 
 /** Las ligas de cada tipo: la que lleva (no nula) y, por omisión, las demás vacías. */
@@ -68,8 +69,7 @@ export const autorizaciones = pgTable(
 		unidad: text("unidad"),
 		/** @llavePendiente ajustes.id */
 		ajusteId: uuid("ajuste_id"),
-		/** @llavePendiente recepciones.id */
-		recepcionId: uuid("recepcion_id"),
+		recepcionId: uuid("recepcion_id").references((): AnyPgColumn => recepciones.id),
 		ordenCompraLineaId: uuid("orden_compra_linea_id").references((): AnyPgColumn => ordenCompraLineas.id),
 		/** @llavePendiente notas_entrega.id */
 		notaEntregaId: uuid("nota_entrega_id"),

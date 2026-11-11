@@ -4,8 +4,8 @@
  * petición: quien la lee dos veces en la misma transacción ve los mismos números. No se guarda.
  * Fase 10 · docs/modulos/compras/proyeccion-de-material.md (reglas 1 a 16, «El consumo», «Lecturas»)
  *
- * Lo comprometido con los lotes por cortar llega con Producción en la fase 12: hasta entonces es cero. El plazo es
- * lo que dice que tarda el proveedor habitual: sus entregas llegan con Aduana en la fase 11.
+ * Lo comprometido con los lotes por cortar llega con Producción en la fase 12: hasta entonces es cero. El plazo es el
+ * plazo real del proveedor habitual: el promedio de sus entregas, o lo que dice que tarda si no tiene.
  */
 
 import { aMilesimos, aMilesimosConSigno, deMilesimos } from "@uniformame/compartido/calculos/cuenta-material";
@@ -14,6 +14,7 @@ import { and, eq, inArray, isNull } from "drizzle-orm";
 import { z } from "zod";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
 import { parametroNumero } from "../dominio/comunes.ts";
+import { plazosReales } from "../dominio/ordenes.ts";
 import { materiales, ordenCompraLineas, ordenesCompra, proveedores } from "../tablas.ts";
 import { ordenesPorRecibir } from "./ordenes.ts";
 
@@ -192,7 +193,8 @@ async function calcular(
 			multiploCompra: materiales.multiploCompra,
 			diasCubre: materiales.diasCubre,
 			consumoDiarioInicial: materiales.consumoDiarioInicial,
-			plazo: proveedores.diasDiceTardar,
+			proveedorId: proveedores.id,
+			diasDiceTardar: proveedores.diasDiceTardar,
 		})
 		.from(materiales)
 		.innerJoin(proveedores, eq(proveedores.id, materiales.proveedorHabitualId))
@@ -213,8 +215,14 @@ async function calcular(
 		}),
 	);
 	const enCamino = await enCaminoPorMaterial(contexto);
+	const habituales = new Map(suyos.map((material) => [material.proveedorId, material.diasDiceTardar]));
+	const plazos = await plazosReales(
+		contexto,
+		[...habituales].map(([id, diasDiceTardar]) => ({ id, diasDiceTardar })),
+	);
 	const enBorrador = await borradores(contexto, materialIds);
 	for (const material of suyos) {
+		const plazo = plazos.get(material.proveedorId)?.plazo ?? material.diasDiceTardar;
 		const hay = existencias[material.id] ?? { bodega: "0.000", aduana: "0.000" };
 		const bodega = aMilesimosConSigno(hay.bodega);
 		const aduana = aMilesimosConSigno(hay.aduana);
@@ -246,7 +254,7 @@ async function calcular(
 			llegadas,
 			consumoNormal: consumo.consumo,
 			factores: parametros.factores,
-			plazo: material.plazo,
+			plazo,
 			minimo,
 			multiplo: aMilesimosConSigno(material.multiploCompra),
 			diasCubre: material.diasCubre,
@@ -267,7 +275,7 @@ async function calcular(
 			consumo_medido: consumo.medido,
 			consumo_por_mes: proyeccion.consumoPorMes.map(deMilesimos),
 			se_acaba: proyeccion.seAcaba,
-			plazo: material.plazo,
+			plazo,
 			fecha_limite: proyeccion.fechaLimite,
 			dias_sin_material: proyeccion.diasSinMaterial,
 			estado: proyeccion.estado,

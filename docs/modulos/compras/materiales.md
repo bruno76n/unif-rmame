@@ -172,3 +172,5 @@ Usa también `compras.precio_max_centavos` ([proveedores y precios](proveedores-
 - **Lo que baja** está en `modulos/compras/bajada.ts`: los consumibles activos con `nombre`, `unidad`, `unidad_tablet` y `factor_tablet` (que baja como número).
 - **Quién lee** cada tabla, para los avisos en vivo, está en `permisos.ts`: los precios, solo Compras y Contaduría.
 - **Pruebas:** `acciones/crear-material.prueba.ts`, `dar-baja-material.prueba.ts`, `reactivar-material.prueba.ts` y `bajada.prueba.ts`. Las del inventario que movían material usan materiales de verdad (`materialesDePrueba`).
+
+**Fase 11.** `compras.datos_materiales` (`lecturas/datos-materiales.ts`) se construyó antes de su fase porque la usa `inventario.tomar_consumible` (decisión 563): por material, su nombre, su tipo, su unidad y si se cuenta entera, lo de la tablet, su habitual y si está de baja; nunca su costo.

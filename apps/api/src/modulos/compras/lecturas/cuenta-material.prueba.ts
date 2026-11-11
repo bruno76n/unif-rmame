@@ -2,7 +2,7 @@
  * Prueba de `compras.cuenta_material`: el ejemplo de la gabardina azul marino da lo mismo en la API que en la
  * función del paquete compartido; lo que viene en camino y el borrador; con 90 días de salidas, el consumo es el
  * medido; y la cuenta se memoriza durante la petición.
- * Fase 10 · docs/fases/10-patronaje-y-compras.md (parte 5)
+ * Fase 10 · docs/fases/10-patronaje-y-compras.md (parte 5); fase 11, el plazo real y lo que falta con las recepciones
  */
 
 import { aMilesimos } from "@uniformame/compartido/calculos/cuenta-material";
@@ -14,6 +14,7 @@ import { z } from "zod";
 import { crearBase } from "../../../nucleo/base/conexion.ts";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
 import { enAccionDePrueba } from "../../../nucleo/pruebas/accion-de-prueba.ts";
+import { ordenParaRecibir, recibirDePrueba } from "../../../nucleo/pruebas/aduana-de-prueba.ts";
 import {
 	altaDeMaterial,
 	altaDeProveedor,
@@ -33,6 +34,8 @@ const deLaCuenta = z.record(
 	z
 		.object({
 			hay_bodega: z.string(),
+			hay_aduana: z.string(),
+			plazo: z.number(),
 			libre_para_comprar: z.string(),
 			en_camino: z.array(
 				z.object({ folio: z.string(), cantidad: z.string(), llegada_esperada: z.string() }).passthrough(),
@@ -216,5 +219,26 @@ describe("La proyección da los números del ejemplo de la gabardina azul marino
 		// Sin materiales, todos los activos.
 		expect(Object.keys(deLaCuenta.parse(todos))).toContain(material);
 		expect((await cuentaDe(ahora, [material]))[material]).toMatchObject({ hay_bodega: "40.000" });
+	});
+
+	it("lo que falta en camino y el plazo real del proveedor salen de las recepciones (fase 11)", async () => {
+		const orden = await ordenParaRecibir(servidor);
+		// Se envió hace 14 días; el proveedor dice que tarda 12.
+		await servidor.base.dueno.query(
+			"UPDATE ordenes_compra SET enviada_en = now() - interval '14 days', fecha_prometida = current_date + 5 WHERE id = $1",
+			[orden.id],
+		);
+		const ahora = Temporal.Now.instant();
+		expect((await cuentaDe(ahora, [orden.tela]))[orden.tela]).toMatchObject({
+			plazo: 12,
+			en_camino: [{ folio: orden.folio, cantidad: "100.000" }],
+		});
+		await recibirDePrueba(servidor, orden, [{ metros: "60", partida: "A" }]);
+		// Llegaron 60 hoy: faltan 40 en camino y su única entrega tardó 14 días.
+		expect((await cuentaDe(ahora, [orden.tela]))[orden.tela]).toMatchObject({
+			plazo: 14,
+			hay_aduana: "60.000",
+			en_camino: [{ folio: orden.folio, cantidad: "40.000" }],
+		});
 	});
 });

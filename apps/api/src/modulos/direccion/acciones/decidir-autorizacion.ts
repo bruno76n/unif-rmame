@@ -95,6 +95,8 @@ async function aplicarEfecto(
 			tipo,
 			decision: decision.decision,
 			...(decision.motivo === undefined ? {} : { motivo: decision.motivo }),
+			// Lo que se pidió, si tiene cantidad (lo recibido de más).
+			...(autorizacion.cantidad === null ? {} : { cantidad: autorizacion.cantidad, unidad: autorizacion.unidad }),
 			...ligasDe(autorizacion),
 		})) ?? {},
 	);

@@ -253,6 +253,13 @@
 			"when": 1794382829057,
 			"tag": "0035_ordenes_de_compra",
 			"breakpoints": true
+		},
+		{
+			"idx": 36,
+			"version": "7",
+			"when": 1794387343409,
+			"tag": "0036_rollos_y_recepciones",
+			"breakpoints": true
 		}
 	]
 }

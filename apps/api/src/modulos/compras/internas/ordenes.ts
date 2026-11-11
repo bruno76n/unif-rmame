@@ -2,7 +2,7 @@
  * Las internas de la orden de compra que llaman otros módulos: recalcular su estado al recibir, cerrarla al quedar
  * pagada, reabrirla si se cancela el pago, y los precios de la nota del proveedor.
  * Fase 10 · docs/modulos/compras/ordenes-de-compra.md («Acciones internas») y proveedores-y-precios.md
- * («`compras.registrar_precios_nota`»)
+ * («`compras.registrar_precios_nota`»); fase 11, la llamada a `inventario.actualizar_costo_rollos`
  *
  * Las usan Aduana (fase 11) y Contaduría (fase 17); se construyen aquí y se prueban directo.
  */
@@ -139,6 +139,11 @@ export async function registrarPreciosNota(
 			anterior: antes,
 		});
 		await materialCambiado(contexto, linea.materialId);
+		// La nota manda también en el costo del metro de los rollos de esa línea.
+		await contexto.interna("inventario.actualizar_costo_rollos", {
+			orden_compra_linea_id: linea.id,
+			costo_metro_centavos: renglon.precio_centavos,
+		});
 		cambiaron.push({ orden_compra_linea_id: linea.id, antes, nuevo: renglon.precio_centavos });
 	}
 	if (cambiaron.length > 0) {

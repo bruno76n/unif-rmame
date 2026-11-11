@@ -38,6 +38,7 @@ import {
 } from "./internas/ordenes.ts";
 import { costoMaterial } from "./lecturas/costo-material.ts";
 import { cuentaMaterial } from "./lecturas/cuenta-material.ts";
+import { datosMateriales } from "./lecturas/datos-materiales.ts";
 import { ordenesPorRecibir, precioVigenteLineas } from "./lecturas/ordenes.ts";
 import { semillaDeParametrosDeCompras } from "./parametros.ts";
 import { lectoresDeCompras } from "./permisos.ts";
@@ -72,6 +73,7 @@ export default definirModulo({
 	lecturas: {
 		costo_material: costoMaterial,
 		cuenta_material: cuentaMaterial,
+		datos_materiales: datosMateriales,
 		ordenes_por_recibir: ordenesPorRecibir,
 		precio_vigente_lineas: precioVigenteLineas,
 	},

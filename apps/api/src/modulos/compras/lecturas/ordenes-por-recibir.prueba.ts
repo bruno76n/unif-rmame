@@ -63,6 +63,7 @@ describe("Aduana ve lo que falta de cada orden por recibir, sin precios, con cu√
 			{
 				orden_compra_id: atrasada.id,
 				folio: atrasada.folio,
+				proveedor_id: atrasada.proveedor,
 				proveedor: expect.any(String),
 				estado: "enviada",
 				se_puede_recibir: true,
@@ -75,6 +76,8 @@ describe("Aduana ve lo que falta de cada orden por recibir, sin precios, con cu√
 						material_id: atrasada.material,
 						material: expect.stringMatching(/^Bot√≥n /),
 						unidad: "pza",
+						tipo: "avio",
+						se_cuenta_entera: true,
 						pedido: "100.000",
 						falta: "100.000",
 					},

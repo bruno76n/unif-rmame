@@ -1,6 +1,10 @@
 /**
  * Los parámetros de `inventario`.
  * Fase 9 · docs/modulos/inventario/traspasos.md, reservas.md y existencias-y-cuadre.md («Parámetros»)
+ * Fase 11 · docs/modulos/inventario/material-en-bodega.md y recepciones-en-aduana.md («Parámetros»)
+ *
+ * `inventario.ubicacion_consumibles` guarda el tipo de la ubicación (`bodega`, `taller` o `aduana`): hay una de
+ * cada una.
  */
 
 import { semillaDeParametros } from "../../nucleo/parametros.ts";
@@ -109,5 +113,48 @@ export const semillaDeParametrosDeInventario = semillaDeParametros("inventario",
 		tipo: "booleano",
 		inicial: true,
 		orden: 10,
+	},
+	{
+		clave: "inventario.ubicacion_consumibles",
+		seccion: "parametro",
+		nombre: "De dónde se descuenta lo que toma el taller",
+		explicacion: "La ubicación de los consumibles, aunque la tablet diga «Se descuenta del taller»",
+		tipo: "opcion",
+		opciones: ["bodega", "taller", "aduana"],
+		inicial: "bodega",
+		orden: 11,
+	},
+	{
+		clave: "inventario.metros_frontera_rollo",
+		seccion: "parametro",
+		nombre: "Metros de la frontera del rollo",
+		explicacion: "Desde aquí lo que queda del corte regresa como rollo; abajo, es retazo o merma",
+		tipo: "entero",
+		unidad: "m",
+		inicial: 15,
+		minimo: 1,
+		orden: 12,
+	},
+	{
+		clave: "inventario.dias_ventana_ordenes",
+		seccion: "parametro",
+		nombre: "Días de la ventana de órdenes en la Recepción",
+		explicacion: "Las órdenes que se esperan dentro de estos días salen en la Recepción de Aduana",
+		tipo: "entero",
+		unidad: "días",
+		inicial: 7,
+		minimo: 0,
+		orden: 13,
+	},
+	{
+		clave: "inventario.porcentaje_de_mas_tela",
+		seccion: "parametro",
+		nombre: "Tela de más que no pide autorización",
+		explicacion: "La tela que llega de más hasta este porcentaje de lo pedido no pide autorización a Dirección",
+		tipo: "porcentaje",
+		inicial: 3,
+		minimo: 0,
+		maximo: 100,
+		orden: 14,
 	},
 ]);

@@ -5,6 +5,8 @@
  * `movimiento_lineas`»), existencias-y-cuadre.md («La tabla `existencias`», «La tabla `existencias_material`»),
  * traspasos.md («La tabla `traspasos`», «La tabla `traspaso_lineas`»), reservas.md («La tabla `reservas`»),
  * excepciones.md («La tabla `excepciones`») y existencias-y-cuadre.md («La tabla `cuadres`»)
+ * Fase 11 · docs/modulos/inventario/material-en-bodega.md («La tabla `rollos`», «La tabla `partidas_tela`») y
+ * recepciones-en-aduana.md («La tabla `recepciones`», «La tabla `recepcion_lineas`»)
  *
  * `ubicaciones` nace en la fase 4 con su siembra porque antes la usan los parámetros, las impresoras, las
  * cuentas, los aparatos y las personas. El libro solo crece: el rol de la app no lo puede cambiar.
@@ -13,6 +15,7 @@
 import { sql } from "drizzle-orm";
 import {
 	type AnyPgColumn,
+	bigint,
 	boolean,
 	check,
 	date,
@@ -39,7 +42,7 @@ import {
 } from "../../nucleo/base/columnas.ts";
 import { comandosRecibidos, usuarios } from "../admin/tablas.ts";
 import { variantes } from "../catalogo/tablas.ts";
-import { materiales, ordenesCompra } from "../compras/tablas.ts";
+import { materiales, ordenCompraLineas, ordenesCompra, proveedores } from "../compras/tablas.ts";
 import { personas } from "../personal/tablas.ts";
 
 /** Cada lugar donde puede estar una pieza: Aduana, Bodega, las tiendas, el Taller y los dos de paso. */
@@ -176,8 +179,7 @@ export const movimientoLineas = pgTable(
 		destinoUbicacionId: uuid("destino_ubicacion_id").references(() => ubicaciones.id),
 		varianteId: uuid("variante_id").references(() => variantes.id),
 		materialId: uuid("material_id").references(() => materiales.id),
-		/** @llavePendiente rollos.id */
-		rolloId: uuid("rollo_id"),
+		rolloId: uuid("rollo_id").references((): AnyPgColumn => rollos.id),
 		/** @llavePendiente lotes.id */
 		loteId: uuid("lote_id"),
 		piezas: integer("piezas"),
@@ -241,8 +243,7 @@ export const existenciasMaterial = pgTable(
 		materialId: uuid("material_id")
 			.notNull()
 			.references(() => materiales.id),
-		/** @llavePendiente rollos.id */
-		rolloId: uuid("rollo_id"),
+		rolloId: uuid("rollo_id").references((): AnyPgColumn => rollos.id),
 		cantidad: numeric("cantidad", { precision: 12, scale: 3 }).notNull().default("0"),
 		ultimoMovimientoId: uuid("ultimo_movimiento_id").references(() => movimientos.id),
 		...columnasComunes(),
@@ -346,12 +347,10 @@ export const traspasos = pgTable(
 		/** @llavePendiente notas_credito.id */
 		notaCreditoId: uuid("nota_credito_id"),
 		traspasoPadreId: uuid("traspaso_padre_id").references((): AnyPgColumn => traspasos.id),
-		/** @llavePendiente recepciones.id */
-		recepcionAduanaId: uuid("recepcion_aduana_id"),
+		recepcionAduanaId: uuid("recepcion_aduana_id").references((): AnyPgColumn => recepciones.id),
 		/** @llavePendiente despachos.id */
 		despachoId: uuid("despacho_id"),
-		/** @llavePendiente recepciones.id */
-		recepcionDestinoId: uuid("recepcion_destino_id"),
+		recepcionDestinoId: uuid("recepcion_destino_id").references((): AnyPgColumn => recepciones.id),
 		fechaSalidaEsperada: date("fecha_salida_esperada", { mode: "string" }),
 		enviadoEn: momento("enviado_en"),
 		llegoAduanaEn: momento("llego_aduana_en"),
@@ -424,8 +423,7 @@ export const traspasoLineas = pgTable(
 		renglon: smallint("renglon").notNull(),
 		varianteId: uuid("variante_id").references(() => variantes.id),
 		materialId: uuid("material_id").references(() => materiales.id),
-		/** @llavePendiente rollos.id */
-		rolloId: uuid("rollo_id"),
+		rolloId: uuid("rollo_id").references((): AnyPgColumn => rollos.id),
 		/** @llavePendiente lotes.id */
 		loteId: uuid("lote_id"),
 		piezasEnviadas: integer("piezas_enviadas"),
@@ -691,3 +689,176 @@ export const partidasAduana = pgView("partidas_aduana", {
 	fechaSalidaEsperada: date("fecha_salida_esperada", { mode: "string" }),
 	sale: text("sale"),
 }).existing();
+
+/** Los estados de un rollo (docs/modulos/inventario/material-en-bodega.md, «Estados del rollo»). */
+export const estadosDeRollo = ["disponible", "entregado", "por_recibir", "agotado", "devuelto"] as const;
+
+/** La partida de tela: el tono, con el código de la etiqueta del proveedor y un folio P-. Única por proveedor y material. */
+export const partidasTela = pgTable(
+	"partidas_tela",
+	{
+		id: uuid("id").primaryKey(),
+		folio: text("folio").notNull(),
+		codigoProveedor: text("codigo_proveedor").notNull(),
+		materialId: uuid("material_id")
+			.notNull()
+			.references(() => materiales.id),
+		proveedorId: uuid("proveedor_id")
+			.notNull()
+			.references(() => proveedores.id),
+		primeraRecepcionId: uuid("primera_recepcion_id").references((): AnyPgColumn => recepciones.id),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		uniqueIndex("partidas_tela_folio").on(tabla.folio),
+		uniqueIndex("partidas_tela_codigo").on(tabla.proveedorId, tabla.materialId, tabla.codigoProveedor),
+		check("partidas_tela_codigo", sql`char_length(${tabla.codigoProveedor}) between 1 and 20`),
+		check("partidas_tela_mayusculas", sql`${tabla.codigoProveedor} = upper(${tabla.codigoProveedor})`),
+	],
+);
+
+/**
+ * El rollo de tela, con su folio R-, su partida y el costo de su metro. Dónde está y cuántos metros le quedan salen
+ * de su existencia de material, no del rollo.
+ */
+export const rollos = pgTable(
+	"rollos",
+	{
+		id: uuid("id").primaryKey(),
+		folio: text("folio").notNull(),
+		materialId: uuid("material_id")
+			.notNull()
+			.references(() => materiales.id),
+		partidaTelaId: uuid("partida_tela_id").references(() => partidasTela.id),
+		proveedorId: uuid("proveedor_id").references(() => proveedores.id),
+		ordenCompraId: uuid("orden_compra_id").references(() => ordenesCompra.id),
+		ordenCompraLineaId: uuid("orden_compra_linea_id").references(() => ordenCompraLineas.id),
+		recepcionId: uuid("recepcion_id").references((): AnyPgColumn => recepciones.id),
+		metrosIniciales: numeric("metros_iniciales", { precision: 12, scale: 3 }).notNull(),
+		costoMetroCentavos: bigint("costo_metro_centavos", { mode: "number" }),
+		estado: text("estado").notNull(),
+		esRetazo: boolean("es_retazo").notNull().default(false),
+		esCargaInicial: boolean("es_carga_inicial").notNull().default(false),
+		etiquetaImpresaEn: momento("etiqueta_impresa_en"),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		uniqueIndex("rollos_folio").on(tabla.folio),
+		index("rollos_material_estado").on(tabla.materialId, tabla.estado),
+		index("rollos_orden_linea").on(tabla.ordenCompraLineaId),
+		check("rollos_metros", sql`${tabla.metrosIniciales} > 0`),
+		check("rollos_costo", sql`${tabla.costoMetroCentavos} > 0`),
+		check("rollos_estado", sql`${tabla.estado} in (${valores(estadosDeRollo)})`),
+		// Sin partida solo en una carga inicial; de una recepción, con su orden y su línea.
+		check("rollos_partida", sql`${tabla.partidaTelaId} is not null or ${tabla.esCargaInicial}`),
+		check(
+			"rollos_de_proveedor",
+			sql`${tabla.esCargaInicial} or (${tabla.ordenCompraLineaId} is not null and ${tabla.recepcionId} is not null)`,
+		),
+	],
+);
+
+/** Los tipos de recepción (docs/modulos/inventario/recepciones-en-aduana.md, «La tabla `recepciones`»). */
+export const tiposDeRecepcion = [
+	"aduana_de_proveedor",
+	"aduana_de_camino",
+	"aduana_devolucion",
+	"aduana_del_taller",
+	"destino_despacho",
+	"entrega_cliente",
+	"bodega_regreso_corte",
+] as const;
+
+/** Un papel que no cambia: qué se recibió, dónde, cómo, quién y cuándo. */
+export const recepciones = pgTable(
+	"recepciones",
+	{
+		id: uuid("id").primaryKey(),
+		tipo: text("tipo").notNull(),
+		ubicacionId: uuid("ubicacion_id")
+			.notNull()
+			.references(() => ubicaciones.id),
+		modo: text("modo").notNull(),
+		ordenCompraId: uuid("orden_compra_id").references(() => ordenesCompra.id),
+		traspasoId: uuid("traspaso_id").references((): AnyPgColumn => traspasos.id),
+		/** @llavePendiente despachos.id */
+		despachoId: uuid("despacho_id"),
+		/** @llavePendiente lotes.id */
+		loteId: uuid("lote_id"),
+		/** @llavePendiente revisiones.id */
+		revisionId: uuid("revision_id"),
+		/** @llavePendiente reprocesos.id */
+		reprocesoId: uuid("reproceso_id"),
+		recibidoEn: momento("recibido_en").notNull(),
+		recibidoPor: uuid("recibido_por").references(() => usuarios.id),
+		huboDiferencia: boolean("hubo_diferencia").notNull(),
+		movimientoId: uuid("movimiento_id").references((): AnyPgColumn => movimientos.id),
+		...columnasDeAparato(),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		index("recepciones_orden").on(tabla.ordenCompraId),
+		index("recepciones_traspaso").on(tabla.traspasoId),
+		index("recepciones_despacho").on(tabla.despachoId),
+		index("recepciones_lote").on(tabla.loteId),
+		index("recepciones_tipo").on(tabla.tipo, tabla.recibidoEn.desc()),
+		check("recepciones_tipo", sql`${tabla.tipo} in (${valores(tiposDeRecepcion)})`),
+		check("recepciones_modo", sql`${tabla.modo} in ('completo', 'con_diferencias', 'ciego')`),
+		// Cada tipo lleva su documento.
+		check(
+			"recepciones_documento",
+			sql`(${tabla.tipo} <> 'aduana_de_proveedor' or ${tabla.ordenCompraId} is not null)
+				and (${tabla.tipo} not in ('aduana_de_camino', 'aduana_devolucion') or ${tabla.traspasoId} is not null)
+				and (${tabla.tipo} not in ('destino_despacho', 'entrega_cliente') or ${tabla.despachoId} is not null)
+				and (${tabla.tipo} not in ('aduana_del_taller', 'bodega_regreso_corte') or ${tabla.loteId} is not null)`,
+		),
+	],
+);
+
+/** Lo esperado contra lo contado, renglón por renglón: de prenda o de material. */
+export const recepcionLineas = pgTable(
+	"recepcion_lineas",
+	{
+		id: uuid("id").primaryKey(),
+		recepcionId: uuid("recepcion_id")
+			.notNull()
+			.references(() => recepciones.id),
+		renglon: smallint("renglon").notNull(),
+		traspasoLineaId: uuid("traspaso_linea_id").references(() => traspasoLineas.id),
+		ordenCompraLineaId: uuid("orden_compra_linea_id").references(() => ordenCompraLineas.id),
+		varianteId: uuid("variante_id").references(() => variantes.id),
+		materialId: uuid("material_id").references(() => materiales.id),
+		rolloId: uuid("rollo_id").references(() => rollos.id),
+		partidaTelaId: uuid("partida_tela_id").references(() => partidasTela.id),
+		/** @llavePendiente lotes.id */
+		loteId: uuid("lote_id"),
+		piezasEsperadas: integer("piezas_esperadas"),
+		piezasContadas: integer("piezas_contadas"),
+		diferenciaPiezas: integer("diferencia_piezas").generatedAlwaysAs(sql`piezas_contadas - piezas_esperadas`),
+		cantidadEsperada: numeric("cantidad_esperada", { precision: 12, scale: 3 }),
+		cantidadContada: numeric("cantidad_contada", { precision: 12, scale: 3 }),
+		diferenciaCantidad: numeric("diferencia_cantidad", { precision: 12, scale: 3 }).generatedAlwaysAs(
+			sql`cantidad_contada - cantidad_esperada`,
+		),
+		conDefecto: boolean("con_defecto").notNull().default(false),
+		/** @llavePendiente defectos.id */
+		defectoId: uuid("defecto_id"),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		uniqueIndex("recepcion_lineas_renglon").on(tabla.recepcionId, tabla.renglon),
+		index("recepcion_lineas_orden_linea").on(tabla.ordenCompraLineaId),
+		check(
+			"recepcion_lineas_forma",
+			sql`(${tabla.varianteId} is not null and ${tabla.materialId} is null and ${tabla.piezasContadas} is not null
+					and ${tabla.cantidadContada} is null)
+				or (${tabla.materialId} is not null and ${tabla.varianteId} is null and ${tabla.cantidadContada} is not null
+					and ${tabla.piezasContadas} is null)`,
+		),
+		check(
+			"recepcion_lineas_no_negativas",
+			sql`coalesce(${tabla.piezasContadas}, 0) >= 0 and coalesce(${tabla.piezasEsperadas}, 0) >= 0
+				and coalesce(${tabla.cantidadContada}, 0) >= 0 and coalesce(${tabla.cantidadEsperada}, 0) >= 0`,
+		),
+	],
+);

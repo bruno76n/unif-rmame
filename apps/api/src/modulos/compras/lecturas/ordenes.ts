@@ -24,8 +24,9 @@ const pedidoDePrecios = z.object({ orden_compra_linea_ids: z.array(z.uuid()) }).
 const porRecibir = ["enviada", "recibida_en_parte"];
 
 /**
- * `compras.ordenes_por_recibir`: por orden, su folio, su proveedor, su estado, si se puede recibir, cuándo se espera
- * lo que falta, si está atrasada y cuántos días, y sus líneas con lo pedido y lo que falta. Sin precios.
+ * `compras.ordenes_por_recibir`: por orden, su folio, su proveedor (y su id, para las partidas y los rollos), su
+ * estado, si se puede recibir, cuándo se espera lo que falta, si está atrasada y cuántos días, y sus líneas con su
+ * material, su tipo, si se cuenta entero, lo pedido y lo que falta. Sin precios.
  * @param contexto El contexto de quien lee (Aduana).
  * @param datos Las órdenes, o ninguna para todas las enviadas y recibidas en parte.
  */
@@ -37,6 +38,7 @@ export async function ordenesPorRecibir(contexto: ContextoDeAccion, datos: unkno
 			folio: ordenesCompra.folio,
 			estado: ordenesCompra.estado,
 			fechaPrometida: ordenesCompra.fechaPrometida,
+			proveedorId: ordenesCompra.proveedorId,
 			proveedor: terceros.nombre,
 		})
 		.from(ordenesCompra)
@@ -63,6 +65,7 @@ export async function ordenesPorRecibir(contexto: ContextoDeAccion, datos: unkno
 			return {
 				orden_compra_id: orden.id,
 				folio: orden.folio,
+				proveedor_id: orden.proveedorId,
 				proveedor: orden.proveedor,
 				estado: orden.estado,
 				se_puede_recibir: porRecibir.includes(orden.estado),
@@ -77,6 +80,8 @@ export async function ordenesPorRecibir(contexto: ContextoDeAccion, datos: unkno
 						material_id: linea.materialId,
 						material: linea.material,
 						unidad: linea.unidad,
+						tipo: linea.tipo,
+						se_cuenta_entera: linea.seCuentaEntera,
 						pedido: linea.cantidad,
 						falta: deMilesimos(faltante.get(linea.id) ?? 0n),
 					})),

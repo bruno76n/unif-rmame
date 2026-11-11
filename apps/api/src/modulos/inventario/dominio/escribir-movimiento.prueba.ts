@@ -11,7 +11,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { crearBase } from "../../../nucleo/base/conexion.ts";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
 import { enAccionDePrueba } from "../../../nucleo/pruebas/accion-de-prueba.ts";
-import { materialesDePrueba } from "../../../nucleo/pruebas/compras-de-prueba.ts";
+import { materialesDePrueba, rollosDePrueba } from "../../../nucleo/pruebas/compras-de-prueba.ts";
 import { llaveDePrueba } from "../../../nucleo/pruebas/cuentas-de-prueba.ts";
 import { nuevoTraspaso, variantesLibres } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
@@ -287,7 +287,7 @@ describe("el libro de movimientos", () => {
 
 	it("el material se suma en su unidad sin perder un milésimo; las lecturas de material y de piezas", async () => {
 		const [material = ""] = await materialesDePrueba(servidor, 1, "tela");
-		const rollo = uuidv7();
+		const [rollo = ""] = await rollosDePrueba(servidor, material, 1);
 		for (const [cantidad, rolloId] of [
 			["12.500", rollo],
 			["0.125", rollo],

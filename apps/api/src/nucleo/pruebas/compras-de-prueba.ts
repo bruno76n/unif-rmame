@@ -64,6 +64,32 @@ export async function materialesDePrueba(
 }
 
 /**
+ * Rollos de prueba de una tela, como de carga inicial (sin partida ni orden), directo en la base: para las pruebas
+ * del libro que mueven tela por rollo y no prueban cómo nace el rollo.
+ * @param servidor El servidor de prueba.
+ * @param materialId La tela.
+ * @param cuantos Cuántos.
+ * @returns Sus ids.
+ */
+export async function rollosDePrueba(
+	servidor: ServidorDePrueba,
+	materialId: string,
+	cuantos: number,
+): Promise<string[]> {
+	const ids: string[] = [];
+	for (let i = 0; i < cuantos; i++) {
+		const id = uuidv7();
+		await servidor.base.dueno.query(
+			`INSERT INTO rollos (id, folio, material_id, metros_iniciales, estado, es_carga_inicial)
+			 VALUES ($1, $2, $3, 50, 'disponible', true)`,
+			[id, `R-P${id.slice(-8)}`, materialId],
+		);
+		ids.push(id);
+	}
+	return ids;
+}
+
+/**
  * Compras da de alta un proveedor con su acción.
  * @param servidor El servidor de prueba.
  * @param datos Lo que cambia de la ficha de ejemplo (Textiles Aurora, de León).

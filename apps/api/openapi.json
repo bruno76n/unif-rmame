@@ -8483,6 +8483,202 @@
         }
       }
     },
+    "/v1/acciones/inventario.recibir_de_proveedor": {
+      "post": {
+        "tags": [
+          "inventario"
+        ],
+        "description": "Recibe en aduana lo que llegó de una orden de compra: nacen sus rollos, sus partidas y su A- a Bodega\n\nPermiso: departamento aduana.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "clave_idempotencia": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "description": "La hace el cliente al apretar el botón y la reusa en cada reintento"
+                  },
+                  "datos": {
+                    "type": "object",
+                    "properties": {
+                      "orden_compra_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "description": "La orden"
+                      },
+                      "materiales": {
+                        "minItems": 1,
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "orden_compra_linea_id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                              "description": "La línea de la orden"
+                            },
+                            "rollos": {
+                              "description": "Si es tela: al menos uno",
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "metros": {
+                                    "type": "string",
+                                    "pattern": "^\\d{1,6}(\\.\\d)?$",
+                                    "description": "Los metros marcados del rollo, mayores que 0, con un decimal como máximo"
+                                  },
+                                  "partida": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 20,
+                                    "description": "El código de la etiqueta del proveedor; se guarda en mayúsculas"
+                                  }
+                                },
+                                "required": [
+                                  "metros",
+                                  "partida"
+                                ]
+                              }
+                            },
+                            "cantidad": {
+                              "description": "Si no es tela: de 0 en adelante; entera si su unidad se cuenta entera",
+                              "type": "string",
+                              "pattern": "^\\d{1,9}(\\.\\d{1,3})?$"
+                            }
+                          },
+                          "required": [
+                            "orden_compra_linea_id"
+                          ]
+                        },
+                        "description": "Uno por línea que llega"
+                      }
+                    },
+                    "required": [
+                      "orden_compra_id",
+                      "materiales"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "clave_idempotencia",
+                  "datos"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "recepcion_id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                          "description": "La recepción"
+                        },
+                        "traspaso_id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                          "description": "El A- del material, en aduana con destino Bodega"
+                        },
+                        "folio": {
+                          "type": "string",
+                          "description": "El folio del A-"
+                        },
+                        "rollos": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "rollo_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "folio": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "rollo_id",
+                              "folio"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Los rollos que nacieron"
+                        },
+                        "mensaje": {
+                          "type": "string",
+                          "description": "El aviso verde que muestra la pantalla"
+                        },
+                        "version": {
+                          "description": "La versión nueva de lo que cambió, si la acción editó algo",
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "recepcion_id",
+                        "traspaso_id",
+                        "folio",
+                        "rollos",
+                        "mensaje"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "avisos": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Mensajes que no bloquean"
+                    },
+                    "secreto_entregado": {
+                      "description": "La respuesta repetida de una acción que entregó un secreto: el secreto ya no viene",
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "avisos"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/acciones/patronaje.guardar_receta": {
       "post": {
         "tags": [

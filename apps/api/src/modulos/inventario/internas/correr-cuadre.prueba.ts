@@ -14,6 +14,7 @@ import { guardarEventosConAdmin } from "../../../nucleo/acciones/corredor.ts";
 import { crearBase } from "../../../nucleo/base/conexion.ts";
 import { cargarModulos } from "../../../nucleo/modulos.ts";
 import { enAccionDePrueba } from "../../../nucleo/pruebas/accion-de-prueba.ts";
+import { materialesDePrueba, rollosDePrueba } from "../../../nucleo/pruebas/compras-de-prueba.ts";
 import {
 	meterPiezas,
 	nuevoTraspaso,
@@ -222,5 +223,41 @@ describe("el cuadre de la noche", () => {
 			{ codigo: "ADU", piezas: 6 },
 			{ codigo: "BOD", piezas: 7 },
 		]);
+	});
+
+	it("El cuadre encuentra un rollo con metros en dos ubicaciones (paso 2); con sus metros en un solo lugar, ya cuadra", async () => {
+		const [tela = ""] = await materialesDePrueba(servidor, 1, "tela");
+		const [rollo = ""] = await rollosDePrueba(servidor, tela, 1);
+		/** Un ajuste del rollo que entra o sale de una ubicación. */
+		const ajuste = (codigo: string, cantidad: string, entra: boolean) =>
+			enAccionDePrueba(crearBase(servidor.base.app), servidor.modulos, (contexto) =>
+				escribirMovimiento(contexto, {
+					tipo: "ajuste",
+					documento: { tipo: "ajuste", id: uuidv7() },
+					renglones: [
+						{
+							origen: entra ? null : (ubicacion[codigo] ?? ""),
+							destino: entra ? (ubicacion[codigo] ?? "") : null,
+							materialId: tela,
+							rolloId: rollo,
+							cantidad,
+						},
+					],
+					clave: uuidv7(),
+				}),
+			);
+		await ajuste("BOD", "40.000", true);
+		await ajuste("ADU", "2.500", true);
+		const cuadre = await cuadrar("2026-12-01");
+		expect(await excepcionesDe(cuadre)).toEqual([
+			{
+				tipo: "rollo_en_dos_lugares",
+				variante_id: null,
+				documento_id: null,
+				datos: expect.objectContaining({ rollo_id: rollo, donde: "Aduana 2.500, Bodega 40.000" }),
+			},
+		]);
+		await ajuste("ADU", "2.500", false);
+		expect(await cuadrar("2026-12-02")).toMatchObject({ estado: "cuadro" });
 	});
 });

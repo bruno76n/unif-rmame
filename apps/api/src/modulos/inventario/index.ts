@@ -2,6 +2,7 @@
  * El módulo `inventario`: las ubicaciones, el libro de movimientos y las existencias.
  * Fase 4 · docs/modulos/inventario/libro-de-movimientos.md («La tabla `ubicaciones`»)
  * Fase 9 · docs/modulos/inventario/libro-de-movimientos.md y existencias-y-cuadre.md
+ * Fase 11 · docs/modulos/inventario/material-en-bodega.md y recepciones-en-aduana.md
  *
  * Las ubicaciones nacen en la fase 4 porque las usan antes los parámetros, las impresoras, las cuentas,
  * los aparatos y las personas; sus responsables nacen vacíos. El libro no tiene acciones propias: lo escribe
@@ -11,8 +12,10 @@
 import { v7 as uuidv7 } from "uuid";
 import { todosLosDepartamentos } from "../../nucleo/acceso/departamentos.ts";
 import { definirModulo } from "../../nucleo/modulos.ts";
+import { accionRecibirDeProveedor } from "./acciones/recibir-de-proveedor.ts";
 import { accionResolverExcepcion } from "./acciones/resolver-excepcion.ts";
 import { marcarExcepcionResuelta, registrarExcepcion, tomarVersionExcepcion } from "./internas/excepciones.ts";
+import { actualizarCostoRollos, aplicarDecisionRecepcionDeMas, tomarConsumible } from "./internas/material.ts";
 import {
 	apartarParaNota,
 	confirmarPagoReserva,
@@ -22,6 +25,7 @@ import {
 } from "./internas/reservas.ts";
 import { existenciaMaterial, piezasDeVariante } from "./lecturas/existencias.ts";
 import { existenciasDeMateriales, salidasDeMateriales } from "./lecturas/materiales.ts";
+import { recibidoDeOrdenes } from "./lecturas/recibido-de-ordenes.ts";
 import { libres, listoEnAduana } from "./lecturas/reservas.ts";
 import { semillaDeParametrosDeInventario } from "./parametros.ts";
 import { ubicaciones } from "./tablas.ts";
@@ -67,8 +71,13 @@ export default definirModulo({
 		// La bandeja: Bodega; Producción ve las del taller y Contaduría las de dinero; Dirección cuenta las abiertas.
 		excepciones: ["bodega", "produccion", "contaduria", "direccion"],
 		cuadres: lectoresDelLibro,
+		// Los rollos, las partidas y las recepciones, sin el costo, que solo viaja en las consultas de Compras y Contaduría.
+		rollos: [...lectoresDelLibro, "compras"],
+		partidas_tela: [...lectoresDelLibro, "compras"],
+		recepciones: [...lectoresDelLibro, "compras"],
+		recepcion_lineas: [...lectoresDelLibro, "compras"],
 	},
-	acciones: [accionResolverExcepcion],
+	acciones: [accionResolverExcepcion, accionRecibirDeProveedor],
 	internas: {
 		registrar_excepcion: registrarExcepcion,
 		marcar_excepcion_resuelta: marcarExcepcionResuelta,
@@ -78,7 +87,11 @@ export default definirModulo({
 		confirmar_pago_reserva: confirmarPagoReserva,
 		apartar_para_nota: apartarParaNota,
 		devolver_de_nota: devolverDeNota,
+		aplicar_decision_recepcion_de_mas: aplicarDecisionRecepcionDeMas,
+		actualizar_costo_rollos: actualizarCostoRollos,
+		tomar_consumible: tomarConsumible,
 	},
+	efectosDeAutorizacion: { recepcion_de_mas: "aplicar_decision_recepcion_de_mas" },
 	lecturas: {
 		existencia_material: existenciaMaterial,
 		existencias_de_materiales: existenciasDeMateriales,
@@ -86,6 +99,7 @@ export default definirModulo({
 		piezas_de_variante: piezasDeVariante,
 		libres,
 		listo_en_aduana: listoEnAduana,
+		recibido_de_ordenes: recibidoDeOrdenes,
 	},
 	trabajos: [cuadreNocturno],
 	semillas: [

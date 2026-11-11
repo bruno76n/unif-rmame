@@ -15,12 +15,12 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { crearContexto } from "../../../nucleo/acciones/corredor.ts";
 import { type Base, crearBase } from "../../../nucleo/base/conexion.ts";
 import { codigoDePostgres } from "../../../nucleo/base/transacciones.ts";
-import { materialesDePrueba } from "../../../nucleo/pruebas/compras-de-prueba.ts";
+import { materialesDePrueba, rollosDePrueba } from "../../../nucleo/pruebas/compras-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 import { escribirMovimiento, type RenglonDeMovimiento } from "./escribir-movimiento.ts";
 
-/** Dos rollos fijos (y sin rollo): el material con rollo y sin él cuadran por separado. */
-const rollos = [null, uuidv7(), uuidv7()];
+/** Dos rollos fijos (y sin rollo): el material con rollo y sin él cuadran por separado. Nacen en `beforeAll`. */
+const rollos: (string | null)[] = [null];
 
 /** Lo que mueve un renglón: piezas de una variante, o milésimos de un material en un rollo (o sin rollo). */
 const cosa = fc.oneof(
@@ -73,6 +73,7 @@ describe("Con movimientos al azar y varias conexiones al mismo tiempo, la existe
 			(fila) => fila.id,
 		);
 		materiales = await materialesDePrueba(servidor, 2, "tela");
+		rollos.push(...(await rollosDePrueba(servidor, materiales[0] ?? "", 2)));
 	});
 	afterAll(async () => {
 		await servidor.cerrar();

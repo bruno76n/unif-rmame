@@ -171,4 +171,16 @@ Los cambia solo la dueña, en Configuración (ver [configuración](../admin/conf
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 11.*
+**Fase 11, parte 1.**
+
+- **Las tablas** `recepciones` y `recepcion_lineas` (migración `0036`), con sus CHECK: cada tipo con su documento, el modo, la forma del renglón (prenda o material) y nada negativo; las diferencias son columnas generadas. Los renglones solo crecen (`marcar_solo_crece`); la recepción guarda su movimiento después de escribirlo, porque el movimiento necesita sus rollos y los rollos su recepción (decisión 565). Con ellas, `traspasos.recepcion_aduana_id`, `traspasos.recepcion_destino_id`, `rollos.recepcion_id` y `autorizaciones.recepcion_id` ya son llaves.
+- **`inventario.recibir_de_proveedor`** (`acciones/recibir-de-proveedor.ts`, contrato en `packages/compartido/src/contratos/inventario/recepciones.ts`):
+  - lee la orden con `compras.ordenes_por_recibir` (que ahora trae el id del proveedor y, por línea, su tipo y si se cuenta entera) y el costo con `compras.precio_vigente_lineas`;
+  - toma el candado de lo recibido de la orden (decisión 567), revisa cada línea (`linea_ajena` dice «Ese material…», porque la línea ajena no tiene nombre en esta orden, decisión 561) y los datos (`400`: «Metros», «Cantidad», «Número entero»; si todo llega en cero, «Escribe lo que llegó», decisión 569);
+  - escribe la recepción, las partidas y los rollos, el A- `material_proveedor` en aduana con destino Bodega, el movimiento `recepcion_proveedor` (cada renglón con su A-) y los renglones del papel: lo esperado (lo que faltaba de la línea) va en el primer renglón de cada línea (decisión 560);
+  - recalcula la orden con `compras.recalcular_estado_orden`; si mientras tanto se canceló, no se recibe nada;
+  - pide la autorización de lo de más por línea: lo que pasa de lo pedido después de recibir, si pasa del umbral (la tela, con `inventario.porcentaje_de_mas_tela`), menos lo que ya pasaba si ya pasaba del umbral (decisión 559).
+- **`inventario.aplicar_decision_recepcion_de_mas`** (`internas/material.ts`), registrado para `recepcion_de_mas`: rechazado, crea las devoluciones `esperado` (en Aduana hasta lo que su A- tiene ahí sin apartar, el resto en Bodega) y recalcula la orden. `direccion.decidir_autorizacion` le pasa la cantidad y la unidad de la autorización (decisión 566).
+- **`inventario.recibido_de_ordenes`** (`lecturas/recibido-de-ordenes.ts`) recibe líneas y órdenes y regresa `lineas` (lo contado menos las devoluciones de esa orden y ese material que no se cancelaron) y `recepciones` por orden con su día en hora de México (decisión 562).
+- **Los parámetros** `inventario.dias_ventana_ordenes` y `inventario.porcentaje_de_mas_tela`.
+- **Pruebas:** `acciones/recibir-de-proveedor.prueba.ts`, `internas/aplicar-decision-recepcion-de-mas.prueba.ts` y `lecturas/recibido-de-ordenes.prueba.ts`; las ayudas están en `nucleo/pruebas/aduana-de-prueba.ts`.

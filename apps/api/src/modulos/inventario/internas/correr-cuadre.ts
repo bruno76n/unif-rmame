@@ -2,11 +2,12 @@
  * El cuadre de la noche: vuelve a sacar las existencias del libro y revisa los tramos, las reservas, lo que no se
  * confirma y el total.
  * Fase 9 · docs/modulos/inventario/existencias-y-cuadre.md («El cuadre de la noche», pasos 1, 3, 6, 7 y 8)
+ * Fase 11 · el paso 2, con los rollos
  *
  * Corre en tandas, cada una en su propia transacción corta, para no frenar las ventas: el paso 1 una por
  * ubicación, y cada paso que sigue en la suya. Nunca toca el libro: si una existencia no es la del libro, la corrige
- * y deja la excepción con los dos valores. El paso 2 llega con los rollos (11), el 4 con los lotes (12), el 5 con
- * las DF- (14); en el paso 6, cada documento con su fase.
+ * y deja la excepción con los dos valores. El paso 4 llega con los lotes (12), el 5 con las DF- (14); en el paso 6,
+ * cada documento con su fase.
  */
 
 import { diaDeNegocio } from "@uniformame/compartido/calculos/fechas";
@@ -127,6 +128,37 @@ async function existenciasContraLibro(
 		cuenta.excepciones += 1;
 	}
 	return cuenta;
+}
+
+/**
+ * Paso 2: una pieza, un lugar. Ningún rollo tiene metros en dos ubicaciones, y uno entregado o por recibir solo los
+ * tiene en el Taller. Corre después del paso 1, con las existencias ya iguales al libro. Abre una excepción
+ * `rollo_en_dos_lugares` por rollo, con dónde tiene metros.
+ * Fase 11 · docs/modulos/inventario/material-en-bodega.md («El cuadre de la noche»)
+ * @returns Las excepciones que abrió.
+ */
+async function rollosEnUnLugar(contexto: ContextoDeAccion, cuadreId: string): Promise<number> {
+	const { rows } = await contexto.transaccion.execute(sql`
+		SELECT r.id, r.folio, r.estado,
+			string_agg(u.nombre || ' ' || (e.cantidad::numeric(12, 3))::text, ', ' ORDER BY u.orden) AS donde
+		FROM rollos r
+		JOIN existencias_material e ON e.rollo_id = r.id AND e.cantidad <> 0
+		JOIN ubicaciones u ON u.id = e.ubicacion_id
+		GROUP BY r.id, r.folio, r.estado
+		HAVING count(*) > 1
+			OR (r.estado IN ('entregado', 'por_recibir') AND bool_or(u.tipo <> 'taller'))
+		ORDER BY r.folio`);
+	const enDosLugares = z
+		.array(z.object({ id: z.uuid(), folio: z.string(), estado: z.string(), donde: z.string() }))
+		.parse(rows);
+	for (const rollo of enDosLugares) {
+		await abrir(contexto, cuadreId, {
+			tipo: "rollo_en_dos_lugares",
+			descripcion: `${rollo.folio} tiene metros en ${rollo.donde}`,
+			datos: { rollo_id: rollo.id, folio: rollo.folio, estado: rollo.estado, donde: rollo.donde },
+		});
+	}
+	return enDosLugares.length;
 }
 
 /**
@@ -366,6 +398,7 @@ export async function correrCuadre(
 			await entreTandas(ubicacion.codigo);
 		}
 		for (const paso of [
+			(accion: ContextoDeAccion) => rollosEnUnLugar(accion, cuadreId),
 			(accion: ContextoDeAccion) => tramosDeCamino(accion, cuadreId, fecha),
 			(accion: ContextoDeAccion) => reservasSinDocumento(accion, cuadreId),
 			(accion: ContextoDeAccion) => sinConfirmar(accion, cuadreId),
