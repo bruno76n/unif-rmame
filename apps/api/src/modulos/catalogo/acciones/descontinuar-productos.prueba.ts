@@ -58,7 +58,7 @@ describe("descontinuar conserva todo y deja un renglón por producto; reactivar 
 					await mandarAccion(
 						servidor,
 						"catalogo.agregar_escuela",
-						{ datos: { nombre: "Colegio Allende", municipio: "Zamora" } },
+						{ datos: { nombre: "Colegio Hidalgo", municipio: "Sahuayo" } },
 						"catalogo",
 					)
 				).cuerpo.resultado,
@@ -93,7 +93,7 @@ describe("descontinuar conserva todo y deja un renglón por producto; reactivar 
 		);
 		expect((await reactivar()).cuerpo).toMatchObject({
 			codigo: "escuela_dada_de_baja",
-			mensaje: "Colegio Allende está dada de baja: reactívala antes.",
+			mensaje: "Colegio Hidalgo está dada de baja: reactívala antes.",
 		});
 		await mandarAccion(
 			servidor,

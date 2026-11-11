@@ -10,6 +10,7 @@
 import { abrirConexiones, type Base, crearBase } from "../src/nucleo/base/conexion.ts";
 import { migrarYSembrar } from "../src/nucleo/base/migrar.ts";
 import { leerEntorno } from "../src/nucleo/entorno.ts";
+import { cargarCatalogoDeLaMuestra } from "./catalogo.ts";
 import { cargarCuentasDeLaMuestra } from "./cuentas.ts";
 import { cargarPersonasDeLaMuestra } from "./personas.ts";
 
@@ -17,7 +18,11 @@ import { cargarPersonasDeLaMuestra } from "./personas.ts";
 export type CargaDeLaMuestra = (base: Base) => Promise<void>;
 
 /** Las cargas de todos los módulos, en orden de dependencia. */
-export const cargasDeLaMuestra: readonly CargaDeLaMuestra[] = [cargarPersonasDeLaMuestra, cargarCuentasDeLaMuestra];
+export const cargasDeLaMuestra: readonly CargaDeLaMuestra[] = [
+	cargarPersonasDeLaMuestra,
+	cargarCuentasDeLaMuestra,
+	cargarCatalogoDeLaMuestra,
+];
 
 if (import.meta.main) {
 	const entorno = leerEntorno();

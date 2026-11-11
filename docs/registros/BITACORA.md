@@ -59,3 +59,4 @@ La línea de la bitácora se escribe al final, con el resultado ya conocido. Esc
 | 11 nov 2026 | 8 | 3 · Productos y sus tallas | [2026-11-11-fase-08](sesiones/2026-11-11-fase-08.md) |
 | 11 nov 2026 | 8 | 4 · Precios | [2026-11-11-fase-08](sesiones/2026-11-11-fase-08.md) |
 | 11 nov 2026 | 8 | 5 · Etiquetas y códigos | [2026-11-11-fase-08](sesiones/2026-11-11-fase-08.md) |
+| 11 nov 2026 | 8 | Los datos de la muestra del catálogo | [2026-11-11-fase-08](sesiones/2026-11-11-fase-08.md) |

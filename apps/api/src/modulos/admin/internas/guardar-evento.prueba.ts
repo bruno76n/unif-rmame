@@ -4,7 +4,7 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { contar, mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
+import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 
 describe("una acción que confirma deja sus eventos y la tarea encolada; una que falla, ninguno de los dos", () => {
@@ -15,6 +15,12 @@ describe("una acción que confirma deja sus eventos y la tarea encolada; una que
 	afterAll(async () => {
 		await servidor.cerrar();
 	});
+
+	/** Los eventos del módulo de prueba: los de la muestra ya estaban. */
+	async function eventosDePrueba(): Promise<number> {
+		const { rows } = await servidor.base.dueno.query("SELECT count(*)::int AS n FROM eventos WHERE modulo = 'prueba'");
+		return Number(rows[0]?.n);
+	}
 
 	/** Las tareas `procesar_eventos` pendientes en Graphile Worker. */
 	async function tareasPendientes(): Promise<number> {
@@ -33,7 +39,7 @@ describe("una acción que confirma deja sus eventos y la tarea encolada; una que
 			datos: { texto: `falla ${fallar}`, monto_centavos: 1, fallar },
 		});
 		expect(respuesta.estado).toBe(estado);
-		expect(await contar(servidor, "eventos")).toBe(0);
+		expect(await eventosDePrueba()).toBe(0);
 		expect(await tareasPendientes()).toBe(0);
 	});
 
@@ -43,7 +49,7 @@ describe("una acción que confirma deja sus eventos y la tarea encolada; una que
 		await mandarAccion(servidor, "prueba.crear_nota", { datos: { texto: "dos", monto_centavos: 1 } });
 		const { rows } = await servidor.base.dueno.query(
 			`SELECT e.tipo, e.modulo, e.entidad, e.entidad_id, e.tablas, e.usuario_id, e.datos, c.id AS comando
-			 FROM eventos e JOIN comandos_recibidos c ON c.id = e.comando_id ORDER BY e.creado_en`,
+			 FROM eventos e JOIN comandos_recibidos c ON c.id = e.comando_id WHERE e.modulo = 'prueba' ORDER BY e.creado_en`,
 		);
 		const id = String((primera.cuerpo.resultado as { id: string }).id);
 		expect(rows).toHaveLength(2);

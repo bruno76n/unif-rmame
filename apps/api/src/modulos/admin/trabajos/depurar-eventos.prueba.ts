@@ -41,9 +41,9 @@ describe("depurar quita los eventos procesados de hace más de admin.dias_guarda
 		await prueba.borrar();
 	});
 
-	/** Los eventos que quedan. */
+	/** Los eventos de esta prueba que quedan (los de la muestra son del mes que corre). */
 	async function quedan(): Promise<string[]> {
-		const { rows } = await prueba.dueno.query("SELECT id FROM eventos ORDER BY id");
+		const { rows } = await prueba.dueno.query("SELECT id FROM eventos WHERE modulo = 'prueba' ORDER BY id");
 		return rows.map((renglon) => renglon.id);
 	}
 

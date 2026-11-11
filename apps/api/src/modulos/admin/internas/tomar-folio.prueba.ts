@@ -100,6 +100,8 @@ describe("dos documentos que piden folio a la vez reciben números seguidos, sin
 	});
 
 	it("el código de barras empieza en 100001 y no pasa de 499999: sin dar una parte de lo que se pide", async () => {
+		// Los productos de la muestra ya tomaron códigos: el contador vuelve a como lo deja la siembra.
+		await prueba.dueno.query("UPDATE contadores_folio SET siguiente = minimo WHERE tipo = 'codigo_barras'");
 		expect(await tomar({ tipo: "codigo_barras" })).toEqual({ folio: "100001", numero: 100001 });
 		await prueba.dueno.query("UPDATE contadores_folio SET siguiente = 499998 WHERE tipo = 'codigo_barras'");
 		expect(await siguiente({ tipo: "codigo_barras" })).toEqual({ folio: "499998", quedan: 2 });

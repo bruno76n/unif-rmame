@@ -104,12 +104,18 @@ describe("una escuela es única por nombre y municipio sin importar acentos ni m
 	it("la escuela de un cliente nace igual, y si ya existe dice que se escoja en la lista", async () => {
 		const base = crearBase(servidor.base.app);
 		const creada = await enAccionDePrueba(base, servidor.modulos, (contexto) =>
-			contexto.interna("catalogo.crear_escuela_para_cliente", { nombre: "Colegio Allende", municipio: "Zamora" }),
+			contexto.interna("catalogo.crear_escuela_para_cliente", {
+				nombre: "Colegio Guadalupe Victoria",
+				municipio: "Jiquilpan",
+			}),
 		);
 		expect(creada).toEqual({ escuela_id: expect.any(String) });
 		await expect(
 			enAccionDePrueba(base, servidor.modulos, (contexto) =>
-				contexto.interna("catalogo.crear_escuela_para_cliente", { nombre: "COLEGIO ALLENDE", municipio: "zamora" }),
+				contexto.interna("catalogo.crear_escuela_para_cliente", {
+					nombre: "COLEGIO GUADALUPE VICTORIA",
+					municipio: "jiquilpan",
+				}),
 			),
 		).rejects.toMatchObject({ codigo: "escuela_repetida", message: "Esa escuela ya existe: escógela en la lista." });
 	});

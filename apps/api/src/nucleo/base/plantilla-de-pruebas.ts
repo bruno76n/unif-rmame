@@ -3,16 +3,22 @@
  * Fase 2 · docs/cimientos/PRUEBAS.md («Postgres real»)
  *
  * Levanta un Postgres 18 con Testcontainers, aplica las migraciones, la siembra, los datos de la muestra y
- * las cuentas de prueba (con su sesión) en la base plantilla con el rol dueño, le da entrada al rol de la app y le pasa a cada archivo dónde quedó todo. Cada
+ * las cuentas de prueba (con su sesión) en la base plantilla con el rol dueño, procesa los eventos de la muestra
+ * como el worker, le da entrada al rol de la app y le pasa a cada archivo dónde quedó todo. Cada
  * archivo copia la plantilla con `crearBaseDePrueba` de `@uniformame/pruebas/base`.
  */
 
+import { join } from "node:path";
 import { PostgreSqlContainer } from "@testcontainers/postgresql";
 import type { BaseDePruebasCompartida } from "@uniformame/pruebas/base/contexto";
+import { sql } from "drizzle-orm";
 import pg from "pg";
+import { Temporal } from "temporal-polyfill";
 import type { TestProject } from "vitest/node";
 import { cargasDeLaMuestra } from "../../../semillas/sembrar.ts";
+import { cargarModulos } from "../modulos.ts";
 import { sembrarAparatosDePrueba, sembrarCuentasDePrueba } from "../pruebas/cuentas-de-prueba.ts";
+import { procesarEventos, repartirConLosModulos } from "../trabajos/procesar-eventos.ts";
 import { abrirConexiones, crearBase } from "./conexion.ts";
 import { migrarYSembrar } from "./migrar.ts";
 
@@ -37,6 +43,13 @@ export default async function arrancar(proyecto: TestProject): Promise<() => Pro
 	try {
 		const base = crearBase(conexiones);
 		for (const cargar of cargasDeLaMuestra) await cargar(base);
+		// Los eventos de la muestra ya pasaron por el worker, y su tarea ya corrió: cada archivo empieza sin pendientes.
+		const ahora = () => Temporal.Now.instant();
+		const repartir = repartirConLosModulos(await cargarModulos(join(import.meta.dirname, "../../modulos")), ahora);
+		while ((await procesarEventos({ base, repartir, avisarFalla: async () => undefined, ahora })) > 0);
+		await base.execute(
+			sql`SELECT graphile_worker.complete_jobs(array_agg(id)) FROM graphile_worker.jobs WHERE task_identifier = 'procesar_eventos'`,
+		);
 		await sembrarCuentasDePrueba(base);
 		await sembrarAparatosDePrueba(base);
 	} finally {

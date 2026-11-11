@@ -211,5 +211,9 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 11 nov 2026 | 8 | Qué cuenta para «uno por semana» del aviso de códigos (decisión 453) | Solo sin leer · cualquiera de los últimos 7 días | Cualquiera: leerlo no trae otro al día siguiente | No |
 | 11 nov 2026 | 8 | Cómo entra `codigos_por_acabarse` al CHECK de avisos (decisión 454) | En la lista del núcleo · en la migración de Catálogo | En la migración de Catálogo, como pide su archivo | No |
 | 11 nov 2026 | 8 | Cuándo sale «Ya se pueden recibir en las tiendas» (decisión 455) | Siempre · las pendientes de un producto | Las pendientes de un producto | No |
+| 11 nov 2026 | 8 | Cómo cargar la muestra del catálogo con las acciones (decisión 456) | Insertar directo · las acciones con una sesión de carga | Las acciones, como Rosa, en una sesión sin token que se cierra | No |
+| 11 nov 2026 | 8 | Productos con escuela marcados en línea en la muestra (decisión 457) | Saltarse la regla · quitarles el canal | Quitarles el canal: manda la regla | No |
+| 11 nov 2026 | 8 | Las etiquetas impresas de la muestra (decisión 458) | Todas por imprimir · marcarlas directo | Marcarlas directo hasta la fase 20 | No |
+| 11 nov 2026 | 8 | Los eventos de la muestra en la base de pruebas (decisión 459) | Que cada prueba los ignore · procesarlos en la plantilla | Procesarlos en la plantilla, como el worker | No |
 | 10 nov 2026 | 5 | La pantalla del Google de desarrollo | Una propia para escoger cuenta · la de desarrollo de oidc-provider, que pide el correo | La de oidc-provider; `pnpm local` escribe los correos de la muestra al arrancar | No |
 

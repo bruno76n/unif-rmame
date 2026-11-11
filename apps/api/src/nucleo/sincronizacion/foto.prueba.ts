@@ -38,7 +38,7 @@ describe("la foto entrega todo lo vigente del aparato y la bajada sigue desde su
 		const { cambios } = await fotoCompleta(servidor, 2);
 		expect(cambios.every((cambio) => cambio.op === "cambio")).toBe(true);
 		const tablas = [...new Set(cambios.map((cambio) => cambio.tabla))];
-		expect(tablas).toEqual(["dispositivos", "parametros", "tallas", "prueba_lotes"]);
+		expect(tablas).toEqual(["dispositivos", "parametros", "tallas", "productos", "variantes", "prueba_lotes"]);
 		const quien = quienesDePrueba.tablet;
 		const suyo = quien?.tipo === "aparato" ? quien.dispositivoId : "";
 		expect(cambios.filter((cambio) => cambio.tabla === "dispositivos").map((cambio) => cambio.id)).toEqual([suyo]);
