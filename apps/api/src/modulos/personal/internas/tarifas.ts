@@ -1,13 +1,15 @@
 /**
- * `personal.copiar_tarifas_flujo`: el flujo nuevo que parte de otro copia sus tarifas.
- * Fase 7 · docs/modulos/personal/tarifas.md (regla 6, «`personal.copiar_tarifas_flujo`»)
+ * `personal.copiar_tarifas_flujo`: el flujo nuevo que parte de otro copia sus tarifas; y
+ * `personal.tocar_tarifas_operacion`: la tarifa de una operación que se quita del flujo vuelve a bajar a la tablet.
+ * Fase 7 · docs/modulos/personal/tarifas.md (regla 6, «`personal.copiar_tarifas_flujo`»); fase 12 · la misma, «Lo que
+ * baja a la tablet»
  *
  * La llama `produccion.crear_flujo` (fase 12) en su transacción. No rechaza ni pide «ven sueldos y tarifas»:
  * la tarifa no viaja a la pantalla de quien crea el flujo, y lo que regresa no lleva montos. Una operación
  * del origen sin tarifa queda «Sin tarifa».
  */
 
-import { and, inArray, isNull } from "drizzle-orm";
+import { and, inArray, isNull, sql } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
@@ -78,4 +80,20 @@ export async function copiarTarifasFlujo(contexto: ContextoDeAccion, datos: unkn
 		tablas: ["tarifas_operacion"],
 	});
 	return { copiadas: nuevas.length };
+}
+
+/**
+ * `personal.tocar_tarifas_operacion`: toca las tarifas vigentes de unas operaciones del flujo para que la tablet las
+ * vuelva a ver: su filtro depende de que la operación siga en el flujo, que vive en otra tabla (ver
+ * docs/cimientos/SINCRONIZACION.md, «Filtros que cambian sin tocar el renglón»). La llama
+ * `produccion.quitar_operacion_flujo`.
+ * @param datos `flujo_operacion_ids`.
+ */
+export async function tocarTarifasOperacion(contexto: ContextoDeAccion, datos: unknown): Promise<void> {
+	const { flujo_operacion_ids } = z.object({ flujo_operacion_ids: z.array(z.uuid()) }).parse(datos);
+	if (flujo_operacion_ids.length === 0) return;
+	await contexto.transaccion
+		.update(tarifasOperacion)
+		.set({ actualizadoEn: sql`now()` })
+		.where(and(inArray(tarifasOperacion.flujoOperacionId, flujo_operacion_ids), isNull(tarifasOperacion.vigenteHasta)));
 }

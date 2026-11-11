@@ -112,6 +112,8 @@ describe("Las proyecciones de cada talla siempre son la suma de sus registros vi
 		);
 		expect(cancelado.estado).toBe(200);
 		const tallas = await tallasDe(lote.loteId);
+		const versionDelLote = async () =>
+			Number((await consultar("SELECT version::int AS v FROM lotes WHERE id = $1", [lote.loteId]))[0]?.v);
 		await fc.assert(
 			fc.asyncProperty(
 				fc.array(fc.record({ terminadas: fc.nat({ max: 10 }), merma: fc.nat({ max: 10 }) }), {
@@ -126,7 +128,10 @@ describe("Las proyecciones de cada talla siempre son la suma de sus registros vi
 							descuadre[i]?.merma,
 						]);
 					}
-					await recalcular();
+					const antes = await versionDelLote();
+					const corregidas = await recalcular();
+					// El lote sigue en proceso: solo sube su versión si el recálculo corrigió alguna talla.
+					expect((await versionDelLote()) > antes).toBe(corregidas > 0);
 					const despues = await tallasDe(lote.loteId);
 					expect(despues.every((talla) => talla.terminadas === talla.terminadas_real)).toBe(true);
 					expect(despues.every((talla) => talla.merma === talla.merma_real)).toBe(true);

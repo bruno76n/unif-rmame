@@ -157,7 +157,7 @@ describe("Entregar al corte pasa al Taller los rollos de cada tela de la receta 
 		);
 	}
 
-	it("lo sugerido que no se usó se libera; la tela que falta sigue comprometida y se entrega después, sin repetir los avíos", async () => {
+	it("lo sugerido que no se usó se libera; la tela que falta se entrega después, sin repetir los avíos", async () => {
 		const prenda = await prendaParaCortar(servidor, siembra);
 		const tela = prenda.materiales.gabardina;
 		const [chico, grande] = [

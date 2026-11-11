@@ -19,7 +19,7 @@ import {
 } from "../../nucleo/pruebas/produccion-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../nucleo/pruebas/servidor-de-prueba.ts";
 
-describe("A la tablet bajan los lotes en proceso y terminados, sus bultos, sus registros y los flujos, nunca una tarifa ni un costo", () => {
+describe("A la tablet bajan los lotes en proceso y terminados, sus bultos, sus registros y los flujos, nunca un costo ni una tarifa, salvo con produccion.tarifa_visible_tablet", () => {
 	let servidor: ServidorDePrueba;
 	beforeAll(async () => {
 		servidor = await crearServidorDePrueba();
@@ -128,7 +128,7 @@ describe("A la tablet bajan los lotes en proceso y terminados, sus bultos, sus r
 		).toEqual(["quitar", "quitar"]);
 	});
 
-	it("un lote cortado baja con sus bultos y sus registros, sin la tarifa que congelaron; las tarifas, solo si la dueña decide que se muestren", async () => {
+	it("un lote cortado baja con sus bultos y sus registros, sin la tarifa que congelaron; las tarifas, solo si la dueña decide que se muestren, y la de una operación quitada se quita", async () => {
 		const siembra = await siembraDelCatalogo(servidor);
 		const lote = await loteCortado(servidor, siembra);
 		const costados = lote.prenda.flujo.operaciones[1]?.flujoOperacionId;
@@ -188,5 +188,27 @@ describe("A la tablet bajan los lotes en proceso y terminados, sus bultos, sus r
 				(cambio) => cambio.tabla === "tarifas_operacion" && cambio.datos?.flujo_operacion_id === costados,
 			),
 		).toMatchObject({ op: "cambio", datos: { tarifa_centavos: 150 } });
+		// La tarifa de una operación que se quita del flujo se quita de la tablet.
+		const flujo = await flujoDePrueba(servidor.base.dueno, 2);
+		const sale = flujo.operaciones[1]?.flujoOperacionId;
+		const tarifa = uuidv7();
+		await servidor.base.dueno.query(
+			"INSERT INTO tarifas_operacion (id, flujo_operacion_id, tarifa_centavos, vigente_desde) VALUES ($1, $2, 90, now() - interval '1 day')",
+			[tarifa, sale],
+		);
+		const conLaNueva = await fotoCompleta(servidor);
+		expect(conLaNueva.cambios.find((cambio) => cambio.id === tarifa)).toMatchObject({ op: "cambio" });
+		const { rows: delFlujo } = await servidor.base.dueno.query("SELECT version::int AS v FROM flujos WHERE id = $1", [
+			flujo.flujoId,
+		]);
+		const quitada = await mandarAccion(
+			servidor,
+			"produccion.quitar_operacion_flujo",
+			{ datos: { flujo_operacion_id: sale }, version: delFlujo[0]?.v },
+			"produccion",
+		);
+		expect(quitada.estado).toBe(200);
+		const despues = await bajarHastaTener(servidor, conLaNueva.cursor, [tarifa]);
+		expect(despues.cambios.filter((cambio) => cambio.id === tarifa).at(-1)).toMatchObject({ op: "quitar" });
 	});
 });

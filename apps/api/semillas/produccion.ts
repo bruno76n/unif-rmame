@@ -22,7 +22,7 @@ import { dispositivos, dispositivosSync } from "../src/modulos/admin/tablas.ts";
 import { ubicaciones } from "../src/modulos/inventario/tablas.ts";
 import { flujos } from "../src/modulos/produccion/tablas.ts";
 import type { AparatoQueLlama, CuentaQueLlama } from "../src/nucleo/acceso/quien.ts";
-import { escribirBitacoraConAdmin, guardarEventosConAdmin } from "../src/nucleo/acciones/corredor.ts";
+import { crearContexto, escribirBitacoraConAdmin, guardarEventosConAdmin } from "../src/nucleo/acciones/corredor.ts";
 import type { Base } from "../src/nucleo/base/conexion.ts";
 import { enTransaccion } from "../src/nucleo/base/transacciones.ts";
 import { ErrorDeApi } from "../src/nucleo/http/errores.ts";
@@ -233,7 +233,7 @@ export async function cargarProduccionDeLaMuestra(base: Base): Promise<void> {
 			}
 		},
 	);
-	await registrarTablet(base);
+	await registrarTablet(base, registro);
 	for (const { lote, loteId } of cortados) await subirRegistros(base, registro, lote, loteId);
 }
 
@@ -399,21 +399,40 @@ async function cortar(
 	}
 }
 
-/** Da de alta la tablet del taller de la muestra, como un aparato ya registrado, con una llave que nadie tiene. */
-async function registrarTablet(base: Base): Promise<void> {
-	const [taller] = await base.select({ id: ubicaciones.id }).from(ubicaciones).where(eq(ubicaciones.codigo, "TAL"));
-	await base.insert(dispositivos).values({
-		id: tabletDelTaller,
-		folio: "DV-0001",
-		nombre: "Tablet del taller",
-		tipo: "tablet_taller",
-		ubicacionId: taller?.id ?? null,
-		llaveId: randomBytes(6).toString("hex"),
-		llaveHash: createHash("sha256").update(randomBytes(32)).digest("hex"),
+/**
+ * Da de alta la tablet del taller de la muestra, como un aparato ya registrado, con una llave que nadie tiene y su folio
+ * DV- del contador.
+ */
+async function registrarTablet(base: Base, registro: RegistroDeModulos): Promise<void> {
+	await enTransaccion(base, async (transaccion) => {
+		const { contexto } = crearContexto(
+			registro,
+			transaccion,
+			tomas,
+			"muestra.tablet",
+			Temporal.Now.instant(),
+			undefined,
+		);
+		const { folio } = z
+			.object({ folio: z.string() })
+			.parse(await contexto.interna("admin.tomar_folio", { tipo: "dispositivo" }));
+		const [taller] = await transaccion
+			.select({ id: ubicaciones.id })
+			.from(ubicaciones)
+			.where(eq(ubicaciones.codigo, "TAL"));
+		await transaccion.insert(dispositivos).values({
+			id: tabletDelTaller,
+			folio,
+			nombre: "Tablet del taller",
+			tipo: "tablet_taller",
+			ubicacionId: taller?.id ?? null,
+			llaveId: randomBytes(6).toString("hex"),
+			llaveHash: createHash("sha256").update(randomBytes(32)).digest("hex"),
+		});
+		await transaccion
+			.insert(dispositivosSync)
+			.values({ id: tabletDelTaller, dispositivoId: tabletDelTaller, versionApp: "1.0.0" });
 	});
-	await base
-		.insert(dispositivosSync)
-		.values({ id: tabletDelTaller, dispositivoId: tabletDelTaller, versionApp: "1.0.0" });
 }
 
 /**

@@ -278,6 +278,8 @@ export const accionQuitarOperacionFlujo = implementarAccion(quitarOperacionFlujo
 				gt(flujoOperaciones.orden, sale.orden),
 			),
 		);
+	// Su tarifa sale de la tablet con ella: su filtro depende de que siga en el flujo.
+	await contexto.interna("personal.tocar_tarifas_operacion", { flujo_operacion_ids: [sale.flujoOperacionId] });
 	const despues = await operacionesDelFlujo(contexto, flujo.id);
 	flujoCambiado(contexto, flujo, `Quitó ${sale.nombre} de ${flujo.nombre}`, antes, despues);
 	return {

@@ -30,7 +30,7 @@ Quien cobra por pieza cobra por cada operación que hace, a la tarifa de esa ope
 
 - Lleva las columnas comunes y, como baja a la tablet, `xid_escritura`.
 - **Único:** una vigente por `flujo_operacion_id` (donde `vigente_hasta` es nulo).
-- `flujo_operacion_id` lleva su `@llavePendiente` hasta la fase 12.
+- `flujo_operacion_id` es llave hacia `flujo_operaciones` desde la fase 12.
 
 ## Acciones
 
@@ -61,6 +61,15 @@ Quien cobra por pieza cobra por cada operación que hace, a la tarifa de esa ope
 | **Regresa** | Cuántas copió, sin montos |
 | **Eventos** | Un `tarifa.puesta` con el flujo |
 | **Bitácora** | «Copió {n} tarifas de {origen} a {flujo}», marcada como sueldo |
+
+### `personal.tocar_tarifas_operacion`
+
+| | |
+|---|---|
+| **La llama** | `produccion.quitar_operacion_flujo`, con la operación que sale del flujo |
+| **Recibe** | `flujo_operacion_ids` |
+| **Escribe** | Toca la tarifa vigente de esas operaciones, sin cambiar su monto, para que la tablet la quite (su filtro depende de que la operación siga en el flujo; ver [sincronización](../../cimientos/SINCRONIZACION.md#filtros-que-cambian-sin-tocar-el-renglón)) |
+| **Regresa** | Nada |
 
 ## Lecturas
 
@@ -96,7 +105,7 @@ Si la dueña cambia ese parámetro, la tablet pide su foto completa (ver [sincro
 
 **Fase 7, parte 5.**
 
-- **La tabla** `tarifas_operacion` es de `personal` (migración `0019_asistencia_y_tarifas.sql`), con `tarifa_centavos > 0` (y a lo más 99,999,999 en su contrato), el periodo con `vigente_hasta >= vigente_desde` (migración `0020`), una vigente por operación (único parcial donde `vigente_hasta` es nulo), su `xid_escritura` y la `@llavePendiente` hacia `flujo_operaciones`. `tarifa_centavos` es un campo de sueldo (`camposDeSueldo`): sin el permiso no viaja y su renglón de bitácora queda sensible. Lo que baja a la tablet llega con Producción (fase 12).
+- **La tabla** `tarifas_operacion` es de `personal` (migración `0019_asistencia_y_tarifas.sql`), con `tarifa_centavos > 0` (y a lo más 99,999,999 en su contrato), el periodo con `vigente_hasta >= vigente_desde` (migración `0020`), una vigente por operación (único parcial donde `vigente_hasta` es nulo), su `xid_escritura` y la llave hacia `flujo_operaciones` (desde la fase 12, migración `0038`). `tarifa_centavos` es un campo de sueldo (`camposDeSueldo`): sin el permiso no viaja y su renglón de bitácora queda sensible. Lo que baja a la tablet está abajo, en la fase 12.
 - **`personal.poner_tarifa_operacion`** (`acciones/poner-tarifa-operacion.ts`, contrato en `packages/compartido/src/contratos/personal/tarifas.ts`): pide «ven sueldos y tarifas» en su contrato; un candado por operación; la versión de la vigente va en `datos` (la primera no la tiene); cierra la vigente y abre la nueva; la misma tarifa solo revisa la versión (`revisarVersion`) y no escribe nada. La bitácora va como plantilla con las tarifas como sueldo. Mientras no haya flujos, el mensaje dice «La operación: {tarifa} por pieza desde ahora» (decisión 434).
 - **`personal.copiar_tarifas_flujo`** (`internas/tarifas.ts`): copia la vigente de cada operación de origen a su operación nueva, deja «Sin tarifa» las que no tenían y regresa cuántas, sin montos.
 - **`personal.tarifa_vigente`** (`lecturas/tarifa-vigente.ts`): la de ese momento (la más reciente que empezó antes), o `null`.
@@ -104,4 +113,4 @@ Si la dueña cambia ese parámetro, la tablet pide su foto completa (ver [sincro
 
 **Fase 12, parte 1.** `tarifas_operacion.flujo_operacion_id` ya es llave. `personal.poner_tarifa_operacion` lee la operación de su flujo con `FOR SHARE` (decisión 594): si ya no está en el flujo, `422 operacion_de_baja`; su mensaje dice el nombre de la operación y su bitácora, también el del flujo. Lo prueba `poner-tarifa-operacion.prueba.ts`, con flujos de prueba de verdad.
 
-**Fase 12.** Lo que baja a la tablet está en `bajada.ts`: las tarifas vigentes de las operaciones vigentes de los flujos vigentes, solo con `produccion.tarifa_visible_tablet` encendido; el parámetro está en la lista de la tabla, así que cambiarlo pide la foto a las tablets (decisión 619). Lo prueba `produccion/bajada.prueba.ts`. El aviso de `poner_tarifa_operacion` dice «1 registro sin tarifa ya la tomó» cuando es uno.
+**Fase 12.** Lo que baja a la tablet está en `bajada.ts`: las tarifas vigentes de las operaciones vigentes de los flujos vigentes, solo con `produccion.tarifa_visible_tablet` encendido; el parámetro está en la lista de la tabla, así que cambiarlo pide la foto a las tablets (decisión 619). `produccion.quitar_operacion_flujo` llama `personal.tocar_tarifas_operacion` (`internas/tarifas.ts`) para que la tarifa de la operación que sale se quite de la tablet. Lo prueba `produccion/bajada.prueba.ts`. El aviso de `poner_tarifa_operacion` dice «1 registro sin tarifa ya la tomó» cuando es uno.

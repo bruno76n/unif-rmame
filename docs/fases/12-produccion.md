@@ -1,7 +1,7 @@
 # Fase 12: Producción
 
 > **Etapa:** Módulos.
-> **Estado:** Pendiente.
+> **Estado:** Terminada.
 > **Antes de empezar:** lee la [forma de trabajo](../trabajo/FORMA-DE-TRABAJO.md) y la [revisión de fase](../trabajo/REVISION-DE-FASE.md).
 > **Se conecta con:** [fases](FASES.md) · [fase 11](11-aduana-y-bodega.md) · [fase 13](13-calidad-y-mantenimiento.md)
 
@@ -84,7 +84,7 @@ El taller queda en el sistema de punta a punta: el flujo de cada prenda, la orde
 | Un flujo nuevo copia las operaciones, el orden y las personas de su origen, y Personal copia sus tarifas; el de una sola operación lleva el corte y las de su parámetro | `modulos/produccion/acciones/crear-flujo.prueba.ts` |
 | El corte siempre va primero y no se quita; un flujo no queda con menos de dos; con lotes en proceso o terminados sin revisar, el flujo no cambia | `modulos/produccion/acciones/cambiar-operaciones-flujo.prueba.ts` |
 | Una orden nueva nace con su lote por cortar, su fecha de corte y sus tallas; una prenda sin flujo no entra; sin receta entra con su aviso | `modulos/produccion/acciones/crear-orden.prueba.ts` |
-| Mandar un pedido suma piezas al lote por cortar sin tela de esa prenda o abre una orden con un lote por prenda; cancelar el pedido pasa sus lotes a temporada | `modulos/produccion/internas/mandar-a-produccion.prueba.ts` y `pasar-pedido-a-temporada.prueba.ts` |
+| Mandar un pedido suma piezas al lote por cortar sin tela de esa prenda o abre una orden con un lote por prenda; cancelar el pedido pasa sus lotes a temporada | `modulos/produccion/internas/mandar-a-produccion.prueba.ts` y `modulos/produccion/internas/pasar-pedido-a-temporada.prueba.ts` |
 | La salud da atorado, sin datos de la tablet, atrasado, en riesgo o en tiempo en ese orden, sin contar los días en que la tablet no subió nada; lo mismo en la tablet que en la API | `packages/compartido/src/calculos/salud-lote.prueba.ts`, con fast-check |
 | Un lote atorado avisa una vez hasta que algo cambia | `modulos/produccion/trabajos/vigilar-lotes-atorados.prueba.ts` |
 | Los rollos sugeridos siguen la regla de las partidas en orden de fecha de corte y nunca dan el mismo rollo a dos lotes | `modulos/inventario/internas/recalcular-rollos-sugeridos.prueba.ts`, con fast-check |
@@ -98,7 +98,7 @@ El taller queda en el sistema de punta a punta: el flujo de cada prenda, la orde
 | La tarifa que pone Personal llega a los registros que no la tenían | `modulos/produccion/acciones/registrar-operacion.prueba.ts` |
 | Un consumible se descuenta en la unidad de inventario; un PIN bloqueado en la tablet queda bloqueado en Personal | `modulos/produccion/acciones/tomar-consumible.prueba.ts` |
 | Con registros al azar, las proyecciones de cada talla siempre son la suma de sus registros vigentes, y el cuadre encuentra un Taller que no cuadra con su lote | `modulos/produccion/internas/recalcular-proyecciones.prueba.ts` y `modulos/inventario/internas/correr-cuadre.prueba.ts` |
-| A la tablet bajan los lotes en proceso y terminados, sus bultos, sus registros y los flujos, nunca una tarifa ni un costo | `modulos/produccion/bajada.prueba.ts` |
+| A la tablet bajan los lotes en proceso y terminados, sus bultos, sus registros y los flujos, nunca un costo ni una tarifa (salvo con `produccion.tarifa_visible_tablet`, y la de una operación quitada se quita) | `modulos/produccion/bajada.prueba.ts` |
 
 ## Revisión de fase
 

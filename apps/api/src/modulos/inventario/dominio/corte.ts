@@ -62,7 +62,7 @@ export async function loteConReceta(contexto: ContextoDeAccion, loteId: string):
 		.innerJoin(productos, eq(productos.id, lotes.productoId))
 		.where(eq(lotes.id, loteId))
 		// Bloquea el lote: dos entregas del mismo lote, o una entrega y el cierre de su corte, van una tras otra.
-		.for("update", { of: lotes });
+		.for("no key update", { of: lotes });
 	if (lote === undefined) throw errorDeRegla("lote_no_por_cortar", "Ese lote ya se cortó");
 	const porCortar = lotesPorCortar
 		.parse(await contexto.lectura("produccion.lotes_por_cortar", {}))

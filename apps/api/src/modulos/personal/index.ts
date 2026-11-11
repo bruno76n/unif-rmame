@@ -20,7 +20,7 @@ import { bajadaDePersonal } from "./bajada.ts";
 import { consultaPersona } from "./consultas/persona.ts";
 import { consultaPersonas } from "./consultas/personas.ts";
 import { anularPin, anularPinesUbicacion, bloquearPin } from "./internas/pin.ts";
-import { copiarTarifasFlujo } from "./internas/tarifas.ts";
+import { copiarTarifasFlujo, tocarTarifasOperacion } from "./internas/tarifas.ts";
 import { datosDePersona } from "./lecturas/datos-de-persona.ts";
 import { diasDeSemana } from "./lecturas/dias-de-semana.ts";
 import { entraAlSistema } from "./lecturas/entra-al-sistema.ts";
@@ -51,6 +51,7 @@ export default definirModulo({
 		anular_pines_ubicacion: anularPinesUbicacion,
 		bloquear_pin: bloquearPin,
 		copiar_tarifas_flujo: copiarTarifasFlujo,
+		tocar_tarifas_operacion: tocarTarifasOperacion,
 	},
 	lecturas: {
 		entra_al_sistema: entraAlSistema,

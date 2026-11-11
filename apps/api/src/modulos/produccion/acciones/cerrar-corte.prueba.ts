@@ -7,6 +7,7 @@
 
 import { aMilesimos, deMilesimos } from "@uniformame/compartido/calculos/cuenta-material";
 import { Temporal } from "temporal-polyfill";
+import { v7 as uuidv7 } from "uuid";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { crearBase } from "../../../nucleo/base/conexion.ts";
@@ -280,13 +281,17 @@ describe("Cerrar el corte consume lo que pide la receta o lo que se escribió qu
 		expect(vacia.cuerpo).toMatchObject({ codigo: "sin_impresora_taller" });
 	});
 
-	it("una tela de la receta sin rollos no deja cerrar", async () => {
-		const prenda = await prendaParaCortar(servidor, siembra);
-		const [receta] = await consultar("SELECT id, version::int AS v FROM recetas WHERE producto_id = $1", [
+	/**
+	 * Patronaje guarda una versión nueva de la receta: la gabardina a 1 m por talla y, si se pide, popelina de
+	 * combinación.
+	 * @returns La versión vigente nueva.
+	 */
+	async function nuevaVersionDeLaReceta(prenda: PrendaParaCortar, conPopelina: boolean): Promise<string> {
+		const [receta] = await consultar("SELECT version::int AS v FROM recetas WHERE producto_id = $1", [
 			prenda.productoId,
 		]);
-		// La receta lleva también popelina de combinación.
-		const tallasDeLaReceta = ["4", "6", "8"].map((talla) => prenda.tallas[talla]);
+		const porTalla = (cantidad: string) =>
+			["4", "6", "8"].map((talla) => ({ talla_id: prenda.tallas[talla], cantidad }));
 		const guardada = await mandarAccion(
 			servidor,
 			"patronaje.guardar_receta",
@@ -294,24 +299,28 @@ describe("Cerrar el corte consume lo que pide la receta o lo que se escribió qu
 				datos: {
 					producto_id: prenda.productoId,
 					medidas: [],
-					motivo: "Lleva vista de popelina",
+					motivo: "Cambio de prueba",
 					lineas: [
 						{
 							papel: "tela_principal",
 							material_id: prenda.materiales.gabardina,
 							modo: "por_talla",
 							unidad_receta: "m",
-							tallas: tallasDeLaReceta.map((talla_id) => ({ talla_id, cantidad: "1.000" })),
+							tallas: porTalla("1.000"),
 							orden: 1,
 						},
-						{
-							papel: "combinacion",
-							material_id: prenda.materiales.popelina,
-							modo: "por_talla",
-							unidad_receta: "m",
-							tallas: tallasDeLaReceta.map((talla_id) => ({ talla_id, cantidad: "0.200" })),
-							orden: 2,
-						},
+						...(conPopelina
+							? [
+									{
+										papel: "combinacion",
+										material_id: prenda.materiales.popelina,
+										modo: "por_talla",
+										unidad_receta: "m",
+										tallas: porTalla("0.200"),
+										orden: 2,
+									},
+								]
+							: []),
 					],
 				},
 				version: receta?.v,
@@ -323,6 +332,13 @@ describe("Cerrar el corte consume lo que pide la receta o lo que se escribió qu
 			"SELECT version_vigente_id AS version FROM recetas WHERE producto_id = $1",
 			[prenda.productoId],
 		);
+		return String(version);
+	}
+
+	it("una tela de la receta sin rollos no deja cerrar", async () => {
+		const prenda = await prendaParaCortar(servidor, siembra);
+		// La receta lleva también popelina de combinación.
+		const version = await nuevaVersionDeLaReceta(prenda, true);
 		const rollo = await rolloEnBodega(servidor, prenda.materiales.gabardina, "100");
 		const { lote_id } = await lote(prenda, [5, 5, 5]);
 		const respuesta = await cerrar(lote_id, {
@@ -331,6 +347,50 @@ describe("Cerrar el corte consume lo que pide la receta o lo que se escribió qu
 			tallas: ["4", "6", "8"].map((talla) => ({ variante_id: prenda.variantes[talla], piezas: 5 })),
 		});
 		expect(respuesta.cuerpo).toMatchObject({ codigo: "falta_tela" });
+	});
+
+	it("si Bodega entregó la tela con otra versión de la receta, el corte avisa con el nombre de la prenda", async () => {
+		const prenda = await prendaParaCortar(servidor, siembra);
+		const rollo = await rolloEnBodega(servidor, prenda.materiales.gabardina, "100");
+		const { lote_id } = await lote(prenda, [5, 5, 5]);
+		const entregada = await mandarAccion(
+			servidor,
+			"inventario.entregar_al_corte",
+			{ datos: { lote_id, receta_version_id: prenda.recetaVersionId, rollo_ids: [rollo.id] } },
+			"bodega",
+		);
+		expect(entregada.estado).toBe(200);
+		const version = await nuevaVersionDeLaReceta(prenda, false);
+		const respuesta = await cerrar(lote_id, {
+			receta_version_id: version,
+			telas: [{ material_id: prenda.materiales.gabardina, rollos: [{ rollo_id: rollo.id }] }],
+			tallas: ["4", "6", "8"].map((talla) => ({ variante_id: prenda.variantes[talla], piezas: 5 })),
+		});
+		expect(respuesta.estado).toBe(200);
+		expect(respuesta.cuerpo.avisos).toContain(`La receta de ${prenda.nombre} cambió desde que bodega entregó la tela`);
+	});
+
+	it("registrar el corte rechaza lo que quedó que no va a donde le toca con la frontera", async () => {
+		const corte = (destino: string, quedaron: string) =>
+			enAccionDePrueba(crearBase(servidor.base.app), servidor.modulos, (contexto) =>
+				contexto.interna("inventario.registrar_corte", {
+					corte_id: uuidv7(),
+					lote_id: uuidv7(),
+					folio_lote: "L-PRUEBA",
+					prenda: "Prenda",
+					receta_version_id: uuidv7(),
+					telas: [{ material_id: uuidv7(), rollos: [], metros_quedaron: quedaron, destino_sobrante: destino }],
+					tallas: [],
+				}),
+			);
+		// La frontera es de varios metros: 1 m no es rollo, 0 m no es retazo, y algo que queda no se va a ningún lado.
+		for (const [destino, quedaron] of [
+			["rollo", "1.000"],
+			["retazo", "0.000"],
+			["ninguno", "2.000"],
+		]) {
+			await expect(corte(destino ?? "", quedaron ?? "")).rejects.toMatchObject({ codigo: "destino_no_cuadra" });
+		}
 	});
 
 	it("lo que falta, el piso del patrón y la mezcla de partidas solo avisan: el corte se cierra", async () => {
