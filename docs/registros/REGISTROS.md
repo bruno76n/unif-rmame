@@ -206,5 +206,10 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 11 nov 2026 | 8 | Cómo se deciden las etiquetas por reimprimir (decisión 448) | Una regla por cambio · comparar el precio de cada talla | Comparar | No |
 | 11 nov 2026 | 8 | El precio en línea de un descontinuado (decisión 449) | Cambiarlo · `canal_en_linea_apagado` | `canal_en_linea_apagado` | No |
 | 11 nov 2026 | 8 | Quitar el precio de un canal apagado (decisión 450) | Rechazarlo · dejarlo | Dejarlo | No |
+| 11 nov 2026 | 8 | Con qué tipo de etiqueta se prueba la impresión de prendas (decisión 451) | Dibujar con `prueba` · registrar `prenda` en el módulo de prueba | `prenda` en el módulo de prueba: la acción queda como será | No |
+| 11 nov 2026 | 8 | Dónde se revisa «una de las dos listas» de etiquetas (decisión 452) | En el contrato · en la acción | En la acción: la regla entre campos no llega a la validación del contrato | No |
+| 11 nov 2026 | 8 | Qué cuenta para «uno por semana» del aviso de códigos (decisión 453) | Solo sin leer · cualquiera de los últimos 7 días | Cualquiera: leerlo no trae otro al día siguiente | No |
+| 11 nov 2026 | 8 | Cómo entra `codigos_por_acabarse` al CHECK de avisos (decisión 454) | En la lista del núcleo · en la migración de Catálogo | En la migración de Catálogo, como pide su archivo | No |
+| 11 nov 2026 | 8 | Cuándo sale «Ya se pueden recibir en las tiendas» (decisión 455) | Siempre · las pendientes de un producto | Las pendientes de un producto | No |
 | 10 nov 2026 | 5 | La pantalla del Google de desarrollo | Una propia para escoger cuenta · la de desarrollo de oidc-provider, que pide el correo | La de oidc-provider; `pnpm local` escribe los correos de la muestra al arrancar | No |
 

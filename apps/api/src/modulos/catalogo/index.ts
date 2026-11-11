@@ -1,9 +1,9 @@
 /**
  * El módulo `catalogo`: escuelas, secciones, grupos de tallas, tipos de prenda, listas de precios, productos,
- * sus tallas y sus precios.
+ * sus tallas, sus precios y sus etiquetas.
  * Fase 8 · docs/modulos/catalogo/
  *
- * Las etiquetas llegan en la parte 5 de la fase.
+ * El tipo de etiqueta `prenda`, con su dibujo, llega en la fase 20.
  */
 
 import { definirModulo } from "../../nucleo/modulos.ts";
@@ -20,6 +20,7 @@ import {
 } from "./acciones/escuelas.ts";
 import { accionGuardarGrupoTalla } from "./acciones/guardar-grupo-talla.ts";
 import { accionGuardarTipoPrenda } from "./acciones/guardar-tipo-prenda.ts";
+import { accionImprimirEtiquetas } from "./acciones/imprimir-etiquetas.ts";
 import { accionDescontinuarProductos, accionReactivarProducto, accionSubirFotoProducto } from "./acciones/productos.ts";
 import {
 	accionAgregarTalla,
@@ -45,6 +46,7 @@ import {
 	semillaDeListasPrecios,
 	semillaDeSecciones,
 } from "./siembra.ts";
+import { revisarCodigosDeBarras } from "./trabajos/revisar-codigos-de-barras.ts";
 
 export default definirModulo({
 	nombre: "catalogo",
@@ -67,6 +69,7 @@ export default definirModulo({
 		accionReactivarProducto,
 		accionAplicarCambiosProducto,
 		accionCambiarPreciosEnBloque,
+		accionImprimirEtiquetas,
 	],
 	internas: {
 		crear_escuela_para_cliente: crearEscuelaParaCliente,
@@ -84,6 +87,7 @@ export default definirModulo({
 		semillaDeCategoriasMayoreo,
 		semillaDeParametrosDeCatalogo,
 	],
+	trabajos: [revisarCodigosDeBarras],
 	bajada: bajadaDeCatalogo,
 	lectores: lectoresDeCatalogo,
 });

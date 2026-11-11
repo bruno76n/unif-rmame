@@ -176,6 +176,13 @@
 			"when": 1794361800011,
 			"tag": "0024_productos_variantes_y_precios",
 			"breakpoints": true
+		},
+		{
+			"idx": 25,
+			"version": "7",
+			"when": 1794363376938,
+			"tag": "0025_aviso_codigos_por_acabarse",
+			"breakpoints": true
 		}
 	]
 }

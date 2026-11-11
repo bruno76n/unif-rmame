@@ -19,6 +19,7 @@
 		"./contratos/admin/cuentas": "./src/contratos/admin/cuentas.ts",
 		"./contratos/admin/dispositivos": "./src/contratos/admin/dispositivos.ts",
 		"./contratos/catalogo/escuelas": "./src/contratos/catalogo/escuelas.ts",
+		"./contratos/catalogo/etiquetas": "./src/contratos/catalogo/etiquetas.ts",
 		"./contratos/catalogo/listas": "./src/contratos/catalogo/listas.ts",
 		"./contratos/catalogo/precios": "./src/contratos/catalogo/precios.ts",
 		"./contratos/catalogo/productos": "./src/contratos/catalogo/productos.ts",

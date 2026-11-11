@@ -121,4 +121,13 @@ export const semillaDeParametrosDeCatalogo = semillaDeParametros("catalogo", [
 		minimo: 1,
 		orden: 11,
 	},
+	{
+		clave: "avisos.correo_codigos_por_acabarse",
+		seccion: "parametro",
+		nombre: "Correo: Códigos de barras por acabarse",
+		explicacion: "Si este aviso también llega por correo",
+		tipo: "booleano",
+		inicial: true,
+		orden: 12,
+	},
 ]);

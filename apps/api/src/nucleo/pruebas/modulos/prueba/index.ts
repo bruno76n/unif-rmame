@@ -15,6 +15,7 @@ import {
 	type Horario,
 	implementarAccion,
 	implementarConsulta,
+	type TipoDeEtiqueta,
 } from "../../../modulos.ts";
 import { accionesDeAutorizaciones, aplicarDecisionDesarrollo } from "./autorizaciones.ts";
 import { bajadaDePrueba } from "./bajada.ts";
@@ -67,6 +68,12 @@ async function notaVisible(contexto: ContextoDeAccion, id: string): Promise<Reco
 	return recortar(nota, veMontos ? [] : ["monto_centavos"]).objeto;
 }
 
+/** Dibuja las etiquetas de prueba: el ZPL o un «PDF» con los ids, para ver qué se pidió. */
+const dibujoDePrueba: TipoDeEtiqueta["dibujar"] = async (_contexto, pedido) =>
+	pedido.formato === "zpl"
+		? `^XA^FD${pedido.ids.join(",")}^FS^PQ${pedido.copias}^XZ`
+		: new TextEncoder().encode(`%PDF-prueba ${pedido.ids.join(",")}`);
+
 export default definirModulo({
 	nombre: "prueba",
 	lectores: { prueba_notas: ["ventas"] },
@@ -78,14 +85,9 @@ export default definirModulo({
 	camposDeSueldo: ["pago_dia_centavos"],
 	// La etiqueta de prueba: la piden Ventas o un puente con su trabajo; dice las notas y las copias.
 	tiposDeEtiqueta: [
-		{
-			tipo: "prueba",
-			departamentos: ["ventas"],
-			dibujar: async (_contexto, pedido) =>
-				pedido.formato === "zpl"
-					? `^XA^FD${pedido.ids.join(",")}^FS^PQ${pedido.copias}^XZ`
-					: new TextEncoder().encode(`%PDF-prueba ${pedido.ids.join(",")}`),
-		},
+		{ tipo: "prueba", departamentos: ["ventas"], dibujar: dibujoDePrueba },
+		// La etiqueta de prenda con el mismo dibujo, para `catalogo.imprimir_etiquetas`; la real llega en la fase 20.
+		{ tipo: "prenda", departamentos: ["catalogo"], dibujar: dibujoDePrueba },
 	],
 	trabajos: [
 		{
