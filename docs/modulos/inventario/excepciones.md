@@ -125,3 +125,23 @@ Lo que ya pasó no se rechaza: una venta de la caja, un registro de la tablet o 
 ## Cómo está hecho
 
 *Lo escribe Claude Code al terminar la fase 9.*
+
+**Fase 9, parte 4.**
+
+- **La tabla** `excepciones` está en `modulos/inventario/tablas.ts` (migración `0029`), con sus CHECK:
+  - el tipo (los 27 de este archivo), el área, el estado y el tipo de documento;
+  - `resuelta` si y solo si tiene su hora y su resolución.
+- **Sus llaves:** `comando_id` es una llave diferida, que se revisa al confirmar: la subida abre la excepción antes de guardar su comando (decisión 487). `cuadre_id` lleva su `@llavePendiente` hasta la parte 5. `comandos_recibidos.excepcion_id` ya es llave foránea.
+- **Las internas** están en `internas/excepciones.ts`:
+  - `registrar_excepcion` abre la excepción en su bandeja (los tipos de dinero van a Contaduría), con el comando, el aparato y la persona de quien la abre, y guarda `excepcion.creada`. Un tipo que no es del código es un `Error` (`tipo_desconocido`).
+  - `marcar_excepcion_resuelta` no hace nada si ya estaba resuelta.
+- **`inventario.resolver_excepcion`** (`acciones/resolver-excepcion.ts`) revisa la bandeja de quien resuelve: Bodega lo de Bodega, Producción las del taller, Contaduría las de dinero y la dueña todo (decisión 490). Pide al menos `general.largo_minimo_motivo` letras y la versión de la excepción. No mueve nada.
+- **Quién abre cada una:**
+  - **La subida:** lo retenido de un aparato revocado abre `dispositivo_revocado`, con su carga sin secretos, y la respuesta trae la excepción (decisión 488).
+  - **Reservas:** abre `pedido_linea_sin_pieza` y `pago_despues_de_vencer` (decisión 492).
+  - **El módulo de prueba** abre las suyas de verdad: `pasa_tope_bulto` y `cancelacion_tardia` (decisión 489).
+- **Pruebas:**
+  - `acciones/resolver-excepcion.prueba.ts`, con las cuentas de prueba nuevas de Bodega, Producción y Contaduría (decisión 493);
+  - `modulos/admin/acciones/aplicar-comando-retenido.prueba.ts`;
+  - `internas/reservar.prueba.ts`, el W- sin pieza;
+  - `nucleo/sincronizacion/subir.prueba.ts` y `revocado.prueba.ts`.

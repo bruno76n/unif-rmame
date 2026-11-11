@@ -243,5 +243,12 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 11 nov 2026 | 9 | El orden de candados de la baja de una talla (decisión 484) | Variante primero · inventario primero | Inventario primero | No |
 | 11 nov 2026 | 9 | El mensaje de una nota que ya salió sin D- (decisión 485) | Sin folios · el de Ventas y el del traspaso | El de Ventas y el del traspaso | No |
 | 11 nov 2026 | 9 | Cómo regresa una nota cancelada a su pedido (decisión 486) | Por el traspaso · la reserva lleva su pedido | La reserva lleva su pedido | No |
+| 11 nov 2026 | 9 | La llave de la excepción a su comando (decisión 487) | Normal · diferida | Diferida | No |
+| 11 nov 2026 | 9 | Qué guarda la excepción de lo retenido (decisión 488) | Solo el comando · la carga sin secretos | La carga sin secretos | No |
+| 11 nov 2026 | 9 | Las excepciones del módulo de prueba (decisión 489) | Ids inventados · las de verdad | Las de verdad | No |
+| 11 nov 2026 | 9 | Quién resuelve cada bandeja (decisión 490) | Solo Bodega · cada quien la suya | Cada quien la suya | No |
+| 11 nov 2026 | 9 | Un retenido que queda apartado (decisión 491) | Resolverlo igual · sigue retenido | Sigue retenido | No |
+| 11 nov 2026 | 9 | Cuándo se abre `pedido_linea_sin_pieza` (decisión 492) | Fase 18 · fase 9 | Fase 9 | No |
+| 11 nov 2026 | 9 | Cuentas de prueba para las bandejas (decisión 493) | Solo la dueña · Bodega, Producción y Contaduría | Bodega, Producción y Contaduría | No |
 | 10 nov 2026 | 5 | La pantalla del Google de desarrollo | Una propia para escoger cuenta · la de desarrollo de oidc-provider, que pide el correo | La de oidc-provider; `pnpm local` escribe los correos de la muestra al arrancar | No |
 

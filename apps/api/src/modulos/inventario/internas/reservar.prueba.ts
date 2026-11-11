@@ -123,16 +123,30 @@ describe("las reservas nacen sin apartar de más", () => {
 		}
 	});
 
-	it("Un pedido en línea sin pieza en ningún lado queda reservado en Bodega, en negativo", async () => {
+	it("Un pedido en línea sin pieza en ningún lado queda reservado en Bodega, en negativo, con su excepción", async () => {
 		const [variante = ""] = await variantesLibres(servidor, 1);
+		const pedido = uuidv7();
 		const apartado = await llamarInterna(servidor, "inventario.reservar", {
 			motivo: "pedido_linea",
-			pedido_linea_id: uuidv7(),
+			pedido_linea_id: pedido,
 			renglones: [{ variante_id: variante, piezas: 2 }],
 		});
 		expect(apartado).toMatchObject({
 			renglones: [{ reservas: [{ ubicacion_id: ubicacion.BOD, piezas: 2 }], promesa: "sale_hoy", sin_pieza: true }],
 		});
 		expect(await libres("BOD", variante)).toBe(-2);
+		const { rows } = await servidor.base.dueno.query(
+			"SELECT tipo, area, estado, ubicacion_id, documento_tipo FROM excepciones WHERE variante_id = $1 AND documento_id = $2",
+			[variante, pedido],
+		);
+		expect(rows).toEqual([
+			{
+				tipo: "pedido_linea_sin_pieza",
+				area: "bodega",
+				estado: "por_revisar",
+				ubicacion_id: ubicacion.BOD,
+				documento_tipo: "pedido_linea",
+			},
+		]);
 	});
 });

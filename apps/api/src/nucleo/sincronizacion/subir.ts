@@ -33,15 +33,18 @@ import {
 	anotarClaveRepetida,
 	aplicarComando,
 	type CargaDeComando,
+	type ComandoHecho,
 	type DependenciasDeComandos,
 	deUnRevocado,
 	guardarComando,
 	huellaDeComando,
 	motivoDeClaveRepetida,
+	motivoDeRetenido,
 	type RespuestaSinClave,
 	reintentarLosQueEsperaban,
 	reintentarLosQueYaTienenSuDocumento,
 	respuestaRepetida,
+	sinCamposSecretos,
 } from "./comandos.ts";
 
 /** Lo que necesita la subida. */
@@ -227,7 +230,15 @@ async function contestarComando(
 	const hecho =
 		revocadoEn === undefined
 			? await aplicarComando(dependencias, transaccion, quien, carga, comandoId)
-			: deUnRevocado(carga.ocurrido_en, revocadoEn);
+			: await conSuExcepcion(
+					dependencias,
+					transaccion,
+					aparato,
+					carga,
+					comandoId,
+					ahora,
+					deUnRevocado(carga.ocurrido_en, revocadoEn),
+				);
 	// Paso 7: su renglón de `comandos_recibidos`, en la misma transacción.
 	await guardarComando(transaccion, {
 		id: comandoId,
@@ -238,6 +249,49 @@ async function contestarComando(
 		revocado: revocadoEn !== undefined,
 	});
 	return hecho.respuesta;
+}
+
+/**
+ * Lo retenido de un aparato revocado abre la excepción `dispositivo_revocado`, con su carga, para que la dueña lo
+ * aplique o Bodega lo resuelva; la respuesta lleva la excepción. Lo apartado (`despues_de_revocar`) no la abre.
+ * @param dependencias Los módulos, la bitácora y los eventos.
+ * @param transaccion La transacción del comando.
+ * @param aparato El aparato revocado.
+ * @param carga Lo que llegó.
+ * @param comandoId El id de su renglón en `comandos_recibidos` (se guarda después, en la misma transacción).
+ * @param ahora La hora de la subida.
+ * @param hecho Lo que contesta el aparato revocado.
+ */
+async function conSuExcepcion(
+	dependencias: DependenciasDeLaSubida,
+	transaccion: Transaccion,
+	aparato: AparatoConLlave,
+	carga: CargaDeComando,
+	comandoId: string,
+	ahora: Temporal.Instant,
+	hecho: ComandoHecho,
+): Promise<ComandoHecho> {
+	if (hecho.respuesta.resultado !== "excepcion") return hecho;
+	const { contexto, eventos } = crearContexto(
+		dependencias.registro,
+		transaccion,
+		aparato.quien,
+		accionDeLaSubida,
+		ahora,
+		comandoId,
+	);
+	const { excepcion_id } = z.object({ excepcion_id: z.uuid() }).parse(
+		await contexto.interna("inventario.registrar_excepcion", {
+			tipo: motivoDeRetenido,
+			descripcion: `${carga.accion} de ${aparato.nombre}, que pasó antes de revocarlo: quedó retenido`,
+			comando_id: comandoId,
+			dispositivo_id: aparato.quien.dispositivoId,
+			datos: { ...carga, datos: sinCamposSecretos(carga.datos) },
+		}),
+	);
+	await dependencias.servicios.guardarEventos(contexto, eventos);
+	const respuesta = { ...hecho.respuesta, excepciones: [{ id: excepcion_id, codigo: motivoDeRetenido }] };
+	return { ...hecho, respuesta, guardada: respuesta, excepcionId: excepcion_id };
 }
 
 /**

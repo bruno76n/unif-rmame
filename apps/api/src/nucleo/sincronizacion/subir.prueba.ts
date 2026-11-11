@@ -247,7 +247,7 @@ describe("la subida aplica lo que ya pasó, aparta lo que no puede aplicar y nun
 		expect(excepcion).toMatchObject({
 			resultado: "excepcion",
 			entidad: { tabla: "prueba_bultos", id: bulto },
-			excepciones: [{ id: expect.any(String), codigo: "no_cuadra" }],
+			excepciones: [{ id: expect.any(String), codigo: "pasa_tope_bulto" }],
 		});
 		const [guardado] = await recibido(excepcion.clave_idempotencia);
 		expect(guardado).toMatchObject({

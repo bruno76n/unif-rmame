@@ -3,7 +3,8 @@
  * Fase 4 · docs/modulos/inventario/libro-de-movimientos.md («La tabla `ubicaciones`»)
  * Fase 9 · docs/modulos/inventario/libro-de-movimientos.md («La tabla `movimientos`», «La tabla
  * `movimiento_lineas`»), existencias-y-cuadre.md («La tabla `existencias`», «La tabla `existencias_material`»),
- * traspasos.md («La tabla `traspasos`», «La tabla `traspaso_lineas`») y reservas.md («La tabla `reservas`»)
+ * traspasos.md («La tabla `traspasos`», «La tabla `traspaso_lineas`»), reservas.md («La tabla `reservas`») y
+ * excepciones.md («La tabla `excepciones`»)
  *
  * `ubicaciones` nace en la fase 4 con su siembra porque antes la usan los parámetros, las impresoras, las
  * cuentas, los aparatos y las personas. El libro solo crece: el rol de la app no lo puede cambiar.
@@ -17,6 +18,7 @@ import {
 	date,
 	index,
 	integer,
+	jsonb,
 	numeric,
 	pgTable,
 	pgView,
@@ -34,7 +36,7 @@ import {
 	columnasDeCancelacion,
 	momento,
 } from "../../nucleo/base/columnas.ts";
-import { comandosRecibidos } from "../admin/tablas.ts";
+import { comandosRecibidos, usuarios } from "../admin/tablas.ts";
 import { variantes } from "../catalogo/tablas.ts";
 import { personas } from "../personal/tablas.ts";
 
@@ -562,6 +564,84 @@ export const reservas = pgTable(
 			sql`(${tabla.estado} = 'transferida') = (${tabla.transferidaAReservaId} is not null)`,
 		),
 		check("reservas_consumida", sql`(${tabla.estado} = 'consumida') = (${tabla.consumidaPorMovimientoId} is not null)`),
+	],
+);
+
+/** Los tipos de excepción (docs/modulos/inventario/excepciones.md, «Los tipos»): son del código, no del negocio. */
+export const tiposDeExcepcion = [
+	"dispositivo_revocado",
+	"cuadre_proyeccion",
+	"sin_confirmar",
+	"reserva_sin_documento",
+	"rollo_en_dos_lugares",
+	"pasa_tope_bulto",
+	"lote_no_en_proceso",
+	"referencia_desconocida",
+	"pedido_linea_sin_pieza",
+	"pago_despues_de_vencer",
+	"variante_sin_canal_linea",
+	"totales_no_cuadran",
+	"pago_de_pedido_cancelado",
+	"cancelacion_tardia",
+	"recepcion_duplicada",
+	"conteo_no_coincide",
+	"folio_repetido",
+	"hora_adelantada",
+	"turno_desconocido",
+	"turno_cerrado",
+	"turnos_abiertos_dos",
+	"devuelve_de_mas",
+	"entrega_de_mas",
+	"entrega_sin_recibir",
+	"anticipo_mayor_total",
+	"corte_no_coincide",
+	"corte_repetido",
+] as const;
+
+/** El tipo de una excepción. */
+export type TipoDeExcepcion = (typeof tiposDeExcepcion)[number];
+
+/** Lo que el servidor aplicó y no cuadra, en la bandeja de Bodega o de Contaduría, hasta que alguien lo resuelve. */
+export const excepciones = pgTable(
+	"excepciones",
+	{
+		id: uuid("id").primaryKey(),
+		tipo: text("tipo").notNull(),
+		area: text("area").notNull().default("bodega"),
+		estado: text("estado").notNull(),
+		descripcion: text("descripcion").notNull(),
+		ubicacionId: uuid("ubicacion_id").references(() => ubicaciones.id),
+		varianteId: uuid("variante_id").references(() => variantes.id),
+		documentoTipo: text("documento_tipo"),
+		documentoId: uuid("documento_id"),
+		documentoFolio: text("documento_folio"),
+		// La llave es diferida (migración `0029`): la subida abre la excepción antes de guardar su comando.
+		comandoId: uuid("comando_id").references((): AnyPgColumn => comandosRecibidos.id),
+		...columnasDeAparato(),
+		/** @llavePendiente cuadres.id */
+		cuadreId: uuid("cuadre_id"),
+		datos: jsonb("datos"),
+		detectadaEn: momento("detectada_en").notNull(),
+		resueltaEn: momento("resuelta_en"),
+		resueltaPor: uuid("resuelta_por").references((): AnyPgColumn => usuarios.id),
+		resolucion: text("resolucion"),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		index("excepciones_bandeja")
+			.on(tabla.area, tabla.estado, tabla.detectadaEn)
+			.where(sql`${tabla.estado} = 'por_revisar'`),
+		index("excepciones_tipo").on(tabla.tipo),
+		index("excepciones_documento").on(tabla.documentoId),
+		index("excepciones_comando").on(tabla.comandoId),
+		check("excepciones_tipo", sql`${tabla.tipo} in (${valores(tiposDeExcepcion)})`),
+		check("excepciones_area", sql`${tabla.area} in ('bodega', 'contaduria')`),
+		check("excepciones_estado", sql`${tabla.estado} in ('por_revisar', 'resuelta')`),
+		check("excepciones_documento_tipo", sql`${tabla.documentoTipo} in (${valores(tiposDeDocumentoDeMovimiento)})`),
+		check(
+			"excepciones_resuelta",
+			sql`(${tabla.estado} = 'resuelta') = (${tabla.resueltaEn} is not null and ${tabla.resolucion} is not null)`,
+		),
 	],
 );
 

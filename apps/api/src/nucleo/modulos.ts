@@ -141,7 +141,7 @@ export interface SalidaDeAccion<Resultado> {
 	 */
 	sinBitacora?: true;
 	/**
-	 * Lo que llegó de un aparato y no cuadra: se aplicó igual y abrió esta excepción (`no_cuadra`,
+	 * Lo que llegó de un aparato y no cuadra: se aplicó igual y abrió esta excepción (`pasa_tope_bulto`,
 	 * `cancelacion_tardia`…). La subida lo contesta como `excepcion` (ver docs/cimientos/SINCRONIZACION.md).
 	 */
 	excepcion?: { id: string; codigo: string };

@@ -13,6 +13,7 @@
 
 import { definirModulo } from "../../nucleo/modulos.ts";
 import { accionAgregarALista } from "./acciones/agregar-a-lista.ts";
+import { accionAplicarComandoRetenido } from "./acciones/aplicar-comando-retenido.ts";
 import { accionCambiarDepartamentos } from "./acciones/cambiar-departamentos.ts";
 import { accionCambiarParametro } from "./acciones/cambiar-parametro.ts";
 import { accionCambiarPermisoFino } from "./acciones/cambiar-permiso-fino.ts";
@@ -93,6 +94,7 @@ export default definirModulo({
 		accionCancelarCodigoRegistro,
 		accionRevocarDispositivo,
 		accionReintentarComandoApartado,
+		accionAplicarComandoRetenido,
 		accionDescartarComandoApartado,
 		accionRotarLlave,
 	],

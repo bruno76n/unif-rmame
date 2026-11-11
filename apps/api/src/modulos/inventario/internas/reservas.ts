@@ -4,8 +4,8 @@
  *
  * Las llaman otros módulos en su propia transacción (Ventas, Tienda en línea y la caja); no llevan clave propia.
  * Antes de escoger o mover reservas toman el candado de cada variante y bloquean sus existencias en el orden fijo:
- * dos que quieren las últimas piezas de Bodega no apartan de más. La excepción de un pedido en línea sin pieza
- * llega con la tabla de excepciones (parte 4).
+ * dos que quieren las últimas piezas de Bodega no apartan de más. Un pedido en línea sin pieza en ningún lado se
+ * aparta igual en Bodega y abre su excepción.
  */
 
 import { and, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
@@ -122,8 +122,22 @@ interface RenglonApartado {
  * @returns Por renglón, sus reservas y, en un W-, la promesa.
  * @throws `422 sin_libres` si un PE- pide más de lo libre en Bodega.
  */
-export async function reservar(contexto: ContextoDeAccion, datos: unknown): Promise<{ renglones: RenglonApartado[] }> {
-	const pedido = pedidoDeReservar.parse(datos);
+export function reservar(contexto: ContextoDeAccion, datos: unknown): Promise<{ renglones: RenglonApartado[] }> {
+	return apartar(contexto, pedidoDeReservar.parse(datos), "pedido_linea_sin_pieza");
+}
+
+/**
+ * Aparta lo pedido; un W- sin pieza en ningún lado abre la excepción `sinPieza`.
+ * @param contexto El contexto de la acción.
+ * @param pedido Lo que se aparta, ya revisado.
+ * @param sinPieza La excepción de un W- sin pieza: `pedido_linea_sin_pieza`, o `pago_despues_de_vencer` si el
+ * pago llegó tarde.
+ */
+async function apartar(
+	contexto: ContextoDeAccion,
+	pedido: z.infer<typeof pedidoDeReservar>,
+	sinPieza: "pedido_linea_sin_pieza" | "pago_despues_de_vencer",
+): Promise<{ renglones: RenglonApartado[] }> {
 	const lugares = await leerUbicaciones(contexto);
 	const documento = documentoDe(pedido);
 	const variantesIds = pedido.renglones.map((renglon) => renglon.variante_id);
@@ -169,7 +183,7 @@ export async function reservar(contexto: ContextoDeAccion, datos: unknown): Prom
 				reservas: [{ reserva_id: id, ubicacion_id: renglon.ubicacion_id, piezas: renglon.piezas }],
 			});
 		} else {
-			apartados.push(await apartarEnLinea(contexto, lugares, base, renglon.piezas));
+			apartados.push(await apartarEnLinea(contexto, lugares, base, renglon.piezas, sinPieza));
 		}
 	}
 	eventoDeReservas(contexto, "reserva.creada", {
@@ -219,6 +233,7 @@ async function apartarEnLinea(
 	lugares: Awaited<ReturnType<typeof leerUbicaciones>>,
 	base: Omit<Parameters<typeof crearReserva>[1], "ubicacionId" | "piezas">,
 	piezas: number,
+	sinPieza: "pedido_linea_sin_pieza" | "pago_despues_de_vencer",
 ): Promise<RenglonApartado> {
 	const { transaccion } = contexto;
 	const varianteId = base.varianteId;
@@ -259,10 +274,20 @@ async function apartarEnLinea(
 			}
 		}
 	}
-	// Un pedido en línea nunca se queda sin reserva: lo que falta, en Bodega (sus libres quedan en negativo).
+	// Un pedido en línea nunca se queda sin reserva: lo que falta, en Bodega (sus libres quedan en negativo), con
+	// su excepción para que alguien lo resuelva.
 	if (falta > 0) {
 		const id = await crearReserva(contexto, { ...base, ubicacionId: lugares.bodega, piezas: falta });
 		tomadas.push({ reserva_id: id, ubicacion_id: lugares.bodega, piezas: falta });
+		const { prenda, talla } = await nombreDeVariante(transaccion, varianteId);
+		await contexto.interna("inventario.registrar_excepcion", {
+			tipo: sinPieza,
+			descripcion: `${prenda} talla ${talla}: ${falta} sin pieza en ningún lado; quedaron apartadas en Bodega`,
+			ubicacion_id: lugares.bodega,
+			variante_id: varianteId,
+			documento_tipo: "pedido_linea",
+			...(base.pedidoLineaId === undefined || base.pedidoLineaId === null ? {} : { documento_id: base.pedidoLineaId }),
+		});
 	}
 	return {
 		variante_id: varianteId,
@@ -529,15 +554,19 @@ export async function confirmarPagoReserva(
 		)
 		.orderBy(reservas.creadoEn);
 	if (vencidas.length === 0) return { volvio_a_apartar: false, renglones: [] };
-	const { renglones } = await reservar(contexto, {
-		motivo: "pedido_linea",
-		pedido_linea_id,
-		renglones: vencidas.map((reserva) => ({
-			variante_id: reserva.varianteId,
-			piezas: reserva.piezas,
-			...(reserva.pedidoLineaRenglonId === null ? {} : { pedido_linea_renglon_id: reserva.pedidoLineaRenglonId }),
-		})),
-	});
+	const { renglones } = await apartar(
+		contexto,
+		{
+			motivo: "pedido_linea",
+			pedido_linea_id,
+			renglones: vencidas.map((reserva) => ({
+				variante_id: reserva.varianteId,
+				piezas: reserva.piezas,
+				...(reserva.pedidoLineaRenglonId === null ? {} : { pedido_linea_renglon_id: reserva.pedidoLineaRenglonId }),
+			})),
+		},
+		"pago_despues_de_vencer",
+	);
 	return { volvio_a_apartar: true, renglones };
 }
 

@@ -204,6 +204,13 @@
 			"when": 1794367908364,
 			"tag": "0028_reservas",
 			"breakpoints": true
+		},
+		{
+			"idx": 29,
+			"version": "7",
+			"when": 1794369200570,
+			"tag": "0029_excepciones",
+			"breakpoints": true
 		}
 	]
 }

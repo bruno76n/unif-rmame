@@ -311,3 +311,9 @@ Los dos primeros van en `parametro`; los demás, en `tecnico`. La ventana de int
 - **`dispositivo.foto_pedida`** manda `resincronizar` a cada aparato al que se le pidió la foto.
 - **Lo de un aparato revocado** no se reintenta: `leerApartado` dice si llegó de uno revocado o si su aparato se revocó después (ver [sincronización](../../cimientos/SINCRONIZACION.md#cómo-está-hecho)).
 - **Las pruebas:** `trabajos/aparatos-sin-sincronizar.prueba.ts` (antes del tiempo, una vez por episodio, la bajada completa acaba el episodio, el siguiente avisa otra vez, el revocado y el puente no avisan; la lectura) y `nucleo/sincronizacion/revocado.prueba.ts`.
+
+**Fase 9, parte 4.** `admin.aplicar_comando_retenido` está en `modulos/admin/acciones/aplicar-comando-retenido.ts`.
+- **Cómo corre:** `leerRetenido` y `aplicarRetenido` (`nucleo/sincronizacion/comandos.ts`) bloquean el comando y corren su carga con `aplicarComando`, a nombre del aparato revocado. Guardan quién y cuándo lo aplicó, su resultado y su respuesta nueva. La versión que se pide es la de la excepción.
+- **Si se aplica:** la bitácora de la acción del comando lleva `retenido` en `despues`, y `inventario.marcar_excepcion_resuelta` resuelve la excepción. Si queda apartado, sigue retenido y su excepción abierta (decisión 491).
+- **Quién:** pide Bodega, solo la dueña y «Confirmar con Google» (`aplicar_retenido`).
+- **Prueba:** `aplicar-comando-retenido.prueba.ts`.

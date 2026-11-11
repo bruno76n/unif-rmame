@@ -55,7 +55,7 @@ export interface DependenciasDeComandos {
 }
 
 /** Lo que pasó al aplicar un comando: la respuesta que se contesta, la que se guarda y lo que tocó. */
-interface ComandoHecho {
+export interface ComandoHecho {
 	respuesta: RespuestaSinClave;
 	guardada: RespuestaSinClave;
 	motivo: string | null;
@@ -275,7 +275,7 @@ export function respuestaRepetida(guardada: unknown): RespuestaSinClave {
  * carga se guarda: un secreto nunca queda en claro en la base.
  * @param valor Los datos del comando.
  */
-function sinCamposSecretos(valor: unknown): unknown {
+export function sinCamposSecretos(valor: unknown): unknown {
 	if (Array.isArray(valor)) return valor.map(sinCamposSecretos);
 	if (typeof valor !== "object" || valor === null) return valor;
 	return Object.fromEntries(
@@ -428,6 +428,102 @@ export async function reintentarComando(
 					{ motivoApartado: hecho.motivo, esperaEntidadId: hecho.esperaEntidadId }),
 		})
 		.where(eq(comandosRecibidos.id, comandoId));
+	return hecho;
+}
+
+/** Un comando retenido de un aparato revocado, listo para aplicarse. */
+export interface ComandoRetenido {
+	id: string;
+	tipoComando: string;
+	excepcionId: string;
+	nombreDelAparato: string;
+	aparato: AparatoQueLlama;
+	carga: CargaDeComando;
+}
+
+/**
+ * Lee y bloquea un comando retenido de un aparato revocado: llegó de un revocado, pasó antes de revocarlo (se
+ * contestó `excepcion`, con su excepción) y nadie lo ha aplicado.
+ * @param transaccion La transacción.
+ * @param comandoId El comando.
+ * @returns El comando, o por qué no se aplica.
+ */
+export async function leerRetenido(
+	transaccion: Transaccion,
+	comandoId: string,
+): Promise<ComandoRetenido | "no_existe" | "no_retenido" | "ya_aplicado"> {
+	const [comando] = await transaccion
+		.select({
+			id: comandosRecibidos.id,
+			tipoComando: comandosRecibidos.tipoComando,
+			resultado: comandosRecibidos.resultado,
+			deUnRevocado: comandosRecibidos.dispositivoRevocado,
+			excepcionId: comandosRecibidos.excepcionId,
+			aplicadoEn: comandosRecibidos.retenidoAplicadoEn,
+			carga: comandosRecibidos.carga,
+			dispositivoId: comandosRecibidos.dispositivoId,
+			tipo: dispositivos.tipo,
+			nombre: dispositivos.nombre,
+		})
+		.from(comandosRecibidos)
+		.innerJoin(dispositivos, eq(dispositivos.id, comandosRecibidos.dispositivoId))
+		.where(eq(comandosRecibidos.id, comandoId))
+		.for("update", { of: comandosRecibidos });
+	if (comando === undefined) return "no_existe";
+	if (comando.aplicadoEn !== null) return "ya_aplicado";
+	if (!comando.deUnRevocado || comando.resultado !== "excepcion" || comando.excepcionId === null) return "no_retenido";
+	const tipoDeAparato = tipoQueLlama[comando.tipo];
+	if (comando.dispositivoId === null || tipoDeAparato === undefined) return "no_retenido";
+	const carga = cargaDeComando.parse(comando.carga);
+	return {
+		id: comando.id,
+		tipoComando: comando.tipoComando,
+		excepcionId: comando.excepcionId,
+		nombreDelAparato: comando.nombre,
+		aparato: { tipo: "aparato", dispositivoId: comando.dispositivoId, tipoDeAparato, personaId: carga.persona_id },
+		carga,
+	};
+}
+
+/**
+ * Aplica un comando retenido por el mismo camino de la subida: con su hora, su persona y su código, a nombre del
+ * aparato revocado. Si se aplica, el comando guarda quién y cuándo, su resultado y su respuesta nueva; si queda
+ * apartado (le falta su documento), sigue retenido.
+ * @param dependencias Los módulos, la bitácora y los eventos.
+ * @param transaccion La transacción de la acción.
+ * @param retenido El comando retenido.
+ * @param aplicadoPor La cuenta que lo aplica.
+ * @param ajustarBitacora Cambia cada renglón de bitácora de la acción (quién lo aplicó).
+ * @returns Lo que pasó.
+ */
+export async function aplicarRetenido(
+	dependencias: DependenciasDeComandos,
+	transaccion: Transaccion,
+	retenido: ComandoRetenido,
+	aplicadoPor: string,
+	ajustarBitacora: (renglon: RenglonDeBitacora) => RenglonDeBitacora,
+): Promise<ComandoHecho> {
+	const hecho = await aplicarComando(
+		dependencias,
+		transaccion,
+		retenido.aparato,
+		retenido.carga,
+		retenido.id,
+		ajustarBitacora,
+	);
+	if (hecho.motivo !== null) return hecho;
+	await transaccion
+		.update(comandosRecibidos)
+		.set({
+			resultado: hecho.respuesta.resultado === "excepcion" ? "excepcion" : "aplicado",
+			respuesta: hecho.guardada,
+			entidad: hecho.entidad?.nombre ?? null,
+			entidadId: hecho.entidad?.id ?? null,
+			retenidoAplicadoEn: sql`now()`,
+			retenidoAplicadoPor: aplicadoPor,
+			actualizadoEn: sql`now()`,
+		})
+		.where(eq(comandosRecibidos.id, retenido.id));
 	return hecho;
 }
 

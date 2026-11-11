@@ -3,12 +3,12 @@
  * Fase 6 · docs/fases/06-dispositivos-y-sincronizacion.md («Cómo se construye»)
  *
  * Un bulto de un lote que no ha llegado se aparta con `falta_documento` hasta que el lote llegue; uno con
- * más de 100 piezas se aplica y abre la excepción `no_cuadra`; cancelar uno ya atendido se aplica y abre
- * `cancelacion_tardia`. Cerrar un lote toca sus bultos, para que bajen como `quitar`.
+ * más de 100 piezas se aplica y abre la excepción `pasa_tope_bulto`; cancelar uno ya atendido se aplica y abre
+ * `cancelacion_tardia`. Las excepciones se abren de verdad, con `inventario.registrar_excepcion`. Cerrar un lote toca sus bultos, para que bajen como `quitar`.
  */
 
 import { eq, sql } from "drizzle-orm";
-import { v7 as uuidv7 } from "uuid";
+import { z } from "zod";
 import { errorDeRegla, FaltaDocumento, noExiste } from "../../../http/errores.ts";
 import { type AccionImplementada, type ContextoDeAccion, implementarAccion } from "../../../modulos.ts";
 import { abrirLote, atenderBulto, cancelarBulto, cerrarLote, registrarBulto } from "./contratos.ts";
@@ -27,6 +27,19 @@ async function ubicacionDeQuienLlama(contexto: ContextoDeAccion): Promise<string
 	const id = rows[0]?.id;
 	if (typeof id !== "string") throw new Error("sin ubicación para el lote");
 	return id;
+}
+
+/**
+ * Abre una excepción con la interna de inventario y la regresa como la contesta la subida.
+ * @param contexto El contexto de la acción.
+ * @param tipo El tipo de la excepción.
+ * @param descripcion Qué pasó.
+ */
+async function abrirExcepcion(contexto: ContextoDeAccion, tipo: string, descripcion: string) {
+	const { excepcion_id } = z
+		.object({ excepcion_id: z.uuid() })
+		.parse(await contexto.interna("inventario.registrar_excepcion", { tipo, descripcion }));
+	return { id: excepcion_id, codigo: tipo };
 }
 
 /** Las acciones de lotes y bultos. */
@@ -53,7 +66,9 @@ export const accionesDeLotes: AccionImplementada[] = [
 		return {
 			resultado: { mensaje: "Bulto registrado" },
 			entidad: { nombre: "prueba_bultos", id: datos.id },
-			...(datos.piezas > piezasQueCuadran ? { excepcion: { id: uuidv7(), codigo: "no_cuadra" } } : {}),
+			...(datos.piezas > piezasQueCuadran
+				? { excepcion: await abrirExcepcion(contexto, "pasa_tope_bulto", `El bulto trae ${datos.piezas} piezas`) }
+				: {}),
 		};
 	}),
 	implementarAccion(cancelarBulto, async (contexto, datos) => {
@@ -64,7 +79,9 @@ export const accionesDeLotes: AccionImplementada[] = [
 		return {
 			resultado: { mensaje: "Bulto cancelado" },
 			entidad: { nombre: "prueba_bultos", id: bulto.id },
-			...(bulto.atendido ? { excepcion: { id: uuidv7(), codigo: "cancelacion_tardia" } } : {}),
+			...(bulto.atendido
+				? { excepcion: await abrirExcepcion(contexto, "cancelacion_tardia", "Se canceló un bulto ya atendido") }
+				: {}),
 		};
 	}),
 	implementarAccion(atenderBulto, async (contexto, datos) => {

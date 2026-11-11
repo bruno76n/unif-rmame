@@ -162,6 +162,29 @@ export const reintentarComandoApartado = definirAccion({
 	],
 });
 
+/**
+ * La dueña aplica lo que llegó de un aparato revocado y pasó antes de revocarlo: corre la carga guardada por el
+ * camino de la subida, a nombre del aparato, y resuelve su excepción.
+ */
+export const aplicarComandoRetenido = definirAccion({
+	nombre: "admin.aplicar_comando_retenido",
+	descripcion: "Aplica un movimiento retenido de un aparato revocado y resuelve su excepción",
+	entrada: z.object({ comando_id: z.uuid().describe("El comando retenido") }),
+	salida: z.object({
+		resultado: z.enum(["aplicado", "excepcion", "apartado"]).describe("Qué pasó al aplicarlo"),
+		motivo: z.string().nullable().describe("Si quedó apartado: por qué"),
+		excepciones: z
+			.array(z.object({ id: z.uuid(), codigo: z.string() }))
+			.describe("Las excepciones que abrió al aplicarse: se aplicó, pero no cuadra"),
+	}),
+	permiso: { departamento: "bodega", soloDuena: true, confirmarConGoogle: "aplicar_retenido" },
+	errores: [
+		{ codigo: "no_retenido", mensaje: "Ese comando no está retenido." },
+		{ codigo: "ya_aplicado", mensaje: "Ese movimiento ya se aplicó." },
+	],
+	edita: true,
+});
+
 /** La dueña descarta un comando apartado: no aplica nada; si era un hecho real, se captura en su módulo. */
 export const descartarComandoApartado = definirAccion({
 	nombre: "admin.descartar_comando_apartado",

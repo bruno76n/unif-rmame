@@ -11,6 +11,8 @@
 import { v7 as uuidv7 } from "uuid";
 import { todosLosDepartamentos } from "../../nucleo/acceso/departamentos.ts";
 import { definirModulo } from "../../nucleo/modulos.ts";
+import { accionResolverExcepcion } from "./acciones/resolver-excepcion.ts";
+import { marcarExcepcionResuelta, registrarExcepcion } from "./internas/excepciones.ts";
 import {
 	apartarParaNota,
 	confirmarPagoReserva,
@@ -60,8 +62,13 @@ export default definirModulo({
 		traspaso_lineas: [...lectoresDelLibro, "linea"],
 		// Las reservas las leen Bodega y Aduana; Ventas y Tienda en línea, las de sus documentos.
 		reservas: [...lectoresDelLibro, "ventas", "linea"],
+		// La bandeja: Bodega; Producción ve las del taller y Contaduría las de dinero; Dirección cuenta las abiertas.
+		excepciones: ["bodega", "produccion", "contaduria", "direccion"],
 	},
+	acciones: [accionResolverExcepcion],
 	internas: {
+		registrar_excepcion: registrarExcepcion,
+		marcar_excepcion_resuelta: marcarExcepcionResuelta,
 		reservar,
 		liberar_reservas: liberarReservas,
 		confirmar_pago_reserva: confirmarPagoReserva,

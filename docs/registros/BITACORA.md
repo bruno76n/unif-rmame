@@ -65,3 +65,4 @@ La línea de la bitácora se escribe al final, con el resultado ya conocido. Esc
 | 11 nov 2026 | 9 | 1 · El libro y las existencias | [2026-11-11-fase-09](sesiones/2026-11-11-fase-09.md) |
 | 11 nov 2026 | 9 | 2 · Traspasos | [2026-11-11-fase-09](sesiones/2026-11-11-fase-09.md) |
 | 11 nov 2026 | 9 | 3 · Reservas | [2026-11-11-fase-09](sesiones/2026-11-11-fase-09.md) |
+| 11 nov 2026 | 9 | 4 · Excepciones | [2026-11-11-fase-09](sesiones/2026-11-11-fase-09.md) |

@@ -38,7 +38,7 @@ import {
 	columnaXidEscritura,
 } from "../../nucleo/base/columnas.ts";
 import { autorizaciones } from "../direccion/tablas.ts";
-import { ubicaciones } from "../inventario/tablas.ts";
+import { excepciones, ubicaciones } from "../inventario/tablas.ts";
 import { personas } from "../personal/tablas.ts";
 
 /** Un momento: `timestamptz`. */
@@ -66,8 +66,7 @@ export const comandosRecibidos = pgTable(
 		motivoApartado: text("motivo_apartado"),
 		esperaEntidadId: uuid("espera_entidad_id"),
 		dispositivoRevocado: boolean("dispositivo_revocado").notNull().default(false),
-		/** @llavePendiente excepciones.id */
-		excepcionId: uuid("excepcion_id"),
+		excepcionId: uuid("excepcion_id").references((): AnyPgColumn => excepciones.id),
 		entidad: text("entidad"),
 		entidadId: uuid("entidad_id"),
 		respuesta: jsonb("respuesta"),
