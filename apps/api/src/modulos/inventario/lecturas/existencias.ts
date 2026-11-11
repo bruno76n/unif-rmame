@@ -17,10 +17,32 @@ const pedidoDeMaterial = z.object({ material_id: z.uuid(), ubicacion_id: z.uuid(
  * `inventario.existencia_material`: cuánto hay de un material en una ubicación, o en todas si no viene.
  * @param contexto El contexto de la acción.
  * @param datos `material_id` y, si se pide una, `ubicacion_id`.
- * @returns La cantidad en su unidad de inventario, como texto decimal (`"12.500"`): todos sus rollos juntos.
+ * @returns La cantidad en su unidad de inventario, como texto decimal (`"12.500"`): todos sus rollos juntos; y,
+ * por ubicación, la que no es cero, con su nombre (para decir dónde hay).
  */
-export async function existenciaMaterial(contexto: ContextoDeAccion, datos: unknown): Promise<{ cantidad: string }> {
+export async function existenciaMaterial(
+	contexto: ContextoDeAccion,
+	datos: unknown,
+): Promise<{ cantidad: string; por_ubicacion: { ubicacion_id: string; ubicacion: string; cantidad: string }[] }> {
 	const { material_id, ubicacion_id } = pedidoDeMaterial.parse(datos);
+	const porUbicacion = await contexto.transaccion
+		.select({
+			ubicacion_id: existenciasMaterial.ubicacionId,
+			ubicacion: ubicaciones.nombre,
+			cantidad: sql<string>`sum(${existenciasMaterial.cantidad})::numeric(12, 3)::text`,
+		})
+		.from(existenciasMaterial)
+		.innerJoin(ubicaciones, eq(ubicaciones.id, existenciasMaterial.ubicacionId))
+		.where(
+			and(
+				eq(existenciasMaterial.materialId, material_id),
+				ubicacion_id === undefined ? undefined : eq(existenciasMaterial.ubicacionId, ubicacion_id),
+			),
+		)
+		.groupBy(existenciasMaterial.ubicacionId, ubicaciones.nombre, ubicaciones.codigo)
+		.having(sql`sum(${existenciasMaterial.cantidad}) <> 0`)
+		.orderBy(ubicaciones.codigo);
+	// La suma se hace en la base, en `numeric`: nunca pasa por un número con decimales.
 	const [suma] = await contexto.transaccion
 		.select({ cantidad: sql<string>`coalesce(sum(${existenciasMaterial.cantidad}), 0)::numeric(12, 3)::text` })
 		.from(existenciasMaterial)
@@ -30,7 +52,7 @@ export async function existenciaMaterial(contexto: ContextoDeAccion, datos: unkn
 				ubicacion_id === undefined ? undefined : eq(existenciasMaterial.ubicacionId, ubicacion_id),
 			),
 		);
-	return { cantidad: suma?.cantidad ?? "0.000" };
+	return { cantidad: suma?.cantidad ?? "0.000", por_ubicacion: porUbicacion };
 }
 
 /** Lo que recibe `inventario.piezas_de_variante`. */

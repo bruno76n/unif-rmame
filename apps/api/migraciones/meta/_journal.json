@@ -225,6 +225,13 @@
 			"when": 1794371894413,
 			"tag": "0031_movimientos_comando_diferido",
 			"breakpoints": true
+		},
+		{
+			"idx": 32,
+			"version": "7",
+			"when": 1794376846839,
+			"tag": "0032_terceros_proveedores_y_materiales",
+			"breakpoints": true
 		}
 	]
 }

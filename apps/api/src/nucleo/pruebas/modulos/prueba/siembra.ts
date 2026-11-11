@@ -3,8 +3,8 @@
  * tablet), dos listas y la empresa.
  * Fase 4 · docs/fases/04-servicios-comunes.md (parte 2)
  *
- * Solo la carga el servidor de prueba en su base copia. La lista de las unidades de material lleva la
- * clave de la de verdad (la siembra Compras en la fase 10) para probar sus reglas propias.
+ * Solo la carga el servidor de prueba en su base copia. Las reglas propias de las unidades de material se
+ * prueban con la lista de verdad, que siembra `compras`.
  */
 
 import { v7 as uuidv7 } from "uuid";
@@ -83,13 +83,6 @@ export const semillasDePrueba: readonly Semilla[] = [
 				nombre: "Lista de la dueña",
 				modulo: "prueba",
 				soloDuenaAgrega: true,
-			},
-			{
-				id: uuidv7(),
-				clave: "unidades_material",
-				nombre: "Unidades de material",
-				modulo: "compras",
-				soloDuenaAgrega: false,
 			},
 		],
 	},

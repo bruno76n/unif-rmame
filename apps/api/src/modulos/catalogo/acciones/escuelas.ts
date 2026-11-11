@@ -14,10 +14,10 @@ import {
 	reactivarEscuela,
 } from "@uniformame/compartido/contratos/catalogo/escuelas";
 import { and, count, eq, isNull, ne, sql } from "drizzle-orm";
+import { quienCambia, revisarMotivo } from "../../../nucleo/acciones/comunes.ts";
 import { tomarVersion, versionActual } from "../../../nucleo/acciones/pisadas.ts";
 import { errorDeRegla } from "../../../nucleo/http/errores.ts";
 import { implementarAccion } from "../../../nucleo/modulos.ts";
-import { quienCambia, revisarMotivo } from "../dominio/comunes.ts";
 import { crearEscuela, escuelaCambiada, leerEscuela } from "../dominio/escuelas.ts";
 import { escuelas, productos } from "../tablas.ts";
 

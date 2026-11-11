@@ -35,9 +35,11 @@ import {
 	columnasDeBaja,
 	columnasDeCancelacion,
 	momento,
+	valores,
 } from "../../nucleo/base/columnas.ts";
 import { comandosRecibidos, usuarios } from "../admin/tablas.ts";
 import { variantes } from "../catalogo/tablas.ts";
+import { materiales } from "../compras/tablas.ts";
 import { personas } from "../personal/tablas.ts";
 
 /** Cada lugar donde puede estar una pieza: Aduana, Bodega, las tiendas, el Taller y los dos de paso. */
@@ -129,11 +131,6 @@ export const tiposDeDocumentoDeMovimiento = [
 	"reproceso",
 ] as const;
 
-/** Escribe una lista como los valores de un CHECK: `'a', 'b'`. */
-function valores(lista: readonly string[]) {
-	return sql.raw(lista.map((valor) => `'${valor}'`).join(", "));
-}
-
 /** El encabezado del libro: un hecho que movió inventario. Solo crece. */
 export const movimientos = pgTable(
 	"movimientos",
@@ -178,8 +175,7 @@ export const movimientoLineas = pgTable(
 		origenUbicacionId: uuid("origen_ubicacion_id").references(() => ubicaciones.id),
 		destinoUbicacionId: uuid("destino_ubicacion_id").references(() => ubicaciones.id),
 		varianteId: uuid("variante_id").references(() => variantes.id),
-		/** @llavePendiente materiales.id */
-		materialId: uuid("material_id"),
+		materialId: uuid("material_id").references(() => materiales.id),
 		/** @llavePendiente rollos.id */
 		rolloId: uuid("rollo_id"),
 		/** @llavePendiente lotes.id */
@@ -242,8 +238,9 @@ export const existenciasMaterial = pgTable(
 		ubicacionId: uuid("ubicacion_id")
 			.notNull()
 			.references(() => ubicaciones.id),
-		/** @llavePendiente materiales.id */
-		materialId: uuid("material_id").notNull(),
+		materialId: uuid("material_id")
+			.notNull()
+			.references(() => materiales.id),
 		/** @llavePendiente rollos.id */
 		rolloId: uuid("rollo_id"),
 		cantidad: numeric("cantidad", { precision: 12, scale: 3 }).notNull().default("0"),
@@ -427,8 +424,7 @@ export const traspasoLineas = pgTable(
 			.references(() => traspasos.id),
 		renglon: smallint("renglon").notNull(),
 		varianteId: uuid("variante_id").references(() => variantes.id),
-		/** @llavePendiente materiales.id */
-		materialId: uuid("material_id"),
+		materialId: uuid("material_id").references(() => materiales.id),
 		/** @llavePendiente rollos.id */
 		rolloId: uuid("rollo_id"),
 		/** @llavePendiente lotes.id */

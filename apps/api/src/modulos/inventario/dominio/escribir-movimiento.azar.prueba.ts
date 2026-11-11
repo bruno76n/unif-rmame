@@ -15,11 +15,11 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { crearContexto } from "../../../nucleo/acciones/corredor.ts";
 import { type Base, crearBase } from "../../../nucleo/base/conexion.ts";
 import { codigoDePostgres } from "../../../nucleo/base/transacciones.ts";
+import { materialesDePrueba } from "../../../nucleo/pruebas/compras-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 import { escribirMovimiento, type RenglonDeMovimiento } from "./escribir-movimiento.ts";
 
-/** Dos materiales y dos rollos fijos: el material con rollo y sin él cuadran por separado. */
-const materiales = [uuidv7(), uuidv7()];
+/** Dos rollos fijos (y sin rollo): el material con rollo y sin él cuadran por separado. */
 const rollos = [null, uuidv7(), uuidv7()];
 
 /** Lo que mueve un renglón: piezas de una variante, o milésimos de un material en un rollo (o sin rollo). */
@@ -58,6 +58,8 @@ describe("Con movimientos al azar y varias conexiones al mismo tiempo, la existe
 	let base: Base;
 	let ubicacion: Record<string, string>;
 	let variantes: string[];
+	/** Dos materiales de verdad. */
+	let materiales: string[];
 	beforeAll(async () => {
 		servidor = await crearServidorDePrueba();
 		base = crearBase(servidor.base.app);
@@ -70,6 +72,7 @@ describe("Con movimientos al azar y varias conexiones al mismo tiempo, la existe
 		variantes = (await servidor.base.dueno.query("SELECT id FROM variantes ORDER BY codigo DESC LIMIT 3")).rows.map(
 			(fila) => fila.id,
 		);
+		materiales = await materialesDePrueba(servidor, 2, "tela");
 	});
 	afterAll(async () => {
 		await servidor.cerrar();

@@ -8,6 +8,7 @@ import { v7 as uuidv7 } from "uuid";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { crearBase } from "../../../nucleo/base/conexion.ts";
 import { enAccionDePrueba } from "../../../nucleo/pruebas/accion-de-prueba.ts";
+import { materialesDePrueba } from "../../../nucleo/pruebas/compras-de-prueba.ts";
 import { nuevoTraspaso, ubicacionesPorCodigo } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 import type { EstadoDeTraspaso } from "../tablas.ts";
@@ -102,6 +103,7 @@ describe("Una transición de estado que no está en la tabla de traspasos es un 
 	});
 
 	it("la vista da por renglón lo que queda en aduana, sus horas, su color y si sale hoy o mañana", async () => {
+		const [material = ""] = await materialesDePrueba(servidor, 1, "tela");
 		const hoy = (
 			await servidor.base.dueno.query("SELECT (now() AT TIME ZONE 'America/Mexico_City')::date::text AS hoy")
 		).rows[0]?.hoy;
@@ -114,7 +116,7 @@ describe("Una transición de estado que no está en la tabla de traspasos es un 
 					destino: { ubicacionId: ubicacion.BOD ?? "" },
 					renglones: [
 						{ varianteId: variante, piezas: 10 },
-						{ materialId: uuidv7(), cantidad: "4.250" },
+						{ materialId: material, cantidad: "4.250" },
 					],
 					llegoAduanaEn: contexto.ahora.subtract({ hours: horasAtras }).toString(),
 					fechaSalidaEsperada: fecha,

@@ -11,9 +11,9 @@
 import { imprimirEtiquetas } from "@uniformame/compartido/contratos/catalogo/etiquetas";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { z } from "zod";
+import { quienCambia } from "../../../nucleo/acciones/comunes.ts";
 import { errorDeCampo, errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeAccion, type ContextoDeConsulta, implementarAccion } from "../../../nucleo/modulos.ts";
-import { quienCambia } from "../dominio/comunes.ts";
 import { subirVersionDelProducto } from "../dominio/precios.ts";
 import { productos, tallas, variantes } from "../tablas.ts";
 

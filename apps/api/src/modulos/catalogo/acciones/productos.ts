@@ -14,10 +14,10 @@ import {
 } from "@uniformame/compartido/contratos/catalogo/productos";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
+import { quienCambia, revisarMotivo } from "../../../nucleo/acciones/comunes.ts";
 import { versionActual } from "../../../nucleo/acciones/pisadas.ts";
 import { errorDeRegla } from "../../../nucleo/http/errores.ts";
 import { implementarAccion } from "../../../nucleo/modulos.ts";
-import { quienCambia, revisarMotivo } from "../dominio/comunes.ts";
 import { eventoDeProducto, leerProducto, tomarVersionDelProducto } from "../dominio/productos.ts";
 import { escuelas, productos } from "../tablas.ts";
 

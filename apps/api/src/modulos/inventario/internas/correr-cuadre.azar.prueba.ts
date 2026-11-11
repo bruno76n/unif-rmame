@@ -14,6 +14,7 @@ import { crearContexto, guardarEventosConAdmin } from "../../../nucleo/acciones/
 import { type Base, crearBase } from "../../../nucleo/base/conexion.ts";
 import { codigoDePostgres } from "../../../nucleo/base/transacciones.ts";
 import { cargarModulos } from "../../../nucleo/modulos.ts";
+import { materialesDePrueba } from "../../../nucleo/pruebas/compras-de-prueba.ts";
 import { ubicacionesPorCodigo, variantesLibres } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 import { correrTrabajo } from "../../../nucleo/trabajos/trabajador.ts";
@@ -22,12 +23,6 @@ import { type CuadreCorrido, correrCuadre } from "./correr-cuadre.ts";
 
 /** Las ubicaciones donde se mueve y se altera. */
 const codigos = ["ADU", "BOD", "T1"] as const;
-
-/** Dos materiales, uno con rollo y otro sin él. */
-const materiales = [
-	{ materialId: uuidv7(), rolloId: uuidv7() },
-	{ materialId: uuidv7(), rolloId: null },
-];
 
 /** Una existencia: de una variante (0 a 2) o de un material (3 y 4), en una ubicación. */
 const lugar = fc.record({ cosa: fc.integer({ min: 0, max: 4 }), ubicacion: fc.constantFrom(...codigos) });
@@ -59,11 +54,18 @@ describe("El cuadre corrige desde el libro toda existencia alterada, aunque al m
 	let ubicacion: Record<string, string>;
 	let variantes: string[];
 	let dia = Temporal.PlainDate.from("2031-01-01");
+	/** Dos materiales, uno con rollo y otro sin él. */
+	let materiales: { materialId: string; rolloId: string | null }[];
 	beforeAll(async () => {
 		servidor = await crearServidorDePrueba();
 		base = crearBase(servidor.base.app);
 		ubicacion = await ubicacionesPorCodigo(servidor);
 		variantes = await variantesLibres(servidor, 3);
+		const [conRollo = "", sinRollo = ""] = await materialesDePrueba(servidor, 2, "tela");
+		materiales = [
+			{ materialId: conRollo, rolloId: uuidv7() },
+			{ materialId: sinRollo, rolloId: null },
+		];
 		// Cada lugar empieza con algo, para que la alteración tenga existencia que alterar.
 		for (const codigo of codigos)
 			for (const cosa of [0, 1, 2, 3, 4]) await mover({ lugar: { cosa, ubicacion: codigo }, entra: true, cuanto: 50 });

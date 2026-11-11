@@ -160,4 +160,15 @@ Usa también `compras.precio_max_centavos` ([proveedores y precios](proveedores-
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 10.*
+**Fase 10, parte 1.**
+
+- **La tabla** `materiales` está en `modulos/compras/tablas.ts` (migración `0032`), con sus CHECK: la tela en `m`, cada unidad de conversión con su factor y la de la tablet solo en un consumible. La misma migración pone las llaves de `materiales.id` que dejó pendientes el inventario (`movimiento_lineas`, `existencias_material` y `traspaso_lineas`).
+- **La lista «Unidades de material»** la siembra `modulos/compras/siembra.ts`, con sus seis unidades; solo la dueña agrega (decisión 516).
+- **Las acciones** (`acciones/materiales.ts`):
+  - `crear_material` revisa el costo y los días contra los parámetros, la unidad en la lista y la conversión; toma el proveedor compartido y deja el material, su par y el primer precio en una transacción.
+  - `guardar_material` compara lo que llegó con lo guardado (los enteros como `numeric` con tres decimales) y escribe un renglón de bitácora por campo.
+  - `dar_baja_material` bloquea el material antes de leer su existencia: un movimiento a medias que lo usa comparte su renglón por la llave foránea, así que la baja espera a que termine y ve lo que dejó (decisión 515). La existencia, por ubicación, la da `inventario.existencia_material` (decisión 513).
+  - `reactivar_material` revisa que su proveedor habitual siga activo.
+- **Lo que baja** está en `modulos/compras/bajada.ts`: los consumibles activos con `nombre`, `unidad`, `unidad_tablet` y `factor_tablet` (que baja como número).
+- **Quién lee** cada tabla, para los avisos en vivo, está en `permisos.ts`: los precios, solo Compras y Contaduría.
+- **Pruebas:** `acciones/crear-material.prueba.ts`, `dar-baja-material.prueba.ts`, `reactivar-material.prueba.ts` y `bajada.prueba.ts`. Las del inventario que movían material usan materiales de verdad (`materialesDePrueba`).

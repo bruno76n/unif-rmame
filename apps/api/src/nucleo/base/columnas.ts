@@ -78,3 +78,11 @@ export function columnasDeBaja() {
 		reactivadoEn: momento("reactivado_en"),
 	};
 }
+
+/**
+ * Escribe una lista como los valores de un CHECK: `'a', 'b'`.
+ * @param lista Los valores que acepta la columna (los del código, nunca de quien llama).
+ */
+export function valores(lista: readonly string[]) {
+	return sql.raw(lista.map((valor) => `'${valor}'`).join(", "));
+}

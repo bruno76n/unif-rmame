@@ -10,10 +10,10 @@
 import { guardarTipoPrenda } from "@uniformame/compartido/contratos/catalogo/tallas";
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
+import { quienCambia } from "../../../nucleo/acciones/comunes.ts";
 import { tomarVersion, versionActual } from "../../../nucleo/acciones/pisadas.ts";
 import { errorDeCampo, errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeAccion, implementarAccion } from "../../../nucleo/modulos.ts";
-import { quienCambia } from "../dominio/comunes.ts";
 import { secciones, tallas, tipoPrendaMedidas, tiposPrenda } from "../tablas.ts";
 
 /** Una medida como se manda: su nombre, su orden y sus valores por talla. */

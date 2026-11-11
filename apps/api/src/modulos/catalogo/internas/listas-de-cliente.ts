@@ -10,10 +10,10 @@
 import { and, eq, ne, sql } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
+import { quienCambia } from "../../../nucleo/acciones/comunes.ts";
 import type { Transaccion } from "../../../nucleo/base/transacciones.ts";
 import { errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
-import { quienCambia } from "../dominio/comunes.ts";
 import { escuelaCambiada } from "../dominio/escuelas.ts";
 import { escuelas, listasPrecios } from "../tablas.ts";
 

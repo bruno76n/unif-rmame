@@ -262,4 +262,6 @@ Dentro de una acción, cada clave se lee una sola vez y se recuerda hasta que la
   - `lecturas/parametro.prueba.ts` (con `en`, una sola lectura por acción, la siembra que no pisa y la versión mínima);
   - `acciones/agregar-a-lista.prueba.ts`;
   - `acciones/editar-empresa.prueba.ts`.
-- **La siembra de prueba** (parámetros de cada tipo, tres listas y la empresa) está en `nucleo/pruebas/modulos/prueba/siembra.ts`.
+- **La siembra de prueba** (parámetros de cada tipo, dos listas y la empresa) está en `nucleo/pruebas/modulos/prueba/siembra.ts`.
+
+**Fase 10.** «Unidades de material» la siembra `modulos/compras/siembra.ts`, con sus seis unidades. Las reglas propias de esa lista se prueban con ella: el módulo de prueba ya no siembra una propia (decisión 516).

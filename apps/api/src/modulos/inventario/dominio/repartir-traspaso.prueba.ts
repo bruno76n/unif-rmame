@@ -8,6 +8,7 @@ import { v7 as uuidv7 } from "uuid";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { crearBase } from "../../../nucleo/base/conexion.ts";
 import { enAccionDePrueba } from "../../../nucleo/pruebas/accion-de-prueba.ts";
+import { materialesDePrueba } from "../../../nucleo/pruebas/compras-de-prueba.ts";
 import { nuevoTraspaso, ubicacionesPorCodigo } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 import { type PedidoDeReparto, repartirTraspaso } from "./traspasos.ts";
@@ -37,6 +38,7 @@ describe("Repartir nunca pasa de lo que queda en aduana, no mueve existencia, ll
 
 	/** Un lote de un pedido externo recién recibido en aduana: 10 piezas y 3.5 m de tela. */
 	async function loteEnAduana() {
+		const [material = ""] = await materialesDePrueba(servidor, 1, "tela");
 		const lote = await nuevoTraspaso(servidor, {
 			tipo: "lote_cliente",
 			estado: "en_aduana",
@@ -44,7 +46,7 @@ describe("Repartir nunca pasa de lo que queda en aduana, no mueve existencia, ll
 			destino: { externo: "cliente_externo" },
 			renglones: [
 				{ varianteId: variante, piezas: 10 },
-				{ materialId: uuidv7(), cantidad: "3.500" },
+				{ materialId: material, cantidad: "3.500" },
 			],
 			llegoAduanaEn: "2026-11-09T15:00:00Z",
 			fechaSalidaEsperada: "2026-11-20",

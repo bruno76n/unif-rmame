@@ -270,5 +270,15 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 11 nov 2026 | 9 | La bandeja ajena al resolver (decisión 509) | `403` · `404` | `404`, como lo que no se ve | No |
 | 11 nov 2026 | 9 | Bodega resolvió y la dueña aplica (decisión 510) | Reescribir la resolución · dejarla | Dejarla; el comando guarda quién lo aplicó | No |
 | 11 nov 2026 | 9 | Qué variantes pide el reparto (decisión 511) | Todas las del traspaso · solo las que reparte | Solo las que reparte: quien reparte ya las tiene | No |
+| 11 nov 2026 | 10 | Cuánto cabe en el cambio de un precio (decisión 512) | Agrandar la columna · topar a ±999.999 | Topar: la marca solo pregunta si pasa del umbral | No |
+| 11 nov 2026 | 10 | Cómo dice la baja de un material dónde hay (decisión 513) | Una lectura nueva · agregar el desglose a la que hay | Agregar el desglose | No |
+| 11 nov 2026 | 10 | Dónde viven quién cambia y el motivo (decisión 514) | Copiarlos en Compras · llevarlos al núcleo | Al núcleo | No |
+| 11 nov 2026 | 10 | La baja de un material contra un movimiento (decisión 515) | Candado por material · bloquear el material | Bloquear el material: la llave foránea ya espera | No |
+| 11 nov 2026 | 10 | Quién siembra las unidades de material (decisión 516) | El módulo de prueba · Compras | Compras, y solo la dueña agrega | No |
+| 11 nov 2026 | 10 | Con qué cuenta se prueba Compras (decisión 517) | La dueña · una cuenta de Compras | Una cuenta de Compras | No |
+| 11 nov 2026 | 10 | Cómo se revisa el teléfono (decisión 518) | Sin espacios · 10 dígitos con o sin espacios | 10 dígitos con o sin espacios | No |
+| 11 nov 2026 | 10 | Los avisos de las internas de terceros (decisión 519) | Descartarlos · regresarlos | Regresarlos para la acción | No |
+| 11 nov 2026 | 10 | Qué materiales detienen la baja de un proveedor (decisión 520) | Todos · los activos | Los activos | No |
+| 11 nov 2026 | 10 | El costo antes de las órdenes (decisión 521) | Esperar · el del alta | El del alta | No |
 | 10 nov 2026 | 5 | La pantalla del Google de desarrollo | Una propia para escoger cuenta · la de desarrollo de oidc-provider, que pide el correo | La de oidc-provider; `pnpm local` escribe los correos de la muestra al arrancar | No |
 

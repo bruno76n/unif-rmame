@@ -11,6 +11,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { crearBase } from "../../../nucleo/base/conexion.ts";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
 import { enAccionDePrueba } from "../../../nucleo/pruebas/accion-de-prueba.ts";
+import { materialesDePrueba } from "../../../nucleo/pruebas/compras-de-prueba.ts";
 import { llaveDePrueba } from "../../../nucleo/pruebas/cuentas-de-prueba.ts";
 import { nuevoTraspaso, variantesLibres } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
@@ -285,7 +286,7 @@ describe("el libro de movimientos", () => {
 	});
 
 	it("el material se suma en su unidad sin perder un milésimo; las lecturas de material y de piezas", async () => {
-		const material = uuidv7();
+		const [material = ""] = await materialesDePrueba(servidor, 1, "tela");
 		const rollo = uuidv7();
 		for (const [cantidad, rolloId] of [
 			["12.500", rollo],
@@ -305,15 +306,30 @@ describe("el libro de movimientos", () => {
 			await enAccion((contexto) =>
 				contexto.lectura("inventario.existencia_material", { material_id: material, ubicacion_id: ubicacion.BOD }),
 			),
-		).toEqual({ cantidad: "15.625" });
+		).toMatchObject({ cantidad: "15.625" });
+		// En todas: la suma, y dónde hay (lo que se movió de Bodega a Aduana).
+		await enAccion((contexto) =>
+			escribirMovimiento(contexto, {
+				tipo: "ajuste",
+				documento: { tipo: "ajuste", id: uuidv7() },
+				renglones: [
+					{ origen: null, destino: ubicacion.ADU ?? "", materialId: material, rolloId: null, cantidad: "1.000" },
+				],
+				clave: uuidv7(),
+			}),
+		);
 		expect(
 			await enAccion((contexto) => contexto.lectura("inventario.existencia_material", { material_id: material })),
 		).toEqual({
-			cantidad: "15.625",
+			cantidad: "16.625",
+			por_ubicacion: [
+				{ ubicacion_id: ubicacion.ADU, ubicacion: expect.any(String), cantidad: "1.000" },
+				{ ubicacion_id: ubicacion.BOD, ubicacion: expect.any(String), cantidad: "15.625" },
+			],
 		});
 		const { rows } = await servidor.base.dueno.query(
-			"SELECT rollo_id, cantidad FROM existencias_material WHERE material_id = $1 ORDER BY cantidad",
-			[material],
+			"SELECT rollo_id, cantidad FROM existencias_material WHERE material_id = $1 AND ubicacion_id = $2 ORDER BY cantidad",
+			[material, ubicacion.BOD],
 		);
 		expect(rows).toEqual([
 			{ rollo_id: null, cantidad: "3.000" },

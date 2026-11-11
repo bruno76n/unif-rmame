@@ -17,10 +17,10 @@ import {
 import { and, eq, isNull } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
+import { quienCambia, revisarMotivo } from "../../../nucleo/acciones/comunes.ts";
 import { versionActual } from "../../../nucleo/acciones/pisadas.ts";
 import { errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeAccion, implementarAccion } from "../../../nucleo/modulos.ts";
-import { quienCambia, revisarMotivo } from "../dominio/comunes.ts";
 import {
 	eventoDeProducto,
 	leerProducto,

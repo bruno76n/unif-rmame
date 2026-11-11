@@ -9,10 +9,10 @@
 
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
+import { quienCambia } from "../../../nucleo/acciones/comunes.ts";
 import type { Transaccion } from "../../../nucleo/base/transacciones.ts";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
 import { precios, productos, variantes } from "../tablas.ts";
-import { quienCambia } from "./comunes.ts";
 
 /** Un precio vigente, como lo leen las acciones. */
 export type PrecioVigente = typeof precios.$inferSelect;

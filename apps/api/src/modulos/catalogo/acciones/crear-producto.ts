@@ -15,9 +15,9 @@ import { centavos } from "@uniformame/compartido/tipos/base";
 import { and, eq, inArray, isNotNull, isNull } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
 import type { z } from "zod";
+import { quienCambia } from "../../../nucleo/acciones/comunes.ts";
 import { ErrorDeApi, errorDeCampo, errorDeRegla } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeAccion, implementarAccion } from "../../../nucleo/modulos.ts";
-import { quienCambia } from "../dominio/comunes.ts";
 import {
 	eventoDeProducto,
 	type Producto,

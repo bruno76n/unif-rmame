@@ -65,8 +65,12 @@ function aJson(esquema: z.ZodType, io: "input" | "output"): EsquemaJson {
 	return esquemaJson.parse(z.toJSONSchema(esquema, { io }));
 }
 
-/** Los campos cuya forma revisa una transformación que el esquema de entrada no dice. */
-const ejemplosPorCampo: Record<string, string> = { correo: "alguien@alameda.invalid", rfc: "UAL010101AB1" };
+/** Los campos cuya forma revisa una transformación o una regla que el esquema de entrada no dice. */
+const ejemplosPorCampo: Record<string, string> = {
+	correo: "alguien@alameda.invalid",
+	rfc: "UAL010101AB1",
+	telefono: "4775550100",
+};
 
 /**
  * Un valor que cumple un esquema JSON, para llegar hasta el permiso: lo obligatorio y nada más.

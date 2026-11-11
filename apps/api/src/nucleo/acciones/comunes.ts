@@ -1,10 +1,10 @@
 /**
- * Lo que comparten las acciones del catálogo: quién cambia y el motivo de una baja.
- * Fase 8 · docs/modulos/catalogo/ (las acciones con motivo)
+ * Lo que comparten las acciones de los módulos: quién cambia y el motivo de una baja.
+ * Fase 8 · docs/modulos/catalogo/ (las acciones con motivo); desde la fase 10, también Compras
  */
 
-import { errorDeCampo } from "../../../nucleo/http/errores.ts";
-import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
+import { errorDeCampo } from "../http/errores.ts";
+import type { ContextoDeAccion } from "../modulos.ts";
 
 /**
  * La cuenta que hace el cambio, o nada si es el sistema.

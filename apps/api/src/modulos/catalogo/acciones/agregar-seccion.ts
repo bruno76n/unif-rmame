@@ -9,9 +9,9 @@
 import { agregarSeccion } from "@uniformame/compartido/contratos/catalogo/escuelas";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
+import { quienCambia } from "../../../nucleo/acciones/comunes.ts";
 import { errorDeCampo, errorDeRegla } from "../../../nucleo/http/errores.ts";
 import { implementarAccion } from "../../../nucleo/modulos.ts";
-import { quienCambia } from "../dominio/comunes.ts";
 import { secciones, tiposPrenda } from "../tablas.ts";
 
 export const accionAgregarSeccion = implementarAccion(agregarSeccion, async (contexto, datos) => {

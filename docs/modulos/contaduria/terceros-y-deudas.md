@@ -202,4 +202,13 @@ Ninguno propio: el largo del motivo es `general.largo_minimo_motivo` (ver [confi
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 17. La tabla `terceros` y sus dos internas, al terminar la fase 10.*
+**Fase 10, parte 1.** Solo la ficha: lo demás de este archivo llega en la fase 17.
+
+- **La tabla** `terceros` está en `modulos/contaduria/tablas.ts` (migración `0032`), con sus CHECK: el nombre de 3 a 120, la clase, al menos un rol prendido y el RFC en mayúsculas. `nombre_busqueda` es `regexp_replace(sin_acentos(btrim(nombre)), '\s+', ' ', 'g')`: el índice único hace la regla 2.
+- **Las internas** (`internas/terceros.ts`):
+  - `crear_tercero` toma un candado por nombre de búsqueda antes de leer: dos altas del mismo nombre a la vez esperan, y la segunda liga o responde repetido. Con `ligar_a_tercero_id` prende el rol en esa ficha. Regresa también los avisos que no detienen («Ese RFC ya lo tiene {nombre}»), para que la acción que la llama los dé (decisión 519). El teléfono solo se guarda en un acreedor.
+  - `renombrar_tercero` regresa lo de antes (para la bitácora de quien llama) y sus avisos.
+  - `tercero_ya_existe` lleva en `datos` el id, el nombre y los roles.
+- **La lectura** `datos_terceros` (`lecturas/terceros.ts`) regresa, por id, el nombre, el RFC y los roles.
+- **Quién lee** `terceros`, para los avisos en vivo: Contaduría, Compras, Ventas y Dirección (`index.ts`).
+- **Pruebas:** `internas/crear-tercero.prueba.ts` (nace, se liga sin importar acentos ni espacios, `rol_ya_existe`, `tercero_ya_existe` con sus datos, «Es el mismo», el RFC, renombrar, y dos altas a la vez en cinco rondas).

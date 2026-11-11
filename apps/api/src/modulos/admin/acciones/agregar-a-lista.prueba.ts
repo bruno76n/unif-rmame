@@ -46,12 +46,14 @@ describe("un valor repetido en una lista (sin mayúsculas ni acentos) responde y
 		expect((await agregar({ lista: "prueba_categorias", nombre: " " })).cuerpo).toMatchObject({
 			campos: { nombre: "Escribe el nombre." },
 		});
-		expect((await agregar({ lista: "unidades_material", nombre: "m" })).cuerpo).toMatchObject({
+		expect((await agregar({ lista: "unidades_material", nombre: "m" }, "duena")).cuerpo).toMatchObject({
 			campos: { se_cuenta_entera: "Escoge si se cuenta entera." },
 		});
-		expect((await agregar({ lista: "unidades_material", nombre: "Métro", se_cuenta_entera: false })).estado).toBe(200);
+		expect(
+			(await agregar({ lista: "unidades_material", nombre: "Métro", se_cuenta_entera: false }, "duena")).estado,
+		).toBe(200);
 		const { rows } = await servidor.base.dueno.query(
-			"SELECT v.clave, v.se_cuenta_entera FROM lista_valores v JOIN listas l ON l.id = v.lista_id WHERE l.clave = 'unidades_material'",
+			"SELECT v.clave, v.se_cuenta_entera FROM lista_valores v JOIN listas l ON l.id = v.lista_id WHERE l.clave = 'unidades_material' AND v.nombre = 'Métro'",
 		);
 		expect(rows).toEqual([{ clave: "metro", se_cuenta_entera: false }]);
 	});

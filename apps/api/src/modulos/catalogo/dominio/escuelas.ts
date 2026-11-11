@@ -6,11 +6,11 @@
 import { paletaDeEscuelas } from "@uniformame/compartido/contratos/catalogo/escuelas";
 import { count, eq, sql } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
+import { quienCambia } from "../../../nucleo/acciones/comunes.ts";
 import type { Transaccion } from "../../../nucleo/base/transacciones.ts";
 import { errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
 import { escuelas } from "../tablas.ts";
-import { quienCambia } from "./comunes.ts";
 
 /** Una escuela como la leen las acciones. */
 export type Escuela = typeof escuelas.$inferSelect;

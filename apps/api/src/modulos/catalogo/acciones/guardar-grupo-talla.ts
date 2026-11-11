@@ -10,10 +10,10 @@
 import { guardarGrupoTalla } from "@uniformame/compartido/contratos/catalogo/tallas";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
+import { quienCambia } from "../../../nucleo/acciones/comunes.ts";
 import { tomarVersion, versionActual } from "../../../nucleo/acciones/pisadas.ts";
 import { errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeAccion, implementarAccion } from "../../../nucleo/modulos.ts";
-import { quienCambia } from "../dominio/comunes.ts";
 import { revisarQueNoSeUsa } from "../dominio/tallas.ts";
 import { gruposTalla, tallas } from "../tablas.ts";
 
