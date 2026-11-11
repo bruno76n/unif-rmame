@@ -6,7 +6,13 @@
 
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { aMilesimos, cuentaDeMaterial, type LineaDeLaCuenta } from "./cuenta-material.ts";
+import {
+	aMilesimos,
+	aMilesimosConSigno,
+	cuentaDeMaterial,
+	deMilesimos,
+	type LineaDeLaCuenta,
+} from "./cuenta-material.ts";
 
 /** Una línea por talla de tela principal. */
 function tela(porTalla: Record<string, string>, materialId = "gabardina"): LineaDeLaCuenta {
@@ -108,5 +114,17 @@ describe("La cuenta de material da lo mismo en la pantalla y en la API: la tela 
 			),
 			{ numRuns: 2_000 },
 		);
+	});
+});
+
+describe("los milésimos con signo van y vuelven como los guarda la base", () => {
+	it("cualquier entero de milésimos regresa igual", () => {
+		fc.assert(
+			fc.property(fc.bigInt({ min: -1_000_000_000_000n, max: 1_000_000_000_000n }), (milesimos) => {
+				expect(aMilesimosConSigno(deMilesimos(milesimos))).toBe(milesimos);
+			}),
+		);
+		expect(deMilesimos(-5_250n)).toBe("-5.250");
+		expect(deMilesimos(1_700_000n)).toBe("1700.000");
 	});
 });

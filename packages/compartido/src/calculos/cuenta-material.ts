@@ -39,6 +39,26 @@ export function aMilesimos(texto: string): bigint {
 }
 
 /**
+ * Un decimal con signo en milésimos, como los guarda la base (una existencia puede ser negativa).
+ * @param texto «700.000», «-5.250».
+ * @throws RangeError si no es un decimal con hasta tres decimales.
+ */
+export function aMilesimosConSigno(texto: string): bigint {
+	const limpio = texto.trim();
+	return limpio.startsWith("-") ? -aMilesimos(limpio.slice(1)) : aMilesimos(limpio);
+}
+
+/**
+ * Unos milésimos como texto decimal con tres decimales, como los guarda la base: `1_700_000n` → «1700.000».
+ * @param milesimos Con o sin signo.
+ */
+export function deMilesimos(milesimos: bigint): string {
+	const signo = milesimos < 0n ? "-" : "";
+	const valor = milesimos < 0n ? -milesimos : milesimos;
+	return `${signo}${valor / 1000n}.${String(valor % 1000n).padStart(3, "0")}`;
+}
+
+/**
  * Divide hacia arriba dos enteros no negativos.
  * @param numerador De cero en adelante.
  * @param denominador Mayor que cero.

@@ -44,6 +44,7 @@ Lo que falta decidir o investigar, y en qué fase se resuelve. Lo del negocio ya
 - **La prueba al azar de la idempotencia corre 150 series contra Postgres** (fase 21, con la temporada simulada): la regla de pruebas pide miles; con la base real cada serie cuesta, y la temporada simulada es donde se corren muchas más.
 - **Un commit de solo registros no corre `docs:revisar`** (fase 22): el encabezado de la bitácora o de `REGISTROS.md` se puede romper ahí y solo lo ve la siguiente revisión completa. Se decide al revisar la seguridad completa si el gancho también revisa esos dos encabezados.
 - **La red del entorno «Unifórmame»** (antes de la fase 2): Claude Code lo creó con red limitada (`nodejs.org` y los registros de paquetes); la [forma de trabajo](../trabajo/FORMA-DE-TRABAJO.md#el-entorno-de-la-nube) pide «Trusted», que también deja pasar las documentaciones oficiales y Docker Hub. Bruno lo cambia en Settings → Environments y abre las sesiones que siguen en ese entorno.
+- **Un tipo fecha en los parámetros** (fase 19): `compras.fecha_regreso_clases` (17 ago 2027) es una fecha, y Configuración no tiene ese tipo (decisión 547). Decidir si se agrega el tipo o se guarda de otra forma.
 
 - **El paso 1 del cuadre suma toda la historia de cada ubicación** (fase 22, antes de lanzar): la tanda bloquea las existencias de su ubicación mientras suma todo `movimiento_lineas`, y con los años se alarga. Partir de la existencia que dejó el último cuadre que cuadró y sumar solo lo de después la mantendría corta.
 - **Una fecha cuyo cuadre falló no se vuelve a cuadrar, y lo que terminó esa noche no pasa por el paso 3** (fase 14, con las DF-): el cuadre es único por fecha y el paso 3 revisa solo los traspasos que terminaron ese día. Falta decir si se reabre la fecha o si la noche siguiente toma lo que quedó pendiente.
@@ -305,4 +306,11 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 11 nov 2026 | 10 | El precio sin anterior en la bitácora (decisión 543) | «— → $84» · «$84» | «$84»: no hay antes | No |
 | 11 nov 2026 | 10 | El precio en la respuesta del envío (decisión 544) | Obligatorio · opcional | Opcional, para que el servidor lo recorte a soporte | No |
 | 11 nov 2026 | 10 | El estado de la orden en las pruebas (decisión 545) | Enviar cada una con su PDF · ponerlo en la base | Ponerlo en la base: la recepción llega en la fase 11 | No |
+| 11 nov 2026 | 10 | Los factores de consumo (decisión 546) | Un tipo decimal nuevo · porcentaje de un mes normal | Porcentaje: 0.9 es 90 %, sin tocar Configuración | No |
+| 11 nov 2026 | 10 | La fecha de regreso a clases y el horizonte corto (decisión 547) | Ahora, como texto · con la pantalla de la fase 19 | Con su pantalla; el tipo fecha queda en Pendientes | No |
+| 11 nov 2026 | 10 | De dónde lee la cuenta lo de Inventario (decisión 548) | Una lectura por material · dos lecturas nuevas para muchos | Dos lecturas nuevas: una pasada para todos | No |
+| 11 nov 2026 | 10 | El consumo por día de cada mes (decisión 549) | Más decimales · al milésimo | Al milésimo, como todo material | No |
+| 11 nov 2026 | 10 | La memoria de la cuenta (decisión 550) | Calcular cada vez · una vez por transacción | Una vez: todos leen los mismos números | No |
+| 11 nov 2026 | 10 | Un solo día sin material (decisión 551) | «1 días» · «1 día» | «1 día» | No |
+| 11 nov 2026 | 10 | Las salidas que se revierten (decisión 552) | Ignorarlas · contarlas al revés | Al revés: una entrega deshecha no es consumo | No |
 

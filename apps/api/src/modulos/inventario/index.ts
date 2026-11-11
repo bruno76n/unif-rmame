@@ -21,6 +21,7 @@ import {
 	reservar,
 } from "./internas/reservas.ts";
 import { existenciaMaterial, piezasDeVariante } from "./lecturas/existencias.ts";
+import { existenciasDeMateriales, salidasDeMateriales } from "./lecturas/materiales.ts";
 import { libres, listoEnAduana } from "./lecturas/reservas.ts";
 import { semillaDeParametrosDeInventario } from "./parametros.ts";
 import { ubicaciones } from "./tablas.ts";
@@ -80,6 +81,8 @@ export default definirModulo({
 	},
 	lecturas: {
 		existencia_material: existenciaMaterial,
+		existencias_de_materiales: existenciasDeMateriales,
+		salidas_de_materiales: salidasDeMateriales,
 		piezas_de_variante: piezasDeVariante,
 		libres,
 		listo_en_aduana: listoEnAduana,
