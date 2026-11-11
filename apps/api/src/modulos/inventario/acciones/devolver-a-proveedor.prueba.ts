@@ -272,4 +272,65 @@ describe("Lo de más regresa al proveedor en rollos enteros que se reparten de s
 			{ tipo: "en_camino_aduana", hay: "5.000" },
 		]);
 	});
+
+	it("dos devoluciones de la misma orden a la vez se ponen en fila: lo repartido suma las dos y cuadra con lo que hay en aduana", async () => {
+		const orden = await ordenParaRecibir(servidor);
+		// 510 botones y luego 30: dos autorizaciones de lo de más, de 10 y de 30.
+		await recibirDePrueba(servidor, orden, [], 510);
+		await recibirDePrueba(servidor, orden, [], 30);
+		const autorizaciones = await consultar(
+			"SELECT id FROM autorizaciones WHERE orden_compra_linea_id = $1 ORDER BY creado_en",
+			[orden.lineaAvio],
+		);
+		for (const { id } of autorizaciones)
+			await decidirDePrueba(servidor, String(id), { decision: "rechazar", motivo: "No lo pedimos" });
+		const devoluciones = await consultar(
+			`SELECT t.id, l.cantidad_enviada FROM traspasos t JOIN traspaso_lineas l ON l.traspaso_id = t.id
+			 WHERE t.tipo = 'devolucion_proveedor' AND t.orden_compra_id = $1 ORDER BY t.folio`,
+			[orden.id],
+		);
+		const respuestas = await Promise.all(
+			devoluciones.map(async (devolucion) =>
+				devolver(String(devolucion.id), { cantidad: String(devolucion.cantidad_enviada) }),
+			),
+		);
+		expect(respuestas.map((respuesta) => respuesta.estado)).toEqual([200, 200]);
+		const [aduana] = await consultar(
+			`SELECT sum(e.cantidad)::text AS hay FROM existencias_material e JOIN ubicaciones u ON u.id = e.ubicacion_id
+			 WHERE u.tipo = 'aduana' AND e.material_id = $1`,
+			[orden.avio],
+		);
+		const [segunLosA] = await consultar(
+			`SELECT sum(l.cantidad_recibida_aduana - l.cantidad_repartida)::text AS queda FROM traspaso_lineas l
+			 JOIN traspasos t ON t.id = l.traspaso_id WHERE t.tipo = 'material_proveedor' AND t.orden_compra_id = $1`,
+			[orden.id],
+		);
+		expect({ aduana: aduana?.hay, segunLosA: segunLosA?.queda }).toEqual({ aduana: "500.000", segunLosA: "500.000" });
+	});
+
+	it("lo de más que no es tela no se surte mientras va en tránsito a Bodega: espera a que llegue", async () => {
+		const { orden, aDeLaOrden } = await recibidaDeMas();
+		const despacho = z
+			.object({ despacho_id: z.uuid() })
+			.parse((await despacharDePrueba(servidor, [aDeLaOrden])).cuerpo.resultado).despacho_id;
+		const botones = await rechazar(orden.lineaAvio);
+		const surtir = () =>
+			mandarAccion(
+				servidor,
+				"inventario.surtir_a_aduana",
+				{ datos: { documento_tipo: "devolucion_proveedor", documento_id: botones.id } },
+				"bodega",
+			);
+		expect((await surtir()).cuerpo).toMatchObject({
+			codigo: "no_hay_en_bodega",
+			mensaje: expect.stringMatching(/^No hay 20 pza de Botón de prueba .+ en bodega: espera a que llegue$/),
+		});
+		await mandarAccion(
+			servidor,
+			"inventario.recibir_despacho",
+			{ datos: { despacho_id: despacho, modo: "completo" }, version: await versionDeDespacho(servidor, despacho) },
+			"bodega",
+		);
+		expect((await surtir()).estado).toBe(200);
+	});
 });

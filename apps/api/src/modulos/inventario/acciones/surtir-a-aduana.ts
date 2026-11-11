@@ -13,7 +13,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import type { z } from "zod";
 import { errorDeCampo, errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeAccion, implementarAccion } from "../../../nucleo/modulos.ts";
-import { tomarCandadosDeInventario } from "../dominio/candados.ts";
+import { bloquearExistenciasMaterial, tomarCandadosDeInventario } from "../dominio/candados.ts";
 import {
 	datosDeDevolucion,
 	loQueRegresa,
@@ -159,8 +159,15 @@ async function surtirDevolucion(contexto: ContextoDeAccion, pedido: Pedido) {
 		await ponerRollosEnDevolucion(contexto, devolucion, regresan);
 	}
 	const lineas = await loQueRegresa(contexto, devolucion.id);
-	// Lo que no es tela sale de lo que Bodega tiene sin rollo: si no lo tiene (va todavía en tránsito), no surte.
+	const enCaminoAAduana = await ubicacionDeTipo(transaccion, "en_camino_aduana");
+	// Lo que no es tela sale de lo que Bodega tiene sin rollo: si no lo tiene (va todavía en tránsito), no surte. Sus
+	// dos renglones se bloquean antes de leerlo, en el orden fijo, para que otro surtido o un consumible no lo cuenten
+	// a la vez.
 	if (!datos.esTela) {
+		await bloquearExistenciasMaterial(
+			transaccion,
+			[bodega, enCaminoAAduana].map((ubicacionId) => ({ ubicacionId, materialId: datos.materialId, rolloId: null })),
+		);
 		const [hay] = await transaccion
 			.select({ cantidad: existenciasMaterial.cantidad })
 			.from(existenciasMaterial)
@@ -179,7 +186,6 @@ async function surtirDevolucion(contexto: ContextoDeAccion, pedido: Pedido) {
 			);
 		}
 	}
-	const enCaminoAAduana = await ubicacionDeTipo(transaccion, "en_camino_aduana");
 	await escribirMovimiento(contexto, {
 		tipo: "surtido_bodega",
 		documento: { tipo: "traspaso", id: devolucion.id, folio: devolucion.folio },

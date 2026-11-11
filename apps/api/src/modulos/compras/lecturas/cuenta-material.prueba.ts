@@ -250,5 +250,10 @@ describe("La proyección da los números del ejemplo de la gabardina azul marino
 			fueraDePlazo: true,
 			entregas: [{ ordenCompraId: orden.id, dias: 14, aTiempo: false }],
 		});
+		// Si dijera que tarda 14, la misma entrega llegó a tiempo y no está fuera de plazo.
+		const aTiempo = await enAccionDePrueba(crearBase(servidor.base.app), servidor.modulos, (contexto) =>
+			plazosReales(contexto, [{ id: orden.proveedor, diasDiceTardar: 14 }]),
+		);
+		expect(aTiempo.get(orden.proveedor)).toMatchObject({ fueraDePlazo: false, entregas: [{ aTiempo: true }] });
 	});
 });

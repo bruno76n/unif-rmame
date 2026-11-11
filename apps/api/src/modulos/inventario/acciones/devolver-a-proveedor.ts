@@ -26,7 +26,7 @@ import {
 	rollosQueRegresan,
 } from "../dominio/devoluciones.ts";
 import { escribirMovimiento } from "../dominio/escribir-movimiento.ts";
-import { ubicacionDeTipo } from "../dominio/recepciones.ts";
+import { candadoDeLoRecibido, ubicacionDeTipo } from "../dominio/recepciones.ts";
 import { cambiarEstadoTraspaso } from "../dominio/traspasos.ts";
 import { traspasoLineas, traspasos } from "../tablas.ts";
 
@@ -94,9 +94,41 @@ async function repartirDeLosA(
 	}
 }
 
+/**
+ * Pone en fila lo que toca una devolución: ella y los A- de su orden que siguen en aduana (todos los traspasos, en una
+ * sola llamada y en orden), y luego lo recibido de la orden, como `despachar`. Así dos devoluciones de la misma orden,
+ * o una devolución y el despacho de su A-, no se pisan lo repartido. La orden de una devolución no cambia, así que se
+ * lee antes del candado; los A- se vuelven a leer al repartir.
+ * @param contexto El contexto de la acción.
+ * @param devolucionId La devolución.
+ */
+async function candadosDeLaDevolucion(contexto: ContextoDeAccion, devolucionId: string): Promise<void> {
+	const { transaccion } = contexto;
+	const [suya] = await transaccion
+		.select({ ordenCompraId: traspasos.ordenCompraId })
+		.from(traspasos)
+		.where(eq(traspasos.id, devolucionId));
+	const ordenCompraId = suya?.ordenCompraId ?? null;
+	const deLaOrden =
+		ordenCompraId === null
+			? []
+			: await transaccion
+					.select({ id: traspasos.id })
+					.from(traspasos)
+					.where(
+						and(
+							eq(traspasos.tipo, "material_proveedor"),
+							eq(traspasos.ordenCompraId, ordenCompraId),
+							eq(traspasos.estado, "en_aduana"),
+						),
+					);
+	await tomarCandadosDeInventario(transaccion, { traspasoIds: [devolucionId, ...deLaOrden.map((a) => a.id)] });
+	if (ordenCompraId !== null) await candadoDeLoRecibido(contexto, ordenCompraId);
+}
+
 export const accionDevolverAProveedor = implementarAccion(devolverAProveedor, async (contexto, datos, version) => {
 	const { transaccion } = contexto;
-	await tomarCandadosDeInventario(transaccion, { traspasoIds: [datos.traspaso_id] });
+	await candadosDeLaDevolucion(contexto, datos.traspaso_id);
 	const [devolucion] = await transaccion.select().from(traspasos).where(eq(traspasos.id, datos.traspaso_id));
 	if (devolucion === undefined || devolucion.tipo !== "devolucion_proveedor") throw noExiste();
 	await tomarVersion(contexto, traspasos, devolucion.id, version, async () => ({
@@ -132,7 +164,8 @@ export const accionDevolverAProveedor = implementarAccion(devolverAProveedor, as
 	// Si de lo que surtió Bodega no llegó nada, no hay nada en aduana que sacar: se queda en su tramo.
 	if (lineas.length === 0) throw errorDeRegla("no_esta_en_aduana", `${devolucion.folio} no está en aduana.`);
 	const regresa = lineas.reduce((suma, linea) => suma + linea.milesimos, 0n);
-	if (datosDe.esTela && regresa !== loDeMas) {
+	// El aviso es de los rollos escogidos: lo que surtió Bodega y no llegó se queda en su tramo, sin aviso.
+	if (esperaEnAduana && datosDe.esTela && regresa !== loDeMas) {
 		avisos.push(
 			`Los rollos suman ${cantidadEnTexto(regresa)} m y lo de más es ${cantidadEnTexto(loDeMas)} m: la diferencia se ve en la conciliación de Compras`,
 		);
