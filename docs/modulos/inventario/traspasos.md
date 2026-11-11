@@ -27,7 +27,7 @@ Ejemplo: la Tienda 1 pide ropa con la S-T1-088. Bodega surte y nace el traspaso 
    Un D- puede juntar varios A- que van al mismo destino: un viaje, una hoja.
 2. **El folio:** `A-{n}` si nace en la fábrica (contador `partida_aduana` de [folios](../admin/folios.md)); el de la salida (`E-T1-…`) si nace en una tienda; `{folio del padre}-{n}` si se repartió de otro.
 3. **Solo quien recibe confirma.** Aduana solo puede «Recordar».
-4. **Lo que no llega se queda en su tramo,** a cargo de quien lo mandó (decisión de integración 2): nace una DF- por renglón y el traspaso termina `con_diferencia`, aunque el otro tramo cuadre. Lo que llega de más sale igual del tramo (ese tramo queda en negativo en ese traspaso) y nace una DF- de sobrante (ver [diferencias, ajustes y mermas](diferencias-ajustes-y-mermas.md)).
+4. **Lo que no llega se queda en su tramo,** a cargo de quien lo mandó (decisión de integración 2): nace una DF- por renglón y el traspaso termina `con_diferencia`, aunque el otro tramo cuadre. Lo que llega de más sale igual del tramo (ese tramo queda en negativo en ese traspaso; si llega en un despacho con varios traspasos, en el primero del despacho, ver [surtido y despachos](surtido-y-despachos.md#reglas)) y nace una DF- de sobrante (ver [diferencias, ajustes y mermas](diferencias-ajustes-y-mermas.md)).
 5. **El lote y el reproceso se quedan en el Taller** hasta que Aduana los cuenta a ciegas: sus traspasos nacen `en_aduana` al recibirlos (decisión de integración 3).
 6. **Una devolución aceptada no es inventario** hasta que Aduana la recibe: espera en `esperado`, sin movimiento.
 7. **Repartir no mueve.** Cuando parte de lo que hay en aduana cambia de destino, pasa a un traspaso hijo (abajo).

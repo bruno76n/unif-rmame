@@ -59,6 +59,15 @@ export function deMilesimos(milesimos: bigint): string {
 }
 
 /**
+ * El menor de dos enteros grandes (`Math.min` no los acepta).
+ * @param uno Uno.
+ * @param otro El otro.
+ */
+export function menor(uno: bigint, otro: bigint): bigint {
+	return uno < otro ? uno : otro;
+}
+
+/**
  * Unos milésimos como se dicen en un mensaje, sin ceros de más: `100_000n` → «100», `12_500n` → «12.5».
  * @param milesimos Con o sin signo.
  */

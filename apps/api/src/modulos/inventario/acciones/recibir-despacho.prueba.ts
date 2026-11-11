@@ -128,6 +128,30 @@ describe("Solo quien recibe confirma: lo que falta se queda en Tránsito a cargo
 		]);
 	});
 
+	it("con diferencias: el primer traspaso que cuadra queda con diferencia si de su tramo salió lo de más de otro", async () => {
+		const [primero, segundo] = [await traspasoEnAduana(servidor, "BOD"), await traspasoEnAduana(servidor, "BOD")];
+		const despacho = await despachado([primero.id, segundo.id]);
+		const lineas = await consultar(
+			`SELECT l.id FROM traspaso_lineas l JOIN traspasos t ON t.id = l.traspaso_id
+			 WHERE t.despacho_id = $1 ORDER BY t.folio, l.renglon`,
+			[despacho],
+		);
+		// El primero llegó justo; del segundo, 6 de 5.
+		const contadas = [5, 3, 6, 3];
+		await recibir(despacho, {
+			modo: "con_diferencias",
+			renglones: lineas.map((linea, i) => ({ traspaso_linea_id: linea.id, piezas: contadas[i] })),
+		});
+		expect(
+			await consultar("SELECT folio, estado FROM traspasos WHERE id = ANY($1::uuid[]) ORDER BY folio", [
+				[primero.id, segundo.id],
+			]),
+		).toEqual([
+			{ folio: primero.folio, estado: "con_diferencia" },
+			{ folio: segundo.folio, estado: "con_diferencia" },
+		]);
+	});
+
 	it("el material de una orden: despachado y recibido, queda en Bodega por rollo", async () => {
 		const orden = await ordenParaRecibir(servidor);
 		const recibida = await recibirDePrueba(servidor, orden, [{ metros: "100", partida: "A" }], 500);

@@ -5,9 +5,15 @@
  * Fase 11 · docs/modulos/inventario/recepciones-en-aduana.md (reglas 5 y 6, «`inventario.devolver_a_proveedor`»)
  */
 
-import { aMilesimos, cantidadEnTexto, deMilesimos } from "@uniformame/compartido/calculos/cuenta-material";
+import {
+	aMilesimos,
+	aMilesimosConSigno,
+	cantidadEnTexto,
+	deMilesimos,
+	menor,
+} from "@uniformame/compartido/calculos/cuenta-material";
 import { devolverAProveedor } from "@uniformame/compartido/contratos/inventario/recepciones";
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { tomarVersion, versionActual } from "../../../nucleo/acciones/pisadas.ts";
 import { errorDeCampo, errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeAccion, implementarAccion } from "../../../nucleo/modulos.ts";
@@ -25,38 +31,66 @@ import { cambiarEstadoTraspaso } from "../dominio/traspasos.ts";
 import { traspasoLineas, traspasos } from "../tablas.ts";
 
 /**
- * Reparte del A- del material de una orden, que está en aduana, lo que regresa: cada rollo de su renglón, o la
- * cantidad del renglón sin rollo.
+ * Reparte de los A- del material de una orden que siguen en aduana lo que regresa, como `repartirTraspaso` (ver
+ * traspasos.md, «Repartir»): de cada renglón (del mismo material y rollo) como mucho lo que le queda en aduana, y lo
+ * que falte, del siguiente, por folio. Un A- al que ya no le queda nada pasa a `repartido`.
  * @param contexto El contexto de la acción.
  * @param ordenCompraId La orden.
  * @param regresa Lo que regresa, por material y rollo.
+ * @throws Error si los A- no tienen en aduana lo que regresa: la acción ya revisó que esté ahí.
  */
-async function repartirDelA(
+async function repartirDeLosA(
 	contexto: ContextoDeAccion,
 	ordenCompraId: string,
 	regresa: readonly { materialId: string; rolloId: string | null; milesimos: bigint }[],
 ): Promise<void> {
-	const aDeLaOrden = contexto.transaccion
-		.select({ id: traspasos.id })
-		.from(traspasos)
+	const { transaccion } = contexto;
+	const lineas = await transaccion
+		.select({
+			id: traspasoLineas.id,
+			traspasoId: traspasoLineas.traspasoId,
+			materialId: traspasoLineas.materialId,
+			rolloId: traspasoLineas.rolloId,
+			recibida: traspasoLineas.cantidadRecibidaAduana,
+			repartida: traspasoLineas.cantidadRepartida,
+		})
+		.from(traspasoLineas)
+		.innerJoin(traspasos, eq(traspasos.id, traspasoLineas.traspasoId))
 		.where(
 			and(
 				eq(traspasos.tipo, "material_proveedor"),
 				eq(traspasos.ordenCompraId, ordenCompraId),
 				eq(traspasos.estado, "en_aduana"),
 			),
-		);
+		)
+		.orderBy(asc(traspasos.folio), asc(traspasoLineas.renglon));
+	const queda = new Map(
+		lineas.map((linea) => [linea.id, aMilesimosConSigno(linea.recibida ?? "0") - aMilesimosConSigno(linea.repartida)]),
+	);
 	for (const suyo of regresa) {
-		await contexto.transaccion
-			.update(traspasoLineas)
-			.set({ cantidadRepartida: sql`${traspasoLineas.cantidadRepartida} + ${deMilesimos(suyo.milesimos)}::numeric` })
-			.where(
-				and(
-					sql`${traspasoLineas.traspasoId} IN (${aDeLaOrden})`,
-					eq(traspasoLineas.materialId, suyo.materialId),
-					suyo.rolloId === null ? isNull(traspasoLineas.rolloId) : eq(traspasoLineas.rolloId, suyo.rolloId),
-				),
-			);
+		let falta = suyo.milesimos;
+		for (const linea of lineas) {
+			if (falta === 0n) break;
+			if (linea.materialId !== suyo.materialId || linea.rolloId !== suyo.rolloId) continue;
+			const tiene = queda.get(linea.id) ?? 0n;
+			const toma = menor(tiene, falta);
+			if (toma <= 0n) continue;
+			queda.set(linea.id, tiene - toma);
+			falta -= toma;
+			await transaccion
+				.update(traspasoLineas)
+				.set({ cantidadRepartida: deMilesimos(aMilesimosConSigno(linea.recibida ?? "0") - (tiene - toma)) })
+				.where(eq(traspasoLineas.id, linea.id));
+		}
+		if (falta > 0n)
+			throw new Error(`los A- de la orden no tienen en aduana lo que regresa (${deMilesimos(falta)} de más)`);
+	}
+	// Un A- al que ya no le queda nada en aduana pasa a repartido.
+	for (const traspasoId of new Set(lineas.map((linea) => linea.traspasoId))) {
+		const suyas = lineas.filter((linea) => linea.traspasoId === traspasoId);
+		if (suyas.every((linea) => (queda.get(linea.id) ?? 0n) === 0n)) {
+			await cambiarEstadoTraspaso(contexto, traspasoId, "repartido");
+		}
 	}
 }
 
@@ -89,9 +123,14 @@ export const accionDevolverAProveedor = implementarAccion(devolverAProveedor, as
 		} else if (datos.cantidad === undefined || aMilesimos(datos.cantidad) !== loDeMas) {
 			throw errorDeRegla("cantidad_distinta", `Lo que regresa es ${cantidadEnTexto(loDeMas)} ${datosDe.unidad}.`);
 		}
-		await repartirDelA(contexto, devolucion.ordenCompraId ?? "", await loQueRegresa(contexto, devolucion.id));
+		await repartirDeLosA(contexto, devolucion.ordenCompraId ?? "", await loQueRegresa(contexto, devolucion.id));
 	}
-	const lineas = await loQueRegresa(contexto, devolucion.id);
+	// Lo que sale: lo escogido, o lo que Aduana recibió de lo que surtió Bodega.
+	const lineas = (await loQueRegresa(contexto, devolucion.id, esperaEnAduana ? "enviado" : "en_aduana")).filter(
+		(linea) => linea.milesimos > 0n,
+	);
+	// Si de lo que surtió Bodega no llegó nada, no hay nada en aduana que sacar: se queda en su tramo.
+	if (lineas.length === 0) throw errorDeRegla("no_esta_en_aduana", `${devolucion.folio} no está en aduana.`);
 	const regresa = lineas.reduce((suma, linea) => suma + linea.milesimos, 0n);
 	if (datosDe.esTela && regresa !== loDeMas) {
 		avisos.push(

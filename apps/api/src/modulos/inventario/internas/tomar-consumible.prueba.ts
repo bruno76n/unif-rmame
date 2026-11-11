@@ -34,7 +34,7 @@ describe("Un consumible tomado se descuenta de la ubicación de consumibles, en 
 		);
 	}
 
-	it("3 agujas de una caja de 100 son 0.030 cajas que salen de Bodega, aunque no haya; la misma toma otra vez no repite", async () => {
+	it("0.030 cajas (ya en la unidad de inventario) salen de Bodega con la persona, aunque no haya; la misma toma otra vez no repite", async () => {
 		const proveedor = await altaDeProveedor(servidor);
 		const agujas = await altaDeMaterial(servidor, proveedor, { tipo: "consumible", unidad: "cajas" });
 		const id = uuidv7();

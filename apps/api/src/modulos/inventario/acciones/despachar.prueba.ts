@@ -15,6 +15,7 @@ import {
 	traspasoEnAduana,
 } from "../../../nucleo/pruebas/aduana-de-prueba.ts";
 import { ubicacionesPorCodigo } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
+import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 
 describe("Un despacho junta traspasos de un solo destino y saca todo lo que queda en aduana de cada uno; lo que no sale por despacho se rechaza con su motivo", () => {
@@ -58,6 +59,21 @@ describe("Un despacho junta traspasos de un solo destino y saca todo lo que qued
 		).toEqual([{ codigo: "TRA", piezas: 16 }]);
 		expect(await consultar("SELECT estado, recordatorios FROM despachos WHERE id = $1", [despachoId])).toEqual([
 			{ estado: "en_transito", recordatorios: 0 },
+		]);
+	});
+
+	it("con la versión vieja de un traspaso no sale: 409", async () => {
+		const traspaso = await traspasoEnAduana(servidor, "T1");
+		await servidor.base.dueno.query("UPDATE traspasos SET version = version + 1 WHERE id = $1", [traspaso.id]);
+		const respuesta = await mandarAccion(
+			servidor,
+			"inventario.despachar",
+			{ datos: { traspasos: [{ traspaso_id: traspaso.id, version: traspaso.version }] } },
+			"aduana",
+		);
+		expect(respuesta.estado).toBe(409);
+		expect(await consultar("SELECT estado FROM traspasos WHERE id = $1", [traspaso.id])).toEqual([
+			{ estado: "en_aduana" },
 		]);
 	});
 

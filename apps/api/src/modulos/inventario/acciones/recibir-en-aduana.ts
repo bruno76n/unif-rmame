@@ -16,22 +16,12 @@ import { v7 as uuidv7 } from "uuid";
 import { quienCambia } from "../../../nucleo/acciones/comunes.ts";
 import { tomarVersion, versionActual } from "../../../nucleo/acciones/pisadas.ts";
 import { ErrorDeApi, errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
-import { type ContextoDeAccion, implementarAccion } from "../../../nucleo/modulos.ts";
+import { implementarAccion } from "../../../nucleo/modulos.ts";
 import { tomarCandadosDeInventario } from "../dominio/candados.ts";
 import { escribirMovimiento, type RenglonDeMovimiento } from "../dominio/escribir-movimiento.ts";
-import { ubicacionDeTipo } from "../dominio/recepciones.ts";
+import { ubicacionDeTipo, ubicacionPorId } from "../dominio/recepciones.ts";
 import { cambiarEstadoTraspaso } from "../dominio/traspasos.ts";
-import { recepciones, recepcionLineas, traspasoLineas, traspasos, ubicaciones } from "../tablas.ts";
-
-/** El nombre de una ubicación, o «quien lo mandó» si no es una. */
-async function nombreDeUbicacion(contexto: ContextoDeAccion, id: string | null) {
-	if (id === null) return { nombre: "quien lo mandó", tipo: "" };
-	const [ubicacion] = await contexto.transaccion
-		.select({ nombre: ubicaciones.nombre, tipo: ubicaciones.tipo })
-		.from(ubicaciones)
-		.where(eq(ubicaciones.id, id));
-	return ubicacion ?? { nombre: "quien lo mandó", tipo: "" };
-}
+import { recepciones, recepcionLineas, traspasoLineas, traspasos } from "../tablas.ts";
 
 export const accionRecibirEnAduana = implementarAccion(recibirEnAduana, async (contexto, datos, version) => {
 	const { transaccion } = contexto;
@@ -174,8 +164,11 @@ export const accionRecibirEnAduana = implementarAccion(recibirEnAduana, async (c
 		.filter(({ esPrenda }) => esPrenda)
 		.reduce((suma, { enviado, llego }) => suma + Math.max(0, Number(enviado - llego)), 0);
 	const faltoMaterial = contados.some(({ esPrenda, enviado, llego }) => !esPrenda && llego < enviado);
-	const destino = await nombreDeUbicacion(contexto, traspaso.destinoUbicacionId);
-	const origen = await nombreDeUbicacion(contexto, traspaso.origenUbicacionId);
+	const destino = (await ubicacionPorId(transaccion, traspaso.destinoUbicacionId)) ?? { nombre: "", tipo: "" };
+	const origen = (await ubicacionPorId(transaccion, traspaso.origenUbicacionId)) ?? {
+		nombre: "quien lo mandó",
+		tipo: "",
+	};
 	const soloMaterial = contados.every(({ esPrenda }) => !esPrenda);
 	const base = soloMaterial
 		? `${traspaso.folio} recibido en aduana`

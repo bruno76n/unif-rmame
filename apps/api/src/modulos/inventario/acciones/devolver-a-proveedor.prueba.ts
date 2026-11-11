@@ -124,6 +124,8 @@ describe("Lo de más regresa al proveedor en rollos enteros que se reparten de s
 				new RegExp(`^${otra.rollos[0]?.folio} no es de .+ de ${orden.folio}, o no está en aduana\\.$`),
 			),
 		});
+		const repetido = await devolver(devolucion.id, { rollo_ids: [rollos[0]?.rollo_id, rollos[0]?.rollo_id] });
+		expect(repetido).toMatchObject({ estado: 400, cuerpo: { campos: { rollo_ids: "Un rollo va una sola vez" } } });
 		const conAviso = await devolver(devolucion.id, { rollo_ids: [rollos[0]?.rollo_id] });
 		expect(conAviso.cuerpo.avisos).toEqual([
 			"Los rollos suman 50 m y lo de más es 10 m: la diferencia se ve en la conciliación de Compras",
@@ -187,5 +189,87 @@ describe("Lo de más regresa al proveedor en rollos enteros que se reparten de s
 			{ estado: "devuelto" },
 		]);
 		expect(await recibido(orden.lineaTela)).toMatchObject({ lineas: { [orden.lineaTela]: "100.000" } });
+	});
+
+	it("lo de más en dos recepciones: lo que regresa sale de cada A- hasta lo que le queda en aduana, y el que se vacía queda repartido", async () => {
+		const orden = await ordenParaRecibir(servidor);
+		const aDe = async (piezas: number) =>
+			z.object({ traspaso_id: z.uuid() }).parse((await recibirDePrueba(servidor, orden, [], piezas)).cuerpo.resultado)
+				.traspaso_id;
+		// 10 botones y luego 520: 530 de 500, 30 de más.
+		const [primero, segundo] = [await aDe(10), await aDe(520)];
+		const botones = await rechazar(orden.lineaAvio);
+		expect((await devolver(botones.id, { cantidad: "30" })).estado).toBe(200);
+		expect(
+			await consultar(
+				`SELECT t.estado, l.cantidad_repartida FROM traspaso_lineas l JOIN traspasos t ON t.id = l.traspaso_id
+				 WHERE t.id = ANY($1::uuid[]) ORDER BY t.folio`,
+				[[primero, segundo]],
+			),
+		).toEqual([
+			{ estado: "repartido", cantidad_repartida: "10.000" },
+			{ estado: "en_aduana", cantidad_repartida: "20.000" },
+		]);
+		expect(await recibido(orden.lineaAvio)).toMatchObject({ lineas: { [orden.lineaAvio]: "500.000" } });
+	});
+
+	it("surtida de Bodega y recibida en aduana con diferencias: sale lo que llegó, y lo que no llegó se queda en su tramo", async () => {
+		const { orden, aDeLaOrden } = await recibidaDeMas();
+		const despacho = z
+			.object({ despacho_id: z.uuid() })
+			.parse((await despacharDePrueba(servidor, [aDeLaOrden])).cuerpo.resultado).despacho_id;
+		await mandarAccion(
+			servidor,
+			"inventario.recibir_despacho",
+			{ datos: { despacho_id: despacho, modo: "completo" }, version: await versionDeDespacho(servidor, despacho) },
+			"bodega",
+		);
+		const botones = await rechazar(orden.lineaAvio);
+		await mandarAccion(
+			servidor,
+			"inventario.surtir_a_aduana",
+			{ datos: { documento_tipo: "devolucion_proveedor", documento_id: botones.id } },
+			"bodega",
+		);
+		const [linea] = await consultar("SELECT id FROM traspaso_lineas WHERE traspaso_id = $1", [botones.id]);
+		await mandarAccion(
+			servidor,
+			"inventario.recibir_en_aduana",
+			{
+				datos: {
+					traspaso_id: botones.id,
+					modo: "con_diferencias",
+					renglones: [{ traspaso_linea_id: linea?.id, cantidad: "15" }],
+				},
+				version: await versionDeTraspaso(servidor, botones.id),
+			},
+			"aduana",
+		);
+		// Con una versión vieja no sale.
+		const vieja = await versionDeTraspaso(servidor, botones.id);
+		await servidor.base.dueno.query("UPDATE traspasos SET version = version + 1 WHERE id = $1", [botones.id]);
+		expect(
+			(
+				await mandarAccion(
+					servidor,
+					"inventario.devolver_a_proveedor",
+					{ datos: { traspaso_id: botones.id }, version: vieja },
+					"aduana",
+				)
+			).estado,
+		).toBe(409);
+		expect((await devolver(botones.id)).cuerpo.resultado).toMatchObject({
+			mensaje: expect.stringMatching(/^15 pza de Botón de prueba .+ regresan a /),
+		});
+		expect(
+			await consultar(
+				`SELECT u.tipo, sum(e.cantidad)::text AS hay FROM existencias_material e JOIN ubicaciones u ON u.id = e.ubicacion_id
+				 WHERE e.material_id = $1 AND e.cantidad <> 0 GROUP BY u.tipo ORDER BY u.tipo`,
+				[orden.avio],
+			),
+		).toEqual([
+			{ tipo: "bodega", hay: "500.000" },
+			{ tipo: "en_camino_aduana", hay: "5.000" },
+		]);
 	});
 });

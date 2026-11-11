@@ -91,6 +91,23 @@ describe("Recibir lo que viene en camino deja lo que no llegó en su tramo y una
 		});
 	});
 
+	it("con una versión vieja no recibe: 409, y todo sigue en camino", async () => {
+		const { id, variante } = await surtido();
+		const vieja = await versionDeTraspaso(servidor, id);
+		await servidor.base.dueno.query("UPDATE traspasos SET version = version + 1 WHERE id = $1", [id]);
+		const respuesta = await mandarAccion(
+			servidor,
+			"inventario.recibir_en_aduana",
+			{ datos: { traspaso_id: id, modo: "completo" }, version: vieja },
+			"aduana",
+		);
+		expect(respuesta.estado).toBe(409);
+		expect(await piezas(variante)).toEqual([{ codigo: expect.any(String), piezas: 3 }]);
+		expect(await servidor.base.dueno.query("SELECT estado FROM traspasos WHERE id = $1", [id])).toMatchObject({
+			rows: [{ estado: "en_camino_aduana" }],
+		});
+	});
+
 	it("con diferencias: pide cada renglón; lo que no llegó se queda En camino a aduana, a cargo de quien lo mandó", async () => {
 		const a = await surtido();
 		expect((await recibir(a.id, { modo: "con_diferencias", renglones: [] })).cuerpo).toMatchObject({

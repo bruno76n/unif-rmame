@@ -21,41 +21,18 @@ import { quienCambia } from "../../../nucleo/acciones/comunes.ts";
 import { ErrorDeApi, errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeAccion, implementarAccion } from "../../../nucleo/modulos.ts";
 import { escribirMovimiento } from "../dominio/escribir-movimiento.ts";
-import { candadoDeLoRecibido, recibidoDeLineas, ubicacionDeTipo } from "../dominio/recepciones.ts";
+import {
+	candadoDeLoRecibido,
+	type OrdenParaInventario,
+	ordenesDeCompras,
+	recibidoDeLineas,
+	ubicacionDeTipo,
+} from "../dominio/recepciones.ts";
 import { crearTraspaso, type RenglonDeTraspaso } from "../dominio/traspasos.ts";
 import { partidasTela, recepciones, recepcionLineas, rollos } from "../tablas.ts";
 
-/** Lo que regresa `compras.ordenes_por_recibir` de una orden, en lo que usa la recepción. */
-const deLaOrden = z.object({
-	ordenes: z.array(
-		z
-			.object({
-				orden_compra_id: z.uuid(),
-				folio: z.string(),
-				proveedor_id: z.uuid(),
-				proveedor: z.string(),
-				estado: z.string(),
-				se_puede_recibir: z.boolean(),
-				lineas: z.array(
-					z
-						.object({
-							orden_compra_linea_id: z.uuid(),
-							material_id: z.uuid(),
-							material: z.string(),
-							unidad: z.string(),
-							tipo: z.string(),
-							se_cuenta_entera: z.boolean(),
-							pedido: z.string(),
-						})
-						.passthrough(),
-				),
-			})
-			.passthrough(),
-	),
-});
-
 /** Una línea de la orden como la usa la recepción. */
-type LineaDeLaOrden = z.infer<typeof deLaOrden>["ordenes"][number]["lineas"][number];
+type LineaDeLaOrden = OrdenParaInventario["lineas"][number];
 
 /** Lo que regresa `compras.precio_vigente_lineas`. */
 const precios = z.record(z.string(), z.number().int());
@@ -190,9 +167,7 @@ function deMasPorPedir(pedido: bigint, antes: bigint, despues: bigint, umbral: b
 
 export const accionRecibirDeProveedor = implementarAccion(recibirDeProveedor, async (contexto, datos) => {
 	const { transaccion } = contexto;
-	const [orden] = deLaOrden.parse(
-		await contexto.lectura("compras.ordenes_por_recibir", { orden_compra_ids: [datos.orden_compra_id] }),
-	).ordenes;
+	const [orden] = await ordenesDeCompras(contexto, [datos.orden_compra_id]);
 	if (orden === undefined) throw noExiste();
 	const noRecibible = () =>
 		errorDeRegla(

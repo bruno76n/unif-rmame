@@ -7,7 +7,7 @@
  * Tránsito a cargo de Aduana; lo que sobra o no venía sale del tramo del primer traspaso del despacho.
  */
 
-import { aMilesimosConSigno, deMilesimos } from "@uniformame/compartido/calculos/cuenta-material";
+import { aMilesimosConSigno, deMilesimos, menor } from "@uniformame/compartido/calculos/cuenta-material";
 import {
 	despachar,
 	entregarATiendaSinCaja,
@@ -20,11 +20,11 @@ import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
 import { quienCambia } from "../../../nucleo/acciones/comunes.ts";
 import { tomarVersion, versionActual } from "../../../nucleo/acciones/pisadas.ts";
-import { ErrorDeApi, errorDeCampo, errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
+import { ErrorDeApi, errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeAccion, implementarAccion } from "../../../nucleo/modulos.ts";
 import { tomarCandadosDeInventario } from "../dominio/candados.ts";
 import { escribirMovimiento, type RenglonDeMovimiento } from "../dominio/escribir-movimiento.ts";
-import { ubicacionDeTipo } from "../dominio/recepciones.ts";
+import { candadoDeLoRecibido, ordenesDeCompras, ubicacionDeTipo, ubicacionPorId } from "../dominio/recepciones.ts";
 import { cambiarEstadoTraspaso } from "../dominio/traspasos.ts";
 import {
 	despachos,
@@ -96,22 +96,21 @@ async function candadosDe(contexto: ContextoDeAccion, traspasoIds: readonly stri
 	});
 }
 
-/** El nombre de una ubicación. */
-async function nombreDe(contexto: ContextoDeAccion, ubicacionId: string): Promise<{ nombre: string; tipo: string }> {
-	const [ubicacion] = await contexto.transaccion
-		.select({ nombre: ubicaciones.nombre, tipo: ubicaciones.tipo, existenciaDesde: ubicaciones.existenciaDesde })
-		.from(ubicaciones)
-		.where(eq(ubicaciones.id, ubicacionId));
-	if (ubicacion === undefined) throw noExiste();
-	return ubicacion;
+/** `400 falta_destino`: «Escoge a dónde va». */
+function faltaDestino() {
+	return new ErrorDeApi("validacion", "falta_destino", "Escoge a dónde va", {
+		campos: { destino_ubicacion_id: "Escoge a dónde va" },
+	});
 }
 
-/** El folio de una orden de compra, como lo dice Compras. */
-async function folioDeOrden(contexto: ContextoDeAccion, ordenId: string): Promise<string> {
-	const { ordenes } = z
-		.object({ ordenes: z.array(z.object({ folio: z.string() }).passthrough()) })
-		.parse(await contexto.lectura("compras.ordenes_por_recibir", { orden_compra_ids: [ordenId] }));
-	return ordenes[0]?.folio ?? "la orden";
+/**
+ * El nombre y el tipo de una ubicación que tiene que existir.
+ * @throws `404` si no existe.
+ */
+async function nombreDe(contexto: ContextoDeAccion, ubicacionId: string): Promise<{ nombre: string; tipo: string }> {
+	const ubicacion = await ubicacionPorId(contexto.transaccion, ubicacionId);
+	if (ubicacion === undefined) throw noExiste();
+	return ubicacion;
 }
 
 /**
@@ -162,7 +161,7 @@ async function revisarQueSalga(contexto: ContextoDeAccion, traspaso: Traspaso): 
 		if (pendiente !== undefined) {
 			throw errorDeRegla(
 				"devolucion_pendiente",
-				`Primero regresa al proveedor lo de más de ${await folioDeOrden(contexto, traspaso.ordenCompraId)}.`,
+				`Primero regresa al proveedor lo de más de ${(await ordenesDeCompras(contexto, [traspaso.ordenCompraId]))[0]?.folio ?? "la orden"}.`,
 			);
 		}
 	}
@@ -172,6 +171,14 @@ export const accionDespachar = implementarAccion(despachar, async (contexto, dat
 	const { transaccion } = contexto;
 	const ids = datos.traspasos.map((suyo) => suyo.traspaso_id);
 	await candadosDe(contexto, ids);
+	// El A- del material de una orden espera a quien decide lo de más de esa orden (y al revés): si Dirección rechaza
+	// mientras sale, la devolución ve dónde quedó.
+	const ordenes = await transaccion
+		.selectDistinct({ ordenCompraId: traspasos.ordenCompraId })
+		.from(traspasos)
+		.where(and(inArray(traspasos.id, ids), eq(traspasos.tipo, "material_proveedor")));
+	for (const { ordenCompraId } of ordenes)
+		if (ordenCompraId !== null) await candadoDeLoRecibido(contexto, ordenCompraId);
 	const salen: Traspaso[] = [];
 	for (const { traspaso_id, version } of datos.traspasos) {
 		const [traspaso] = await transaccion.select().from(traspasos).where(eq(traspasos.id, traspaso_id));
@@ -190,16 +197,17 @@ export const accionDespachar = implementarAccion(despachar, async (contexto, dat
 		if (traspaso.destinoUbicacionId !== null) destinos.add(traspaso.destinoUbicacionId);
 		else if (traspaso.destinoExterno !== null) destinos.add(traspaso.destinoExterno);
 		else if (porDecidir.has(traspaso.tipo)) {
-			if (datos.destino_ubicacion_id === undefined) throw errorDeCampo("destino_ubicacion_id", "Escoge a dónde va");
+			if (datos.destino_ubicacion_id === undefined) throw faltaDestino();
 			destinos.add(datos.destino_ubicacion_id);
 		}
 	}
 	if (destinos.size !== 1) throw errorDeRegla("destinos_distintos", "Un despacho va a un solo destino");
 	const [destino = ""] = destinos;
 	const esCliente = destino === "cliente_externo";
-	const nombreDestino = esCliente ? "el cliente" : (await nombreDe(contexto, destino)).nombre;
-	if (!esCliente && !["bodega", "tienda"].includes((await nombreDe(contexto, destino)).tipo)) {
-		throw errorDeCampo("destino_ubicacion_id", "Escoge a dónde va");
+	const lugar = esCliente ? undefined : await nombreDe(contexto, destino);
+	const nombreDestino = lugar?.nombre ?? "el cliente";
+	if (lugar !== undefined && !["bodega", "tienda"].includes(lugar.tipo)) {
+		throw faltaDestino();
 	}
 	const quien = quienCambia(contexto);
 	if (quien === null) throw new Error("despacha una cuenta de Aduana");
@@ -397,11 +405,6 @@ export const accionMarcarEtiquetasImpresas = implementarAccion(
 	},
 );
 
-/** El menor de dos enteros grandes (`Math.min` no los acepta). */
-function menor(uno: bigint, otro: bigint): bigint {
-	return uno < otro ? uno : otro;
-}
-
 /** Lo que se cuenta de un renglón al llegar. */
 interface Contado {
 	linea: LineaDeTraspaso;
@@ -569,7 +572,14 @@ async function confirmarLlegada(
 		const cuadra = suyos.every(
 			({ esperado, llego }) => esperado.piezas === llego.piezas && esperado.milesimos === llego.milesimos,
 		);
-		const conSobrante = traspasoId === primero && pedido.noVenia.length > 0;
+		// Del tramo del primero sale lo que no venía y lo de más de los demás: tampoco cuadra.
+		const conSobrante =
+			traspasoId === primero &&
+			(pedido.noVenia.length > 0 ||
+				pedido.contados.some(
+					({ linea, esperado, llego }) =>
+						linea.traspasoId !== primero && (llego.piezas > esperado.piezas || llego.milesimos > esperado.milesimos),
+				));
 		await cambiarEstadoTraspaso(contexto, traspasoId, cuadra && !conSobrante ? "recibido" : "con_diferencia");
 		await transaccion.update(traspasos).set({ recepcionDestinoId: recepcionId }).where(eq(traspasos.id, traspasoId));
 	}

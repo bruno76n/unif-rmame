@@ -9,13 +9,13 @@
  */
 
 import { aMilesimosConSigno, deMilesimos } from "@uniformame/compartido/calculos/cuenta-material";
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { asc, eq, inArray, sql } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
-import { z } from "zod";
 import { quienCambia } from "../../../nucleo/acciones/comunes.ts";
-import { errorDeRegla } from "../../../nucleo/http/errores.ts";
+import { errorDeCampo, errorDeRegla } from "../../../nucleo/http/errores.ts";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
 import { rollos, traspasoLineas, type traspasos } from "../tablas.ts";
+import { ordenesDeCompras } from "./recepciones.ts";
 
 /** Un traspaso como se guarda. */
 type Traspaso = typeof traspasos.$inferSelect;
@@ -29,21 +29,6 @@ export interface DatosDeDevolucion {
 	unidad: string;
 	esTela: boolean;
 }
-
-/** Lo que regresa `compras.ordenes_por_recibir`, en lo que usa una devolución. */
-const deLaOrden = z.object({
-	ordenes: z.array(
-		z
-			.object({
-				folio: z.string(),
-				proveedor: z.string(),
-				lineas: z.array(
-					z.object({ material_id: z.uuid(), material: z.string(), unidad: z.string(), tipo: z.string() }).passthrough(),
-				),
-			})
-			.passthrough(),
-	),
-});
 
 /**
  * Los renglones de una devolución, en su orden.
@@ -70,9 +55,7 @@ export async function datosDeDevolucion(contexto: ContextoDeAccion, devolucion: 
 		throw new Error(`${devolucion.folio} no es la devolución de una orden`);
 	}
 	const { materialId } = linea;
-	const [orden] = deLaOrden.parse(
-		await contexto.lectura("compras.ordenes_por_recibir", { orden_compra_ids: [devolucion.ordenCompraId] }),
-	).ordenes;
+	const [orden] = await ordenesDeCompras(contexto, [devolucion.ordenCompraId]);
 	const suya = orden?.lineas.find((linea) => linea.material_id === materialId);
 	if (orden === undefined || suya === undefined)
 		throw new Error(`la orden de ${devolucion.folio} no tiene su material`);
@@ -97,7 +80,7 @@ export interface RolloQueRegresa {
  * Revisa los rollos que regresan: de ese material y de esa orden, no devueltos, y con metros en la ubicación de donde
  * salen; regresan enteros, con todo lo que tienen ahí.
  * @param donde La ubicación de donde salen, y cómo se dice («aduana» o «bodega»).
- * @throws `422 rollo_ajeno`: «{rollo} no es de {material} de {OC}, o no está en {donde}.».
+ * @throws `400` si un rollo va dos veces; `422 rollo_ajeno`: «{rollo} no es de {material} de {OC}, o no está en {donde}.».
  */
 export async function rollosQueRegresan(
 	contexto: ContextoDeAccion,
@@ -106,6 +89,7 @@ export async function rollosQueRegresan(
 	rolloIds: readonly string[],
 	donde: { ubicacionId: string; nombre: string },
 ): Promise<RolloQueRegresa[]> {
+	if (new Set(rolloIds).size !== rolloIds.length) throw errorDeCampo("rollo_ids", "Un rollo va una sola vez");
 	const suyos = await contexto.transaccion
 		.select({
 			id: rollos.id,
@@ -174,17 +158,26 @@ export async function ponerRollosEnDevolucion(
 }
 
 /**
- * Lo que regresa cada rollo de una devolución ya escogida, o su cantidad: para quien lo saca o lo recibe.
+ * Lo que regresa cada rollo de una devolución ya escogida, o su cantidad: lo enviado, o, si ya está en aduana, lo
+ * que Aduana recibió de ella menos lo repartido (lo que no llegó se queda en su tramo).
  * @param contexto El contexto de la acción.
  * @param devolucionId La devolución.
+ * @param segun `enviado` o `en_aduana`.
  */
-export async function loQueRegresa(contexto: ContextoDeAccion, devolucionId: string) {
+export async function loQueRegresa(
+	contexto: ContextoDeAccion,
+	devolucionId: string,
+	segun: "enviado" | "en_aduana" = "enviado",
+) {
 	const lineas = await lineasDeDevolucion(contexto, devolucionId);
 	return lineas.map((linea) => ({
 		lineaId: linea.id,
 		materialId: linea.materialId ?? "",
 		rolloId: linea.rolloId,
-		milesimos: aMilesimosConSigno(linea.cantidadEnviada ?? "0"),
+		milesimos:
+			segun === "enviado"
+				? aMilesimosConSigno(linea.cantidadEnviada ?? "0")
+				: aMilesimosConSigno(linea.cantidadRecibidaAduana ?? "0") - aMilesimosConSigno(linea.cantidadRepartida),
 	}));
 }
 
@@ -194,5 +187,5 @@ export async function rollosDevueltos(contexto: ContextoDeAccion, rolloIds: read
 	await contexto.transaccion
 		.update(rollos)
 		.set({ estado: "devuelto" })
-		.where(and(inArray(rollos.id, [...rolloIds])));
+		.where(inArray(rollos.id, [...rolloIds]));
 }

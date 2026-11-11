@@ -126,6 +126,21 @@ describe("Recibir una orden crea sus rollos, su partida (reusada), el costo de s
 		).toEqual([{ n: 1 }]);
 	});
 
+	it("dos recepciones de la misma orden a la vez, con la misma partida nueva: las dos entran y la partida nace una vez", async () => {
+		const orden = await ordenParaRecibir(servidor);
+		const [una, otra] = await Promise.all([
+			recibirDePrueba(servidor, orden, [{ metros: "50", partida: "Z-1" }]),
+			recibirDePrueba(servidor, orden, [{ metros: "50", partida: "Z-1" }]),
+		]);
+		expect([una.estado, otra.estado]).toEqual([200, 200]);
+		expect(
+			await consultar("SELECT count(*)::int AS n FROM partidas_tela WHERE material_id = $1", [orden.tela]),
+		).toEqual([{ n: 1 }]);
+		expect(
+			await consultar("SELECT count(*)::int AS n FROM recepciones WHERE orden_compra_id = $1", [orden.id]),
+		).toEqual([{ n: 2 }]);
+	});
+
 	it("una orden que no está enviada ni recibida en parte no se recibe; una enviada sí, aunque llegue antes; los datos que faltan", async () => {
 		const borrador = await ordenParaRecibir(servidor);
 		await servidor.base.dueno.query(

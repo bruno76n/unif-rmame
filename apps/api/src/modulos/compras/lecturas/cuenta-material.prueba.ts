@@ -24,6 +24,7 @@ import {
 import { ubicacionesPorCodigo } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 import { escribirMovimiento } from "../../inventario/dominio/escribir-movimiento.ts";
+import { plazosReales } from "../dominio/ordenes.ts";
 
 /** Las 12 del día en México de una fecha. */
 const mediodia = (dia: string) => Temporal.Instant.from(`${dia}T18:00:00Z`);
@@ -239,6 +240,15 @@ describe("La proyección da los números del ejemplo de la gabardina azul marino
 			plazo: 14,
 			hay_aduana: "60.000",
 			en_camino: [{ folio: orden.folio, cantidad: "40.000" }],
+		});
+		// 14 días contra los 12 que dice: la entrega no llegó a tiempo y el proveedor está fuera de plazo.
+		const plazos = await enAccionDePrueba(crearBase(servidor.base.app), servidor.modulos, (contexto) =>
+			plazosReales(contexto, [{ id: orden.proveedor, diasDiceTardar: 12 }]),
+		);
+		expect(plazos.get(orden.proveedor)).toMatchObject({
+			plazo: 14,
+			fueraDePlazo: true,
+			entregas: [{ ordenCompraId: orden.id, dias: 14, aTiempo: false }],
 		});
 	});
 });

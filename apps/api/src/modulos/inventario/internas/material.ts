@@ -5,7 +5,7 @@
  * y material-en-bodega.md (reglas 3 y 6, «Acciones internas»)
  */
 
-import { aMilesimosConSigno, deMilesimos } from "@uniformame/compartido/calculos/cuenta-material";
+import { aMilesimosConSigno, deMilesimos, menor } from "@uniformame/compartido/calculos/cuenta-material";
 import { and, eq, sql } from "drizzle-orm";
 import { Temporal } from "temporal-polyfill";
 import { z } from "zod";
@@ -83,7 +83,7 @@ export async function aplicarDecisionRecepcionDeMas(contexto: ContextoDeAccion, 
 	const [aduana, bodega] = [await ubicacionDeTipo(transaccion, "aduana"), await ubicacionDeTipo(transaccion, "bodega")];
 	const rechazado = aMilesimosConSigno(pedido.cantidad);
 	const libreEnAduana = await enAduanaSinApartar(contexto, ordenCompraId, materialId, aduana);
-	const deAduana = rechazado < libreEnAduana ? rechazado : libreEnAduana > 0n ? libreEnAduana : 0n;
+	const deAduana = libreEnAduana > 0n ? menor(rechazado, libreEnAduana) : 0n;
 	const devoluciones: { traspaso_id: string; folio: string; donde: string; cantidad: string }[] = [];
 	for (const [ubicacionId, donde, cantidad] of [
 		[aduana, "aduana", deAduana],

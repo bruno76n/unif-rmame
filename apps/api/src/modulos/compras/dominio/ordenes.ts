@@ -248,11 +248,15 @@ export async function foliosDeOrdenesAbiertas(
 	return filas.map((fila) => fila.folio);
 }
 
-/** Una entrega de un proveedor: una recepción de una de sus órdenes y los días que tardó desde que se envió. */
+/**
+ * Una entrega de un proveedor: una recepción de una de sus órdenes, los días que tardó desde que se envió y si llegó a
+ * tiempo (lo que dice hoy que tarda, o menos). La pantalla de Proveedores (fase 19) las cuenta.
+ */
 export interface Entrega {
 	ordenCompraId: string;
 	recepcionId: string;
 	dias: number;
+	aTiempo: boolean;
 }
 
 /**
@@ -262,15 +266,19 @@ export interface Entrega {
  * Fase 11 · docs/modulos/compras/proveedores-y-precios.md (reglas 5 y 6)
  * @param contexto El contexto de quien lee.
  * @param proveedores Los proveedores, con lo que dice cada uno que tarda.
- * @returns Por proveedor, su plazo real y sus entregas.
+ * @returns Por proveedor, su plazo real, si está fuera de plazo (su plazo real pasa de lo que dice) y sus entregas.
  */
 export async function plazosReales(
 	contexto: ContextoDeAccion,
 	proveedores: readonly { id: string; diasDiceTardar: number }[],
-): Promise<Map<string, { plazo: number; entregas: Entrega[] }>> {
+): Promise<Map<string, { plazo: number; fueraDePlazo: boolean; entregas: Entrega[] }>> {
 	const resultado = new Map(
-		proveedores.map((proveedor) => [proveedor.id, { plazo: proveedor.diasDiceTardar, entregas: [] as Entrega[] }]),
+		proveedores.map((proveedor) => [
+			proveedor.id,
+			{ plazo: proveedor.diasDiceTardar, fueraDePlazo: false, entregas: [] as Entrega[] },
+		]),
 	);
+	const dicen = new Map(proveedores.map((proveedor) => [proveedor.id, proveedor.diasDiceTardar]));
 	if (proveedores.length === 0 || !contexto.hayLectura("inventario.recibido_de_ordenes")) return resultado;
 	const enviadas = await contexto.transaccion
 		.select({ id: ordenesCompra.id, proveedorId: ordenesCompra.proveedorId, enviadaEn: ordenesCompra.enviadaEn })
@@ -293,15 +301,17 @@ export async function plazosReales(
 		const enviadaEl = diaDeNegocio(Temporal.Instant.from(orden.enviadaEn));
 		for (const recepcion of recepciones[orden.id] ?? []) {
 			const dias = enviadaEl.until(Temporal.PlainDate.from(recepcion.dia)).days;
+			const dice = dicen.get(orden.proveedorId) ?? 0;
 			resultado
 				.get(orden.proveedorId)
-				?.entregas.push({ ordenCompraId: orden.id, recepcionId: recepcion.recepcion_id, dias });
+				?.entregas.push({ ordenCompraId: orden.id, recepcionId: recepcion.recepcion_id, dias, aTiempo: dias <= dice });
 		}
 	}
-	for (const suyo of resultado.values()) {
+	for (const [id, suyo] of resultado) {
 		if (suyo.entregas.length === 0) continue;
 		const total = suyo.entregas.reduce((suma, entrega) => suma + entrega.dias, 0);
 		suyo.plazo = Math.round(total / suyo.entregas.length);
+		suyo.fueraDePlazo = suyo.plazo > (dicen.get(id) ?? 0);
 	}
 	return resultado;
 }

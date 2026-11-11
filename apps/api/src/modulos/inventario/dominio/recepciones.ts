@@ -5,6 +5,7 @@
  */
 
 import { and, eq, isNull, sql } from "drizzle-orm";
+import { z } from "zod";
 import type { Transaccion } from "../../../nucleo/base/transacciones.ts";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
 import { ubicaciones } from "../tablas.ts";
@@ -98,4 +99,68 @@ export async function recepcionesDeOrdenes(
 		porOrden[fila.orden] = suyas;
 	}
 	return porOrden;
+}
+
+/**
+ * El nombre y el tipo de una ubicación.
+ * @param transaccion La transacción.
+ * @param id La ubicación, o `null`.
+ * @returns La ubicación, o `undefined` si no hay.
+ */
+export async function ubicacionPorId(
+	transaccion: Transaccion,
+	id: string | null,
+): Promise<{ nombre: string; tipo: string } | undefined> {
+	if (id === null) return undefined;
+	const [ubicacion] = await transaccion
+		.select({ nombre: ubicaciones.nombre, tipo: ubicaciones.tipo })
+		.from(ubicaciones)
+		.where(eq(ubicaciones.id, id));
+	return ubicacion;
+}
+
+/** Lo que regresa `compras.ordenes_por_recibir`, en lo que usa Inventario (nunca un precio). */
+const deOrdenesPorRecibir = z.object({
+	ordenes: z.array(
+		z
+			.object({
+				orden_compra_id: z.uuid(),
+				folio: z.string(),
+				proveedor_id: z.uuid(),
+				proveedor: z.string(),
+				estado: z.string(),
+				se_puede_recibir: z.boolean(),
+				lineas: z.array(
+					z
+						.object({
+							orden_compra_linea_id: z.uuid(),
+							material_id: z.uuid(),
+							material: z.string(),
+							unidad: z.string(),
+							tipo: z.string(),
+							se_cuenta_entera: z.boolean(),
+							pedido: z.string(),
+						})
+						.passthrough(),
+				),
+			})
+			.passthrough(),
+	),
+});
+
+/** Una orden como la dice Compras a Inventario. */
+export type OrdenParaInventario = z.infer<typeof deOrdenesPorRecibir>["ordenes"][number];
+
+/**
+ * Unas órdenes de compra como las dice Compras: su folio, su proveedor, su estado y sus líneas, sin precios.
+ * @param contexto El contexto de la acción.
+ * @param ordenIds Las órdenes.
+ */
+export async function ordenesDeCompras(
+	contexto: ContextoDeAccion,
+	ordenIds: readonly string[],
+): Promise<OrdenParaInventario[]> {
+	return deOrdenesPorRecibir.parse(
+		await contexto.lectura("compras.ordenes_por_recibir", { orden_compra_ids: ordenIds }),
+	).ordenes;
 }

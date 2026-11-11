@@ -7,7 +7,7 @@
  * entrega del pedido llega con Ventas (decisión 573).
  */
 
-import { cantidadEnTexto, deMilesimos } from "@uniformame/compartido/calculos/cuenta-material";
+import { aMilesimosConSigno, cantidadEnTexto, deMilesimos } from "@uniformame/compartido/calculos/cuenta-material";
 import { surtirAAduana } from "@uniformame/compartido/contratos/inventario/despachos";
 import { and, eq, isNull } from "drizzle-orm";
 import type { z } from "zod";
@@ -24,7 +24,7 @@ import { escribirMovimiento } from "../dominio/escribir-movimiento.ts";
 import { ubicacionDeTipo } from "../dominio/recepciones.ts";
 import { nombreDeVariante, reservasActivas } from "../dominio/reservas.ts";
 import { cambiarEstadoTraspaso, crearTraspaso } from "../dominio/traspasos.ts";
-import { existencias, reservas, traspasos } from "../tablas.ts";
+import { existencias, existenciasMaterial, reservas, traspasos } from "../tablas.ts";
 
 /** Lo que pide la acción. */
 type Pedido = z.infer<typeof surtirAAduana.entrada>;
@@ -137,7 +137,8 @@ async function surtirPedido(contexto: ContextoDeAccion, pedido: Pedido) {
 /**
  * Surte lo de más que regresa al proveedor y espera en Bodega: la tela con los rollos escogidos, enteros; lo demás, por
  * su cantidad. La devolución pasa a en camino a aduana.
- * @throws `422 nada_en_bodega` si no espera en Bodega; `400` sin los rollos de una tela; `422 rollo_ajeno`.
+ * @throws `422 nada_en_bodega` si no espera en Bodega; `400` sin los rollos de una tela; `422 rollo_ajeno`;
+ * `422 no_hay_en_bodega` si lo que no es tela todavía no está en Bodega.
  */
 async function surtirDevolucion(contexto: ContextoDeAccion, pedido: Pedido) {
 	const { transaccion } = contexto;
@@ -158,6 +159,26 @@ async function surtirDevolucion(contexto: ContextoDeAccion, pedido: Pedido) {
 		await ponerRollosEnDevolucion(contexto, devolucion, regresan);
 	}
 	const lineas = await loQueRegresa(contexto, devolucion.id);
+	// Lo que no es tela sale de lo que Bodega tiene sin rollo: si no lo tiene (va todavía en tránsito), no surte.
+	if (!datos.esTela) {
+		const [hay] = await transaccion
+			.select({ cantidad: existenciasMaterial.cantidad })
+			.from(existenciasMaterial)
+			.where(
+				and(
+					eq(existenciasMaterial.ubicacionId, bodega),
+					eq(existenciasMaterial.materialId, datos.materialId),
+					isNull(existenciasMaterial.rolloId),
+				),
+			);
+		const pide = lineas.reduce((suma, linea) => suma + linea.milesimos, 0n);
+		if (aMilesimosConSigno(hay?.cantidad ?? "0") < pide) {
+			throw errorDeRegla(
+				"no_hay_en_bodega",
+				`No hay ${cantidadEnTexto(pide)} ${datos.unidad} de ${datos.material} en bodega: espera a que llegue`,
+			);
+		}
+	}
 	const enCaminoAAduana = await ubicacionDeTipo(transaccion, "en_camino_aduana");
 	await escribirMovimiento(contexto, {
 		tipo: "surtido_bodega",
