@@ -191,5 +191,8 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 10 nov 2026 | 7 | Cómo probar la nómina pagada antes de la fase 17 (decisión 433) | Esperar · un módulo `contaduria` de prueba | El módulo de prueba, que se quita en la fase 17 | No |
 | 10 nov 2026 | 7 | Cómo se nombra la operación antes de los flujos (decisión 434) | Su id · «La operación» | «La operación» | No |
 | 10 nov 2026 | 7 | Qué semana es la de un día si la dueña cambia los días de trabajo (decisión 435) | El inicio de hoy · su semana de lunes a domingo | Su semana de lunes a domingo: una cerrada nunca cambia | No |
+| 11 nov 2026 | 8 | Cuándo llegan los candados de los productos (decisión 436) | Parte 1 · parte 3 | Parte 3, con los productos | No |
+| 11 nov 2026 | 8 | Cómo se escoge el color de una escuela (decisión 437) | Un contador · cuántas hay | Cuántas hay, con candado | No |
+| 11 nov 2026 | 8 | La talla que vuelve con el nombre de una quitada (decisión 438) | Otra talla · la misma, reactivada | La misma | No |
 | 10 nov 2026 | 5 | La pantalla del Google de desarrollo | Una propia para escoger cuenta · la de desarrollo de oidc-provider, que pide el correo | La de oidc-provider; `pnpm local` escribe los correos de la muestra al arrancar | No |
 

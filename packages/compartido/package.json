@@ -17,6 +17,8 @@
 		"./contratos/admin/respaldos": "./src/contratos/admin/respaldos.ts",
 		"./contratos/admin/cuentas": "./src/contratos/admin/cuentas.ts",
 		"./contratos/admin/dispositivos": "./src/contratos/admin/dispositivos.ts",
+		"./contratos/catalogo/escuelas": "./src/contratos/catalogo/escuelas.ts",
+		"./contratos/catalogo/tallas": "./src/contratos/catalogo/tallas.ts",
 		"./contratos/direccion/autorizaciones": "./src/contratos/direccion/autorizaciones.ts",
 		"./contratos/personal/asistencia": "./src/contratos/personal/asistencia.ts",
 		"./contratos/personal/personas": "./src/contratos/personal/personas.ts",

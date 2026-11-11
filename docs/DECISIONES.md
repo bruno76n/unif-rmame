@@ -554,3 +554,11 @@ Decisiones técnicas que salieron al escribir los archivos, siguiendo lo ya deci
 | 433 | Reabrir una semana pregunta a `contaduria.estado_nomina_semana` solo si existe; las pruebas usan un módulo `contaduria` de prueba, que se quita en la fase 17 | La nómina llega en la fase 17 y el criterio de la fase 7 ya pide la nómina pagada | Esperar a la fase 17 para probarlo | [asistencia](modulos/personal/asistencia.md#cómo-está-hecho) |
 | 434 | Mientras no haya flujos, la tarifa se nombra «La operación» en el mensaje y la bitácora | El nombre de la operación y del flujo es de Producción (fase 12) | Mostrar el id | [tarifas](modulos/personal/tarifas.md#cómo-está-hecho) |
 | 435 | La semana de asistencia de un día es la guardada de su semana de lunes a domingo (una sola por semana, con índice único); sus días son los de trabajo de hoy dentro de esa semana, y una cerrada nunca cambia | Buscarla por el inicio que dan los días de trabajo de hoy encimaba otra semana y dejaba cambiar un día de una semana cerrada; con los días de hoy, la ficha y el cierre ven los mismos días | Prohibir cambiar `general.dias_de_trabajo` con semanas abiertas · ampliar el rango guardado | [asistencia](modulos/personal/asistencia.md#cómo-está-hecho) |
+
+## 11 de noviembre de 2026 · La fase 8
+
+| # | Decisión | Por qué | Antes | Detalle |
+|---|---|---|---|---|
+| 436 | Los candados que dependen de los productos (`escuela_con_modelos`, `talla_en_uso`) llegan con los productos, en la parte 3 de la fase 8 | Los productos y sus variantes nacen en la parte 3 | Crear las tablas de productos en la parte 1 | [escuelas y secciones](modulos/catalogo/escuelas-y-secciones.md#cómo-está-hecho) |
+| 437 | El color de una escuela nueva es el de la paleta en el lugar de cuántas escuelas hay (también las dadas de baja), con un candado para que dos a la vez no tomen el mismo | «El siguiente de la paleta, en orden»; contar todas lo deja estable aunque una se dé de baja | Guardar un contador aparte | [escuelas y secciones](modulos/catalogo/escuelas-y-secciones.md#cómo-está-hecho) |
+| 438 | Al guardar un grupo, una talla que vuelve con el nombre de una quitada (sin uso) se reactiva: es la misma talla | El nombre es único en su grupo, también con las quitadas | Una talla nueva con otro renglón | [tallas y tipos de prenda](modulos/catalogo/tallas-y-tipos-de-prenda.md#cómo-está-hecho) |

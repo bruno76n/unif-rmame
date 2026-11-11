@@ -54,3 +54,4 @@ La línea de la bitácora se escribe al final, con el resultado ya conocido. Esc
 | 10 nov 2026 | 7 | 4 · Lo que faltaba de las cuentas y los aparatos | [2026-11-10-fase-07](sesiones/2026-11-10-fase-07.md) |
 | 10 nov 2026 | 7 | 5 · Asistencia y tarifas | [2026-11-10-fase-07](sesiones/2026-11-10-fase-07.md) |
 | 10 nov 2026 | 7 | Auditoría, correcciones, revisión y cierre: fase 7 terminada | [2026-11-10-fase-07](sesiones/2026-11-10-fase-07.md) |
+| 11 nov 2026 | 8 | 1 · Escuelas, secciones, tallas y tipos de prenda | [2026-11-11-fase-08](sesiones/2026-11-11-fase-08.md) |

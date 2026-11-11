@@ -155,6 +155,13 @@
 			"when": 1794350928516,
 			"tag": "0021_una_semana_por_semana",
 			"breakpoints": true
+		},
+		{
+			"idx": 22,
+			"version": "7",
+			"when": 1794360682022,
+			"tag": "0022_catalogo_escuelas_y_tallas",
+			"breakpoints": true
 		}
 	]
 }

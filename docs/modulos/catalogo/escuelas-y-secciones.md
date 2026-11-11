@@ -162,4 +162,10 @@ Todas son de la web. Los errores `422` llevan su `codigo` y su mensaje (formato 
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 8.*
+**Fase 8, parte 1.**
+
+- **Las tablas** `escuelas` y `secciones` son del módulo `catalogo` (`apps/api/src/modulos/catalogo/tablas.ts`, migración `0022_catalogo_escuelas_y_tallas.sql`): la escuela es única por `sin_acentos(nombre)` y `sin_acentos(municipio)` (un índice único de la base) y su color, `#RRGGBB` por CHECK; la sección, única por `lower(nombre)`. Las siete secciones son parte de la siembra del sistema (`siembra.ts`).
+- **El color** (`dominio/escuelas.ts`, `crearEscuela`): el siguiente de `paletaDeEscuelas` (`packages/compartido/src/contratos/catalogo/escuelas.ts`) según cuántas escuelas hay, con un candado para que dos a la vez no tomen el mismo (decisión 437).
+- **Las acciones** (`acciones/escuelas.ts`, contratos en `packages/compartido/src/contratos/catalogo/escuelas.ts`): agregar, editar (con su versión, sin chocar con otra), dar de baja (el motivo con `general.largo_minimo_motivo`, `ya_dada_de_baja`) y reactivar (`escuela_activa`, con el motivo que tenía en `antes`). `catalogo.agregar_seccion` (`acciones/agregar-seccion.ts`) es solo de la dueña y va al final del orden. El candado `escuela_con_modelos` llega con los productos, en la parte 3 (decisión 436).
+- **La interna** `catalogo.crear_escuela_para_cliente` (`internas/crear-escuela-para-cliente.ts`) crea la escuela igual, sin bitácora propia.
+- **Las pruebas:** `modulos/catalogo/acciones/agregar-escuela.prueba.ts` (única sin acentos ni mayúsculas, en otro municipio sí, el color en orden, los `400`, editar y la escuela del cliente), `dar-baja-escuela.prueba.ts` (el motivo, una sola vez, reactivar) y `agregar-seccion.prueba.ts` (la siembra, solo la dueña, al final, repetida).

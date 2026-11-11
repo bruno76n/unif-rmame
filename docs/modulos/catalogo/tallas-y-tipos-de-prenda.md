@@ -222,4 +222,9 @@ Este archivo no tiene parámetros propios. Usa:
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 8.*
+**Fase 8, parte 1.**
+
+- **Las tablas** `grupos_talla`, `tallas`, `tipos_prenda` y `tipo_prenda_medidas` son de `catalogo` (migración `0022`). Las tallas llevan `xid_escritura` y bajan a la tablet todas, con su nombre y su orden (`bajada.ts`). Los cuatro grupos con sus tallas son parte de la siembra del sistema (`siembra.ts`), que agrega solo lo que falta. `flujo_defecto_id` nace con su `@llavePendiente`.
+- **`catalogo.guardar_grupo_talla`** (`acciones/guardar-grupo-talla.ts`): se manda el grupo completo; un grupo nuevo, o el que existe con su versión (en `datos`, decisión 432); `grupo_repetido` y `talla_repetida`; renombra y reordena; la que ya no viene queda con baja, y una que vuelve con el nombre de una quitada la reactiva (decisión 438). Que una talla en uso no se renombre ni se quite llega con los productos, en la parte 3 (decisión 436).
+- **`catalogo.guardar_tipo_prenda`** (`acciones/guardar-tipo-prenda.ts`): la sección tiene que llevar receta (`seccion_sin_receta`); `tipo_repetido`; `medida_repetida`; cada número entre `patronaje.medida_cm_min` y `patronaje.medida_cm_max` (`400` en `medidas`); las medidas que ya no vienen quedan con baja. Esos dos parámetros los siembra el módulo `patronaje`, que por ahora solo tiene su `index.ts` y su `parametros.ts`.
+- **Las pruebas:** `modulos/catalogo/acciones/guardar-grupo-talla.prueba.ts` (nuevo, repetido, renombrar, reordenar, quitar, la que vuelve, el `409`) y `guardar-tipo-prenda.prueba.ts` (el rango, la medida repetida, la sección sin receta, el tipo repetido, la medida quitada, la bitácora y el `409`). La siembra la revisa `agregar-seccion.prueba.ts`; la foto de la tablet, `nucleo/sincronizacion/foto.prueba.ts`.
