@@ -195,3 +195,5 @@ Usa también `general.largo_minimo_motivo` y, de Personal, `personal.pin_intento
 - **Los parámetros** `produccion.tarifa_visible_tablet`, `produccion.bultos_para_ti_max` y `produccion.consumible_max_por_vez`.
 - **«Bultos para ti»** es `bultosParaTi` del paquete compartido (`packages/compartido/src/calculos/bultos-para-ti.ts`): recibe los bultos con su tope, su salud y su fecha de entrega, y los ordena y corta hasta el máximo; la prueba `bultos-para-ti.prueba.ts`, también con fast-check.
 - **Pruebas:** `acciones/registrar-operacion.prueba.ts` (la hora y la tarifa, lo que se aparta, el tope, terminar y reabrir, cancelar lo que sobró sin reabrir, el lote revisado, los registros del corte, la tarifa que llega después), `acciones/tomar-consumible.prueba.ts` (también el PIN) y `tope-bulto.prueba.ts` con fast-check.
+
+**Fase 13, parte 1.** La lectura `produccion.persona_que_la_hizo` (`lecturas/persona-que-la-hizo.ts`): la persona con más buenas vigentes de esa operación en los bultos de esa talla (si empatan, la del primer registro), o la de base. Lo prueba `lecturas/persona-que-la-hizo.prueba.ts`.

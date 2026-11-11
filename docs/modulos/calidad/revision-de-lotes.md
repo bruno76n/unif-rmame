@@ -199,4 +199,13 @@ Los cambia solo la dueña, en Configuración (ver [configuración](../admin/conf
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 13.*
+**Fase 13, parte 1.**
+
+- **Las tablas** `defectos`, `defecto_operaciones`, `revisiones`, `revision_tallas`, `rechazos` y `reprocesos` son de `calidad` (`apps/api/src/modulos/calidad/tablas.ts`, migración `0042`), con sus CHECK y sus únicos; la revisión, sus tallas y sus rechazos solo crecen. Con ellas son llaves `traspasos.reproceso_id`, `recepciones.reproceso_id`, `recepciones.revision_id`, `recepcion_lineas.defecto_id` y `traspaso_lineas.defecto_id`.
+- **Las acciones** están en `acciones/revision.ts`, con sus contratos en `packages/compartido/src/contratos/calidad/revision.ts`:
+  - `revisar_lote` lee el lote y lo bloquea con su versión sin escribirlo (`revisarVersion`): un registro de la tablet que llegó mientras se revisaba da `409` (regla 10). El cambio a revisado lo hace `produccion.marcar_lote_revisado`, que sí escribe el lote (decisión 622). Revisa los rechazos (repetidos, tallas, operaciones del flujo, defectos vigentes, personas que existen y las listas de cada talla), escribe la revisión, sus tallas, sus rechazos y un reproceso por rechazo con folio `{lote}-R{n}`, y marca quién cosió con los registros vigentes de la persona de la cuenta.
+  - `aprobar_reproceso` toma la versión del reproceso y lo aprueba completo solo con el lote en aduana. El «para {pedido}» del mensaje llega con los pedidos (fase 16, decisión 623).
+  - `agregar_defecto` revisa el nombre sin mayúsculas y que las operaciones estén vigentes.
+- **Las lecturas** (`lecturas/revision.ts`): `aprobadas_del_lote` y `en_reproceso_de_pedido`, que regresa las piezas por lote y talla; `produccion.piezas_en_produccion` suma solo las de los lotes que ya llegaron a aduana, porque antes lo rechazado sigue contado en su lote (decisión 621).
+- **Los parámetros** (`parametros.ts`): `calidad.por_revisar_hoy_dias`, `calidad.defectos_periodo_dias` y `calidad.defectos_tasa_roja_porcentaje`; los usan las pantallas y la tasa de defectos (fase 19).
+- **Pruebas:** `acciones/revisar-lote.prueba.ts` (las aprobadas y el reproceso, lo que no deja revisar, el `409`, quien cosió, aprobar el reproceso con el pedido en producción, el catálogo de defectos) y `produccion/lecturas/persona-que-la-hizo.prueba.ts`. Las pruebas usan la cuenta de prueba `calidad`.

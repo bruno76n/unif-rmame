@@ -42,6 +42,7 @@ import {
 	valores,
 } from "../../nucleo/base/columnas.ts";
 import { comandosRecibidos, usuarios } from "../admin/tablas.ts";
+import { defectos, reprocesos, revisiones } from "../calidad/tablas.ts";
 import { variantes } from "../catalogo/tablas.ts";
 import { materiales, ordenCompraLineas, ordenesCompra, proveedores } from "../compras/tablas.ts";
 import { recetaVersiones } from "../patronaje/tablas.ts";
@@ -340,8 +341,7 @@ export const traspasos = pgTable(
 		/** @llavePendiente pedidos_especiales_tienda.id */
 		pedidoEspecialTiendaId: uuid("pedido_especial_tienda_id"),
 		loteId: uuid("lote_id").references((): AnyPgColumn => lotes.id),
-		/** @llavePendiente reprocesos.id */
-		reprocesoId: uuid("reproceso_id"),
+		reprocesoId: uuid("reproceso_id").references((): AnyPgColumn => reprocesos.id),
 		ordenCompraId: uuid("orden_compra_id").references(() => ordenesCompra.id),
 		/** @llavePendiente devoluciones_linea.id */
 		devolucionLineaId: uuid("devolucion_linea_id"),
@@ -433,8 +433,7 @@ export const traspasoLineas = pgTable(
 		cantidadRecibidaAduana: numeric("cantidad_recibida_aduana", { precision: 12, scale: 3 }),
 		cantidadRepartida: numeric("cantidad_repartida", { precision: 12, scale: 3 }).notNull().default("0"),
 		cantidadRecibidaDestino: numeric("cantidad_recibida_destino", { precision: 12, scale: 3 }),
-		/** @llavePendiente defectos.id */
-		defectoId: uuid("defecto_id"),
+		defectoId: uuid("defecto_id").references((): AnyPgColumn => defectos.id),
 		/** @llavePendiente pedidos_linea.id */
 		pedidoLineaId: uuid("pedido_linea_id"),
 		nota: text("nota"),
@@ -782,10 +781,8 @@ export const recepciones = pgTable(
 		traspasoId: uuid("traspaso_id").references((): AnyPgColumn => traspasos.id),
 		despachoId: uuid("despacho_id").references((): AnyPgColumn => despachos.id),
 		loteId: uuid("lote_id").references((): AnyPgColumn => lotes.id),
-		/** @llavePendiente revisiones.id */
-		revisionId: uuid("revision_id"),
-		/** @llavePendiente reprocesos.id */
-		reprocesoId: uuid("reproceso_id"),
+		revisionId: uuid("revision_id").references((): AnyPgColumn => revisiones.id),
+		reprocesoId: uuid("reproceso_id").references((): AnyPgColumn => reprocesos.id),
 		recibidoEn: momento("recibido_en").notNull(),
 		recibidoPor: uuid("recibido_por").references(() => usuarios.id),
 		huboDiferencia: boolean("hubo_diferencia").notNull(),
@@ -837,8 +834,7 @@ export const recepcionLineas = pgTable(
 			sql`cantidad_contada - cantidad_esperada`,
 		),
 		conDefecto: boolean("con_defecto").notNull().default(false),
-		/** @llavePendiente defectos.id */
-		defectoId: uuid("defecto_id"),
+		defectoId: uuid("defecto_id").references((): AnyPgColumn => defectos.id),
 		...columnasComunes(),
 	},
 	(tabla) => [

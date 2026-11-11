@@ -150,6 +150,16 @@ export const quienesDePrueba: Record<string, QuienLlama> = {
 		permisosFinos: [],
 		confirmadoConGoogleEn: undefined,
 	},
+	calidad: {
+		tipo: "cuenta",
+		usuarioId: "01936f2e-0000-7000-8000-000000000060",
+		sesionId: "01936f2e-0000-7000-8000-000000000061",
+		esDuena: false,
+		esSoporte: false,
+		departamentos: ["calidad"],
+		permisosFinos: [],
+		confirmadoConGoogleEn: undefined,
+	},
 	soporte: {
 		tipo: "cuenta",
 		usuarioId: "01936f2e-0000-7000-8000-000000000005",

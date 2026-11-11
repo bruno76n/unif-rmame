@@ -17,8 +17,9 @@ const cortadoEnElTaller = ["en_proceso", "terminado", "revisado"] as const;
 
 /**
  * `produccion.piezas_en_produccion`: por talla, lo que el pedido tiene en producción: las planeadas de sus lotes por
- * cortar y las cortadas − merma − las que van a Bodega de los que ya se cortaron, sin los que llegaron a aduana o se
- * cancelaron (regla 9).
+ * cortar, las cortadas − merma − las que van a Bodega de los que ya se cortaron, sin los que llegaron a aduana o se
+ * cancelaron, y las de los reprocesos de los que ya llegaron a aduana (`calidad.en_reproceso_de_pedido`): antes de
+ * aduana, lo rechazado sigue contado en su lote (regla 9, decisión 621).
  * @param contexto El contexto de quien lee (Ventas).
  * @param datos `pedido_id`.
  * @returns Por variante, sus piezas.
@@ -36,7 +37,34 @@ export async function piezasEnProduccion(contexto: ContextoDeAccion, datos: unkn
 		.where(and(eq(lotes.pedidoId, pedido_id), inArray(lotes.estado, ["por_cortar", ...cortadoEnElTaller])))
 		.groupBy(loteTallas.varianteId)
 		.orderBy(asc(loteTallas.varianteId));
-	return { variantes: filas };
+	const enReproceso = z
+		.object({ reprocesos: z.array(z.object({ lote_id: z.uuid(), variante_id: z.uuid(), piezas: z.number() })) })
+		.parse(await contexto.lectura("calidad.en_reproceso_de_pedido", { pedido_id })).reprocesos;
+	const enAduana =
+		enReproceso.length === 0
+			? new Set<string>()
+			: new Set(
+					(
+						await contexto.transaccion
+							.select({ id: lotes.id })
+							.from(lotes)
+							.where(
+								and(
+									inArray(lotes.id, [...new Set(enReproceso.map((suyo) => suyo.lote_id))]),
+									eq(lotes.estado, "en_aduana"),
+								),
+							)
+					).map((lote) => lote.id),
+				);
+	const porVariante = new Map(filas.map((fila) => [fila.variante_id, fila.piezas]));
+	for (const suyo of enReproceso.filter((reproceso) => enAduana.has(reproceso.lote_id))) {
+		porVariante.set(suyo.variante_id, (porVariante.get(suyo.variante_id) ?? 0) + suyo.piezas);
+	}
+	return {
+		variantes: [...porVariante.entries()]
+			.map(([variante_id, piezas]) => ({ variante_id, piezas }))
+			.sort((una, otra) => una.variante_id.localeCompare(otra.variante_id)),
+	};
 }
 
 /**
