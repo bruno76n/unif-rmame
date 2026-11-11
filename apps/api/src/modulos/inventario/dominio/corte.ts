@@ -47,7 +47,7 @@ export interface LoteConReceta {
 }
 
 /**
- * El lote por cortar con su receta vigente y lo que pide para sus piezas planeadas.
+ * El lote por cortar, bloqueado, con su receta vigente y lo que pide para sus piezas planeadas.
  * @throws `422 lote_no_por_cortar`: «{lote} ya se cortó»; `422 sin_receta`.
  */
 export async function loteConReceta(contexto: ContextoDeAccion, loteId: string): Promise<LoteConReceta> {
@@ -60,7 +60,9 @@ export async function loteConReceta(contexto: ContextoDeAccion, loteId: string):
 		})
 		.from(lotes)
 		.innerJoin(productos, eq(productos.id, lotes.productoId))
-		.where(eq(lotes.id, loteId));
+		.where(eq(lotes.id, loteId))
+		// Bloquea el lote: dos entregas del mismo lote, o una entrega y el cierre de su corte, van una tras otra.
+		.for("update", { of: lotes });
 	if (lote === undefined) throw errorDeRegla("lote_no_por_cortar", "Ese lote ya se cortó");
 	const porCortar = lotesPorCortar
 		.parse(await contexto.lectura("produccion.lotes_por_cortar", {}))

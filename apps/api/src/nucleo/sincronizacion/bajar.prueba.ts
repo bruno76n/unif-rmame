@@ -6,6 +6,7 @@
 
 import { v7 as uuidv7 } from "uuid";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { z } from "zod";
 import { enVivoDeAdmin } from "../../modulos/admin/en-vivo.ts";
 import {
 	bajar,
@@ -192,10 +193,24 @@ describe("cada aparato baja solo lo suyo, hasta un tope seguro, con su cursor fi
 			"SELECT id, tipo, datos FROM eventos WHERE tipo = 'dispositivo.foto_pedida' ORDER BY creado_en DESC LIMIT 1",
 		);
 		const guardado = evento.rows[0];
-		expect(guardado?.datos).toEqual({ dispositivo_ids: tablet(), motivo: "parametro" });
-		expect(enVivoDeAdmin["dispositivo.foto_pedida"]?.(guardado)).toEqual([
-			{ para: { dispositivoId: tablet() }, nombre: "resincronizar", datos: { motivo: "parametro" } },
-		]);
+		// Las tablets vigentes: la de prueba y la de la muestra.
+		const tablets = (
+			await servidor.base.dueno.query(
+				"SELECT id FROM dispositivos WHERE tipo = 'tablet_taller' AND baja_en IS NULL ORDER BY id",
+			)
+		).rows.map((fila) => String(fila.id));
+		expect(tablets).toContain(tablet());
+		const datos = z.object({ dispositivo_ids: z.string(), motivo: z.string() }).parse(guardado?.datos);
+		expect({ ...datos, dispositivo_ids: datos.dispositivo_ids.split(",").sort() }).toEqual({
+			dispositivo_ids: [...tablets].sort(),
+			motivo: "parametro",
+		});
+		expect(enVivoDeAdmin["dispositivo.foto_pedida"]?.(guardado)).toEqual(
+			expect.arrayContaining(
+				tablets.map((id) => ({ para: { dispositivoId: id }, nombre: "resincronizar", datos: { motivo: "parametro" } })),
+			),
+		);
+		expect(enVivoDeAdmin["dispositivo.foto_pedida"]?.(guardado)).toHaveLength(tablets.length);
 		expect(await bajar(servidor, cursor)).toMatchObject({ requiere_foto: true, cursor: null });
 		const { cursor: nuevo } = await fotoCompleta(servidor);
 		expect((await bajar(servidor, nuevo)).requiere_foto).toBe(false);

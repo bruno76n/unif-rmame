@@ -11,6 +11,8 @@ Estos registros nunca cuentan como error del código: si les falta algo, se escr
 
 Lo que falta decidir o investigar, y en qué fase se resuelve. Lo del negocio ya tiene su valor inicial configurable, así que ninguno detiene una fase antes de la suya.
 
+- **El permiso de las tarifas en la nómina** (fase 17): `produccion.registros_para_nomina` regresa `tarifa_centavos` y, como lectura interna, no revisa permisos. La acción o consulta de Contaduría que la llame tiene que pedir «ven sueldos y tarifas».
+- **Lecturas de Producción e Inventario que crecen con los lotes** (fase 22, rendimiento): `loteConReceta` lee todos los lotes por cortar para encontrar uno, el comprometido de Compras llama `patronaje.calcular_material` por cada lote por cortar, y el paso 4 del cuadre recorre todo `movimiento_lineas` con lote. Medir con datos de volumen y, si hace falta, filtrar por los lotes pedidos.
 - **Pasar de pieza a tiempo entre el cierre de la semana y su pago** (fase 17): la nómina usa la ficha como esté al pagar (`nomina.md`), así que los registros de esa semana entrarían como de quien cobra por tiempo, sin pagarse y sin poder volver a entrar. Decidir si la nómina congela la forma de pago al cerrar la semana.
 - **En qué paso se redondea medio día** (fase 17): medio día con un pago por día impar da medio centavo. La regla de redondeo ya está en el paquete compartido; falta decir en `nomina.md` si se redondea por día o por semana.
 - **La app puede cambiar sus propios valores de sesión** (fase 22): `uniformame_app` puede hacer `SET idle_in_transaction_session_timeout = 0` o `ALTER ROLE … SET`. El límite de un minuto es el valor por omisión, no una garantía.
@@ -379,3 +381,6 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 11 nov 2026 | 12 | Hasta qué día se cuentan los días sin subir (decisión 614) | Hasta hoy · hasta ayer | Hasta ayer: hoy todavía no termina | No |
 | 11 nov 2026 | 12 | El tamaño del tramo del recálculo (decisión 615) | Un parámetro · una constante | Una constante: es técnico, no del negocio | No |
 | 11 nov 2026 | 12 | Qué lotes revisa el paso 4 del cuadre (decisión 616) | Todos los cortados · en proceso, terminados y revisados | La segunda: los de aduana ya salieron del Taller | No |
+| 11 nov 2026 | 12 | Qué carga la muestra de Producción (decisión 617) | Todo lo de la muestra, inventando pedidos y rollos · solo temporada y reabasto, cortando con la tela de Bodega | La segunda: se carga con las mismas acciones sin inventar lo que la muestra no tiene | No |
+| 11 nov 2026 | 12 | Qué metros cuenta el desperdicio medido (decisión 618) | Lo que pide la receta salvo que se cambie lo que quedó · lo que salió de los rollos | Lo que salió de los rollos: es lo mismo en el caso normal y no infla el desperdicio cuando los rollos no alcanzan | No |
+| 11 nov 2026 | 12 | Dónde y cómo bajan las tarifas a la tablet (decisión 619) | Esperar a la fase 20 · en la bajada de Personal, con el parámetro en su lista | La segunda: lo pide el archivo de tarifas y el mecanismo del parámetro que pide la foto ya existe | No |

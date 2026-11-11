@@ -6,6 +6,7 @@
 
 import { cuentaDeMaterial } from "@uniformame/compartido/calculos/cuenta-material";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { z } from "zod";
 import { crearBase } from "../../../nucleo/base/conexion.ts";
 import { enAccionDePrueba } from "../../../nucleo/pruebas/accion-de-prueba.ts";
 import { type SiembraDelCatalogo, siembraDelCatalogo } from "../../../nucleo/pruebas/catalogo-de-prueba.ts";
@@ -127,6 +128,11 @@ describe("La cuenta de material da lo mismo en la pantalla y en la API: la tela 
 				},
 			],
 		});
-		expect(await leer("desperdicio_prenda", {})).toEqual({ prendas: [] });
+		// Sin prenda, solo las que tienen cortes: las de la muestra, nunca la que no se ha cortado.
+		const todas = z
+			.object({ prendas: z.array(z.object({ producto_id: z.uuid(), lotes: z.number() })) })
+			.parse(await leer("desperdicio_prenda", {}));
+		expect(todas.prendas.map((suya) => suya.producto_id)).not.toContain(prenda.productoId);
+		expect(todas.prendas.every((suya) => suya.lotes > 0)).toBe(true);
 	});
 });

@@ -146,7 +146,7 @@ Los cambia solo la dueña, en Configuración (ver [configuración](../admin/conf
 - **Las acciones** están en `acciones/flujos.ts`, con sus contratos en `packages/compartido/src/contratos/produccion/flujos.ts`; lo común, en `dominio/flujos.ts`:
   - `crear_flujo` copia del origen (con `FOR SHARE`) sus operaciones vigentes con su orden y su persona y llama `personal.copiar_tarifas_flujo`; o arma el corte y las del parámetro. Una operación que no existe nace con ese nombre (`operacionPorNombre`, sin importar mayúsculas). Quien hace cada una es una persona activa del Taller (`persona_no_valida`).
   - `agregar_operacion_flujo` y `quitar_operacion_flujo` toman la versión del flujo; las siguientes recorren su orden. Si la operación que se escoge en «Va antes de» no es del flujo, `400` «Escoge antes de cuál va.»; la que propone `produccion.operacion_antes_por_omision` la lee la pantalla (fase 19, decisión 595).
-  - El candado de los lotes en proceso (`flujo_con_lotes`) llega con los lotes, en la parte 2 (decisión 591).
+  - El candado de los lotes (`flujo_con_lotes`) cuenta los lotes en proceso o terminados sin revisar con ese flujo (decisión 591); `cerrar_corte` lee el flujo con `FOR SHARE` al congelarlo, así que un cambio y un corte del mismo flujo van uno tras otro.
 - **La lectura** `produccion.flujo_vigente` (`lecturas/flujos.ts`) regresa si está vigente y su nombre, con `FOR SHARE`.
 - **Lo que baja a la tablet** (`bajada.ts`): las tres tablas, lo vigente; lo que se da de baja baja como `quitar`.
 - **Pruebas:** `acciones/crear-flujo.prueba.ts`, `acciones/cambiar-operaciones-flujo.prueba.ts` (agregar, quitar, el corte, el mínimo, el `409` y dos cambios a la vez) y `bajada.prueba.ts`; las ayudas están en `nucleo/pruebas/produccion-de-prueba.ts`.

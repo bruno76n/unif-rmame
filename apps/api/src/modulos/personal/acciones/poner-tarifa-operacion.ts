@@ -115,7 +115,9 @@ export const accionPonerTarifaOperacion = implementarAccion(ponerTarifaOperacion
 				tarifa_centavos: datos.tarifa_centavos,
 			}),
 		);
-		if (tomaron > 0) avisos.push(`${tomaron} registros sin tarifa ya la tomaron`);
+		if (tomaron > 0) {
+			avisos.push(tomaron === 1 ? "1 registro sin tarifa ya la tomó" : `${tomaron} registros sin tarifa ya la tomaron`);
+		}
 	}
 	contexto.guardarEvento({
 		tipo: "tarifa.puesta",

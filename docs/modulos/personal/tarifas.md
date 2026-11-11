@@ -44,7 +44,7 @@ Quien cobra por pieza cobra por cada operación que hace, a la tarifa de esa ope
 | **Reglas y errores** | `400`: «Escribe la tarifa en pesos, por ejemplo 1.50» (cero o texto)<br>`422 operacion_de_baja`: «Esa operación ya no está en el flujo»<br>La misma tarifa: no escribe nada |
 | **Escribe** | Cierra la vigente y crea la nueva |
 | **Llama** | Si la operación no tenía tarifa: `produccion.poner_tarifa_a_registros`, que la escribe en los registros vigentes de esa operación que no la tenían |
-| **Regresa** | «{operación}: ${tarifa} por pieza desde ahora». Aviso que no bloquea: «{n} registros sin tarifa ya la tomaron», más «. Los de semanas pagadas entran en la siguiente nómina» si aplica |
+| **Regresa** | «{operación}: ${tarifa} por pieza desde ahora». Aviso que no bloquea: «{n} registros sin tarifa ya la tomaron» («1 registro sin tarifa ya la tomó» si es uno), más «. Los de semanas pagadas entran en la siguiente nómina» si aplica |
 | **Eventos** | `tarifa.puesta`: «hay cambios» para Producción y, si la tablet muestra la tarifa, para la tablet |
 | **Bitácora** | «Tarifa de «{operación}» en {flujo}: {antes} → {después}», marcada como sueldo |
 
@@ -103,3 +103,5 @@ Si la dueña cambia ese parámetro, la tablet pide su foto completa (ver [sincro
 - **Las pruebas:** `modulos/personal/acciones/poner-tarifa-operacion.prueba.ts` (la nueva cierra la vigente, la misma no escribe ni cambia la versión, el `409`, la bitácora sensible; cero y texto no; sin el permiso; la vigente de un momento; copiar un flujo y su bitácora sensible; tres primeras tarifas a la vez).
 
 **Fase 12, parte 1.** `tarifas_operacion.flujo_operacion_id` ya es llave. `personal.poner_tarifa_operacion` lee la operación de su flujo con `FOR SHARE` (decisión 594): si ya no está en el flujo, `422 operacion_de_baja`; su mensaje dice el nombre de la operación y su bitácora, también el del flujo. Lo prueba `poner-tarifa-operacion.prueba.ts`, con flujos de prueba de verdad.
+
+**Fase 12.** Lo que baja a la tablet está en `bajada.ts`: las tarifas vigentes de las operaciones vigentes de los flujos vigentes, solo con `produccion.tarifa_visible_tablet` encendido; el parámetro está en la lista de la tabla, así que cambiarlo pide la foto a las tablets (decisión 619). Lo prueba `produccion/bajada.prueba.ts`. El aviso de `poner_tarifa_operacion` dice «1 registro sin tarifa ya la tomó» cuando es uno.

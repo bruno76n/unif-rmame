@@ -31,10 +31,8 @@ describe("el libro de movimientos", () => {
 				fila.id,
 			]),
 		);
-		// Las variantes de la muestra del catálogo.
-		variantes = (await servidor.base.dueno.query("SELECT id FROM variantes ORDER BY codigo LIMIT 6")).rows.map(
-			(fila) => fila.id,
-		);
+		// Variantes de la muestra del catálogo sin existencias ni reservas (la muestra ya tiene piezas en el Taller).
+		variantes = await variantesLibres(servidor, 6);
 		// El traspaso que llevan los renglones que tocan Tránsito.
 		({ traspasoId: traspaso } = await nuevoTraspaso(servidor, {
 			tipo: "solicitud_tienda",

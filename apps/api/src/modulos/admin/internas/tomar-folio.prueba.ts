@@ -73,16 +73,17 @@ describe("dos documentos que piden folio a la vez reciben números seguidos, sin
 	});
 
 	it("el año es el del día de negocio en México: el 31 de diciembre a las 11 de la noche es del año que termina, y el año nuevo empieza en 1", async () => {
-		const nochevieja = Temporal.Instant.from("2027-01-01T05:30:00Z");
-		const anioNuevo = Temporal.Instant.from("2027-01-01T06:30:00Z");
-		expect(await tomar({ tipo: "orden_produccion" }, nochevieja)).toEqual({ folio: "OP-2026-001", numero: 1 });
-		expect(await tomar({ tipo: "orden_produccion" }, nochevieja)).toEqual({ folio: "OP-2026-002", numero: 2 });
+		// Años sin folios de la muestra (que ya tiene órdenes y lotes de 2026).
+		const nochevieja = Temporal.Instant.from("2030-01-01T05:30:00Z");
+		const anioNuevo = Temporal.Instant.from("2030-01-01T06:30:00Z");
+		expect(await tomar({ tipo: "orden_produccion" }, nochevieja)).toEqual({ folio: "OP-2029-001", numero: 1 });
+		expect(await tomar({ tipo: "orden_produccion" }, nochevieja)).toEqual({ folio: "OP-2029-002", numero: 2 });
 		expect(await siguiente({ tipo: "orden_produccion" }, anioNuevo)).toEqual({
-			folio: "OP-2027-001",
+			folio: "OP-2030-001",
 			quedan: undefined,
 		});
-		expect(await tomar({ tipo: "orden_produccion" }, anioNuevo)).toEqual({ folio: "OP-2027-001", numero: 1 });
-		expect(await tomar({ tipo: "lote" }, anioNuevo)).toEqual({ folio: "L-2027-001", numero: 1 });
+		expect(await tomar({ tipo: "orden_produccion" }, anioNuevo)).toEqual({ folio: "OP-2030-001", numero: 1 });
+		expect(await tomar({ tipo: "lote" }, anioNuevo)).toEqual({ folio: "L-2030-001", numero: 1 });
 	});
 
 	it("los primeros folios de un año nuevo pedidos a la vez salen seguidos desde 1", async () => {

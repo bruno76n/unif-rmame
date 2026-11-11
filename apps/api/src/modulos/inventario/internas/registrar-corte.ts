@@ -8,12 +8,13 @@
  */
 
 import { aMilesimos, deMilesimos } from "@uniformame/compartido/calculos/cuenta-material";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, or } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
 import { quienCambia } from "../../../nucleo/acciones/comunes.ts";
 import { errorDeRegla } from "../../../nucleo/http/errores.ts";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
+import { tomarCandadosDeInventario } from "../dominio/candados.ts";
 import { rollosEnUso } from "../dominio/corte.ts";
 import { escribirMovimiento, type RenglonDeMovimiento } from "../dominio/escribir-movimiento.ts";
 import { ubicacionDeTipo } from "../dominio/recepciones.ts";
@@ -27,6 +28,7 @@ const pedido = z.object({
 	corte_id: z.uuid(),
 	lote_id: z.uuid(),
 	folio_lote: z.string(),
+	prenda: z.string(),
 	receta_version_id: z.uuid(),
 	telas: z.array(
 		z.object({
@@ -49,10 +51,36 @@ export interface CorteRegistrado {
 }
 
 /**
+ * Revisa que lo que quedó de cada tela vaya a donde le toca: `ninguno` sin nada; `rollo` con la frontera
+ * (`inventario.metros_frontera_rollo`) o más; `retazo` o `merma` con más de 0 y menos de la frontera.
+ * @throws `422 destino_no_cuadra`.
+ */
+async function destinosQueCuadran(contexto: ContextoDeAccion, telas: z.infer<typeof pedido>["telas"]): Promise<void> {
+	const frontera = aMilesimos(
+		String(await contexto.lectura("admin.parametro", { clave: "inventario.metros_frontera_rollo" })),
+	);
+	for (const tela of telas) {
+		const quedaron = aMilesimos(tela.metros_quedaron);
+		const cuadra =
+			tela.destino_sobrante === "ninguno"
+				? quedaron === 0n
+				: tela.destino_sobrante === "rollo"
+					? quedaron >= frontera
+					: quedaron > 0n && quedaron < frontera;
+		if (!cuadra) {
+			throw errorDeRegla(
+				"destino_no_cuadra",
+				`Lo que quedó (${tela.metros_quedaron} m) no puede ir a ${tela.destino_sobrante.replace("ninguno", "ningún lado")}`,
+			);
+		}
+	}
+}
+
+/**
  * Registra en el inventario el cierre de un corte.
  * @param contexto El contexto de `produccion.cerrar_corte`.
  * @param datos El corte, el lote, la receta, sus telas con sus rollos y lo que quedó, y las piezas cortadas por talla.
- * @throws `422 rollo_de_otro_lote` o `rollo_no_disponible`.
+ * @throws `422 rollo_de_otro_lote`, `rollo_no_disponible` o `destino_no_cuadra`.
  */
 export async function registrarCorte(contexto: ContextoDeAccion, datos: unknown): Promise<CorteRegistrado> {
 	const corte = pedido.parse(datos);
@@ -60,6 +88,9 @@ export async function registrarCorte(contexto: ContextoDeAccion, datos: unknown)
 	const quien = quienCambia(contexto);
 	const bodega = await ubicacionDeTipo(transaccion, "bodega");
 	const taller = await ubicacionDeTipo(transaccion, "taller");
+	await destinosQueCuadran(contexto, corte.telas);
+	// Escribe varios movimientos: las variantes de las piezas cortadas van primero, en el orden fijo (decisión 500).
+	await tomarCandadosDeInventario(transaccion, { varianteIds: corte.tallas.map((talla) => talla.variante_id) });
 	const todos = corte.telas.flatMap((tela) => tela.rollos.map((rollo) => rollo.rollo_id));
 	const enTaller = await rollosEnUso(contexto, todos, taller);
 	const enBodega = await rollosEnUso(contexto, todos, bodega);
@@ -103,11 +134,17 @@ export async function registrarCorte(contexto: ContextoDeAccion, datos: unknown)
 			movimientoId: movimiento.movimientoId,
 			creadoPor: quien,
 		});
+		// Como al entregar: los sugeridos del lote y los de estos rollos con otro lote se liberan.
 		const ids = porEntregar.map((rollo) => rollo.rolloId);
 		await transaccion
 			.update(apartadosRollo)
 			.set({ estado: "liberado" })
-			.where(and(eq(apartadosRollo.estado, "sugerido"), inArray(apartadosRollo.rolloId, ids)));
+			.where(
+				and(
+					eq(apartadosRollo.estado, "sugerido"),
+					or(eq(apartadosRollo.loteId, corte.lote_id), inArray(apartadosRollo.rolloId, ids)),
+				),
+			);
 		for (const rollo of porEntregar) {
 			const apartadoId = uuidv7();
 			await transaccion.insert(apartadosRollo).values({
@@ -267,7 +304,7 @@ export async function registrarCorte(contexto: ContextoDeAccion, datos: unknown)
 		.where(and(eq(entregasCorte.loteId, corte.lote_id), eq(entregasCorte.estado, "entregada")))
 		.returning({ recetaVersionId: entregasCorte.recetaVersionId });
 	const avisos = cerradas.some((entrega) => entrega.recetaVersionId !== corte.receta_version_id)
-		? ["La receta cambió desde que bodega entregó la tela"]
+		? [`La receta de ${corte.prenda} cambió desde que bodega entregó la tela`]
 		: [];
 	contexto.guardarEvento({
 		tipo: "corte.registrado",

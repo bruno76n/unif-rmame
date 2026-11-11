@@ -62,7 +62,9 @@ describe("los datos de la muestra de Patronaje y Compras se cargan con estas mis
 	it("las recetas: la tela escala por talla desde la de en medio y los avíos van en su unidad de Patronaje", async () => {
 		expect(await consultar("SELECT estado, count(*)::int AS n FROM recetas GROUP BY estado ORDER BY estado")).toEqual([
 			{ estado: "sin_receta", n: 5 },
-			{ estado: "sin_verificar", n: 23 },
+			{ estado: "sin_verificar", n: 21 },
+			// Las de los dos lotes que corta la carga de Producción (fase 12) quedan verificadas.
+			{ estado: "verificada", n: 2 },
 		]);
 		// La playera lisa: 0.92 m medidos con 6 % de desperdicio son 0.87 de patrón en la talla 14, y 3.5 cm por talla:
 		// la 3 está seis tallas antes y la XXG siete después.

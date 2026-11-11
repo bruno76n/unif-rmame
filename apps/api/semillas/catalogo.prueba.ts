@@ -82,6 +82,8 @@ describe("los datos de la muestra del catálogo se cargan con estas mismas accio
 		).toEqual([
 			{ accion: "catalogo.agregar_escuela" },
 			{ accion: "catalogo.agregar_talla" },
+			// El flujo de cada prenda, que le pone la carga de Producción (fase 12).
+			{ accion: "catalogo.aplicar_cambios_producto" },
 			{ accion: "catalogo.crear_producto" },
 			{ accion: "catalogo.dar_baja_talla" },
 			{ accion: "catalogo.descontinuar_productos" },

@@ -82,7 +82,7 @@ El taller queda en el sistema de punta a punta: el flujo de cada prenda, la orde
 | Criterio | Prueba que lo demuestra |
 |---|---|
 | Un flujo nuevo copia las operaciones, el orden y las personas de su origen, y Personal copia sus tarifas; el de una sola operación lleva el corte y las de su parámetro | `modulos/produccion/acciones/crear-flujo.prueba.ts` |
-| El corte siempre va primero y no se quita; un flujo no queda con menos de dos; con lotes en proceso o terminados sin revisar, el flujo no cambia | `agregar-operacion-flujo.prueba.ts` y `quitar-operacion-flujo.prueba.ts` |
+| El corte siempre va primero y no se quita; un flujo no queda con menos de dos; con lotes en proceso o terminados sin revisar, el flujo no cambia | `modulos/produccion/acciones/cambiar-operaciones-flujo.prueba.ts` |
 | Una orden nueva nace con su lote por cortar, su fecha de corte y sus tallas; una prenda sin flujo no entra; sin receta entra con su aviso | `modulos/produccion/acciones/crear-orden.prueba.ts` |
 | Mandar un pedido suma piezas al lote por cortar sin tela de esa prenda o abre una orden con un lote por prenda; cancelar el pedido pasa sus lotes a temporada | `modulos/produccion/internas/mandar-a-produccion.prueba.ts` y `pasar-pedido-a-temporada.prueba.ts` |
 | La salud da atorado, sin datos de la tablet, atrasado, en riesgo o en tiempo en ese orden, sin contar los días en que la tablet no subió nada; lo mismo en la tablet que en la API | `packages/compartido/src/calculos/salud-lote.prueba.ts`, con fast-check |
@@ -92,12 +92,12 @@ El taller queda en el sistema de punta a punta: el flujo de cada prenda, la orde
 | Cerrar el corte consume de cada tela lo que pide la receta, con sus decimales, o lo que resulta de lo que se escribió que quedó; manda lo que quedó a rollo, retazo o merma con la frontera, crea las piezas cortadas, arma los bultos parejos de hasta 24, crea un registro del corte por bulto a nombre de quien cortó y verifica la receta | `modulos/produccion/acciones/cerrar-corte.prueba.ts` |
 | Sin tocar lo que quedó, el corte cierra con lo de la receta; quedar abajo del piso del patrón, lo que falta o la mezcla de partidas solo avisan; una tela de la receta sin rollos no deja cerrar | La misma prueba |
 | De cada tela, lo usado más lo que quedó da los metros de sus rollos; lo que queda según la receta nunca es negativo; los rollos automáticos cubren lo que pide la receta y con ellos lo que queda nunca llega a los metros del último rollo; lo mismo en la pantalla que en la API | `packages/compartido/src/calculos/corte.prueba.ts`, con fast-check |
-| Lo que regresa del corte se queda en el Taller hasta que Bodega lo recibe; quitar un lote con tela entregada la devuelve | `recibir-del-corte.prueba.ts` y `modulos/inventario/internas/devolver-entrega-corte.prueba.ts` |
+| Lo que regresa del corte se queda en el Taller hasta que Bodega lo recibe; quitar un lote con tela entregada la devuelve | `modulos/produccion/acciones/cerrar-corte.prueba.ts` y `modulos/inventario/internas/devolver-entrega-corte.prueba.ts` |
 | Un registro de la tablet se aplica con su hora y la tarifa que valía; uno mal formado se aparta; uno que pasa del tope o de un lote ya revisado se aplica con su excepción | `modulos/produccion/acciones/registrar-operacion.prueba.ts` |
-| El registro que completa la última operación termina el lote; cancelarlo lo reabre; no se cancela si la siguiente ya reportó, si es del corte o si el lote ya pasó por Calidad | `registrar-operacion.prueba.ts` y `cancelar-registro.prueba.ts` |
-| La tarifa que pone Personal llega a los registros que no la tenían | `modulos/produccion/internas/poner-tarifa-a-registros.prueba.ts` |
-| Un consumible se descuenta en la unidad de inventario; un PIN bloqueado en la tablet queda bloqueado en Personal | `tomar-consumible.prueba.ts` y `registrar-bloqueo-pin.prueba.ts` |
-| Con registros al azar, las proyecciones de cada talla siempre son la suma de sus registros vigentes, y el cuadre encuentra un Taller que no cuadra con su lote | `modulos/produccion/trabajos/recalcular-proyecciones.prueba.ts` y `modulos/inventario/internas/correr-cuadre.prueba.ts` |
+| El registro que completa la última operación termina el lote; cancelarlo lo reabre; no se cancela si la siguiente ya reportó, si es del corte o si el lote ya pasó por Calidad | `modulos/produccion/acciones/registrar-operacion.prueba.ts` |
+| La tarifa que pone Personal llega a los registros que no la tenían | `modulos/produccion/acciones/registrar-operacion.prueba.ts` |
+| Un consumible se descuenta en la unidad de inventario; un PIN bloqueado en la tablet queda bloqueado en Personal | `modulos/produccion/acciones/tomar-consumible.prueba.ts` |
+| Con registros al azar, las proyecciones de cada talla siempre son la suma de sus registros vigentes, y el cuadre encuentra un Taller que no cuadra con su lote | `modulos/produccion/internas/recalcular-proyecciones.prueba.ts` y `modulos/inventario/internas/correr-cuadre.prueba.ts` |
 | A la tablet bajan los lotes en proceso y terminados, sus bultos, sus registros y los flujos, nunca una tarifa ni un costo | `modulos/produccion/bajada.prueba.ts` |
 
 ## Revisión de fase

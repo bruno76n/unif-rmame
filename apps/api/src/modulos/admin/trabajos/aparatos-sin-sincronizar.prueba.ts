@@ -139,8 +139,14 @@ describe("un aparato sin sincronizar admin.horas_sin_sincronizar_aviso avisa a l
 	});
 
 	it("un aparato revocado o que no sincroniza (el puente) no avisa", async () => {
+		// Los aparatos de prueba (la tablet de la muestra no es de este caso).
+		const deLaPrueba = (["tablet", "puente", "otro_puente"] as const).flatMap((nombre) => {
+			const quien = quienesDePrueba[nombre];
+			return quien?.tipo === "aparato" ? [quien.dispositivoId] : [];
+		});
 		await servidor.base.dueno.query(
-			"UPDATE dispositivos_sync SET ultima_sincronizacion_en = now() - interval '9 hours', aviso_sin_sincronizar_en = NULL",
+			"UPDATE dispositivos_sync SET ultima_sincronizacion_en = now() - interval '9 hours', aviso_sin_sincronizar_en = NULL WHERE dispositivo_id = ANY($1)",
+			[deLaPrueba],
 		);
 		await servidor.base.dueno.query(
 			`UPDATE dispositivos SET baja_en = now(), motivo_baja = 'Se perdió', baja_confirmado_con_google_en = now() WHERE id = $1`,

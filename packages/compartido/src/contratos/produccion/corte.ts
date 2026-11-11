@@ -54,6 +54,8 @@ export const cerrarCorte = definirAccion({
 	permiso: { departamento: "produccion" },
 	errores: [
 		{ codigo: "rollo_repetido", mensaje: "Ese rollo ya está en la lista." },
+		{ codigo: "tela_repetida", mensaje: "Esa tela ya está en la lista." },
+		{ codigo: "talla_repetida", mensaje: "Esa talla ya está en la lista." },
 		{ codigo: "lote_no_por_cortar", mensaje: "{lote} ya está cortado." },
 		{
 			codigo: "sin_receta",

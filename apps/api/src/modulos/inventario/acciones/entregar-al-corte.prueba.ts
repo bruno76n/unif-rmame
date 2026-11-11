@@ -12,7 +12,8 @@ import { type SiembraDelCatalogo, siembraDelCatalogo } from "../../../nucleo/pru
 import { ubicacionesPorCodigo } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import {
-	type PrendaParaCortar,
+	type PrendaDelTaller,
+	prendaDelTaller,
 	prendaParaCortar,
 	rolloEnBodega,
 } from "../../../nucleo/pruebas/produccion-de-prueba.ts";
@@ -37,7 +38,7 @@ describe("Entregar al corte pasa al Taller los rollos de cada tela de la receta 
 	}
 
 	/** Producción levanta un lote para Bodega con 20 piezas por talla, que entrega en tantos días (20 si no se dice). */
-	async function lote(prenda: PrendaParaCortar, entregaEnDias = 20) {
+	async function lote(prenda: PrendaDelTaller, entregaEnDias = 20) {
 		const respuesta = await mandarAccion(
 			servidor,
 			"produccion.crear_orden",
@@ -145,5 +146,58 @@ describe("Entregar al corte pasa al Taller los rollos de cada tela de la receta 
 		const antes = await lote(prenda, 2);
 		expect(await apartados(antes.lote_id)).toEqual([{ rollo_id: rollo.id, estado: "sugerido" }]);
 		expect(await apartados(despues.lote_id)).toEqual([]);
+	});
+
+	/** Lo que hay del cierre de la receta en el Taller. */
+	function cierresEnElTaller(prenda: { materiales: { cierre: string } }) {
+		return consultar(
+			`SELECT e.cantidad FROM existencias_material e JOIN ubicaciones u ON u.id = e.ubicacion_id
+			 WHERE u.codigo = 'TAL' AND e.material_id = $1 AND e.rollo_id IS NULL`,
+			[prenda.materiales.cierre],
+		);
+	}
+
+	it("lo sugerido que no se usó se libera; la tela que falta sigue comprometida y se entrega después, sin repetir los avíos", async () => {
+		const prenda = await prendaParaCortar(servidor, siembra);
+		const tela = prenda.materiales.gabardina;
+		const [chico, grande] = [
+			await rolloEnBodega(servidor, tela, "40", "P-F"),
+			await rolloEnBodega(servidor, tela, "60", "P-F"),
+		];
+		const { lote_id } = await lote(prenda);
+		expect(await apartados(lote_id)).toHaveLength(2);
+		expect((await entregar(lote_id, prenda.recetaVersionId, [grande.id])).estado).toBe(200);
+		// El chico ya no queda sugerido: queda libre hasta la siguiente entrega.
+		expect(await apartados(lote_id)).toEqual([{ rollo_id: grande.id, estado: "entregado" }]);
+		expect(await cierresEnElTaller(prenda)).toEqual([{ cantidad: "60.000" }]);
+		// La segunda entrega lleva solo la tela.
+		expect((await entregar(lote_id, prenda.recetaVersionId, [chico.id])).estado).toBe(200);
+		expect(await apartados(lote_id)).toEqual(
+			[chico.id, grande.id].sort().map((rollo_id) => ({ rollo_id, estado: "entregado" })),
+		);
+		expect(await cierresEnElTaller(prenda)).toEqual([{ cantidad: "60.000" }]);
+	});
+
+	it("dos entregas del mismo lote a la vez van una tras otra: los avíos salen una sola vez", async () => {
+		const prenda = await prendaParaCortar(servidor, siembra);
+		const tela = prenda.materiales.gabardina;
+		const [uno, dos] = [
+			await rolloEnBodega(servidor, tela, "50", "P-G"),
+			await rolloEnBodega(servidor, tela, "50", "P-G"),
+		];
+		const { lote_id } = await lote(prenda);
+		const respuestas = await Promise.all([
+			entregar(lote_id, prenda.recetaVersionId, [uno.id]),
+			entregar(lote_id, prenda.recetaVersionId, [dos.id]),
+		]);
+		expect(respuestas.map((respuesta) => respuesta.estado)).toEqual([200, 200]);
+		expect(await cierresEnElTaller(prenda)).toEqual([{ cantidad: "60.000" }]);
+	});
+
+	it("sin receta no entrega", async () => {
+		const prenda = await prendaDelTaller(servidor, siembra);
+		const { lote_id } = await lote(prenda);
+		const rollo = await rolloEnBodega(servidor, (await prendaParaCortar(servidor, siembra)).materiales.gabardina, "10");
+		expect((await entregar(lote_id, lote_id, [rollo.id])).cuerpo).toMatchObject({ codigo: "sin_receta" });
 	});
 });

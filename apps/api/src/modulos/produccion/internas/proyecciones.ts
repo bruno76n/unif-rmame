@@ -10,6 +10,7 @@
 
 import { and, asc, eq, gt, isNotNull, ne, sql } from "drizzle-orm";
 import { z } from "zod";
+import { subirVersion } from "../../../nucleo/acciones/pisadas.ts";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
 import { loteCompleto, terminarLote } from "../dominio/registros.ts";
 import { lotes, loteTallas } from "../tablas.ts";
@@ -42,6 +43,7 @@ export async function recalcularProyecciones(contexto: ContextoDeAccion, datos: 
 		.for("update");
 	let corregidas = 0;
 	for (const lote of delTramo) {
+		const antes = corregidas;
 		// Por talla: la merma de todas las operaciones y las terminadas de la última, en sus bultos.
 		const { rows } = await transaccion.execute(sqlDeLasTallas(lote.id));
 		const reales = z.array(fila).parse(rows);
@@ -66,6 +68,8 @@ export async function recalcularProyecciones(contexto: ContextoDeAccion, datos: 
 				despues: real,
 			});
 		}
+		// El lote es un agregado con sus tallas: si alguna cambió, sube su versión.
+		if (corregidas > antes) await subirVersion(transaccion, lotes, lote.id);
 		if (lote.estado === "en_proceso" && (await loteCompleto(contexto, lote.id))) await terminarLote(contexto, lote);
 	}
 	if (corregidas > 0) {

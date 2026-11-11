@@ -25,7 +25,7 @@ import { personas } from "../../personal/tablas.ts";
 import { armarBultos, folioDeBulto } from "../dominio/bultos.ts";
 import { prendaQueSeFabrica } from "../dominio/lotes.ts";
 import { registrosDelCorte } from "../dominio/registros.ts";
-import { bultos, corteRollos, cortes, corteTelas, lotes, loteTallas } from "../tablas.ts";
+import { bultos, corteRollos, cortes, corteTelas, flujos, lotes, loteTallas } from "../tablas.ts";
 
 /** Lo que pide la receta de cada material, con sus decimales. */
 const deLaReceta = z.object({
@@ -104,6 +104,9 @@ export const accionCerrarCorte = implementarAccion(cerrarCorte, async (contexto,
 	for (const talla of datos.tallas) {
 		const suya = delLote.find((deEste) => deEste.varianteId === talla.variante_id);
 		if (suya === undefined) throw errorDeLaCaptura("talla_ajena", "tallas", `Esa talla no es de ${lote.folio}.`);
+		if (piezasDe.has(talla.variante_id)) {
+			throw errorDeLaCaptura("talla_repetida", "tallas", "Esa talla ya está en la lista.");
+		}
 		if (talla.piezas > suya.planeadas) {
 			throw errorDeRegla("piezas_mas_que_planeado", `Máximo ${suya.planeadas}`);
 		}
@@ -144,6 +147,9 @@ export const accionCerrarCorte = implementarAccion(cerrarCorte, async (contexto,
 		}),
 	);
 	const nombreDe = (materialId: string) => nombres[materialId]?.nombre ?? "Esa tela";
+	if (new Set(datos.telas.map((tela) => tela.material_id)).size !== datos.telas.length) {
+		throw errorDeLaCaptura("tela_repetida", "telas", "Esa tela ya está en la lista.");
+	}
 	for (const tela of datos.telas) {
 		if (!telasDeLaReceta.some((suya) => suya.material_id === tela.material_id)) {
 			throw errorDeRegla(
@@ -259,6 +265,7 @@ export const accionCerrarCorte = implementarAccion(cerrarCorte, async (contexto,
 			corte_id: corteId,
 			lote_id: lote.id,
 			folio_lote: lote.folio,
+			prenda: prenda.nombre,
 			receta_version_id: receta.receta_version_id,
 			telas: telas.map(({ tela, uso, destino }) => ({
 				material_id: tela.material_id,
@@ -311,6 +318,10 @@ export const accionCerrarCorte = implementarAccion(cerrarCorte, async (contexto,
 		.select({ flujoId: productos.flujoId })
 		.from(productos)
 		.where(eq(productos.id, lote.productoId));
+	// El flujo que congela, leído con `FOR SHARE`: nadie le agrega ni le quita operaciones mientras el lote lo toma.
+	if (conFlujo?.flujoId != null) {
+		await transaccion.select({ id: flujos.id }).from(flujos).where(eq(flujos.id, conFlujo.flujoId)).for("share");
+	}
 	await transaccion
 		.update(lotes)
 		.set({
@@ -429,11 +440,13 @@ function bultosDelLote(contexto: ContextoDeAccion, loteId: string, ids?: readonl
 export const accionImprimirEtiquetasBulto = implementarAccion(imprimirEtiquetasBulto, async (contexto, datos) => {
 	const [lote] = await contexto.transaccion.select().from(lotes).where(eq(lotes.id, datos.lote_id));
 	if (lote === undefined) throw noExiste();
-	const deEste = await bultosDelLote(contexto, lote.id, datos.bulto_ids);
-	if (deEste.length === 0 && (datos.bulto_ids ?? []).length === 0) {
+	// Sin bultos, o con la lista vacía: todos los del lote.
+	const pedidos = datos.bulto_ids === undefined || datos.bulto_ids.length === 0 ? undefined : datos.bulto_ids;
+	const deEste = await bultosDelLote(contexto, lote.id, pedidos);
+	if (deEste.length === 0 && pedidos === undefined) {
 		throw errorDeRegla("lote_sin_cortar", `${lote.folio} no tiene bultos: primero se cierra el corte.`);
 	}
-	if (deEste.length !== new Set(datos.bulto_ids ?? deEste.map((bulto) => bulto.id)).size) {
+	if (deEste.length !== new Set(pedidos ?? deEste.map((bulto) => bulto.id)).size) {
 		throw errorDeLaCaptura("bulto_ajeno", "bulto_ids", `Ese bulto no es de ${lote.folio}.`);
 	}
 	const taller = await contexto.transaccion

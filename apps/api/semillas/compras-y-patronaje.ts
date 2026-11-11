@@ -369,7 +369,7 @@ export async function cargarComprasYPatronajeDeLaMuestra(base: Base): Promise<vo
  * Los productos del catálogo de la muestra por su clave en ella (`P01` es el primero).
  * @param base La base.
  */
-async function productosPorClave(base: Base): Promise<Map<string, string>> {
+export async function productosPorClave(base: Base): Promise<Map<string, string>> {
 	const claves = new Map<string, string>();
 	for (const [indice, producto] of productosDeLaMuestra.entries()) {
 		const escuela = producto.escuela === null ? null : (escuelasDeLaMuestra[producto.escuela]?.nombre ?? "");

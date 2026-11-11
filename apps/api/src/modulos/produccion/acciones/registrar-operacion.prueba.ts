@@ -8,6 +8,8 @@
 
 import { v7 as uuidv7 } from "uuid";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { crearBase } from "../../../nucleo/base/conexion.ts";
+import { enAccionDePrueba } from "../../../nucleo/pruebas/accion-de-prueba.ts";
 import { type SiembraDelCatalogo, siembraDelCatalogo } from "../../../nucleo/pruebas/catalogo-de-prueba.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import { type LoteCortado, loteCortado, subirDeLaTablet } from "../../../nucleo/pruebas/produccion-de-prueba.ts";
@@ -177,12 +179,48 @@ describe("Un registro de la tablet se aplica con su hora y la tarifa que valía;
 			{ datos: { flujo_operacion_id: costados, tarifa_centavos: 180 } },
 			"personal_sueldos",
 		);
-		expect(puesta.cuerpo.avisos).toEqual(["1 registros sin tarifa ya la tomaron"]);
+		expect(puesta.cuerpo.avisos).toEqual(["1 registro sin tarifa ya la tomó"]);
 		expect(
 			await consultar(
 				"SELECT tarifa_centavos::int AS tarifa, tarifa_puesta_en IS NOT NULL AS puesta FROM registros_operacion WHERE flujo_operacion_id = $1",
 				[costados],
 			),
 		).toEqual([{ tarifa: 180, puesta: true }]);
+	});
+
+	it("cancelar lo que sobró de una operación anterior no reabre un lote que sigue completo", async () => {
+		const lote = await loteCortado(servidor, siembra, [3, 0, 0]);
+		await registrar(lote, 0, 1, 3);
+		// Dos de más en la primera operación: se aplican con su excepción.
+		expect(await registrar(lote, 0, 1, 2)).toMatchObject({ resultado: "excepcion" });
+		await registrar(lote, 0, 2, 3);
+		expect(await consultar("SELECT estado FROM lotes WHERE id = $1", [lote.loteId])).toEqual([{ estado: "terminado" }]);
+		const [sobra] = await consultar(
+			"SELECT id FROM registros_operacion WHERE lote_id = $1 AND origen = 'tablet' AND piezas_buenas = 2",
+			[lote.loteId],
+		);
+		expect((await cancelar(String(sobra?.id))).estado).toBe(200);
+		expect(await consultar("SELECT estado FROM lotes WHERE id = $1", [lote.loteId])).toEqual([{ estado: "terminado" }]);
+	});
+
+	it("con el lote ya revisado: lo que registra la tablet se aplica con su excepción y nada se cancela", async () => {
+		const lote = await loteCortado(servidor, siembra, [3, 0, 0]);
+		await registrar(lote, 0, 1, 3);
+		await registrar(lote, 0, 2, 3);
+		await enAccionDePrueba(crearBase(servidor.base.app), servidor.modulos, (contexto) =>
+			contexto.interna("produccion.marcar_lote_revisado", { lote_id: lote.loteId }),
+		);
+		expect(await registrar(lote, 0, 1, 1)).toMatchObject({
+			resultado: "excepcion",
+			excepciones: [{ codigo: "lote_no_en_proceso" }],
+		});
+		const [ultimo] = await consultar(
+			"SELECT id FROM registros_operacion WHERE lote_id = $1 AND origen = 'tablet' ORDER BY recibido_en DESC LIMIT 1",
+			[lote.loteId],
+		);
+		expect((await cancelar(String(ultimo?.id))).cuerpo).toMatchObject({
+			codigo: "lote_ya_revisado",
+			mensaje: `${lote.folio} ya pasó por Calidad: este registro ya no se cancela.`,
+		});
 	});
 });

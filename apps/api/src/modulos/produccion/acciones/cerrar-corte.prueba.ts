@@ -9,6 +9,8 @@ import { aMilesimos, deMilesimos } from "@uniformame/compartido/calculos/cuenta-
 import { Temporal } from "temporal-polyfill";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
+import { crearBase } from "../../../nucleo/base/conexion.ts";
+import { enAccionDePrueba } from "../../../nucleo/pruebas/accion-de-prueba.ts";
 import { type SiembraDelCatalogo, siembraDelCatalogo } from "../../../nucleo/pruebas/catalogo-de-prueba.ts";
 import { ubicacionesPorCodigo } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
@@ -196,7 +198,7 @@ describe("Cerrar el corte consume lo que pide la receta o lo que se escribió qu
 		expect(await consultar("SELECT estado FROM rollos WHERE id = $1", [conMerma.id])).toEqual([{ estado: "agotado" }]);
 	});
 
-	it("lo que no deja cerrar: más piezas que las planeadas, ninguna pieza, una tela de la receta sin rollos, un rollo repetido, un lote ya cortado", async () => {
+	it("lo que no deja cerrar: más piezas que las planeadas, ninguna pieza, una tela que no es de la receta, una tela, una talla o un rollo repetidos, un lote ya cortado", async () => {
 		const prenda = await prendaParaCortar(servidor, siembra);
 		const tela = prenda.materiales.gabardina;
 		const rollo = await rolloEnBodega(servidor, tela, "100");
@@ -235,6 +237,12 @@ describe("Cerrar el corte consume lo que pide la receta o lo que se escribió qu
 				})
 			).cuerpo,
 		).toMatchObject({ codigo: "rollo_repetido" });
+		expect((await cerrar(lote_id, { ...base, telas: [...base.telas, ...base.telas] })).cuerpo).toMatchObject({
+			codigo: "tela_repetida",
+		});
+		expect(
+			(await cerrar(lote_id, { ...base, tallas: [...base.tallas, ...base.tallas.slice(0, 1)] })).cuerpo,
+		).toMatchObject({ codigo: "talla_repetida" });
 		const bien = await cerrar(lote_id, base);
 		expect(bien.estado).toBe(200);
 		expect((await cerrar(lote_id, base)).cuerpo).toMatchObject({
@@ -262,5 +270,110 @@ describe("Cerrar el corte consume lo que pide la receta o lo que se escribió qu
 			codigo: "sin_impresora_taller",
 			mensaje: "No hay impresora del taller: descarga el PDF de las etiquetas.",
 		});
+		// Con la lista vacía, también todos los del lote.
+		const vacia = await mandarAccion(
+			servidor,
+			"produccion.imprimir_etiquetas_bulto",
+			{ datos: { lote_id, bulto_ids: [] } },
+			"produccion",
+		);
+		expect(vacia.cuerpo).toMatchObject({ codigo: "sin_impresora_taller" });
+	});
+
+	it("una tela de la receta sin rollos no deja cerrar", async () => {
+		const prenda = await prendaParaCortar(servidor, siembra);
+		const [receta] = await consultar("SELECT id, version::int AS v FROM recetas WHERE producto_id = $1", [
+			prenda.productoId,
+		]);
+		// La receta lleva también popelina de combinación.
+		const tallasDeLaReceta = ["4", "6", "8"].map((talla) => prenda.tallas[talla]);
+		const guardada = await mandarAccion(
+			servidor,
+			"patronaje.guardar_receta",
+			{
+				datos: {
+					producto_id: prenda.productoId,
+					medidas: [],
+					motivo: "Lleva vista de popelina",
+					lineas: [
+						{
+							papel: "tela_principal",
+							material_id: prenda.materiales.gabardina,
+							modo: "por_talla",
+							unidad_receta: "m",
+							tallas: tallasDeLaReceta.map((talla_id) => ({ talla_id, cantidad: "1.000" })),
+							orden: 1,
+						},
+						{
+							papel: "combinacion",
+							material_id: prenda.materiales.popelina,
+							modo: "por_talla",
+							unidad_receta: "m",
+							tallas: tallasDeLaReceta.map((talla_id) => ({ talla_id, cantidad: "0.200" })),
+							orden: 2,
+						},
+					],
+				},
+				version: receta?.v,
+			},
+			"patronaje",
+		);
+		expect(guardada.cuerpo).toMatchObject({ ok: true });
+		const [{ version } = { version: "" }] = await consultar(
+			"SELECT version_vigente_id AS version FROM recetas WHERE producto_id = $1",
+			[prenda.productoId],
+		);
+		const rollo = await rolloEnBodega(servidor, prenda.materiales.gabardina, "100");
+		const { lote_id } = await lote(prenda, [5, 5, 5]);
+		const respuesta = await cerrar(lote_id, {
+			receta_version_id: version,
+			telas: [{ material_id: prenda.materiales.gabardina, rollos: [{ rollo_id: rollo.id }] }],
+			tallas: ["4", "6", "8"].map((talla) => ({ variante_id: prenda.variantes[talla], piezas: 5 })),
+		});
+		expect(respuesta.cuerpo).toMatchObject({ codigo: "falta_tela" });
+	});
+
+	it("lo que falta, el piso del patrón y la mezcla de partidas solo avisan: el corte se cierra", async () => {
+		const prenda = await prendaParaCortar(servidor, siembra);
+		const tela = prenda.materiales.gabardina;
+		// 30 piezas piden más de 31 m; los dos rollos, de dos partidas, tienen 25.
+		const [uno, dos] = [
+			await rolloEnBodega(servidor, tela, "20", "P-H"),
+			await rolloEnBodega(servidor, tela, "5", "P-I"),
+		];
+		// El que alcanza solo queda sugerido para el lote, aunque se corte con los otros dos.
+		await rolloEnBodega(servidor, tela, "100", "P-J");
+		const { lote_id } = await lote(prenda, [10, 10, 10]);
+		expect(
+			await consultar("SELECT count(*)::int AS n FROM apartados_rollo WHERE lote_id = $1 AND estado = 'sugerido'", [
+				lote_id,
+			]),
+		).toEqual([{ n: 1 }]);
+		const respuesta = await cerrar(lote_id, {
+			receta_version_id: prenda.recetaVersionId,
+			telas: [{ material_id: tela, rollos: [{ rollo_id: uno.id }, { rollo_id: dos.id }] }],
+			tallas: ["4", "6", "8"].map((talla) => ({ variante_id: prenda.variantes[talla], piezas: 10 })),
+		});
+		expect(respuesta.estado).toBe(200);
+		expect(respuesta.cuerpo.avisos).toEqual(
+			expect.arrayContaining([
+				expect.stringMatching(/^Faltan .+ m de .+ · 30 piezas llevan .+ m según la receta · los 2 rollos tienen 25 m$/),
+				expect.stringMatching(
+					/^Con 25 m de .+ no salen 30 piezas según el patrón, que pide .+ m: revisa lo que quedó\.$/,
+				),
+				"Se mezclan las partidas P-H y P-I: el tono puede variar entre piezas.",
+			]),
+		);
+		// El desperdicio medido cuenta lo que de verdad salió de los rollos, no lo que pedía la receta.
+		const leido = await enAccionDePrueba(crearBase(servidor.base.app), servidor.modulos, (contexto) =>
+			contexto.lectura("produccion.cortes_de_prenda", { producto_id: prenda.productoId }),
+		);
+		expect(leido).toMatchObject({ cortes: [{ lote_id, metros_usados: "25.000" }] });
+		// Lo sugerido que el lote ya no usó queda libre al cerrar.
+		expect(
+			await consultar("SELECT count(*)::int AS n FROM apartados_rollo WHERE lote_id = $1 AND estado = 'sugerido'", [
+				lote_id,
+			]),
+		).toEqual([{ n: 0 }]);
 	});
 });

@@ -146,6 +146,9 @@ describe("Las proyecciones de cada talla siempre son la suma de sus registros vi
 		// La tablet ya lo terminó; se descuadra a mano para que lo corrija el recálculo.
 		await consultar("UPDATE lotes SET estado = 'en_proceso', terminado_en = NULL WHERE id = $1", [lote.loteId]);
 		await consultar("UPDATE lote_tallas SET piezas_terminadas = 0 WHERE lote_id = $1", [lote.loteId]);
+		const [{ v: version } = { v: 0 }] = await consultar("SELECT version::int AS v FROM lotes WHERE id = $1", [
+			lote.loteId,
+		]);
 		const terminados = () =>
 			consultar("SELECT count(*)::int AS n FROM eventos WHERE tipo = 'lote.terminado' AND entidad_id = $1", [
 				lote.loteId,
@@ -154,5 +157,10 @@ describe("Las proyecciones de cada talla siempre son la suma de sus registros vi
 		expect(await recalcular()).toBe(1);
 		expect(await consultar("SELECT estado FROM lotes WHERE id = $1", [lote.loteId])).toEqual([{ estado: "terminado" }]);
 		expect(await terminados()).toEqual([{ n: antes + 1 }]);
+		// Sus tallas cambiaron: su versión subió.
+		const [{ v: despues } = { v: 0 }] = await consultar("SELECT version::int AS v FROM lotes WHERE id = $1", [
+			lote.loteId,
+		]);
+		expect(despues).toBeGreaterThan(version);
 	});
 });

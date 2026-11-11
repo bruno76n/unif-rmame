@@ -9,7 +9,7 @@
  */
 
 import { aMilesimos, deMilesimos } from "@uniformame/compartido/calculos/cuenta-material";
-import { topeDelBulto } from "@uniformame/compartido/calculos/tope-bulto";
+import { pasaDelTope, topeDelBulto } from "@uniformame/compartido/calculos/tope-bulto";
 import {
 	cancelarRegistro,
 	registrarBloqueoPin,
@@ -84,12 +84,13 @@ export const accionRegistrarOperacion = implementarAccion(registrarOperacion, as
 	const hecho = await hechoEnElBulto(contexto, bulto.id);
 	const anterior = flujo[lugar - 1];
 	const deEsta = hecho.get(operacion.flujoOperacionId);
-	const tope = topeDelBulto({
+	const delBulto = {
 		piezasDelBulto: bulto.piezas,
 		buenasDeLaAnterior:
 			anterior === undefined || anterior.esCorte ? null : (hecho.get(anterior.flujoOperacionId)?.buenas ?? 0),
 		hechasEnEsta: (deEsta?.buenas ?? 0) + (deEsta?.danadas ?? 0),
-	});
+	};
+	const tope = topeDelBulto(delBulto);
 	const piezas = datos.piezas_buenas + datos.piezas_danadas;
 	const descripcion = `${persona.nombre} registró ${datos.piezas_buenas} buenas y ${datos.piezas_danadas} dañadas de ${operacion.nombre} en ${bulto.folio}`;
 	const excepcion =
@@ -97,7 +98,7 @@ export const accionRegistrarOperacion = implementarAccion(registrarOperacion, as
 			? await abrirExcepcion(contexto, "lote_no_en_proceso", `${descripcion}, con ${lote.folio} ya revisado`, {
 					registro_id: datos.id,
 				})
-			: piezas > tope
+			: pasaDelTope(delBulto, piezas)
 				? await abrirExcepcion(contexto, "pasa_tope_bulto", `${descripcion}, y el tope era ${tope}`, {
 						registro_id: datos.id,
 						tope,
@@ -243,8 +244,8 @@ export const accionCancelarRegistro = implementarAccion(cancelarRegistro, async 
 	if (registro.piezasDanadas > 0) {
 		await contexto.interna("inventario.revertir_merma_produccion", { registro_operacion_id: registro.id });
 	}
-	// Un lote terminado regresa a en proceso.
-	if (lote.estado === "terminado") {
+	// Un lote terminado regresa a en proceso, si con esto ya no está completo.
+	if (lote.estado === "terminado" && !(await loteCompleto(contexto, lote.id))) {
 		await transaccion.update(lotes).set({ estado: "en_proceso", terminadoEn: null }).where(eq(lotes.id, lote.id));
 		contexto.guardarEvento({
 			tipo: "lote.reabierto",

@@ -115,8 +115,9 @@ export async function lotesSinTerminarDeVariante(contexto: ContextoDeAccion, dat
 
 /**
  * `produccion.cortes_de_prenda`: los cortes cerrados de una prenda (o de todas), con la versión de receta con que se
- * cortó cada lote, sus piezas cortadas por talla y los metros que usó su tela principal: lo que pidió la receta, o la
- * suma de sus rollos si se cambió lo que quedó. Patronaje la usa para el desperdicio medido.
+ * cortó cada lote, sus piezas cortadas por talla y los metros que usó su tela principal: la suma de lo que salió de sus
+ * rollos, que es lo que pidió la receta salvo que se cambiara lo que quedó o los rollos no alcanzaran (decisión 618).
+ * Patronaje la usa para el desperdicio medido.
  * Fase 12 · docs/modulos/patronaje/cuenta-de-material.md (reglas 5 y 6)
  * @param contexto El contexto de quien lee.
  * @param datos `producto_id`, opcional.
@@ -129,9 +130,8 @@ export async function cortesDePrenda(contexto: ContextoDeAccion, datos: unknown)
 			lote_id: lotes.id,
 			producto_id: lotes.productoId,
 			receta_version_id: lotes.recetaVersionId,
-			metros_usados: sql<string>`CASE WHEN ${corteTelas.quedaronCambiado}
-				THEN (SELECT sum(r.metros_usados) FROM corte_rollos r WHERE r.corte_tela_id = ${corteTelas.id})
-				ELSE ${corteTelas.metrosReceta} END::numeric(12, 3)::text`,
+			metros_usados: sql<string>`(SELECT sum(r.metros_usados) FROM corte_rollos r
+				WHERE r.corte_tela_id = ${corteTelas.id})::numeric(12, 3)::text`,
 		})
 		.from(cortes)
 		.innerJoin(lotes, eq(lotes.id, cortes.loteId))
