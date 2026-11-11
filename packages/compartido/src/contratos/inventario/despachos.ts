@@ -141,3 +141,21 @@ export const entregarATiendaSinCaja = definirAccion({
 	],
 	edita: true,
 });
+
+/** Bodega surte a aduana lo de un pedido externo, un pedido en línea o lo de más que regresa al proveedor. */
+export const surtirAAduana = definirAccion({
+	nombre: "inventario.surtir_a_aduana",
+	descripcion: "Surte a aduana de bodega lo de un pedido externo, un pedido en línea o una devolución al proveedor",
+	entrada: z.object({
+		documento_tipo: z.enum(["pedido_externo", "pedido_linea", "devolucion_proveedor"]).describe("Qué se surte"),
+		documento_id: z.uuid().describe("El PE-, el W- o la devolución al proveedor"),
+		rollo_ids: z.array(z.uuid()).optional().describe("En una devolución de tela: los rollos que regresan"),
+	}),
+	salida: z.object({ traspaso_id: z.uuid().describe("El A- que va a aduana"), folio: z.string().describe("Su folio") }),
+	permiso: { departamento: "bodega" },
+	errores: [
+		{ codigo: "nada_en_bodega", mensaje: "Nada que surtir de bodega para {folio}" },
+		{ codigo: "no_hay_en_bodega", mensaje: "No hay {prenda} {talla} en bodega: hay que pedirla a una tienda" },
+		{ codigo: "rollo_ajeno", mensaje: "{rollo} no es de {material} de {OC}, o no está en bodega." },
+	],
+});

@@ -56,3 +56,56 @@ export const recibirDeProveedor = definirAccion({
 		{ codigo: "linea_ajena", mensaje: "{material} no es de {OC}." },
 	],
 });
+
+/** Aduana recibe lo que viene en camino de Bodega o de una tienda: completo, o con lo que contó. */
+export const recibirEnAduana = definirAccion({
+	nombre: "inventario.recibir_en_aduana",
+	descripcion: "Recibe en aduana lo que viene en camino, completo o con diferencias",
+	entrada: z.object({
+		traspaso_id: z.uuid().describe("El traspaso"),
+		modo: z.enum(["completo", "con_diferencias"]).describe("«Llegó completo» o «Llegó con diferencias»"),
+		renglones: z
+			.array(
+				z.object({
+					traspaso_linea_id: z.uuid().describe("El renglón del traspaso"),
+					piezas: z.number().int().nonnegative().optional().describe("Las piezas que llegaron, si es prenda"),
+					cantidad: z
+						.string()
+						.trim()
+						.regex(/^\d{1,9}(\.\d{1,3})?$/)
+						.optional()
+						.describe("Lo que llegó, si es material"),
+				}),
+			)
+			.optional()
+			.describe("Obligatorios con diferencias: cada renglón, aunque sea 0"),
+	}),
+	salida: z.object({ recepcion_id: z.uuid().describe("La recepción") }),
+	permiso: { departamento: "aduana" },
+	errores: [{ codigo: "no_por_recibir", mensaje: "{folio} ya se recibió" }],
+	edita: true,
+});
+
+/** Aduana saca al proveedor lo de más que Dirección rechazó: los rollos escogidos o la cantidad. */
+export const devolverAProveedor = definirAccion({
+	nombre: "inventario.devolver_a_proveedor",
+	descripcion: "Saca al proveedor lo de más rechazado: de aduana, o lo que Bodega surtió a aduana",
+	entrada: z.object({
+		traspaso_id: z.uuid().describe("La devolución al proveedor"),
+		rollo_ids: z.array(z.uuid()).optional().describe("Si es tela y espera en aduana: los rollos que regresan"),
+		cantidad: z
+			.string()
+			.trim()
+			.regex(/^\d{1,9}(\.\d{1,3})?$/)
+			.optional()
+			.describe("Si no es tela y espera en aduana: lo que regresa"),
+	}),
+	salida: z.object({}),
+	permiso: { departamento: "aduana" },
+	errores: [
+		{ codigo: "no_esta_en_aduana", mensaje: "{folio} no está en aduana." },
+		{ codigo: "rollo_ajeno", mensaje: "{rollo} no es de {material} de {OC}, o no está en aduana." },
+		{ codigo: "cantidad_distinta", mensaje: "Lo que regresa es {n} {unidad}." },
+	],
+	edita: true,
+});

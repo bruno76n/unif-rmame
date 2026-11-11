@@ -157,3 +157,9 @@ Todas son de la web: surtir, con el departamento Bodega; despachar, recordar y l
   - `recibir_despacho` (Bodega) y `entregar_a_tienda_sin_caja` (Aduana, con la firma) comparten `confirmarLlegada`: la recepción `destino_despacho` y sus renglones, el movimiento desde Tránsito (al destino o a Fuera), lo que confirmó el destino en cada renglón, cada traspaso y el despacho. De cada renglón sale con su traspaso lo que llegó hasta lo esperado; lo de más y lo que no venía, del tramo del primer traspaso del despacho (por folio, decisión 571). Las reservas viajan con su pieza con `escribirMovimiento`.
 - **Todavía no nace ninguna DF-:** lo que falta o sobra se queda en su tramo (fase 14).
 - **Pruebas:** `acciones/despachar.prueba.ts`, `recibir-despacho.prueba.ts` (también las reservas, la tienda sin caja y las etiquetas) y `recordar-despacho.prueba.ts`; las ayudas están en `nucleo/pruebas/aduana-de-prueba.ts`.
+
+**Fase 11, parte 3.** `inventario.surtir_a_aduana` (`acciones/surtir-a-aduana.ts`):
+
+- **Un pedido externo o en línea:** toma el candado de las variantes de sus reservas en Bodega, revisa que la existencia de Bodega las cubra (`no_hay_en_bodega`, con la prenda y la talla), crea el A- en camino con destino su cliente (el W- con salida esperada hoy), ata sus reservas al A- y escribe `surtido_bodega`: las reservas viajan con su pieza. Mientras no existen Ventas ni Tienda en línea, el mensaje nombra el A- y dice «ese pedido» (decisión 573).
+- **Una devolución al proveedor** que espera en Bodega: la tela con los rollos escogidos, enteros (ver [recepciones en aduana](recepciones-en-aduana.md#cómo-está-hecho)); pasa a en camino y la orden se recalcula.
+- **Pruebas:** `acciones/surtir-a-aduana.prueba.ts` y el caso de Bodega de `devolver-a-proveedor.prueba.ts`.

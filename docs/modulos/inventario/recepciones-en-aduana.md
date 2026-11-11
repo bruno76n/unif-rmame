@@ -184,3 +184,10 @@ Los cambia solo la dueña, en Configuración (ver [configuración](../admin/conf
 - **`inventario.recibido_de_ordenes`** (`lecturas/recibido-de-ordenes.ts`) recibe líneas y órdenes y regresa `lineas` (lo contado menos las devoluciones de esa orden y ese material que no se cancelaron) y `recepciones` por orden con su día en hora de México (decisión 562).
 - **Los parámetros** `inventario.dias_ventana_ordenes` y `inventario.porcentaje_de_mas_tela`.
 - **Pruebas:** `acciones/recibir-de-proveedor.prueba.ts`, `internas/aplicar-decision-recepcion-de-mas.prueba.ts` y `lecturas/recibido-de-ordenes.prueba.ts`; las ayudas están en `nucleo/pruebas/aduana-de-prueba.ts`.
+
+**Fase 11, parte 3.**
+
+- **`inventario.recibir_en_aduana`** (`acciones/recibir-en-aduana.ts`): lo que viene en camino, completo o con lo contado de cada renglón (`falta_renglon`); lo que llegó pasa de En camino a aduana a Aduana con su traspaso y lo que no llegó se queda en su tramo, a cargo de quien lo mandó. La devolución de un cliente llega `esperado` de Fuera, siempre contada: lo que llegó entra a Aduana y lo que no, nunca fue inventario. Lo de cada tipo que sigue (el hijo con lo bueno, Calidad, las tiendas, Tienda en línea) llega con su fase (decisión 574).
+- **`inventario.devolver_a_proveedor`** (`acciones/devolver-a-proveedor.ts`): si espera en aduana, la tela con los rollos escogidos (`rollo_ajeno`) y lo demás con su cantidad exacta (`cantidad_distinta`), repartidos del A- de la orden; si Bodega la surtió y Aduana la recibió, sale tal cual. Los rollos quedan `devuelto` y la orden se recalcula.
+- **Los rollos que regresan** (`dominio/devoluciones.ts`) pasan a ser los renglones de la devolución, enteros: lo que la línea baja de su recibido es lo que de verdad regresa, y si no suma lo rechazado, avisa la diferencia (decisión 575).
+- **Pruebas:** `acciones/recibir-en-aduana.prueba.ts` y `devolver-a-proveedor.prueba.ts`.

@@ -19,8 +19,11 @@ import {
 	accionRecibirDespacho,
 	accionRecordarDespacho,
 } from "./acciones/despachos.ts";
+import { accionDevolverAProveedor } from "./acciones/devolver-a-proveedor.ts";
 import { accionRecibirDeProveedor } from "./acciones/recibir-de-proveedor.ts";
+import { accionRecibirEnAduana } from "./acciones/recibir-en-aduana.ts";
 import { accionResolverExcepcion } from "./acciones/resolver-excepcion.ts";
+import { accionSurtirAAduana } from "./acciones/surtir-a-aduana.ts";
 import { marcarExcepcionResuelta, registrarExcepcion, tomarVersionExcepcion } from "./internas/excepciones.ts";
 import { actualizarCostoRollos, aplicarDecisionRecepcionDeMas, tomarConsumible } from "./internas/material.ts";
 import {
@@ -93,6 +96,9 @@ export default definirModulo({
 		accionMarcarEtiquetasImpresas,
 		accionRecibirDespacho,
 		accionEntregarATiendaSinCaja,
+		accionSurtirAAduana,
+		accionRecibirEnAduana,
+		accionDevolverAProveedor,
 	],
 	internas: {
 		registrar_excepcion: registrarExcepcion,
