@@ -1,8 +1,8 @@
 /**
  * Las tablas de `calidad`: la revisión de cada lote con sus tallas y sus rechazos, los reprocesos que nacen de los
- * rechazos y el catálogo de defectos con las operaciones que suelen causarlos.
+ * rechazos, el catálogo de defectos con las operaciones que suelen causarlos y los reclamos.
  * Fase 13 · docs/modulos/calidad/revision-de-lotes.md («La tabla `revisiones`», `revision_tallas`, `rechazos`,
- * `reprocesos`, `defectos` y `defecto_operaciones`)
+ * `reprocesos`, `defectos` y `defecto_operaciones`); parte 2 · reclamos-y-devoluciones.md («La tabla `reclamos`»)
  *
  * La revisión nace cerrada y no cambia: ella, sus tallas y sus rechazos solo crecen. Ninguna baja a un aparato todavía
  * (los defectos bajan a la caja con el POS).
@@ -13,8 +13,15 @@ import { boolean, check, date, index, integer, pgTable, text, uniqueIndex, uuid 
 import { columnasComunes, columnasDeBaja, momento, valores } from "../../nucleo/base/columnas.ts";
 import { usuarios } from "../admin/tablas.ts";
 import { variantes } from "../catalogo/tablas.ts";
+import { ubicaciones } from "../inventario/tablas.ts";
 import { personas } from "../personal/tablas.ts";
 import { flujoOperaciones, lotes, operaciones } from "../produccion/tablas.ts";
+
+/** De dónde viene un reclamo. */
+export const origenesDeReclamo = ["cliente_externo", "tienda"] as const;
+
+/** Los estados de un reclamo. */
+export const estadosDeReclamo = ["por_resolver", "resuelto"] as const;
 
 /** Los estados de un reproceso. */
 export const estadosDeReproceso = ["en_reproceso", "listo"] as const;
@@ -175,5 +182,59 @@ export const reprocesos = pgTable(
 			sql`(${tabla.piezasAprobadas} is null or ${tabla.piezasAprobadas} >= 0)
 				and (${tabla.piezasMerma} is null or ${tabla.piezasMerma} >= 0)`,
 		),
+	],
+);
+
+/** Un reclamo de un cliente o de una tienda, del código de la prenda a su lote, su operación y su persona. */
+export const reclamos = pgTable(
+	"reclamos",
+	{
+		id: uuid("id").primaryKey(),
+		folio: text("folio").notNull(),
+		fecha: date("fecha", { mode: "string" }).notNull(),
+		origen: text("origen", { enum: origenesDeReclamo }).notNull().default("cliente_externo"),
+		/** @llavePendiente clientes.id */
+		clienteId: uuid("cliente_id"),
+		ubicacionId: uuid("ubicacion_id").references(() => ubicaciones.id),
+		/** @llavePendiente salidas_tienda.id */
+		salidaTiendaId: uuid("salida_tienda_id"),
+		/** @llavePendiente notas_entrega.id */
+		notaEntregaId: uuid("nota_entrega_id"),
+		varianteId: uuid("variante_id")
+			.notNull()
+			.references(() => variantes.id),
+		loteId: uuid("lote_id")
+			.notNull()
+			.references(() => lotes.id),
+		defectoId: uuid("defecto_id")
+			.notNull()
+			.references(() => defectos.id),
+		flujoOperacionId: uuid("flujo_operacion_id")
+			.notNull()
+			.references(() => flujoOperaciones.id),
+		personaId: uuid("persona_id").references(() => personas.id),
+		piezas: integer("piezas").notNull(),
+		queDiceCliente: text("que_dice_cliente").notNull(),
+		estado: text("estado", { enum: estadosDeReclamo }).notNull().default("por_resolver"),
+		resueltoEn: momento("resuelto_en"),
+		resueltoPor: uuid("resuelto_por").references(() => usuarios.id),
+		resolucion: text("resolucion"),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		uniqueIndex("reclamos_folio").on(tabla.folio),
+		index("reclamos_estado").on(tabla.estado),
+		index("reclamos_lote").on(tabla.loteId),
+		index("reclamos_variante").on(tabla.varianteId),
+		check("reclamos_origen", sql`${tabla.origen} in (${valores(origenesDeReclamo)})`),
+		check("reclamos_cliente", sql`(${tabla.origen} = 'cliente_externo') = (${tabla.clienteId} is not null)`),
+		check("reclamos_tienda", sql`(${tabla.origen} = 'tienda') = (${tabla.ubicacionId} is not null)`),
+		check("reclamos_piezas", sql`${tabla.piezas} > 0`),
+		check("reclamos_estado", sql`${tabla.estado} in (${valores(estadosDeReclamo)})`),
+		check(
+			"reclamos_resuelto",
+			sql`(${tabla.estado} = 'resuelto') = (${tabla.resueltoEn} is not null and ${tabla.resueltoPor} is not null)`,
+		),
+		check("reclamos_resolucion", sql`${tabla.resolucion} is null or char_length(${tabla.resolucion}) <= 200`),
 	],
 );

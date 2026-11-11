@@ -11,10 +11,15 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { crearBase } from "../../../nucleo/base/conexion.ts";
 import { enAccionDePrueba } from "../../../nucleo/pruebas/accion-de-prueba.ts";
+import {
+	defectoDePrueba,
+	registrarEnBulto,
+	loteTerminado as terminado,
+} from "../../../nucleo/pruebas/calidad-de-prueba.ts";
 import { type SiembraDelCatalogo, siembraDelCatalogo } from "../../../nucleo/pruebas/catalogo-de-prueba.ts";
 import { cuentaDePrueba, personaDePrueba } from "../../../nucleo/pruebas/cuentas-de-prueba.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
-import { type LoteCortado, loteCortado, subirDeLaTablet } from "../../../nucleo/pruebas/produccion-de-prueba.ts";
+import { type LoteCortado, loteCortado } from "../../../nucleo/pruebas/produccion-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 
 describe("Revisar un lote terminado congela sus aprobadas por talla, crea un reproceso por rechazo y deja el lote revisado", () => {
@@ -35,41 +40,19 @@ describe("Revisar un lote terminado congela sus aprobadas por talla, crea un rep
 
 	/** La tablet registra en un bulto, con la persona que se diga (por omisión, la del lote). */
 	function registrar(lote: LoteCortado, bulto: number, operacion: number, buenas: number, personaId = lote.personaId) {
-		return subirDeLaTablet(
-			servidor,
-			"produccion.registrar_operacion",
-			{
-				id: uuidv7(),
-				bulto_id: lote.bultos[bulto]?.id,
-				flujo_operacion_id: lote.prenda.flujo.operaciones[operacion]?.flujoOperacionId,
-				piezas_buenas: buenas,
-				piezas_danadas: 0,
-				sin_internet: false,
-			},
-			personaId,
-		);
+		return registrarEnBulto(servidor, lote, bulto, operacion, buenas, personaId);
 	}
 
-	/** Un lote cortado con 3 piezas de la talla 4 y 2 de la 6, terminado en sus dos operaciones. */
+	/** Un lote con 3 piezas de la talla 4 y 2 de la 6, terminado. */
 	async function loteTerminado(): Promise<LoteCortado> {
-		const lote = await loteCortado(servidor, siembra, [3, 2, 0]);
-		for (const [i, bulto] of lote.bultos.entries()) {
-			await registrar(lote, i, 1, bulto.piezas);
-			await registrar(lote, i, 2, bulto.piezas);
-		}
+		const lote = await terminado(servidor, siembra);
 		expect(await consultar("SELECT estado FROM lotes WHERE id = $1", [lote.loteId])).toEqual([{ estado: "terminado" }]);
 		return lote;
 	}
 
 	/** Calidad agrega un defecto que suele causar la primera operación después del corte. */
-	async function defecto(lote: LoteCortado, nombre = `Costura abierta ${uuidv7().slice(-6)}`): Promise<string> {
-		const respuesta = await mandarAccion(
-			servidor,
-			"calidad.agregar_defecto",
-			{ datos: { nombre, operacion_ids: [lote.prenda.flujo.operaciones[1]?.operacionId] } },
-			"calidad",
-		);
-		return z.object({ defecto_id: z.uuid() }).parse(respuesta.cuerpo.resultado).defecto_id;
+	function defecto(lote: LoteCortado, nombre?: string): Promise<string> {
+		return defectoDePrueba(servidor, lote, nombre);
 	}
 
 	/** La versión de un lote. */

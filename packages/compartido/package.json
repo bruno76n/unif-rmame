@@ -42,6 +42,7 @@
 		"./contratos/sincronizacion": "./src/contratos/sincronizacion.ts",
 		"./cliente/cliente": "./src/cliente/cliente.ts",
 		"./contratos/compras/proveedores": "./src/contratos/compras/proveedores.ts",
+		"./contratos/calidad/reclamos": "./src/contratos/calidad/reclamos.ts",
 		"./contratos/calidad/revision": "./src/contratos/calidad/revision.ts",
 		"./contratos/produccion/flujos": "./src/contratos/produccion/flujos.ts",
 		"./contratos/produccion/ordenes": "./src/contratos/produccion/ordenes.ts",

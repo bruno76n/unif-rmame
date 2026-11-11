@@ -172,3 +172,5 @@ Los cambia solo la dueña, en Configuración (ver [configuración](../admin/conf
 
 - **`catalogo.imprimir_etiquetas`** bloquea primero los productos, en orden por id, y luego las variantes: el mismo orden que el alta, las tallas y «Aplicar cambios» (decisión 464).
 - **El aviso de códigos** dice el último código con lo que da `admin.siguiente_folio` (el siguiente más los que quedan), no con un número fijo.
+
+**Fase 13, parte 2.** La lectura `catalogo.variante_por_codigo` (`lecturas/variantes.ts`) regresa la variante de un código con su producto y su talla, también la dada de baja (la prenda ya se hizo), o nada. Lo prueba `calidad/acciones/registrar-reclamo.prueba.ts`.

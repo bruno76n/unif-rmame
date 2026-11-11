@@ -388,3 +388,5 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 11 nov 2026 | 13 | Qué regresa lo que un pedido tiene en reproceso (decisión 621) | Por talla · por lote y talla | Por lote y talla: Producción suma solo los de los lotes en aduana y no cuenta dos veces | No |
 | 11 nov 2026 | 13 | Cómo da Calidad el `409` del lote sin escribirlo (decisión 622) | Subir la versión del lote · bloquearlo con su versión y que Producción lo marque | La segunda: cada tabla la escribe su dueño | No |
 | 11 nov 2026 | 13 | El pedido en el mensaje del reproceso (decisión 623) | Esperar a la fase 16 · leerlo por id | Esperar: no hay tabla de pedidos | No |
+| 11 nov 2026 | 13 | El cliente de un reclamo antes de la fase 16 (decisión 624) | Esperar · registrarlo sin revisar su tabla | Registrarlo: el reclamo ya sirve para rastrear | No |
+| 11 nov 2026 | 13 | Dónde se revisa el cliente o la tienda según el origen (decisión 625) | En el contrato · en la acción | En la acción: el contrato no corre los refinamientos | No |

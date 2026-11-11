@@ -1,6 +1,7 @@
 /**
- * Los parámetros que declara `calidad`: cuándo un lote es «Por revisar hoy» y la tasa de defectos.
- * Fase 13 · docs/modulos/calidad/revision-de-lotes.md («Parámetros»)
+ * Los parámetros que declara `calidad`: cuándo un lote es «Por revisar hoy», la tasa de defectos y lo menos que dice
+ * un reclamo.
+ * Fase 13 · docs/modulos/calidad/revision-de-lotes.md y reclamos-y-devoluciones.md («Parámetros»)
  */
 
 import { semillaDeParametros } from "../../nucleo/parametros.ts";
@@ -41,5 +42,17 @@ export const semillaDeParametrosDeCalidad = semillaDeParametros("calidad", [
 		minimo: 0,
 		maximo: 100,
 		orden: 3,
+	},
+	{
+		clave: "calidad.reclamo_min_letras",
+		seccion: "parametro",
+		nombre: "Lo que dice el cliente",
+		explicacion: "Lo menos que lleva «Qué dice el cliente» en un reclamo",
+		tipo: "entero",
+		unidad: "letras",
+		inicial: 10,
+		minimo: 1,
+		maximo: 200,
+		orden: 4,
 	},
 ]);

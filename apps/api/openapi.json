@@ -3611,6 +3611,387 @@
         }
       }
     },
+    "/v1/acciones/calidad.registrar_reclamo": {
+      "post": {
+        "tags": [
+          "calidad"
+        ],
+        "description": "Registra un reclamo: del código de la prenda a su lote, su operación y su persona\n\nPermiso: departamento calidad.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "clave_idempotencia": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "description": "La hace el cliente al apretar el botón y la reusa en cada reintento"
+                  },
+                  "datos": {
+                    "type": "object",
+                    "properties": {
+                      "origen": {
+                        "type": "string",
+                        "enum": [
+                          "cliente_externo",
+                          "tienda"
+                        ],
+                        "description": "De un cliente externo o de una tienda"
+                      },
+                      "cliente_id": {
+                        "description": "El cliente, si es de un cliente externo",
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      "ubicacion_id": {
+                        "description": "La tienda, si es de una tienda",
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      "salida_tienda_id": {
+                        "description": "La salida con que llegó de la tienda, si se sabe",
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      "nota_entrega_id": {
+                        "description": "La nota de entrega en que salió, si se sabe",
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      "codigo": {
+                        "type": "string",
+                        "pattern": "^\\d{6}$",
+                        "description": "El código de 6 dígitos de la prenda"
+                      },
+                      "lote_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "description": "El lote revisado de esa prenda"
+                      },
+                      "defecto_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "description": "El defecto"
+                      },
+                      "flujo_operacion_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "description": "La operación del flujo que lo causó"
+                      },
+                      "persona_id": {
+                        "description": "Quién la hizo; si no viene, la que propone Producción",
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      "piezas": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 9007199254740991,
+                        "description": "Cuántas"
+                      },
+                      "que_dice_cliente": {
+                        "type": "string",
+                        "maxLength": 500,
+                        "description": "Qué dice el cliente; al menos `calidad.reclamo_min_letras` letras"
+                      }
+                    },
+                    "required": [
+                      "origen",
+                      "codigo",
+                      "lote_id",
+                      "defecto_id",
+                      "flujo_operacion_id",
+                      "piezas",
+                      "que_dice_cliente"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "clave_idempotencia",
+                  "datos"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "reclamo_id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                          "description": "El reclamo"
+                        },
+                        "folio": {
+                          "type": "string",
+                          "description": "Su folio RC-"
+                        },
+                        "rastreo": {
+                          "type": "object",
+                          "properties": {
+                            "lote": {
+                              "type": "string",
+                              "description": "El folio del lote"
+                            },
+                            "revisado_por": {
+                              "nullable": true,
+                              "description": "Quién lo revisó",
+                              "type": "string"
+                            },
+                            "revisado_en": {
+                              "nullable": true,
+                              "description": "Cuándo",
+                              "type": "string"
+                            },
+                            "operacion": {
+                              "type": "string",
+                              "description": "La operación que lo causó"
+                            },
+                            "persona": {
+                              "nullable": true,
+                              "description": "Quién la hizo",
+                              "type": "string"
+                            },
+                            "rollos": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "rollo": {
+                                    "type": "string"
+                                  },
+                                  "partida": {
+                                    "nullable": true,
+                                    "type": "string"
+                                  },
+                                  "tela": {
+                                    "type": "string"
+                                  },
+                                  "proveedor": {
+                                    "nullable": true,
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "rollo",
+                                  "partida",
+                                  "tela",
+                                  "proveedor"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "description": "Los rollos del corte con su partida, su tela y su proveedor"
+                            },
+                            "lotes_de_la_prenda": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "En cuántos lotes se hizo esa prenda"
+                            }
+                          },
+                          "required": [
+                            "lote",
+                            "revisado_por",
+                            "revisado_en",
+                            "operacion",
+                            "persona",
+                            "rollos",
+                            "lotes_de_la_prenda"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "mensaje": {
+                          "type": "string",
+                          "description": "El aviso verde que muestra la pantalla"
+                        },
+                        "version": {
+                          "description": "La versión nueva de lo que cambió, si la acción editó algo",
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "reclamo_id",
+                        "folio",
+                        "rastreo",
+                        "mensaje"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "avisos": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Mensajes que no bloquean"
+                    },
+                    "secreto_entregado": {
+                      "description": "La respuesta repetida de una acción que entregó un secreto: el secreto ya no viene",
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "avisos"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/acciones/calidad.resolver_reclamo": {
+      "post": {
+        "tags": [
+          "calidad"
+        ],
+        "description": "Marca un reclamo como resuelto\n\nPermiso: departamento calidad.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "clave_idempotencia": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "description": "La hace el cliente al apretar el botón y la reusa en cada reintento"
+                  },
+                  "datos": {
+                    "type": "object",
+                    "properties": {
+                      "reclamo_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "description": "El reclamo"
+                      },
+                      "resolucion": {
+                        "description": "Cómo se resolvió, opcional",
+                        "type": "string",
+                        "maxLength": 200
+                      }
+                    },
+                    "required": [
+                      "reclamo_id"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "version": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991,
+                    "description": "La versión que se leyó"
+                  }
+                },
+                "required": [
+                  "clave_idempotencia",
+                  "datos",
+                  "version"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "mensaje": {
+                          "type": "string",
+                          "description": "El aviso verde que muestra la pantalla"
+                        },
+                        "version": {
+                          "description": "La versión nueva de lo que cambió, si la acción editó algo",
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "mensaje"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "avisos": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Mensajes que no bloquean"
+                    },
+                    "secreto_entregado": {
+                      "description": "La respuesta repetida de una acción que entregó un secreto: el secreto ya no viene",
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "avisos"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/acciones/catalogo.agregar_escuela": {
       "post": {
         "tags": [

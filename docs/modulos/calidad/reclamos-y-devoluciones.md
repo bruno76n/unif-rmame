@@ -141,4 +141,12 @@ Los cambia solo la dueña, en Configuración (ver [configuración](../admin/conf
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 13.*
+**Fase 13, parte 2.**
+
+- **La tabla** `reclamos` es de `calidad` (`tablas.ts`, migración `0043`), con sus CHECK (el origen con su cliente o su tienda, las piezas, el estado y lo resuelto, la resolución de hasta 200). `cliente_id`, `nota_entrega_id` y `salida_tienda_id` llevan su `@llavePendiente`.
+- **Las acciones** están en `acciones/reclamos.ts`, con sus contratos en `packages/compartido/src/contratos/calidad/reclamos.ts`:
+  - `registrar_reclamo` revisa lo que dice el cliente con `calidad.reclamo_min_letras`, el cliente o la tienda (una ubicación de tipo tienda; si no, `422 tienda_no_valida`), el código con `catalogo.variante_por_codigo`, que el lote tenga esa talla revisada (`revision_tallas`) y que la operación sea del flujo del lote y esté ligada al defecto. La persona se congela: la escogida o la de `produccion.persona_que_la_hizo`. Toma su folio RC- con `admin.tomar_folio`. Que venga el cliente se revisa en la acción, no en el contrato (decisión 625). Hasta la fase 16, la bitácora dice «de un cliente externo» (decisión 624).
+  - `resolver_reclamo` toma la versión del reclamo.
+- **El rastreo** (`dominio/rastreo.ts`) se calcula al registrar y regresa con el reclamo: el lote, quién lo revisó y cuándo, la operación, la persona, los rollos del corte con su partida, su tela y su proveedor, y en cuántos lotes se hizo la prenda. La pantalla de Calidad lo pedirá con su consulta (fase 19).
+- **El parámetro** `calidad.reclamo_min_letras` está en `parametros.ts`.
+- **Pruebas:** `acciones/registrar-reclamo.prueba.ts` (del código al lote con la persona congelada y el rastreo, resolver una vez, lo que no deja registrar, el reclamo de una tienda). Las ayudas de lote terminado y defecto están en `nucleo/pruebas/calidad-de-prueba.ts`.
