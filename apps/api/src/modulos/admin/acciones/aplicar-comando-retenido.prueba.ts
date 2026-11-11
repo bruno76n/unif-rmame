@@ -27,13 +27,13 @@ describe("Lo que llega de un aparato revocado y pasó antes abre `dispositivo_re
 	});
 
 	/** La tablet sube un comando de abrir un lote. */
-	async function subirLote(nombre: string, ocurridoEn: string) {
-		const comando = {
-			clave_idempotencia: nuevaClave(),
-			accion: "prueba.abrir_lote",
-			datos: { id: uuidv7(), nombre },
-			ocurrido_en: ocurridoEn,
-		};
+	function subirLote(nombre: string, ocurridoEn: string) {
+		return subirComando("prueba.abrir_lote", { id: uuidv7(), nombre }, ocurridoEn);
+	}
+
+	/** La tablet sube un comando. */
+	async function subirComando(accion: string, datos: Record<string, unknown>, ocurridoEn: string) {
+		const comando = { clave_idempotencia: nuevaClave(), accion, datos, ocurrido_en: ocurridoEn };
 		const respuesta = await servidor.app.inject({
 			method: "POST",
 			url: "/v1/sync/subir",
@@ -96,7 +96,7 @@ describe("Lo que llega de un aparato revocado y pasó antes abre `dispositivo_re
 		expect(aplicado.estado).toBe(200);
 		expect(aplicado.cuerpo.resultado).toMatchObject({
 			resultado: "aplicado",
-			mensaje: "Movimiento de Tablet del taller aplicado: prueba.abrir_lote",
+			mensaje: "Movimiento de Tablet del taller aplicado: prueba.abrir_lote L-retenido",
 		});
 		// El lote se abrió, con la bitácora de su acción y quién lo aplicó.
 		const { rows: lotes } = await servidor.base.dueno.query(
@@ -104,10 +104,12 @@ describe("Lo que llega de un aparato revocado y pasó antes abre `dispositivo_re
 		);
 		expect(lotes).toEqual([{ nombre: "L-retenido" }]);
 		const { rows: bitacora } = await servidor.base.dueno.query(
-			"SELECT despues->>'retenido' AS retenido FROM bitacora WHERE accion = 'prueba.abrir_lote' AND comando_id = $1",
+			"SELECT despues->>'retenido' AS retenido, confirmado_con_google_en IS NOT NULL AS con_google FROM bitacora WHERE accion = 'prueba.abrir_lote' AND comando_id = $1",
 			[abierta?.comando_id],
 		);
 		expect(bitacora[0]?.retenido).toMatch(/^retenido de Tablet del taller revocado; aplicado por /);
+		// Con la confirmación de Google de quien lo aplicó.
+		expect(bitacora[0]?.con_google).toBe(true);
 		expect(await excepcionDe(comando.clave_idempotencia)).toMatchObject({
 			estado: "resuelta",
 			resolucion: "Se aplicó el movimiento retenido",
@@ -144,5 +146,43 @@ describe("Lo que llega de un aparato revocado y pasó antes abre `dispositivo_re
 				)
 			).cuerpo,
 		).toMatchObject({ codigo: "no_retenido" });
+	});
+
+	it("la versión vieja da 409; dos a la vez aplican uno; si le falta su documento queda apartado y sigue retenido", async () => {
+		// La tablet ya está revocada (la prueba anterior): lo que sube de antes queda retenido.
+		const haceUnMinuto = new Date(Date.now() - 60_000).toISOString();
+		const lote = await subirLote("L-a-la-vez", haceUnMinuto);
+		const abierta = await excepcionDe(lote.comando.clave_idempotencia);
+		const aplicar = (version: number, comandoId = abierta?.comando_id) =>
+			mandarAccion(
+				servidor,
+				"admin.aplicar_comando_retenido",
+				{ datos: { comando_id: comandoId }, version },
+				"duena",
+				conGoogle(),
+			);
+		expect((await aplicar((abierta?.version ?? 0) - 1)).estado).toBe(409);
+		const aLaVez = await Promise.all([aplicar(abierta?.version ?? 0), aplicar(abierta?.version ?? 0)]);
+		expect(aLaVez.map((respuesta) => respuesta.estado).sort()).toEqual([200, 422]);
+		const { rows } = await servidor.base.dueno.query(
+			"SELECT count(*)::int AS n FROM prueba_lotes WHERE nombre = 'L-a-la-vez'",
+		);
+		expect(rows[0]?.n).toBe(1);
+		// Un bulto de un lote que no existe: al aplicarlo queda apartado, y sigue retenido con su excepción abierta.
+		const bulto = await subirComando(
+			"prueba.registrar_bulto",
+			{ id: uuidv7(), lote_id: uuidv7(), piezas: 3 },
+			haceUnMinuto,
+		);
+		const delBulto = await excepcionDe(bulto.comando.clave_idempotencia);
+		const sinLote = await aplicar(delBulto?.version ?? 0, delBulto?.comando_id);
+		expect(sinLote.cuerpo.resultado).toMatchObject({
+			resultado: "apartado",
+			mensaje: expect.stringMatching(/^Sigue retenido: /),
+		});
+		expect(await excepcionDe(bulto.comando.clave_idempotencia)).toMatchObject({
+			estado: "por_revisar",
+			aplicado: false,
+		});
 	});
 });

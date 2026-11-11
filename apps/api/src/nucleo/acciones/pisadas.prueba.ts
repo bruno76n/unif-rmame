@@ -125,6 +125,7 @@ describe("una edición con versión vieja recibe 409 con la versión actual y su
 				ahora: Temporal.Now.instant(),
 				diaDeNegocio: Temporal.PlainDate.from("2026-11-10"),
 				comandoId: "01936f2e-0000-7000-8000-0000000000aa",
+				claveIdempotencia: undefined,
 				interna: async () => undefined,
 				lectura: async () => undefined,
 				hayLectura: () => false,

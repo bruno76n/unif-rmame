@@ -59,7 +59,7 @@ async function existenciasContraLibro(
 		sql`SELECT 1 FROM existencias WHERE ubicacion_id = ${ubicacion.id} ORDER BY variante_id FOR UPDATE`,
 	);
 	await transaccion.execute(
-		sql`SELECT 1 FROM existencias_material WHERE ubicacion_id = ${ubicacion.id} ORDER BY material_id, rollo_id FOR UPDATE`,
+		sql`SELECT 1 FROM existencias_material WHERE ubicacion_id = ${ubicacion.id} ORDER BY material_id, rollo_id NULLS FIRST FOR UPDATE`,
 	);
 	const prendas = z.array(filaDePrenda).parse(
 		(
@@ -130,34 +130,68 @@ async function existenciasContraLibro(
 }
 
 /**
- * Paso 3: un traspaso que terminó ese día `recibido` o `salio` tiene cero en Tránsito y en En camino a aduana.
- * (Uno `con_diferencia` se revisa contra sus DF- abiertas desde la fase 14.)
+ * Paso 3: un traspaso que terminó ese día `recibido`, `salio`, `repartido` o `cancelado` tiene cero en Tránsito y cero
+ * en En camino a aduana, por renglón: cada tramo y cada variante (o material y rollo) por separado, para que un
+ * residuo no tape a otro. (Uno `con_diferencia` se revisa contra sus DF- abiertas desde la fase 14.) Abre una
+ * excepción por traspaso, con lo que quedó en cada tramo.
  * @returns Las excepciones que abrió.
  */
 async function tramosDeCamino(contexto: ContextoDeAccion, cuadreId: string, fecha: string): Promise<number> {
 	const { rows } = await contexto.transaccion.execute(sql`
-		SELECT t.id, t.folio,
-			coalesce(sum(CASE WHEN d.tipo IN ('transito', 'en_camino_aduana') THEN coalesce(l.piezas, l.cantidad) ELSE 0 END
-				- CASE WHEN o.tipo IN ('transito', 'en_camino_aduana') THEN coalesce(l.piezas, l.cantidad) ELSE 0 END), 0)::text AS en_tramo
-		FROM traspasos t
-		JOIN movimiento_lineas l ON l.traspaso_id = t.id
-		LEFT JOIN ubicaciones o ON o.id = l.origen_ubicacion_id
-		LEFT JOIN ubicaciones d ON d.id = l.destino_ubicacion_id
-		WHERE t.estado IN ('recibido', 'salio') AND (t.terminado_en AT TIME ZONE 'America/Mexico_City')::date = ${fecha}::date
-		GROUP BY t.id, t.folio
-		HAVING coalesce(sum(CASE WHEN d.tipo IN ('transito', 'en_camino_aduana') THEN coalesce(l.piezas, l.cantidad) ELSE 0 END
-			- CASE WHEN o.tipo IN ('transito', 'en_camino_aduana') THEN coalesce(l.piezas, l.cantidad) ELSE 0 END), 0) <> 0`);
-	for (const fila of z.array(z.object({ id: z.uuid(), folio: z.string(), en_tramo: z.string() })).parse(rows)) {
+		WITH terminados AS (
+			SELECT id, folio FROM traspasos
+			WHERE estado IN ('recibido', 'salio', 'repartido', 'cancelado')
+				AND (terminado_en AT TIME ZONE 'America/Mexico_City')::date = ${fecha}::date
+		), efectos AS (
+			SELECT l.traspaso_id, l.destino_ubicacion_id AS tramo, l.variante_id, l.material_id, l.rollo_id,
+				coalesce(l.piezas, l.cantidad) AS cuanto
+			FROM movimiento_lineas l JOIN ubicaciones u ON u.id = l.destino_ubicacion_id
+			WHERE l.traspaso_id IN (SELECT id FROM terminados) AND u.tipo IN ('transito', 'en_camino_aduana')
+			UNION ALL
+			SELECT l.traspaso_id, l.origen_ubicacion_id, l.variante_id, l.material_id, l.rollo_id, -coalesce(l.piezas, l.cantidad)
+			FROM movimiento_lineas l JOIN ubicaciones u ON u.id = l.origen_ubicacion_id
+			WHERE l.traspaso_id IN (SELECT id FROM terminados) AND u.tipo IN ('transito', 'en_camino_aduana')
+		)
+		SELECT t.id, t.folio, u.nombre AS tramo, e.variante_id, e.material_id, e.rollo_id, sum(e.cuanto)::text AS en_tramo
+		FROM efectos e JOIN terminados t ON t.id = e.traspaso_id JOIN ubicaciones u ON u.id = e.tramo
+		GROUP BY t.id, t.folio, u.nombre, e.variante_id, e.material_id, e.rollo_id
+		HAVING sum(e.cuanto) <> 0
+		ORDER BY t.folio, u.nombre`);
+	const residuos = z
+		.array(
+			z.object({
+				id: z.uuid(),
+				folio: z.string(),
+				tramo: z.string(),
+				variante_id: z.uuid().nullable(),
+				material_id: z.uuid().nullable(),
+				rollo_id: z.uuid().nullable(),
+				en_tramo: z.string(),
+			}),
+		)
+		.parse(rows);
+	const porTraspaso = new Map<string, typeof residuos>();
+	for (const residuo of residuos) porTraspaso.set(residuo.id, [...(porTraspaso.get(residuo.id) ?? []), residuo]);
+	for (const [id, suyos] of porTraspaso) {
+		const folio = suyos[0]?.folio ?? "";
 		await abrir(contexto, cuadreId, {
 			tipo: "cuadre_proyeccion",
-			descripcion: `${fila.folio} ya terminó y le quedan ${Number(fila.en_tramo)} en camino`,
+			descripcion: `${folio} ya terminó y le quedó algo en camino: ${suyos.map((residuo) => `${Number(residuo.en_tramo)} en ${residuo.tramo}`).join(", ")}`,
 			documento_tipo: "traspaso",
-			documento_id: fila.id,
-			documento_folio: fila.folio,
-			datos: { en_tramo: fila.en_tramo },
+			documento_id: id,
+			documento_folio: folio,
+			datos: {
+				tramos: suyos.map(({ tramo, variante_id, material_id, rollo_id, en_tramo }) => ({
+					tramo,
+					variante_id,
+					material_id,
+					rollo_id,
+					en_tramo,
+				})),
+			},
 		});
 	}
-	return rows.length;
+	return porTraspaso.size;
 }
 
 /** De cada motivo de reserva, la lectura que dice qué documentos siguen abiertos y la columna de su documento. */
@@ -280,15 +314,17 @@ async function elTotal(contexto: ContextoDeAccion, cuadreId: string): Promise<nu
 	return rows.length;
 }
 
-/** Lo que regresa el cuadre. */
-export type CuadreCorrido = { cuadreId: string; estado: "cuadro" | "con_residuo" } | "ya_corrio";
+/** Lo que regresa el cuadre: el suyo, o el de esa fecha que ya estaba, con su estado. */
+export type CuadreCorrido =
+	| { cuadreId: string; estado: "cuadro" | "con_residuo" }
+	| { yaCorrio: true; cuadreId: string; estado: string };
 
 /**
  * Corre el cuadre de un día de negocio, tanda por tanda. Una sola corrida por fecha.
  * @param contexto El contexto del trabajo, con sus transacciones cortas.
  * @param fecha El día de negocio que terminó (`2026-11-10`).
  * @param entreTandas Lo que corre entre una tanda y la siguiente (las pruebas meten ahí un movimiento).
- * @returns El cuadre y su estado, o `ya_corrio`.
+ * @returns El cuadre y su estado o, si ya había uno de esa fecha, ese.
  * @throws El error de la tanda que falló, después de dejar el cuadre en `fallo` con su error.
  */
 export async function correrCuadre(
@@ -304,7 +340,16 @@ export async function correrCuadre(
 			.onConflictDoNothing()
 			.returning({ id: cuadres.id }),
 	);
-	if (nacio.length === 0) return "ya_corrio";
+	if (nacio.length === 0) {
+		const [anterior] = await contexto.enTransaccion((accion) =>
+			accion.transaccion
+				.select({ id: cuadres.id, estado: cuadres.estado })
+				.from(cuadres)
+				.where(eq(cuadres.fecha, fecha)),
+		);
+		if (anterior === undefined) throw new Error(`el cuadre del ${fecha} no nació ni estaba`);
+		return { yaCorrio: true, cuadreId: anterior.id, estado: anterior.estado };
+	}
 	const cuenta: Cuenta = { revisados: 0, corregidas: 0, excepciones: 0 };
 	try {
 		const lugares = await contexto.enTransaccion((accion) =>
@@ -335,6 +380,23 @@ export async function correrCuadre(
 		await terminar(contexto, cuadreId, fecha, "fallo", cuenta, error instanceof Error ? error.message : String(error));
 		throw error;
 	}
+}
+
+/**
+ * Deja en `fallo` un cuadre que se quedó `corriendo` porque su proceso se cortó (el `catch` no alcanzó a correr).
+ * @param contexto El contexto del trabajo.
+ * @param cuadreId El cuadre.
+ * @param fecha Su día de negocio.
+ */
+export function marcarCuadreCortado(contexto: ContextoDeTrabajo, cuadreId: string, fecha: string): Promise<void> {
+	return terminar(
+		contexto,
+		cuadreId,
+		fecha,
+		"fallo",
+		{ revisados: 0, corregidas: 0, excepciones: 0 },
+		"El cuadre se cortó sin terminar",
+	);
 }
 
 /** Deja el cuadre en su estado final, con sus contadores, y guarda `cuadre.terminado`. */

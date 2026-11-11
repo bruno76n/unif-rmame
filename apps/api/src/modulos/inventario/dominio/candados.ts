@@ -1,7 +1,8 @@
 /**
- * Los candados del inventario, en el orden fijo: primero el de cada variante, después los renglones de
- * `existencias` por (`ubicacion_id`, `variante_id`) y los de `existencias_material` por (`ubicacion_id`,
- * `material_id`, `rollo_id`).
+ * Los candados del inventario, en el orden fijo: primero el de cada variante, después los traspasos por id, los
+ * renglones de `existencias` por (`ubicacion_id`, `variante_id`) y los de `existencias_material` por
+ * (`ubicacion_id`, `material_id`, `rollo_id`, el rollo vacío primero). Una acción que hace varias cosas con el
+ * inventario toma al principio, con `tomarCandadosDeInventario`, las variantes y los traspasos de todas.
  * Fase 9 · docs/cimientos/BASE-DE-DATOS.md («Candados») y docs/modulos/inventario/libro-de-movimientos.md
  * («Cómo se escribe un movimiento», paso 2)
  *
@@ -39,6 +40,18 @@ function comparar(uno: string, otro: string): number {
 export async function candadoDeVariantes(transaccion: Transaccion, varianteIds: Iterable<string>): Promise<void> {
 	for (const id of [...new Set(varianteIds)].sort(comparar)) {
 		await transaccion.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended(${`variante:${id}`}, 0))`);
+	}
+}
+
+/**
+ * Bloquea unos traspasos, en orden por id, después de las variantes y antes de las existencias. No cambia nada de
+ * ellos: así un movimiento, un cambio de estado y un reparto del mismo traspaso se ponen en fila en el mismo orden.
+ * @param transaccion La transacción.
+ * @param traspasoIds Los traspasos; se quitan los repetidos.
+ */
+export async function bloquearTraspasos(transaccion: Transaccion, traspasoIds: Iterable<string>): Promise<void> {
+	for (const id of [...new Set(traspasoIds)].sort(comparar)) {
+		await transaccion.execute(sql`SELECT 1 FROM traspasos WHERE id = ${id} FOR NO KEY UPDATE`);
 	}
 }
 
@@ -82,6 +95,7 @@ export async function bloquearExistenciasMaterial(
 		(uno, otro) =>
 			comparar(uno.ubicacionId, otro.ubicacionId) ||
 			comparar(uno.materialId, otro.materialId) ||
+			// El rollo vacío va primero, como en el `ORDER BY … rollo_id NULLS FIRST` del cuadre.
 			comparar(uno.rolloId ?? "", otro.rolloId ?? ""),
 	);
 	for (const { ubicacionId, materialId, rolloId } of ordenados) {
@@ -96,4 +110,19 @@ export async function bloquearExistenciasMaterial(
 			FOR UPDATE`);
 	}
 	return ordenados;
+}
+
+/**
+ * Toma al principio de una acción los candados de todo lo que va a tocar del inventario: sus variantes y, después,
+ * sus traspasos. Lo que escriba luego (varios movimientos, un cambio de estado, un reparto) vuelve a pedirlos sin
+ * esperar, y ya no puede invertir el orden con otra acción.
+ * @param transaccion La transacción.
+ * @param candados Las variantes y los traspasos.
+ */
+export async function tomarCandadosDeInventario(
+	transaccion: Transaccion,
+	candados: { varianteIds?: Iterable<string>; traspasoIds?: Iterable<string> },
+): Promise<void> {
+	await candadoDeVariantes(transaccion, candados.varianteIds ?? []);
+	await bloquearTraspasos(transaccion, candados.traspasoIds ?? []);
 }

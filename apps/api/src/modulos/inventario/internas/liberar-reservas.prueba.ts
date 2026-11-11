@@ -7,6 +7,8 @@
 
 import { v7 as uuidv7 } from "uuid";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { crearBase } from "../../../nucleo/base/conexion.ts";
+import { enAccionDePrueba } from "../../../nucleo/pruebas/accion-de-prueba.ts";
 import {
 	llamarInterna,
 	meterPiezas,
@@ -166,5 +168,47 @@ describe("liberar reservas", () => {
 			"liberada",
 			"activa",
 		]);
+	});
+
+	it("si el pago se confirma mientras se liberan sus reservas, espera y vuelve a apartar: el W- pagado nunca se queda sin reserva", async () => {
+		const [variante = ""] = await variantesLibres(servidor, 1);
+		await meterPiezas(servidor, ubicacion.BOD ?? "", variante, 2);
+		const pedido = uuidv7();
+		await llamarInterna(servidor, "inventario.reservar", {
+			motivo: "pedido_linea",
+			pedido_linea_id: pedido,
+			renglones: [{ variante_id: variante, piezas: 1 }],
+			pago_pendiente: true,
+		});
+		let soltar: () => void = () => undefined;
+		const espera = new Promise<void>((resolver) => {
+			soltar = resolver;
+		});
+		let libero: () => void = () => undefined;
+		const yaLibero = new Promise<void>((resolver) => {
+			libero = resolver;
+		});
+		// «Vencer reservas» libera y se queda abierta hasta que se le suelte.
+		const vencer = enAccionDePrueba(crearBase(servidor.base.app), servidor.modulos, async (contexto) => {
+			await contexto.interna("inventario.liberar_reservas", {
+				motivo: "pedido_linea",
+				documento_id: pedido,
+				motivo_fin: "vencio_pago",
+				documento_cancelado: false,
+			});
+			libero();
+			await espera;
+		});
+		await yaLibero;
+		const confirmar = llamarInterna(servidor, "inventario.confirmar_pago_reserva", { pedido_linea_id: pedido });
+		await new Promise((resolver) => setTimeout(resolver, 300));
+		soltar();
+		await vencer;
+		expect(await confirmar).toMatchObject({ volvio_a_apartar: true });
+		const { rows } = await servidor.base.dueno.query(
+			"SELECT count(*)::int AS n FROM reservas WHERE pedido_linea_id = $1 AND estado = 'activa'",
+			[pedido],
+		);
+		expect(rows[0]?.n).toBe(1);
 	});
 });

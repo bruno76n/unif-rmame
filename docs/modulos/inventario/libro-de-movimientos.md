@@ -1,6 +1,6 @@
 # Libro de movimientos
 
-> **Qué cubre:** el inventario como suma de movimientos: las siete ubicaciones con su responsable, los 30 tipos de movimiento con su origen y su destino, los renglones con su lote y su traspaso, y cómo se escribe y se revierte un movimiento.
+> **Qué cubre:** el inventario como suma de movimientos: las siete ubicaciones con su responsable, los 31 tipos de movimiento con su origen y su destino, los renglones con su lote y su traspaso, y cómo se escribe y se revierte un movimiento.
 > **Estado:** Decidido.
 > **Se construye en:** [fase 9 ●](../../fases/09-inventario-libro-existencias-reservas-y-traspasos.md).
 > **Se conecta con:** [existencias y cuadre](existencias-y-cuadre.md) · [traspasos](traspasos.md) · [reservas](reservas.md) · [base de datos](../../cimientos/BASE-DE-DATOS.md) · [idempotencia y concurrencia](../../cimientos/IDEMPOTENCIA-Y-CONCURRENCIA.md) · [recepciones en aduana](recepciones-en-aduana.md) · [surtido y despachos](surtido-y-despachos.md) · [material en bodega](material-en-bodega.md) · [entregas a corte](entregas-a-corte.md) · [recepción del taller](recepcion-del-taller.md) · [conteos](conteos.md) · [diferencias, ajustes y mermas](diferencias-ajustes-y-mermas.md) · [mínimos y reabasto](minimos-y-reabasto.md) · [entregas y devoluciones de clientes](entregas-y-devoluciones-de-clientes.md) · [notas de entrega](../ventas/notas-de-entrega.md) · [pantallas comunes](../../interfaz/comunes.md) · [pantallas de Aduana](../../interfaz/fabrica/aduana.md) · [pantallas de Bodega](../../interfaz/fabrica/bodega.md) · [pantallas de Dirección](../../interfaz/fabrica/direccion.md) · [pantallas de Contaduría](../../interfaz/fabrica/contaduria.md) · [pantallas de Personal](../../interfaz/fabrica/personal.md) · [pantallas de Administración](../../interfaz/fabrica/administracion.md) · [migración](../../MIGRACION.md)
@@ -120,7 +120,7 @@ El encabezado: un hecho que movió inventario.
 | Columna | Tipo | Nulo | Qué es |
 |---|---|---|---|
 | `id` | uuid | no | Llave (v7, la pone el servidor) |
-| `tipo` | text | no | CHECK con los 30 tipos de arriba |
+| `tipo` | text | no | CHECK con los 31 tipos de arriba |
 | `fecha` | date | no | El día de negocio de `ocurrido_en`, en hora de México |
 | `ocurrido_en` | timestamptz | no | Cuándo pasó de verdad: la hora del aparato si vino de uno; si no, la de la acción |
 | `documento_tipo` | text | no | CHECK (`carga_inicial`, `conteo`, `venta_tienda`, `devolucion_mostrador`, `merma_tienda`, `salida_tienda`, `traspaso`, `recepcion`, `despacho`, `nota_entrega`, `pedido_linea`, `corte`, `registro_operacion`, `toma_consumible`, `entrega_corte`, `ajuste`, `diferencia`, `reproceso`) |
@@ -165,7 +165,7 @@ Cada renglón mueve una cantidad positiva de una variante, o de un material (y s
 Lo hace una sola función del módulo, `escribirMovimiento`, en `modulos/inventario/dominio/` (ver [estructura](../../cimientos/ESTRUCTURA.md#un-módulo-por-dentro)). No es una acción interna: los demás módulos piden sus movimientos con la interna de cada caso (`inventario.registrar_corte`, `inventario.registrar_venta_tienda`…), y esas internas y las acciones de inventario usan esta función. Dentro de la transacción de quien la llama:
 
 1. **Revisa los renglones:** que el tipo exista y que cada renglón vaya del origen al destino que dice su tipo (un `despacho` solo de Aduana a Tránsito); la forma de prenda o de material; el rollo en la tela; el traspaso en lo que toca Tránsito o En camino a aduana. Si algo no cumple es un error del programa (`500`): quien la llama ya validó lo que llegó.
-2. **Toma los candados** en el orden fijo: las existencias por (`ubicacion_id`, `variante_id`) y las de material por (`ubicacion_id`, `material_id`, `rollo_id`), con `SELECT … FOR UPDATE` (ver [base de datos](../../cimientos/BASE-DE-DATOS.md#candados)).
+2. **Toma los candados** en el orden fijo: el de cada variante (`pg_advisory_xact_lock`), los traspasos de sus renglones, y luego las existencias por (`ubicacion_id`, `variante_id`) y las de material por (`ubicacion_id`, `material_id`, `rollo_id`), con `SELECT … FOR UPDATE` (ver [base de datos](../../cimientos/BASE-DE-DATOS.md#candados)).
 3. **Escribe el movimiento y sus renglones,** con la fecha del día de negocio y la clave (la de la acción o la derivada).
 4. **Suma la proyección:** cada renglón resta en su origen y suma en su destino, en `existencias` o en `existencias_material`, con su `ultimo_movimiento_id`. Si un renglón no existía, nace.
 5. **Mueve las reservas con su pieza:** las reservas activas ligadas al traspaso del renglón cambian de ubicación; al llegar a su destino final se les quita el traspaso (ver [reservas](reservas.md)). No es otro movimiento.
@@ -194,8 +194,6 @@ Ninguno propio: cada acción guarda los suyos, con `existencias` entre sus tabla
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 9 (y las fases 4, 10, 11 y 12 en lo que les toca).*
-
 **Fase 4.** La tabla `ubicaciones` está en `apps/api/src/modulos/inventario/tablas.ts` (migración `0004_configuracion.sql`), con su disparador común y el índice único de una sola por tipo fuera de las tiendas. Su siembra, con los siete renglones y los responsables vacíos, está en `modulos/inventario/index.ts`, que por ahora solo registra eso y dice que las ubicaciones las leen todos los departamentos.
 
 **Fase 9, parte 1.**
@@ -207,16 +205,17 @@ Ninguno propio: cada acción guarda los suyos, con `existencias` entre sus tabla
   - o prenda o material.
 - **Sus índices** son los de este archivo; el de `revierte_movimiento_id` es único.
 - **El libro solo crece:** `marcar_solo_crece` le quita el `UPDATE` al rol de la app, y ninguna tabla de negocio tiene `DELETE`. `actualizado_en` lo llena el disparador común al nacer y ya no cambia (decisión 472).
-- **La tabla de tipos** tiene 31 renglones, aunque el texto dice 30; se construyeron los 31 (decisión 469).
+- **La tabla de tipos** tiene los 31 renglones de arriba (decisión 469).
 - **Las reglas de cada tipo** (sus caminos y si mueve prendas, material o los dos) están en `dominio/tipos-de-movimiento.ts`. `consumible_tomado` acepta Bodega, Taller o Aduana como origen hasta que llegue `inventario.ubicacion_consumibles` (decisión 470).
-- **`escribirMovimiento` y `revertirMovimiento`** (`dominio/escribir-movimiento.ts`) hacen los pasos 1, 2, 3, 4 y 6:
+- **`escribirMovimiento` y `revertirMovimiento`** (`dominio/escribir-movimiento.ts`) hacen los seis pasos:
   - **Revisan** cada renglón contra su tipo, su forma y el traspaso de lo que toca un tramo de camino; si algo no cumple, es un `Error` (un `500`).
-  - **Toman los candados** de `dominio/candados.ts`: primero el de cada variante (`pg_advisory_xact_lock`) y después las existencias en el orden fijo. Las existencias que no estaban nacen en cero antes de bloquearse (decisión 466).
+  - **Toman los candados** de `dominio/candados.ts`: primero el de cada variante (`pg_advisory_xact_lock`), después los traspasos de sus renglones (`bloquearTraspasos`, `FOR NO KEY UPDATE`) y al final las existencias en el orden fijo, con el rollo vacío primero. Las existencias que no estaban nacen en cero antes de bloquearse (decisión 466). Una acción que escribe más de un movimiento, o cambia un traspaso y luego lo mueve, toma todo al principio con `tomarCandadosDeInventario` (decisión 500).
   - **Escriben** el movimiento con el día de negocio de `ocurrido_en` y suman la existencia. El material se suma en `numeric` dentro de Postgres; su cantidad viaja como texto decimal (decisión 471).
-  - **El paso 5** (las reservas) llega en la parte 3.
-- **La clave** es la del comando de la acción, leída de `comandos_recibidos`. Si la acción crea varios movimientos, se deriva con `claveDerivada` (uuid v5 de la clave, el tipo y el número). Un trabajo pasa la suya. Si ya hay un movimiento con esa clave, se regresa ese sin escribir nada (decisiones 467 y 468).
+  - **Mueven las reservas** con `moverReservasConSuPieza` (`dominio/reservas.ts`): cambian de ubicación con su pieza y, al llegar al destino de su traspaso, lo sueltan. Solo una entrega (`entrega_cliente_externo`, `entrega_tienda_sin_caja`, `salida_linea`, `venta_tienda`) las cumple; otra salida a Fuera las deja donde estaban (decisión 503).
+- **La clave** es la de la acción, que viaja en el contexto (`claveIdempotencia`): sirve igual por la web que por la cola de un aparato, donde el renglón del comando se guarda al final (decisión 501). `movimientos.comando_id` es una llave diferida (migración `0031`). Si la acción crea varios movimientos, se deriva con `claveDerivada` (uuid v5 de la clave, el tipo y el número). Un trabajo pasa la suya. Si ya hay un movimiento con esa clave, del mismo tipo y el mismo documento, se regresa ese sin escribir nada (decisiones 467 y 468); con otro tipo, otro documento u otra reversión es un error del programa (decisión 502).
 - **La reversión** voltea los renglones del original, con su lote y su traspaso, y toma su documento si no viene otro. Revertir dos veces, o revertir una reversión, es un error.
 - **Pruebas:**
   - `dominio/escribir-movimiento.prueba.ts`: la misma transacción; los caminos y el traspaso; el negativo; las claves derivadas con un comando real (la acción `prueba.mover_inventario` del módulo de prueba); la reversión única; el material.
-  - `dominio/escribir-movimiento.azar.prueba.ts`: cuatro conexiones a la vez, sin reintento. Con el orden de los candados quitado a propósito, sale en rojo.
+  - `dominio/escribir-movimiento.azar.prueba.ts`: cuatro conexiones a la vez, sin reintento, con ajustes y aclaraciones entre Taller y Bodega, de prendas y de material con milésimos y rollos; las existencias de los dos son siempre la suma del libro. Con el orden de los candados quitado a propósito, sale en rojo.
+  - `dominio/candados.prueba.ts`: sin reintento, dos movimientos en una acción contra otra que mueve las mismas variantes al revés, y un cambio de estado de un traspaso con su movimiento contra el reparto de sus reservas; ninguna da `40P01`.
   - `tablas.prueba.ts`: `42501` al cambiar o borrar el libro.

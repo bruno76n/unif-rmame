@@ -13,7 +13,15 @@ import { v7 as uuidv7 } from "uuid";
 import type { Transaccion } from "../../../nucleo/base/transacciones.ts";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
 import { productos, tallas, variantes } from "../../catalogo/tablas.ts";
-import { type motivosDeFinDeReserva, reservas, traspasos } from "../tablas.ts";
+import { type motivosDeFinDeReserva, reservas, type TipoDeMovimiento, traspasos } from "../tablas.ts";
+
+/** Los movimientos que entregan la pieza a su dueño: cumplen su reserva. */
+const tiposQueEntregan: readonly TipoDeMovimiento[] = [
+	"entrega_cliente_externo",
+	"entrega_tienda_sin_caja",
+	"salida_linea",
+	"venta_tienda",
+];
 
 /** Una reserva como está guardada. */
 export type Reserva = typeof reservas.$inferSelect;
@@ -213,6 +221,7 @@ interface RenglonQueViaja {
  */
 export async function moverReservasConSuPieza(
 	contexto: ContextoDeAccion,
+	tipo: TipoDeMovimiento,
 	movimientoId: string,
 	renglones: readonly RenglonQueViaja[],
 ): Promise<boolean> {
@@ -230,6 +239,9 @@ export async function moverReservasConSuPieza(
 		cambio = true;
 		const ids = tomadas.map((tomada) => tomada.id);
 		if (renglon.destino === null) {
+			// Solo una entrega cumple la reserva; una pérdida, una merma o una devolución al proveedor no: la reserva se
+			// queda donde estaba, y sus libres en negativo lo explican.
+			if (!tiposQueEntregan.includes(tipo)) continue;
 			for (const id of ids) await terminarReserva(contexto, id, { estado: "consumida", movimientoId });
 			continue;
 		}

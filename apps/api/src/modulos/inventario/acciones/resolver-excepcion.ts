@@ -16,8 +16,8 @@ const tiposDelTaller: readonly string[] = ["pasa_tope_bulto", "lote_no_en_proces
 
 /**
  * Revisa que quien resuelve tenga esa bandeja: Bodega lo de Bodega; Producción lo del taller; Contaduría lo de
- * dinero. La dueña, todo.
- * @throws `403 sin_departamento`.
+ * dinero. La dueña, todo. A quien no tiene esa bandeja se le contesta como si no existiera: no sabe ni que está.
+ * @throws `404` si no es de su bandeja.
  */
 function revisarBandeja(contexto: ContextoDeAccion, excepcion: { tipo: string; area: string }): void {
 	const { quien } = contexto;
@@ -28,7 +28,7 @@ function revisarBandeja(contexto: ContextoDeAccion, excepcion: { tipo: string; a
 		excepcion.area === "contaduria"
 			? tiene("contaduria")
 			: tiene("bodega") || (tiposDelTaller.includes(excepcion.tipo) && tiene("produccion"));
-	if (!puede) throw new ErrorDeApi("sin_permiso", "sin_departamento");
+	if (!puede) throw noExiste();
 }
 
 /**

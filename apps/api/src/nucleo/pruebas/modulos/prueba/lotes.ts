@@ -50,7 +50,10 @@ export const accionesDeLotes: AccionImplementada[] = [
 			.values({ id: datos.id, nombre: datos.nombre, ubicacionId: await ubicacionDeQuienLlama(contexto) });
 		contexto.bitacora({ descripcion: `Abrió el lote ${datos.nombre}`, entidad: "prueba_lotes", entidadId: datos.id });
 		contexto.guardarEvento({ tipo: "lote.abierto", datos: { lote_id: datos.id }, tablas: ["prueba_lotes"] });
-		return { resultado: { mensaje: "Lote abierto" }, entidad: { nombre: "prueba_lotes", id: datos.id } };
+		return {
+			resultado: { mensaje: "Lote abierto", folio: datos.nombre },
+			entidad: { nombre: "prueba_lotes", id: datos.id },
+		};
 	}),
 	implementarAccion(registrarBulto, async (contexto, datos) => {
 		const [lote] = await contexto.transaccion.select().from(lotes).where(eq(lotes.id, datos.lote_id));

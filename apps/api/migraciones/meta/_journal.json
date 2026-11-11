@@ -218,6 +218,13 @@
 			"when": 1794370019628,
 			"tag": "0030_cuadres",
 			"breakpoints": true
+		},
+		{
+			"idx": 31,
+			"version": "7",
+			"when": 1794371894413,
+			"tag": "0031_movimientos_comando_diferido",
+			"breakpoints": true
 		}
 	]
 }

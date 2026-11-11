@@ -12,7 +12,7 @@ import { v7 as uuidv7 } from "uuid";
 import { todosLosDepartamentos } from "../../nucleo/acceso/departamentos.ts";
 import { definirModulo } from "../../nucleo/modulos.ts";
 import { accionResolverExcepcion } from "./acciones/resolver-excepcion.ts";
-import { marcarExcepcionResuelta, registrarExcepcion } from "./internas/excepciones.ts";
+import { marcarExcepcionResuelta, registrarExcepcion, tomarVersionExcepcion } from "./internas/excepciones.ts";
 import {
 	apartarParaNota,
 	confirmarPagoReserva,
@@ -71,6 +71,7 @@ export default definirModulo({
 	internas: {
 		registrar_excepcion: registrarExcepcion,
 		marcar_excepcion_resuelta: marcarExcepcionResuelta,
+		tomar_version_excepcion: tomarVersionExcepcion,
 		reservar,
 		liberar_reservas: liberarReservas,
 		confirmar_pago_reserva: confirmarPagoReserva,

@@ -102,7 +102,7 @@ const pedidoDeReservar = z
 			)
 			.min(1),
 		pago_pendiente: z.boolean().optional(),
-		vence_en: z.string().optional(),
+		vence_en: z.iso.datetime({ offset: true }).optional(),
 	})
 	.strict();
 
@@ -384,7 +384,7 @@ async function renglonesARepartir(
 				const toma = Math.min(falta, (linea.piezasRecibidasAduana ?? 0) - linea.piezasRepartidas);
 				if (toma <= 0) return [];
 				falta -= toma;
-				return [{ lineaId: linea.id, piezas: toma }];
+				return [{ lineaId: linea.id, piezas: toma, varianteId }];
 			});
 	});
 }
@@ -490,7 +490,7 @@ async function regresarLoDeAduana(contexto: ContextoDeAccion, liberadas: readonl
 	}
 	const lugares = await leerUbicaciones(contexto);
 	const hijos: string[] = [];
-	for (const [traspasoId, deEse] of porTraspaso) {
+	for (const [traspasoId, deEse] of [...porTraspaso].sort(([uno], [otro]) => (uno < otro ? -1 : 1))) {
 		const [padre] = await contexto.transaccion.select().from(traspasos).where(eq(traspasos.id, traspasoId));
 		if (padre === undefined || padre.estado !== "en_aduana") continue;
 		const renglones = await renglonesARepartir(contexto, traspasoId, sumarPorVariante(deEse));
@@ -528,15 +528,27 @@ export async function confirmarPagoReserva(
 ): Promise<{ volvio_a_apartar: boolean; renglones: RenglonApartado[] }> {
 	const { pedido_linea_id } = pedidoDeConfirmarPago.parse(datos);
 	const { transaccion } = contexto;
+	// El candado de sus variantes antes de decidir: «Vencer reservas» no puede liberarlas a la mitad.
+	const deEse = await transaccion
+		.selectDistinct({ varianteId: reservas.varianteId })
+		.from(reservas)
+		.where(eq(reservas.pedidoLineaId, pedido_linea_id));
+	await candadoDeVariantes(
+		transaccion,
+		deEse.map((reserva) => reserva.varianteId),
+	);
 	const activas = await reservasActivas(transaccion, eq(reservas.pedidoLineaId, pedido_linea_id));
 	if (activas.length > 0) {
 		await transaccion
 			.update(reservas)
 			.set({ venceEn: null })
 			.where(
-				inArray(
-					reservas.id,
-					activas.map((reserva) => reserva.id),
+				and(
+					inArray(
+						reservas.id,
+						activas.map((reserva) => reserva.id),
+					),
+					eq(reservas.estado, "activa"),
 				),
 			);
 		return { volvio_a_apartar: false, renglones: [] };
@@ -600,8 +612,20 @@ async function pasarAHijos(
 		porPadre.set(reserva.traspasoId, [...(porPadre.get(reserva.traspasoId) ?? []), reserva]);
 	}
 	const hijos: string[] = [];
-	for (const [padreId, deEse] of porPadre) {
-		const renglones = await renglonesARepartir(contexto, padreId, sumarPorVariante(deEse));
+	// Los padres en orden por id: dos acciones que reparten los mismos los bloquean igual.
+	for (const [padreId, deEse] of [...porPadre].sort(([uno], [otro]) => (uno < otro ? -1 : 1))) {
+		const porVariante = sumarPorVariante(deEse);
+		const renglones = await renglonesARepartir(contexto, padreId, porVariante);
+		// Lo apartado tiene que estar en aduana: si no, el hijo llevaría menos piezas que sus reservas.
+		for (const [varianteId, piezas] of porVariante) {
+			const repartidas = renglones.reduce(
+				(suma, renglon) => suma + (renglon.varianteId === varianteId ? renglon.piezas : 0),
+				0,
+			);
+			if (repartidas !== piezas) {
+				throw new Error(`el traspaso ${padreId} tiene en aduana ${repartidas} de ${piezas} apartadas de ${varianteId}`);
+			}
+		}
 		const repartido = await repartirTraspaso(contexto, { padreId, renglones, hijo });
 		for (const reserva of deEse) {
 			const nuevaId = await crearReserva(contexto, {

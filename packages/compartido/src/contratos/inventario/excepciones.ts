@@ -23,6 +23,6 @@ export const resolverExcepcion = definirAccion({
 	}),
 	salida: z.object({}),
 	permiso: {},
-	errores: [{ codigo: "ya_resuelta", mensaje: "Esa excepción ya está resuelta." }],
+	errores: [{ codigo: "ya_resuelta", mensaje: "Ya la resolvió {nombre}" }],
 	edita: true,
 });

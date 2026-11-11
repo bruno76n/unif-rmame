@@ -10,12 +10,10 @@
 
 import { aplicarComandoRetenido } from "@uniformame/compartido/contratos/admin/dispositivos";
 import { escribirBitacoraConAdmin, guardarEventosConAdmin } from "../../../nucleo/acciones/corredor.ts";
-import { tomarVersion } from "../../../nucleo/acciones/pisadas.ts";
 import { errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
 import { implementarAccion, type RenglonDeBitacora } from "../../../nucleo/modulos.ts";
 import { aplicarRetenido, leerRetenido } from "../../../nucleo/sincronizacion/comandos.ts";
-import { excepciones } from "../../inventario/tablas.ts";
-import { cuentaQueLlama, leerCuenta, nombreDeCuenta } from "../dominio/cuentas.ts";
+import { confirmadoConGoogle, cuentaQueLlama, leerCuenta, nombreDeCuenta } from "../dominio/cuentas.ts";
 
 export const accionAplicarComandoRetenido = implementarAccion(
 	aplicarComandoRetenido,
@@ -27,13 +25,14 @@ export const accionAplicarComandoRetenido = implementarAccion(
 		if (retenido === "no_existe") throw noExiste();
 		if (retenido === "no_retenido") throw errorDeRegla("no_retenido", "Ese comando no está retenido.");
 		if (retenido === "ya_aplicado") throw errorDeRegla("ya_aplicado", "Ese movimiento ya se aplicó.");
-		// La versión que se leyó es la de la excepción.
-		await tomarVersion(contexto, excepciones, retenido.excepcionId, version, async () => ({
-			excepcion_id: retenido.excepcionId,
-		}));
+		// La versión que se leyó es la de la excepción: la toma su dueño, `inventario`.
+		await contexto.interna("inventario.tomar_version_excepcion", { excepcion_id: retenido.excepcionId, version });
+		const confirmadoEn = confirmadoConGoogle(contexto);
 		const nota = `retenido de ${retenido.nombreDelAparato} revocado; aplicado por ${nombre}`;
+		// La bitácora de la acción del comando, a nombre del aparato, con la confirmación de quien la aplicó.
 		const ajustar = (renglon: RenglonDeBitacora): RenglonDeBitacora => ({
 			...renglon,
+			confirmadoConGoogleEn: confirmadoEn,
 			despues:
 				typeof renglon.despues === "object" && renglon.despues !== null && !Array.isArray(renglon.despues)
 					? { ...renglon.despues, retenido: nota }
@@ -50,8 +49,8 @@ export const accionAplicarComandoRetenido = implementarAccion(
 			usuarioId,
 			ajustar,
 		);
-		const { resultado, motivo, excepciones: abiertas } = hecho.respuesta;
-		if (resultado === "apartado" || resultado === "repetido") {
+		const { resultado, motivo, excepciones: abiertas, datos: regreso } = hecho.respuesta;
+		if (resultado !== "aplicado" && resultado !== "excepcion") {
 			contexto.bitacora({
 				descripcion: `Intentó aplicar un movimiento retenido de ${retenido.nombreDelAparato} (${retenido.tipoComando}): queda apartado por ${motivo ?? "su regla"}`,
 				entidad: "comandos_recibidos",
@@ -76,7 +75,8 @@ export const accionAplicarComandoRetenido = implementarAccion(
 				resultado,
 				motivo: null,
 				excepciones: abiertas,
-				mensaje: `Movimiento de ${retenido.nombreDelAparato} aplicado: ${retenido.tipoComando}`,
+				// El folio, si la acción del comando lo dio.
+				mensaje: `Movimiento de ${retenido.nombreDelAparato} aplicado: ${retenido.tipoComando}${typeof regreso?.folio === "string" ? ` ${regreso.folio}` : ""}`,
 			},
 			// La bitácora es la de la acción del comando, con quién lo aplicó.
 			sinBitacora: true,

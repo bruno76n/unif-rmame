@@ -187,8 +187,6 @@ Las existencias las leen las pantallas de Aduana, Bodega, Dirección, Catálogo 
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 9.*
-
 **Fase 9, parte 1.**
 
 - **Las tablas** `existencias` y `existencias_material` están en `modulos/inventario/tablas.ts` (migración `0026`). El único de material es `UNIQUE NULLS NOT DISTINCT` (`existencias_material_lugar`), para que un avío sin rollo tenga un solo renglón.
@@ -208,15 +206,16 @@ Las existencias las leen las pantallas de Aduana, Bodega, Dirección, Catálogo 
 - **La tabla** `cuadres` está en `modulos/inventario/tablas.ts` (migración `0030`): única por fecha, y `terminado_en` lleno si y solo si ya no está `corriendo`. `excepciones.cuadre_id` ya es llave.
 - **El cuadre** (`internas/correr-cuadre.ts`, `correrCuadre`) es una función del módulo y no una interna registrada: corre sus propias transacciones, y una interna corre dentro de la de quien la llama (decisión 495).
   - **Una sola corrida por fecha:** nace con un único por fecha; si ya estaba, regresa `ya_corrio`.
-  - **Paso 1:** una tanda por ubicación. Bloquea sus existencias en el orden fijo, las compara con la suma del libro (piezas y material) y corrige la que no es igual, con su `cuadre_proyeccion` y los dos valores.
-  - **Paso 3:** los traspasos que terminaron ese día `recibido` o `salio` tienen cero en los tramos de camino. Los `con_diferencia` esperan a las DF- de la fase 14 (decisión 496).
+  - **Paso 1:** una tanda por ubicación. Bloquea sus existencias en el orden fijo (el material con el rollo vacío primero, como `escribirMovimiento`), las compara con la suma del libro (piezas y material) y corrige la que no es igual, con su `cuadre_proyeccion` y los dos valores.
+  - **Paso 3:** los traspasos que terminaron ese día `recibido`, `salio`, `repartido` o `cancelado` tienen cero en los tramos de camino, por tramo y por variante (o material y rollo): un residuo no tapa a otro. Abre una excepción por traspaso, con lo que quedó en cada tramo en `datos.tramos` (decisión 504). Los `con_diferencia` esperan a las DF- de la fase 14 (decisión 496).
   - **Paso 6:** pregunta a `ventas.documentos_abiertos` y `linea.pedidos_abiertos` cuando esos módulos existen (decisión 497). Hasta la fase 16, un módulo de prueba `ventas` da la primera (decisión 498).
   - **Paso 7:** lo que lleva más de `inventario.dias_sin_confirmar_excepcion` días en camino (desde `enviado_en`) o en tránsito (desde su último movimiento a Tránsito). Abre una excepción por traspaso mientras siga abierta (decisión 499).
   - **Paso 8:** el total de cada variante y de cada material contra el libro.
-  - **Al final:** `cuadro` o `con_residuo` con sus contadores y el evento `cuadre.terminado`. Si una tanda falla, queda `fallo` con su error.
-- **El trabajo** `inventario.cuadre_nocturno` (`trabajos/cuadre-nocturno.ts`) corre a `inventario.hora_cuadre` el día que terminó. Si el cuadre falla, avisa `cuadre_fallido` a la dueña y falla, para que soporte reciba su `trabajo_fallido`.
+  - **Al final:** `cuadro` o `con_residuo` con sus contadores y el evento `cuadre.terminado`. Si una tanda falla, queda `fallo` con su error. Si el proceso se cortó y el cuadre se quedó `corriendo`, la siguiente vuelta del trabajo lo encuentra así, lo pasa a `fallo` («El cuadre se cortó sin terminar», `marcarCuadreCortado`), avisa y falla (decisión 505).
+- **El trabajo** `inventario.cuadre_nocturno` (`trabajos/cuadre-nocturno.ts`) corre a `inventario.hora_cuadre` el día que terminó. Si el cuadre falla, avisa `cuadre_fallido` a la dueña y falla, para que soporte reciba su `trabajo_fallido`. El aviso va ligado a su cuadre (entidad `cuadres`): el de otra fecha no lo tapa aunque siga sin leer.
 - **Al terminar:** `cuadre.terminado` encola `admin.depurar_eventos` (`trasEventos`).
 - **El aviso** `cuadre_fallido` entra al CHECK de `avisos.tipo` en la migración `0030`, con la lista completa. `tipos-de-aviso.prueba.ts` revisa que el CHECK deje todos los tipos que se declaran (decisión 494).
 - **Pruebas:**
-  - `internas/correr-cuadre.prueba.ts`: la existencia alterada; el tramo; lo sin confirmar; la reserva sin documento; una sola corrida; y movimientos a media corrida que no esperan.
-  - `trabajos/cuadre-nocturno.prueba.ts`: el horario, la depuración encolada y el aviso del cuadre que falla.
+  - `internas/correr-cuadre.prueba.ts`: la existencia alterada; el tramo, con dos variantes cuyos residuos se cancelarían; lo sin confirmar; la reserva sin documento; una sola corrida; y movimientos a media corrida que no esperan.
+  - `internas/correr-cuadre.azar.prueba.ts`: existencias de prendas y de material alteradas al azar, con movimientos al azar desde otra conexión mientras el cuadre corre; al terminar todo es la suma del libro, con una excepción por cada alteración y ninguna más.
+  - `trabajos/cuadre-nocturno.prueba.ts`: el horario, la depuración encolada, el aviso del cuadre que falla y el del cuadre que se quedó `corriendo`.

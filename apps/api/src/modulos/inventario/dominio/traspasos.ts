@@ -191,11 +191,20 @@ async function tomarFolioDeTraspaso(contexto: ContextoDeAccion): Promise<string>
  * @throws Error si no existe.
  */
 export async function bloquearTraspaso(contexto: ContextoDeAccion, traspasoId: string) {
+	// El orden fijo: primero las variantes que lleva, después el traspaso (como un movimiento y una reserva).
+	const suyas = await contexto.transaccion
+		.selectDistinct({ varianteId: traspasoLineas.varianteId })
+		.from(traspasoLineas)
+		.where(eq(traspasoLineas.traspasoId, traspasoId));
+	await candadoDeVariantes(
+		contexto.transaccion,
+		suyas.flatMap(({ varianteId }) => (varianteId === null ? [] : [varianteId])),
+	);
 	const [traspaso] = await contexto.transaccion
 		.select()
 		.from(traspasos)
 		.where(eq(traspasos.id, traspasoId))
-		.for("update");
+		.for("no key update");
 	if (traspaso === undefined) throw new Error(`no existe el traspaso ${traspasoId}`);
 	return traspaso;
 }
@@ -322,13 +331,10 @@ export interface RepartoHecho extends TraspasoCreado {
  */
 export async function repartirTraspaso(contexto: ContextoDeAccion, pedido: PedidoDeReparto): Promise<RepartoHecho> {
 	const { transaccion } = contexto;
-	// El candado de la variante antes de mover reservas, y antes del padre: el mismo orden que un movimiento.
-	const llevadas = await reservasDelPadre(contexto, pedido);
-	await candadoDeVariantes(
-		transaccion,
-		llevadas.map((reserva) => reserva.varianteId),
-	);
+	// El candado de las variantes del padre antes que el padre (lo toma `bloquearTraspaso`, el mismo orden que un
+	// movimiento); con él puesto se leen las reservas que se lleva.
 	const padre = await bloquearTraspaso(contexto, pedido.padreId);
+	const llevadas = await reservasDelPadre(contexto, pedido);
 	if (padre.estado !== "en_aduana") throw new Error(`el traspaso ${padre.folio} no está en aduana: ${padre.estado}`);
 	const lineas = await transaccion
 		.select()
@@ -419,9 +425,12 @@ export async function repartirTraspaso(contexto: ContextoDeAccion, pedido: Pedid
 			.update(reservas)
 			.set({ traspasoId: hijo.traspasoId })
 			.where(
-				inArray(
-					reservas.id,
-					llevadas.map((reserva) => reserva.id),
+				and(
+					inArray(
+						reservas.id,
+						llevadas.map((reserva) => reserva.id),
+					),
+					eq(reservas.estado, "activa"),
 				),
 			);
 	}

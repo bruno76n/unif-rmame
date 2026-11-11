@@ -14,7 +14,6 @@ import { eq, sql } from "drizzle-orm";
 import type { Temporal } from "temporal-polyfill";
 import { v5 as uuidv5, v7 as uuidv7 } from "uuid";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
-import { comandosRecibidos } from "../../admin/tablas.ts";
 import {
 	existencias,
 	existenciasMaterial,
@@ -27,6 +26,7 @@ import {
 import {
 	bloquearExistencias,
 	bloquearExistenciasMaterial,
+	bloquearTraspasos,
 	candadoDeVariantes,
 	type LugarDeMaterial,
 	type LugarDePrenda,
@@ -95,22 +95,18 @@ const ladosDeCamino: readonly Lado[] = ["transito", "en_camino_aduana"];
 const cantidadValida = /^\d{1,9}(\.\d{1,3})?$/;
 
 /**
- * La clave de un movimiento: la del comando de la acción o, si crea varios, una derivada (uuid v5 de la clave
- * de la acción, el tipo y el número).
+ * La clave de un movimiento: la del comando de la acción (la trae su contexto, también en la subida de un aparato)
+ * o, si crea varios, una derivada (uuid v5 de la clave de la acción, el tipo y el número). Un trabajo pasa la suya.
  * @throws Error si no hay de dónde sacarla.
  */
-async function claveDelMovimiento(
+function claveDelMovimiento(
 	contexto: ContextoDeAccion,
 	pedido: { tipo: TipoDeMovimiento; numero?: number | undefined; clave?: string | undefined },
-): Promise<string> {
+): string {
 	if (pedido.clave !== undefined) return pedido.clave;
-	if (contexto.comandoId === undefined) throw new Error("un movimiento sin comando necesita su clave");
-	const [comando] = await contexto.transaccion
-		.select({ clave: comandosRecibidos.claveIdempotencia })
-		.from(comandosRecibidos)
-		.where(eq(comandosRecibidos.id, contexto.comandoId));
-	if (comando === undefined) throw new Error(`no está el comando ${contexto.comandoId}`);
-	return pedido.numero === undefined ? comando.clave : claveDerivada(comando.clave, pedido.tipo, pedido.numero);
+	const { claveIdempotencia } = contexto;
+	if (claveIdempotencia === undefined) throw new Error("un movimiento sin comando necesita su clave");
+	return pedido.numero === undefined ? claveIdempotencia : claveDerivada(claveIdempotencia, pedido.tipo, pedido.numero);
 }
 
 /**
@@ -233,6 +229,12 @@ async function escribir(
 		transaccion,
 		prendas.map((renglon) => renglon.varianteId ?? ""),
 	);
+	await bloquearTraspasos(
+		transaccion,
+		renglones.flatMap((renglon) =>
+			renglon.traspasoId === undefined || renglon.traspasoId === null ? [] : [renglon.traspasoId],
+		),
+	);
 	const deExistencias = await bloquearExistencias(transaccion, lugaresDePrenda);
 	const deMaterial = await bloquearExistenciasMaterial(transaccion, lugaresDeMaterial);
 	// Paso 3: el movimiento y sus renglones.
@@ -310,7 +312,7 @@ async function escribir(
 			);
 	}
 	// Paso 5: las reservas de las piezas de un traspaso viajan con ellas (el candado de la variante ya está).
-	const viajaron = await moverReservasConSuPieza(contexto, movimientoId, prendas);
+	const viajaron = await moverReservasConSuPieza(contexto, cabecera.tipo, movimientoId, prendas);
 	return {
 		movimientoId,
 		nuevo: true,
@@ -325,16 +327,35 @@ async function escribir(
 }
 
 /**
- * El movimiento que ya se escribió con esa clave, si hay.
+ * El movimiento que ya se escribió con esa clave, si hay. Si es otro (otro tipo, otro documento o, en una
+ * reversión, otro original), es un error del programa: dos movimientos distintos con la misma clave, y el segundo
+ * se perdería en silencio.
  * @param contexto El contexto de la acción.
  * @param clave La clave del movimiento.
+ * @param esperado Lo que tiene que ser el que ya estaba.
+ * @throws Error si el que estaba es otro.
  */
-async function yaEscrito(contexto: ContextoDeAccion, clave: string): Promise<string | undefined> {
+async function yaEscrito(
+	contexto: ContextoDeAccion,
+	clave: string,
+	esperado: { tipo: TipoDeMovimiento; documentoId?: string; revierte?: string },
+): Promise<string | undefined> {
 	const [suyo] = await contexto.transaccion
-		.select({ id: movimientos.id })
+		.select({
+			id: movimientos.id,
+			tipo: movimientos.tipo,
+			documentoId: movimientos.documentoId,
+			revierte: movimientos.revierteMovimientoId,
+		})
 		.from(movimientos)
 		.where(eq(movimientos.claveIdempotencia, clave));
-	return suyo?.id;
+	if (suyo === undefined) return undefined;
+	const otro =
+		suyo.tipo !== esperado.tipo ||
+		(esperado.documentoId !== undefined && suyo.documentoId !== esperado.documentoId) ||
+		(esperado.revierte !== undefined && suyo.revierte !== esperado.revierte);
+	if (otro) throw new Error(`la clave ${clave} ya es de otro movimiento (${suyo.tipo} ${suyo.id})`);
+	return suyo.id;
 }
 
 /**
@@ -349,8 +370,8 @@ export async function escribirMovimiento(
 	contexto: ContextoDeAccion,
 	pedido: PedidoDeMovimiento,
 ): Promise<MovimientoEscrito> {
-	const clave = await claveDelMovimiento(contexto, pedido);
-	const existente = await yaEscrito(contexto, clave);
+	const clave = claveDelMovimiento(contexto, pedido);
+	const existente = await yaEscrito(contexto, clave, { tipo: pedido.tipo, documentoId: pedido.documento.id });
 	if (existente !== undefined) return { movimientoId: existente, nuevo: false, tablas: [] };
 	const renglones = revisarRenglones(pedido.tipo, pedido.renglones, await ladosDeUbicaciones(contexto));
 	const { quien } = contexto;
@@ -404,8 +425,8 @@ export async function revertirMovimiento(
 	const [original] = await transaccion.select().from(movimientos).where(eq(movimientos.id, pedido.movimientoId));
 	if (original === undefined) throw new Error(`no existe el movimiento ${pedido.movimientoId}`);
 	if (original.tipo === "reversion") throw new Error("una reversión no se revierte");
-	const clave = await claveDelMovimiento(contexto, { tipo: "reversion", numero: pedido.numero, clave: pedido.clave });
-	const existente = await yaEscrito(contexto, clave);
+	const clave = claveDelMovimiento(contexto, { tipo: "reversion", numero: pedido.numero, clave: pedido.clave });
+	const existente = await yaEscrito(contexto, clave, { tipo: "reversion", revierte: original.id });
 	if (existente !== undefined) return { movimientoId: existente, nuevo: false, tablas: [] };
 	const [revertido] = await transaccion
 		.select({ id: movimientos.id })

@@ -4,7 +4,9 @@
  * Fase 9 · docs/fases/09-inventario-libro-existencias-reservas-y-traspasos.md (parte 4)
  */
 
+import { v7 as uuidv7 } from "uuid";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { llaveDePrueba } from "../../../nucleo/pruebas/cuentas-de-prueba.ts";
 import {
 	llamarInterna,
 	meterPiezas,
@@ -82,12 +84,38 @@ describe("Una excepción no deshace lo aplicado; resolver pide qué se hizo y no
 		const delTaller = await abrir("pasa_tope_bulto");
 		const deBodega = await abrir("cuadre_proyeccion");
 		const deDinero = await abrir("totales_no_cuadran");
-		expect((await resolver(deBodega, "Lo resolví yo", "produccion")).estado).toBe(403);
+		// A quien no tiene esa bandeja se le contesta como si no existiera.
+		expect((await resolver(deBodega, "Lo resolví yo", "produccion")).estado).toBe(404);
 		expect((await resolver(delTaller, "Se canceló el registro repetido", "produccion")).estado).toBe(200);
 		const { rows } = await servidor.base.dueno.query("SELECT area FROM excepciones WHERE id = $1", [deDinero]);
 		expect(rows).toEqual([{ area: "contaduria" }]);
-		expect((await resolver(deDinero, "Se revisó el corte", "bodega")).estado).toBe(403);
+		expect((await resolver(deDinero, "Se revisó el corte", "bodega")).estado).toBe(404);
 		expect((await resolver(deDinero, "Se revisó el corte", "contaduria")).estado).toBe(200);
 		await expect(abrir("no_existe")).rejects.toThrow("tipo_desconocido: no_existe");
+	});
+
+	it("Una excepción no deshace lo aplicado: el bulto de más que subió la tablet sigue después de resolverla", async () => {
+		const subir = async (accion: string, datos: Record<string, unknown>) =>
+			(
+				await servidor.app.inject({
+					method: "POST",
+					url: "/v1/sync/subir",
+					headers: { authorization: llaveDePrueba("tablet"), "x-app-version": "1.0.0" },
+					payload: {
+						enviado_en: new Date().toISOString(),
+						pendientes_por_subir: 1,
+						comandos: [{ clave_idempotencia: uuidv7(), accion, datos, ocurrido_en: new Date().toISOString() }],
+					},
+				})
+			).json().respuestas[0];
+		const lote = uuidv7();
+		const bulto = uuidv7();
+		await subir("prueba.abrir_lote", { id: lote, nombre: "L-resolver" });
+		const respuesta = await subir("prueba.registrar_bulto", { id: bulto, lote_id: lote, piezas: 120 });
+		expect(respuesta).toMatchObject({ resultado: "excepcion", excepciones: [{ codigo: "pasa_tope_bulto" }] });
+		const excepcionId = respuesta.excepciones[0].id;
+		expect((await resolver(excepcionId, "Se revisó: el bulto sí traía 120", "produccion")).estado).toBe(200);
+		const { rows } = await servidor.base.dueno.query("SELECT piezas FROM prueba_bultos WHERE id = $1", [bulto]);
+		expect(rows).toEqual([{ piezas: 120 }]);
 	});
 });

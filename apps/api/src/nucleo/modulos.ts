@@ -97,6 +97,11 @@ export interface ContextoDeAccion {
 	diaDeNegocio: Temporal.PlainDate;
 	/** El id del comando en `comandos_recibidos`: lo llevan la bitácora y los eventos. Un trabajo no tiene. */
 	comandoId: string | undefined;
+	/**
+	 * La clave de idempotencia del comando: de ella salen las claves de los movimientos. En la subida de un aparato
+	 * se conoce antes de guardar el renglón del comando. Un trabajo no tiene.
+	 */
+	claveIdempotencia: string | undefined;
 	/** Llama a la acción interna de otro módulo, en esta misma transacción. */
 	interna: (nombre: string, datos: unknown) => Promise<unknown>;
 	/** Llama a la lectura de otro módulo, en esta misma transacción. */

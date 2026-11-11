@@ -205,13 +205,11 @@ Los traspasos no tienen acciones propias: cada acción que los crea o los cambia
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 9.*
-
 **Fase 9, parte 2.**
 
 - **Las tablas** `traspasos` y `traspaso_lineas` están en `modulos/inventario/tablas.ts` (migración `0027`), con los CHECK de este archivo. Además, `terminado_en` va lleno si y solo si el estado es final, y `cancelado` pide su motivo. Las llaves a tablas de fases posteriores llevan su `@llavePendiente`; `recepcion_aduana_id` y `recepcion_destino_id` apuntan a `recepciones` (decisión 476). `movimiento_lineas.traspaso_id` ya es llave foránea.
 - **La vista `partidas_aduana`** (migración `0027`) da, por renglón de un traspaso `en_aduana` con algo que quede, lo que queda, sus horas, su color y «hoy» o «mañana». El color y el «sale» los calcula la vista con los parámetros de la base (decisión 474). En el esquema está como `pgView(...).existing()`.
-- **La tabla de transiciones** es `transicionesDeTraspaso` (`dominio/traspasos.ts`). `cambiarEstadoTraspaso` bloquea el traspaso, rechaza con un `Error` lo que no está en la tabla y pone las horas de cada paso. `crearTraspaso` nace en `en_camino_aduana`, `en_aduana` o `esperado`, con su folio `A-{n}` del contador `partida_aduana` o el que traiga.
-- **`repartirTraspaso`** bloquea al padre, rechaza lo que pase de lo que queda (en material, por milésimos) y suma lo repartido. Si ya no le queda nada, el padre pasa a `repartido`. El hijo nace con folio `{padre}-{n}`, el origen del padre (decisión 473), su hora de llegada y su fecha de salida, y se guarda `traspaso.repartido`. Las reservas pasan al hijo en la parte 3.
+- **La tabla de transiciones** es `transicionesDeTraspaso` (`dominio/traspasos.ts`). `cambiarEstadoTraspaso` bloquea el traspaso con `bloquearTraspaso`: primero el candado de las variantes de sus renglones y luego el traspaso con `FOR NO KEY UPDATE`, el mismo orden que un movimiento (decisión 500); rechaza con un `Error` lo que no está en la tabla y pone las horas de cada paso. `crearTraspaso` nace en `en_camino_aduana`, `en_aduana` o `esperado`, con su folio `A-{n}` del contador `partida_aduana` o el que traiga.
+- **`repartirTraspaso`** bloquea al padre de la misma forma, rechaza lo que pase de lo que queda (en material, por milésimos) y suma lo repartido. Si ya no le queda nada, el padre pasa a `repartido`. El hijo nace con folio `{padre}-{n}`, el origen del padre (decisión 473), su hora de llegada y su fecha de salida, y se guarda `traspaso.repartido`. Las reservas que le pasan (`reservaIds`) las lee después del candado y solo cambia las que siguen `activa`.
 - **Los parámetros** de este archivo están en `modulos/inventario/parametros.ts`.
-- **Pruebas:** `dominio/traspasos.prueba.ts` (las transiciones, los CHECK y la vista) y `dominio/repartir-traspaso.prueba.ts` (el reparto, el hijo, el evento y el padre `repartido`).
+- **Pruebas:** `dominio/candados.prueba.ts` (cambiar el estado y mover contra repartir con reservas, sin `40P01`), `dominio/traspasos.prueba.ts` (las transiciones, los CHECK y la vista) y `dominio/repartir-traspaso.prueba.ts` (el reparto, el hijo, el evento y el padre `repartido`).

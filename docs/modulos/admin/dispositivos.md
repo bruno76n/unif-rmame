@@ -264,8 +264,6 @@ Los dos primeros van en `parametro`; los demás, en `tecnico`. La ventana de int
 
 ## Lo que llega después
 
-- **Fase 7:** la llamada a `personal.anular_pines_ubicacion` al revocar la tablet.
-- **Fase 9:** la excepción `dispositivo_revocado` en la bandeja de Bodega y `admin.aplicar_comando_retenido`, que la resuelve. Hasta entonces, lo que llega de un aparato revocado se queda retenido en `comandos_recibidos`.
 - **Con el POS:** la caja (`computadora_tienda`), su prefijo y los folios que trae su foto.
 - **Con uniformame.mx:** crear la credencial de servidor y los usuarios de su panel.
 
@@ -313,7 +311,8 @@ Los dos primeros van en `parametro`; los demás, en `tecnico`. La ventana de int
 - **Las pruebas:** `trabajos/aparatos-sin-sincronizar.prueba.ts` (antes del tiempo, una vez por episodio, la bajada completa acaba el episodio, el siguiente avisa otra vez, el revocado y el puente no avisan; la lectura) y `nucleo/sincronizacion/revocado.prueba.ts`.
 
 **Fase 9, parte 4.** `admin.aplicar_comando_retenido` está en `modulos/admin/acciones/aplicar-comando-retenido.ts`.
-- **Cómo corre:** `leerRetenido` y `aplicarRetenido` (`nucleo/sincronizacion/comandos.ts`) bloquean el comando y corren su carga con `aplicarComando`, a nombre del aparato revocado. Guardan quién y cuándo lo aplicó, su resultado y su respuesta nueva. La versión que se pide es la de la excepción.
-- **Si se aplica:** la bitácora de la acción del comando lleva `retenido` en `despues`, y `inventario.marcar_excepcion_resuelta` resuelve la excepción. Si queda apartado, sigue retenido y su excepción abierta (decisión 491).
+- **Cómo corre:** `leerRetenido` y `aplicarRetenido` (`nucleo/sincronizacion/comandos.ts`) bloquean el comando y corren su carga con `aplicarComando`, a nombre del aparato revocado. Guardan quién y cuándo lo aplicó, su resultado y su respuesta nueva. La versión que se pide es la de la excepción, y la toma su dueño con `inventario.tomar_version_excepcion` (decisión 508).
+- **Si se aplica:** el mensaje lleva el folio si la acción del comando lo regresó («Movimiento de Tablet del taller aplicado: prueba.abrir_lote L-retenido»); la bitácora de la acción del comando lleva `retenido` en `despues` y `confirmado_con_google_en` de la dueña, y `inventario.marcar_excepcion_resuelta` resuelve la excepción. Si queda apartado, sigue retenido y su excepción abierta (decisión 491).
 - **Quién:** pide Bodega, solo la dueña y «Confirmar con Google» (`aplicar_retenido`).
-- **Prueba:** `aplicar-comando-retenido.prueba.ts`.
+- **Si Bodega ya la resolvió:** el comando sigue retenido y la dueña aún lo puede aplicar; la excepción se queda con la resolución de Bodega, y `comandos_recibidos` guarda quién y cuándo lo aplicó (decisión 510).
+- **Prueba:** `aplicar-comando-retenido.prueba.ts` (con Google, la versión vieja, dos a la vez, lo que sigue retenido).

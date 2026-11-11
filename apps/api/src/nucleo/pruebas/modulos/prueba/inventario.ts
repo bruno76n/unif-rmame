@@ -22,7 +22,8 @@ export const moverInventario = definirAccion({
 		repetir: z.boolean().describe("Pide otra vez los mismos dos"),
 	}),
 	salida: z.object({ movimiento_ids: z.array(z.uuid()) }),
-	permiso: { departamento: "ventas" },
+	// También la sube la tablet por su cola: así se prueba la clave de sus movimientos en la subida.
+	permiso: { departamento: "ventas", aparatos: ["tablet"], cola: true },
 });
 
 /** Las acciones de inventario del módulo de prueba. */

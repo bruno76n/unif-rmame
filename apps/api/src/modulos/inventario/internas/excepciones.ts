@@ -9,6 +9,7 @@
 import { and, eq } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
+import { tomarVersion } from "../../../nucleo/acciones/pisadas.ts";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
 import { excepciones, tiposDeDocumentoDeMovimiento, tiposDeExcepcion } from "../tablas.ts";
 
@@ -85,6 +86,28 @@ export async function registrarExcepcion(
 		entidadId: id,
 	});
 	return { excepcion_id: id };
+}
+
+/** Lo que recibe `inventario.tomar_version_excepcion`. */
+const pedidoDeVersion = z.object({ excepcion_id: z.uuid(), version: z.number().int().optional() }).strict();
+
+/**
+ * `inventario.tomar_version_excepcion`: revisa y toma la versión que se leyó de una excepción, para la acción de
+ * otro módulo que la decide (la dueña que aplica un movimiento retenido). La excepción es de `inventario`: solo él
+ * la escribe.
+ * @param contexto El contexto de la acción.
+ * @param datos La excepción y la versión que se leyó.
+ * @throws `409` si cambió desde que se leyó.
+ */
+export async function tomarVersionExcepcion(contexto: ContextoDeAccion, datos: unknown): Promise<void> {
+	const { excepcion_id, version } = pedidoDeVersion.parse(datos);
+	await tomarVersion(contexto, excepciones, excepcion_id, version, async () => {
+		const [suya] = await contexto.transaccion
+			.select({ id: excepciones.id, estado: excepciones.estado, resolucion: excepciones.resolucion })
+			.from(excepciones)
+			.where(eq(excepciones.id, excepcion_id));
+		return suya;
+	});
 }
 
 /** Lo que recibe `inventario.marcar_excepcion_resuelta`. */

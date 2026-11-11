@@ -34,17 +34,18 @@ import {
 	aplicarComando,
 	type CargaDeComando,
 	type ComandoHecho,
+	cargaSinSecretos,
 	type DependenciasDeComandos,
 	deUnRevocado,
 	guardarComando,
 	huellaDeComando,
 	motivoDeClaveRepetida,
 	motivoDeRetenido,
+	personaDelComando,
 	type RespuestaSinClave,
 	reintentarLosQueEsperaban,
 	reintentarLosQueYaTienenSuDocumento,
 	respuestaRepetida,
-	sinCamposSecretos,
 } from "./comandos.ts";
 
 /** Lo que necesita la subida. */
@@ -229,7 +230,7 @@ async function contestarComando(
 	const { revocadoEn } = aparato;
 	const hecho =
 		revocadoEn === undefined
-			? await aplicarComando(dependencias, transaccion, quien, carga, comandoId)
+			? await aplicarComando(dependencias, transaccion, quien, carga, { id: comandoId, clave })
 			: await conSuExcepcion(
 					dependencias,
 					transaccion,
@@ -286,7 +287,10 @@ async function conSuExcepcion(
 			descripcion: `${carga.accion} de ${aparato.nombre}, que pasó antes de revocarlo: quedó retenido`,
 			comando_id: comandoId,
 			dispositivo_id: aparato.quien.dispositivoId,
-			datos: { ...carga, datos: sinCamposSecretos(carga.datos) },
+			...(carga.persona_id !== undefined && (await personaDelComando(transaccion, carga.persona_id)) !== undefined
+				? { persona_id: carga.persona_id }
+				: {}),
+			datos: cargaSinSecretos(carga),
 		}),
 	);
 	await dependencias.servicios.guardarEventos(contexto, eventos);

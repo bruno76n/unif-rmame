@@ -236,7 +236,7 @@ export const abrirLote = definirAccion({
 	nombre: "prueba.abrir_lote",
 	descripcion: "Abre un lote de prueba",
 	entrada: z.object({ id: z.uuid().describe("El lote"), nombre: z.string().min(1).describe("Su nombre") }),
-	salida: z.object({}),
+	salida: z.object({ folio: z.string().describe("Su folio: el nombre del lote") }),
 	permiso: { departamento: "ventas", aparatos: ["tablet"], cola: true },
 });
 

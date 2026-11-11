@@ -45,6 +45,9 @@ Lo que falta decidir o investigar, y en qué fase se resuelve. Lo del negocio ya
 - **Un commit de solo registros no corre `docs:revisar`** (fase 22): el encabezado de la bitácora o de `REGISTROS.md` se puede romper ahí y solo lo ve la siguiente revisión completa. Se decide al revisar la seguridad completa si el gancho también revisa esos dos encabezados.
 - **La red del entorno «Unifórmame»** (antes de la fase 2): Claude Code lo creó con red limitada (`nodejs.org` y los registros de paquetes); la [forma de trabajo](../trabajo/FORMA-DE-TRABAJO.md#el-entorno-de-la-nube) pide «Trusted», que también deja pasar las documentaciones oficiales y Docker Hub. Bruno lo cambia en Settings → Environments y abre las sesiones que siguen en ese entorno.
 
+- **El paso 1 del cuadre suma toda la historia de cada ubicación** (fase 22, antes de lanzar): la tanda bloquea las existencias de su ubicación mientras suma todo `movimiento_lineas`, y con los años se alarga. Partir de la existencia que dejó el último cuadre que cuadró y sumar solo lo de después la mantendría corta.
+- **Una fecha cuyo cuadre falló no se vuelve a cuadrar, y lo que terminó esa noche no pasa por el paso 3** (fase 14, con las DF-): el cuadre es único por fecha y el paso 3 revisa solo los traspasos que terminaron ese día. Falta decir si se reabre la fecha o si la noche siguiente toma lo que quedó pendiente.
+
 ## Para después
 
 Ninguna idea nueva entra a escondidas.
@@ -255,5 +258,16 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 11 nov 2026 | 9 | El paso 6 sin Ventas ni Tienda en línea (decisión 497) | No hacerlo · preguntar cuando existan | Preguntar cuando existan | No |
 | 11 nov 2026 | 9 | Cómo se prueba el paso 6 antes de Ventas (decisión 498) | Sin prueba · un módulo de prueba `ventas` | Un módulo de prueba `ventas` | No |
 | 11 nov 2026 | 9 | Desde cuándo cuenta lo que va en tránsito (decisión 499) | La hora del traspaso · su último movimiento a Tránsito | Su último movimiento a Tránsito | No |
+| 11 nov 2026 | 9 | El orden de los candados en toda la transacción (decisión 500) | Solo por movimiento, con el reintento · en toda la transacción | En toda la transacción: sin `40P01` | No |
+| 11 nov 2026 | 9 | De dónde sale la clave del movimiento (decisión 501) | De `comandos_recibidos` · del contexto de la acción | Del contexto: sirve también por la cola | No |
+| 11 nov 2026 | 9 | La misma clave con otro movimiento (decisión 502) | Regresar el que ya está · error | Error: no se pierde nada en silencio | No |
+| 11 nov 2026 | 9 | Qué salida cumple la reserva (decisión 503) | Cualquier salida a Fuera · solo una entrega | Solo una entrega | No |
+| 11 nov 2026 | 9 | Cómo revisa el cuadre los tramos (decisión 504) | Un total por traspaso · por tramo y por variante | Por tramo y por variante | No |
+| 11 nov 2026 | 9 | El cuadre que se quedó corriendo (decisión 505) | `ya_corrio` · `fallo` con aviso | `fallo` con aviso | No |
+| 11 nov 2026 | 9 | El pago confirmado mientras se vence (decisión 506) | Sin candado · con candado y relectura | Con candado y relectura | No |
+| 11 nov 2026 | 9 | Las reservas que pasan a un hijo (decisión 507) | Con sus piezas completas · revisar que coincidan | Revisar que coincidan | No |
+| 11 nov 2026 | 9 | Quién toma la versión de la excepción (decisión 508) | `admin` · `inventario` | `inventario`, su dueño | No |
+| 11 nov 2026 | 9 | La bandeja ajena al resolver (decisión 509) | `403` · `404` | `404`, como lo que no se ve | No |
+| 11 nov 2026 | 9 | Bodega resolvió y la dueña aplica (decisión 510) | Reescribir la resolución · dejarla | Dejarla; el comando guarda quién lo aplicó | No |
 | 10 nov 2026 | 5 | La pantalla del Google de desarrollo | Una propia para escoger cuenta · la de desarrollo de oidc-provider, que pide el correo | La de oidc-provider; `pnpm local` escribe los correos de la muestra al arrancar | No |
 

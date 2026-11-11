@@ -88,7 +88,7 @@ describe("la subida aplica lo que ya pasó, aparta lo que no puede aplicar y nun
 			{
 				clave_idempotencia: abrir.clave_idempotencia,
 				resultado: "aplicado",
-				datos: { mensaje: "Lote abierto" },
+				datos: { mensaje: "Lote abierto", folio: "L-2026-122" },
 				entidad: { tabla: "prueba_lotes", id: lote },
 				excepciones: [],
 				motivo: null,

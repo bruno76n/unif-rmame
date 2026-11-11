@@ -89,6 +89,7 @@ export function crearContexto(
 	ahora: Temporal.Instant,
 	comandoId: string | undefined,
 	almacen?: Almacen,
+	claveIdempotencia?: string,
 ): {
 	contexto: ContextoDeAccion;
 	renglones: RenglonDeBitacora[];
@@ -104,6 +105,7 @@ export function crearContexto(
 		ahora,
 		diaDeNegocio: diaDeNegocio(ahora),
 		comandoId,
+		claveIdempotencia,
 		interna: (nombre, datos) => {
 			const interna = registro.internas.get(nombre);
 			if (interna === undefined) throw new Error(`no existe la interna ${nombre}`);
@@ -169,6 +171,7 @@ export async function correrAccion(
 			version: cuerpo.version,
 			ahora,
 			comandoId,
+			clave: cuerpo.clave_idempotencia,
 		});
 		// Paso 9: la respuesta se guarda sin secretos.
 		await guardarRespuesta(transaccion, comandoId, sinSecretos(respuesta, contrato.secretos), salida.entidad);
@@ -198,10 +201,12 @@ export async function aplicarAccion(
 		version: number | undefined;
 		ahora: Temporal.Instant;
 		comandoId: string;
+		/** La clave de idempotencia del comando. */
+		clave?: string;
 	},
 	ajustarBitacora: (renglon: RenglonDeBitacora) => RenglonDeBitacora = (renglon) => renglon,
 ): Promise<{ respuesta: RespuestaDeAccion; salida: SalidaDeAccion<unknown> }> {
-	const { accion, quien, ahora, comandoId } = peticion;
+	const { accion, quien, ahora, comandoId, clave } = peticion;
 	const { contrato } = accion;
 	const { contexto, renglones, eventos } = crearContexto(
 		dependencias.registro,
@@ -211,6 +216,7 @@ export async function aplicarAccion(
 		ahora,
 		comandoId,
 		dependencias.almacen,
+		clave,
 	);
 	const salida = await accion.ejecutar(contexto, peticion.datos, peticion.version);
 	// Una acción que edita tiene que haber tomado la versión que se leyó: si no, la versión no serviría.

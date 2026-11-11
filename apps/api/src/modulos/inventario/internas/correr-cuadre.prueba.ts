@@ -40,7 +40,7 @@ describe("el cuadre de la noche", () => {
 
 	/** Corre el cuadre de una fecha como lo corre el trabajo, con lo que se pida entre tandas. */
 	async function cuadrar(fecha: string, entreTandas?: (tanda: string) => Promise<void>): Promise<CuadreCorrido> {
-		let corrido: CuadreCorrido = "ya_corrio";
+		let corrido: CuadreCorrido | undefined;
 		const registro = await cargarModulos(join(import.meta.dirname, "../.."));
 		const pruebas = await cargarModulos(join(import.meta.dirname, "../../../nucleo/pruebas/modulos"));
 		await correrTrabajo(
@@ -61,12 +61,13 @@ describe("el cuadre de la noche", () => {
 			},
 			{},
 		);
+		if (corrido === undefined) throw new Error("el cuadre no regresó nada");
 		return corrido;
 	}
 
 	/** Las excepciones de un cuadre, por tipo. */
 	async function excepcionesDe(cuadre: CuadreCorrido) {
-		if (cuadre === "ya_corrio") return [];
+		if ("yaCorrio" in cuadre) return [];
 		const { rows } = await servidor.base.dueno.query(
 			"SELECT tipo, variante_id, documento_id, datos FROM excepciones WHERE cuadre_id = $1 ORDER BY tipo",
 			[cuadre.cuadreId],
@@ -91,7 +92,7 @@ describe("el cuadre de la noche", () => {
 		expect(await excepcionesDe(cuadre)).toEqual([
 			{ tipo: "cuadre_proyeccion", variante_id: variante, documento_id: null, datos: { guardada: 9, libro: 5 } },
 		]);
-		if (cuadre === "ya_corrio") throw new Error("el cuadre no corrió");
+		if ("yaCorrio" in cuadre) throw new Error("el cuadre no corrió");
 		const { rows: renglon } = await servidor.base.dueno.query(
 			"SELECT estado, proyecciones_corregidas, excepciones_creadas, terminado_en IS NOT NULL AS terminado FROM cuadres WHERE id = $1",
 			[cuadre.cuadreId],
@@ -99,34 +100,41 @@ describe("el cuadre de la noche", () => {
 		expect(renglon).toEqual([
 			{ estado: "con_residuo", proyecciones_corregidas: 1, excepciones_creadas: 1, terminado: true },
 		]);
-		expect(await cuadrar("2026-10-01")).toBe("ya_corrio");
+		expect(await cuadrar("2026-10-01")).toMatchObject({ yaCorrio: true, estado: "con_residuo" });
 		// Otra noche, ya cuadra.
 		expect(await cuadrar("2026-10-02")).toMatchObject({ estado: "cuadro" });
 	});
 
 	it("un traspaso terminado con algo en un tramo abre `cuadre_proyeccion`; uno de más días sin confirmar abre `sin_confirmar`, una sola vez", async () => {
-		const [variante = ""] = await variantesLibres(servidor, 1);
+		const [variante = "", otra = ""] = await variantesLibres(servidor, 2);
 		const { traspasoId } = await nuevoTraspaso(servidor, {
 			tipo: "reabasto",
 			estado: "en_aduana",
 			origen: { ubicacionId: ubicacion.BOD ?? "" },
 			destino: { ubicacionId: ubicacion.T1 ?? "" },
-			renglones: [{ varianteId: variante, piezas: 5 }],
+			renglones: [
+				{ varianteId: variante, piezas: 5 },
+				{ varianteId: otra, piezas: 5 },
+			],
 		});
 		await enAccionDePrueba(crearBase(servidor.base.app), servidor.modulos, async (contexto) => {
-			const mover = (tipo: "despacho" | "recepcion_despacho", de: string, a: string, piezas: number) =>
+			const mover = (tipo: "despacho" | "recepcion_despacho", de: string, a: string, piezas: [number, number]) =>
 				escribirMovimiento(contexto, {
 					tipo,
 					documento: { tipo: "traspaso", id: traspasoId },
-					renglones: [
-						{ origen: ubicacion[de] ?? "", destino: ubicacion[a] ?? "", varianteId: variante, piezas, traspasoId },
-					],
+					renglones: [variante, otra].map((varianteId, i) => ({
+						origen: ubicacion[de] ?? "",
+						destino: ubicacion[a] ?? "",
+						varianteId,
+						piezas: piezas[i] ?? 0,
+						traspasoId,
+					})),
 					clave: uuidv7(),
 				});
-			await mover("despacho", "ADU", "TRA", 5);
+			await mover("despacho", "ADU", "TRA", [5, 5]);
 			await cambiarEstadoTraspaso(contexto, traspasoId, "en_transito");
-			// Llegan 3; se confirma como recibido, aunque 2 siguen en Tránsito.
-			await mover("recepcion_despacho", "TRA", "T1", 3);
+			// Llegan 8 de una y 2 de la otra: en Tránsito quedan −3 y +3, que juntos darían cero.
+			await mover("recepcion_despacho", "TRA", "T1", [8, 2]);
 			await cambiarEstadoTraspaso(contexto, traspasoId, "recibido");
 		});
 		// Otro que salió de Bodega hace tres días y nadie ha recibido.
@@ -143,15 +151,29 @@ describe("el cuadre de la noche", () => {
 		const hoy = diaDeNegocio(Temporal.Now.instant()).toString();
 		const cuadre = await cuadrar(hoy);
 		const encontradas = await excepcionesDe(cuadre);
-		expect(encontradas.filter((excepcion) => excepcion.documento_id === traspasoId)).toEqual([
-			{ tipo: "cuadre_proyeccion", variante_id: null, documento_id: traspasoId, datos: { en_tramo: "2" } },
+		const delTramo = encontradas.filter((excepcion) => excepcion.documento_id === traspasoId);
+		expect(delTramo).toHaveLength(1);
+		expect(delTramo[0]?.tipo).toBe("cuadre_proyeccion");
+		expect(
+			delTramo[0]?.datos.tramos
+				.map((tramo: { variante_id: string; en_tramo: string; tramo: string }) => [
+					tramo.tramo,
+					tramo.variante_id,
+					Number(tramo.en_tramo),
+				])
+				.sort((uno: [string, string, number], otro: [string, string, number]) => uno[2] - otro[2]),
+		).toEqual([
+			["Tránsito", variante, -3],
+			["Tránsito", otra, 3],
 		]);
 		expect(encontradas.filter((excepcion) => excepcion.documento_id === viejo.traspasoId)).toEqual([
 			{ tipo: "sin_confirmar", variante_id: null, documento_id: viejo.traspasoId, datos: null },
 		]);
 		// La noche siguiente sigue sin confirmar, pero su excepción ya está abierta.
-		const otra = await cuadrar("2099-01-01");
-		expect((await excepcionesDe(otra)).filter((excepcion) => excepcion.documento_id === viejo.traspasoId)).toEqual([]);
+		const siguiente = await cuadrar("2099-01-01");
+		expect((await excepcionesDe(siguiente)).filter((excepcion) => excepcion.documento_id === viejo.traspasoId)).toEqual(
+			[],
+		);
 	});
 
 	it("una reserva activa cuyo documento ya se cerró abre `reserva_sin_documento`; si sigue abierto, no", async () => {

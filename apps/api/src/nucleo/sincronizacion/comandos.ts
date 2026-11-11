@@ -175,7 +175,8 @@ function avisosDe(persona: PersonaDelComando, aparato: AparatoQueLlama): string[
  * @param transaccion La transacción del comando: la acción corre en un `SAVEPOINT` de ella.
  * @param aparato El aparato, con quien lo hizo.
  * @param carga El comando como lo guardó el aparato.
- * @param comandoId El id del comando en `comandos_recibidos`: lo llevan su bitácora y sus eventos.
+ * @param comando El id del comando en `comandos_recibidos` (lo llevan su bitácora y sus eventos) y su clave de
+ * idempotencia (de ella salen las claves de sus movimientos), que se conocen antes de guardar su renglón.
  * @param ajustarBitacora Cambia cada renglón de bitácora de la acción (el reintento dice quién lo reintentó).
  * @returns Lo que pasó: aplicado, excepción o apartado, con su respuesta.
  * @throws Un error del servidor (no del comando): la tanda se detiene.
@@ -185,9 +186,10 @@ export async function aplicarComando(
 	transaccion: Transaccion,
 	aparato: AparatoQueLlama,
 	carga: CargaDeComando,
-	comandoId: string,
+	comando: { id: string; clave: string },
 	ajustarBitacora?: (renglon: RenglonDeBitacora) => RenglonDeBitacora,
 ): Promise<ComandoHecho> {
+	const comandoId = comando.id;
 	const accion = dependencias.registro.acciones.get(carga.accion);
 	// Paso 2: lo que no está en el alcance de su tipo de aparato, o no sube por la cola (solo en línea).
 	const { permiso } = accion?.contrato ?? {};
@@ -214,6 +216,7 @@ export async function aplicarComando(
 					version: undefined,
 					ahora: Temporal.Instant.from(carga.ocurrido_en),
 					comandoId,
+					clave: comando.clave,
 				},
 				ajustarBitacora,
 			),
@@ -270,12 +273,20 @@ export function respuestaRepetida(guardada: unknown): RespuestaSinClave {
 }
 
 /**
+ * La carga de un comando como se guarda (en el comando o en su excepción): sin los campos que parecen secretos.
+ * @param carga Lo que llegó.
+ */
+export function cargaSinSecretos(carga: CargaDeComando): CargaDeComando {
+	return { ...carga, datos: sinCamposSecretos(carga.datos) };
+}
+
+/**
  * Quita de un valor, a cualquier profundidad, los campos con nombre de secreto. Lo que sube por la cola no
  * los lleva (`definirAccion` lo revisa), pero lo que llega fuera de alcance puede traer cualquier cosa, y su
  * carga se guarda: un secreto nunca queda en claro en la base.
  * @param valor Los datos del comando.
  */
-export function sinCamposSecretos(valor: unknown): unknown {
+function sinCamposSecretos(valor: unknown): unknown {
 	if (Array.isArray(valor)) return valor.map(sinCamposSecretos);
 	if (typeof valor !== "object" || valor === null) return valor;
 	return Object.fromEntries(
@@ -320,7 +331,7 @@ export async function guardarComando(
 		ocurridoEn: carga.ocurrido_en,
 		cargaHash: huellaDeComando(carga),
 		// La huella ya se tomó con la carga completa; lo que se guarda va sin secretos.
-		carga: resultado === "aplicado" ? null : { ...carga, datos: sinCamposSecretos(carga.datos) },
+		carga: resultado === "aplicado" ? null : cargaSinSecretos(carga),
 		resultado,
 		motivoApartado: hecho.motivo,
 		esperaEntidadId: hecho.esperaEntidadId,
@@ -386,6 +397,7 @@ export async function reintentarComando(
 		.select({
 			resultado: comandosRecibidos.resultado,
 			descartadoEn: comandosRecibidos.descartadoEn,
+			clave: comandosRecibidos.claveIdempotencia,
 			carga: comandosRecibidos.carga,
 			dispositivoId: comandosRecibidos.dispositivoId,
 			deUnRevocado: comandosRecibidos.dispositivoRevocado,
@@ -408,7 +420,14 @@ export async function reintentarComando(
 		tipoDeAparato,
 		personaId: carga.persona_id,
 	};
-	const hecho = await aplicarComando(dependencias, transaccion, aparato, carga, comandoId, ajustarBitacora);
+	const hecho = await aplicarComando(
+		dependencias,
+		transaccion,
+		aparato,
+		carga,
+		{ id: comandoId, clave: comando.clave },
+		ajustarBitacora,
+	);
 	const aplicado = hecho.motivo === null;
 	await transaccion
 		.update(comandosRecibidos)
@@ -434,6 +453,7 @@ export async function reintentarComando(
 /** Un comando retenido de un aparato revocado, listo para aplicarse. */
 export interface ComandoRetenido {
 	id: string;
+	clave: string;
 	tipoComando: string;
 	excepcionId: string;
 	nombreDelAparato: string;
@@ -456,6 +476,7 @@ export async function leerRetenido(
 		.select({
 			id: comandosRecibidos.id,
 			tipoComando: comandosRecibidos.tipoComando,
+			clave: comandosRecibidos.claveIdempotencia,
 			resultado: comandosRecibidos.resultado,
 			deUnRevocado: comandosRecibidos.dispositivoRevocado,
 			excepcionId: comandosRecibidos.excepcionId,
@@ -477,6 +498,7 @@ export async function leerRetenido(
 	const carga = cargaDeComando.parse(comando.carga);
 	return {
 		id: comando.id,
+		clave: comando.clave,
 		tipoComando: comando.tipoComando,
 		excepcionId: comando.excepcionId,
 		nombreDelAparato: comando.nombre,
@@ -508,7 +530,7 @@ export async function aplicarRetenido(
 		transaccion,
 		retenido.aparato,
 		retenido.carga,
-		retenido.id,
+		{ id: retenido.id, clave: retenido.clave },
 		ajustarBitacora,
 	);
 	if (hecho.motivo !== null) return hecho;

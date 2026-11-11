@@ -11,6 +11,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { crearBase } from "../../../nucleo/base/conexion.ts";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
 import { enAccionDePrueba } from "../../../nucleo/pruebas/accion-de-prueba.ts";
+import { llaveDePrueba } from "../../../nucleo/pruebas/cuentas-de-prueba.ts";
 import { nuevoTraspaso, variantesLibres } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
@@ -214,16 +215,27 @@ describe("el libro de movimientos", () => {
 		const otraVez = await mandarAccion(servidor, "prueba.mover_inventario", { clave, datos });
 		expect(otraVez.cuerpo.resultado).toEqual(respuesta.cuerpo.resultado);
 		expect(await existencia("BOD", variante(3))).toBe(8);
-		// Y escribirlo directo con una clave ya usada regresa el que estaba.
+		// Y escribirlo directo con una clave ya usada regresa el que estaba…
 		const repetido = await enAccion((contexto) =>
 			escribirMovimiento(contexto, {
 				tipo: "ajuste",
-				documento: { tipo: "ajuste", id: uuidv7() },
+				documento: { tipo: "ajuste", id: ubicacion.BOD ?? "" },
 				renglones: [{ origen: null, destino: ubicacion.BOD ?? "", varianteId: variante(3), piezas: 4 }],
 				clave: claveDerivada(clave, "ajuste", 1),
 			}),
 		);
 		expect(repetido).toEqual({ movimientoId: ids[0], nuevo: false, tablas: [] });
+		// …pero otro movimiento con esa clave (otro tipo u otro documento) es un error, no se pierde en silencio.
+		await expect(
+			enAccion((contexto) =>
+				escribirMovimiento(contexto, {
+					tipo: "carga_inicial",
+					documento: { tipo: "carga_inicial", id: uuidv7() },
+					renglones: [{ origen: null, destino: ubicacion.BOD ?? "", varianteId: variante(3), piezas: 7 }],
+					clave: claveDerivada(clave, "ajuste", 1),
+				}),
+			),
+		).rejects.toThrow("ya es de otro movimiento");
 		expect(await existencia("BOD", variante(3))).toBe(8);
 	});
 
@@ -381,5 +393,45 @@ describe("el libro de movimientos", () => {
 			[pedido, salida.movimientoId],
 		);
 		expect(rows).toEqual([{ piezas: 2, motivo_fin: "cumplida" }]);
+	});
+
+	it("por la cola de la tablet también: la tanda se aplica, y repetirla (o un comando que llega dos veces) no duplica sus movimientos", async () => {
+		const [suya = ""] = await variantesLibres(servidor, 1);
+		const comando = {
+			clave_idempotencia: uuidv7(),
+			accion: "prueba.mover_inventario",
+			datos: { ubicacion_id: ubicacion.TAL, variante_id: suya, piezas: 3, repetir: true },
+			ocurrido_en: new Date(Date.now() - 60_000).toISOString(),
+		};
+		const subir = async (comandos: (typeof comando)[]) =>
+			(
+				await servidor.app.inject({
+					method: "POST",
+					url: "/v1/sync/subir",
+					headers: { authorization: llaveDePrueba("tablet"), "x-app-version": "1.0.0" },
+					payload: { enviado_en: new Date().toISOString(), pendientes_por_subir: comandos.length, comandos },
+				})
+			).json();
+		const primera = await subir([comando]);
+		expect(primera).toMatchObject({ detenido: false, respuestas: [{ resultado: "aplicado" }] });
+		const otraVez = await subir([comando, comando]);
+		expect(otraVez.respuestas.map((respuesta: { resultado: string }) => respuesta.resultado)).toEqual([
+			"repetido",
+			"repetido",
+		]);
+		const { rows } = await servidor.base.dueno.query(
+			`SELECT m.clave_idempotencia, c.clave_idempotencia AS del_comando FROM movimientos m
+			 JOIN movimiento_lineas l ON l.movimiento_id = m.id JOIN comandos_recibidos c ON c.id = m.comando_id
+			 WHERE l.variante_id = $1 ORDER BY m.clave_idempotencia`,
+			[suya],
+		);
+		expect(rows.map((fila) => fila.clave_idempotencia)).toEqual(
+			[
+				claveDerivada(comando.clave_idempotencia, "ajuste", 1),
+				claveDerivada(comando.clave_idempotencia, "ajuste", 2),
+			].sort(),
+		);
+		expect(rows.every((fila) => fila.del_comando === comando.clave_idempotencia)).toBe(true);
+		expect(await existencia("TAL", suya)).toBe(6);
 	});
 });

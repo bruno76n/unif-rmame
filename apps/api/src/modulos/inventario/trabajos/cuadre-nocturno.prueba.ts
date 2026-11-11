@@ -101,4 +101,17 @@ describe("Un cuadre que no termina avisa a la dueña; al terminar se encola la d
 			},
 		]);
 	});
+
+	it("un cuadre que se quedó `corriendo` (su proceso se cortó) queda en `fallo` al volver a correr, y la dueña recibe su aviso", async () => {
+		await servidor.base.dueno.query(
+			"INSERT INTO cuadres (id, fecha, iniciado_en, estado) VALUES (gen_random_uuid(), '2026-11-12', now() - interval '1 hour', 'corriendo')",
+		);
+		await expect(correr("2026-11-13T09:00:00Z")).rejects.toThrow("se cortó sin terminar");
+		const { rows } = await servidor.base.dueno.query("SELECT estado, error FROM cuadres WHERE fecha = '2026-11-12'");
+		expect(rows).toEqual([{ estado: "fallo", error: "El cuadre se cortó sin terminar" }]);
+		const { rows: avisos } = await servidor.base.dueno.query(
+			"SELECT texto FROM avisos WHERE tipo = 'cuadre_fallido' AND texto LIKE '%12 de noviembre%'",
+		);
+		expect(avisos).toHaveLength(1);
+	});
 });
