@@ -22,6 +22,7 @@ export const aplicarCambiosProducto = definirAccion({
 		categoria_mayoreo_id: z.uuid().optional().describe("Su categoría de mayoreo"),
 		recargo_pedido_especial_centavos: recargoDePedidoEspecial.optional(),
 		tipo_prenda_id: z.uuid().optional().describe("Su tipo de prenda"),
+		flujo_id: z.uuid().optional().describe("Su flujo del taller; los lotes ya cortados conservan el suyo"),
 		precios: z
 			.array(
 				z.object({

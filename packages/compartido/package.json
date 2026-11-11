@@ -37,6 +37,7 @@
 		"./contratos/sincronizacion": "./src/contratos/sincronizacion.ts",
 		"./cliente/cliente": "./src/cliente/cliente.ts",
 		"./contratos/compras/proveedores": "./src/contratos/compras/proveedores.ts",
+		"./contratos/produccion/flujos": "./src/contratos/produccion/flujos.ts",
 		"./contratos/compras/materiales": "./src/contratos/compras/materiales.ts",
 		"./contratos/patronaje/recetas": "./src/contratos/patronaje/recetas.ts",
 		"./contratos/patronaje/desarrollos": "./src/contratos/patronaje/desarrollos.ts",

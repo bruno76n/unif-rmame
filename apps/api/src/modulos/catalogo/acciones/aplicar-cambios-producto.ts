@@ -1,7 +1,7 @@
 /**
  * `catalogo.aplicar_cambios_producto`: Catálogo aplica juntos los cambios de la ficha de un producto.
  * Fase 8 · docs/modulos/catalogo/productos.md (reglas 3, 4, 8 y 9, «`catalogo.aplicar_cambios_producto`») y
- * precios.md (reglas 2 a 4 y 8, «Los avisos de la ficha»)
+ * precios.md (reglas 2 a 4 y 8, «Los avisos de la ficha»); fase 12 · el flujo (productos.md, «Lo que llega después»)
  *
  * Canales, categoría, recargo, tipo de prenda y precios van en una sola transacción, con la versión de la ficha.
  * Cada precio que cambia cierra el vigente y crea otro con origen `ficha`. Deja un renglón de bitácora por
@@ -27,6 +27,8 @@ import {
 } from "../dominio/precios.ts";
 import {
 	eventoDeProducto,
+	flujoEscogido,
+	leerFlujo,
 	leerProducto,
 	type Producto,
 	revisarCanalEnLinea,
@@ -283,6 +285,24 @@ export const accionAplicarCambiosProducto = implementarAccion(
 				despues: { tipo_prenda_id: datos.tipo_prenda_id },
 			});
 		}
+		// El flujo: solo en lo que se fabrica; los lotes ya cortados conservan el suyo.
+		if (datos.flujo_id !== undefined && datos.flujo_id !== producto.flujoId) {
+			const [seccion] = await transaccion
+				.select({ llevaReceta: secciones.llevaReceta })
+				.from(secciones)
+				.where(eq(secciones.id, producto.seccionId));
+			if (seccion?.llevaReceta !== true || producto.esServicio) {
+				throw errorDeCampo("flujo_id", "Lo que no se fabrica no lleva flujo.");
+			}
+			const nuevo = await flujoEscogido(contexto, datos.flujo_id, "flujo_id");
+			const antes = producto.flujoId === null ? null : (await leerFlujo(contexto, producto.flujoId)).nombre;
+			renglones.push({
+				...deEsteProducto,
+				descripcion: `Flujo: ${antes ?? "sin flujo"} → ${nuevo}`,
+				antes: { flujo_id: producto.flujoId },
+				despues: { flujo_id: datos.flujo_id },
+			});
+		}
 		const cambiaElProducto = renglones.length > 0;
 		if (!cambiaElProducto && preciosQueCambian.length === 0) throw errorDeRegla("sin_cambios", "Sin cambios");
 		if (cambiaElProducto) {
@@ -295,6 +315,7 @@ export const accionAplicarCambiosProducto = implementarAccion(
 					...(datos.categoria_mayoreo_id === undefined ? {} : { categoriaMayoreoId: datos.categoria_mayoreo_id }),
 					...(recargo === undefined ? {} : { recargoPedidoEspecialCentavos: recargo }),
 					...(datos.tipo_prenda_id === undefined ? {} : { tipoPrendaId: datos.tipo_prenda_id }),
+					...(datos.flujo_id === undefined ? {} : { flujoId: datos.flujo_id }),
 				})
 				.where(eq(productos.id, producto.id));
 			eventoDeProducto(contexto, "producto.cambiado", producto, ["productos"]);

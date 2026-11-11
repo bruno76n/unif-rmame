@@ -27,5 +27,5 @@ export const ponerTarifaOperacion = definirAccion({
 		version: z.number().int().describe("Su versión"),
 	}),
 	permiso: { departamento: "personal", permisoFino: "ven_sueldos_y_tarifas" },
-	errores: [],
+	errores: [{ codigo: "operacion_de_baja", mensaje: "Esa operación ya no está en el flujo" }],
 });

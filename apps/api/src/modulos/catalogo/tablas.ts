@@ -24,6 +24,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { columnasComunes, columnaXidEscritura, momento } from "../../nucleo/base/columnas.ts";
 import { archivos, dispositivos, usuarios } from "../admin/tablas.ts";
+import { flujos } from "../produccion/tablas.ts";
 
 /** Las columnas de una baja que se puede deshacer. */
 function columnasDeBaja() {
@@ -122,8 +123,7 @@ export const tiposPrenda = pgTable(
 		seccionId: uuid("seccion_id")
 			.notNull()
 			.references((): AnyPgColumn => secciones.id),
-		/** @llavePendiente flujos.id */
-		flujoDefectoId: uuid("flujo_defecto_id"),
+		flujoDefectoId: uuid("flujo_defecto_id").references(() => flujos.id),
 		orden: integer("orden").notNull(),
 		...columnasDeBaja(),
 		...columnasComunes(),
@@ -231,8 +231,7 @@ export const productos = pgTable(
 			.references(() => secciones.id),
 		escuelaId: uuid("escuela_id").references(() => escuelas.id),
 		tipoPrendaId: uuid("tipo_prenda_id").references(() => tiposPrenda.id),
-		/** @llavePendiente flujos.id */
-		flujoId: uuid("flujo_id"),
+		flujoId: uuid("flujo_id").references(() => flujos.id),
 		categoriaMayoreoId: uuid("categoria_mayoreo_id")
 			.notNull()
 			.references(() => categoriasMayoreo.id),

@@ -23,6 +23,7 @@ import {
 import { columnasComunes, columnaXidEscritura, momento } from "../../nucleo/base/columnas.ts";
 import { usuarios } from "../admin/tablas.ts";
 import { ubicaciones } from "../inventario/tablas.ts";
+import { flujoOperaciones } from "../produccion/tablas.ts";
 
 /** Quien trabaja en la fábrica o en las tiendas, tenga o no cuenta. */
 export const personas = pgTable(
@@ -170,8 +171,9 @@ export const tarifasOperacion = pgTable(
 	"tarifas_operacion",
 	{
 		id: uuid("id").primaryKey(),
-		/** @llavePendiente flujo_operaciones.id */
-		flujoOperacionId: uuid("flujo_operacion_id").notNull(),
+		flujoOperacionId: uuid("flujo_operacion_id")
+			.notNull()
+			.references(() => flujoOperaciones.id),
 		tarifaCentavos: bigint("tarifa_centavos", { mode: "number" }).notNull(),
 		vigenteDesde: momento("vigente_desde").notNull().default(sql`now()`),
 		vigenteHasta: momento("vigente_hasta"),

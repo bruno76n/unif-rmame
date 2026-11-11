@@ -11,6 +11,7 @@ import { z } from "zod";
 import { crearBase } from "../../../nucleo/base/conexion.ts";
 import { enAccionDePrueba } from "../../../nucleo/pruebas/accion-de-prueba.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
+import { operacionDePrueba } from "../../../nucleo/pruebas/produccion-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 
 /** Lo que regresa poner una tarifa. */
@@ -51,9 +52,10 @@ describe("la tarifa nueva cierra la vigente; una tarifa en cero no se acepta; un
 	}
 
 	it("la primera abre la vigente; la nueva cierra la anterior; la misma no escribe; con la versión vieja, 409", async () => {
-		const operacion = uuidv7();
+		const deLaPrueba = await operacionDePrueba(servidor.base.dueno);
+		const operacion = deLaPrueba.id;
 		const primera = tarifaPuesta.parse((await poner(operacion, 100)).cuerpo.resultado);
-		expect(primera.mensaje).toBe("La operación: $1.00 por pieza desde ahora");
+		expect(primera.mensaje).toBe(`${deLaPrueba.nombre}: $1.00 por pieza desde ahora`);
 		const nueva = await poner(operacion, 120, primera.version);
 		expect(nueva.estado).toBe(200);
 		expect(await tarifasDe(operacion)).toEqual([
@@ -79,11 +81,16 @@ describe("la tarifa nueva cierra la vigente; una tarifa en cero no se acepta; un
 			"SELECT descripcion_recortada, sensible_sueldos FROM bitacora WHERE accion = 'personal.poner_tarifa_operacion' AND entidad_id = $1",
 			[vigente.tarifa_operacion_id],
 		);
-		expect(rows).toEqual([{ descripcion_recortada: "Tarifa de la operación: •••• → ••••", sensible_sueldos: true }]);
+		expect(rows).toEqual([
+			{
+				descripcion_recortada: `Tarifa de «${deLaPrueba.nombre}» en ${deLaPrueba.flujo}: •••• → ••••`,
+				sensible_sueldos: true,
+			},
+		]);
 	});
 
 	it("cero o texto no se aceptan; sin «ven sueldos y tarifas», 403 sin_permiso_fino y nada se escribe", async () => {
-		const operacion = uuidv7();
+		const operacion = (await operacionDePrueba(servidor.base.dueno)).id;
 		const cero = await poner(operacion, 0);
 		expect(cero.estado).toBe(400);
 		expect(cero.cuerpo).toMatchObject({ campos: { tarifa_centavos: "Escribe la tarifa en pesos, por ejemplo 1.50" } });
@@ -95,8 +102,8 @@ describe("la tarifa nueva cierra la vigente; una tarifa en cero no se acepta; un
 	});
 
 	it("la vigente de un momento es la de entonces; copiar un flujo copia las vigentes y deja «Sin tarifa» las que no tenían", async () => {
-		const conTarifa = uuidv7();
-		const sinTarifa = uuidv7();
+		const conTarifa = (await operacionDePrueba(servidor.base.dueno)).id;
+		const sinTarifa = (await operacionDePrueba(servidor.base.dueno)).id;
 		const primera = tarifaPuesta.parse((await poner(conTarifa, 100)).cuerpo.resultado);
 		const antes = Temporal.Now.instant().toString();
 		await new Promise((listo) => setTimeout(listo, 20));
@@ -113,7 +120,10 @@ describe("la tarifa nueva cierra la vigente; una tarifa en cero no se acepta; un
 			}),
 		);
 		expect(ahora).toMatchObject({ tarifa_centavos: 130 });
-		const nuevas = { conTarifa: uuidv7(), sinTarifa: uuidv7() };
+		const nuevas = {
+			conTarifa: (await operacionDePrueba(servidor.base.dueno)).id,
+			sinTarifa: (await operacionDePrueba(servidor.base.dueno)).id,
+		};
 		const copiadas = await enAccionDePrueba(
 			base,
 			servidor.modulos,
@@ -142,9 +152,19 @@ describe("la tarifa nueva cierra la vigente; una tarifa en cero no se acepta; un
 	});
 
 	it("tres primeras tarifas a la vez sobre la misma operación: una entra y las otras responden 409; queda una sola vigente", async () => {
-		const operacion = uuidv7();
+		const operacion = (await operacionDePrueba(servidor.base.dueno)).id;
 		const respuestas = await Promise.all([poner(operacion, 100), poner(operacion, 110), poner(operacion, 120)]);
 		expect(respuestas.map((respuesta) => respuesta.estado).sort()).toEqual([200, 409, 409]);
 		expect((await tarifasDe(operacion)).filter((tarifa) => tarifa.vigente)).toHaveLength(1);
+	});
+
+	it("una operación que ya no está en el flujo no recibe tarifa (fase 12)", async () => {
+		const operacion = await operacionDePrueba(servidor.base.dueno);
+		await servidor.base.dueno.query("UPDATE flujo_operaciones SET baja_en = now() WHERE id = $1", [operacion.id]);
+		expect((await poner(operacion.id, 100)).cuerpo).toMatchObject({
+			codigo: "operacion_de_baja",
+			mensaje: "Esa operación ya no está en el flujo",
+		});
+		expect(await tarifasDe(operacion.id)).toEqual([]);
 	});
 });

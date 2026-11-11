@@ -64,6 +64,10 @@ export const crearProducto = definirAccion({
 		seccion_id: z.uuid("Escoge la sección.").describe("Su sección"),
 		escuela_id: z.uuid().nullable().describe("Su escuela; vacío: «Ninguna escuela: básico o general»"),
 		tipo_prenda_id: z.uuid().optional().describe("Si falta: el del base; si no, el de la sección"),
+		flujo_id: z
+			.uuid()
+			.optional()
+			.describe("Su flujo del taller. Si falta: el del base; si no, el de su tipo de prenda. Vacío en servicios"),
 		categoria_mayoreo_id: z.uuid().describe("Su categoría de mayoreo"),
 		es_servicio: z.boolean().optional().describe("Un servicio de mostrador"),
 		tallas: z

@@ -161,3 +161,33 @@ export function eventoDeProducto(
 		entidadId: producto.id,
 	});
 }
+
+/**
+ * Revisa con Producción que un flujo exista y no esté dado de baja (`produccion.flujo_vigente`).
+ * Fase 12 · docs/modulos/catalogo/productos.md («Lo que llega después»)
+ * @param contexto El contexto de la acción.
+ * @param flujoId El flujo.
+ * @returns Su nombre, o `null` si no existe o está dado de baja.
+ */
+export async function nombreDeFlujoVigente(contexto: ContextoDeAccion, flujoId: string): Promise<string | null> {
+	const suyo = await leerFlujo(contexto, flujoId);
+	return suyo.vigente ? suyo.nombre : null;
+}
+
+/** Lo que dice Producción de un flujo: si está vigente y su nombre (también si ya está dado de baja). */
+export async function leerFlujo(contexto: ContextoDeAccion, flujoId: string) {
+	return z
+		.object({ vigente: z.boolean(), nombre: z.string().nullable() })
+		.parse(await contexto.lectura("produccion.flujo_vigente", { flujo_id: flujoId }));
+}
+
+/**
+ * Como `nombreDeFlujoVigente`, para un flujo que se escogió.
+ * @param campo El campo que lo trae, para el error.
+ * @throws `400` en el campo: «Escoge un flujo vigente.».
+ */
+export async function flujoEscogido(contexto: ContextoDeAccion, flujoId: string, campo: string): Promise<string> {
+	const nombre = await nombreDeFlujoVigente(contexto, flujoId);
+	if (nombre === null) throw errorDeCampo(campo, "Escoge un flujo vigente.");
+	return nombre;
+}

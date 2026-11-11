@@ -52,6 +52,7 @@ export const guardarTipoPrenda = definirAccion({
 		tipo_prenda_id: z.uuid().optional().describe("El tipo; sin él es nuevo"),
 		nombre: z.string().trim().min(3, "Escribe el nombre del tipo.").max(40).describe("El tipo de prenda"),
 		seccion_id: z.uuid("Escoge la sección.").describe("Su sección, que lleva receta"),
+		flujo_defecto_id: z.uuid().nullable().optional().describe("El flujo que propone el alta; vacío, ninguno"),
 		medidas: z
 			.array(
 				z.object({

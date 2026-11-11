@@ -1,7 +1,8 @@
 /**
  * `catalogo.crear_producto`: el alta de un producto desde cero, a partir de otro o desde un pedido de Ventas.
  * Fase 8 · docs/modulos/catalogo/productos.md («`catalogo.crear_producto`») y variantes-codigos-y-etiquetas.md
- * (reglas 1 y 2); fase 10 · la receta (docs/modulos/patronaje/recetas.md, reglas 1 y 9)
+ *  (reglas 1 y 2); fase 10 · la receta (docs/modulos/patronaje/recetas.md, reglas 1 y 9); fase 12 · el flujo
+ * (productos.md, «Lo que llega después»)
  *
  * Toma un bloque de códigos seguidos, uno por talla, en un solo paso; sin códigos suficientes no crea nada.
  * Resuelve el tipo de prenda, el recargo y el precio en línea que no vienen. A partir de otro copia también los
@@ -22,6 +23,8 @@ import { ErrorDeApi, errorDeCampo, errorDeRegla } from "../../../nucleo/http/err
 import { type ContextoDeAccion, implementarAccion } from "../../../nucleo/modulos.ts";
 import {
 	eventoDeProducto,
+	flujoEscogido,
+	nombreDeFlujoVigente,
 	type Producto,
 	revisarCanalEnLinea,
 	revisarPrecioMaximo,
@@ -225,14 +228,41 @@ async function loQueLoUbica(contexto: ContextoDeAccion, datos: DatosDelAlta, bas
 		: null;
 	if (seccion.llevaReceta && tipoPrendaId === null)
 		throw errorDeRegla("falta_tipo_prenda", "Escoge el tipo de prenda.");
+	let flujoDelTipo: string | null = null;
 	if (tipoPrendaId !== null) {
 		const [tipo] = await transaccion
-			.select({ id: tiposPrenda.id })
+			.select({ id: tiposPrenda.id, flujoDefectoId: tiposPrenda.flujoDefectoId })
 			.from(tiposPrenda)
 			.where(eq(tiposPrenda.id, tipoPrendaId));
 		if (tipo === undefined) throw errorDeCampo("tipo_prenda_id", "Escoge el tipo de prenda.");
+		flujoDelTipo = tipo.flujoDefectoId;
 	}
-	return { tipoPrendaId, llevaReceta: seccion.llevaReceta && datos.es_servicio !== true };
+	const llevaReceta = seccion.llevaReceta && datos.es_servicio !== true;
+	return { tipoPrendaId, llevaReceta, flujoId: await flujoDelAlta(contexto, datos, llevaReceta, base, flujoDelTipo) };
+}
+
+/**
+ * El flujo del producto nuevo: el que se escoge o, si falta, el del base o el de su tipo de prenda (si siguen
+ * vigentes). Un servicio o un producto de una sección sin receta no pasa por el taller: va vacío.
+ * @throws `400` en `flujo_id` si se escoge uno en lo que no se fabrica, o uno que no está vigente.
+ */
+async function flujoDelAlta(
+	contexto: ContextoDeAccion,
+	datos: DatosDelAlta,
+	seFabrica: boolean,
+	base: Producto | undefined,
+	flujoDelTipo: string | null,
+): Promise<string | null> {
+	if (datos.flujo_id !== undefined) {
+		if (!seFabrica) throw errorDeCampo("flujo_id", "Lo que no se fabrica no lleva flujo.");
+		await flujoEscogido(contexto, datos.flujo_id, "flujo_id");
+		return datos.flujo_id;
+	}
+	if (!seFabrica) return null;
+	for (const propuesto of [base?.flujoId ?? null, flujoDelTipo]) {
+		if (propuesto !== null && (await nombreDeFlujoVigente(contexto, propuesto)) !== null) return propuesto;
+	}
+	return null;
 }
 
 /**
@@ -275,7 +305,7 @@ export const accionCrearProducto = implementarAccion(crearProducto, async (conte
 		throw errorDeCampo("cliente_id", "Escoge el cliente.");
 	const base = await leerBase(contexto, datos);
 	revisarCanales(datos);
-	const { tipoPrendaId, llevaReceta } = await loQueLoUbica(contexto, datos, base);
+	const { tipoPrendaId, llevaReceta, flujoId } = await loQueLoUbica(contexto, datos, base);
 	const deLasTallas = await tallasDelAlta(contexto, datos, base);
 	const porLista = await preciosDelAlta(contexto, datos);
 	// El recargo inicial es un parámetro en centavos: se lleva a peso entero, como todo precio.
@@ -299,6 +329,7 @@ export const accionCrearProducto = implementarAccion(crearProducto, async (conte
 			seccionId: datos.seccion_id,
 			escuelaId: datos.escuela_id,
 			tipoPrendaId,
+			flujoId,
 			categoriaMayoreoId: datos.categoria_mayoreo_id,
 			esServicio: datos.es_servicio ?? false,
 			canalMostrador: datos.canales.includes("mostrador"),

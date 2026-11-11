@@ -236,3 +236,5 @@ Este archivo no tiene parámetros propios. Usa:
 - **Pruebas:** `dar-baja-talla.prueba.ts`. Incluye una baja que espera a un movimiento abierto y luego ve su existencia.
 
 **Fase 10, parte 2.** `catalogo.agregar_talla` pregunta a `patronaje.receta_cubre_tallas` al agregar una talla normal: si la prenda tiene receta y no la cubre, regresa el aviso «La receta de {producto} no tiene la talla {t}: Patronaje la completa.». Lo prueba `acciones/agregar-talla.prueba.ts`.
+
+**Fase 12, parte 1.** `catalogo.guardar_tipo_prenda` recibe `flujo_defecto_id`, que tiene que estar vigente (`produccion.flujo_vigente`), y lo anota en la bitácora; `tipos_prenda.flujo_defecto_id` ya es llave. Lo prueba `acciones/flujo-del-producto.prueba.ts`.

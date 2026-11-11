@@ -267,6 +267,13 @@
 			"when": 1794389295922,
 			"tag": "0037_despachos",
 			"breakpoints": true
+		},
+		{
+			"idx": 38,
+			"version": "7",
+			"when": 1794394520790,
+			"tag": "0038_operaciones_y_flujos",
+			"breakpoints": true
 		}
 	]
 }

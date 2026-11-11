@@ -4,7 +4,7 @@
  *
  * Es de una sección que lleva receta. Sus medidas van en centímetros, entre `patronaje.medida_cm_min` y
  * `patronaje.medida_cm_max`, con un número por talla que puede quedar vacío. Se mandan todas: una medida que
- * ya no viene queda con baja. El flujo por omisión llega con Producción (fase 12).
+ * ya no viene queda con baja. Fase 12: su flujo por omisión, que tiene que estar vigente.
  */
 
 import { guardarTipoPrenda } from "@uniformame/compartido/contratos/catalogo/tallas";
@@ -14,6 +14,7 @@ import { quienCambia } from "../../../nucleo/acciones/comunes.ts";
 import { tomarVersion, versionActual } from "../../../nucleo/acciones/pisadas.ts";
 import { errorDeCampo, errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeAccion, implementarAccion } from "../../../nucleo/modulos.ts";
+import { flujoEscogido } from "../dominio/productos.ts";
 import { secciones, tallas, tipoPrendaMedidas, tiposPrenda } from "../tablas.ts";
 
 /** Una medida como se manda: su nombre, su orden y sus valores por talla. */
@@ -63,7 +64,13 @@ async function revisarMedidas(contexto: ContextoDeAccion, medidas: readonly Medi
  */
 async function tipoQueSeGuarda(
 	contexto: ContextoDeAccion,
-	datos: { tipo_prenda_id?: string | undefined; nombre: string; seccion_id: string; version?: number | undefined },
+	datos: {
+		tipo_prenda_id?: string | undefined;
+		nombre: string;
+		seccion_id: string;
+		flujo_defecto_id?: string | null | undefined;
+		version?: number | undefined;
+	},
 ) {
 	const { transaccion } = contexto;
 	const repetido = errorDeRegla("tipo_repetido", "Ese tipo de prenda ya existe.");
@@ -75,6 +82,7 @@ async function tipoQueSeGuarda(
 				id,
 				nombre: datos.nombre,
 				seccionId: datos.seccion_id,
+				flujoDefectoId: datos.flujo_defecto_id ?? null,
 				orden: sql`(SELECT coalesce(max(orden), 0) + 1 FROM tipos_prenda)`,
 				creadoPor: quienCambia(contexto),
 			})
@@ -96,7 +104,11 @@ async function tipoQueSeGuarda(
 	if (otro !== undefined) throw repetido;
 	await transaccion
 		.update(tiposPrenda)
-		.set({ nombre: datos.nombre, seccionId: datos.seccion_id })
+		.set({
+			nombre: datos.nombre,
+			seccionId: datos.seccion_id,
+			...(datos.flujo_defecto_id === undefined ? {} : { flujoDefectoId: datos.flujo_defecto_id }),
+		})
 		.where(eq(tiposPrenda.id, tipo.id));
 	return { id: tipo.id, antes: tipo };
 }
@@ -125,6 +137,7 @@ export const accionGuardarTipoPrenda = implementarAccion(guardarTipoPrenda, asyn
 		throw errorDeRegla("seccion_sin_receta", `${seccion.nombre} no lleva receta: sus productos no tienen medidas.`);
 	}
 	await revisarMedidas(contexto, datos.medidas);
+	if (datos.flujo_defecto_id != null) await flujoEscogido(contexto, datos.flujo_defecto_id, "flujo_defecto_id");
 	const tipo = await tipoQueSeGuarda(contexto, datos);
 	const medidasAntes = tipo.antes === undefined ? [] : await medidasDe(contexto, tipo.id);
 	const vigentes = await transaccion
@@ -176,6 +189,11 @@ export const accionGuardarTipoPrenda = implementarAccion(guardarTipoPrenda, asyn
 		...(tipo.antes === undefined ? ["nuevo"] : []),
 		...(tipo.antes !== undefined && tipo.antes.nombre !== datos.nombre ? ["nombre"] : []),
 		...(tipo.antes !== undefined && tipo.antes.seccionId !== datos.seccion_id ? ["sección"] : []),
+		...(tipo.antes !== undefined &&
+		datos.flujo_defecto_id !== undefined &&
+		tipo.antes.flujoDefectoId !== datos.flujo_defecto_id
+			? ["flujo"]
+			: []),
 		...(JSON.stringify(medidasAntes) !== JSON.stringify(medidasDespues) ? ["medidas"] : []),
 	];
 	contexto.bitacora({
@@ -184,8 +202,20 @@ export const accionGuardarTipoPrenda = implementarAccion(guardarTipoPrenda, asyn
 		entidadId: tipo.id,
 		...(tipo.antes === undefined
 			? {}
-			: { antes: { nombre: tipo.antes.nombre, seccion_id: tipo.antes.seccionId, medidas: medidasAntes } }),
-		despues: { nombre: datos.nombre, seccion_id: datos.seccion_id, medidas: medidasDespues },
+			: {
+					antes: {
+						nombre: tipo.antes.nombre,
+						seccion_id: tipo.antes.seccionId,
+						flujo_defecto_id: tipo.antes.flujoDefectoId,
+						medidas: medidasAntes,
+					},
+				}),
+		despues: {
+			nombre: datos.nombre,
+			seccion_id: datos.seccion_id,
+			flujo_defecto_id: datos.flujo_defecto_id ?? tipo.antes?.flujoDefectoId ?? null,
+			medidas: medidasDespues,
+		},
 	});
 	contexto.guardarEvento({
 		tipo: "tipo_prenda.guardado",

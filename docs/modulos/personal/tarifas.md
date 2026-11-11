@@ -101,3 +101,5 @@ Si la dueña cambia ese parámetro, la tablet pide su foto completa (ver [sincro
 - **`personal.copiar_tarifas_flujo`** (`internas/tarifas.ts`): copia la vigente de cada operación de origen a su operación nueva, deja «Sin tarifa» las que no tenían y regresa cuántas, sin montos.
 - **`personal.tarifa_vigente`** (`lecturas/tarifa-vigente.ts`): la de ese momento (la más reciente que empezó antes), o `null`.
 - **Las pruebas:** `modulos/personal/acciones/poner-tarifa-operacion.prueba.ts` (la nueva cierra la vigente, la misma no escribe ni cambia la versión, el `409`, la bitácora sensible; cero y texto no; sin el permiso; la vigente de un momento; copiar un flujo y su bitácora sensible; tres primeras tarifas a la vez).
+
+**Fase 12, parte 1.** `tarifas_operacion.flujo_operacion_id` ya es llave. `personal.poner_tarifa_operacion` lee la operación de su flujo con `FOR SHARE` (decisión 594): si ya no está en el flujo, `422 operacion_de_baja`; su mensaje dice el nombre de la operación y su bitácora, también el del flujo. Lo prueba `poner-tarifa-operacion.prueba.ts`, con flujos de prueba de verdad.

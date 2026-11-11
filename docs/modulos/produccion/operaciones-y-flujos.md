@@ -140,4 +140,13 @@ Los cambia solo la dueña, en Configuración (ver [configuración](../admin/conf
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 12.*
+**Fase 12, parte 1.**
+
+- **Las tablas** `operaciones`, `flujos` y `flujo_operaciones` son de `produccion` (`apps/api/src/modulos/produccion/tablas.ts`, migración `0038`), con sus CHECK, sus únicos y `xid_escritura`. El único del orden de las operaciones vigentes de un flujo es una exclusión diferida (`flujo_operaciones_un_orden`), revisada al final de la transacción (decisión 593). Con ellas, `productos.flujo_id`, `tipos_prenda.flujo_defecto_id` y `tarifas_operacion.flujo_operacion_id` ya son llaves. La siembra (`siembra.ts`) agrega la operación «Corte»; los parámetros están en `parametros.ts`, con las operaciones de «Una sola operación» separadas por coma (decisión 590).
+- **Las acciones** están en `acciones/flujos.ts`, con sus contratos en `packages/compartido/src/contratos/produccion/flujos.ts`; lo común, en `dominio/flujos.ts`:
+  - `crear_flujo` copia del origen (con `FOR SHARE`) sus operaciones vigentes con su orden y su persona y llama `personal.copiar_tarifas_flujo`; o arma el corte y las del parámetro. Una operación que no existe nace con ese nombre (`operacionPorNombre`, sin importar mayúsculas). Quien hace cada una es una persona activa del Taller (`persona_no_valida`).
+  - `agregar_operacion_flujo` y `quitar_operacion_flujo` toman la versión del flujo; las siguientes recorren su orden. Si la operación que se escoge en «Va antes de» no es del flujo, `400` «Escoge antes de cuál va.»; la que propone `produccion.operacion_antes_por_omision` la lee la pantalla (fase 19, decisión 595).
+  - El candado de los lotes en proceso (`flujo_con_lotes`) llega con los lotes, en la parte 2 (decisión 591).
+- **La lectura** `produccion.flujo_vigente` (`lecturas/flujos.ts`) regresa si está vigente y su nombre, con `FOR SHARE`.
+- **Lo que baja a la tablet** (`bajada.ts`): las tres tablas, lo vigente; lo que se da de baja baja como `quitar`.
+- **Pruebas:** `acciones/crear-flujo.prueba.ts`, `acciones/cambiar-operaciones-flujo.prueba.ts` (agregar, quitar, el corte, el mínimo, el `409` y dos cambios a la vez) y `bajada.prueba.ts`; las ayudas están en `nucleo/pruebas/produccion-de-prueba.ts`.
