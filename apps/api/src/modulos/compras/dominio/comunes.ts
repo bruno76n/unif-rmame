@@ -10,6 +10,7 @@ import { and, eq } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
 import { quienCambia } from "../../../nucleo/acciones/comunes.ts";
+import { subirVersion } from "../../../nucleo/acciones/pisadas.ts";
 import { errorDeCampo, errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
 import { materiales, materialProveedores, type origenesDePrecio, preciosCompra, proveedores } from "../tablas.ts";
@@ -194,6 +195,17 @@ export function eventoDeProveedor(
 		entidad: "proveedores",
 		entidadId: id,
 	});
+}
+
+/**
+ * Un material cuyos proveedores o último precio cambiaron desde otra acción (una orden, una nota): sube su versión,
+ * para que quien lo tiene abierto choque, y guarda `material.cambiado`.
+ * @param contexto El contexto de la acción, que ya bloqueó el material.
+ * @param materialId El material.
+ */
+export async function materialCambiado(contexto: ContextoDeAccion, materialId: string): Promise<void> {
+	await subirVersion(contexto.transaccion, materiales, materialId);
+	eventoDeMaterial(contexto, "material.cambiado", materialId);
 }
 
 /**

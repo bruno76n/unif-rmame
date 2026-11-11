@@ -168,10 +168,11 @@ export async function calcularMaterial(
 		.where(eq(recetas.productoId, pedido.producto_id));
 	// La versión que congeló un lote tiene que ser de la receta de ese producto.
 	if (pedido.receta_version_id !== undefined) {
+		if (receta === undefined) throw new Error(`${pedido.producto_id} no tiene receta: no tiene la versión que pide`);
 		const [suya] = await contexto.transaccion
 			.select({ id: recetaVersiones.id })
 			.from(recetaVersiones)
-			.where(and(eq(recetaVersiones.id, pedido.receta_version_id), eq(recetaVersiones.recetaId, receta?.id ?? "")));
+			.where(and(eq(recetaVersiones.id, pedido.receta_version_id), eq(recetaVersiones.recetaId, receta.id)));
 		if (suya === undefined)
 			throw new Error(`la versión ${pedido.receta_version_id} no es de la receta de ese producto`);
 	}

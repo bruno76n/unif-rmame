@@ -25,15 +25,15 @@ import { subirVersion, tomarVersion, versionActual } from "../../../nucleo/accio
 import { errorDeCampo, errorDeRegla } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeAccion, implementarAccion } from "../../../nucleo/modulos.ts";
 import {
-	eventoDeMaterial,
-	leerMaterial,
 	leerProveedor,
+	materialCambiado,
 	precioATexto,
 	registrarPrecio,
 	revisarPrecio,
 	revisarProveedorActivo,
 } from "../dominio/comunes.ts";
 import {
+	bloquearMaterialesDeOrden,
 	eventoDeOrden,
 	faltanteDeLineas,
 	leerOrden,
@@ -292,6 +292,8 @@ async function guardarPdf(contexto: ContextoDeAccion, orden: Orden) {
 
 export const accionMarcarOrdenEnviada = implementarAccion(marcarOrdenEnviada, async (contexto, datos, version) => {
 	const { transaccion } = contexto;
+	// Sus proveedores son parte de cada material: primero los materiales, luego la orden, como al levantarla.
+	await bloquearMaterialesDeOrden(contexto, datos.orden_compra_id);
 	const orden = await borradorConSuVersion(contexto, datos.orden_compra_id, version);
 	const proveedor = await leerProveedor(contexto, orden.proveedorId, "share");
 	revisarProveedorActivo(proveedor);
@@ -308,11 +310,7 @@ export const accionMarcarOrdenEnviada = implementarAccion(marcarOrdenEnviada, as
 		})
 		.where(eq(ordenesCompra.id, orden.id));
 	// Cada precio distinto del último con ese proveedor (o el primero con él) entra al historial; y el proveedor
-	// queda entre los que surten cada material de la orden. Sus proveedores son parte del material: se bloquea antes,
-	// en el orden de su id (como quien agrega un proveedor), y si cambian sube su versión y se avisa.
-	for (const materialId of [...new Set(lineas.map((linea) => linea.materialId))].sort()) {
-		await leerMaterial(contexto, materialId);
-	}
+	// queda entre los que surten cada material de la orden. El material que cambió sube su versión y se avisa.
 	const nuevos: { material: string; precio_centavos: number; anterior: number | null }[] = [];
 	const cambiados = new Set<string>();
 	for (const linea of lineas) {
@@ -344,10 +342,7 @@ export const accionMarcarOrdenEnviada = implementarAccion(marcarOrdenEnviada, as
 			cambiados.add(linea.materialId);
 		}
 	}
-	for (const materialId of cambiados) {
-		await subirVersion(transaccion, materiales, materialId);
-		eventoDeMaterial(contexto, "material.cambiado", materialId);
-	}
+	for (const materialId of cambiados) await materialCambiado(contexto, materialId);
 	const promete = textoDeDia(datos.fecha_prometida);
 	contexto.bitacora({
 		descripcion: `Mandó ${orden.folio} a ${proveedor.nombre}. Promete llegar el ${promete}`,

@@ -15,7 +15,7 @@ import type { Transaccion } from "../../../nucleo/base/transacciones.ts";
 import { errorDeCampo, errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
 import { materiales, ordenCompraLineas, ordenesCompra } from "../tablas.ts";
-import { leerProveedor, parametroNumero } from "./comunes.ts";
+import { leerMaterial, leerProveedor, parametroNumero } from "./comunes.ts";
 
 /** Una orden como se guarda, con el nombre de su proveedor. */
 export type Orden = typeof ordenesCompra.$inferSelect & { proveedor: string };
@@ -161,6 +161,22 @@ export async function faltanteDeLineas(
 			return [linea.id, falta > 0n ? falta : 0n];
 		}),
 	);
+}
+
+/**
+ * Bloquea los materiales de una orden en el orden de su id, antes de bloquear la orden: sus proveedores y su último
+ * precio son parte del material. Es el mismo orden de `levantar_orden` (los materiales y luego el borrador), así que
+ * nunca se cruzan.
+ * @param contexto El contexto de la acción.
+ * @param ordenId La orden.
+ */
+export async function bloquearMaterialesDeOrden(contexto: ContextoDeAccion, ordenId: string): Promise<void> {
+	const suyos = await contexto.transaccion
+		.selectDistinct({ materialId: ordenCompraLineas.materialId })
+		.from(ordenCompraLineas)
+		.where(eq(ordenCompraLineas.ordenCompraId, ordenId))
+		.orderBy(asc(ordenCompraLineas.materialId));
+	for (const { materialId } of suyos) await leerMaterial(contexto, materialId);
 }
 
 /** Los eventos de una orden. */

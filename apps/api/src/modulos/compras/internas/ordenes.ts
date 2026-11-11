@@ -13,8 +13,15 @@ import { quienCambia } from "../../../nucleo/acciones/comunes.ts";
 import { subirVersion } from "../../../nucleo/acciones/pisadas.ts";
 import { errorDeRegla } from "../../../nucleo/http/errores.ts";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
-import { registrarPrecio } from "../dominio/comunes.ts";
-import { eventoDeOrden, faltanteDeLineas, leerOrden, lineasDeOrdenes, precioVigente } from "../dominio/ordenes.ts";
+import { materialCambiado, registrarPrecio } from "../dominio/comunes.ts";
+import {
+	bloquearMaterialesDeOrden,
+	eventoDeOrden,
+	faltanteDeLineas,
+	leerOrden,
+	lineasDeOrdenes,
+	precioVigente,
+} from "../dominio/ordenes.ts";
 import { ordenCompraLineas, ordenesCompra } from "../tablas.ts";
 
 /** Lo que reciben las internas de una orden. */
@@ -102,6 +109,8 @@ export async function registrarPreciosNota(
 	datos: unknown,
 ): Promise<{ lineas: { orden_compra_linea_id: string; antes: number; nuevo: number }[] }> {
 	const pedido = pedidoDeNota.parse(datos);
+	// El último precio de cada par es parte del material: primero los materiales, luego la orden.
+	await bloquearMaterialesDeOrden(contexto, pedido.orden_compra_id);
 	const orden = await leerOrden(contexto, pedido.orden_compra_id);
 	if (orden.estado === "borrador" || orden.estado === "cancelada") {
 		throw errorDeRegla("orden_no_enviada", `${orden.folio} no se ha enviado: no tiene nota que capturar.`);
@@ -129,6 +138,7 @@ export async function registrarPreciosNota(
 			orden: { id: orden.id, lineaId: linea.id },
 			anterior: antes,
 		});
+		await materialCambiado(contexto, linea.materialId);
 		cambiaron.push({ orden_compra_linea_id: linea.id, antes, nuevo: renglon.precio_centavos });
 	}
 	if (cambiaron.length > 0) {

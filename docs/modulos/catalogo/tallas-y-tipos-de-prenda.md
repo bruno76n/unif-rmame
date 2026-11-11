@@ -214,7 +214,7 @@ Este archivo no tiene parámetros propios. Usa:
 ## Lo que llega después
 
 - **Fase 9:** los candados `talla_con_existencia` y `talla_con_reservas` de `catalogo.dar_baja_talla`, con la lectura de inventario de lo que retiene una variante. Antes de revisar, toma el candado de la variante en el orden fijo, para que ningún movimiento se cruce con la baja.
-- **Fase 10:** al agregar una talla normal a una prenda con receta, el aviso que no bloquea «La receta de {producto} no tiene la talla {t}: Patronaje la completa.»; y la receta nueva empieza con las medidas del tipo de prenda.
+- **Fase 10:** al agregar una talla normal a una prenda con receta, el aviso que no bloquea «La receta de {producto} no tiene la talla {t}: Patronaje la completa.»; y, mientras la receta nueva no tiene medidas propias, su pantalla muestra las del tipo de prenda (fase 19, decisión 555).
 - **Fase 12:** `flujo_defecto_id` en `catalogo.guardar_tipo_prenda`, la llave de `tipos_prenda.flujo_defecto_id` y el candado `talla_con_lotes`.
 - **Fase 16:** el candado `talla_con_pedidos` con los pedidos abiertos de Ventas (PE-).
 - **Fase 18:** el mismo candado con los pedidos en línea abiertos (W-), con `linea.pedidos_abiertos_de_variante` (ver [pedidos en línea](../linea/pedidos-en-linea.md)).

@@ -28,7 +28,10 @@ const deUnaTalla = z.object({
 	cantidad: z
 		.string("Escribe un número")
 		.trim()
-		.describe("Decimal con hasta tres decimales; si no lo es, «{material}: revisa la talla {t}»"),
+		.max(20, "Escribe un número")
+		.describe(
+			"Decimal con hasta tres decimales; vacía es que falta; si no es número, «{material}: revisa la talla {t}»",
+		),
 });
 
 /** Patronaje guarda la receta de una prenda como versión nueva. */

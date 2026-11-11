@@ -8623,7 +8623,8 @@
                                   },
                                   "cantidad": {
                                     "type": "string",
-                                    "description": "Decimal con hasta tres decimales; si no lo es, «{material}: revisa la talla {t}»"
+                                    "maxLength": 20,
+                                    "description": "Decimal con hasta tres decimales; vacía es que falta; si no es número, «{material}: revisa la talla {t}»"
                                   }
                                 },
                                 "required": [

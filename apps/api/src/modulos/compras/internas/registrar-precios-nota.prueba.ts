@@ -12,6 +12,7 @@ import {
 	altaDeProveedor,
 	levantarDePrueba,
 	ordenEnEstado,
+	versionDe,
 } from "../../../nucleo/pruebas/compras-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 
@@ -52,6 +53,10 @@ describe("La nota cambia el precio vigente de la línea, deja su renglón «seg�
 	it("la línea con otro precio toma el de la nota, con su renglón en el historial y el último precio del par; la del mismo precio no cambia", async () => {
 		const orden = await ordenDeDos();
 		await ordenEnEstado(servidor, orden.id, "enviada");
+		const [botonAntes, cierreAntes] = [
+			await versionDe(servidor, "materiales", orden.boton),
+			await versionDe(servidor, "materiales", orden.cierre),
+		];
 		const { rows: antes } = await servidor.base.dueno.query("SELECT version FROM ordenes_compra WHERE id = $1", [
 			orden.id,
 		]);
@@ -81,6 +86,9 @@ describe("La nota cambia el precio vigente de la línea, deja su renglón «seg�
 			[orden.cierre, orden.proveedor],
 		);
 		expect(par).toEqual([{ precio: 650 }]);
+		// El último precio es parte del material: el cierre sube su versión; el botón, que no cambió, no.
+		expect(await versionDe(servidor, "materiales", orden.cierre)).toBeGreaterThan(cierreAntes);
+		expect(await versionDe(servidor, "materiales", orden.boton)).toBe(botonAntes);
 		const { rows: despues } = await servidor.base.dueno.query("SELECT version FROM ordenes_compra WHERE id = $1", [
 			orden.id,
 		]);

@@ -261,7 +261,9 @@ async function lineasRevisadas(
 		const material = porId.get(linea.material_id);
 		const nombre = material?.nombre ?? "";
 		const unidad = unidadEnPalabras[linea.unidad_receta];
-		const tallasDeLaLinea = linea.modo === "por_talla" ? (linea.tallas ?? []) : [];
+		// Una talla vacía es una talla que falta.
+		const tallasDeLaLinea =
+			linea.modo === "por_talla" ? (linea.tallas ?? []).filter((talla) => talla.cantidad !== "") : [];
 		if (linea.modo === "igual" && linea.cantidad === undefined) {
 			problemas.anotar(campo, `${nombre}: escribe cuánto lleva cada prenda, en ${unidad}`);
 		}
