@@ -202,3 +202,21 @@ Las existencias las leen las pantallas de Aduana, Bodega, Dirección, Catálogo 
 **Fase 9, parte 3.**
 - **`inventario.piezas_de_variante`** regresa también las reservas activas de la variante, con su motivo y su documento.
 - **`inventario.libres`** está en `lecturas/reservas.ts`.
+
+**Fase 9, parte 5.**
+
+- **La tabla** `cuadres` está en `modulos/inventario/tablas.ts` (migración `0030`): única por fecha, y `terminado_en` lleno si y solo si ya no está `corriendo`. `excepciones.cuadre_id` ya es llave.
+- **El cuadre** (`internas/correr-cuadre.ts`, `correrCuadre`) es una función del módulo y no una interna registrada: corre sus propias transacciones, y una interna corre dentro de la de quien la llama (decisión 495).
+  - **Una sola corrida por fecha:** nace con un único por fecha; si ya estaba, regresa `ya_corrio`.
+  - **Paso 1:** una tanda por ubicación. Bloquea sus existencias en el orden fijo, las compara con la suma del libro (piezas y material) y corrige la que no es igual, con su `cuadre_proyeccion` y los dos valores.
+  - **Paso 3:** los traspasos que terminaron ese día `recibido` o `salio` tienen cero en los tramos de camino. Los `con_diferencia` esperan a las DF- de la fase 14 (decisión 496).
+  - **Paso 6:** pregunta a `ventas.documentos_abiertos` y `linea.pedidos_abiertos` cuando esos módulos existen (decisión 497). Hasta la fase 16, un módulo de prueba `ventas` da la primera (decisión 498).
+  - **Paso 7:** lo que lleva más de `inventario.dias_sin_confirmar_excepcion` días en camino (desde `enviado_en`) o en tránsito (desde su último movimiento a Tránsito). Abre una excepción por traspaso mientras siga abierta (decisión 499).
+  - **Paso 8:** el total de cada variante y de cada material contra el libro.
+  - **Al final:** `cuadro` o `con_residuo` con sus contadores y el evento `cuadre.terminado`. Si una tanda falla, queda `fallo` con su error.
+- **El trabajo** `inventario.cuadre_nocturno` (`trabajos/cuadre-nocturno.ts`) corre a `inventario.hora_cuadre` el día que terminó. Si el cuadre falla, avisa `cuadre_fallido` a la dueña y falla, para que soporte reciba su `trabajo_fallido`.
+- **Al terminar:** `cuadre.terminado` encola `admin.depurar_eventos` (`trasEventos`).
+- **El aviso** `cuadre_fallido` entra al CHECK de `avisos.tipo` en la migración `0030`, con la lista completa. `tipos-de-aviso.prueba.ts` revisa que el CHECK deje todos los tipos que se declaran (decisión 494).
+- **Pruebas:**
+  - `internas/correr-cuadre.prueba.ts`: la existencia alterada; el tramo; lo sin confirmar; la reserva sin documento; una sola corrida; y movimientos a media corrida que no esperan.
+  - `trabajos/cuadre-nocturno.prueba.ts`: el horario, la depuración encolada y el aviso del cuadre que falla.

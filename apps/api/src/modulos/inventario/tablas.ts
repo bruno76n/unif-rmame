@@ -3,8 +3,8 @@
  * Fase 4 · docs/modulos/inventario/libro-de-movimientos.md («La tabla `ubicaciones`»)
  * Fase 9 · docs/modulos/inventario/libro-de-movimientos.md («La tabla `movimientos`», «La tabla
  * `movimiento_lineas`»), existencias-y-cuadre.md («La tabla `existencias`», «La tabla `existencias_material`»),
- * traspasos.md («La tabla `traspasos`», «La tabla `traspaso_lineas`»), reservas.md («La tabla `reservas`») y
- * excepciones.md («La tabla `excepciones`»)
+ * traspasos.md («La tabla `traspasos`», «La tabla `traspaso_lineas`»), reservas.md («La tabla `reservas`»),
+ * excepciones.md («La tabla `excepciones`») y existencias-y-cuadre.md («La tabla `cuadres`»)
  *
  * `ubicaciones` nace en la fase 4 con su siembra porque antes la usan los parámetros, las impresoras, las
  * cuentas, los aparatos y las personas. El libro solo crece: el rol de la app no lo puede cambiar.
@@ -618,8 +618,7 @@ export const excepciones = pgTable(
 		// La llave es diferida (migración `0029`): la subida abre la excepción antes de guardar su comando.
 		comandoId: uuid("comando_id").references((): AnyPgColumn => comandosRecibidos.id),
 		...columnasDeAparato(),
-		/** @llavePendiente cuadres.id */
-		cuadreId: uuid("cuadre_id"),
+		cuadreId: uuid("cuadre_id").references((): AnyPgColumn => cuadres.id),
 		datos: jsonb("datos"),
 		detectadaEn: momento("detectada_en").notNull(),
 		resueltaEn: momento("resuelta_en"),
@@ -644,6 +643,32 @@ export const excepciones = pgTable(
 		),
 	],
 );
+
+/** Una corrida del cuadre de la noche por día de negocio. */
+export const cuadres = pgTable(
+	"cuadres",
+	{
+		id: uuid("id").primaryKey(),
+		fecha: date("fecha", { mode: "string" }).notNull(),
+		iniciadoEn: momento("iniciado_en").notNull(),
+		terminadoEn: momento("terminado_en"),
+		estado: text("estado").notNull(),
+		renglonesRevisados: integer("renglones_revisados").notNull().default(0),
+		proyeccionesCorregidas: integer("proyecciones_corregidas").notNull().default(0),
+		diferenciasCreadas: integer("diferencias_creadas").notNull().default(0),
+		excepcionesCreadas: integer("excepciones_creadas").notNull().default(0),
+		error: text("error"),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		uniqueIndex("cuadres_fecha").on(tabla.fecha),
+		check("cuadres_estado", sql`${tabla.estado} in ('corriendo', 'cuadro', 'con_residuo', 'fallo')`),
+		check("cuadres_terminado", sql`(${tabla.estado} = 'corriendo') = (${tabla.terminadoEn} is null)`),
+	],
+);
+
+/** Los tipos de aviso que suma `inventario` al CHECK de `avisos.tipo` (con su migración). */
+export const tiposDeAvisoDeInventario = ["cuadre_fallido"] as const;
 
 /**
  * Una partida en aduana: por renglón de un traspaso `en_aduana`, lo que queda (recibido − repartido), sus horas en

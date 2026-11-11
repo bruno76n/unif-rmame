@@ -5,7 +5,7 @@
  * Suelta las particiones de los meses que terminaron antes del corte y ya no tienen nada sin procesar
  * (`soltar_particiones_de_eventos`, con los permisos del dueño). Un mes a medias espera a que termine su
  * mes completo. No toca `avisos`, `bitacora` ni `comandos_recibidos`. Repetirlo no hace nada. Lo encola el
- * cuadre nocturno desde la fase 9.
+ * evento `cuadre.terminado` del cuadre nocturno (fase 9).
  */
 
 import { sql } from "drizzle-orm";
@@ -14,6 +14,8 @@ import { leerParametro } from "../../../nucleo/parametros.ts";
 
 export const depurarEventos: Trabajo = {
 	nombre: "admin.depurar_eventos",
+	// Lo encola el cuadre de la noche al terminar.
+	trasEventos: ["cuadre.terminado"],
 	correr: async (contexto) => {
 		const dias = Number(await leerParametro(contexto.base, { clave: "admin.dias_guardar_eventos" }));
 		const corte = contexto.ahora.subtract({ hours: dias * 24 }).toString();

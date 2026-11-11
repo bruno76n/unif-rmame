@@ -44,7 +44,6 @@ Lo que falta decidir o investigar, y en qué fase se resuelve. Lo del negocio ya
 - **La prueba al azar de la idempotencia corre 150 series contra Postgres** (fase 21, con la temporada simulada): la regla de pruebas pide miles; con la base real cada serie cuesta, y la temporada simulada es donde se corren muchas más.
 - **Un commit de solo registros no corre `docs:revisar`** (fase 22): el encabezado de la bitácora o de `REGISTROS.md` se puede romper ahí y solo lo ve la siguiente revisión completa. Se decide al revisar la seguridad completa si el gancho también revisa esos dos encabezados.
 - **La red del entorno «Unifórmame»** (antes de la fase 2): Claude Code lo creó con red limitada (`nodejs.org` y los registros de paquetes); la [forma de trabajo](../trabajo/FORMA-DE-TRABAJO.md#el-entorno-de-la-nube) pide «Trusted», que también deja pasar las documentaciones oficiales y Docker Hub. Bruno lo cambia en Settings → Environments y abre las sesiones que siguen en ese entorno.
-- **Los tipos de aviso de cada módulo en el CHECK de `avisos.tipo`** (antes de la fase 9): Catálogo reescribió el CHECK con la lista completa (decisión 454), y el esquema de Drizzle de `admin` sigue con los del núcleo. Cada módulo que sume un tipo tiene que repetir la lista; falta decidir si los módulos declaran sus tipos de aviso en su registro y una prueba compara el CHECK con ellos.
 
 ## Para después
 
@@ -250,5 +249,11 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 11 nov 2026 | 9 | Un retenido que queda apartado (decisión 491) | Resolverlo igual · sigue retenido | Sigue retenido | No |
 | 11 nov 2026 | 9 | Cuándo se abre `pedido_linea_sin_pieza` (decisión 492) | Fase 18 · fase 9 | Fase 9 | No |
 | 11 nov 2026 | 9 | Cuentas de prueba para las bandejas (decisión 493) | Solo la dueña · Bodega, Producción y Contaduría | Bodega, Producción y Contaduría | No |
+| 11 nov 2026 | 9 | Cómo entran los tipos de aviso de cada módulo al CHECK (decisión 494) | Un registro en `admin` · cada módulo los declara y una prueba revisa el CHECK | Cada módulo los declara y una prueba revisa el CHECK | No |
+| 11 nov 2026 | 9 | El cuadre como interna (decisión 495) | Interna registrada · función del módulo con sus tandas | Función del módulo con sus tandas | No |
+| 11 nov 2026 | 9 | Qué traspasos revisa el paso 3 (decisión 496) | Todos los terminados · los que terminaron ese día | Los que terminaron ese día | No |
+| 11 nov 2026 | 9 | El paso 6 sin Ventas ni Tienda en línea (decisión 497) | No hacerlo · preguntar cuando existan | Preguntar cuando existan | No |
+| 11 nov 2026 | 9 | Cómo se prueba el paso 6 antes de Ventas (decisión 498) | Sin prueba · un módulo de prueba `ventas` | Un módulo de prueba `ventas` | No |
+| 11 nov 2026 | 9 | Desde cuándo cuenta lo que va en tránsito (decisión 499) | La hora del traspaso · su último movimiento a Tránsito | Su último movimiento a Tránsito | No |
 | 10 nov 2026 | 5 | La pantalla del Google de desarrollo | Una propia para escoger cuenta · la de desarrollo de oidc-provider, que pide el correo | La de oidc-provider; `pnpm local` escribe los correos de la muestra al arrancar | No |
 

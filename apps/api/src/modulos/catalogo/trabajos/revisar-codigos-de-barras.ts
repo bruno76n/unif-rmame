@@ -12,9 +12,10 @@ import { and, eq, gt } from "drizzle-orm";
 import { z } from "zod";
 import type { ContextoDeAccion, Trabajo } from "../../../nucleo/modulos.ts";
 import { avisos } from "../../admin/tablas.ts";
+import { tiposDeAvisoDeCatalogo } from "../tablas.ts";
 
 /** El tipo de aviso de este trabajo. */
-const tipoDeAviso = "codigos_por_acabarse";
+const [tipoDeAviso] = tiposDeAvisoDeCatalogo;
 
 /** Los días que pasan antes de repetir el aviso. */
 const diasEntreAvisos = 7;

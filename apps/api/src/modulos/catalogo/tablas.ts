@@ -379,3 +379,6 @@ export const precios = pgTable(
 		check("precios_panel", sql`${tabla.origen} <> 'panel_uniformame' or ${tabla.usuarioPanelId} is not null`),
 	],
 );
+
+/** Los tipos de aviso que suma `catalogo` al CHECK de `avisos.tipo` (con su migración `0025`). */
+export const tiposDeAvisoDeCatalogo = ["codigos_por_acabarse"] as const;

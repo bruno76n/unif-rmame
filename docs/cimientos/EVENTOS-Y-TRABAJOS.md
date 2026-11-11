@@ -189,3 +189,5 @@ Este archivo es dueño del mecanismo; cada evento lo produce el archivo de su te
   - Es el trabajo `admin.depurar_eventos`. Lee `admin.dias_guardar_eventos` y llama a `soltar_particiones_de_eventos(corte)`, que corre con los permisos del dueño.
   - Suelta la partición de cada mes que terminó antes del corte y no tiene nada sin procesar. Un mes a medias espera a que todo su mes quede atrás del corte.
   - Su prueba es `depurar-eventos.prueba.ts`.
+
+**Fase 9.** `admin.depurar_eventos` se encola tras el evento `cuadre.terminado` (`trasEventos`), que guarda el cuadre de la noche al terminar.

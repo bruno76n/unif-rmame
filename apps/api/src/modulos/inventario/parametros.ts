@@ -1,6 +1,6 @@
 /**
  * Los parámetros de `inventario`.
- * Fase 9 · docs/modulos/inventario/traspasos.md y reservas.md («Parámetros»)
+ * Fase 9 · docs/modulos/inventario/traspasos.md, reservas.md y existencias-y-cuadre.md («Parámetros»)
  */
 
 import { semillaDeParametros } from "../../nucleo/parametros.ts";
@@ -81,5 +81,33 @@ export const semillaDeParametrosDeInventario = semillaDeParametros("inventario",
 		tipo: "texto",
 		inicial: "bodega,aduana_a_bodega,tiendas",
 		orden: 7,
+	},
+	{
+		clave: "inventario.hora_cuadre",
+		seccion: "tecnico",
+		nombre: "Hora del cuadre de la noche",
+		tipo: "hora",
+		inicial: "03:00",
+		orden: 8,
+	},
+	{
+		clave: "inventario.dias_sin_confirmar_excepcion",
+		seccion: "parametro",
+		nombre: "Días sin confirmar para la excepción",
+		explicacion: "Lo que lleva más días en camino o en tránsito abre la excepción «sin confirmar»",
+		tipo: "entero",
+		unidad: "días",
+		inicial: 2,
+		minimo: 1,
+		orden: 9,
+	},
+	{
+		clave: "avisos.correo_cuadre_fallido",
+		seccion: "parametro",
+		nombre: "Correo: Cuadre fallido",
+		explicacion: "Si este aviso también llega por correo",
+		tipo: "booleano",
+		inicial: true,
+		orden: 10,
 	},
 ]);

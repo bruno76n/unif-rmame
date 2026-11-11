@@ -24,6 +24,7 @@ import { existenciaMaterial, piezasDeVariante } from "./lecturas/existencias.ts"
 import { libres, listoEnAduana } from "./lecturas/reservas.ts";
 import { semillaDeParametrosDeInventario } from "./parametros.ts";
 import { ubicaciones } from "./tablas.ts";
+import { cuadreNocturno } from "./trabajos/cuadre-nocturno.ts";
 
 /** Los departamentos que leen el libro y el material. */
 const lectoresDelLibro = ["aduana", "bodega", "direccion"];
@@ -64,6 +65,7 @@ export default definirModulo({
 		reservas: [...lectoresDelLibro, "ventas", "linea"],
 		// La bandeja: Bodega; Producción ve las del taller y Contaduría las de dinero; Dirección cuenta las abiertas.
 		excepciones: ["bodega", "produccion", "contaduria", "direccion"],
+		cuadres: lectoresDelLibro,
 	},
 	acciones: [accionResolverExcepcion],
 	internas: {
@@ -81,6 +83,7 @@ export default definirModulo({
 		libres,
 		listo_en_aduana: listoEnAduana,
 	},
+	trabajos: [cuadreNocturno],
 	semillas: [
 		{ tabla: ubicaciones, filas: ubicacionesDeLaSiembra.map((ubicacion) => ({ id: uuidv7(), ...ubicacion })) },
 		semillaDeParametrosDeInventario,
