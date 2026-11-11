@@ -1,6 +1,6 @@
 /**
  * Prueba del orden de los candados en toda una transacción: las variantes, luego los traspasos, luego las
- * existencias. Las dos situaciones que antes se bloqueaban entre sí, sin el reintento del núcleo.
+ * existencias. Las situaciones que se bloqueaban entre sí, sin el reintento del núcleo.
  * Fase 9 · docs/cimientos/BASE-DE-DATOS.md («Candados») y la decisión 500
  */
 
@@ -71,21 +71,62 @@ describe("Con varias conexiones al mismo tiempo no hay bloqueos cruzados: el ord
 		return contexto.transaccion.execute(sql`SELECT pg_sleep(0.2)`);
 	}
 
-	it("una acción que escribe dos movimientos toma al principio sus candados: no se cruza con otra que mueve las mismas variantes al revés", async () => {
+	it("dos acciones que escriben dos movimientos cada una, en orden contrario, toman al principio sus candados y no se cruzan", async () => {
 		for (let ronda = 0; ronda < 5; ronda++) {
 			const [a = "", b = ""] = await variantesLibres(servidor, 2);
+			// Cada una escribe en el orden contrario de la otra; sin `tomarCandadosDeInventario`, se cruzarían siempre.
+			const dosMovimientos = (primera: string, segunda: string) =>
+				sinReintento(async (contexto) => {
+					await tomarCandadosDeInventario(contexto.transaccion, { varianteIds: [primera, segunda] });
+					await entra(contexto, primera);
+					await pausa(contexto);
+					await entra(contexto, segunda);
+				});
+			expect(await Promise.all([dosMovimientos(b, a), dosMovimientos(a, b)])).toEqual([undefined, undefined]);
+		}
+	});
+
+	it("apartar un W- de lo que hay en aduana reparte el lote sin pedir las demás variantes del lote: no se cruza con un movimiento de esas variantes", async () => {
+		for (let ronda = 0; ronda < 5; ronda++) {
+			// Dos variantes del mismo lote; la que se aparta es la mayor, para que pedir la otra invirtiera el orden.
+			const [menor = "", mayor = ""] = (await variantesLibres(servidor, 2)).sort();
+			await nuevoTraspaso(servidor, {
+				tipo: "lote_temporada",
+				estado: "en_aduana",
+				origen: { ubicacionId: ubicacion.TAL ?? "" },
+				destino: { ubicacionId: ubicacion.BOD ?? "" },
+				renglones: [
+					{ varianteId: menor, piezas: 3 },
+					{ varianteId: mayor, piezas: 3 },
+				],
+			});
+			await meterPiezas(servidor, ubicacion.ADU ?? "", menor, 3);
+			await meterPiezas(servidor, ubicacion.ADU ?? "", mayor, 3);
 			const errores = await Promise.all([
+				// Un movimiento de las dos, en el orden fijo: toma la menor y espera.
 				sinReintento(async (contexto) => {
-					await tomarCandadosDeInventario(contexto.transaccion, { varianteIds: [a, b] });
-					await entra(contexto, b);
+					await tomarCandadosDeInventario(contexto.transaccion, { varianteIds: [menor] });
 					await pausa(contexto);
-					await entra(contexto, a);
+					await escribirMovimiento(contexto, {
+						tipo: "ajuste",
+						documento: { tipo: "ajuste", id: uuidv7() },
+						renglones: [menor, mayor].map((varianteId) => ({
+							origen: null,
+							destino: ubicacion.T2 ?? "",
+							varianteId,
+							piezas: 1,
+						})),
+						clave: uuidv7(),
+					});
 				}),
-				sinReintento(async (contexto) => {
-					await entra(contexto, a);
-					await pausa(contexto);
-					await entra(contexto, b);
-				}),
+				// El W- de la mayor: sin pieza en Bodega, se aparta de la aduana y se reparte en un hijo.
+				sinReintento((contexto) =>
+					contexto.interna("inventario.reservar", {
+						motivo: "pedido_linea",
+						pedido_linea_id: uuidv7(),
+						renglones: [{ variante_id: mayor, piezas: 2 }],
+					}),
+				),
 			]);
 			expect(errores).toEqual([undefined, undefined]);
 		}

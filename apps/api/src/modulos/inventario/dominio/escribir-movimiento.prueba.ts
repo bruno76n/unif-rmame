@@ -332,7 +332,7 @@ describe("el libro de movimientos", () => {
 		});
 	});
 
-	it("Una reserva viaja con su pieza en cada movimiento: cambia de lugar, deja su traspaso al llegar y se cumple al salir", async () => {
+	it("Una reserva viaja con su pieza en cada movimiento: cambia de lugar, deja su traspaso al llegar y se cumple al salir con una entrega; una pérdida no la toca", async () => {
 		const [suya = ""] = await variantesLibres(servidor, 1);
 		const { traspasoId } = await nuevoTraspaso(servidor, {
 			tipo: "reabasto",
@@ -348,7 +348,7 @@ describe("el libro de movimientos", () => {
 			[uuidv7(), ubicacion.ADU, suya, pedido, traspasoId],
 		);
 		const mover = (
-			tipo: "despacho" | "recepcion_despacho" | "entrega_cliente_externo",
+			tipo: "despacho" | "recepcion_despacho" | "entrega_cliente_externo" | "ajuste",
 			de: string,
 			a: string | null,
 			piezas: number,
@@ -385,7 +385,18 @@ describe("el libro de movimientos", () => {
 			{ codigo: "T1", piezas: 3, con_traspaso: false },
 			{ codigo: "TRA", piezas: 2, con_traspaso: true },
 		]);
-		// Las 2 que quedaban salen a Fuera: se cumplen con el movimiento.
+		// Una pérdida en el camino no la cumple ni la parte: la reserva se queda entera donde estaba.
+		const cuantas = async () =>
+			(await servidor.base.dueno.query("SELECT count(*)::int AS n FROM reservas WHERE pedido_id = $1", [pedido]))
+				.rows[0]?.n;
+		const antes = await cuantas();
+		await mover("ajuste", "TRA", null, 1);
+		expect(await activas()).toEqual([
+			{ codigo: "T1", piezas: 3, con_traspaso: false },
+			{ codigo: "TRA", piezas: 2, con_traspaso: true },
+		]);
+		expect(await cuantas()).toBe(antes);
+		// Las 2 que quedaban salen a Fuera con la entrega: se cumplen con el movimiento.
 		const salida = await mover("entrega_cliente_externo", "TRA", null, 2);
 		expect(await activas()).toEqual([{ codigo: "T1", piezas: 3, con_traspaso: false }]);
 		const { rows } = await servidor.base.dueno.query(

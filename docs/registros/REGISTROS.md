@@ -269,5 +269,6 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 11 nov 2026 | 9 | Quién toma la versión de la excepción (decisión 508) | `admin` · `inventario` | `inventario`, su dueño | No |
 | 11 nov 2026 | 9 | La bandeja ajena al resolver (decisión 509) | `403` · `404` | `404`, como lo que no se ve | No |
 | 11 nov 2026 | 9 | Bodega resolvió y la dueña aplica (decisión 510) | Reescribir la resolución · dejarla | Dejarla; el comando guarda quién lo aplicó | No |
+| 11 nov 2026 | 9 | Qué variantes pide el reparto (decisión 511) | Todas las del traspaso · solo las que reparte | Solo las que reparte: quien reparte ya las tiene | No |
 | 10 nov 2026 | 5 | La pantalla del Google de desarrollo | Una propia para escoger cuenta · la de desarrollo de oidc-provider, que pide el correo | La de oidc-provider; `pnpm local` escribe los correos de la muestra al arrancar | No |
 

@@ -1,22 +1,23 @@
 /**
  * Prueba con datos al azar de las reservas: varias conexiones a la vez meten piezas a Bodega, apartan para pedidos
  * externos y liberan todo o una parte. Nunca se aparta en Bodega más de lo que hay, lo apartado es siempre lo que
- * cada conexión apartó menos lo que liberó, y ninguna se corta por un bloqueo.
+ * cada conexión apartó menos lo que liberó, y ninguna se corta por un bloqueo: cada paso corre en su propia
+ * transacción, sin el reintento del núcleo.
  * Fase 9 · docs/fases/09-inventario-libro-existencias-reservas-y-traspasos.md (parte 3)
  */
 
 import fc from "fast-check";
+import { Temporal } from "temporal-polyfill";
 import { v7 as uuidv7 } from "uuid";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { crearContexto } from "../../../nucleo/acciones/corredor.ts";
+import { type Base, crearBase } from "../../../nucleo/base/conexion.ts";
 import { codigoDePostgres } from "../../../nucleo/base/transacciones.ts";
 import { ErrorDeApi } from "../../../nucleo/http/errores.ts";
-import {
-	llamarInterna,
-	meterPiezas,
-	ubicacionesPorCodigo,
-	variantesLibres,
-} from "../../../nucleo/pruebas/inventario-de-prueba.ts";
+import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
+import { ubicacionesPorCodigo, variantesLibres } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
+import { escribirMovimiento } from "../dominio/escribir-movimiento.ts";
 
 /** Lo que hace una conexión en un paso: meter piezas, apartar un pedido nuevo, o liberar uno suyo (todo o una parte). */
 const paso = fc.oneof(
@@ -47,16 +48,34 @@ type Apartado = Map<string, Map<number, number>>;
 
 describe("Con reservas al azar y varias conexiones al mismo tiempo, nunca se aparta de más en Bodega y lo apartado cuadra con lo pedido", () => {
 	let servidor: ServidorDePrueba;
+	let base: Base;
 	let bodega: string;
 	let variantes: string[];
 	beforeAll(async () => {
 		servidor = await crearServidorDePrueba();
+		base = crearBase(servidor.base.app);
 		bodega = (await ubicacionesPorCodigo(servidor)).BOD ?? "";
 		variantes = await variantesLibres(servidor, 2);
 	});
 	afterAll(async () => {
 		await servidor.cerrar();
 	});
+
+	/** Corre algo en su propia transacción, sin el reintento del núcleo: un `40P01` sale como error. */
+	function sinReintento<T>(hacer: (contexto: ContextoDeAccion) => Promise<T>): Promise<T> {
+		return base.transaction((transaccion) =>
+			hacer(
+				crearContexto(
+					servidor.modulos,
+					transaccion,
+					{ tipo: "sistema", trabajo: "prueba.azar" },
+					"prueba.azar",
+					Temporal.Now.instant(),
+					undefined,
+				).contexto,
+			),
+		);
+	}
 
 	/**
 	 * Hace un paso y anota lo que apartó o liberó la conexión.
@@ -65,17 +84,28 @@ describe("Con reservas al azar y varias conexiones al mismo tiempo, nunca se apa
 	async function hacer(suyo: Paso, apartado: Apartado): Promise<unknown> {
 		try {
 			if (suyo.hace === "meter") {
-				await meterPiezas(servidor, bodega, variantes[suyo.variante] ?? "", suyo.piezas);
+				await sinReintento((contexto) =>
+					escribirMovimiento(contexto, {
+						tipo: "ajuste",
+						documento: { tipo: "ajuste", id: uuidv7() },
+						renglones: [
+							{ origen: null, destino: bodega, varianteId: variantes[suyo.variante] ?? "", piezas: suyo.piezas },
+						],
+						clave: uuidv7(),
+					}),
+				);
 			} else if (suyo.hace === "apartar") {
 				const pedido = uuidv7();
-				await llamarInterna(servidor, "inventario.reservar", {
-					motivo: "pedido_externo",
-					pedido_id: pedido,
-					renglones: suyo.renglones.map((renglon) => ({
-						variante_id: variantes[renglon.variante],
-						piezas: renglon.piezas,
-					})),
-				});
+				await sinReintento((contexto) =>
+					contexto.interna("inventario.reservar", {
+						motivo: "pedido_externo",
+						pedido_id: pedido,
+						renglones: suyo.renglones.map((renglon) => ({
+							variante_id: variantes[renglon.variante],
+							piezas: renglon.piezas,
+						})),
+					}),
+				);
 				apartado.set(pedido, new Map(suyo.renglones.map((renglon) => [renglon.variante, renglon.piezas])));
 			} else {
 				await liberar(suyo, apartado);
@@ -95,13 +125,15 @@ describe("Con reservas al azar y varias conexiones al mismo tiempo, nunca se apa
 		if (pedido === undefined || suyas === undefined) return;
 		const [variante, tiene] = [...suyas.entries()][0] ?? [0, 0];
 		const piezas = suyo.parte === null ? undefined : Math.min(suyo.parte, tiene);
-		await llamarInterna(servidor, "inventario.liberar_reservas", {
-			motivo: "pedido_externo",
-			documento_id: pedido,
-			motivo_fin: "quitada_del_pedido",
-			documento_cancelado: false,
-			...(piezas === undefined ? {} : { piezas: [{ variante_id: variantes[variante], piezas }] }),
-		});
+		await sinReintento((contexto) =>
+			contexto.interna("inventario.liberar_reservas", {
+				motivo: "pedido_externo",
+				documento_id: pedido,
+				motivo_fin: "quitada_del_pedido",
+				documento_cancelado: false,
+				...(piezas === undefined ? {} : { piezas: [{ variante_id: variantes[variante], piezas }] }),
+			}),
+		);
 		if (piezas === undefined || piezas === tiene) suyas.delete(variante);
 		else suyas.set(variante, tiene - piezas);
 		if (piezas === undefined || suyas.size === 0) apartado.delete(pedido);

@@ -187,19 +187,24 @@ async function tomarFolioDeTraspaso(contexto: ContextoDeAccion): Promise<string>
 }
 
 /**
- * Lee un traspaso y lo bloquea hasta que termine la transacción.
+ * Lee un traspaso y lo bloquea hasta que termine la transacción, en el orden fijo: primero el candado de las
+ * variantes, después el traspaso (como un movimiento y una reserva).
+ * @param contexto El contexto de la acción.
+ * @param traspasoId El traspaso.
+ * @param varianteIds Las variantes que toca quien lo bloquea; sin ellas, todas las de sus renglones. Quien reparte
+ * pasa solo las suyas: ya las tiene tomadas, y pedir otra después de sus existencias invertiría el orden.
  * @throws Error si no existe.
  */
-export async function bloquearTraspaso(contexto: ContextoDeAccion, traspasoId: string) {
-	// El orden fijo: primero las variantes que lleva, después el traspaso (como un movimiento y una reserva).
-	const suyas = await contexto.transaccion
-		.selectDistinct({ varianteId: traspasoLineas.varianteId })
-		.from(traspasoLineas)
-		.where(eq(traspasoLineas.traspasoId, traspasoId));
-	await candadoDeVariantes(
-		contexto.transaccion,
-		suyas.flatMap(({ varianteId }) => (varianteId === null ? [] : [varianteId])),
-	);
+export async function bloquearTraspaso(contexto: ContextoDeAccion, traspasoId: string, varianteIds?: Iterable<string>) {
+	const suyas =
+		varianteIds ??
+		(
+			await contexto.transaccion
+				.selectDistinct({ varianteId: traspasoLineas.varianteId })
+				.from(traspasoLineas)
+				.where(eq(traspasoLineas.traspasoId, traspasoId))
+		).flatMap(({ varianteId }) => (varianteId === null ? [] : [varianteId]));
+	await candadoDeVariantes(contexto.transaccion, suyas);
 	const [traspaso] = await contexto.transaccion
 		.select()
 		.from(traspasos)
@@ -298,7 +303,33 @@ export interface PedidoDeReparto {
 }
 
 /**
- * Las reservas que se lleva un reparto: activas y del padre.
+ * Las variantes que toca un reparto: las de los renglones que reparte y las de las reservas que se lleva. Se leen
+ * sin candado, solo para saber cuáles pedir.
+ * @param contexto El contexto de la acción que reparte.
+ * @param pedido El reparto.
+ */
+async function variantesDelReparto(contexto: ContextoDeAccion, pedido: PedidoDeReparto): Promise<string[]> {
+	const lineaIds = pedido.renglones.map((renglon) => renglon.lineaId);
+	const reservaIds = pedido.reservaIds ?? [];
+	const deLineas =
+		lineaIds.length === 0
+			? []
+			: await contexto.transaccion
+					.selectDistinct({ varianteId: traspasoLineas.varianteId })
+					.from(traspasoLineas)
+					.where(inArray(traspasoLineas.id, lineaIds));
+	const deReservas =
+		reservaIds.length === 0
+			? []
+			: await contexto.transaccion
+					.selectDistinct({ varianteId: reservas.varianteId })
+					.from(reservas)
+					.where(inArray(reservas.id, [...reservaIds]));
+	return [...deLineas, ...deReservas].flatMap(({ varianteId }) => (varianteId === null ? [] : [varianteId]));
+}
+
+/**
+ * Las reservas que se lleva un reparto: activas y del padre. Se leen con el candado ya puesto.
  * @throws Error (un `500`) si una no es una reserva activa del padre.
  */
 async function reservasDelPadre(contexto: ContextoDeAccion, pedido: PedidoDeReparto) {
@@ -331,9 +362,9 @@ export interface RepartoHecho extends TraspasoCreado {
  */
 export async function repartirTraspaso(contexto: ContextoDeAccion, pedido: PedidoDeReparto): Promise<RepartoHecho> {
 	const { transaccion } = contexto;
-	// El candado de las variantes del padre antes que el padre (lo toma `bloquearTraspaso`, el mismo orden que un
-	// movimiento); con él puesto se leen las reservas que se lleva.
-	const padre = await bloquearTraspaso(contexto, pedido.padreId);
+	// El candado de las variantes que se reparten antes que el padre (lo toma `bloquearTraspaso`, el mismo orden que
+	// un movimiento); con él puesto se leen las reservas que se lleva.
+	const padre = await bloquearTraspaso(contexto, pedido.padreId, await variantesDelReparto(contexto, pedido));
 	const llevadas = await reservasDelPadre(contexto, pedido);
 	if (padre.estado !== "en_aduana") throw new Error(`el traspaso ${padre.folio} no está en aduana: ${padre.estado}`);
 	const lineas = await transaccion

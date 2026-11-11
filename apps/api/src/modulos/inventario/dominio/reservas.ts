@@ -213,8 +213,10 @@ interface RenglonQueViaja {
 /**
  * Paso 5 de `escribirMovimiento`: las reservas activas de las piezas de un traspaso viajan con ellas. Las que
  * estaban en el origen del renglón pasan a su destino (hasta las piezas del renglón); al llegar al destino del
- * traspaso se les quita el traspaso, y si salen a Fuera, se cumplen con el movimiento. No es otro movimiento.
+ * traspaso se les quita el traspaso. Si salen a Fuera con una entrega (`tiposQueEntregan`), se cumplen con el
+ * movimiento; con otra salida (una pérdida, una merma) no se tocan. No es otro movimiento.
  * @param contexto El contexto de la acción (el candado de la variante ya está tomado).
+ * @param tipo El tipo del movimiento.
  * @param movimientoId El movimiento que las lleva.
  * @param renglones Los renglones del movimiento.
  * @returns Si alguna reserva cambió.
@@ -230,6 +232,9 @@ export async function moverReservasConSuPieza(
 	for (const renglon of renglones) {
 		const { varianteId, traspasoId, origen } = renglon;
 		if (varianteId === undefined || traspasoId === undefined || traspasoId === null || origen === null) continue;
+		// Solo una entrega cumple la reserva; una pérdida, una merma o una devolución al proveedor no: la reserva se
+		// queda donde estaba, entera, y sus libres en negativo lo explican.
+		if (renglon.destino === null && !tiposQueEntregan.includes(tipo)) continue;
 		const suyas = await reservasActivas(
 			transaccion,
 			and(eq(reservas.traspasoId, traspasoId), eq(reservas.varianteId, varianteId), eq(reservas.ubicacionId, origen)),
@@ -239,9 +244,6 @@ export async function moverReservasConSuPieza(
 		cambio = true;
 		const ids = tomadas.map((tomada) => tomada.id);
 		if (renglon.destino === null) {
-			// Solo una entrega cumple la reserva; una pérdida, una merma o una devolución al proveedor no: la reserva se
-			// queda donde estaba, y sus libres en negativo lo explican.
-			if (!tiposQueEntregan.includes(tipo)) continue;
 			for (const id of ids) await terminarReserva(contexto, id, { estado: "consumida", movimientoId });
 			continue;
 		}

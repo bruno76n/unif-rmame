@@ -59,7 +59,7 @@ El corazón del inventario queda listo: el libro de movimientos que es el invent
 ## Cómo se construye
 
 - Un solo agente, una parte a la vez.
-- Ninguna acción del negocio mueve inventario todavía: la primera llega en la fase 11. Las pruebas escriben movimientos de los 30 tipos con documentos de prueba, con `escribirMovimiento`.
+- Ninguna acción del negocio mueve inventario todavía: la primera llega en la fase 11. Las pruebas escriben movimientos de los 31 tipos con documentos de prueba, con `escribirMovimiento`.
 - El libro, las reservas y el cuadre se prueban con datos al azar y con varias conexiones al mismo tiempo.
 - No va en esta fase: ninguna pantalla, ninguna acción de Aduana ni de Bodega, ni las consultas de sus pantallas.
 
