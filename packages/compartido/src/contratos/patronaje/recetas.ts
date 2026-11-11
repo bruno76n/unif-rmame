@@ -16,14 +16,20 @@ export const papelesDeLaReceta = ["tela_principal", "combinacion", "forro", "avi
 export const unidadesDeLaReceta = ["m", "cm", "pza"] as const;
 
 /** Un decimal sin signo con hasta tres decimales, en texto. */
-const cantidad = z
+export const cantidad = z
 	.string("Escribe un número")
 	.trim()
 	.regex(/^\d{1,9}(\.\d{1,3})?$/, "Escribe un número")
 	.describe("Decimal con hasta tres decimales");
 
 /** El valor de una talla. */
-const deUnaTalla = z.object({ talla_id: z.uuid().describe("La talla"), cantidad });
+const deUnaTalla = z.object({
+	talla_id: z.uuid().describe("La talla"),
+	cantidad: z
+		.string("Escribe un número")
+		.trim()
+		.describe("Decimal con hasta tres decimales; si no lo es, «{material}: revisa la talla {t}»"),
+});
 
 /** Patronaje guarda la receta de una prenda como versión nueva. */
 export const guardarReceta = definirAccion({

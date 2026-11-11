@@ -1,9 +1,7 @@
 /**
- * Prueba de la ficha de un proveedor: renombrarlo renombra su tercero, y solo cambia lo que llegó, con un renglón
- * de bitácora por campo.
- * Fase 10 · docs/fases/10-patronaje-y-compras.md (parte 1)
- *
- * Que la condición nueva no cambie la de las órdenes ya enviadas se prueba con las órdenes, en la parte 4.
+ * Prueba de la ficha de un proveedor: renombrarlo renombra su tercero, solo cambia lo que llegó, con un renglón de
+ * bitácora por campo, y su condición nueva no cambia la de las órdenes ya enviadas (con el simulador de R2).
+ * Fase 10 · docs/fases/10-patronaje-y-compras.md (partes 1 y 4)
  */
 
 import { crearSimuladorDeR2 } from "@uniformame/pruebas/simuladores/r2";

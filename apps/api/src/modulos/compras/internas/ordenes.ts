@@ -10,17 +10,11 @@
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { quienCambia } from "../../../nucleo/acciones/comunes.ts";
+import { subirVersion } from "../../../nucleo/acciones/pisadas.ts";
 import { errorDeRegla } from "../../../nucleo/http/errores.ts";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
 import { registrarPrecio } from "../dominio/comunes.ts";
-import {
-	eventoDeOrden,
-	faltanteDeLineas,
-	leerOrden,
-	lineasDeOrdenes,
-	precioVigente,
-	subirVersionDeOrden,
-} from "../dominio/ordenes.ts";
+import { eventoDeOrden, faltanteDeLineas, leerOrden, lineasDeOrdenes, precioVigente } from "../dominio/ordenes.ts";
 import { ordenCompraLineas, ordenesCompra } from "../tablas.ts";
 
 /** Lo que reciben las internas de una orden. */
@@ -49,7 +43,7 @@ export async function recalcularEstadoOrden(contexto: ContextoDeAccion, datos: u
 	const orden = await leerOrden(contexto, orden_compra_id);
 	if (sinRecalcular.has(orden.estado)) return { estado: orden.estado };
 	const faltante = await faltanteDeLineas(contexto, await lineasDeOrdenes(contexto.transaccion, [orden.id]));
-	const estado = [...faltante.values()].every((falta) => falta === 0) ? "recibida" : "recibida_en_parte";
+	const estado = [...faltante.values()].every((falta) => falta === 0n) ? "recibida" : "recibida_en_parte";
 	if (estado !== orden.estado) {
 		await contexto.transaccion.update(ordenesCompra).set({ estado }).where(eq(ordenesCompra.id, orden.id));
 	}
@@ -138,7 +132,7 @@ export async function registrarPreciosNota(
 		cambiaron.push({ orden_compra_linea_id: linea.id, antes, nuevo: renglon.precio_centavos });
 	}
 	if (cambiaron.length > 0) {
-		await subirVersionDeOrden(contexto.transaccion, orden.id);
+		await subirVersion(contexto.transaccion, ordenesCompra, orden.id);
 		eventoDeOrden(contexto, "orden_compra.cambiada", orden);
 	}
 	return { lineas: cambiaron };

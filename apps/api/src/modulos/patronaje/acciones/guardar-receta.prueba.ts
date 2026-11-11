@@ -175,6 +175,13 @@ describe("Guardar una receta crea una versión que no cambia, con la conversión
 				/^Gabardina azul marino .+, talla 6: 6\.000 m por prenda es demasiado\. La tela va en metros, por ejemplo 1\.06$/,
 			),
 		});
+		// Una talla con algo que no es número.
+		const conLetras = recetaDeEjemplo(prenda, materiales, ["1.000", "uno", "1.100"]);
+		expect((await guardarRecetaDePrueba(servidor, prenda, conLetras)).cuerpo).toMatchObject({
+			campos: {
+				"lineas.0": expect.stringMatching(/^Gabardina azul marino .+: revisa la talla 6$/),
+			},
+		});
 	});
 
 	it("los materiales: tipo que no cuadra, tela que no va en metros, unidad sin conversión, repetido, dado de baja y talla ajena", async () => {

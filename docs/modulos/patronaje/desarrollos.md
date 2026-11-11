@@ -15,7 +15,7 @@ Antes de que una prenda nueva exista en el catálogo, Patronaje la desarrolla: r
 2. **Si Dirección rechaza,** la muestra regresa a hacerse, con el motivo del rechazo como cambios pedidos.
 3. **Pedir cambios o descartar con una autorización esperando** la cancela, con su motivo («Patronaje regresó la muestra con cambios», «Patronaje descartó el desarrollo»).
 4. **Se descarta con motivo** en cualquier etapa menos «En catálogo». El motivo lleva al menos `general.largo_minimo_motivo` (5) letras; en pantalla, `cancelado` se llama «Descartado».
-5. **El alta la hace Catálogo:** «Dar de alta en catálogo» abre el alta con el nombre y la escuela de la solicitud, y al crear el producto lo liga al desarrollo (ver [productos](../catalogo/productos.md)). La receta del producto nuevo empieza con la tela de la solicitud.
+5. **El alta la hace Catálogo:** «Dar de alta en catálogo» abre el alta con el nombre y la escuela de la solicitud, y al crear el producto lo liga al desarrollo (ver [productos](../catalogo/productos.md)). La receta del producto nuevo empieza en «Sin receta», y su pantalla propone la tela de la solicitud (decisión 538).
 6. **Todo queda en su historial** (`desarrollo_eventos`), con quién, cuándo y su motivo. El historial solo crece.
 7. **La tela de la solicitud** tiene que ser una tela de Compras. La escuela, si la tiene, no puede estar dada de baja.
 8. **El material de la muestra no se descuenta** del inventario en la primera versión.
@@ -159,7 +159,7 @@ El efecto que este módulo registra para el tipo `aprobar_desarrollo` (ver [mód
 | | |
 |---|---|
 | **La llama** | `direccion.decidir_autorizacion`, en su misma transacción |
-| **Recibe** | `autorizacion_id` · `decision` (`autorizada` o `rechazada`) · `motivo_rechazo` · `decidida_por` |
+| **Recibe** | Lo que manda `direccion.decidir_autorizacion`: `autorizacion_id` · `decision` (`autorizar` o `rechazar`) · `motivo` (al rechazar, siempre) · `desarrollo_id`. Quién decidió es quien llama |
 | **Reglas** | Si el desarrollo ya no está en `aprobacion`, no hace nada |
 | **Escribe** | Autorizada: etapa `ficha_tecnica`, `aprobado_por_tipo = direccion` y `aprobado_por` = quien autorizó; su paso `aprobado`, con la AU- («Dirección aprobó la muestra»). Rechazada: regresa a `muestra` con el motivo del rechazo en `motivo_cambios`; su paso `cambios_pedidos` |
 | **Eventos** | `desarrollo.cambiado` |
@@ -210,3 +210,5 @@ Usa `general.largo_minimo_motivo` ([configuración](../admin/configuracion.md)).
 - **La lectura** `desarrollos_en_proceso_de_escuela` (`lecturas/desarrollos.ts`) regresa los folios en orden; la usa `catalogo.dar_baja_escuela`.
 - **La receta del producto nuevo** nace como la de cualquier alta, en «Sin receta»: la tela de la solicitud la propone la pantalla de la receta (fase 19, decisión 538).
 - **Pruebas:** `acciones/pedir-cambios-muestra.prueba.ts` (con escuela, de la solicitud a la ficha técnica con su historial; la tela y el descarte), `internas/aplicar-decision-desarrollo.prueba.ts` (sin escuela: la AU-, `aprueba_direccion`, autorizar, rechazar, y la AU- cancelada al pedir cambios o descartar), `catalogo/acciones/crear-producto.prueba.ts` (desde un desarrollo) y `catalogo/acciones/dar-baja-escuela.prueba.ts` (`escuela_con_desarrollos`).
+
+**Fase 10, cierre.** Un rechazo de Dirección siempre trae su motivo; si llegara sin él es un error del programa (decisión 557, que reemplaza la 535).

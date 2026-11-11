@@ -13,9 +13,10 @@ import { z } from "zod";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
 import { listas, listaValores } from "../../admin/tablas.ts";
 import { productos } from "../../catalogo/tablas.ts";
+import { listaDeUnidades } from "../../compras/siembra.ts";
 import { materiales } from "../../compras/tablas.ts";
 import { contenidoDeVersion } from "../dominio/recetas.ts";
-import { recetaLineas, recetas } from "../tablas.ts";
+import { recetaLineas, recetas, recetaVersiones } from "../tablas.ts";
 
 /** Lo que recibe `patronaje.receta_cubre_tallas`. */
 const pedidoDeCubre = z.object({ producto_id: z.uuid(), talla_ids: z.array(z.uuid()) }).strict();
@@ -137,7 +138,7 @@ async function seCuentaEntera(
 	const leidos = await contexto.transaccion
 		.select({ id: materiales.id, entera: listaValores.seCuentaEntera })
 		.from(materiales)
-		.innerJoin(listas, eq(listas.clave, "unidades_material"))
+		.innerJoin(listas, eq(listas.clave, listaDeUnidades))
 		.leftJoin(listaValores, and(eq(listaValores.listaId, listas.id), eq(listaValores.clave, materiales.unidad)))
 		.where(inArray(materiales.id, [...materialIds]));
 	return new Map(leidos.map((leido) => [leido.id, leido.entera === true]));
@@ -162,9 +163,18 @@ export async function calcularMaterial(
 	const pedido = pedidoDeCalcular.parse(datos);
 	const { desperdicio_pct } = await desperdicioEstimado(contexto);
 	const [receta] = await contexto.transaccion
-		.select({ versionId: recetas.versionVigenteId })
+		.select({ id: recetas.id, versionId: recetas.versionVigenteId })
 		.from(recetas)
 		.where(eq(recetas.productoId, pedido.producto_id));
+	// La versión que congeló un lote tiene que ser de la receta de ese producto.
+	if (pedido.receta_version_id !== undefined) {
+		const [suya] = await contexto.transaccion
+			.select({ id: recetaVersiones.id })
+			.from(recetaVersiones)
+			.where(and(eq(recetaVersiones.id, pedido.receta_version_id), eq(recetaVersiones.recetaId, receta?.id ?? "")));
+		if (suya === undefined)
+			throw new Error(`la versión ${pedido.receta_version_id} no es de la receta de ese producto`);
+	}
 	const versionId = pedido.receta_version_id ?? receta?.versionId ?? null;
 	if (versionId === null) return { receta_version_id: null, desperdicio_pct, materiales: [] };
 	const { lineas } = await contenidoDeVersion(contexto.transaccion, versionId);

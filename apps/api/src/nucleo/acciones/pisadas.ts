@@ -71,8 +71,18 @@ export async function tomarVersion(
 	leerVisible: () => Promise<unknown>,
 ): Promise<void> {
 	await revisarVersion(contexto, tabla, id, versionLeida, leerVisible);
-	// La versión se sube aquí con la secuencia, aunque a la tabla le faltara su disparador.
-	await contexto.transaccion.execute(
+	await subirVersion(contexto.transaccion, tabla, id);
+}
+
+/**
+ * Sube la versión de un registro con la secuencia, aunque a la tabla le faltara su disparador: lo usa quien cambia
+ * una parte de un agregado (sus renglones) sin haber traído su versión.
+ * @param transaccion La transacción de la acción.
+ * @param tabla La tabla del registro (o del encabezado de su agregado).
+ * @param id El id del registro.
+ */
+export async function subirVersion(transaccion: Transaccion, tabla: PgTable, id: string): Promise<void> {
+	await transaccion.execute(
 		sql`UPDATE ${tabla} SET actualizado_en = now(), version = nextval('public.version_global') WHERE id = ${id}`,
 	);
 }

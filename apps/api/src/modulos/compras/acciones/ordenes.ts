@@ -8,6 +8,7 @@
  * guarda antes de confirmar: si falla, la orden no queda enviada.
  */
 
+import { cantidadEnTexto } from "@uniformame/compartido/calculos/cuenta-material";
 import { textoDeDia } from "@uniformame/compartido/calculos/fechas";
 import {
 	cancelarOrden,
@@ -20,10 +21,12 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
 import { contextoDeDibujo, quienCambia, revisarMotivo } from "../../../nucleo/acciones/comunes.ts";
-import { tomarVersion, versionActual } from "../../../nucleo/acciones/pisadas.ts";
+import { subirVersion, tomarVersion, versionActual } from "../../../nucleo/acciones/pisadas.ts";
 import { errorDeCampo, errorDeRegla } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeAccion, implementarAccion } from "../../../nucleo/modulos.ts";
 import {
+	eventoDeMaterial,
+	leerMaterial,
 	leerProveedor,
 	precioATexto,
 	registrarPrecio,
@@ -38,7 +41,6 @@ import {
 	type Orden,
 	revisarCantidad,
 	revisarFechaPrometida,
-	subirVersionDeOrden,
 } from "../dominio/ordenes.ts";
 import { materiales, materialProveedores, ordenCompraLineas, ordenesCompra } from "../tablas.ts";
 
@@ -161,7 +163,7 @@ export const accionLevantarOrden = implementarAccion(levantarOrden, async (conte
 				...avisoDePrecio(materialDe.get(renglon.material_id)?.nombre ?? "", anterior, renglon.precio_centavos),
 			);
 		}
-		if (!orden.nueva) await subirVersionDeOrden(transaccion, orden.id);
+		if (!orden.nueva) await subirVersion(transaccion, ordenesCompra, orden.id);
 		const nombres = renglones.map((renglon) => materialDe.get(renglon.material_id)?.nombre ?? "").join(", ");
 		contexto.bitacora({
 			descripcion: orden.nueva
@@ -306,8 +308,13 @@ export const accionMarcarOrdenEnviada = implementarAccion(marcarOrdenEnviada, as
 		})
 		.where(eq(ordenesCompra.id, orden.id));
 	// Cada precio distinto del último con ese proveedor (o el primero con él) entra al historial; y el proveedor
-	// queda entre los que surten cada material de la orden.
+	// queda entre los que surten cada material de la orden. Sus proveedores son parte del material: se bloquea antes,
+	// en el orden de su id (como quien agrega un proveedor), y si cambian sube su versión y se avisa.
+	for (const materialId of [...new Set(lineas.map((linea) => linea.materialId))].sort()) {
+		await leerMaterial(contexto, materialId);
+	}
 	const nuevos: { material: string; precio_centavos: number; anterior: number | null }[] = [];
+	const cambiados = new Set<string>();
 	for (const linea of lineas) {
 		const [par] = await transaccion
 			.select({
@@ -328,12 +335,18 @@ export const accionMarcarOrdenEnviada = implementarAccion(marcarOrdenEnviada, as
 				orden: { id: orden.id, lineaId: linea.id },
 			});
 			nuevos.push({ material: linea.material, precio_centavos: linea.precioOrdenCentavos, anterior });
+			cambiados.add(linea.materialId);
 		} else if (par.bajaEn !== null) {
 			await transaccion
 				.update(materialProveedores)
 				.set({ bajaEn: null, bajaPor: null, motivoBaja: null, reactivadoEn: contexto.ahora.toString() })
 				.where(eq(materialProveedores.id, par.id));
+			cambiados.add(linea.materialId);
 		}
+	}
+	for (const materialId of cambiados) {
+		await subirVersion(transaccion, materiales, materialId);
+		eventoDeMaterial(contexto, "material.cambiado", materialId);
 	}
 	const promete = textoDeDia(datos.fecha_prometida);
 	contexto.bitacora({
@@ -451,8 +464,8 @@ export const accionCerrarOrdenConFaltante = implementarAccion(
 		const lineas = await lineasDeOrdenes(contexto.transaccion, [orden.id]);
 		const faltante = await faltanteDeLineas(contexto, lineas);
 		const loQueFalto = lineas
-			.filter((linea) => (faltante.get(linea.id) ?? 0) > 0)
-			.map((linea) => `${(faltante.get(linea.id) ?? 0) / 1000} ${linea.unidad} de ${linea.material}`)
+			.filter((linea) => (faltante.get(linea.id) ?? 0n) > 0n)
+			.map((linea) => `${cantidadEnTexto(faltante.get(linea.id) ?? 0n)} ${linea.unidad} de ${linea.material}`)
 			.join(", ");
 		await contexto.transaccion
 			.update(ordenesCompra)

@@ -4,7 +4,6 @@
  * Fase 10 · docs/modulos/patronaje/recetas.md (reglas, tablas)
  */
 
-import { aMilesimos } from "@uniformame/compartido/calculos/cuenta-material";
 import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
 import { quienCambia } from "../../../nucleo/acciones/comunes.ts";
@@ -60,15 +59,6 @@ export interface ContenidoDeVersion {
 
 /** Una receta como se guarda. */
 export type Receta = typeof recetas.$inferSelect;
-
-/**
- * Un decimal con tres decimales, como lo regresa la base («1.060»).
- * @param texto Un decimal sin signo con hasta tres decimales.
- */
-export function conTresDecimales(texto: string): string {
-	const milesimos = aMilesimos(texto);
-	return `${milesimos / 1000n}.${String(milesimos % 1000n).padStart(3, "0")}`;
-}
 
 /**
  * Lee la prenda con sus tallas vivas (sin las dadas de baja), en el orden de las tallas.

@@ -315,4 +315,8 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 11 nov 2026 | 10 | Las salidas que se revierten (decisión 552) | Ignorarlas · contarlas al revés | Al revés: una entrega deshecha no es consumo | No |
 | 11 nov 2026 | 10 | Lo de la muestra que el sistema todavía no hace (decisión 553) | Esperar a sus fases · ajustarlo y cargar lo demás con las acciones | Ajustarlo: la muestra de Compras y Patronaje ya se ve en local | No |
 | 11 nov 2026 | 10 | Correr acciones desde una carga (decisión 554) | Copiar el código · un archivo común | Un archivo común | No |
+| 11 nov 2026 | 10 | Las medidas del tipo de prenda en la receta nueva (decisión 555) | Copiarlas · mostrarlas en la pantalla | Mostrarlas, como dice la regla 3 de recetas | No |
+| 11 nov 2026 | 10 | El aviso en vivo de las órdenes a Aduana (decisión 556) | Un evento aparte · leer `ordenes_compra` | Leer `ordenes_compra`: sin precios | No |
+| 11 nov 2026 | 10 | El rechazo sin motivo (decisión 557, reemplaza la 535) | Texto de respaldo · error del programa | Error del programa: nunca pasa | No |
+| 11 nov 2026 | 10 | El material al enviar una orden (decisión 558) | Sin candado · bloquearlo y subir su versión | Bloquearlo: nadie pisa sus proveedores | No |
 

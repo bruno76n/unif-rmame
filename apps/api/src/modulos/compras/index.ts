@@ -1,9 +1,7 @@
 /**
- * El módulo `compras`: proveedores, materiales, sus precios de compra, las órdenes de compra y los consumibles que
- * bajan a la tablet.
+ * El módulo `compras`: proveedores, materiales, sus precios de compra, las órdenes de compra, la cuenta de cada
+ * material y los consumibles que bajan a la tablet.
  * Fase 10 · docs/modulos/compras/
- *
- * La proyección de material llega en la parte 5.
  */
 
 import { definirModulo } from "../../nucleo/modulos.ts";

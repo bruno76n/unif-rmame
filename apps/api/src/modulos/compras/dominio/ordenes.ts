@@ -1,13 +1,14 @@
 /**
  * Lo que comparten las acciones, las internas y las lecturas de las órdenes de compra: leer la orden con candado,
- * sus líneas con su material, revisar una línea y la fecha prometida, lo recibido, la versión y sus eventos.
+ * sus líneas con su material, revisar una línea y la fecha prometida, lo recibido y sus eventos.
  * Fase 10 · docs/modulos/compras/ordenes-de-compra.md (reglas 3, 6, 7, 8, 10 y 16)
  *
  * Lo recibido de cada línea no se guarda aquí: lo da `inventario.recibido_de_ordenes`, que llega con Aduana en la
  * fase 11. Hasta entonces nada está recibido.
  */
 
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { aMilesimosConSigno } from "@uniformame/compartido/calculos/cuenta-material";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import { Temporal } from "temporal-polyfill";
 import { z } from "zod";
 import type { Transaccion } from "../../../nucleo/base/transacciones.ts";
@@ -132,13 +133,13 @@ export async function revisarFechaPrometida(contexto: ContextoDeAccion, fecha: s
 export async function recibidoDeLineas(
 	contexto: ContextoDeAccion,
 	lineaIds: readonly string[],
-): Promise<Map<string, number>> {
-	const nada = new Map(lineaIds.map((id) => [id, 0]));
+): Promise<Map<string, bigint>> {
+	const nada = new Map(lineaIds.map((id) => [id, 0n]));
 	if (lineaIds.length === 0 || !contexto.hayLectura("inventario.recibido_de_ordenes")) return nada;
 	const leido = recibido.parse(
 		await contexto.lectura("inventario.recibido_de_ordenes", { orden_compra_linea_ids: lineaIds }),
 	);
-	return new Map(lineaIds.map((id) => [id, Math.round(Number(leido[id] ?? "0") * 1000)]));
+	return new Map(lineaIds.map((id) => [id, aMilesimosConSigno(leido[id] ?? "0")]));
 }
 
 /**
@@ -149,27 +150,16 @@ export async function recibidoDeLineas(
 export async function faltanteDeLineas(
 	contexto: ContextoDeAccion,
 	lineas: readonly Pick<LineaDeOrden, "id" | "cantidad">[],
-): Promise<Map<string, number>> {
+): Promise<Map<string, bigint>> {
 	const recibidas = await recibidoDeLineas(
 		contexto,
 		lineas.map((linea) => linea.id),
 	);
 	return new Map(
-		lineas.map((linea) => [
-			linea.id,
-			Math.max(0, Math.round(Number(linea.cantidad) * 1000) - (recibidas.get(linea.id) ?? 0)),
-		]),
-	);
-}
-
-/**
- * Sube la versión de la orden: cualquier cambio en sus líneas cambia el agregado.
- * @param transaccion La transacción.
- * @param ordenId La orden.
- */
-export async function subirVersionDeOrden(transaccion: Transaccion, ordenId: string): Promise<void> {
-	await transaccion.execute(
-		sql`UPDATE ${ordenesCompra} SET actualizado_en = now(), version = nextval('public.version_global') WHERE id = ${ordenId}`,
+		lineas.map((linea) => {
+			const falta = aMilesimosConSigno(linea.cantidad) - (recibidas.get(linea.id) ?? 0n);
+			return [linea.id, falta > 0n ? falta : 0n];
+		}),
 	);
 }
 

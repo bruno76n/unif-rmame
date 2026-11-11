@@ -220,8 +220,8 @@ export const accionGuardarMaterial = implementarAccion(guardarMaterial, async (c
 		unidad: material.unidad,
 		unidadReceta: material.unidadReceta,
 		factorReceta: material.factorReceta,
-		unidadTablet: pedido.unidad_tablet === undefined ? material.unidadTablet : (pedido.unidad_tablet as string | null),
-		factorTablet: pedido.factor_tablet === undefined ? material.factorTablet : (pedido.factor_tablet as string | null),
+		unidadTablet: datos.unidad_tablet === undefined ? material.unidadTablet : datos.unidad_tablet,
+		factorTablet: datos.factor_tablet === undefined ? material.factorTablet : comoSeGuarda(datos.factor_tablet),
 	};
 	revisarConversion(conversion);
 	await contexto.transaccion

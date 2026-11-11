@@ -152,6 +152,30 @@ describe("Con datos al azar: el día en que se acaba es el primero en que la ser
 		);
 	});
 
+	it("lo que faltó no se recupera, visto desde fuera: la serie nunca queda abajo de la cuenta sin perdón (lo libre más lo que llegó menos lo consumido), y es igual mientras nada llega sobre un negativo", () => {
+		fc.assert(
+			fc.property(insumosAlAzar, (insumos) => {
+				const { serie, consumoPorMes: consumos } = proyectarMaterial(insumos);
+				const hoy = Temporal.PlainDate.from(insumos.hoy);
+				let sinPerdon = insumos.libre;
+				let perdono = false;
+				for (let numero = 0; numero < serie.length; numero++) {
+					const dia = hoy.add({ days: numero });
+					const llega = insumos.llegadas
+						.filter((llegada) => llegada.dia === dia.toString())
+						.reduce((suma, llegada) => suma + llegada.cantidad, 0n);
+					const antes = numero === 0 ? insumos.libre : (serie[numero - 1] ?? 0n);
+					if (llega > 0n && antes < 0n) perdono = true;
+					sinPerdon += llega - (consumos[dia.month - 1] ?? 0n);
+					const queda = serie[numero] ?? 0n;
+					expect(queda >= sinPerdon).toBe(true);
+					if (!perdono) expect(queda).toBe(sinPerdon);
+				}
+			}),
+			{ numRuns: 1_000 },
+		);
+	});
+
 	it("el pedido sugerido es múltiplo de compra y cubre el consumo de sus días desde «para cuándo» más el mínimo, sin pasarse de un múltiplo", () => {
 		fc.assert(
 			fc.property(insumosAlAzar, (insumos) => {

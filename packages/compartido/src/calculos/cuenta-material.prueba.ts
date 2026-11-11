@@ -9,6 +9,7 @@ import { describe, expect, it } from "vitest";
 import {
 	aMilesimos,
 	aMilesimosConSigno,
+	cantidadEnTexto,
 	cuentaDeMaterial,
 	deMilesimos,
 	type LineaDeLaCuenta,
@@ -126,5 +127,6 @@ describe("los milésimos con signo van y vuelven como los guarda la base", () =>
 		);
 		expect(deMilesimos(-5_250n)).toBe("-5.250");
 		expect(deMilesimos(1_700_000n)).toBe("1700.000");
+		expect([100_000n, 12_500n, -250n, 0n].map(cantidadEnTexto)).toEqual(["100", "12.5", "-0.25", "0"]);
 	});
 });

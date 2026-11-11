@@ -16,6 +16,7 @@ import {
 	cajonDeLaOrden,
 	enviarDePrueba,
 	levantarDePrueba,
+	versionDe,
 } from "../../../nucleo/pruebas/compras-de-prueba.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
@@ -58,6 +59,7 @@ describe("Enviar congela cantidades y precios, copia la condición, guarda el PD
 		const hoy = (await servidor.base.dueno.query("SELECT (now() AT TIME ZONE 'America/Mexico_City')::date + 10 AS dia"))
 			.rows[0]?.dia;
 		const fecha = new Date(hoy).toISOString().slice(0, 10);
+		const versionDelMaterial = await versionDe(servidor, "materiales", gabardina);
 		const enviada = await enviarDePrueba(servidor, orden.id, { fecha_prometida: fecha });
 		expect(enviada.estado).toBe(200);
 		expect(enviada.cuerpo.resultado).toMatchObject({
@@ -86,6 +88,8 @@ describe("Enviar congela cantidades y precios, copia la condición, guarda el PD
 			[gabardina, otro],
 		);
 		expect(par).toEqual([{ precio: 8_400, baja_en: null }]);
+		// Sus proveedores son parte del material: quien lo tenía abierto ve que cambió.
+		expect(await versionDe(servidor, "materiales", gabardina)).toBeGreaterThan(versionDelMaterial);
 		const { rows: historial } = await servidor.base.dueno.query(
 			"SELECT origen, orden_compra_id, precio_anterior_centavos AS anterior FROM precios_compra WHERE material_id = $1 AND proveedor_id = $2",
 			[gabardina, otro],

@@ -12,7 +12,8 @@ export const lectoresDeCompras: Record<string, readonly string[]> = {
 	materiales: ["compras", "contaduria", "patronaje", "bodega", "aduana", "produccion"],
 	material_proveedores: ["compras", "contaduria"],
 	precios_compra: ["compras", "contaduria"],
-	// Las órdenes llevan precios: Compras y Contaduría. Aduana las ve sin precios con `compras.ordenes_por_recibir`.
-	ordenes_compra: ["compras", "contaduria"],
+	// Los precios van en las líneas: solo Compras y Contaduría. A Aduana le llega el aviso de que una orden cambió
+	// (enviada, cancelada, cerrada con faltante) y la vuelve a leer sin precios con `compras.ordenes_por_recibir`.
+	ordenes_compra: ["compras", "contaduria", "aduana"],
 	orden_compra_lineas: ["compras", "contaduria"],
 };

@@ -59,6 +59,14 @@ export function deMilesimos(milesimos: bigint): string {
 }
 
 /**
+ * Unos milésimos como se dicen en un mensaje, sin ceros de más: `100_000n` → «100», `12_500n` → «12.5».
+ * @param milesimos Con o sin signo.
+ */
+export function cantidadEnTexto(milesimos: bigint): string {
+	return deMilesimos(milesimos).replace(/\.?0+$/, "");
+}
+
+/**
  * Divide hacia arriba dos enteros no negativos.
  * @param numerador De cero en adelante.
  * @param denominador Mayor que cero.

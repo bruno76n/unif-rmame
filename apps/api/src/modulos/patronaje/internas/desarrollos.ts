@@ -45,7 +45,9 @@ export async function aplicarDecisionDesarrollo(contexto: ContextoDeAccion, dato
 			autorizacionId: pedido.autorizacion_id,
 		});
 	} else {
-		const motivo = pedido.motivo ?? "Dirección lo rechazó";
+		// Rechazar siempre trae su motivo: `direccion.decidir_autorizacion` lo pide.
+		const motivo = pedido.motivo;
+		if (motivo === undefined) throw new Error("un rechazo de Dirección llega sin su motivo");
 		await avanzar(contexto, desarrollo, {
 			etapa: "muestra",
 			accion: "cambios_pedidos",

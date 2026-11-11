@@ -4,6 +4,7 @@
  * Fase 10 · docs/modulos/compras/ordenes-de-compra.md (reglas 8 a 10, «Lecturas»)
  */
 
+import { deMilesimos } from "@uniformame/compartido/calculos/cuenta-material";
 import { and, asc, eq, inArray } from "drizzle-orm";
 import { Temporal } from "temporal-polyfill";
 import { z } from "zod";
@@ -77,7 +78,7 @@ export async function ordenesPorRecibir(contexto: ContextoDeAccion, datos: unkno
 						material: linea.material,
 						unidad: linea.unidad,
 						pedido: linea.cantidad,
-						falta: ((faltante.get(linea.id) ?? 0) / 1000).toFixed(3),
+						falta: deMilesimos(faltante.get(linea.id) ?? 0n),
 					})),
 			};
 		}),

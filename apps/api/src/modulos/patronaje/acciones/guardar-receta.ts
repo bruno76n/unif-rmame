@@ -6,8 +6,8 @@
  * verificada, sigue así solo si no cambian la tela ni los avíos.
  */
 
-import { aMilesimos } from "@uniformame/compartido/calculos/cuenta-material";
-import { guardarReceta } from "@uniformame/compartido/contratos/patronaje/recetas";
+import { aMilesimos, deMilesimos } from "@uniformame/compartido/calculos/cuenta-material";
+import { cantidad, guardarReceta } from "@uniformame/compartido/contratos/patronaje/recetas";
 import { eq, inArray } from "drizzle-orm";
 import type { z } from "zod";
 import { tomarVersion, versionActual } from "../../../nucleo/acciones/pisadas.ts";
@@ -18,7 +18,6 @@ import { materiales } from "../../compras/tablas.ts";
 import {
 	bloquearReceta,
 	type ContenidoDeVersion,
-	conTresDecimales,
 	contenidoComparable,
 	contenidoDeVersion,
 	escribirVersion,
@@ -223,9 +222,20 @@ async function medidasRevisadas(
 		return {
 			medida: medida.medida,
 			orden: medida.orden,
-			valores: medida.valores.map((valor) => ({ tallaId: valor.talla_id, valorCm: conTresDecimales(valor.valor_cm) })),
+			valores: medida.valores.map((valor) => ({
+				tallaId: valor.talla_id,
+				valorCm: deMilesimos(aMilesimos(valor.valor_cm)),
+			})),
 		};
 	});
+}
+
+/**
+ * Si el texto de una talla es un decimal con hasta tres decimales, como lo pide el contrato para las demás cantidades.
+ * @param texto Lo que se escribió.
+ */
+function esCantidad(texto: string): boolean {
+	return cantidad.safeParse(texto).success;
 }
 
 /**
@@ -265,8 +275,12 @@ async function lineasRevisadas(
 				new Set(tallasDeLaLinea.map((talla) => talla.talla_id)),
 			);
 		}
+		for (const talla of tallasDeLaLinea) {
+			if (!esCantidad(talla.cantidad))
+				problemas.anotar(campo, `${nombre}: revisa la talla ${nombreDe.get(talla.talla_id)}`);
+		}
 		if (linea.papel !== "avio") {
-			for (const talla of tallasDeLaLinea) {
+			for (const talla of tallasDeLaLinea.filter((suya) => esCantidad(suya.cantidad))) {
 				if (aMilesimos(talla.cantidad) > telaMaxima) {
 					problemas.anotar(
 						campo,
@@ -280,11 +294,15 @@ async function lineasRevisadas(
 			materialId: linea.material_id,
 			modo: linea.modo,
 			unidadReceta: linea.unidad_receta,
-			cantidad: linea.modo === "igual" && linea.cantidad !== undefined ? conTresDecimales(linea.cantidad) : null,
+			cantidad: linea.modo === "igual" && linea.cantidad !== undefined ? deMilesimos(aMilesimos(linea.cantidad)) : null,
 			recetaPorUnidadInventario:
 				material === undefined ? "1.000" : (conversion(material, linea.unidad_receta) ?? "1.000"),
 			orden: linea.orden,
-			tallas: tallasDeLaLinea.map((talla) => ({ tallaId: talla.talla_id, cantidad: conTresDecimales(talla.cantidad) })),
+			tallas: tallasDeLaLinea.map((talla) => ({
+				tallaId: talla.talla_id,
+				// Con una talla que no es número la acción ya no escribe: los problemas se lanzan antes.
+				cantidad: esCantidad(talla.cantidad) ? deMilesimos(aMilesimos(talla.cantidad)) : "0.000",
+			})),
 		};
 	});
 }
