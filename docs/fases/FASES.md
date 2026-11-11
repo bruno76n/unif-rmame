@@ -28,7 +28,7 @@ Una fase es una parte del sistema y se construye de abajo hacia arriba: primero 
 | 6 ● | [Dispositivos y sincronización](06-dispositivos-y-sincronizacion.md) | Registrar y revocar aparatos, sus llaves, y la sincronización: subir, bajar, foto y avisos en vivo | Terminada |
 | 7 ● | [Autorizaciones y Personal](07-autorizaciones-y-personal.md) | Las autorizaciones de Dirección, las personas, el PIN del taller, la asistencia y las tarifas | Terminada |
 | 8 | [Catálogo](08-catalogo.md) | Escuelas, tallas, productos, variantes con su código de barras, listas de precios y precios | Terminada |
-| 9 ● | [Inventario: libro, existencias, reservas y traspasos](09-inventario-libro-existencias-reservas-y-traspasos.md) | El libro de movimientos, las existencias con el cuadre de cada noche, las reservas, los traspasos y las excepciones | Pendiente |
+| 9 ● | [Inventario: libro, existencias, reservas y traspasos](09-inventario-libro-existencias-reservas-y-traspasos.md) | El libro de movimientos, las existencias con el cuadre de cada noche, las reservas, los traspasos y las excepciones | Terminada |
 | 10 | [Patronaje y Compras](10-patronaje-y-compras.md) | Recetas, cuenta de material y desarrollos; materiales, proveedores, órdenes de compra y la proyección de material | Pendiente |
 | 11 | [Aduana y Bodega](11-aduana-y-bodega.md) | Recepciones en Aduana, material en Bodega, surtido y despachos | Pendiente |
 | 12 | [Producción](12-produccion.md) | Órdenes de producción, lotes, entregas a corte, corte y bultos, operaciones y flujos, y los registros de la tablet | Pendiente |
