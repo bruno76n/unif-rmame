@@ -80,6 +80,17 @@ describe("Con menos de `catalogo.codigos_restantes_aviso` códigos, la dueña re
 		);
 		await correr();
 		expect(await avisosDeCodigos()).toHaveLength(2);
+
+		// El último código sale del máximo del contador, no de un número fijo.
+		await servidor.base.dueno.query(
+			"UPDATE avisos SET creado_en = now() - interval '8 days', leido_en = now() WHERE tipo = 'codigos_por_acabarse'",
+		);
+		await servidor.base.dueno.query(
+			"UPDATE contadores_folio SET maximo = 399999, siguiente = 399950 WHERE tipo = 'codigo_barras' AND alcance = ''",
+		);
+		await correr();
+		const textos = (await avisosDeCodigos()).map((aviso) => aviso.texto);
+		expect(textos.at(-1)).toBe("Quedan 50 códigos de barras de fábrica (hasta 399999).");
 	});
 
 	it("corre cada día a las 04:00, hora de México", async () => {

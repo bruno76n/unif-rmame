@@ -27,8 +27,15 @@ const archivoGuardado = z.object({ archivo_id: z.uuid(), url: z.string() });
  * Las variantes con lo que hace falta para etiquetarlas. Primero bloquea sus productos, en orden por id, y luego
  * las variantes: el mismo orden que siguen las tallas, el alta y «Aplicar cambios».
  */
-async function leerVariantes(contexto: ContextoDeAccion, donde: ReturnType<typeof and>) {
-	const suyos = await contexto.transaccion.selectDistinct({ id: variantes.productoId }).from(variantes).where(donde);
+async function leerVariantes(
+	contexto: ContextoDeAccion,
+	donde: ReturnType<typeof and>,
+	productoIds?: readonly string[],
+) {
+	// Con productos, se bloquean esos; por variante, los de esas variantes.
+	const suyos =
+		productoIds?.map((id) => ({ id })) ??
+		(await contexto.transaccion.selectDistinct({ id: variantes.productoId }).from(variantes).where(donde));
 	if (suyos.length > 0) {
 		await contexto.transaccion
 			.select({ id: productos.id })
@@ -78,6 +85,7 @@ async function queEntra(contexto: ContextoDeAccion, datos: z.infer<typeof imprim
 				isNull(variantes.descontinuadaEn),
 				isNull(variantes.bajaEn),
 			),
+			datos.producto_ids,
 		);
 		return activas
 			.filter((variante) => datos.solo_pendientes !== true || pendiente(variante.estado))

@@ -59,7 +59,12 @@ function revisarQuienDaElAlta(contexto: ContextoDeAccion, origen: DatosDelAlta["
 async function leerBase(contexto: ContextoDeAccion, datos: DatosDelAlta): Promise<Producto | undefined> {
 	if (datos.modo === "desde_cero") return undefined;
 	if (datos.producto_base_id === undefined) throw errorDeCampo("producto_base_id", "Escoge el producto base.");
-	const [base] = await contexto.transaccion.select().from(productos).where(eq(productos.id, datos.producto_base_id));
+	// Con `FOR SHARE`: mientras el alta no confirme, el base no se descontinúa.
+	const [base] = await contexto.transaccion
+		.select()
+		.from(productos)
+		.where(eq(productos.id, datos.producto_base_id))
+		.for("share");
 	if (base === undefined) throw errorDeCampo("producto_base_id", "Escoge el producto base.");
 	if (base.bajaEn !== null || base.esServicio) {
 		throw errorDeRegla("base_no_disponible", `${base.nombre} ya no está activo: escoge otro producto base.`);

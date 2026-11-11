@@ -211,7 +211,9 @@ describe("el cambio en bloque pide Google, respeta sus topes y no cambia ninguno
 
 	it("un producto repetido o una lista dada de baja son 400; un descontinuado, producto_descontinuado", async () => {
 		const producto = await nuevoProducto(servidor, siembra);
-		expect((await bloque([producto.producto_id, producto.producto_id], {})).estado).toBe(400);
+		expect((await bloque([producto.producto_id, producto.producto_id], {})).cuerpo).toMatchObject({
+			campos: { productos: "Cada producto va una sola vez." },
+		});
 		const descontinuado = await nuevoProducto(servidor, siembra);
 		await mandarAccion(
 			servidor,
