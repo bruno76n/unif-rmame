@@ -222,5 +222,12 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 11 nov 2026 | 8 | Lo que rechaza el cambio en bloque (decisión 463) | Nada más · repetidos, lista de baja y descontinuados | Repetidos, lista de baja y descontinuados | No |
 | 11 nov 2026 | 8 | Candados del alta y de las etiquetas (decisión 464) | La llave foránea · `FOR SHARE` y un orden fijo | `FOR SHARE` y un orden fijo | No |
 | 11 nov 2026 | 8 | Qué se revisa del tipo de prenda (decisión 465) | La misma sección · que exista y que la sección lleve receta | Que exista y que la sección lleve receta | No |
+| 11 nov 2026 | 9 | El candado de la variante en cada movimiento (decisión 466) | Solo los renglones que existen · la variante y luego los renglones | La variante y luego los renglones | No |
+| 11 nov 2026 | 9 | Un movimiento con una clave ya usada (decisión 467) | Fallar · regresar el que estaba | Regresar el que estaba | No |
+| 11 nov 2026 | 9 | De dónde sale la clave del movimiento (decisión 468) | Del contexto · del comando de la acción | Del comando de la acción | No |
+| 11 nov 2026 | 9 | 30 o 31 tipos de movimiento (decisión 469) | 30 · los 31 de la tabla | Los 31 de la tabla | No |
+| 11 nov 2026 | 9 | El origen de `consumible_tomado` antes de su parámetro (decisión 470) | Bodega · Bodega, Taller o Aduana | Bodega, Taller o Aduana | No |
+| 11 nov 2026 | 9 | Cómo se suma el material (decisión 471) | En JavaScript · en Postgres | En Postgres | No |
+| 11 nov 2026 | 9 | El `actualizado_en` del libro (decisión 472) | Vacío con otro disparador · el del disparador común | El del disparador común | No |
 | 10 nov 2026 | 5 | La pantalla del Google de desarrollo | Una propia para escoger cuenta · la de desarrollo de oidc-provider, que pide el correo | La de oidc-provider; `pnpm local` escribe los correos de la muestra al arrancar | No |
 

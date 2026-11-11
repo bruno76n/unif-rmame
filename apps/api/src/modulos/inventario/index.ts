@@ -1,15 +1,21 @@
 /**
- * El módulo `inventario`. Por ahora, solo sus ubicaciones con su siembra.
+ * El módulo `inventario`: las ubicaciones, el libro de movimientos y las existencias.
  * Fase 4 · docs/modulos/inventario/libro-de-movimientos.md («La tabla `ubicaciones`»)
+ * Fase 9 · docs/modulos/inventario/libro-de-movimientos.md y existencias-y-cuadre.md
  *
  * Las ubicaciones nacen en la fase 4 porque las usan antes los parámetros, las impresoras, las cuentas,
- * los aparatos y las personas. Lo demás del inventario llega en la fase 9. Los responsables nacen vacíos.
+ * los aparatos y las personas; sus responsables nacen vacíos. El libro no tiene acciones propias: lo escribe
+ * `escribirMovimiento` (`dominio/`), que usan las internas y las acciones de cada caso.
  */
 
 import { v7 as uuidv7 } from "uuid";
 import { todosLosDepartamentos } from "../../nucleo/acceso/departamentos.ts";
 import { definirModulo } from "../../nucleo/modulos.ts";
+import { existenciaMaterial, piezasDeVariante } from "./lecturas/existencias.ts";
 import { ubicaciones } from "./tablas.ts";
+
+/** Los departamentos que leen el libro y el material. */
+const lectoresDelLibro = ["aduana", "bodega", "direccion"];
 
 /** Las ubicaciones de la siembra, en su orden. */
 const ubicacionesDeLaSiembra = [
@@ -32,7 +38,16 @@ const ubicacionesDeLaSiembra = [
 export default definirModulo({
 	nombre: "inventario",
 	// Las ubicaciones salen en las pantallas de todos los departamentos.
-	lectores: { ubicaciones: todosLosDepartamentos },
+	lectores: {
+		ubicaciones: todosLosDepartamentos,
+		// El libro lo leen las consultas de Aduana, Bodega y Dirección; las existencias, además, Catálogo (la ficha)
+		// y Tienda en línea (la disponibilidad). Nunca con precios ni costos: no los tienen.
+		movimientos: lectoresDelLibro,
+		movimiento_lineas: lectoresDelLibro,
+		existencias: [...lectoresDelLibro, "catalogo", "linea"],
+		existencias_material: lectoresDelLibro,
+	},
+	lecturas: { existencia_material: existenciaMaterial, piezas_de_variante: piezasDeVariante },
 	semillas: [
 		{ tabla: ubicaciones, filas: ubicacionesDeLaSiembra.map((ubicacion) => ({ id: uuidv7(), ...ubicacion })) },
 	],

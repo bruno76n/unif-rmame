@@ -62,3 +62,4 @@ La línea de la bitácora se escribe al final, con el resultado ya conocido. Esc
 | 11 nov 2026 | 8 | Los datos de la muestra del catálogo | [2026-11-11-fase-08](sesiones/2026-11-11-fase-08.md) |
 | 11 nov 2026 | 8 | Auditoría y correcciones | [2026-11-11-fase-08](sesiones/2026-11-11-fase-08.md) |
 | 11 nov 2026 | 8 | Revisión de las correcciones y cierre: fase 8 terminada | [2026-11-11-fase-08](sesiones/2026-11-11-fase-08.md) |
+| 11 nov 2026 | 9 | 1 · El libro y las existencias | [2026-11-11-fase-09](sesiones/2026-11-11-fase-09.md) |

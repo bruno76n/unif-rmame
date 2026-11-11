@@ -183,6 +183,13 @@
 			"when": 1794363376938,
 			"tag": "0025_aviso_codigos_por_acabarse",
 			"breakpoints": true
+		},
+		{
+			"idx": 26,
+			"version": "7",
+			"when": 1794366366185,
+			"tag": "0026_libro_y_existencias",
+			"breakpoints": true
 		}
 	]
 }

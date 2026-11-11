@@ -188,3 +188,13 @@ Las existencias las leen las pantallas de Aduana, Bodega, Dirección, Catálogo 
 ## Cómo está hecho
 
 *Lo escribe Claude Code al terminar la fase 9.*
+
+**Fase 9, parte 1.**
+
+- **Las tablas** `existencias` y `existencias_material` están en `modulos/inventario/tablas.ts` (migración `0026`). El único de material es `UNIQUE NULLS NOT DISTINCT` (`existencias_material_lugar`), para que un avío sin rollo tenga un solo renglón.
+- **Las suma `escribirMovimiento`** en la misma transacción que el movimiento, con su `ultimo_movimiento_id`.
+- **Las lecturas** están en `lecturas/existencias.ts`:
+  - `inventario.existencia_material` suma todos los rollos y regresa la cantidad como texto con tres decimales;
+  - `inventario.piezas_de_variante` regresa por ubicación lo que no es cero. Con `bloquear`, toma antes el candado de la variante y sus existencias en el orden fijo. Las reservas se le suman en la parte 3.
+- **Quién lee:** Aduana, Bodega y Dirección leen el libro y el material; las existencias, además Catálogo y Tienda en línea (`index.ts`).
+- **Pruebas:** `dominio/escribir-movimiento.prueba.ts` (las lecturas y el material) y `escribir-movimiento.azar.prueba.ts` (la existencia guardada siempre es la suma del libro).

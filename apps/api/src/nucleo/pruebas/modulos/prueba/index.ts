@@ -38,6 +38,7 @@ import {
 	verMontos,
 	verNota,
 } from "./contratos.ts";
+import { accionesDeInventario } from "./inventario.ts";
 import { accionesDeLotes } from "./lotes.ts";
 import { semillasDePrueba } from "./siembra.ts";
 import { conteos, notas, renglones } from "./tablas.ts";
@@ -101,6 +102,7 @@ export default definirModulo({
 	],
 	acciones: [
 		...accionesDeLotes,
+		...accionesDeInventario,
 		...accionesDeAutorizaciones,
 		implementarAccion(crearNota, async (contexto, datos) => {
 			if (datos.fallar === "con_regla") throw errorDeRegla("texto_prohibido", "Ese texto no se puede guardar");

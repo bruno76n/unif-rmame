@@ -197,3 +197,26 @@ Ninguno propio: cada acción guarda los suyos, con `existencias` entre sus tabla
 *Lo escribe Claude Code al terminar la fase 9 (y las fases 4, 10, 11 y 12 en lo que les toca).*
 
 **Fase 4.** La tabla `ubicaciones` está en `apps/api/src/modulos/inventario/tablas.ts` (migración `0004_configuracion.sql`), con su disparador común y el índice único de una sola por tipo fuera de las tiendas. Su siembra, con los siete renglones y los responsables vacíos, está en `modulos/inventario/index.ts`, que por ahora solo registra eso y dice que las ubicaciones las leen todos los departamentos.
+
+**Fase 9, parte 1.**
+
+- **Las tablas** `movimientos` y `movimiento_lineas` están en `modulos/inventario/tablas.ts` (migración `0026`), con sus CHECK:
+  - los tipos y los documentos;
+  - `reversion` si y solo si dice qué revierte;
+  - un lado al menos y dos lados distintos;
+  - o prenda o material.
+- **Sus índices** son los de este archivo; el de `revierte_movimiento_id` es único.
+- **El libro solo crece:** `marcar_solo_crece` le quita el `UPDATE` al rol de la app, y ninguna tabla de negocio tiene `DELETE`. `actualizado_en` lo llena el disparador común al nacer y ya no cambia (decisión 472).
+- **La tabla de tipos** tiene 31 renglones, aunque el texto dice 30; se construyeron los 31 (decisión 469).
+- **Las reglas de cada tipo** (sus caminos y si mueve prendas, material o los dos) están en `dominio/tipos-de-movimiento.ts`. `consumible_tomado` acepta Bodega, Taller o Aduana como origen hasta que llegue `inventario.ubicacion_consumibles` (decisión 470).
+- **`escribirMovimiento` y `revertirMovimiento`** (`dominio/escribir-movimiento.ts`) hacen los pasos 1, 2, 3, 4 y 6:
+  - **Revisan** cada renglón contra su tipo, su forma y el traspaso de lo que toca un tramo de camino; si algo no cumple, es un `Error` (un `500`).
+  - **Toman los candados** de `dominio/candados.ts`: primero el de cada variante (`pg_advisory_xact_lock`) y después las existencias en el orden fijo. Las existencias que no estaban nacen en cero antes de bloquearse (decisión 466).
+  - **Escriben** el movimiento con el día de negocio de `ocurrido_en` y suman la existencia. El material se suma en `numeric` dentro de Postgres; su cantidad viaja como texto decimal (decisión 471).
+  - **El paso 5** (las reservas) llega en la parte 3.
+- **La clave** es la del comando de la acción, leída de `comandos_recibidos`. Si la acción crea varios movimientos, se deriva con `claveDerivada` (uuid v5 de la clave, el tipo y el número). Un trabajo pasa la suya. Si ya hay un movimiento con esa clave, se regresa ese sin escribir nada (decisiones 467 y 468).
+- **La reversión** voltea los renglones del original, con su lote y su traspaso, y toma su documento si no viene otro. Revertir dos veces, o revertir una reversión, es un error.
+- **Pruebas:**
+  - `dominio/escribir-movimiento.prueba.ts`: la misma transacción; los caminos y el traspaso; el negativo; las claves derivadas con un comando real (la acción `prueba.mover_inventario` del módulo de prueba); la reversión única; el material.
+  - `dominio/escribir-movimiento.azar.prueba.ts`: cuatro conexiones a la vez, sin reintento. Con el orden de los candados quitado a propósito, sale en rojo.
+  - `tablas.prueba.ts`: `42501` al cambiar o borrar el libro.

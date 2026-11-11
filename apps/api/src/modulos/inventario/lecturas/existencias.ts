@@ -1,0 +1,71 @@
+/**
+ * Las lecturas de las existencias que usan otros módulos: el material de una ubicación y las piezas de una
+ * variante.
+ * Fase 9 · docs/modulos/inventario/existencias-y-cuadre.md («Lecturas»)
+ */
+
+import { and, eq, ne, sql } from "drizzle-orm";
+import { z } from "zod";
+import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
+import { bloquearExistencias, candadoDeVariantes } from "../dominio/candados.ts";
+import { existencias, existenciasMaterial, ubicaciones } from "../tablas.ts";
+
+/** Lo que recibe `inventario.existencia_material`. */
+const pedidoDeMaterial = z.object({ material_id: z.uuid(), ubicacion_id: z.uuid().optional() });
+
+/**
+ * `inventario.existencia_material`: cuánto hay de un material en una ubicación, o en todas si no viene.
+ * @param contexto El contexto de la acción.
+ * @param datos `material_id` y, si se pide una, `ubicacion_id`.
+ * @returns La cantidad en su unidad de inventario, como texto decimal (`"12.500"`): todos sus rollos juntos.
+ */
+export async function existenciaMaterial(contexto: ContextoDeAccion, datos: unknown): Promise<{ cantidad: string }> {
+	const { material_id, ubicacion_id } = pedidoDeMaterial.parse(datos);
+	const [suma] = await contexto.transaccion
+		.select({ cantidad: sql<string>`coalesce(sum(${existenciasMaterial.cantidad}), 0)::numeric(12, 3)::text` })
+		.from(existenciasMaterial)
+		.where(
+			and(
+				eq(existenciasMaterial.materialId, material_id),
+				ubicacion_id === undefined ? undefined : eq(existenciasMaterial.ubicacionId, ubicacion_id),
+			),
+		);
+	return { cantidad: suma?.cantidad ?? "0.000" };
+}
+
+/** Lo que recibe `inventario.piezas_de_variante`. */
+const pedidoDeVariante = z.object({ variante_id: z.uuid(), bloquear: z.boolean().optional() });
+
+/**
+ * `inventario.piezas_de_variante`: dónde hay piezas de una variante. Con `bloquear`, antes de leer toma el
+ * candado de la variante y sus existencias en el orden fijo: ningún movimiento se cruza con lo que decide
+ * quien la llama (la baja de una talla).
+ * @param contexto El contexto de la acción.
+ * @param datos `variante_id` y `bloquear`.
+ * @returns Por ubicación, la existencia que no es cero (también negativa, en Tránsito o En camino a aduana).
+ */
+export async function piezasDeVariante(
+	contexto: ContextoDeAccion,
+	datos: unknown,
+): Promise<{ existencias: { ubicacion_id: string; ubicacion: string; piezas: number }[] }> {
+	const { variante_id, bloquear } = pedidoDeVariante.parse(datos);
+	const { transaccion } = contexto;
+	if (bloquear === true) {
+		await candadoDeVariantes(transaccion, [variante_id]);
+		const suyas = await transaccion
+			.select({ ubicacionId: existencias.ubicacionId })
+			.from(existencias)
+			.where(eq(existencias.varianteId, variante_id));
+		await bloquearExistencias(
+			transaccion,
+			suyas.map(({ ubicacionId }) => ({ ubicacionId, varianteId: variante_id })),
+		);
+	}
+	const hay = await transaccion
+		.select({ ubicacion_id: existencias.ubicacionId, ubicacion: ubicaciones.nombre, piezas: existencias.piezas })
+		.from(existencias)
+		.innerJoin(ubicaciones, eq(ubicaciones.id, existencias.ubicacionId))
+		.where(and(eq(existencias.varianteId, variante_id), ne(existencias.piezas, 0)))
+		.orderBy(ubicaciones.orden);
+	return { existencias: hay };
+}
