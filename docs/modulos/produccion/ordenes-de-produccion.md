@@ -155,4 +155,6 @@ Los cambia solo la dueña, en Configuración (ver [configuración](../admin/conf
 - **Los parámetros** de la orden están en `parametros.ts`.
 - **Pruebas:** `acciones/crear-orden.prueba.ts`, `internas/mandar-a-produccion.prueba.ts` (también lo que el pedido tiene en producción y los lotes por cortar) e `internas/pasar-pedido-a-temporada.prueba.ts`.
 
+**Fase 16, parte 3.** `mandar_a_produccion` regresa también las piezas de cada lote, para la bitácora de Ventas (decisión 687).
+
 **Fase 14, parte 4.** `produccion.levantar_orden_sugerencia` (`acciones/ordenes.ts`): lee las sugerencias con `inventario.sugerencias_de_fabricar` (una prenda y una ubicación, `400 sugerencias_mezcladas`), redondea cada talla al múltiplo de `produccion.orden_multiplo_piezas`, levanta la orden (`reabasto` o `temporada`, entrega hoy + `orden_entrega_tienda_dias` o `orden_entrega_temporada_dias`, referencia «Sugerencia de bodega», decisión 653) con su lote, y deja las sugerencias levantadas con `inventario.decidir_sugerencia`. Comparte con `crear_orden` la fecha de corte. Lo prueba `acciones/levantar-orden-sugerencia.prueba.ts`.

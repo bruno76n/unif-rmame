@@ -157,6 +157,15 @@ describe("Una versión guarda el antes y el después, respeta el mínimo y avisa
 			resultado: { de_mas: 3, mensaje: expect.stringMatching(/Producción ajusta sus lotes$/) },
 			avisos: ["Sobran 3 piezas en producción: Producción ajusta sus lotes"],
 		});
+		// Nace el cambio de esa versión, por aplicar, para Producción.
+		const { rows: cambios } = await servidor.base.dueno.query(
+			`SELECT c.estado, v.numero FROM cambios_pedido c JOIN pedido_versiones v ON v.id = c.pedido_version_id
+			 WHERE c.pedido_id = $1`,
+			[pedido.pedido_id],
+		);
+		expect(cambios).toEqual([
+			{ estado: "por_aplicar", numero: z.object({ numero: z.number() }).parse(baja.cuerpo.resultado).numero },
+		]);
 	});
 
 	it("un cliente detenido no suma piezas en una versión; sí las baja", async () => {

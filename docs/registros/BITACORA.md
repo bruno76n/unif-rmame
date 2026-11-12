@@ -102,3 +102,4 @@ La línea de la bitácora se escribe al final, con el resultado ya conocido. Esc
 | 12 nov 2026 | 15 | Cierre · auditoría delicada, revisión distinta y `main` | [2026-11-12-fase-15](sesiones/2026-11-12-fase-15.md) |
 | 12 nov 2026 | 16 | 1 · Clientes | [2026-11-12-fase-16](sesiones/2026-11-12-fase-16.md) |
 | 12 nov 2026 | 16 | 2 · Pedidos | [2026-11-12-fase-16](sesiones/2026-11-12-fase-16.md) |
+| 12 nov 2026 | 16 | 3 · Mandar a producción y cambios | [2026-11-12-fase-16](sesiones/2026-11-12-fase-16.md) |

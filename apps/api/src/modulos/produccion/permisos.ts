@@ -14,6 +14,8 @@ export const lectoresDeProduccion: Record<string, readonly string[]> = {
 	ordenes_produccion: ["produccion", "ventas", "bodega", "direccion"],
 	lotes: ["produccion", "ventas", "calidad", "aduana", "bodega", "patronaje", "direccion"],
 	lote_tallas: ["produccion", "ventas", "calidad", "aduana", "bodega", "patronaje", "direccion"],
+	cambios_pedido: ["produccion", "ventas", "direccion"],
+	cambio_pedido_lineas: ["produccion", "ventas", "direccion"],
 	bultos: ["produccion", "calidad"],
 	cortes: ["produccion", "bodega", "patronaje"],
 	corte_telas: ["produccion", "bodega", "patronaje"],

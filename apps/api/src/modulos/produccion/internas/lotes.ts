@@ -35,11 +35,18 @@ const pedidoAProduccion = z.object({
 	renglones: z.array(z.object({ variante_id: z.uuid(), piezas: z.number().int().positive() })).min(1),
 });
 
+/** Las piezas de unas tallas. */
+function sumaDePiezas(tallas: readonly PiezasDeTalla[]): number {
+	return tallas.reduce((total, talla) => total + talla.piezas, 0);
+}
+
 /** Un lote que tocó el pedido: nuevo o con piezas sumadas. */
 interface LoteDelPedido {
 	lote_id: string;
 	folio: string;
 	nuevo: boolean;
+	/** Las piezas que se mandaron a ese lote. */
+	piezas: number;
 }
 
 /**
@@ -119,7 +126,7 @@ export async function mandarAProduccion(contexto: ContextoDeAccion, datos: unkno
 			entidadId: suyo.id,
 			entidadFolio: suyo.folio,
 		});
-		lotesTocados.push({ lote_id: suyo.id, folio: suyo.folio, nuevo: false });
+		lotesTocados.push({ lote_id: suyo.id, folio: suyo.folio, nuevo: false, piezas: sumaDePiezas(tallas) });
 	}
 	let orden: { id: string; folio: string } | undefined;
 	if (nuevos.length > 0) {
@@ -140,7 +147,7 @@ export async function mandarAProduccion(contexto: ContextoDeAccion, datos: unkno
 				fechaEntrega: pedido.fecha_entrega,
 				tallas,
 			});
-			lotesTocados.push({ lote_id: lote.id, folio: lote.folio, nuevo: true });
+			lotesTocados.push({ lote_id: lote.id, folio: lote.folio, nuevo: true, piezas: sumaDePiezas(tallas) });
 		}
 	}
 	await contexto.interna("inventario.recalcular_rollos_sugeridos", {});

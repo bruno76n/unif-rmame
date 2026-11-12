@@ -66,4 +66,9 @@ Ninguno propio: la fecha de corte de un lote nuevo es `produccion.dias_corte_lot
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 16.*
+**Fase 16, parte 3.** En `modulos/ventas/acciones/mandar.ts` (contratos en `packages/compartido/src/contratos/ventas/mandar.ts`):
+
+- **Las dos acciones** leen y bloquean el pedido, toman su versión (la suben: dos revisiones a la vez no mandan de más) y calculan lo que falta por mandar de cada talla con el avance del pedido (`dominio/avance-de-pedido.ts`, el mismo de `ventas.avance_pedido`). Ninguna talla pasa de eso (`piezas_de_mas_por_mandar`); solo un pedido confirmado (`pedido_no_confirmado`). Nada se escribe en las tablas de Ventas (regla 6).
+- **`ventas.mandar_a_produccion`:** sin renglones, todo lo que falta por mandar (`nada_por_mandar` si no queda nada); revisa que ninguna talla esté descontinuada y llama `produccion.mandar_a_produccion` con el pedido, su versión vigente, su entrega y los renglones. Esa interna regresa cada lote con sus piezas, y la bitácora dice las de cada lote (decisión 687). Los avisos: el de la receta, que da Producción, y los de material, con `compras.cuenta_material` sobre los lotes tocados: «Falta material…» si a alguno le falta en la cuenta; si no, «Parte del material llega después…» si lo que le falta para el corte llega después de la primera fecha de corte.
+- **`ventas.surtir_de_bodega`:** sin renglones, por talla de la prenda lo menor entre lo libre en Bodega (`inventario.libres`) y lo que falta por mandar; con renglones, ninguno pasa de lo libre (`bodega_sin_libres`). Aparta con `inventario.reservar`, motivo `pedido_externo`, en Bodega. Bodega lo surte con `inventario.surtir_a_aduana` (fase 11) y Aduana lo recibe con su reserva (ver [recepciones en aduana](../inventario/recepciones-en-aduana.md#cómo-está-hecho)).
+- **Pruebas:** `acciones/mandar-a-produccion.prueba.ts` (surtir lo libre y mandar lo que falta, en una orden nueva y después sumado a su lote, con las piezas de cada lote; lo de más por mandar y por surtir; dos revisiones a la vez nunca apartan de más).

@@ -3,6 +3,8 @@
  * quien lo mandó, y una devolución de cliente que no llegó no deja nada.
  * Fase 11 · docs/fases/11-aduana-y-bodega.md (parte 3)
  * Fase 14 · «Recibir con diferencias en aduana o un despacho abre una DF- por renglón, a cargo de quien lo mandó»
+ * Fase 16 · docs/fases/16-ventas-a-externos.md (parte 3): lo surtido para un pedido que se canceló en camino regresa a
+ * Bodega
  */
 
 import { v7 as uuidv7 } from "uuid";
@@ -16,7 +18,7 @@ import {
 } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
-import { pedidoDePrueba } from "../../../nucleo/pruebas/ventas-de-prueba.ts";
+import { pedidoDePrueba, versionDelPedido } from "../../../nucleo/pruebas/ventas-de-prueba.ts";
 
 describe("Recibir lo que viene en camino deja lo que no llegó en su tramo y una devolución de cliente que no llegó no deja nada", () => {
 	let servidor: ServidorDePrueba;
@@ -91,6 +93,38 @@ describe("Recibir lo que viene en camino deja lo que no llegó en su tramo y una
 			codigo: "no_por_recibir",
 			mensaje: `${a.folio} ya se recibió`,
 		});
+	});
+
+	it("un pedido que se canceló mientras venía en camino: lo que llega regresa a Bodega en un `regresa` y nada queda apartado", async () => {
+		const a = await surtido();
+		const cancelado = await mandarAccion(
+			servidor,
+			"ventas.cancelar_pedido",
+			{
+				datos: { pedido_id: a.pedido, motivo: "El cliente ya no lo quiere" },
+				version: await versionDelPedido(servidor, a.pedido),
+			},
+			"ventas",
+		);
+		expect(cancelado.estado).toBe(200);
+		const respuesta = await recibir(a.id, { modo: "completo" });
+		const { rows: hijos } = await servidor.base.dueno.query(
+			`SELECT t.folio, t.tipo, t.estado, d.codigo AS destino, l.piezas_recibidas_aduana AS piezas
+			 FROM traspasos t JOIN traspaso_lineas l ON l.traspaso_id = t.id JOIN ubicaciones d ON d.id = t.destino_ubicacion_id
+			 WHERE t.traspaso_padre_id = $1`,
+			[a.id],
+		);
+		expect(hijos).toEqual([{ folio: `${a.folio}-1`, tipo: "regresa", estado: "en_aduana", destino: "BOD", piezas: 3 }]);
+		expect(respuesta.cuerpo.resultado).toMatchObject({
+			mensaje: `${a.folio} recibido en aduana: 3 piezas. El pedido se canceló: regresa a Bodega en ${a.folio}-1`,
+		});
+		const { rows: padre } = await servidor.base.dueno.query("SELECT estado FROM traspasos WHERE id = $1", [a.id]);
+		expect(padre).toEqual([{ estado: "repartido" }]);
+		const { rows: activas } = await servidor.base.dueno.query(
+			"SELECT id FROM reservas WHERE pedido_id = $1 AND estado = 'activa'",
+			[a.pedido],
+		);
+		expect(activas).toEqual([]);
 	});
 
 	it("con una versión vieja no recibe: 409, y todo sigue en camino", async () => {

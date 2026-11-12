@@ -12,6 +12,7 @@ import {
 	accionEditarCliente,
 	accionReactivarCliente,
 } from "./acciones/clientes.ts";
+import { accionMandarAProduccion, accionSurtirDeBodega } from "./acciones/mandar.ts";
 import {
 	accionCancelarPedido,
 	accionConfirmarPedido,
@@ -33,6 +34,8 @@ export default definirModulo({
 		accionConfirmarPedido,
 		accionGuardarVersionPedido,
 		accionCancelarPedido,
+		accionMandarAProduccion,
+		accionSurtirDeBodega,
 	],
 	lecturas: {
 		estado_cliente: estadoCliente,

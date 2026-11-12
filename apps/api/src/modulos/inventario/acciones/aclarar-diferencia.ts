@@ -26,7 +26,7 @@ import { type Diferencia, diferenciaBloqueada, diferenciasBloqueadas } from "../
 import { escribirMovimiento, type RenglonDeMovimiento } from "../dominio/escribir-movimiento.ts";
 import { ubicacionDeTipo } from "../dominio/recepciones.ts";
 import { reservasActivas, tomarDeReservas } from "../dominio/reservas.ts";
-import { leerLoteParaAduana, repartoDelTaller } from "../dominio/taller.ts";
+import { apartarLoDelCliente, crearPartesDelReparto, leerLoteParaAduana, repartoDelTaller } from "../dominio/taller.ts";
 import { crearTraspaso, type LadoDeTraspaso, type ReferenciasDeTraspaso } from "../dominio/traspasos.ts";
 import {
 	aclaracionesDeMaterial,
@@ -124,7 +124,7 @@ async function entrarAAduana(
 	lados: LadosDeRecepcion,
 ): Promise<{ traspasoId: string; folio: string }> {
 	const viejo = lados.traspaso;
-	if (viejo === null) return entrarDelTaller(contexto, diferencia);
+	if (viejo === null) throw new Error(`${diferencia.folio} sin su traspaso`);
 	const lado = (ubicacionId: string | null, externo: string | null): LadoDeTraspaso | null =>
 		ubicacionId !== null ? { ubicacionId } : externo === null ? null : { externo: ladoExterno.parse(externo) };
 	const referencias: ReferenciasDeTraspaso = {
@@ -186,13 +186,11 @@ async function entrarAAduana(
 }
 
 /**
- * Crea el A- en que entra a Aduana lo que el Taller trajo después: con el reparto de la recepción del taller (el de su
- * lote, o un `reproceso` si la recepción fue de uno), `en_aduana`, con sus etiquetas por imprimir.
+ * `llego` en una DF- del taller: lo que el Taller trajo después entra con el reparto de la recepción (el de su lote, o
+ * el de un reproceso si la recepción fue de uno), en sus A- nuevos `en_aduana` desde el Taller, con sus etiquetas por
+ * imprimir, y lo que va al cliente de un pedido queda apartado en Aduana.
  */
-async function entrarDelTaller(
-	contexto: ContextoDeAccion,
-	diferencia: Diferencia,
-): Promise<{ traspasoId: string; folio: string }> {
+async function llegoDelTaller(contexto: ContextoDeAccion, diferencia: Diferencia, aduana: string): Promise<Aclarado> {
 	const { transaccion } = contexto;
 	const [recepcion] =
 		diferencia.recepcionId === null
@@ -201,30 +199,37 @@ async function entrarDelTaller(
 					.select({ reprocesoId: recepciones.reprocesoId })
 					.from(recepciones)
 					.where(eq(recepciones.id, diferencia.recepcionId));
-	if (recepcion === undefined || diferencia.loteId === null) throw new Error(`${diferencia.folio} sin su recepción`);
+	if (recepcion === undefined || diferencia.loteId === null || diferencia.varianteId === null) {
+		throw new Error(`${diferencia.folio} sin su recepción`);
+	}
 	const lote = await leerLoteParaAduana(contexto, diferencia.loteId);
-	const reparto = await repartoDelTaller(contexto, lote, recepcion.reprocesoId !== null);
-	const nuevo = await crearTraspaso(contexto, {
-		tipo: reparto.tipo,
-		estado: "en_aduana",
-		origen: { ubicacionId: diferencia.ubicacionId },
-		destino: { ubicacionId: reparto.destinoId },
-		renglones: [pendienteDe(diferencia)],
-		referencias: {
-			loteId: lote.lote_id,
-			...(recepcion.reprocesoId === null ? {} : { reprocesoId: recepcion.reprocesoId }),
-		},
-		fechaSalidaEsperada: lote.fecha_entrega,
+	const pendiente = { varianteId: diferencia.varianteId, piezas: Math.abs(diferencia.piezas ?? 0) };
+	const reparto = await repartoDelTaller(contexto, lote, recepcion.reprocesoId !== null, [pendiente]);
+	const creadas = await crearPartesDelReparto(contexto, reparto, {
+		origenId: diferencia.ubicacionId,
+		lote,
+		reprocesoId: recepcion.reprocesoId,
 	});
-	contexto.guardarEvento({
-		tipo: "traspaso.en_aduana",
-		datos: { traspaso_id: nuevo.traspasoId },
-		tablas: ["traspasos", "traspaso_lineas"],
-		entidad: "traspasos",
-		entidadId: nuevo.traspasoId,
-		entidadFolio: nuevo.folio,
+	// Un renglón por A-: del hueco del Taller a Aduana, con su lote; deja el hueco en cero.
+	const movimiento = creadas.flatMap(({ traspasoId, parte }) =>
+		parte.tallas.map(
+			(talla): RenglonDeMovimiento => ({
+				origen: diferencia.ubicacionId,
+				destino: aduana,
+				varianteId: talla.varianteId,
+				piezas: talla.piezas,
+				loteId: diferencia.loteId,
+				traspasoId,
+			}),
+		),
+	);
+	await escribirMovimiento(contexto, {
+		tipo: "aclaracion_recepcion",
+		documento: { tipo: "diferencia", id: diferencia.id, folio: diferencia.folio },
+		renglones: movimiento,
 	});
-	return nuevo;
+	await apartarLoDelCliente(contexto, creadas);
+	return { movimiento, nuevos: creadas };
 }
 
 /** Un renglón del movimiento de la aclaración: lo pendiente de un lado a otro, con el traspaso y el lote del hueco. */
@@ -235,7 +240,8 @@ function renglonDe(diferencia: Diferencia, origen: string | null, destino: strin
 /** Lo que dejó una aclaración, para el mensaje, la bitácora y la salida. */
 interface Aclarado {
 	movimiento?: RenglonDeMovimiento[];
-	nuevo?: { traspasoId: string; folio: string };
+	/** Los A- en que entró a Aduana: uno, o uno por destino del reparto si lo trajo el Taller. */
+	nuevos?: { traspasoId: string; folio: string }[];
 	espejo?: Diferencia;
 }
 
@@ -254,19 +260,17 @@ async function moverLoPendiente(
 	// El otro lado tiene que existir (sin origen en la del taller); lo que sobró no sale de Aduana.
 	if (aclaracion === "no_salio" && otro === null) throw noAplica(diferencia);
 	if (!falto(diferencia) && otro === lados.aduana) throw noAplica(diferencia);
-	// Lo que el Taller trajo después entra con su A- nuevo desde el Taller; lo de un tramo sale con su traspaso, que
-	// deja el tramo en cero, y luego pasa al A- nuevo con sus reservas.
-	const delTaller = otro === lados.aduana && lados.traspaso === null;
-	const antes = delTaller ? await entrarAAduana(contexto, diferencia, lados) : undefined;
-	const base = falto(diferencia) ? renglonDe(diferencia, hueco, otro) : renglonDe(diferencia, otro, hueco);
-	const renglon = antes === undefined ? base : { ...base, traspasoId: antes.traspasoId };
+	// Lo que el Taller trajo después entra con el reparto de su lote; lo de un tramo sale con su traspaso, que deja el
+	// tramo en cero, y luego pasa al A- nuevo con sus reservas.
+	if (otro === lados.aduana && lados.traspaso === null) return llegoDelTaller(contexto, diferencia, lados.aduana);
+	const renglon = falto(diferencia) ? renglonDe(diferencia, hueco, otro) : renglonDe(diferencia, otro, hueco);
 	await escribirMovimiento(contexto, {
 		tipo: "aclaracion_recepcion",
 		documento: { tipo: "diferencia", id: diferencia.id, folio: diferencia.folio },
 		renglones: [renglon],
 	});
 	if (otro !== lados.aduana) return { movimiento: [renglon] };
-	return { movimiento: [renglon], nuevo: antes ?? (await entrarAAduana(contexto, diferencia, lados)) };
+	return { movimiento: [renglon], nuevos: [await entrarAAduana(contexto, diferencia, lados)] };
 }
 
 /**
@@ -456,10 +460,11 @@ export const accionAclararDiferencia = implementarAccion(aclararDiferencia, asyn
 			await transaccion.update(diferencias).set({ motivoResolucion: motivo }).where(eq(diferencias.id, diferencia.id));
 			break;
 	}
+	const [nuevo] = aclarado.nuevos ?? [];
 	if (ajuste === undefined) {
 		await resolver(contexto, diferencia, datos.aclaracion, motivo, {
 			...(aclarado.espejo === undefined ? {} : { espejoId: aclarado.espejo.id }),
-			...(aclarado.nuevo === undefined ? {} : { traspasoNuevoId: aclarado.nuevo.traspasoId }),
+			...(nuevo === undefined ? {} : { traspasoNuevoId: nuevo.traspasoId }),
 		});
 		if (aclarado.espejo !== undefined) {
 			await resolver(contexto, aclarado.espejo, "venia_en_otro", motivo, { espejoId: diferencia.id });
@@ -476,7 +481,7 @@ export const accionAclararDiferencia = implementarAccion(aclararDiferencia, asyn
 			aclaracion: datos.aclaracion,
 			motivo,
 			...(aclarado.espejo === undefined ? {} : { espejo: aclarado.espejo.folio }),
-			...(aclarado.nuevo === undefined ? {} : { traspaso_nuevo: aclarado.nuevo.folio }),
+			...(aclarado.nuevos === undefined ? {} : { traspasos_nuevos: aclarado.nuevos.map((uno) => uno.folio) }),
 			...(ajuste === undefined ? {} : { ajuste: ajuste.folio }),
 		},
 	});
@@ -484,14 +489,14 @@ export const accionAclararDiferencia = implementarAccion(aclararDiferencia, asyn
 	const mensaje =
 		ajuste !== undefined
 			? ajuste.mensaje
-			: aclarado.nuevo !== undefined && diferencia.varianteId !== null
-				? `${diferencia.folio} aclarada: ${piezas} piezas en aduana en ${aclarado.nuevo.folio}`
+			: aclarado.nuevos !== undefined && diferencia.varianteId !== null
+				? `${diferencia.folio} aclarada: ${piezas} piezas en aduana en ${new Intl.ListFormat("es", { type: "conjunction" }).format(aclarado.nuevos.map((uno) => uno.folio))}`
 				: `${diferencia.folio} aclarada`;
 	return {
 		resultado: {
 			mensaje,
 			...(ajuste === undefined ? {} : { ajuste_id: ajuste.ajusteId }),
-			...(aclarado.nuevo === undefined ? {} : { traspaso_id: aclarado.nuevo.traspasoId }),
+			...(nuevo === undefined ? {} : { traspaso_id: nuevo.traspasoId }),
 			version: await versionActual(transaccion, diferencias, diferencia.id),
 		},
 		entidad: { nombre: "diferencias", id: diferencia.id },

@@ -417,3 +417,58 @@ export const registrosOperacion = pgTable(
 		check("registros_operacion_cancelado", sql`(${tabla.estado} = 'cancelado') = (${tabla.canceladoEn} is not null)`),
 	],
 );
+
+/** El estado de un cambio de pedido. */
+export const estadosDeCambioPedido = ["por_aplicar", "aplicado", "reemplazado"] as const;
+
+/** Lo que Producción ajusta cuando una versión del pedido deja piezas de más en producción. Uno por versión. */
+export const cambiosPedido = pgTable(
+	"cambios_pedido",
+	{
+		id: uuid("id").primaryKey(),
+		pedidoId: uuid("pedido_id")
+			.notNull()
+			.references((): AnyPgColumn => pedidos.id),
+		pedidoVersionId: uuid("pedido_version_id")
+			.notNull()
+			.references((): AnyPgColumn => pedidoVersiones.id),
+		estado: text("estado").notNull().default("por_aplicar"),
+		aplicadoEn: momento("aplicado_en"),
+		aplicadoPor: uuid("aplicado_por").references((): AnyPgColumn => usuarios.id),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		uniqueIndex("cambios_pedido_version").on(tabla.pedidoVersionId),
+		index("cambios_pedido_pedido").on(tabla.pedidoId, tabla.estado),
+		check("cambios_pedido_estado", sql`${tabla.estado} in (${valores(estadosDeCambioPedido)})`),
+		check("cambios_pedido_aplicado", sql`(${tabla.estado} = 'aplicado') = (${tabla.aplicadoEn} is not null)`),
+	],
+);
+
+/** Lo que hizo cada aplicación de un cambio en cada lote y talla. */
+export const cambioPedidoLineas = pgTable(
+	"cambio_pedido_lineas",
+	{
+		id: uuid("id").primaryKey(),
+		cambioPedidoId: uuid("cambio_pedido_id")
+			.notNull()
+			.references(() => cambiosPedido.id),
+		loteId: uuid("lote_id")
+			.notNull()
+			.references(() => lotes.id),
+		varianteId: uuid("variante_id")
+			.notNull()
+			.references(() => variantes.id),
+		piezasRestadas: integer("piezas_restadas").notNull().default(0),
+		piezasABodega: integer("piezas_a_bodega").notNull().default(0),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		uniqueIndex("cambio_pedido_lineas_unico").on(tabla.cambioPedidoId, tabla.loteId, tabla.varianteId),
+		index("cambio_pedido_lineas_lote").on(tabla.loteId),
+		check(
+			"cambio_pedido_lineas_piezas",
+			sql`${tabla.piezasRestadas} >= 0 and ${tabla.piezasABodega} >= 0 and ${tabla.piezasRestadas} + ${tabla.piezasABodega} > 0`,
+		),
+	],
+);

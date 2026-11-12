@@ -4,6 +4,8 @@
  * respuesta nunca trae lo aprobado. Un reproceso solo se recibe aprobado y una vez, con el reparto de su lote. Dos
  * recepciones del mismo lote a la vez reciben una sola.
  * Fase 14 · docs/fases/14-inventario-recepcion-del-taller-conteos-ajustes-y-reabasto.md («Criterios de terminado»)
+ * Fase 16 · docs/fases/16-ventas-a-externos.md (parte 3): el reparto de un lote de pedido, de lo que llega después y de
+ * su reproceso, con su reserva `pedido_externo` en Aduana
  */
 
 import { v7 as uuidv7 } from "uuid";
@@ -21,6 +23,7 @@ import { ubicacionesPorCodigo } from "../../../nucleo/pruebas/inventario-de-prue
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import type { LoteCortado } from "../../../nucleo/pruebas/produccion-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
+import { pedidoDePrueba } from "../../../nucleo/pruebas/ventas-de-prueba.ts";
 import { escribirMovimiento } from "../dominio/escribir-movimiento.ts";
 
 describe("Un lote se recibe a ciegas: un A- por destino, una DF- por talla que no cuadró, sus avíos consumidos y el lote en aduana", () => {
@@ -64,6 +67,118 @@ describe("Un lote se recibe a ciegas: un A- por destino, una DF- por talla que n
 			.strict()
 			.parse(respuesta.cuerpo.resultado);
 	}
+
+	/**
+	 * Hace de un lote revisado el lote de un pedido confirmado que pide tantas de la talla 4 y de la 6, con tantas de la
+	 * 6 que van a Bodega (lo cortado que una versión le quitó).
+	 * @returns El pedido y su folio.
+	 */
+	async function deUnPedido(lote: LoteCortado, pide: { talla4: number; talla6: number }, aBodega6: number) {
+		const pedido = await pedidoDePrueba(servidor);
+		for (const [talla, cantidad] of [
+			["4", pide.talla4],
+			["6", pide.talla6],
+		] as const) {
+			await consultar(
+				`INSERT INTO pedido_renglones (id, pedido_id, variante_id, cantidad, desde_version, precio_dado_centavos,
+					precio_unitario_centavos) VALUES ($1, $2, $3, $4, 1, 10000, 10000)`,
+				[uuidv7(), pedido, lote.prenda.variantes[talla], cantidad],
+			);
+		}
+		await consultar("UPDATE lotes SET destino = 'pedido', pedido_id = $2, ubicacion_destino_id = NULL WHERE id = $1", [
+			lote.loteId,
+			pedido,
+		]);
+		await consultar("UPDATE lote_tallas SET piezas_a_bodega = $3 WHERE lote_id = $1 AND variante_id = $2", [
+			lote.loteId,
+			lote.prenda.variantes["6"],
+			aBodega6,
+		]);
+		const [fila] = await consultar("SELECT folio FROM pedidos WHERE id = $1", [pedido]);
+		return { pedido, folio: String(fila?.folio) };
+	}
+
+	/** Los A- de unos ids, con su destino, su pedido y sus piezas por talla («4» o «6»). */
+	async function repartidos(lote: LoteCortado, ids: readonly string[]) {
+		const filas = await consultar(
+			`SELECT t.tipo, coalesce(d.codigo, t.destino_externo) AS destino, t.pedido_id, l.variante_id,
+				l.piezas_recibidas_aduana AS piezas
+			 FROM traspasos t JOIN traspaso_lineas l ON l.traspaso_id = t.id
+			 LEFT JOIN ubicaciones d ON d.id = t.destino_ubicacion_id
+			 WHERE t.id = ANY($1::uuid[]) ORDER BY t.folio, l.renglon`,
+			[ids],
+		);
+		return filas.map(({ variante_id, ...fila }) => ({
+			...fila,
+			talla: variante_id === lote.prenda.variantes["4"] ? "4" : "6",
+		}));
+	}
+
+	/** Las reservas activas de un pedido: dónde, de qué talla, cuántas y el tipo de su A-. */
+	async function apartadoPara(lote: LoteCortado, pedido: string) {
+		const filas = await consultar(
+			`SELECT u.codigo, r.variante_id, r.piezas, t.tipo FROM reservas r JOIN ubicaciones u ON u.id = r.ubicacion_id
+			 JOIN traspasos t ON t.id = r.traspaso_id
+			 WHERE r.pedido_id = $1 AND r.motivo = 'pedido_externo' AND r.estado = 'activa' ORDER BY t.folio, r.variante_id`,
+			[pedido],
+		);
+		return filas.map(({ variante_id, ...fila }) => ({
+			...fila,
+			talla: variante_id === lote.prenda.variantes["4"] ? "4" : "6",
+		}));
+	}
+
+	it("un lote de pedido: lo que le falta al pedido va al cliente, apartado en Aduana; lo demás a Bodega como quitado y excedente; lo que llega después y su reproceso, con el mismo reparto", async () => {
+		// Calidad aprobó 3 de la talla 4 (rechazó 2: el reproceso) y 3 de la 6. El pedido pide 4 y 1; de la 6, una
+		// pieza cortada ya se le quitó (va a Bodega).
+		const lote = await loteRevisado(servidor, siembra, [5, 3, 0], 2);
+		const { pedido, folio } = await deUnPedido(lote, { talla4: 4, talla6: 1 }, 1);
+		// Aduana cuenta 2 de la 4 (faltó una) y 3 de la 6.
+		const salida = recibida(await recibir(lote, 2, 3));
+		expect(salida.mensaje).toBe(
+			`${lote.folio} en aduana: 5 piezas para ${folio} y Bodega. Faltaron 1 contra lo que aprobó calidad: queda por aclarar a cargo del taller`,
+		);
+		expect(await repartidos(lote, salida.traspaso_ids)).toEqual([
+			{ tipo: "lote_cliente", destino: "cliente_externo", pedido_id: pedido, piezas: 2, talla: "4" },
+			{ tipo: "lote_cliente", destino: "cliente_externo", pedido_id: pedido, piezas: 1, talla: "6" },
+			{ tipo: "quitado_de_pedido", destino: "BOD", pedido_id: null, piezas: 1, talla: "6" },
+			{ tipo: "excedente_pedido", destino: "BOD", pedido_id: null, piezas: 1, talla: "6" },
+		]);
+		expect(await apartadoPara(lote, pedido)).toEqual([
+			{ codigo: "ADU", piezas: 2, tipo: "lote_cliente", talla: "4" },
+			{ codigo: "ADU", piezas: 1, tipo: "lote_cliente", talla: "6" },
+		]);
+		// La que faltó llega después: al pedido todavía le faltan 2 de la 4, así que va al cliente, apartada.
+		const [diferencia] = await consultar("SELECT id FROM diferencias WHERE recepcion_id = $1", [salida.recepcion_id]);
+		const aclarada = salidaDe(await aclararDePrueba(servidor, String(diferencia?.id), { aclaracion: "llego" }));
+		expect(await repartidos(lote, [aclarada.traspaso_id ?? ""])).toEqual([
+			{ tipo: "lote_cliente", destino: "cliente_externo", pedido_id: pedido, piezas: 1, talla: "4" },
+		]);
+		// El reproceso de 2 de la 4: al pedido le falta 1; la otra va a Bodega. Los dos en A- `reproceso`.
+		expect((await aprobarReprocesoDePrueba(servidor, lote.reprocesoId ?? "")).estado).toBe(200);
+		const reproceso = recibida(
+			await mandarAccion(
+				servidor,
+				"inventario.recibir_reproceso",
+				{ datos: { reproceso_id: lote.reprocesoId, piezas: 2 } },
+				"aduana",
+			),
+		);
+		expect(reproceso.mensaje).toBe(`${lote.folio}-R1 en aduana: 2 piezas para ${folio} y Bodega`);
+		expect(await repartidos(lote, reproceso.traspaso_ids)).toEqual([
+			{ tipo: "reproceso", destino: "cliente_externo", pedido_id: pedido, piezas: 1, talla: "4" },
+			{ tipo: "reproceso", destino: "BOD", pedido_id: null, piezas: 1, talla: "4" },
+		]);
+		// Al pedido ya no le falta nada: lo suyo está apartado en Aduana; en Aduana están las 8 piezas.
+		expect((await apartadoPara(lote, pedido)).filter((reserva) => reserva.talla === "4")).toEqual([
+			{ codigo: "ADU", piezas: 2, tipo: "lote_cliente", talla: "4" },
+			{ codigo: "ADU", piezas: 1, tipo: "lote_cliente", talla: "4" },
+			{ codigo: "ADU", piezas: 1, tipo: "reproceso", talla: "4" },
+		]);
+		expect(
+			await libroPorUbicacion(servidor, [lote.prenda.variantes["4"] ?? "", lote.prenda.variantes["6"] ?? ""]),
+		).toEqual([{ codigo: "ADU", piezas: 8 }]);
+	});
 
 	it("a ciegas: el A- de su destino en aduana, el libro del Taller a Aduana, una DF- por talla, los avíos y el lote en aduana", async () => {
 		// Calidad aprobó 3 de la talla 4 (rechazó 2) y 3 de la 6; Aduana cuenta 2 y 3.

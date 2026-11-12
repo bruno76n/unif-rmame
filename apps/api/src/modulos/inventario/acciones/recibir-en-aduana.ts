@@ -7,23 +7,53 @@
  *
  * Una devolución de un cliente llega `esperado`, de Fuera: lo que llegó entra a Aduana y lo que no llegó nunca fue
  * inventario. Por tipo: una devolución al proveedor surtida de Bodega queda lista para «Devolver al proveedor»; lo
- * bueno de una devolución de cliente a un hijo para Bodega, y lo demás de cada tipo, llegan con sus fases (decisión 574).
+ * surtido para un pedido externo deja su reserva en Aduana, o regresa a Bodega si el pedido ya se canceló (fase 16);
+ * lo bueno de una devolución de cliente a un hijo para Bodega, y lo demás de cada tipo, llegan con sus fases
+ * (decisión 574).
  */
 
 import { aMilesimosConSigno, cantidadEnTexto, deMilesimos } from "@uniformame/compartido/calculos/cuenta-material";
 import { recibirEnAduana } from "@uniformame/compartido/contratos/inventario/recepciones";
 import { asc, eq } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
+import { z } from "zod";
 import { quienCambia } from "../../../nucleo/acciones/comunes.ts";
 import { tomarVersion, versionActual } from "../../../nucleo/acciones/pisadas.ts";
 import { ErrorDeApi, errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
-import { implementarAccion } from "../../../nucleo/modulos.ts";
+import { type ContextoDeAccion, implementarAccion } from "../../../nucleo/modulos.ts";
 import { tomarCandadosDeInventario } from "../dominio/candados.ts";
 import { abrirDiferencia } from "../dominio/diferencias.ts";
 import { escribirMovimiento, type RenglonDeMovimiento } from "../dominio/escribir-movimiento.ts";
 import { ubicacionDeTipo, ubicacionPorId } from "../dominio/recepciones.ts";
-import { cambiarEstadoTraspaso } from "../dominio/traspasos.ts";
+import { cambiarEstadoTraspaso, type TraspasoCreado } from "../dominio/traspasos.ts";
+import { regresarAlOrigen } from "../internas/reservas.ts";
 import { recepciones, recepcionLineas, traspasoLineas, traspasos } from "../tablas.ts";
+
+/** Lo que regresa `ventas.avance_pedido` que importa aquí: el estado del pedido. */
+const estadoDelPedido = z.object({ estado: z.string() });
+
+/**
+ * Si lo que llegó es lo surtido para un pedido externo que ya se canceló, lo reparte en un `regresa` a Bodega: sus
+ * reservas se liberaron al cancelarlo y nada lo espera en Aduana.
+ * @returns El hijo `regresa`, o `null` si no aplica.
+ */
+async function regresaSiSeCancelo(
+	contexto: ContextoDeAccion,
+	traspaso: typeof traspasos.$inferSelect,
+	contados: readonly { linea: typeof traspasoLineas.$inferSelect; llego: bigint }[],
+): Promise<TraspasoCreado | null> {
+	if (traspaso.tipo !== "surtido_pedido_externo" || traspaso.pedidoId === null) return null;
+	const pedido = estadoDelPedido.parse(
+		await contexto.lectura("ventas.avance_pedido", { pedido_id: traspaso.pedidoId }),
+	);
+	if (pedido.estado !== "cancelado") return null;
+	const porVariante = new Map<string, number>();
+	for (const { linea, llego } of contados) {
+		if (linea.varianteId === null || llego === 0n) continue;
+		porVariante.set(linea.varianteId, (porVariante.get(linea.varianteId) ?? 0) + Number(llego));
+	}
+	return regresarAlOrigen(contexto, traspaso.id, porVariante);
+}
 
 export const accionRecibirEnAduana = implementarAccion(recibirEnAduana, async (contexto, datos, version) => {
 	const { transaccion } = contexto;
@@ -158,6 +188,9 @@ export const accionRecibirEnAduana = implementarAccion(recibirEnAduana, async (c
 	}
 	await cambiarEstadoTraspaso(contexto, traspaso.id, "en_aduana");
 	await transaccion.update(traspasos).set({ recepcionAduanaId: recepcionId }).where(eq(traspasos.id, traspaso.id));
+	// Lo surtido para un pedido que se canceló mientras venía en camino regresa a Bodega; si sigue, su reserva quedó
+	// en Aduana con la pieza.
+	const regresa = await regresaSiSeCancelo(contexto, traspaso, contados);
 	contexto.bitacora({
 		descripcion: `Recibió ${traspaso.folio}`,
 		entidad: "traspasos",
@@ -212,7 +245,7 @@ export const accionRecibirEnAduana = implementarAccion(recibirEnAduana, async (c
 	return {
 		resultado: {
 			recepcion_id: recepcionId,
-			mensaje: `${base}${falto}`,
+			mensaje: `${base}${falto}${regresa === null ? "" : `. El pedido se canceló: regresa a Bodega en ${regresa.folio}`}`,
 			version: await versionActual(transaccion, traspasos, traspaso.id),
 		},
 		entidad: { nombre: "traspasos", id: traspaso.id },

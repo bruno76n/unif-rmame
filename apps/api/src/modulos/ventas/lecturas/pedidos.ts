@@ -15,7 +15,7 @@ import { pedidoRenglones, pedidos } from "../tablas.ts";
 const pedidoDeLectura = z.object({ pedido_id: z.uuid() }).strict();
 
 /**
- * Por prenda y talla, las cuentas del avance de un pedido, y su etapa y su alerta.
+ * Por prenda y talla, las cuentas del avance de un pedido, y su folio, su estado, su etapa y su alerta.
  * @param contexto El contexto de quien lee (Inventario, Producción o Ventas).
  * @param datos El pedido.
  */
@@ -24,6 +24,7 @@ export async function avancePedido(contexto: ContextoDeAccion, datos: unknown) {
 	const pedido = await leerPedido(contexto.transaccion, pedido_id);
 	const avance = await avanceDelPedido(contexto, pedido, await renglonesVigentes(contexto.transaccion, pedido_id));
 	return {
+		folio: pedido.folio,
 		estado: pedido.estado,
 		etapa: avance.etapa,
 		alerta: avance.alerta,

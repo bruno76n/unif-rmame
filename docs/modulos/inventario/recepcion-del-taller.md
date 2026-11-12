@@ -100,3 +100,10 @@ Ninguno propio.
 - **«Imprimir etiquetas»** de un lote o un reproceso recibido es `inventario.marcar_etiquetas_impresas` (fase 11), con el tipo de prueba hasta la fase 20.
 - **Lo que llega después** de una DF- del taller entra con el mismo reparto (decisión 644).
 - **Pruebas:** `acciones/recibir-del-taller.prueba.ts` (a ciegas con sus A-, su DF- y sus avíos; lo que no deja recibir; dos a la vez; el reproceso y sus etiquetas; lo que llega después) y, en `internas/correr-cuadre.prueba.ts`, el paso 4 con un lote recibido.
+
+**Fase 16, parte 3.** El reparto (`dominio/taller.ts`) regresa sus partes, una por A-, cada una con su tipo, su destino y sus piezas por talla:
+
+- **Un lote de pedido:** con el candado de las variantes puesto, lee lo que le falta al pedido de cada talla con `ventas.avance_pedido` (`falta`). De cada talla, hasta eso va al cliente en un A- `lote_cliente` con destino el cliente externo y el pedido; de lo demás, hasta `piezas_a_bodega` del lote, menos lo que ya salió de ese lote como `quitado_de_pedido`, va a Bodega como `quitado_de_pedido`, y el resto como `excedente_pedido` (decisión 684). Un reproceso lleva el mismo reparto en dos A- `reproceso`: lo del cliente y lo de Bodega.
+- **La interna** crea un A- por parte (`crearPartesDelReparto`), escribe un solo movimiento con un renglón por talla y destino, y después aparta lo del cliente en Aduana: una reserva `pedido_externo` por talla, ligada a su A- (`apartarLoDelCliente`). El mensaje nombra los destinos unidos: «… piezas para PE-0042 y Bodega».
+- **Lo que llega después** de una DF- del taller entra con el mismo reparto, en un A- por parte (decisión 685).
+- **Pruebas:** en `acciones/recibir-del-taller.prueba.ts`, el lote de un pedido: lo que le falta va al cliente apartado en Aduana, lo demás a Bodega como quitado y excedente, y lo que llega después y su reproceso con el mismo reparto.

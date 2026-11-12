@@ -16661,6 +16661,132 @@
         }
       }
     },
+    "/v1/acciones/produccion.aplicar_cambio_pedido": {
+      "post": {
+        "tags": [
+          "produccion"
+        ],
+        "description": "Aplica a los lotes el cambio más nuevo de un pedido: resta de los que no se cortan y manda a Bodega\n\nPermiso: departamento produccion.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "clave_idempotencia": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "description": "La hace el cliente al apretar el botón y la reusa en cada reintento"
+                  },
+                  "datos": {
+                    "type": "object",
+                    "properties": {
+                      "cambio_pedido_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "description": "El cambio de pedido"
+                      }
+                    },
+                    "required": [
+                      "cambio_pedido_id"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "version": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991,
+                    "description": "La versión que se leyó"
+                  }
+                },
+                "required": [
+                  "clave_idempotencia",
+                  "datos",
+                  "version"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "cambio_pedido_id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                          "description": "El cambio que se aplicó: el más nuevo del pedido"
+                        },
+                        "lineas": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "Cuántos lotes y tallas se tocaron"
+                        },
+                        "mensaje": {
+                          "type": "string",
+                          "description": "El aviso verde que muestra la pantalla"
+                        },
+                        "version": {
+                          "description": "La versión nueva de lo que cambió, si la acción editó algo",
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "cambio_pedido_id",
+                        "lineas",
+                        "mensaje"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "avisos": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Mensajes que no bloquean"
+                    },
+                    "secreto_entregado": {
+                      "description": "La respuesta repetida de una acción que entregó un secreto: el secreto ya no viene",
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "avisos"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/acciones/produccion.crear_flujo": {
       "post": {
         "tags": [
@@ -19586,6 +19712,348 @@
                       },
                       "required": [
                         "pedido_id",
+                        "mensaje"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "avisos": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Mensajes que no bloquean"
+                    },
+                    "secreto_entregado": {
+                      "description": "La respuesta repetida de una acción que entregó un secreto: el secreto ya no viene",
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "avisos"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/acciones/ventas.mandar_a_produccion": {
+      "post": {
+        "tags": [
+          "ventas"
+        ],
+        "description": "Manda a producción lo que falta por mandar de un pedido confirmado\n\nPermiso: departamento ventas.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "clave_idempotencia": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "description": "La hace el cliente al apretar el botón y la reusa en cada reintento"
+                  },
+                  "datos": {
+                    "type": "object",
+                    "properties": {
+                      "pedido_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "description": "El pedido confirmado"
+                      },
+                      "renglones": {
+                        "description": "Por talla; si no vienen, todo lo que falta por mandar",
+                        "minItems": 1,
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "variante_id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                              "description": "La prenda y la talla"
+                            },
+                            "piezas": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "exclusiveMinimum": true,
+                              "maximum": 9007199254740991,
+                              "description": "Cuántas"
+                            }
+                          },
+                          "required": [
+                            "variante_id",
+                            "piezas"
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "pedido_id"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "version": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991,
+                    "description": "La versión que se leyó"
+                  }
+                },
+                "required": [
+                  "clave_idempotencia",
+                  "datos",
+                  "version"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "piezas": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "orden_produccion_id": {
+                          "description": "La orden nueva, si nació",
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "lotes": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "lote_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "folio": {
+                                "type": "string"
+                              },
+                              "nuevo": {
+                                "type": "boolean"
+                              },
+                              "piezas": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "lote_id",
+                              "folio",
+                              "nuevo",
+                              "piezas"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "mensaje": {
+                          "type": "string",
+                          "description": "El aviso verde que muestra la pantalla"
+                        },
+                        "version": {
+                          "description": "La versión nueva de lo que cambió, si la acción editó algo",
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "piezas",
+                        "lotes",
+                        "mensaje"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "avisos": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Mensajes que no bloquean"
+                    },
+                    "secreto_entregado": {
+                      "description": "La respuesta repetida de una acción que entregó un secreto: el secreto ya no viene",
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "avisos"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/acciones/ventas.surtir_de_bodega": {
+      "post": {
+        "tags": [
+          "ventas"
+        ],
+        "description": "Aparta en Bodega para un pedido lo libre de una prenda, hasta lo que falta por mandar\n\nPermiso: departamento ventas.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "clave_idempotencia": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "description": "La hace el cliente al apretar el botón y la reusa en cada reintento"
+                  },
+                  "datos": {
+                    "type": "object",
+                    "properties": {
+                      "pedido_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "description": "El pedido confirmado"
+                      },
+                      "producto_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "description": "La prenda"
+                      },
+                      "renglones": {
+                        "description": "Por talla; si no vienen, todo lo que falta por mandar",
+                        "minItems": 1,
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "variante_id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                              "description": "La prenda y la talla"
+                            },
+                            "piezas": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "exclusiveMinimum": true,
+                              "maximum": 9007199254740991,
+                              "description": "Cuántas"
+                            }
+                          },
+                          "required": [
+                            "variante_id",
+                            "piezas"
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "pedido_id",
+                      "producto_id"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "version": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991,
+                    "description": "La versión que se leyó"
+                  }
+                },
+                "required": [
+                  "clave_idempotencia",
+                  "datos",
+                  "version"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "piezas": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "por_mandar": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "Lo que queda por mandar"
+                        },
+                        "mensaje": {
+                          "type": "string",
+                          "description": "El aviso verde que muestra la pantalla"
+                        },
+                        "version": {
+                          "description": "La versión nueva de lo que cambió, si la acción editó algo",
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "piezas",
+                        "por_mandar",
                         "mensaje"
                       ],
                       "additionalProperties": false

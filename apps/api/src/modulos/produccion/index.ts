@@ -4,6 +4,7 @@
  */
 
 import { definirModulo } from "../../nucleo/modulos.ts";
+import { accionAplicarCambioPedido, crearCambioPedido } from "./acciones/cambios.ts";
 import { accionCerrarCorte, accionImprimirEtiquetasBulto } from "./acciones/corte.ts";
 import { accionAgregarOperacionFlujo, accionCrearFlujo, accionQuitarOperacionFlujo } from "./acciones/flujos.ts";
 import { accionCrearOrden, accionLevantarOrdenSugerencia } from "./acciones/ordenes.ts";
@@ -40,6 +41,7 @@ import { vigilarLotesAtorados } from "./trabajos/vigilar-lotes-atorados.ts";
 export default definirModulo({
 	nombre: "produccion",
 	acciones: [
+		accionAplicarCambioPedido,
 		accionCrearFlujo,
 		accionAgregarOperacionFlujo,
 		accionQuitarOperacionFlujo,
@@ -53,6 +55,7 @@ export default definirModulo({
 		accionRegistrarBloqueoPin,
 	],
 	internas: {
+		crear_cambio_pedido: crearCambioPedido,
 		mandar_a_produccion: mandarAProduccion,
 		pasar_pedido_a_temporada: pasarPedidoATemporada,
 		cambiar_fecha_entrega_pedido: cambiarFechaEntregaPedido,

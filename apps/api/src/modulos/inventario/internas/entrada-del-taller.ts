@@ -1,11 +1,12 @@
 /**
  * `inventario.registrar_entrada_del_taller`: la única que mueve piezas del Taller a Aduana. La llaman «Recibir del
  * taller» y «Recibir reproceso».
- * Fase 14 · docs/modulos/inventario/recepcion-del-taller.md (reglas 3 a 7, «`inventario.registrar_entrada_del_taller`»)
+ * Fases 14 y 16 · docs/modulos/inventario/recepcion-del-taller.md (reglas 3 a 7, «`inventario.registrar_entrada_del_taller`»)
  *
- * Escribe la recepción a ciegas con lo aprobado como esperado; el A- de su destino, `en_aduana`, con sus etiquetas por
- * imprimir; el movimiento del Taller a Aduana por talla, con el A- y el lote; en un lote, el consumo de sus avíos; y
- * una DF- por talla que no cuadró, a cargo del Taller.
+ * Escribe la recepción a ciegas con lo aprobado como esperado; un A- por destino del reparto, `en_aduana`, con sus
+ * etiquetas por imprimir; el movimiento del Taller a Aduana por talla y destino, con el A- y el lote; la reserva
+ * `pedido_externo` de lo que va al cliente de un pedido; en un lote, el consumo de sus avíos; y una DF- por talla que
+ * no cuadró, a cargo del Taller.
  */
 
 import { aMilesimosConSigno, deMilesimos } from "@uniformame/compartido/calculos/cuenta-material";
@@ -19,8 +20,13 @@ import { abrirDiferencia } from "../dominio/diferencias.ts";
 import { escribirMovimiento } from "../dominio/escribir-movimiento.ts";
 import { ubicacionDeTipo } from "../dominio/recepciones.ts";
 import { nombreDeVariante } from "../dominio/reservas.ts";
-import { leerLoteParaAduana, repartoDelTaller } from "../dominio/taller.ts";
-import { crearTraspaso } from "../dominio/traspasos.ts";
+import {
+	apartarLoDelCliente,
+	crearPartesDelReparto,
+	leerLoteParaAduana,
+	nombresDelReparto,
+	repartoDelTaller,
+} from "../dominio/taller.ts";
 import { recepciones, recepcionLineas } from "../tablas.ts";
 
 /** Lo que recibe: de dónde viene, el lote y, por talla, lo aprobado y lo contado. */
@@ -70,7 +76,12 @@ export async function registrarEntradaDelTaller(contexto: ContextoDeAccion, dato
 	);
 	const lote = await leerLoteParaAduana(contexto, pedido.lote_id);
 	const esReproceso = pedido.origen === "reproceso";
-	const reparto = await repartoDelTaller(contexto, lote, esReproceso);
+	const reparto = await repartoDelTaller(
+		contexto,
+		lote,
+		esReproceso,
+		pedido.tallas.map((talla) => ({ varianteId: talla.variante_id, piezas: talla.contadas })),
+	);
 	const [taller, aduana] = [await ubicacionDeTipo(transaccion, "taller"), await ubicacionDeTipo(transaccion, "aduana")];
 	const quien = quienCambia(contexto);
 	// La recepción, a ciegas: lo aprobado se guarda como lo esperado.
@@ -100,53 +111,35 @@ export async function registrarEntradaDelTaller(contexto: ContextoDeAccion, dato
 			creadoPor: quien,
 		})),
 	);
-	// El A- de su destino, con lo que llegó de cada talla: nace en aduana, con sus etiquetas por imprimir.
-	const llegaron = pedido.tallas.filter((talla) => talla.contadas > 0);
-	const nuevo =
-		llegaron.length === 0
-			? undefined
-			: await crearTraspaso(contexto, {
-					tipo: reparto.tipo,
-					estado: "en_aduana",
-					origen: { ubicacionId: taller },
-					destino: { ubicacionId: reparto.destinoId },
-					renglones: llegaron.map((talla) => ({
-						varianteId: talla.variante_id,
-						piezas: talla.contadas,
-						loteId: lote.lote_id,
-					})),
-					referencias: {
-						loteId: lote.lote_id,
-						...(pedido.reproceso_id === undefined ? {} : { reprocesoId: pedido.reproceso_id }),
-						recepcionAduanaId: recepcionId,
-					},
-					fechaSalidaEsperada: lote.fecha_entrega,
-				});
+	// Un A- por destino del reparto, con lo que llegó de cada talla: nace en aduana, con sus etiquetas por imprimir.
+	const creadas = await crearPartesDelReparto(contexto, reparto, {
+		origenId: taller,
+		lote,
+		reprocesoId: pedido.reproceso_id ?? null,
+		recepcionId,
+	});
 	let movimientoId: string | null = null;
-	if (nuevo !== undefined) {
+	if (creadas.length > 0) {
+		// Un renglón por talla y destino, del Taller a Aduana, con su A- y el lote.
 		const movimiento = await escribirMovimiento(contexto, {
 			tipo: esReproceso ? "recepcion_reproceso" : "recepcion_taller",
 			documento: { tipo: "recepcion", id: recepcionId, folio: pedido.folio },
-			renglones: llegaron.map((talla) => ({
-				origen: taller,
-				destino: aduana,
-				varianteId: talla.variante_id,
-				piezas: talla.contadas,
-				traspasoId: nuevo.traspasoId,
-				loteId: lote.lote_id,
-			})),
+			renglones: creadas.flatMap(({ traspasoId, parte }) =>
+				parte.tallas.map((talla) => ({
+					origen: taller,
+					destino: aduana,
+					varianteId: talla.varianteId,
+					piezas: talla.piezas,
+					traspasoId,
+					loteId: lote.lote_id,
+				})),
+			),
 			numero: 1,
 		});
 		movimientoId = movimiento.movimientoId;
 		await transaccion.update(recepciones).set({ movimientoId }).where(eq(recepciones.id, recepcionId));
-		contexto.guardarEvento({
-			tipo: "traspaso.en_aduana",
-			datos: { traspaso_id: nuevo.traspasoId },
-			tablas: ["traspasos", "traspaso_lineas", "existencias"],
-			entidad: "traspasos",
-			entidadId: nuevo.traspasoId,
-			entidadFolio: nuevo.folio,
-		});
+		// Lo del cliente queda apartado en Aduana para su pedido.
+		await apartarLoDelCliente(contexto, creadas);
 	}
 	// En un lote, sus avíos salen del Taller: los que pasó su entrega a corte (regla 7).
 	if (!esReproceso) {
@@ -186,7 +179,7 @@ export async function registrarEntradaDelTaller(contexto: ContextoDeAccion, dato
 	contexto.guardarEvento({
 		tipo: "recepcion.del_taller",
 		datos: { recepcion_id: recepcionId, lote_id: lote.lote_id },
-		tablas: ["recepciones", "recepcion_lineas", "existencias", "existencias_material", "diferencias"],
+		tablas: ["recepciones", "recepcion_lineas", "existencias", "existencias_material", "diferencias", "reservas"],
 		entidad: "recepciones",
 		entidadId: recepcionId,
 		entidadFolio: pedido.folio,
@@ -195,9 +188,9 @@ export async function registrarEntradaDelTaller(contexto: ContextoDeAccion, dato
 		pedido.tallas.reduce((total, talla) => total + de(talla), 0);
 	return {
 		recepcion_id: recepcionId,
-		traspasos: nuevo === undefined ? [] : [{ traspaso_id: nuevo.traspasoId, folio: nuevo.folio }],
+		traspasos: creadas.map((creada) => ({ traspaso_id: creada.traspasoId, folio: creada.folio })),
 		diferencias,
-		destino: reparto.destinoNombre,
+		destino: nombresDelReparto(reparto),
 		piezas: suma((talla) => talla.contadas),
 		faltaron: suma((talla) => Math.max(0, talla.aprobadas - talla.contadas)),
 		sobraron: suma((talla) => Math.max(0, talla.contadas - talla.aprobadas)),

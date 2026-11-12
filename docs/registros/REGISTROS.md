@@ -419,3 +419,7 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 12 nov 2026 | 14 | El módulo de la bitácora de «Cambiar mínimo» (decisión 650) | `inventario` · el de la acción | El de la acción: así lo escribe el núcleo | No |
 | 12 nov 2026 | 14 | Cómo se reparte lo disponible de Bodega entre tiendas (decisión 652) | En proporción · en orden | En orden: nunca se promete dos veces | No |
 | 12 nov 2026 | 14 | Qué carga la muestra de la fase 14 (decisión 654) | Todo, inventando lotes viejos · lo que la muestra tiene y el sistema hace | Lo segundo: la existencia de Bodega, sus conteos y sus ajustes | No |
+| 12 nov 2026 | 16 | Cuánto va a Bodega como quitado de un lote de pedido (decisión 684) | Contar `piezas_a_bodega` en cada entrada · descontar lo que ya salió como quitado | Lo segundo: lo que llega después no pasa de lo marcado | No |
+| 12 nov 2026 | 16 | Lo que llega después de un lote de pedido, en varios A- (decisión 685) | Todo al primer destino · un A- por destino, con el primero en la DF- | Lo segundo: es el mismo reparto, sin columnas nuevas | No |
+| 12 nov 2026 | 16 | Lo surtido a un pedido que se canceló en camino (decisión 686) | Dejarlo en aduana sin destino · un `regresa` a Bodega al recibirlo | Lo segundo, como pide su tabla, con la misma función que liberar | No |
+| 12 nov 2026 | 16 | Las piezas de cada lote en la bitácora de mandar a producción (decisión 687) | El total del pedido en cada lote · las de cada lote, que regresa Producción | Las de cada lote | No |

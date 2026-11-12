@@ -7,10 +7,10 @@
  * entonces, un pedido no tiene notas.
  */
 
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
-import { ordenesProduccion } from "../../produccion/tablas.ts";
+import { cambiosPedido, ordenesProduccion } from "../../produccion/tablas.ts";
 import { type AvanceDeTalla, alertaDelPedido, avanceDeTalla, etapaDelPedido } from "./avance.ts";
 import type { PedidoConCliente, Renglon } from "./pedidos.ts";
 
@@ -76,6 +76,11 @@ export async function avanceDelPedido(
 		.from(ordenesProduccion)
 		.where(eq(ordenesProduccion.pedidoId, pedido.id))
 		.limit(1);
+	const [cambio] = await contexto.transaccion
+		.select({ id: cambiosPedido.id })
+		.from(cambiosPedido)
+		.where(and(eq(cambiosPedido.pedidoId, pedido.id), eq(cambiosPedido.estado, "por_aplicar")))
+		.limit(1);
 	const diasEnRiesgo = z
 		.number()
 		.int()
@@ -90,7 +95,7 @@ export async function avanceDelPedido(
 						hoy: contexto.diaDeNegocio,
 						diasEnRiesgo,
 						conOrden: orden !== undefined,
-						cambioPorAplicar: false,
+						cambioPorAplicar: cambio !== undefined,
 					})
 				: null,
 	};

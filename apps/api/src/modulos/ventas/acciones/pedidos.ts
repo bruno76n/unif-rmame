@@ -241,6 +241,7 @@ export const accionGuardarBorradorPedido = implementarAccion(
  * @param numero Su número.
  * @param origen De dónde nace.
  * @param forma Su fecha, su forma de pago y sus días.
+ * @returns El id de la versión.
  */
 async function escribirVersion(
 	contexto: ContextoDeAccion,
@@ -248,15 +249,17 @@ async function escribirVersion(
 	numero: number,
 	origen: "confirmacion" | "modificacion",
 	forma: { fechaEntrega: string; formaPago: string; diasCredito: number },
-): Promise<void> {
+): Promise<string> {
+	const id = uuidv7();
 	await contexto.transaccion.insert(pedidoVersiones).values({
-		id: uuidv7(),
+		id,
 		pedidoId,
 		numero,
 		origen,
 		...forma,
 		creadoPor: quienCambia(contexto),
 	});
+	return id;
 }
 
 export const accionConfirmarPedido = implementarAccion(confirmarPedido, async (contexto, datos, version) => {
@@ -506,7 +509,7 @@ export const accionGuardarVersionPedido = implementarAccion(guardarVersionPedido
 			diasCredito: cliente.diasCredito,
 		})
 		.where(eq(pedidos.id, pedido.id));
-	await escribirVersion(contexto, pedido.id, numero, "modificacion", {
+	const versionId = await escribirVersion(contexto, pedido.id, numero, "modificacion", {
 		fechaEntrega: datos.fecha_entrega,
 		formaPago: datos.forma_pago,
 		diasCredito: cliente.diasCredito,
@@ -544,6 +547,10 @@ export const accionGuardarVersionPedido = implementarAccion(guardarVersionPedido
 	}
 	const porMandar = despues.reduce((total, talla) => total + talla.porMandar, 0);
 	const deMas = despues.reduce((total, talla) => total + talla.deMas, 0);
+	// Con piezas de más en producción, nace el cambio para Producción (regla 7).
+	if (deMas > 0) {
+		await contexto.interna("produccion.crear_cambio_pedido", { pedido_id: pedido.id, pedido_version_id: versionId });
+	}
 	// Queda entregado cuando lo entregado cubre lo pedido en cada talla (regla 8).
 	const entregado = despues.length > 0 && despues.every((talla) => talla.entregado >= talla.pedido);
 	if (entregado) {

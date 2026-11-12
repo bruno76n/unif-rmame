@@ -23,7 +23,7 @@ import {
 	terminarReserva,
 	tomarDeReservas,
 } from "../dominio/reservas.ts";
-import { type LadoDeTraspaso, repartirTraspaso } from "../dominio/traspasos.ts";
+import { type LadoDeTraspaso, repartirTraspaso, type TraspasoCreado } from "../dominio/traspasos.ts";
 import { reservas, traspasoLineas, traspasos, ubicaciones } from "../tablas.ts";
 
 /** Las ubicaciones por tipo y la Bodega, la Aduana y las tiendas que surten en línea. */
@@ -488,25 +488,42 @@ async function regresarLoDeAduana(contexto: ContextoDeAccion, liberadas: readonl
 		if (reserva.traspasoId !== null)
 			porTraspaso.set(reserva.traspasoId, [...(porTraspaso.get(reserva.traspasoId) ?? []), reserva]);
 	}
-	const lugares = await leerUbicaciones(contexto);
 	const hijos: string[] = [];
 	for (const [traspasoId, deEse] of [...porTraspaso].sort(([uno], [otro]) => (uno < otro ? -1 : 1))) {
-		const [padre] = await contexto.transaccion.select().from(traspasos).where(eq(traspasos.id, traspasoId));
-		if (padre === undefined || padre.estado !== "en_aduana") continue;
-		const renglones = await renglonesARepartir(contexto, traspasoId, sumarPorVariante(deEse));
-		if (renglones.length === 0) continue;
-		// A su origen: Bodega o la tienda; si vino del Taller o de fuera, Bodega.
-		const origen = padre.origenUbicacionId;
-		const vuelveA =
-			origen !== null && ["bodega", "tienda"].includes(lugares.tipoDe.get(origen) ?? "") ? origen : lugares.bodega;
-		const hijo = await repartirTraspaso(contexto, {
-			padreId: traspasoId,
-			renglones,
-			hijo: { tipo: "regresa", destino: { ubicacionId: vuelveA } },
-		});
-		hijos.push(hijo.traspasoId);
+		const hijo = await regresarAlOrigen(contexto, traspasoId, sumarPorVariante(deEse));
+		if (hijo !== null) hijos.push(hijo.traspasoId);
 	}
 	return hijos;
+}
+
+/**
+ * Reparte de un traspaso en aduana un hijo `regresa` a su origen (Bodega o la tienda; si vino del Taller o de fuera,
+ * Bodega) con esas piezas por variante, hasta lo que le queda en aduana. Lo usan liberar lo de un documento cancelado
+ * y la recepción en aduana de lo surtido para un pedido que se canceló mientras venía en camino.
+ * @param contexto El contexto de la acción.
+ * @param traspasoId El traspaso.
+ * @param porVariante Por variante, las piezas que regresan.
+ * @returns El hijo y su folio, o `null` si el traspaso no está en aduana o no le queda nada de eso.
+ */
+export async function regresarAlOrigen(
+	contexto: ContextoDeAccion,
+	traspasoId: string,
+	porVariante: ReadonlyMap<string, number>,
+): Promise<TraspasoCreado | null> {
+	const [padre] = await contexto.transaccion.select().from(traspasos).where(eq(traspasos.id, traspasoId));
+	if (padre === undefined || padre.estado !== "en_aduana") return null;
+	const renglones = await renglonesARepartir(contexto, traspasoId, porVariante);
+	if (renglones.length === 0) return null;
+	const lugares = await leerUbicaciones(contexto);
+	const origen = padre.origenUbicacionId;
+	const vuelveA =
+		origen !== null && ["bodega", "tienda"].includes(lugares.tipoDe.get(origen) ?? "") ? origen : lugares.bodega;
+	const hijo = await repartirTraspaso(contexto, {
+		padreId: traspasoId,
+		renglones,
+		hijo: { tipo: "regresa", destino: { ubicacionId: vuelveA } },
+	});
+	return { traspasoId: hijo.traspasoId, folio: hijo.folio };
 }
 
 // ---------------------------------------------------------------------------------------------------------------
