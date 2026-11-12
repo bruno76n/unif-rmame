@@ -37,7 +37,7 @@ Eres un trabajador de Unifórmame. El capataz (la sesión principal) te da una p
 
 ## Lo que entregas
 
-- Tu rama del worktree con commits chicos, en verde (`pnpm revision:rapida`) y con el script de las carpetas limpio.
+- Tus cambios en tu worktree, sin commit (el gancho de git pide el sello de la revisión completa, que corre el capataz), en verde (`pnpm revision:rapida`) y con el script de las carpetas limpio. Nunca `--no-verify`.
 - «Cómo está hecho» de tu archivo de pantalla (o de tu flujo) escrito.
 - Un resumen corto para el capataz: qué construiste, qué pruebas lo demuestran, qué pediste de lo compartido y qué no alcanzaste o no revisaste.
 

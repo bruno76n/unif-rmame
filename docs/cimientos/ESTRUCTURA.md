@@ -105,16 +105,16 @@ apps/web/src/
 ├── main.tsx
 ├── rutas/                     rutas por archivo de TanStack Router; el árbol se genera solo
 │   ├── __root.tsx             el armazón
-│   ├── acceso.tsx             la pantalla de entrada
+│   ├── acceso/                la pantalla de entrada y la vuelta de «Confirmar con Google»
 │   └── <depto>/
 │       ├── index.tsx          Pendientes
 │       └── <pestana>.tsx      una por pestaña
 ├── departamentos/<depto>/
-│   ├── menu.ts                su entrada del menú: grupo, ícono, orden y acción principal
+│   ├── menu.ts                su ícono en el menú (el nombre, el grupo y el orden vienen de `admin.armazon`)
 │   ├── pestanas/              una pestaña por archivo
 │   ├── cajones/               un cajón por archivo
 │   └── ventanas/              una ventana por archivo
-└── comun/                     lo que comparten todos: menú, barra superior, búsqueda, avisos de la cuenta, sesión
+└── comun/                     lo que comparten todos: armazón, cliente de la API, búsqueda, campana, cuenta, avisos y el arnés de pruebas
 ```
 
 - **El encargo de un trabajador** va en `.trabajador.json`, en la raíz de su worktree (no entra a git): su departamento, el commit del que salió y lo que el capataz le dio de más. `scripts/carpetas.ts` revisa con él que solo tocó sus carpetas, y la revisión rápida lo corre (decisión 750).
