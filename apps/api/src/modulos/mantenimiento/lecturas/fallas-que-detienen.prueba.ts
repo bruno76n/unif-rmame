@@ -6,6 +6,7 @@
 
 import { Temporal } from "temporal-polyfill";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { z } from "zod";
 import { crearBase } from "../../../nucleo/base/conexion.ts";
 import { enAccionDePrueba } from "../../../nucleo/pruebas/accion-de-prueba.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
@@ -51,10 +52,13 @@ describe("Las horas de paro cuentan desde que se paró, con los días de trabajo
 		const leidas = await enAccionDePrueba(crearBase(servidor.base.app), servidor.modulos, (contexto) =>
 			contexto.lectura("mantenimiento.fallas_que_detienen", {}),
 		);
-		expect(leidas).toEqual({
-			fallas: [
-				expect.objectContaining({ maquina_id: parada.id, persona_id: persona, motivo: "No prende", horas_paro: 4 }),
-			],
-		});
+		// Las de estas dos máquinas (la muestra trae también su Collareta 3 parada).
+		const deEstas = z
+			.object({ fallas: z.array(z.object({ maquina_id: z.uuid() }).passthrough()) })
+			.parse(leidas)
+			.fallas.filter((falla) => [parada.id, conFalla.id].includes(falla.maquina_id));
+		expect(deEstas).toEqual([
+			expect.objectContaining({ maquina_id: parada.id, persona_id: persona, motivo: "No prende", horas_paro: 4 }),
+		]);
 	});
 });

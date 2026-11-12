@@ -290,7 +290,7 @@ export async function loteCortado(
  * @param servidor El servidor de prueba.
  * @param accion La acción.
  * @param datos Sus datos.
- * @param personaId La persona.
+ * @param personaId La persona; vacía, el comando sube sin persona.
  * @param ocurridoEn Cuándo pasó; si no, ahora.
  * @returns La respuesta de ese comando.
  */
@@ -298,7 +298,7 @@ export async function subirDeLaTablet(
 	servidor: ServidorDePrueba,
 	accion: string,
 	datos: unknown,
-	personaId: string,
+	personaId: string | undefined,
 	ocurridoEn = new Date().toISOString(),
 ): Promise<Record<string, unknown>> {
 	const respuesta = await servidor.app.inject({
@@ -308,7 +308,15 @@ export async function subirDeLaTablet(
 		payload: {
 			enviado_en: new Date().toISOString(),
 			pendientes_por_subir: 1,
-			comandos: [{ clave_idempotencia: uuidv7(), accion, datos, ocurrido_en: ocurridoEn, persona_id: personaId }],
+			comandos: [
+				{
+					clave_idempotencia: uuidv7(),
+					accion,
+					datos,
+					ocurrido_en: ocurridoEn,
+					...(personaId === undefined ? {} : { persona_id: personaId }),
+				},
+			],
 		},
 	});
 	return (

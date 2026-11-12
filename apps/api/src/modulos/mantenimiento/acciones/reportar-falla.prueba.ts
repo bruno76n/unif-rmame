@@ -217,4 +217,52 @@ describe("Una máquina tiene una sola falla abierta: desde la tablet se aplica s
 		);
 		expect(suelto.cuerpo.resultado).toMatchObject({ mensaje: expect.stringMatching(/^SM-\d{4} registrado$/) });
 	});
+
+	it("de la tablet sin la persona que entró con su PIN, el reporte se aparta", async () => {
+		const maquina = await maquinaDePrueba(servidor, persona);
+		const sinPersona = await subirDeLaTablet(
+			servidor,
+			"mantenimiento.reportar_falla",
+			{
+				id: uuidv7(),
+				maquina_id: maquina.id,
+				motivo_falla_id: await motivoDePrueba(servidor, "No prende"),
+				sin_internet: false,
+			},
+			undefined,
+		);
+		expect(sinPersona).toMatchObject({ resultado: "apartado", motivo: "persona_no_valida" });
+		expect(await consultar("SELECT count(*)::int AS n FROM fallas WHERE maquina_id = $1", [maquina.id])).toEqual([
+			{ n: 0 },
+		]);
+	});
+
+	it("dos reportes a la vez de la misma máquina dejan una sola falla; dos «Otro técnico» iguales a la vez, un solo técnico", async () => {
+		const maquina = await maquinaDePrueba(servidor, persona);
+		const noPrende = await motivoDePrueba(servidor, "No prende");
+		const respuestas = await Promise.all([reportar(maquina.id, noPrende), reportar(maquina.id, noPrende)]);
+		expect(respuestas.map((respuesta) => respuesta.estado).sort()).toEqual([200, 422]);
+		expect(await consultar("SELECT count(*)::int AS n FROM fallas WHERE maquina_id = $1", [maquina.id])).toEqual([
+			{ n: 1 },
+		]);
+		// Dos fallas de dos máquinas se mandan a la vez con el mismo técnico nuevo.
+		const otra = await maquinaDePrueba(servidor, persona);
+		await reportar(otra.id, noPrende);
+		const fallaIds = (
+			await consultar("SELECT id FROM fallas WHERE maquina_id = ANY($1::uuid[])", [[maquina.id, otra.id]])
+		).map((fila) => String(fila.id));
+		const nombre = `Taller ${uuidv7().slice(-6)}`;
+		const mandadas = await Promise.all(
+			fallaIds.map(async (falla_id) =>
+				mandarAccion(
+					servidor,
+					"mantenimiento.mandar_a_reparacion",
+					{ datos: { falla_id, tecnico_nombre: nombre, se_queda_parada: true }, version: await versionDe(falla_id) },
+					"mantenimiento",
+				),
+			),
+		);
+		expect(mandadas.map((respuesta) => respuesta.estado)).toEqual([200, 200]);
+		expect(await consultar("SELECT count(*)::int AS n FROM tecnicos WHERE nombre = $1", [nombre])).toEqual([{ n: 1 }]);
+	});
 });

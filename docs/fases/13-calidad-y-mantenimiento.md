@@ -1,7 +1,7 @@
 # Fase 13: Calidad y Mantenimiento
 
 > **Etapa:** Módulos.
-> **Estado:** Pendiente.
+> **Estado:** Terminada.
 > **Antes de empezar:** lee la [forma de trabajo](../trabajo/FORMA-DE-TRABAJO.md) y la [revisión de fase](../trabajo/REVISION-DE-FASE.md).
 > **Se conecta con:** [fases](FASES.md) · [fase 12](12-produccion.md) · [fase 14](14-inventario-recepcion-del-taller-conteos-ajustes-y-reabasto.md)
 
@@ -65,7 +65,7 @@ Ningún lote llega a aduana sin que Calidad lo revise, y lo que regresa mal se r
 | Si llega un registro de la tablet mientras se revisa, la revisión recibe `409` | La misma prueba |
 | La persona propuesta de un rechazo o de un reclamo es la de más piezas buenas de esa operación y talla, o la de base | `modulos/produccion/lecturas/persona-que-la-hizo.prueba.ts` |
 | Quien cosió puede revisar, y la revisión queda marcada | `revisar-lote.prueba.ts` |
-| Un reproceso solo se aprueba con su lote en aduana, y se aprueba completo | `modulos/calidad/acciones/aprobar-reproceso.prueba.ts` |
+| Un reproceso solo se aprueba con su lote en aduana, y se aprueba completo | `modulos/calidad/acciones/revisar-lote.prueba.ts` |
 | Un reclamo llega del código al lote revisado, con una operación del flujo ligada al defecto y la persona congelada | `modulos/calidad/acciones/registrar-reclamo.prueba.ts` |
 | Una máquina nace con el folio de su tipo, y un tipo nuevo toma un prefijo que no choca | `modulos/mantenimiento/acciones/alta-maquina.prueba.ts` |
 | Una máquina tiene una sola falla abierta: desde la tablet se aplica sin crear otra; desde Mantenimiento es un error | `modulos/mantenimiento/acciones/reportar-falla.prueba.ts` |

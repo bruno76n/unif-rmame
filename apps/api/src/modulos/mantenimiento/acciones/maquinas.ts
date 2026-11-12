@@ -41,18 +41,33 @@ export const accionAltaMaquina = implementarAccion(altaMaquina, async (contexto,
 		.parse(await contexto.interna("admin.tomar_folio", { tipo: "maquina", alcance: tipo.prefijo }));
 	const maquinaId = uuidv7();
 	const vacio = (texto: string | undefined) => (texto === undefined || texto === "" ? null : texto);
-	await transaccion.insert(maquinas).values({
-		id: maquinaId,
-		folio,
-		nombre: datos.nombre,
-		tipoMaquinaId: tipo.id,
-		areaId: datos.area_id,
-		marca: vacio(datos.marca),
-		modelo: vacio(datos.modelo),
-		serie,
-		personaId: datos.persona_id,
-		creadoPor: quienCambia(contexto),
-	});
+	// Dos altas a la vez con el mismo nombre o la misma serie: el único deja pasar a una; la otra responde su error y
+	// su transacción se deshace, folio incluido.
+	const nacida = await transaccion
+		.insert(maquinas)
+		.values({
+			id: maquinaId,
+			folio,
+			nombre: datos.nombre,
+			tipoMaquinaId: tipo.id,
+			areaId: datos.area_id,
+			marca: vacio(datos.marca),
+			modelo: vacio(datos.modelo),
+			serie,
+			personaId: datos.persona_id,
+			creadoPor: quienCambia(contexto),
+		})
+		.onConflictDoNothing()
+		.returning({ id: maquinas.id });
+	if (nacida.length === 0) {
+		const [conSerie] =
+			serie === null
+				? []
+				: await transaccion.select({ id: maquinas.id }).from(maquinas).where(eq(maquinas.serie, serie));
+		throw conSerie === undefined
+			? errorDeRegla("maquina_repetida", "Ya hay una máquina con ese nombre.")
+			: errorDeRegla("serie_repetida", "Ya hay una máquina con esa serie.");
+	}
 	contexto.guardarEvento({
 		tipo: "maquina.creada",
 		datos: { maquina_id: maquinaId },

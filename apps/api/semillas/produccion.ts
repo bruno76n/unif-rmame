@@ -32,7 +32,7 @@ import { productosPorClave } from "./compras-y-patronaje.ts";
 import { enSesionDeCarga, type Hacer, idDe } from "./correr.ts";
 
 /** Tomás (`cuentas.ts`), con Producción, en la sesión de esta carga. */
-const tomas: CuentaQueLlama = {
+export const tomas: CuentaQueLlama = {
 	tipo: "cuenta",
 	usuarioId: "01936f2e-0000-7000-8000-000000000008",
 	sesionId: "01936f2e-0000-7000-8000-0000000000f4",
@@ -59,7 +59,7 @@ const rosa: CuentaQueLlama = {
 const tabletDelTaller = "01936f2e-0000-7000-8000-0000000000d1";
 
 /** La gente del taller de la muestra, por su clave. */
-const tallerDeLaMuestra: Record<string, string> = {
+export const tallerDeLaMuestra: Record<string, string> = {
 	BA: "Beto Aguilar",
 	LR: "Lupita Ramos",
 	AT: "Ana Torres",
@@ -238,7 +238,7 @@ export async function cargarProduccionDeLaMuestra(base: Base): Promise<void> {
 }
 
 /** Las personas del taller por su nombre. */
-async function personasDelTaller(base: Base): Promise<Map<string, string>> {
+export async function personasDelTaller(base: Base): Promise<Map<string, string>> {
 	const { rows } = await base.execute(sql`SELECT id, nombre FROM personas WHERE area = 'taller'`);
 	return new Map(
 		z
@@ -493,7 +493,7 @@ async function subirRegistros(
  * Un comando de la tablet, en su transacción: se aplica a nombre de su persona con la hora en que pasó y se guarda en
  * `comandos_recibidos`, como en la subida. Uno que no se aplica es un error de la muestra.
  */
-async function subirComando(
+export async function subirComando(
 	base: Base,
 	registro: RegistroDeModulos,
 	personaId: string,

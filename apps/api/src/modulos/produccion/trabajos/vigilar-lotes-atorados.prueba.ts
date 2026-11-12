@@ -15,6 +15,7 @@ import { crearBase } from "../../../nucleo/base/conexion.ts";
 import { type SiembraDelCatalogo, siembraDelCatalogo } from "../../../nucleo/pruebas/catalogo-de-prueba.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import { maquinaDePrueba, motivoDePrueba } from "../../../nucleo/pruebas/mantenimiento-de-prueba.ts";
+import { nuevaPersona } from "../../../nucleo/pruebas/personas-de-prueba.ts";
 import { type LoteCortado, loteCortado, subirDeLaTablet } from "../../../nucleo/pruebas/produccion-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 import { correrTrabajo, type DependenciasDelTrabajador } from "../../../nucleo/trabajos/trabajador.ts";
@@ -154,7 +155,9 @@ describe("Un lote atorado avisa una vez hasta que algo cambia", () => {
 	it("una falla que detuvo la máquina atora los lotes de la operación de quien la trae, y resolverla quita el atorado", async () => {
 		// Un lote recién cortado: no está atorado por falta de avance.
 		const lote = await loteCortado(servidor, siembra);
-		const maquina = await maquinaDePrueba(servidor, lote.personaId);
+		// La máquina la trae otra persona: no atora este lote.
+		const otra = await nuevaPersona(servidor.base.dueno, "taller");
+		const maquina = await maquinaDePrueba(servidor, otra);
 		const reportada = await mandarAccion(
 			servidor,
 			"mantenimiento.reportar_falla",
@@ -163,12 +166,25 @@ describe("Un lote atorado avisa una vez hasta que algo cambia", () => {
 		);
 		const { falla_id, folio } = z.object({ falla_id: z.uuid(), folio: z.string() }).parse(reportada.cuerpo.resultado);
 		await correr();
+		expect((await avisosDe(lote.loteId)).eventos).toBe(0);
+		// Ahora la trae quien hace de base la operación del lote: el atorado sigue a quien la trae.
+		const { rows: deLaMaquina } = await servidor.base.dueno.query(
+			"SELECT version::int AS v FROM maquinas WHERE id = $1",
+			[maquina.id],
+		);
+		await mandarAccion(
+			servidor,
+			"mantenimiento.cambiar_asignacion_maquina",
+			{ datos: { maquina_id: maquina.id, persona_id: lote.personaId }, version: deLaMaquina[0]?.v },
+			"mantenimiento",
+		);
+		await correr();
 		const operacion = lote.prenda.flujo.operaciones[1]?.nombre;
 		expect(await avisosDe(lote.loteId)).toEqual({
 			textos: [`${lote.folio} atorado en ${operacion}: ${maquina.nombre} parada (${folio})`],
 			eventos: 1,
 		});
-		// Resuelta la falla, ya no está atorado: otra vuelta no avisa.
+		// Resuelta la falla, ya no está atorado: un registro nuevo (que reinicia el aviso) no lo vuelve a avisar.
 		const { rows: tecnico } = await servidor.base.dueno.query(
 			"INSERT INTO tecnicos (id, nombre) VALUES (gen_random_uuid(), $1) RETURNING id",
 			[`Técnico ${falla_id.slice(-6)}`],
@@ -192,6 +208,7 @@ describe("Un lote atorado avisa una vez hasta que algo cambia", () => {
 			"mantenimiento",
 		);
 		expect(resuelta.estado).toBe(200);
+		expect(await registrar(lote, 1)).toMatchObject({ resultado: "aplicado" });
 		await correr();
 		expect((await avisosDe(lote.loteId)).eventos).toBe(1);
 	});

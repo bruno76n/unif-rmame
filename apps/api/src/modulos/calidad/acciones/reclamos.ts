@@ -17,6 +17,7 @@ import { tomarVersion } from "../../../nucleo/acciones/pisadas.ts";
 import { errorDeCampo, errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
 import { implementarAccion } from "../../../nucleo/modulos.ts";
 import { ubicaciones } from "../../inventario/tablas.ts";
+import { personas } from "../../personal/tablas.ts";
 import { rastreoDeReclamo } from "../dominio/rastreo.ts";
 import { defectos, reclamos, revisiones, revisionTallas } from "../tablas.ts";
 
@@ -74,7 +75,14 @@ export const accionRegistrarReclamo = implementarAccion(registrarReclamo, async 
 	if (rows.length === 0) {
 		throw errorDeRegla("operacion_no_ligada", `Esa operación no suele causar ese defecto en ${variante.producto}.`);
 	}
-	// La persona se congela: la que se escogió o la que propone Producción.
+	// La persona se congela: la que se escogió (y existe) o la que propone Producción.
+	if (datos.persona_id !== undefined) {
+		const [existe] = await transaccion
+			.select({ id: personas.id })
+			.from(personas)
+			.where(eq(personas.id, datos.persona_id));
+		if (existe === undefined) throw errorDeCampo("persona_id", "Escoge quién lo hizo.");
+	}
 	const persona =
 		datos.persona_id ??
 		deLaPersona.parse(

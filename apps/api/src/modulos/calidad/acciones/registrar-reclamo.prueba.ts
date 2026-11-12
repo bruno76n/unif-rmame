@@ -148,6 +148,9 @@ describe("Un reclamo llega del código al lote revisado, con una operación del 
 			campos: { cliente_id: "Escoge el cliente." },
 		});
 		expect((await registrar(reclamo(lote, defectoId, codigo4, { codigo: "12345" }))).estado).toBe(400);
+		expect((await registrar(reclamo(lote, defectoId, codigo4, { persona_id: uuidv7() }))).cuerpo).toMatchObject({
+			campos: { persona_id: "Escoge quién lo hizo." },
+		});
 	});
 
 	it("un reclamo de una tienda dice qué tienda; una ubicación que no es tienda no", async () => {

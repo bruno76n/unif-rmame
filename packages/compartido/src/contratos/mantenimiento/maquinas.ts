@@ -90,7 +90,7 @@ export const reportarFalla = definirAccion({
 	nombre: "mantenimiento.reportar_falla",
 	descripcion: "Reporta una falla de una máquina; si el motivo la detiene, la máquina queda parada",
 	entrada: z.object({
-		id: z.uuid().optional().describe("La falla, hecha por la tablet"),
+		id: z.uuid().optional().describe("La falla, hecha por la tablet; en la web la hace el servidor"),
 		maquina_id: z.uuid("Escoge la máquina").describe("La máquina"),
 		motivo_falla_id: z.uuid("Escoge qué tiene").describe("Qué le pasa"),
 		nota: opcional(200, "La nota va en 200 letras.").describe("«Nota (opcional)», solo en la web"),
@@ -105,6 +105,7 @@ export const reportarFalla = definirAccion({
 	errores: [
 		{ codigo: "maquina_con_falla_abierta", mensaje: "{máquina} ya tiene una falla abierta en Mantenimiento" },
 		{ codigo: "maquina_ya_de_baja", mensaje: "{máquina} está dada de baja." },
+		{ codigo: "persona_no_valida", mensaje: "¿Quién la reporta?" },
 	],
 });
 

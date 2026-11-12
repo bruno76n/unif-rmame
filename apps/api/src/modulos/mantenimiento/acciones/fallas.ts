@@ -105,6 +105,8 @@ export const accionReportarFalla = implementarAccion(reportarFalla, async (conte
 		throw errorDeRegla("maquina_con_falla_abierta", `${maquina.nombre} ya tiene una falla abierta en Mantenimiento`);
 	}
 	const reporta = await quienReporta(contexto);
+	// De la tablet, la falla la reporta la persona que entró con su PIN: sin ella, se aparta.
+	if (desdeLaTablet && reporta.personaId === null) throw errorDeRegla("persona_no_valida", "¿Quién la reporta?");
 	if (maquina.bajaEn !== null || abierta !== undefined) {
 		const mensaje =
 			abierta === undefined
@@ -120,7 +122,8 @@ export const accionReportarFalla = implementarAccion(reportarFalla, async (conte
 		return { resultado: { mensaje, falla_id: null, folio: abierta?.folio ?? null, detuvo_maquina: false } };
 	}
 	const folio = await folioDe(contexto, "falla");
-	const fallaId = datos.id ?? uuidv7();
+	// El id lo hace la tablet; en la web, el servidor.
+	const fallaId = desdeLaTablet ? (datos.id ?? uuidv7()) : uuidv7();
 	const hechoEn = contexto.ahora.toString();
 	await transaccion.insert(fallas).values({
 		id: fallaId,

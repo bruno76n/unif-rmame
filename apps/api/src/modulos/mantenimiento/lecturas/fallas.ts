@@ -21,19 +21,20 @@ const deLaFalla = z.object({
 	maquina: z.string(),
 	maquina_folio: z.string(),
 	persona_id: z.uuid().nullable(),
+	persona_asignada_id: z.uuid().nullable(),
 	motivo: z.string(),
 	parada_desde: z.string(),
 	parada_el_dia: z.string(),
 });
 
 /**
- * Las fallas abiertas que detuvieron una máquina: su folio, la máquina, quién la traía al fallar, qué le pasa, desde
- * cuándo está parada y sus horas de paro.
+ * Las fallas abiertas que detuvieron una máquina: su folio, la máquina, quién la trae (con ella se cruza el atorado por
+ * máquina, regla 11) y quién la traía al fallar, qué le pasa, desde cuándo está parada y sus horas de paro.
  */
 export async function fallasQueDetienen(contexto: ContextoDeAccion) {
 	const { rows } = await contexto.transaccion.execute(sql`
 		SELECT f.id AS falla_id, f.folio, m.id AS maquina_id, m.nombre AS maquina, m.folio AS maquina_folio,
-			f.persona_asignada_id AS persona_id, mf.nombre AS motivo,
+			m.persona_id, f.persona_asignada_id, mf.nombre AS motivo,
 			to_char(f.parada_desde AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS parada_desde,
 			(f.parada_desde AT TIME ZONE 'America/Mexico_City')::date::text AS parada_el_dia
 		FROM fallas f JOIN maquinas m ON m.id = f.maquina_id JOIN motivos_falla mf ON mf.id = f.motivo_falla_id

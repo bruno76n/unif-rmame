@@ -184,11 +184,11 @@ describe("el respaldo semanal sale cifrado, llega con su SHA-256 y, descifrado y
 	});
 
 	/**
-	 * Si el volcado de prueba ya no corre. Espera hasta 3 s: con la máquina cargada, el proceso tarda en terminar
-	 * después de que el trabajo lo para.
+	 * Si el volcado de prueba ya no corre. Espera hasta 10 s: con la máquina cargada (la suite completa), el proceso tarda
+	 * en terminar después de que el trabajo lo para.
 	 */
 	async function volcadoParado(): Promise<boolean> {
-		for (let intento = 0; intento < 30; intento++) {
+		for (let intento = 0; intento < 100; intento++) {
 			if (spawnSync("pgrep", ["-f", "^yes respaldo$"]).status === 1) return true;
 			await new Promise((listo) => setTimeout(listo, 100));
 		}

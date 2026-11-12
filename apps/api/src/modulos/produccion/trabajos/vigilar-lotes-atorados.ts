@@ -88,8 +88,8 @@ const deLasFallas = z.object({
 });
 
 /**
- * El atorado por máquina de un lote: la primera operación con piezas esperando que hace de base quien traía, al
- * fallar, una máquina parada (regla 7).
+ * El atorado por máquina de un lote: la primera operación con piezas esperando que hace de base quien trae una
+ * máquina parada (regla 7).
  * @returns La operación y la falla, con desde cuándo está parada; o vacío.
  */
 function atoradoPorMaquina(

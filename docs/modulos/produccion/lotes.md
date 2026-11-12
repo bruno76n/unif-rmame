@@ -178,7 +178,7 @@ Se construye en la [fase 18](../../fases/18-tienda-en-linea-direccion-y-contador
 
 | Lo hace nacer | A quién | Texto | Correo al inicio |
 |---|---|---|---|
-| El trabajo de arriba | La dueña | «{lote} atorado en {operación} desde hace {n} días de trabajo» | No |
+| El trabajo de arriba | La dueña | «{lote} atorado en {operación} desde hace {n} días de trabajo»; por máquina, «{lote} atorado en {operación}: {máquina} parada ({FM})» | No |
 
 Se suma a los tipos de [avisos](../admin/avisos.md) con la misma forma, y su migración lo agrega al CHECK de `avisos.tipo`.
 
@@ -227,7 +227,7 @@ Usa también `general.dias_de_trabajo`, que también baja a la tablet.
 
 - **Las tablas** `lotes` y `lote_tallas` son de `produccion` (`tablas.ts`, migración `0039`), con sus CHECK (la etapa, el destino, el flujo y la versión de receta llenos desde el corte, el pedido con destino `pedido`, la ubicación con tienda o temporada, las piezas que van a Bodega sin pasar de las cortadas) y `xid_escritura`. Con ellas, las columnas que apuntaban a los lotes (movimientos, traspasos, recepciones y `recetas.verificada_lote_id`) ya son llaves. La migración suma `lote_atorado` al CHECK de `avisos.tipo`.
 - **Las internas** `marcar_lote_revisado` y `marcar_lote_en_aduana` (`internas/lotes.ts`) avanzan la etapa con su momento; fuera de orden es un error del programa (decisión 600). Al revisarse, sus tallas se tocan para que bajen como `quitar`.
-- **Las lecturas** (`lecturas/lotes.ts`): `piezas_en_produccion` por variante (regla 9, sin reprocesos hasta la fase 13), `lotes_por_cortar` con sus tallas y si su prenda tiene receta, y `lotes_sin_terminar_de_variante`. Con ella, `catalogo.dar_baja_talla` responde `talla_con_lotes` (decisión 599), y un flujo con lotes en proceso o terminados no cambia (`flujo_con_lotes`).
+- **Las lecturas** (`lecturas/lotes.ts`): `piezas_en_produccion` por variante (regla 9; desde la fase 13, con los reprocesos), `lotes_por_cortar` con sus tallas y si su prenda tiene receta, y `lotes_sin_terminar_de_variante`. Con ella, `catalogo.dar_baja_talla` responde `talla_con_lotes` (decisión 599), y un flujo con lotes en proceso o terminados no cambia (`flujo_con_lotes`).
 - **La salud** es `saludDeLote` del paquete compartido (`packages/compartido/src/calculos/salud-lote.ts`), con `diasSinAvance`; la prueban `salud-lote.prueba.ts` con los casos de la regla 7 y fast-check (el orden de la regla, y que un día sin subir nunca vuelve atorado un lote). El trabajo «Vigilar lotes atorados» la usa con los registros, en la parte 4 (decisión 597).
 - **Lo que baja a la tablet** (`bajada.ts`): los lotes en proceso y terminados con «para quién» (de un pedido dice «Pedido» hasta la fase 16, decisión 598) y sus tallas.
 - **Los parámetros** de la salud están en `parametros.ts`; `lote_atorado_dias` y `riesgo_atraso_dias` bajan a la tablet.
@@ -241,4 +241,4 @@ Usa también `general.dias_de_trabajo`, que también baja a la tablet.
 
 **Fase 13, parte 1.** `piezas_en_produccion` suma los reprocesos de `calidad.en_reproceso_de_pedido` de los lotes que ya llegaron a aduana (regla 9, decisión 621). El lote ya era un agregado con sus tallas: todo lo que cambia una talla sube su versión (regla 12), y la revisión de Calidad recibe `409` (lo prueba `calidad/acciones/revisar-lote.prueba.ts`).
 
-**Fase 13, parte 3.** «Vigilar lotes atorados» arma el atorado por máquina con `mantenimiento.fallas_que_detienen`: la primera operación con piezas esperando que hace de base quien traía, al fallar, una máquina parada. Vuelve a avisar solo con un registro o una falla posterior a su último `lote.atorado`, y su aviso dice la máquina en vez de los días: «{lote} atorado en {operación}: {máquina} parada ({FM})» (decisión 627). Lo prueba `trabajos/vigilar-lotes-atorados.prueba.ts`.
+**Fase 13, parte 3.** «Vigilar lotes atorados» arma el atorado por máquina con `mantenimiento.fallas_que_detienen`: la primera operación con piezas esperando que hace de base quien trae ahora una máquina parada (cambiar quién la trae cambia qué lotes atora). Vuelve a avisar solo con un registro o una falla posterior a su último `lote.atorado`, y su aviso dice la máquina en vez de los días: «{lote} atorado en {operación}: {máquina} parada ({FM})» (decisión 627). Lo prueba `trabajos/vigilar-lotes-atorados.prueba.ts`.

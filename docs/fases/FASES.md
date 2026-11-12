@@ -32,7 +32,7 @@ Una fase es una parte del sistema y se construye de abajo hacia arriba: primero 
 | 10 | [Patronaje y Compras](10-patronaje-y-compras.md) | Recetas, cuenta de material y desarrollos; materiales, proveedores, órdenes de compra y la proyección de material | Terminada |
 | 11 | [Aduana y Bodega](11-aduana-y-bodega.md) | Recepciones en Aduana, material en Bodega, surtido y despachos | Terminada |
 | 12 | [Producción](12-produccion.md) | Órdenes de producción, lotes, entregas a corte, corte y bultos, operaciones y flujos, y los registros de la tablet | Terminada |
-| 13 | [Calidad y Mantenimiento](13-calidad-y-mantenimiento.md) | La revisión de lotes, reclamos y devoluciones; máquinas, fallas y servicios | Pendiente |
+| 13 | [Calidad y Mantenimiento](13-calidad-y-mantenimiento.md) | La revisión de lotes, reclamos y devoluciones; máquinas, fallas y servicios | Terminada |
 | 14 ● | [Inventario: recepción del taller, conteos, ajustes y reabasto](14-inventario-recepcion-del-taller-conteos-ajustes-y-reabasto.md) | Lo que Aduana recibe del taller, los conteos, las diferencias, los ajustes, las mermas, los mínimos y el reabasto | Pendiente |
 | 15 ● | [Contaduría: terceros, crédito y cobranza](15-contaduria-terceros-credito-y-cobranza.md) | El crédito de clientes, cuentas por cobrar, pagos recibidos, saldo a favor y anticipos | Pendiente |
 | 16 | [Ventas a externos](16-ventas-a-externos.md) | Clientes, pedidos con versiones, mandar a producción, cambios de pedido, notas de entrega, notas de crédito, entregas y devoluciones | Pendiente |

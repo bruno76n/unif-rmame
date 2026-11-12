@@ -51,16 +51,17 @@ describe("Una máquina nace con el folio de su tipo, y un tipo nuevo toma un pre
 		const segunda = await maquinaDePrueba(servidor, persona, { tipo_nuevo: "recta" });
 		expect(primera.folio).toMatch(/^R-\d+$/);
 		expect(Number(segunda.folio.slice(2))).toBe(Number(primera.folio.slice(2)) + 1);
-		const overlock = await maquinaDePrueba(servidor, persona, { tipo_nuevo: "Overlock" });
-		const ojaladora = await maquinaDePrueba(servidor, persona, { tipo_nuevo: "Ojaladora" });
-		expect(overlock.folio).toMatch(/^O-\d+$/);
-		expect(ojaladora.folio).toMatch(/^OJ-\d+$/);
+		// Dos tipos nuevos que la muestra no trae y que chocan: el segundo toma la siguiente letra de su nombre.
+		const fusionadora = await maquinaDePrueba(servidor, persona, { tipo_nuevo: "Fusionadora" });
+		const festoneadora = await maquinaDePrueba(servidor, persona, { tipo_nuevo: "Festoneadora" });
+		expect(fusionadora.folio).toMatch(/^F-\d+$/);
+		expect(festoneadora.folio).toMatch(/^FE-\d+$/);
 		const { rows } = await servidor.base.dueno.query(
-			"SELECT nombre, prefijo FROM tipos_maquina WHERE prefijo IN ('R', 'O', 'OJ') ORDER BY prefijo",
+			"SELECT nombre, prefijo FROM tipos_maquina WHERE nombre IN ('Fusionadora', 'Festoneadora', 'Recta') ORDER BY prefijo",
 		);
 		expect(rows).toEqual([
-			{ nombre: "Overlock", prefijo: "O" },
-			{ nombre: "Ojaladora", prefijo: "OJ" },
+			{ nombre: "Fusionadora", prefijo: "F" },
+			{ nombre: "Festoneadora", prefijo: "FE" },
 			{ nombre: "Recta", prefijo: "R" },
 		]);
 	});
@@ -81,5 +82,24 @@ describe("Una máquina nace con el folio de su tipo, y un tipo nuevo toma un pre
 		});
 		expect((await alta({})).estado).toBe(400);
 		expect((await alta({ tipo_nuevo: "Recta", area_id: uuidv7() })).estado).toBe(400);
+	});
+
+	it("dos altas a la vez con tipos nuevos que chocan toman prefijos distintos; con el mismo nombre, entra una", async () => {
+		const [zurcidora, zigzag] = await Promise.all([
+			alta({ tipo_nuevo: "Zurcidora" }),
+			alta({ tipo_nuevo: "Zigzagueadora" }),
+		]);
+		expect([zurcidora.estado, zigzag.estado]).toEqual([200, 200]);
+		// El que toma el candado primero se queda con «Z»; el otro, con la siguiente letra de su nombre.
+		const { rows } = await servidor.base.dueno.query(
+			"SELECT nombre, prefijo FROM tipos_maquina WHERE nombre IN ('Zurcidora', 'Zigzagueadora')",
+		);
+		const conZ = rows.find((fila) => fila.prefijo === "Z");
+		const otro = rows.find((fila) => fila.prefijo !== "Z");
+		expect(conZ).toBeDefined();
+		expect(otro?.prefijo).toBe(prefijosDe(String(otro?.nombre))[1]);
+		const nombre = `La gemela ${uuidv7().slice(-6)}`;
+		const gemelas = await Promise.all([alta({ tipo_nuevo: "Recta", nombre }), alta({ tipo_nuevo: "Recta", nombre })]);
+		expect(gemelas.map((respuesta) => respuesta.estado).sort()).toEqual([200, 422]);
 	});
 });

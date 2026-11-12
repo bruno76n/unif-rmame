@@ -37,7 +37,9 @@ export const accionDarBajaPersona = implementarAccion(darBajaPersona, async (con
 		.object({ cerrada: z.enum(["activa", "solicitada"]).nullable() })
 		.parse(await contexto.interna("admin.cerrar_cuenta_de_persona", { persona_id: persona.id }));
 	// Las máquinas que traía quedan sin quién las trae (fase 13).
-	await contexto.interna("mantenimiento.soltar_maquinas_de_persona", { persona_id: persona.id });
+	const { maquinas } = z
+		.object({ maquinas: z.number() })
+		.parse(await contexto.interna("mantenimiento.soltar_maquinas_de_persona", { persona_id: persona.id }));
 	const quitado = [
 		...(pin.anulado ? ["PIN del taller"] : []),
 		...(cerrada === "activa" ? ["Cuenta de Google"] : []),
@@ -49,7 +51,12 @@ export const accionDarBajaPersona = implementarAccion(darBajaPersona, async (con
 		entidadId: persona.id,
 		entidadFolio: persona.folio,
 		antes: { activa: true },
-		despues: { activa: false, motivo: datos.motivo, ...(quitado.length > 0 ? { acceso_quitado: quitado } : {}) },
+		despues: {
+			activa: false,
+			motivo: datos.motivo,
+			...(quitado.length > 0 ? { acceso_quitado: quitado } : {}),
+			...(maquinas > 0 ? { maquinas_soltadas: maquinas } : {}),
+		},
 		// Cerrarle una cuenta activa le quita sus departamentos: alerta, como «Quitar acceso».
 		...(cerrada === "activa" ? { esAlerta: true } : {}),
 	});
