@@ -42,19 +42,33 @@ export async function revisarMedio(
 		);
 	}
 	if (pedido.medio !== "cuenta_fabrica") return { cuentaFabricaId: null, referencia };
+	return { cuentaFabricaId: await cuentaFabricaEscogida(transaccion, pedido.cuenta_fabrica_id), referencia };
+}
+
+/**
+ * La cuenta de la fábrica de donde salió o donde entró el dinero: una vigente de la lista «Cuentas de la fábrica», o
+ * la única que hay si no se escogió.
+ * @param transaccion La transacción.
+ * @param cuentaFabricaId La que se escogió, si se escogió.
+ * @throws `400` en `cuenta_fabrica_id`: «Escoge la cuenta.».
+ */
+export async function cuentaFabricaEscogida(
+	transaccion: Transaccion,
+	cuentaFabricaId: string | undefined,
+): Promise<string> {
 	const vigentes = await transaccion
 		.select({ id: listaValores.id })
 		.from(listaValores)
 		.innerJoin(listas, eq(listas.id, listaValores.listaId))
 		.where(and(eq(listas.clave, listaDeCuentasFabrica), isNull(listaValores.bajaEn)));
 	const escogida =
-		pedido.cuenta_fabrica_id === undefined
+		cuentaFabricaId === undefined
 			? vigentes.length === 1
 				? vigentes[0]?.id
 				: undefined
-			: vigentes.find((vigente) => vigente.id === pedido.cuenta_fabrica_id)?.id;
+			: vigentes.find((vigente) => vigente.id === cuentaFabricaId)?.id;
 	if (escogida === undefined) throw errorDeCampo("cuenta_fabrica_id", "Escoge la cuenta.");
-	return { cuentaFabricaId: escogida, referencia };
+	return escogida;
 }
 
 /**

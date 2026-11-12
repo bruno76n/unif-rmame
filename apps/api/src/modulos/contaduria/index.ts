@@ -5,9 +5,9 @@
  * permitidas»)
  * Fase 15 · docs/modulos/contaduria/credito-de-clientes.md, cuentas-por-cobrar.md, pagos-y-saldo-a-favor.md y
  * anticipos.md
- * Fase 17 · docs/modulos/contaduria/facturas-de-proveedor.md y cuentas-por-pagar.md
+ * Fase 17 · docs/modulos/contaduria/facturas-de-proveedor.md, cuentas-por-pagar.md, terceros-y-deudas.md y gastos.md
  *
- * Los gastos y la nómina llegan en las partes 3 y 4 de la fase 17.
+ * La nómina llega en la parte 4 de la fase 17.
  */
 
 import { definirModulo } from "../../nucleo/modulos.ts";
@@ -24,6 +24,7 @@ import {
 	accionCapturarFacturaProveedor,
 	accionRegistrarNotaCreditoProveedor,
 } from "./acciones/facturas.ts";
+import { accionCancelarGasto, accionRegistrarGasto } from "./acciones/gastos.ts";
 import { accionCancelarPago, accionRegistrarPagoRecibido } from "./acciones/pagos.ts";
 import { accionPagarCuentaPorPagar, accionPedirPagoLoRecibido } from "./acciones/por-pagar.ts";
 import { accionAplicarSaldoAFavor, accionDevolverSaldoAFavor } from "./acciones/saldo-favor.ts";
@@ -31,6 +32,7 @@ import { aplicarAnticipoANota, pasarAnticipoAFavor, regresarAnticipoAPedido } fr
 import { abrirCreditoCliente } from "./internas/credito.ts";
 import { aplicarNotaCredito, crearCuentaPorCobrar } from "./internas/cuentas.ts";
 import { aplicarDecisionPagoFueraDeLoNormal, revisarFacturasDeOrden } from "./internas/facturas.ts";
+import { registrarGastoMantenimiento } from "./internas/gastos.ts";
 import { crearTercero, renombrarTercero } from "./internas/terceros.ts";
 import { anticipoDelPedidoLectura } from "./lecturas/anticipos.ts";
 import { creditoDeCliente } from "./lecturas/credito.ts";
@@ -38,7 +40,7 @@ import { estadoPagoNotas, saldoPorCobrarDeCliente } from "./lecturas/cuentas.ts"
 import { facturacionDeOrden } from "./lecturas/facturas.ts";
 import { datosTerceros } from "./lecturas/terceros.ts";
 import { semillaDeParametrosDeContaduria } from "./parametros.ts";
-import { semillaDeCuentasFabrica } from "./siembra.ts";
+import { semillaDeCuentasFabrica, semillaDeListasDeGastos } from "./siembra.ts";
 
 export default definirModulo({
 	nombre: "contaduria",
@@ -60,6 +62,8 @@ export default definirModulo({
 		accionCompensar,
 		accionCancelarCompensacion,
 		accionAplicarDepositoATercero,
+		accionRegistrarGasto,
+		accionCancelarGasto,
 	],
 	internas: {
 		crear_tercero: crearTercero,
@@ -72,6 +76,7 @@ export default definirModulo({
 		pasar_anticipo_a_favor: pasarAnticipoAFavor,
 		revisar_facturas_de_orden: revisarFacturasDeOrden,
 		aplicar_decision_pago_fuera_de_lo_normal: aplicarDecisionPagoFueraDeLoNormal,
+		registrar_gasto_mantenimiento: registrarGastoMantenimiento,
 	},
 	efectosDeAutorizacion: { pago_fuera_de_lo_normal: "aplicar_decision_pago_fuera_de_lo_normal" },
 	lecturas: {
@@ -82,7 +87,7 @@ export default definirModulo({
 		anticipo_del_pedido: anticipoDelPedidoLectura,
 		facturacion_de_orden: facturacionDeOrden,
 	},
-	semillas: [semillaDeParametrosDeContaduria, semillaDeCuentasFabrica],
+	semillas: [semillaDeParametrosDeContaduria, semillaDeCuentasFabrica, semillaDeListasDeGastos],
 	// El crédito, las cuentas, los pagos y el saldo a favor llevan montos: solo Contaduría. Ventas recibe el aviso de que
 	// el crédito, una cuenta o un anticipo cambió (el aviso solo lleva la tabla) y vuelve a leer sus lecturas (decisiones
 	// 664 y 675).
@@ -101,5 +106,6 @@ export default definirModulo({
 		compensaciones: ["contaduria"],
 		deudas: ["contaduria"],
 		deuda_mensualidades: ["contaduria"],
+		gastos: ["contaduria"],
 	},
 });

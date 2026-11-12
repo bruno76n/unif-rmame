@@ -3,6 +3,7 @@
  * cola), `mantenimiento.mandar_a_reparacion`, `mantenimiento.guardar_nota_seguimiento` y
  * `mantenimiento.registrar_servicio`.
  * Fase 13 · docs/modulos/mantenimiento/maquinas-fallas-y-servicios.md (reglas 4, 5, 8 a 10, «Acciones»)
+ * Fase 17 · un servicio con costo pide su gasto a Contaduría (`contaduria.registrar_gasto_mantenimiento`)
  *
  * Una máquina tiene a lo más una falla abierta: el reporte bloquea la máquina y un único parcial lo respalda. Desde la
  * tablet, lo que no se puede aplicar (la máquina ya tiene falla abierta o está de baja) se aplica sin crear la falla y
@@ -245,6 +246,9 @@ export const accionGuardarNotaSeguimiento = implementarAccion(
 	},
 );
 
+/** Lo que regresa `contaduria.registrar_gasto_mantenimiento`. */
+const gastoRegistrado = z.object({ gasto_id: z.uuid(), folio: z.string(), categoria: z.string() });
+
 export const accionRegistrarServicio = implementarAccion(registrarServicio, async (contexto, datos, version) => {
 	const { transaccion } = contexto;
 	// Una reparación resuelve su falla (con su versión); uno suelto va a una máquina activa (regla 10).
@@ -293,6 +297,21 @@ export const accionRegistrarServicio = implementarAccion(registrarServicio, asyn
 			entidadFolio: falla.folio,
 		});
 	}
+	// Con costo, Contaduría registra su gasto y el servicio guarda cuál es (decisión 709).
+	const gasto =
+		datos.costo_centavos > 0
+			? gastoRegistrado.parse(
+					await contexto.interna("contaduria.registrar_gasto_mantenimiento", {
+						servicio_id: servicioId,
+						maquina_id: maquina.id,
+						fecha: contexto.diaDeNegocio.toString(),
+						costo_centavos: datos.costo_centavos,
+					}),
+				)
+			: undefined;
+	if (gasto !== undefined) {
+		await transaccion.update(servicios).set({ gastoId: gasto.gasto_id }).where(eq(servicios.id, servicioId));
+	}
 	contexto.guardarEvento({
 		tipo: "servicio.registrado",
 		datos: { servicio_id: servicioId, maquina_id: maquina.id },
@@ -311,6 +330,14 @@ export const accionRegistrarServicio = implementarAccion(registrarServicio, asyn
 		entidadFolio: folio,
 		despues: { ...datos, folio },
 	});
+	if (gasto !== undefined) {
+		contexto.bitacora({
+			descripcion: `Registró el gasto ${gasto.folio}: ${gasto.categoria}, ${centavosATexto(centavos(datos.costo_centavos), { conCentavos: datos.costo_centavos % 100 !== 0 })} (${maquina.nombre}, ${folio})`,
+			entidad: "gastos",
+			entidadId: gasto.gasto_id,
+			entidadFolio: gasto.folio,
+		});
+	}
 	const horas = datos.horas_paro === 1 ? "1 hora" : `${datos.horas_paro} horas`;
 	return {
 		resultado: {

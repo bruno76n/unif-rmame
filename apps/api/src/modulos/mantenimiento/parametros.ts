@@ -1,9 +1,9 @@
 /**
  * Los parámetros que declara `mantenimiento`: lo que cuesta una hora de máquina parada, quién responde por ella y cómo
- * se cuentan las horas de paro.
+ * se cuentan las horas de paro, y la categoría y la ubicación del gasto de un servicio con costo.
  * Fase 13 · docs/modulos/mantenimiento/maquinas-fallas-y-servicios.md («Parámetros»)
- *
- * La categoría y la ubicación del gasto de un servicio se siembran en la fase 17, con los gastos.
+ * Fase 17 · la categoría y la ubicación del gasto de un servicio, con los gastos (docs/modulos/contaduria/gastos.md,
+ * «Las listas»)
  */
 
 import { semillaDeParametros } from "../../nucleo/parametros.ts";
@@ -53,5 +53,23 @@ export const semillaDeParametrosDeMantenimiento = semillaDeParametros("mantenimi
 		minimo: 0,
 		maximo: 24,
 		orden: 4,
+	},
+	{
+		clave: "mantenimiento.servicio_categoria_gasto",
+		seccion: "parametro",
+		nombre: "Categoría del gasto de un servicio",
+		explicacion: "La clave de la categoría de gasto con que entra el costo de un servicio",
+		tipo: "texto",
+		inicial: "reparacion_maquinas",
+		orden: 5,
+	},
+	{
+		clave: "mantenimiento.servicio_ubicacion_gasto",
+		seccion: "parametro",
+		nombre: "Ubicación del gasto de un servicio",
+		explicacion: "El código de la ubicación donde se gastó el costo de un servicio",
+		tipo: "texto",
+		inicial: "TAL",
+		orden: 6,
 	},
 ]);

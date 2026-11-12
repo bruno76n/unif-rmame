@@ -6,7 +6,8 @@
  * docs/modulos/contaduria/cuentas-por-cobrar.md («La tabla `cuentas_por_cobrar`») y
  * docs/modulos/contaduria/pagos-y-saldo-a-favor.md (las tres tablas) y docs/modulos/contaduria/anticipos.md
  * Fase 17 · docs/modulos/contaduria/facturas-de-proveedor.md (las dos tablas), cuentas-por-pagar.md («La tabla
- * `cuentas_por_pagar`») y terceros-y-deudas.md (`compensaciones`, `deudas` y `deuda_mensualidades`)
+ * `cuentas_por_pagar`»), terceros-y-deudas.md (`compensaciones`, `deudas` y `deuda_mensualidades`) y gastos.md («La
+ * tabla `gastos`»)
  *
  * Las columnas que apuntan a los clientes, los pedidos y las notas son llaves a las tablas de Ventas; las de las
  * facturas, a los proveedores y las órdenes de Compras.
@@ -26,10 +27,12 @@ import {
 	uniqueIndex,
 	uuid,
 } from "drizzle-orm/pg-core";
-import { columnasComunes, momento, valores } from "../../nucleo/base/columnas.ts";
+import { columnasComunes, columnasDeAparato, momento, valores } from "../../nucleo/base/columnas.ts";
 import { archivos, listaValores, usuarios } from "../admin/tablas.ts";
 import { ordenesCompra, proveedores } from "../compras/tablas.ts";
 import { autorizaciones } from "../direccion/tablas.ts";
+import { ubicaciones } from "../inventario/tablas.ts";
+import { maquinas, servicios } from "../mantenimiento/tablas.ts";
 import { clientes, notasCredito, notasEntrega, pedidos } from "../ventas/tablas.ts";
 
 /** Qué es un acreedor nuevo. */
@@ -653,5 +656,70 @@ export const deudaMensualidades = pgTable(
 		uniqueIndex("deuda_mensualidades_numero").on(tabla.deudaId, tabla.numero),
 		check("deuda_mensualidades_numero", sql`${tabla.numero} >= 1`),
 		check("deuda_mensualidades_importe", sql`${tabla.importeCentavos} > 0`),
+	],
+);
+
+/** Dónde se gastó: la fábrica, una ubicación (el Taller, una tienda) o la tienda en línea. */
+export const areasDeGasto = ["fabrica", "ubicacion", "en_linea"] as const;
+
+/** De dónde viene un gasto: Contaduría, un servicio de Mantenimiento o la caja de una tienda (con el POS). */
+export const origenesDeGasto = ["manual", "mantenimiento", "tienda"] as const;
+
+/** Un gasto G- de la fábrica, con su categoría, dónde se gastó, de dónde salió el dinero y su comprobante. */
+export const gastos = pgTable(
+	"gastos",
+	{
+		id: uuid("id").primaryKey(),
+		folio: text("folio").notNull(),
+		fecha: date("fecha", { mode: "string" }).notNull(),
+		categoriaId: uuid("categoria_id")
+			.notNull()
+			.references(() => listaValores.id),
+		montoCentavos: bigint("monto_centavos", { mode: "number" }).notNull(),
+		area: text("area").notNull(),
+		ubicacionId: uuid("ubicacion_id").references((): AnyPgColumn => ubicaciones.id),
+		medio: text("medio"),
+		cuentaFabricaId: uuid("cuenta_fabrica_id").references(() => listaValores.id),
+		comprobanteArchivoId: uuid("comprobante_archivo_id").references(() => archivos.id),
+		tipoComprobanteId: uuid("tipo_comprobante_id").references(() => listaValores.id),
+		origen: text("origen").notNull(),
+		servicioId: uuid("servicio_id").references((): AnyPgColumn => servicios.id),
+		maquinaId: uuid("maquina_id").references((): AnyPgColumn => maquinas.id),
+		/** @llavePendiente movimientos_caja.id */
+		movimientoCajaId: uuid("movimiento_caja_id"),
+		motivo: text("motivo"),
+		/** @llavePendiente paquetes_contador.id */
+		paqueteContadorId: uuid("paquete_contador_id"),
+		estado: text("estado").notNull().default("registrado"),
+		...columnasDeCancelacion(),
+		...columnasDeAparato(),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		uniqueIndex("gastos_folio").on(tabla.folio),
+		uniqueIndex("gastos_servicio").on(tabla.servicioId).where(sql`${tabla.servicioId} is not null`),
+		index("gastos_fecha").on(tabla.fecha),
+		index("gastos_categoria").on(tabla.categoriaId),
+		check(
+			"gastos_monto",
+			sql`${tabla.montoCentavos} > 0 and (${tabla.origen} <> 'manual' or ${tabla.montoCentavos} % 100 = 0)`,
+		),
+		check("gastos_area", sql`${tabla.area} in (${valores(areasDeGasto)})`),
+		check("gastos_ubicacion", sql`(${tabla.ubicacionId} is not null) = (${tabla.area} = 'ubicacion')`),
+		check(
+			"gastos_medio",
+			sql`${tabla.medio} in ('efectivo', 'cuenta_fabrica') and (${tabla.medio} is null) = (${tabla.origen} = 'mantenimiento')`,
+		),
+		check("gastos_cuenta_fabrica", sql`(${tabla.cuentaFabricaId} is not null) = (${tabla.medio} = 'cuenta_fabrica')`),
+		check("gastos_origen", sql`${tabla.origen} in (${valores(origenesDeGasto)})`),
+		check(
+			"gastos_servicio",
+			sql`(${tabla.servicioId} is not null and ${tabla.maquinaId} is not null) = (${tabla.origen} = 'mantenimiento')`,
+		),
+		check("gastos_estado", sql`${tabla.estado} in ('registrado', 'cancelado')`),
+		check(
+			"gastos_cancelado",
+			sql`(${tabla.estado} = 'cancelado') = (${tabla.canceladoEn} is not null and ${tabla.motivoCancelacion} is not null)`,
+		),
 	],
 );

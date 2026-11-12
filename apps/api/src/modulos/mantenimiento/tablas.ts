@@ -25,7 +25,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { columnasComunes, columnasDeBaja, columnaXidEscritura, momento, valores } from "../../nucleo/base/columnas.ts";
 import { dispositivos, listaValores, usuarios } from "../admin/tablas.ts";
-import { terceros } from "../contaduria/tablas.ts";
+import { gastos, terceros } from "../contaduria/tablas.ts";
 import { personas } from "../personal/tablas.ts";
 
 /** De dónde llega una falla. */
@@ -194,8 +194,8 @@ export const servicios = pgTable(
 		queSeHizo: text("que_se_hizo").notNull(),
 		costoCentavos: bigint("costo_centavos", { mode: "number" }).notNull(),
 		horasParo: integer("horas_paro").notNull(),
-		/** @llavePendiente gastos.id */
-		gastoId: uuid("gasto_id"),
+		/** El gasto que pidió, si tuvo costo: lo único que se escribe después (decisión 709). */
+		gastoId: uuid("gasto_id").references((): AnyPgColumn => gastos.id),
 		...columnasComunes(),
 	},
 	(tabla) => [

@@ -120,4 +120,12 @@ Ninguno propio. Usa los dos de Mantenimiento de la regla 2 y `general.largo_mini
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 17.*
+**Fase 17, parte 3.**
+
+- **La tabla** `gastos` está en `apps/api/src/modulos/contaduria/tablas.ts` (migración `0060`), con sus CHECK: el monto en pesos enteros si es `manual`, la ubicación solo con `ubicacion`, el medio salvo en `mantenimiento`, la cuenta solo con `cuenta_fabrica`, el servicio y la máquina solo en `mantenimiento` y la cancelación completa. `movimiento_caja_id` y `paquete_contador_id` llevan su `@llavePendiente`. La misma migración pone la llave de `servicios.gasto_id` y le deja a la app escribir solo esa columna del servicio (decisión 709).
+- **Las listas** «Categorías de gasto» y «Tipos de comprobante de gasto» se siembran en `siembra.ts` (`semillaDeListasDeGastos`): agregan lo que falte. «Reparación de máquinas» lleva la clave `reparacion_maquinas` y no es seleccionable.
+- **Las acciones** (`acciones/gastos.ts`, contratos en `packages/compartido/src/contratos/contaduria/gastos.ts`):
+  - `registrar_gasto` revisa la categoría (`valorDeLista` en `dominio/gastos.ts`), la ubicación, la cuenta de la fábrica (`cuentaFabricaEscogida`, la misma de los pagos) y el comprobante. Sin archivo queda «Sin comprobante». El archivo se liga con el propósito `comprobante` (decisión 710).
+  - `cancelar_gasto` cancela con motivo; el de un servicio responde `gasto_de_mantenimiento` con su SM-.
+- **La interna** `registrar_gasto_mantenimiento` (`internas/gastos.ts`) lee la categoría y la ubicación de los dos parámetros de Mantenimiento, de tipo texto: la clave de la categoría y el código de la ubicación. Regresa el gasto, su folio y el nombre de su categoría para el renglón de bitácora del servicio.
+- **Pruebas:** `acciones/registrar-gasto.prueba.ts`, `acciones/cancelar-gasto.prueba.ts` e `internas/registrar-gasto-mantenimiento.prueba.ts`. Las ayudas están en `nucleo/pruebas/gastos-de-prueba.ts`.
