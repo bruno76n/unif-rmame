@@ -136,4 +136,9 @@ Ninguno propio: los días de crédito con que nace son de Contaduría, y el larg
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 16.*
+**Fase 16, parte 1.** En `modulos/ventas/`:
+
+- **La tabla** `clientes` (migración `0053`), con sus CHECK: el tipo, la escuela solo en escuela, los largos, los 10 dígitos y el motivo con la baja. La misma migración pone las llaves a `clientes` de `listas_precios`, `credito_clientes`, `cuentas_por_cobrar`, `pagos`, `saldo_favor_movimientos`, `anticipos`, `reclamos` y `despachos`.
+- **Las acciones** (`acciones/clientes.ts`, contratos en `packages/compartido/src/contratos/ventas/clientes.ts`) siguen a las de los proveedores: el tercero con `contaduria.crear_tercero` (`rol_ya_existe` sale como `cliente_repetido`), la escuela con `catalogo.crear_escuela_para_cliente` o la escogida, bloqueada (decisiones 676 y 677), el crédito y la lista. Editar renombra el tercero y sincroniza la lista y la escuela; dar de baja pide el saldo a `contaduria.saldo_por_cobrar_de_cliente`, que solo da el monto a quien tiene Contaduría (decisión 678).
+- **Las lecturas** `estado_cliente` y `cliente_activo_de_escuela` (`lecturas/clientes.ts`) cierran `cliente_dado_de_baja` en el crédito y `escuela_de_cliente` en Catálogo.
+- **Pruebas:** `acciones/crear-cliente.prueba.ts` y `acciones/dar-baja-cliente.prueba.ts` (también editar, reactivar, el crédito de un cliente de baja y la escuela de un cliente). Las pruebas de las fases anteriores usan clientes de verdad (decisión 679).

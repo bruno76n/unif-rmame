@@ -14,6 +14,7 @@ import { enAccionDePrueba } from "../../../nucleo/pruebas/accion-de-prueba.ts";
 import { nuevoProducto, siembraDelCatalogo, versionDelProducto } from "../../../nucleo/pruebas/catalogo-de-prueba.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
+import { renglonDeClienteDePrueba } from "../../../nucleo/pruebas/ventas-de-prueba.ts";
 
 describe("los cinco pasos del precio sugerido, con datos al azar", () => {
 	const precio = fc.option(
@@ -95,7 +96,7 @@ describe("el precio sugerido con la base: la lista del cliente, su porcentaje, M
 	it("cada paso, y en pedido especial el recargo aparte y sin Mayoreo", async () => {
 		const siembra = await siembraDelCatalogo(servidor);
 		const base = crearBase(servidor.base.app);
-		const cliente = uuidv7();
+		const { clienteId: cliente } = await renglonDeClienteDePrueba(servidor);
 		const { lista_id } = z
 			.object({ lista_id: z.uuid() })
 			.parse(

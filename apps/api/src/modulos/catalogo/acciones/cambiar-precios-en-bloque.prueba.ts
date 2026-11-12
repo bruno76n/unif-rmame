@@ -7,7 +7,6 @@
 import { type CambioEnBloque, precioDelCambioEnBloque } from "@uniformame/compartido/calculos/precios";
 import { centavos } from "@uniformame/compartido/tipos/base";
 import fc from "fast-check";
-import { v7 as uuidv7 } from "uuid";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { crearBase } from "../../../nucleo/base/conexion.ts";
@@ -20,6 +19,7 @@ import {
 } from "../../../nucleo/pruebas/catalogo-de-prueba.ts";
 import { conGoogle, mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
+import { renglonDeClienteDePrueba } from "../../../nucleo/pruebas/ventas-de-prueba.ts";
 
 describe("el precio de un cambio en bloque, con datos al azar", () => {
 	const cambio = fc.record<CambioEnBloque>({
@@ -234,7 +234,7 @@ describe("el cambio en bloque pide Google, respeta sus topes y no cambia ninguno
 		expect((await bloque([descontinuado.producto_id], {})).cuerpo).toMatchObject({ codigo: "producto_descontinuado" });
 		// La lista de un cliente que se dio de baja.
 		const base = crearBase(servidor.base.app);
-		const cliente = uuidv7();
+		const { clienteId: cliente } = await renglonDeClienteDePrueba(servidor);
 		const { lista_id } = z
 			.object({ lista_id: z.uuid() })
 			.parse(

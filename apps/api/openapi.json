@@ -18332,6 +18332,587 @@
         }
       }
     },
+    "/v1/acciones/ventas.crear_cliente": {
+      "post": {
+        "tags": [
+          "ventas"
+        ],
+        "description": "Da de alta un cliente externo con su tercero, su crédito, su lista de precios y, si es escuela, su escuela\n\nPermiso: departamento ventas.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "clave_idempotencia": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "description": "La hace el cliente al apretar el botón y la reusa en cada reintento"
+                  },
+                  "datos": {
+                    "type": "object",
+                    "properties": {
+                      "nombre": {
+                        "type": "string",
+                        "minLength": 3,
+                        "maxLength": 80,
+                        "description": "Su nombre: vive en la ficha de su tercero"
+                      },
+                      "tipo": {
+                        "type": "string",
+                        "enum": [
+                          "escuela",
+                          "mayorista",
+                          "empresa_otro"
+                        ],
+                        "description": "Escuela, mayorista o empresa u otro"
+                      },
+                      "escuela_id": {
+                        "description": "Una escuela que ya existe; sin ella, nace una",
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      "municipio": {
+                        "type": "string",
+                        "minLength": 3,
+                        "maxLength": 60,
+                        "description": "«{tipo} en {municipio}»"
+                      },
+                      "direccion_entrega": {
+                        "type": "string",
+                        "minLength": 8,
+                        "maxLength": 200,
+                        "description": "La usa Aduana para despachar"
+                      },
+                      "contacto": {
+                        "type": "string",
+                        "maxLength": 60,
+                        "description": "«¿Con quién se trata?»"
+                      },
+                      "telefono": {
+                        "type": "string",
+                        "description": "Se guardan sus 10 dígitos"
+                      },
+                      "correo": {
+                        "type": "string",
+                        "format": "email",
+                        "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
+                        "description": "Su correo"
+                      },
+                      "rfc": {
+                        "type": "string",
+                        "pattern": "^[A-Za-zÑñ&0-9]{12,13}$",
+                        "description": "12 o 13 letras y números; se guarda en mayúsculas"
+                      },
+                      "desde_pedido": {
+                        "description": "Si se da de alta desde un pedido nuevo, para escogerlo en él",
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "nombre",
+                      "tipo",
+                      "municipio",
+                      "direccion_entrega",
+                      "telefono"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "clave_idempotencia",
+                  "datos"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "cliente_id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "lista_id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "escuela_id": {
+                          "nullable": true,
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "mensaje": {
+                          "type": "string",
+                          "description": "El aviso verde que muestra la pantalla"
+                        },
+                        "version": {
+                          "description": "La versión nueva de lo que cambió, si la acción editó algo",
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "cliente_id",
+                        "lista_id",
+                        "escuela_id",
+                        "mensaje"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "avisos": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Mensajes que no bloquean"
+                    },
+                    "secreto_entregado": {
+                      "description": "La respuesta repetida de una acción que entregó un secreto: el secreto ya no viene",
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "avisos"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/acciones/ventas.editar_cliente": {
+      "post": {
+        "tags": [
+          "ventas"
+        ],
+        "description": "Cambia los datos de un cliente; con el nombre, renombra su tercero, su lista y su escuela\n\nPermiso: departamento ventas.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "clave_idempotencia": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "description": "La hace el cliente al apretar el botón y la reusa en cada reintento"
+                  },
+                  "datos": {
+                    "type": "object",
+                    "properties": {
+                      "cliente_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "description": "El cliente"
+                      },
+                      "nombre": {
+                        "type": "string",
+                        "minLength": 3,
+                        "maxLength": 80,
+                        "description": "Su nombre: vive en la ficha de su tercero"
+                      },
+                      "municipio": {
+                        "type": "string",
+                        "minLength": 3,
+                        "maxLength": 60,
+                        "description": "«{tipo} en {municipio}»"
+                      },
+                      "direccion_entrega": {
+                        "type": "string",
+                        "minLength": 8,
+                        "maxLength": 200,
+                        "description": "La usa Aduana para despachar"
+                      },
+                      "contacto": {
+                        "nullable": true,
+                        "type": "string",
+                        "maxLength": 60,
+                        "description": "«¿Con quién se trata?»"
+                      },
+                      "telefono": {
+                        "type": "string",
+                        "description": "Se guardan sus 10 dígitos"
+                      },
+                      "correo": {
+                        "nullable": true,
+                        "type": "string",
+                        "format": "email",
+                        "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
+                        "description": "Su correo"
+                      },
+                      "rfc": {
+                        "nullable": true,
+                        "type": "string",
+                        "pattern": "^[A-Za-zÑñ&0-9]{12,13}$",
+                        "description": "12 o 13 letras y números; se guarda en mayúsculas"
+                      }
+                    },
+                    "required": [
+                      "cliente_id"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "version": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991,
+                    "description": "La versión que se leyó"
+                  }
+                },
+                "required": [
+                  "clave_idempotencia",
+                  "datos",
+                  "version"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "cliente_id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "mensaje": {
+                          "type": "string",
+                          "description": "El aviso verde que muestra la pantalla"
+                        },
+                        "version": {
+                          "description": "La versión nueva de lo que cambió, si la acción editó algo",
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "cliente_id",
+                        "mensaje"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "avisos": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Mensajes que no bloquean"
+                    },
+                    "secreto_entregado": {
+                      "description": "La respuesta repetida de una acción que entregó un secreto: el secreto ya no viene",
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "avisos"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/acciones/ventas.dar_baja_cliente": {
+      "post": {
+        "tags": [
+          "ventas"
+        ],
+        "description": "Da de baja un cliente sin pedidos abiertos ni saldo; su historial se conserva\n\nPermiso: departamento ventas.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "clave_idempotencia": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "description": "La hace el cliente al apretar el botón y la reusa en cada reintento"
+                  },
+                  "datos": {
+                    "type": "object",
+                    "properties": {
+                      "cliente_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "description": "El cliente"
+                      },
+                      "motivo": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200,
+                        "description": "Por qué"
+                      }
+                    },
+                    "required": [
+                      "cliente_id",
+                      "motivo"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "version": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991,
+                    "description": "La versión que se leyó"
+                  }
+                },
+                "required": [
+                  "clave_idempotencia",
+                  "datos",
+                  "version"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "cliente_id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "mensaje": {
+                          "type": "string",
+                          "description": "El aviso verde que muestra la pantalla"
+                        },
+                        "version": {
+                          "description": "La versión nueva de lo que cambió, si la acción editó algo",
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "cliente_id",
+                        "mensaje"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "avisos": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Mensajes que no bloquean"
+                    },
+                    "secreto_entregado": {
+                      "description": "La respuesta repetida de una acción que entregó un secreto: el secreto ya no viene",
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "avisos"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/acciones/ventas.reactivar_cliente": {
+      "post": {
+        "tags": [
+          "ventas"
+        ],
+        "description": "Reactiva un cliente dado de baja y su lista de precios\n\nPermiso: departamento ventas.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "clave_idempotencia": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "description": "La hace el cliente al apretar el botón y la reusa en cada reintento"
+                  },
+                  "datos": {
+                    "type": "object",
+                    "properties": {
+                      "cliente_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "description": "El cliente"
+                      }
+                    },
+                    "required": [
+                      "cliente_id"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "version": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991,
+                    "description": "La versión que se leyó"
+                  }
+                },
+                "required": [
+                  "clave_idempotencia",
+                  "datos",
+                  "version"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "cliente_id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "mensaje": {
+                          "type": "string",
+                          "description": "El aviso verde que muestra la pantalla"
+                        },
+                        "version": {
+                          "description": "La versión nueva de lo que cambió, si la acción editó algo",
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "cliente_id",
+                        "mensaje"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "avisos": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Mensajes que no bloquean"
+                    },
+                    "secreto_entregado": {
+                      "description": "La respuesta repetida de una acción que entregó un secreto: el secreto ya no viene",
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "avisos"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/consultas/direccion.autorizaciones": {
       "get": {
         "tags": [

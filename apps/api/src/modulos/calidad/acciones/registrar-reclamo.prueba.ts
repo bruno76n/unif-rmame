@@ -14,6 +14,7 @@ import { ubicacionesPorCodigo } from "../../../nucleo/pruebas/inventario-de-prue
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import type { LoteCortado } from "../../../nucleo/pruebas/produccion-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
+import { renglonDeClienteDePrueba } from "../../../nucleo/pruebas/ventas-de-prueba.ts";
 
 describe("Un reclamo llega del código al lote revisado, con una operación del flujo ligada al defecto y la persona congelada", () => {
 	let servidor: ServidorDePrueba;
@@ -23,6 +24,7 @@ describe("Un reclamo llega del código al lote revisado, con una operación del 
 		servidor = await crearServidorDePrueba();
 		siembra = await siembraDelCatalogo(servidor);
 		ubicacion = await ubicacionesPorCodigo(servidor);
+		clienteId = (await renglonDeClienteDePrueba(servidor)).clienteId;
 	});
 	afterAll(async () => {
 		await servidor.cerrar();
@@ -53,11 +55,14 @@ describe("Un reclamo llega del código al lote revisado, con una operación del 
 		return { lote, defectoId, codigo4: codigoDe("4"), codigo8: codigoDe("8") };
 	}
 
+	/** El cliente externo de los reclamos, dado de alta en Ventas. */
+	let clienteId = "";
+
 	/** Lo de un reclamo de un cliente externo, con lo que se cambie. */
 	function reclamo(lote: LoteCortado, defectoId: string, codigo: string, cambios: Record<string, unknown> = {}) {
 		return {
 			origen: "cliente_externo",
-			cliente_id: uuidv7(),
+			cliente_id: clienteId,
 			codigo,
 			lote_id: lote.loteId,
 			defecto_id: defectoId,

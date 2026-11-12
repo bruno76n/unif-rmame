@@ -372,6 +372,13 @@
 			"when": 1794458039820,
 			"tag": "0052_pagos_y_anticipos_ajustes",
 			"breakpoints": true
+		},
+		{
+			"idx": 53,
+			"version": "7",
+			"when": 1794458580638,
+			"tag": "0053_clientes",
+			"breakpoints": true
 		}
 	]
 }

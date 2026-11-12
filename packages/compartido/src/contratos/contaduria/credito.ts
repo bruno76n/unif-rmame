@@ -30,6 +30,7 @@ export const cambiarLimiteCredito = definirAccion({
 		semaforo_sugerido: semaforoDeCredito.describe("El semáforo que sugiere el sistema con el límite nuevo"),
 	}),
 	permiso: { departamento: "contaduria" },
+	errores: [{ codigo: "cliente_dado_de_baja", mensaje: "{cliente} está dado de baja." }],
 	edita: true,
 });
 
@@ -47,6 +48,7 @@ export const cambiarDiasCredito = definirAccion({
 	}),
 	salida: z.object({ credito_cliente_id: z.uuid() }),
 	permiso: { departamento: "contaduria" },
+	errores: [{ codigo: "cliente_dado_de_baja", mensaje: "{cliente} está dado de baja." }],
 	edita: true,
 });
 
@@ -60,5 +62,6 @@ export const cambiarSemaforoCredito = definirAccion({
 	}),
 	salida: z.object({ credito_cliente_id: z.uuid() }),
 	permiso: { departamento: "contaduria" },
+	errores: [{ codigo: "cliente_dado_de_baja", mensaje: "{cliente} está dado de baja." }],
 	edita: true,
 });

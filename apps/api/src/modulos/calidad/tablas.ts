@@ -9,13 +9,25 @@
  */
 
 import { sql } from "drizzle-orm";
-import { boolean, check, date, index, integer, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import {
+	type AnyPgColumn,
+	boolean,
+	check,
+	date,
+	index,
+	integer,
+	pgTable,
+	text,
+	uniqueIndex,
+	uuid,
+} from "drizzle-orm/pg-core";
 import { columnasComunes, columnasDeBaja, momento, valores } from "../../nucleo/base/columnas.ts";
 import { usuarios } from "../admin/tablas.ts";
 import { variantes } from "../catalogo/tablas.ts";
 import { ubicaciones } from "../inventario/tablas.ts";
 import { personas } from "../personal/tablas.ts";
 import { flujoOperaciones, lotes, operaciones } from "../produccion/tablas.ts";
+import { clientes } from "../ventas/tablas.ts";
 
 /** De dónde viene un reclamo. */
 export const origenesDeReclamo = ["cliente_externo", "tienda"] as const;
@@ -193,8 +205,7 @@ export const reclamos = pgTable(
 		folio: text("folio").notNull(),
 		fecha: date("fecha", { mode: "string" }).notNull(),
 		origen: text("origen", { enum: origenesDeReclamo }).notNull().default("cliente_externo"),
-		/** @llavePendiente clientes.id */
-		clienteId: uuid("cliente_id"),
+		clienteId: uuid("cliente_id").references((): AnyPgColumn => clientes.id),
 		ubicacionId: uuid("ubicacion_id").references(() => ubicaciones.id),
 		/** @llavePendiente salidas_tienda.id */
 		salidaTiendaId: uuid("salida_tienda_id"),

@@ -64,6 +64,10 @@ export const darBajaEscuela = definirAccion({
 		{ codigo: "ya_dada_de_baja", mensaje: "Ya está dada de baja." },
 		{ codigo: "escuela_con_modelos", mensaje: "Tiene modelos activos: descontinúalos antes de darla de baja." },
 		{ codigo: "escuela_con_desarrollos", mensaje: "Tiene desarrollos en proceso." },
+		{
+			codigo: "escuela_de_cliente",
+			mensaje: "{escuela} es de {cliente}, que sigue activo: se da de baja con el cliente en Ventas a externos.",
+		},
 	],
 	edita: true,
 });

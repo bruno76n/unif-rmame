@@ -20,6 +20,7 @@ import {
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import { materialesDeReceta, nuevoDesarrollo } from "../../../nucleo/pruebas/patronaje-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
+import { renglonDeClienteDePrueba } from "../../../nucleo/pruebas/ventas-de-prueba.ts";
 
 describe("un alta toma sus códigos seguidos, resuelve lo que no viene y, desde un pedido, exige Ventas a externos y el precio del cliente", () => {
 	let servidor: ServidorDePrueba;
@@ -231,7 +232,7 @@ describe("un alta toma sus códigos seguidos, resuelve lo que no viene y, desde 
 	});
 
 	it("desde un pedido: Ventas a externos, a externos y con el precio del cliente; Ventas sin pedido, 403", async () => {
-		const cliente = uuidv7();
+		const { clienteId: cliente } = await renglonDeClienteDePrueba(servidor);
 		const lista = z.object({ lista_id: z.uuid() }).parse(
 			await enAccionDePrueba(crearBase(servidor.base.app), servidor.modulos, (contexto) =>
 				contexto.interna("catalogo.crear_lista_cliente", {

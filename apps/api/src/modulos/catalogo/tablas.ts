@@ -25,6 +25,7 @@ import {
 import { columnasComunes, columnaXidEscritura, momento } from "../../nucleo/base/columnas.ts";
 import { archivos, dispositivos, usuarios } from "../admin/tablas.ts";
 import { flujos } from "../produccion/tablas.ts";
+import { clientes } from "../ventas/tablas.ts";
 
 /** Las columnas de una baja que se puede deshacer. */
 function columnasDeBaja() {
@@ -168,8 +169,7 @@ export const listasPrecios = pgTable(
 		nombre: text("nombre").notNull(),
 		nombreCorto: text("nombre_corto"),
 		descripcion: text("descripcion"),
-		/** @llavePendiente clientes.id */
-		clienteId: uuid("cliente_id"),
+		clienteId: uuid("cliente_id").references((): AnyPgColumn => clientes.id),
 		pctBasicos: numeric("pct_basicos", { precision: 6, scale: 3 }),
 		pctEspeciales: numeric("pct_especiales", { precision: 6, scale: 3 }),
 		orden: integer("orden").notNull(),

@@ -4,12 +4,12 @@
  * Fase 15 · docs/fases/15-contaduria-terceros-credito-y-cobranza.md («Criterios de terminado»)
  */
 
-import { v7 as uuidv7 } from "uuid";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { clienteDePrueba } from "../../../nucleo/pruebas/contaduria-de-prueba.ts";
 import { llamarInterna } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
+import { renglonDeClienteDePrueba } from "../../../nucleo/pruebas/ventas-de-prueba.ts";
 
 describe("Un cliente nace sin crédito, con los días de su tipo y al corriente; abrirlo dos veces no duplica", () => {
 	let servidor: ServidorDePrueba;
@@ -54,7 +54,7 @@ describe("Un cliente nace sin crédito, con los días de su tipo y al corriente;
 		});
 		expect(otraVez).toEqual({ credito_cliente_id: cliente.creditoId });
 		expect(await credito(cliente.clienteId)).toMatchObject([{ dias: 15 }]);
-		const nuevo = uuidv7();
+		const { clienteId: nuevo } = await renglonDeClienteDePrueba(servidor);
 		const abrir = () =>
 			llamarInterna(servidor, "contaduria.abrir_credito_cliente", {
 				cliente_id: nuevo,

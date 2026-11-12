@@ -17,8 +17,10 @@ import {
 } from "@uniformame/compartido/contratos/contaduria/credito";
 import { centavos } from "@uniformame/compartido/tipos/base";
 import { eq } from "drizzle-orm";
+import { z } from "zod";
 import { quienCambia } from "../../../nucleo/acciones/comunes.ts";
 import { revisarVersion, subirVersion, versionActual } from "../../../nucleo/acciones/pisadas.ts";
+import { errorDeRegla } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeAccion, implementarAccion } from "../../../nucleo/modulos.ts";
 import { type CreditoConNombre, creditoDelCliente, semaforoDelCliente } from "../dominio/credito.ts";
 import type { SemaforoDeCredito } from "../dominio/semaforo-sugerido.ts";
@@ -61,6 +63,11 @@ async function creditoConSuVersion(
 	};
 	await revisarVersion(contexto, creditoClientes, leido.id, version, visible);
 	const credito = await creditoDelCliente(contexto.transaccion, clienteId);
+	// El crédito de un cliente dado de baja ya no cambia (Ventas lo dice).
+	const { de_baja } = z
+		.object({ de_baja: z.boolean() })
+		.parse(await contexto.lectura("ventas.estado_cliente", { cliente_id: clienteId }));
+	if (de_baja) throw errorDeRegla("cliente_dado_de_baja", `${credito.cliente} está dado de baja.`);
 	const cambio = cambia(credito);
 	if (cambio) await subirVersion(contexto.transaccion, creditoClientes, credito.id);
 	return { credito, cambio };

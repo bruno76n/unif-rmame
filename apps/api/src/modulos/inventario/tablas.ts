@@ -52,6 +52,7 @@ import { autorizaciones } from "../direccion/tablas.ts";
 import { recetaVersiones } from "../patronaje/tablas.ts";
 import { personas } from "../personal/tablas.ts";
 import { cortes, lotes, ordenesProduccion } from "../produccion/tablas.ts";
+import { clientes } from "../ventas/tablas.ts";
 
 /** Cada lugar donde puede estar una pieza: Aduana, Bodega, las tiendas, el Taller y los dos de paso. */
 export const ubicaciones = pgTable(
@@ -877,8 +878,7 @@ export const despachos = pgTable(
 		folio: text("folio").notNull(),
 		destinoUbicacionId: uuid("destino_ubicacion_id").references(() => ubicaciones.id),
 		destinoExterno: text("destino_externo"),
-		/** @llavePendiente clientes.id */
-		clienteId: uuid("cliente_id"),
+		clienteId: uuid("cliente_id").references((): AnyPgColumn => clientes.id),
 		/** @llavePendiente notas_entrega.id */
 		notaEntregaId: uuid("nota_entrega_id"),
 		estado: text("estado").notNull(),

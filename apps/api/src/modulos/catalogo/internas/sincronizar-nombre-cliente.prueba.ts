@@ -4,12 +4,12 @@
  * Fase 8 · docs/fases/08-catalogo.md (parte 2)
  */
 
-import { v7 as uuidv7 } from "uuid";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { crearBase } from "../../../nucleo/base/conexion.ts";
 import { enAccionDePrueba } from "../../../nucleo/pruebas/accion-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
+import { renglonDeClienteDePrueba } from "../../../nucleo/pruebas/ventas-de-prueba.ts";
 
 describe("renombrar al cliente renombra su lista y, solo si se llamaba igual, su escuela", () => {
 	let servidor: ServidorDePrueba;
@@ -29,7 +29,7 @@ describe("renombrar al cliente renombra su lista y, solo si se llamaba igual, su
 
 	/** Un cliente escuela con su escuela y su lista. */
 	async function clienteEscuela(nombre: string, nombreDeLaEscuela = nombre) {
-		const cliente = uuidv7();
+		const { clienteId: cliente } = await renglonDeClienteDePrueba(servidor);
 		const { escuela_id } = z
 			.object({ escuela_id: z.uuid() })
 			.parse(await interna("catalogo.crear_escuela_para_cliente", { nombre: nombreDeLaEscuela, municipio: "Zamora" }));

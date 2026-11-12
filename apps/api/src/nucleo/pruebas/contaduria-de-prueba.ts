@@ -4,8 +4,8 @@
  * anticipo recibido en un pedido de prueba y el saldo a favor de un cliente.
  * Fase 15 · docs/fases/15-contaduria-terceros-credito-y-cobranza.md («Cómo se construye»)
  *
- * Ventas todavía no existe: el cliente es solo un id, con su tercero real y su crédito abierto con la interna que Ventas
- * llamará en la fase 16.
+ * El cliente es su renglón de Ventas, con su tercero real y su crédito abierto con la interna que llama
+ * `ventas.crear_cliente`.
  */
 
 import { Temporal } from "temporal-polyfill";
@@ -16,6 +16,7 @@ import { llamarInterna } from "./inventario-de-prueba.ts";
 import { mandarAccion } from "./llamadas.ts";
 import { foliosDePrueba } from "./modulos/ventas/index.ts";
 import type { ServidorDePrueba } from "./servidor-de-prueba.ts";
+import { renglonDeClienteDePrueba } from "./ventas-de-prueba.ts";
 
 /** Un cliente de prueba: su id, su tercero, su crédito y su nombre. */
 export interface ClienteDePrueba {
@@ -34,11 +35,7 @@ export async function clienteDePrueba(
 	servidor: ServidorDePrueba,
 	opciones: { tipo?: "escuela" | "mayorista" | "empresa_otro"; limiteCentavos?: number } = {},
 ): Promise<ClienteDePrueba> {
-	const nombre = `Cliente de prueba ${uuidv7().slice(-12)}`;
-	const { tercero_id: terceroId } = z
-		.object({ tercero_id: z.uuid() })
-		.parse(await llamarInterna(servidor, "contaduria.crear_tercero", { nombre, rol: "cliente" }));
-	const clienteId = uuidv7();
+	const { clienteId, terceroId, nombre } = await renglonDeClienteDePrueba(servidor, opciones.tipo ?? "mayorista");
 	const { credito_cliente_id: creditoId } = z.object({ credito_cliente_id: z.uuid() }).parse(
 		await llamarInterna(servidor, "contaduria.abrir_credito_cliente", {
 			cliente_id: clienteId,

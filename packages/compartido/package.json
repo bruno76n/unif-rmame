@@ -40,6 +40,7 @@
 		"./contratos/contaduria/credito": "./src/contratos/contaduria/credito.ts",
 		"./contratos/contaduria/pagos": "./src/contratos/contaduria/pagos.ts",
 		"./contratos/contaduria/saldo-favor": "./src/contratos/contaduria/saldo-favor.ts",
+		"./contratos/ventas/clientes": "./src/contratos/ventas/clientes.ts",
 		"./contratos/direccion/autorizaciones": "./src/contratos/direccion/autorizaciones.ts",
 		"./contratos/personal/asistencia": "./src/contratos/personal/asistencia.ts",
 		"./contratos/personal/personas": "./src/contratos/personal/personas.ts",

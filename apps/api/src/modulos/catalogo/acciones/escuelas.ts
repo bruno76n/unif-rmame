@@ -84,6 +84,9 @@ export const accionEditarEscuela = implementarAccion(editarEscuela, async (conte
 /** Lo que regresa `patronaje.desarrollos_en_proceso_de_escuela`. */
 const enProceso = z.object({ folios: z.array(z.string()) });
 
+/** Lo que regresa `ventas.cliente_activo_de_escuela`. */
+const clienteDeEscuela = z.object({ cliente: z.object({ cliente_id: z.uuid(), nombre: z.string() }).nullable() });
+
 export const accionDarBajaEscuela = implementarAccion(darBajaEscuela, async (contexto, datos, version) => {
 	const { transaccion } = contexto;
 	await revisarMotivo(contexto, datos.motivo);
@@ -111,6 +114,16 @@ export const accionDarBajaEscuela = implementarAccion(darBajaEscuela, async (con
 		throw errorDeRegla(
 			"escuela_con_desarrollos",
 			`${escuela.nombre} tiene desarrollos en proceso: ${folios.join(", ")}.`,
+		);
+	}
+	// No es la escuela de un cliente activo (Ventas): se da de baja con el cliente.
+	const { cliente } = clienteDeEscuela.parse(
+		await contexto.lectura("ventas.cliente_activo_de_escuela", { escuela_id: escuela.id }),
+	);
+	if (cliente !== null) {
+		throw errorDeRegla(
+			"escuela_de_cliente",
+			`${escuela.nombre} es de ${cliente.nombre}, que sigue activo: se da de baja con el cliente en Ventas a externos.`,
 		);
 	}
 	await transaccion

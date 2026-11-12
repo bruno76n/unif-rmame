@@ -4,13 +4,13 @@
  * Fase 8 · docs/fases/08-catalogo.md (parte 2)
  */
 
-import { v7 as uuidv7 } from "uuid";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { crearBase } from "../../../nucleo/base/conexion.ts";
 import { enAccionDePrueba } from "../../../nucleo/pruebas/accion-de-prueba.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
+import { renglonDeClienteDePrueba } from "../../../nucleo/pruebas/ventas-de-prueba.ts";
 
 describe("la lista de un cliente nace vacía y sin porcentajes; Catálogo pone sus porcentajes", () => {
 	let servidor: ServidorDePrueba;
@@ -58,7 +58,7 @@ describe("la lista de un cliente nace vacía y sin porcentajes; Catálogo pone s
 	});
 
 	it("nace vacía, sin porcentajes y con el nombre del cliente; otra para el mismo cliente, lista_repetida", async () => {
-		const cliente = uuidv7();
+		const { clienteId: cliente } = await renglonDeClienteDePrueba(servidor);
 		const creada = z
 			.object({ lista_id: z.uuid() })
 			.parse(
@@ -78,7 +78,7 @@ describe("la lista de un cliente nace vacía y sin porcentajes; Catálogo pone s
 	});
 
 	it("Catálogo pone sus porcentajes con la versión; fuera de 0 a 100, 400; en una general, lista_no_es_de_cliente; de baja, lista_dada_de_baja", async () => {
-		const cliente = uuidv7();
+		const { clienteId: cliente } = await renglonDeClienteDePrueba(servidor);
 		const { lista_id } = z
 			.object({ lista_id: z.uuid() })
 			.parse(await interna("catalogo.crear_lista_cliente", { cliente_id: cliente, nombre: "Papelería Uruapan" }));
