@@ -11,6 +11,7 @@ import { enAccionDePrueba } from "../../../nucleo/pruebas/accion-de-prueba.ts";
 import { materialesDePrueba } from "../../../nucleo/pruebas/compras-de-prueba.ts";
 import { nuevoTraspaso, ubicacionesPorCodigo } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
+import { pedidoDePrueba } from "../../../nucleo/pruebas/ventas-de-prueba.ts";
 import { type PedidoDeReparto, repartirTraspaso } from "./traspasos.ts";
 
 describe("Repartir nunca pasa de lo que queda en aduana, no mueve existencia, lleva las reservas al hijo y deja al padre `repartido` cuando no le queda nada", () => {
@@ -177,7 +178,7 @@ describe("Repartir nunca pasa de lo que queda en aduana, no mueve existencia, ll
 
 	it("lleva al hijo las reservas que se le piden, y solo reservas activas del padre", async () => {
 		const lote = await loteEnAduana();
-		const pedido = uuidv7();
+		const pedido = await pedidoDePrueba(servidor);
 		const reserva = uuidv7();
 		await servidor.base.dueno.query(
 			`INSERT INTO reservas (id, ubicacion_id, variante_id, piezas, motivo, pedido_id, traspaso_id, estado)

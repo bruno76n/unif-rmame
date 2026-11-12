@@ -40,6 +40,7 @@ import { materiales } from "../compras/tablas.ts";
 import { apartadosRollo, excepciones, retazos, rollos, ubicaciones } from "../inventario/tablas.ts";
 import { recetaVersiones } from "../patronaje/tablas.ts";
 import { personas, tarifasOperacion } from "../personal/tablas.ts";
+import { pedidos, pedidoVersiones } from "../ventas/tablas.ts";
 
 /** El catálogo de operaciones que comparten los flujos; el corte es una sola. */
 export const operaciones = pgTable(
@@ -118,10 +119,8 @@ export const ordenesProduccion = pgTable(
 		id: uuid("id").primaryKey(),
 		folio: text("folio").notNull(),
 		motivo: text("motivo", { enum: motivosDeOrden }).notNull(),
-		/** @llavePendiente pedidos.id */
-		pedidoId: uuid("pedido_id"),
-		/** @llavePendiente pedido_versiones.id */
-		pedidoVersionId: uuid("pedido_version_id"),
+		pedidoId: uuid("pedido_id").references((): AnyPgColumn => pedidos.id),
+		pedidoVersionId: uuid("pedido_version_id").references((): AnyPgColumn => pedidoVersiones.id),
 		ubicacionDestinoId: uuid("ubicacion_destino_id").references(() => ubicaciones.id),
 		/** @llavePendiente pedidos_especiales_tienda.id */
 		pedidoEspecialTiendaId: uuid("pedido_especial_tienda_id"),
@@ -174,8 +173,7 @@ export const lotes = pgTable(
 		flujoId: uuid("flujo_id").references(() => flujos.id),
 		recetaVersionId: uuid("receta_version_id").references(() => recetaVersiones.id),
 		destino: text("destino", { enum: ["pedido", "tienda", "temporada"] }).notNull(),
-		/** @llavePendiente pedidos.id */
-		pedidoId: uuid("pedido_id"),
+		pedidoId: uuid("pedido_id").references((): AnyPgColumn => pedidos.id),
 		ubicacionDestinoId: uuid("ubicacion_destino_id").references(() => ubicaciones.id),
 		pasoATemporadaEn: momento("paso_a_temporada_en"),
 		estado: text("estado", { enum: etapasDeLote }).notNull().default("por_cortar"),

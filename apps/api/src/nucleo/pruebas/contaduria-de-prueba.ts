@@ -16,7 +16,7 @@ import { llamarInterna } from "./inventario-de-prueba.ts";
 import { mandarAccion } from "./llamadas.ts";
 import { foliosDePrueba } from "./modulos/ventas/index.ts";
 import type { ServidorDePrueba } from "./servidor-de-prueba.ts";
-import { renglonDeClienteDePrueba } from "./ventas-de-prueba.ts";
+import { pedidoDePrueba, renglonDeClienteDePrueba } from "./ventas-de-prueba.ts";
 
 /** Un cliente de prueba: su id, su tercero, su crédito y su nombre. */
 export interface ClienteDePrueba {
@@ -87,7 +87,7 @@ export async function cuentaEscritaDePrueba(
 	await servidor.base.dueno.query(
 		`INSERT INTO cuentas_por_cobrar (id, nota_entrega_id, pedido_id, cliente_id, tercero_id, fecha_entrega, dias_credito,
 			vence, total_nota_centavos, importe_centavos, saldo_centavos, estado, pagada_en)
-		 VALUES ($1, gen_random_uuid(), gen_random_uuid(), $2, $3, (now() AT TIME ZONE 'America/Mexico_City')::date + $4::int,
+		 VALUES ($1, gen_random_uuid(), $8, $2, $3, (now() AT TIME ZONE 'America/Mexico_City')::date + $4::int,
 			0, (now() AT TIME ZONE 'America/Mexico_City')::date + $4::int, $5, $5, $6, $7,
 			CASE WHEN $7 = 'pagada' THEN now() END)`,
 		[
@@ -98,6 +98,7 @@ export async function cuentaEscritaDePrueba(
 			cuenta.importeCentavos,
 			cuenta.saldoCentavos,
 			estado,
+			await pedidoDePrueba(servidor, cliente.clienteId),
 		],
 	);
 	return id;
@@ -128,7 +129,7 @@ export async function notaEntregadaDePrueba(
 ): Promise<NotaDePrueba> {
 	ultimaNota += 1;
 	const notaId = uuidv7();
-	const pedidoId = uuidv7();
+	const pedidoId = await pedidoDePrueba(servidor, cliente.clienteId);
 	const folio = `NV-${String(ultimaNota).padStart(4, "0")}`;
 	foliosDePrueba.set(notaId, folio);
 	const { cuenta_por_cobrar_id: cuentaId } = z.object({ cuenta_por_cobrar_id: z.uuid() }).parse(
@@ -199,14 +200,15 @@ let ultimoPedido = 0;
  * @param servidor El servidor de prueba.
  * @param cliente El cliente.
  * @param montoCentavos El anticipo, en pesos enteros.
- * @param pedidoId El pedido; uno nuevo si no se dice.
+ * @param pedidoIdDado El pedido; uno nuevo del cliente si no se dice.
  */
 export async function anticipoRecibidoDePrueba(
 	servidor: ServidorDePrueba,
 	cliente: ClienteDePrueba,
 	montoCentavos: number,
-	pedidoId = uuidv7(),
+	pedidoIdDado?: string,
 ): Promise<AnticipoDePrueba> {
+	const pedidoId = pedidoIdDado ?? (await pedidoDePrueba(servidor, cliente.clienteId));
 	if (!foliosDePrueba.has(pedidoId)) {
 		ultimoPedido += 1;
 		foliosDePrueba.set(pedidoId, `PE-${String(ultimoPedido).padStart(4, "0")}`);

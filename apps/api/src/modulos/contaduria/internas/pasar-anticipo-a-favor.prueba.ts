@@ -13,6 +13,7 @@ import {
 	saldoAFavorDePrueba,
 } from "../../../nucleo/pruebas/contaduria-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
+import { pedidoDePrueba } from "../../../nucleo/pruebas/ventas-de-prueba.ts";
 
 describe("Pasar el anticipo a favor sigue sus reglas", () => {
 	let servidor: ServidorDePrueba;
@@ -47,7 +48,10 @@ describe("Pasar el anticipo a favor sigue sus reglas", () => {
 
 	it("un pedido cancelado sin anticipo no hace nada", async () => {
 		expect(
-			await internaDeContaduria(servidor, "pasar_anticipo_a_favor", { pedido_id: uuidv7(), causa: "pedido_cancelado" }),
+			await internaDeContaduria(servidor, "pasar_anticipo_a_favor", {
+				pedido_id: await pedidoDePrueba(servidor),
+				causa: "pedido_cancelado",
+			}),
 		).toEqual({ a_favor_centavos: 0 });
 	});
 });

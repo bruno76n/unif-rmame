@@ -17,6 +17,7 @@ import { ErrorDeApi } from "../../../nucleo/http/errores.ts";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
 import { ubicacionesPorCodigo, variantesLibres } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
+import { pedidoDePrueba } from "../../../nucleo/pruebas/ventas-de-prueba.ts";
 import { escribirMovimiento } from "../dominio/escribir-movimiento.ts";
 
 /** Lo que hace una conexión en un paso: meter piezas, apartar un pedido nuevo, o liberar uno suyo (todo o una parte). */
@@ -95,7 +96,7 @@ describe("Con reservas al azar y varias conexiones al mismo tiempo, nunca se apa
 					}),
 				);
 			} else if (suyo.hace === "apartar") {
-				const pedido = uuidv7();
+				const pedido = await pedidoDePrueba(servidor);
 				await sinReintento((contexto) =>
 					contexto.interna("inventario.reservar", {
 						motivo: "pedido_externo",

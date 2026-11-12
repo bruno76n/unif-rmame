@@ -32,6 +32,7 @@ import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import { documentosAbiertosDePrueba } from "../../../nucleo/pruebas/modulos/ventas/index.ts";
 import { loteCortado } from "../../../nucleo/pruebas/produccion-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
+import { pedidoDePrueba } from "../../../nucleo/pruebas/ventas-de-prueba.ts";
 import { correrTrabajo } from "../../../nucleo/trabajos/trabajador.ts";
 import { abrirDiferencia } from "../dominio/diferencias.ts";
 import { escribirMovimiento } from "../dominio/escribir-movimiento.ts";
@@ -189,8 +190,8 @@ describe("el cuadre de la noche", () => {
 
 	it("una reserva activa cuyo documento ya se cerró abre `reserva_sin_documento`; si sigue abierto, no", async () => {
 		const [variante = ""] = await variantesLibres(servidor, 1);
-		const abierto = uuidv7();
-		const cerrado = uuidv7();
+		const abierto = await pedidoDePrueba(servidor);
+		const cerrado = await pedidoDePrueba(servidor);
 		for (const pedido of [abierto, cerrado]) {
 			await servidor.base.dueno.query(
 				`INSERT INTO reservas (id, ubicacion_id, variante_id, piezas, motivo, pedido_id, estado)

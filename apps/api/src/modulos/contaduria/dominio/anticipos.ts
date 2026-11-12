@@ -186,3 +186,79 @@ export async function cancelarAnticipoDelPago(
 	const otraVezAFavor = regresoDeFavor > 0 ? await pasarDisponibleAFavor(contexto, pedidoId) : 0;
 	return { anticipo_centavos: monto, a_favor_centavos: regresoDeFavor - otraVezAFavor };
 }
+
+/** Lo que regresa `ventas.pedido_para_cobro`. */
+const pedidoParaCobro = z.object({
+	cliente_id: z.uuid(),
+	folio: z.string(),
+	abierto: z.boolean(),
+	total_centavos: z.number().int(),
+	notas_centavos: z.number().int(),
+});
+
+/**
+ * Revisa el pedido al que entra un anticipo (un pago o saldo a favor) y dice cuánto le falta, con el candado de su
+ * anticipo ya tomado (regla 2 de pagos).
+ * @param contexto El contexto de la acción.
+ * @param pedidoId El pedido.
+ * @param cliente El cliente que paga, con su nombre.
+ * @returns Su folio y lo que le falta: su total − su anticipo neto − lo de sus notas que el anticipo no cubrió.
+ * @throws `422 pedido_no_abierto` y `422 documento_de_otro_cliente`.
+ */
+export async function pedidoQueRecibe(
+	contexto: ContextoDeAccion,
+	pedidoId: string,
+	cliente: { id: string; nombre: string },
+): Promise<{ folio: string; falta: number }> {
+	await candadoDeAnticipo(contexto.transaccion, pedidoId);
+	const pedido = pedidoParaCobro.parse(await contexto.lectura("ventas.pedido_para_cobro", { pedido_id: pedidoId }));
+	if (!pedido.abierto) {
+		throw errorDeRegla(
+			"pedido_no_abierto",
+			`${pedido.folio} no está confirmado y abierto: no se le puede registrar anticipo.`,
+		);
+	}
+	if (pedido.cliente_id !== cliente.id) {
+		throw errorDeRegla("documento_de_otro_cliente", `${pedido.folio} no es de ${cliente.nombre}.`);
+	}
+	const anticipo = await anticipoDelPedido(contexto.transaccion, pedidoId);
+	const aplicadoNeto = anticipo.aplicado - anticipo.regresado;
+	const sinAnticipo = Math.max(0, pedido.notas_centavos - aplicadoNeto);
+	const falta = pedido.total_centavos - (anticipo.recibido - anticipo.aFavor) - sinAnticipo;
+	return { folio: pedido.folio, falta: Math.max(0, falta) };
+}
+
+/**
+ * Escribe un anticipo recibido en un pedido, de un pago o de saldo a favor, con su evento. Quien la llama ya tiene el
+ * candado del anticipo del pedido.
+ * @param contexto El contexto de la acción.
+ * @param recibido El pedido, el cliente, el monto y de dónde vino.
+ */
+export async function recibirAnticipo(
+	contexto: ContextoDeAccion,
+	recibido: {
+		pedidoId: string;
+		clienteId: string;
+		montoCentavos: number;
+		origen: { pagoId: string } | { saldoFavorMovimientoId: string };
+	},
+): Promise<void> {
+	const id = uuidv7();
+	await contexto.transaccion.insert(anticipos).values({
+		id,
+		pedidoId: recibido.pedidoId,
+		clienteId: recibido.clienteId,
+		tipo: "recibido",
+		montoCentavos: recibido.montoCentavos,
+		fecha: contexto.diaDeNegocio.toString(),
+		...recibido.origen,
+		creadoPor: quienCambia(contexto),
+	});
+	contexto.guardarEvento({
+		tipo: "anticipo.recibido",
+		datos: { anticipo_id: id, pedido_id: recibido.pedidoId },
+		tablas: ["anticipos"],
+		entidad: "anticipos",
+		entidadId: id,
+	});
+}

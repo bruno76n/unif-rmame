@@ -9,6 +9,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { meterPiezas, ubicacionesPorCodigo, variantesLibres } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
+import { pedidoDePrueba } from "../../../nucleo/pruebas/ventas-de-prueba.ts";
 
 describe("Surtir pasa a En camino a aduana con su A- y sus reservas; sin la pieza en Bodega no surte", () => {
 	let servidor: ServidorDePrueba;
@@ -24,7 +25,7 @@ describe("Surtir pasa a En camino a aduana con su A- y sus reservas; sin la piez
 	/** Un pedido externo con piezas reservadas en Bodega. */
 	async function pedidoReservado(hay: number, reservadas: number) {
 		const [variante = ""] = await variantesLibres(servidor, 1);
-		const pedido = uuidv7();
+		const pedido = await pedidoDePrueba(servidor);
 		if (hay > 0) await meterPiezas(servidor, ubicacion.BOD ?? "", variante, hay);
 		await servidor.base.dueno.query(
 			`INSERT INTO reservas (id, ubicacion_id, variante_id, piezas, motivo, pedido_id, estado)

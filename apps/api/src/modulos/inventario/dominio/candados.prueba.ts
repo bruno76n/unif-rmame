@@ -19,6 +19,7 @@ import {
 	variantesLibres,
 } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
+import { pedidoDePrueba } from "../../../nucleo/pruebas/ventas-de-prueba.ts";
 import { tomarCandadosDeInventario } from "./candados.ts";
 import { escribirMovimiento } from "./escribir-movimiento.ts";
 import { cambiarEstadoTraspaso, repartirTraspaso } from "./traspasos.ts";
@@ -150,7 +151,7 @@ describe("Con varias conexiones al mismo tiempo no hay bloqueos cruzados: el ord
 			await servidor.base.dueno.query(
 				`INSERT INTO reservas (id, ubicacion_id, variante_id, piezas, motivo, pedido_id, traspaso_id, estado)
 				 VALUES ($1, $2, $3, 2, 'pedido_externo', $4, $5, 'activa')`,
-				[reserva, ubicacion.ADU, variante, uuidv7(), lote.traspasoId],
+				[reserva, ubicacion.ADU, variante, await pedidoDePrueba(servidor), lote.traspasoId],
 			);
 			const errores = await Promise.all([
 				sinReintento(async (contexto) => {

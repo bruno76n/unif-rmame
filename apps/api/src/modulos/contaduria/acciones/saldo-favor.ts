@@ -12,8 +12,9 @@ import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
 import { quienCambia } from "../../../nucleo/acciones/comunes.ts";
 import { errorDeCampo, errorDeRegla } from "../../../nucleo/http/errores.ts";
-import { implementarAccion } from "../../../nucleo/modulos.ts";
+import { type ContextoDeAccion, implementarAccion } from "../../../nucleo/modulos.ts";
 import { confirmadoConGoogle } from "../../admin/dominio/cuentas.ts";
+import { pedidoQueRecibe, recibirAnticipo } from "../dominio/anticipos.ts";
 import { creditoDelCliente } from "../dominio/credito.ts";
 import { aplicarACuenta, bloquearCuentaDeNota, foliosDeVentas } from "../dominio/cuentas.ts";
 import { enPesos, revisarMedio, revisarPesosEnteros } from "../dominio/pagos.ts";
@@ -23,13 +24,25 @@ import { pagos, saldoFavorMovimientos } from "../tablas.ts";
 export const accionAplicarSaldoAFavor = implementarAccion(aplicarSaldoAFavor, async (contexto, datos) => {
 	const { transaccion } = contexto;
 	const credito = await creditoDelCliente(transaccion, datos.cliente_id);
+	if ((datos.nota_entrega_id === undefined) === (datos.pedido_id === undefined)) {
+		throw errorDeCampo("nota_entrega_id", "Escoge la nota o el pedido.");
+	}
+	// A un pedido: el candado de su anticipo va antes que el del saldo a favor (decisión 670).
+	const pedido =
+		datos.pedido_id === undefined
+			? undefined
+			: await pedidoQueRecibe(contexto, datos.pedido_id, { id: datos.cliente_id, nombre: credito.cliente });
 	await bloquearSaldoAFavor(transaccion, datos.cliente_id);
 	const aFavor = await saldoAFavor(transaccion, datos.cliente_id);
 	if (aFavor <= 0) throw errorDeRegla("sin_saldo_a_favor", `${credito.cliente} no tiene saldo a favor.`);
 	if (datos.monto_centavos > aFavor) throw errorDeRegla("monto_mayor_que_saldo_a_favor", `Hasta ${enPesos(aFavor)}.`);
-	const cuenta = await bloquearCuentaDeNota(transaccion, datos.nota_entrega_id);
-	const folios = await foliosDeVentas(contexto, { nota_entrega_ids: [datos.nota_entrega_id] });
-	const nota = folios.get(datos.nota_entrega_id) ?? "La nota";
+	if (pedido !== undefined && datos.pedido_id !== undefined) {
+		return saldoAFavorAPedido(contexto, { ...datos, pedido_id: datos.pedido_id }, credito, pedido, aFavor);
+	}
+	const notaId = datos.nota_entrega_id ?? "";
+	const cuenta = await bloquearCuentaDeNota(transaccion, notaId);
+	const folios = await foliosDeVentas(contexto, { nota_entrega_ids: [notaId] });
+	const nota = folios.get(notaId) ?? "La nota";
 	if (cuenta === undefined) {
 		throw errorDeRegla("nota_sin_entregar", `${nota} todavía no se entrega: se cobra al confirmar la entrega.`);
 	}
@@ -53,7 +66,7 @@ export const accionAplicarSaldoAFavor = implementarAccion(aplicarSaldoAFavor, as
 	const saldo = await aplicarACuenta(contexto, cuenta, datos.monto_centavos, { saldoFavorMovimientoId: movimientoId });
 	contexto.guardarEvento({
 		tipo: "saldo_favor.aplicado",
-		datos: { movimiento_id: movimientoId, cliente_id: datos.cliente_id, nota_entrega_id: datos.nota_entrega_id },
+		datos: { movimiento_id: movimientoId, cliente_id: datos.cliente_id, nota_entrega_id: notaId },
 		tablas: ["saldo_favor_movimientos", "aplicaciones_pago", "cuentas_por_cobrar"],
 		entidad: "saldo_favor_movimientos",
 		entidadId: movimientoId,
@@ -71,6 +84,62 @@ export const accionAplicarSaldoAFavor = implementarAccion(aplicarSaldoAFavor, as
 		entidad: { nombre: "saldo_favor_movimientos", id: movimientoId },
 	};
 });
+
+/**
+ * Saldo a favor aplicado a un pedido: el movimiento `aplicado_pedido` y su anticipo recibido, hasta lo que le falta al
+ * pedido. Quien la llama ya tiene el candado del anticipo del pedido y el del saldo a favor.
+ * @returns La respuesta de `contaduria.aplicar_saldo_a_favor`.
+ */
+async function saldoAFavorAPedido(
+	contexto: ContextoDeAccion,
+	datos: { cliente_id: string; pedido_id: string; monto_centavos: number },
+	credito: { cliente: string; terceroId: string },
+	pedido: { folio: string; falta: number },
+	aFavor: number,
+) {
+	if (datos.monto_centavos > pedido.falta) {
+		throw errorDeRegla("monto_mayor_que_saldo", `El saldo de ${pedido.folio} es ${enPesos(pedido.falta)}.`);
+	}
+	const movimientoId = uuidv7();
+	await contexto.transaccion.insert(saldoFavorMovimientos).values({
+		id: movimientoId,
+		clienteId: datos.cliente_id,
+		terceroId: credito.terceroId,
+		tipo: "aplicado_pedido",
+		montoCentavos: datos.monto_centavos,
+		fecha: contexto.diaDeNegocio.toString(),
+		pedidoId: datos.pedido_id,
+		creadoPor: quienCambia(contexto),
+	});
+	await recibirAnticipo(contexto, {
+		pedidoId: datos.pedido_id,
+		clienteId: datos.cliente_id,
+		montoCentavos: datos.monto_centavos,
+		origen: { saldoFavorMovimientoId: movimientoId },
+	});
+	contexto.guardarEvento({
+		tipo: "saldo_favor.aplicado",
+		datos: { movimiento_id: movimientoId, cliente_id: datos.cliente_id, pedido_id: datos.pedido_id },
+		tablas: ["saldo_favor_movimientos", "anticipos"],
+		entidad: "saldo_favor_movimientos",
+		entidadId: movimientoId,
+	});
+	const monto = enPesos(datos.monto_centavos);
+	contexto.bitacora({
+		descripcion: `Aplicó ${monto} a favor de ${credito.cliente} a ${pedido.folio}`,
+		entidad: "saldo_favor_movimientos",
+		entidadId: movimientoId,
+		antes: { saldo_a_favor_centavos: aFavor, falta_centavos: pedido.falta },
+		despues: {
+			saldo_a_favor_centavos: aFavor - datos.monto_centavos,
+			falta_centavos: pedido.falta - datos.monto_centavos,
+		},
+	});
+	return {
+		resultado: { mensaje: `${monto} a favor aplicados a ${pedido.folio}`, saldo_favor_movimiento_id: movimientoId },
+		entidad: { nombre: "saldo_favor_movimientos", id: movimientoId },
+	};
+}
 
 export const accionDevolverSaldoAFavor = implementarAccion(devolverSaldoAFavor, async (contexto, datos) => {
 	const { transaccion } = contexto;

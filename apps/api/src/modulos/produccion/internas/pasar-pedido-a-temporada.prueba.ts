@@ -25,6 +25,7 @@ import {
 } from "../../../nucleo/pruebas/patronaje-de-prueba.ts";
 import { type PrendaDelTaller, prendaDelTaller } from "../../../nucleo/pruebas/produccion-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
+import { pedidoDePrueba, versionVigenteDePrueba } from "../../../nucleo/pruebas/ventas-de-prueba.ts";
 
 describe("Cancelar el pedido pasa sus lotes a temporada; su entrega cambia con el pedido; las etapas avanzan; un lote sin terminar detiene la baja de su talla y el cambio de su flujo", () => {
 	let servidor: ServidorDePrueba;
@@ -59,7 +60,7 @@ describe("Cancelar el pedido pasa sus lotes a temporada; su entrega cambia con e
 		const mandado = z.object({ lotes: z.array(z.object({ lote_id: z.uuid() })) }).parse(
 			await interna("produccion.mandar_a_produccion", {
 				pedido_id: pedido,
-				pedido_version_id: uuidv7(),
+				pedido_version_id: await versionVigenteDePrueba(servidor, pedido),
 				fecha_entrega: enDias(15),
 				renglones: [{ variante_id: prenda.variantes["4"], piezas: 20 }],
 			}),
@@ -69,7 +70,7 @@ describe("Cancelar el pedido pasa sus lotes a temporada; su entrega cambia con e
 
 	/** Un lote que ya se cortó, con la receta de su prenda, en la etapa que se diga. */
 	async function loteCortado(prenda: PrendaDelTaller, estado: string) {
-		const lote = await loteDePedido(prenda, uuidv7());
+		const lote = await loteDePedido(prenda, await pedidoDePrueba(servidor));
 		const { rows } = await servidor.base.dueno.query("SELECT id FROM recetas WHERE producto_id = $1", [
 			prenda.productoId,
 		]);
@@ -94,7 +95,7 @@ describe("Cancelar el pedido pasa sus lotes a temporada; su entrega cambia con e
 
 	it("cancelar el pedido: sus lotes van a temporada en Bodega y conservan su pedido y su orden; otra vez no cambia nada", async () => {
 		const prenda = await prendaDelTaller(servidor, siembra);
-		const pedido = uuidv7();
+		const pedido = await pedidoDePrueba(servidor);
 		const lote = await loteDePedido(prenda, pedido);
 		expect(await interna("produccion.pasar_pedido_a_temporada", { pedido_id: pedido })).toEqual({ lotes: 1 });
 		expect(
@@ -115,7 +116,7 @@ describe("Cancelar el pedido pasa sus lotes a temporada; su entrega cambia con e
 
 	it("cambiar la entrega del pedido cambia la de su orden y sus lotes, no su corte", async () => {
 		const prenda = await prendaDelTaller(servidor, siembra);
-		const pedido = uuidv7();
+		const pedido = await pedidoDePrueba(servidor);
 		const lote = await loteDePedido(prenda, pedido);
 		const [antes] = await consultar("SELECT fecha_corte::text FROM lotes WHERE id = $1", [lote]);
 		expect(

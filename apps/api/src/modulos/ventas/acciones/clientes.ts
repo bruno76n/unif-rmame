@@ -15,7 +15,7 @@ import {
 	reactivarCliente,
 } from "@uniformame/compartido/contratos/ventas/clientes";
 import { centavos } from "@uniformame/compartido/tipos/base";
-import { eq } from "drizzle-orm";
+import { and, count, eq, inArray } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
 import { quienCambia, revisarMotivo } from "../../../nucleo/acciones/comunes.ts";
@@ -25,7 +25,7 @@ import { implementarAccion } from "../../../nucleo/modulos.ts";
 import { escuelas } from "../../catalogo/tablas.ts";
 import { creditoClientes, terceros } from "../../contaduria/tablas.ts";
 import { type ClienteConNombre, eventoDeCliente, leerCliente, nombreDelTipo } from "../dominio/clientes.ts";
-import { clientes } from "../tablas.ts";
+import { clientes, pedidos } from "../tablas.ts";
 
 /** Lo que regresa `contaduria.crear_tercero`. */
 const terceroCreado = z.object({ tercero_id: z.uuid(), ya_existia: z.boolean(), avisos: z.array(z.string()) });
@@ -293,6 +293,17 @@ export const accionDarBajaCliente = implementarAccion(darBajaCliente, async (con
 	}));
 	if (cliente.bajaEn !== null) {
 		throw errorDeRegla("cliente_dado_de_baja", `${cliente.nombre} ya está dado de baja.`);
+	}
+	// Sin pedidos abiertos: en borrador o confirmados.
+	const [abiertos] = await transaccion
+		.select({ n: count() })
+		.from(pedidos)
+		.where(and(eq(pedidos.clienteId, cliente.id), inArray(pedidos.estado, ["borrador", "confirmado"])));
+	if ((abiertos?.n ?? 0) > 0) {
+		throw errorDeRegla(
+			"cliente_con_pedidos",
+			`${cliente.nombre} tiene ${abiertos?.n} pedido(s) abierto(s): no se puede dar de baja.`,
+		);
 	}
 	// Sin saldo por cobrar; el monto solo lo ve quien también tiene Contaduría.
 	const saldo = saldoDelCliente.parse(

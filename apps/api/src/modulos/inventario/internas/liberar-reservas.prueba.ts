@@ -17,6 +17,7 @@ import {
 	variantesLibres,
 } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
+import { pedidoDePrueba } from "../../../nucleo/pruebas/ventas-de-prueba.ts";
 
 describe("liberar reservas", () => {
 	let servidor: ServidorDePrueba;
@@ -42,7 +43,7 @@ describe("liberar reservas", () => {
 	it("Liberar una parte deja el resto en una reserva nueva; las que ya no están activas se ignoran", async () => {
 		const [variante = ""] = await variantesLibres(servidor, 1);
 		await meterPiezas(servidor, ubicacion.BOD ?? "", variante, 10);
-		const pedido = uuidv7();
+		const pedido = await pedidoDePrueba(servidor);
 		await llamarInterna(servidor, "inventario.reservar", {
 			motivo: "pedido_externo",
 			pedido_id: pedido,
@@ -86,7 +87,7 @@ describe("liberar reservas", () => {
 
 	it("Un documento cancelado reparte lo de aduana en un `regresa` a su origen (Bodega, si vino del Taller)", async () => {
 		const [variante = ""] = await variantesLibres(servidor, 1);
-		const pedido = uuidv7();
+		const pedido = await pedidoDePrueba(servidor);
 		// Un lote del pedido, recibido en aduana: sus 8 piezas están apartadas para el pedido.
 		const lote = await nuevoTraspaso(servidor, {
 			tipo: "lote_cliente",
@@ -173,7 +174,7 @@ describe("liberar reservas", () => {
 	it("si el pago se confirma mientras se liberan sus reservas, espera y vuelve a apartar: el W- pagado nunca se queda sin reserva", async () => {
 		const [variante = ""] = await variantesLibres(servidor, 1);
 		await meterPiezas(servidor, ubicacion.BOD ?? "", variante, 2);
-		const pedido = uuidv7();
+		const pedido = await pedidoDePrueba(servidor);
 		await llamarInterna(servidor, "inventario.reservar", {
 			motivo: "pedido_linea",
 			pedido_linea_id: pedido,

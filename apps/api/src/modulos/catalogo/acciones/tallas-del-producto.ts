@@ -264,6 +264,16 @@ export const accionDarBajaTalla = implementarAccion(darBajaTalla, async (context
 			`La talla ${variante.talla} está en lotes sin terminar: ${enLotes.folios.join(", ")}.`,
 		);
 	}
+	// Ni en pedidos abiertos de Ventas (borrador o confirmados) con piezas de esta talla.
+	const enPedidos = z
+		.object({ folios: z.array(z.string()) })
+		.parse(await contexto.lectura("ventas.pedidos_abiertos_de_variante", { variante_id: variante.id }));
+	if (enPedidos.folios.length > 0) {
+		throw errorDeRegla(
+			"talla_con_pedidos",
+			`La talla ${variante.talla} está en pedidos abiertos: ${enPedidos.folios.join(", ")}.`,
+		);
+	}
 	await contexto.transaccion
 		.update(variantes)
 		.set({ bajaEn: contexto.ahora.toString(), bajaPor: quienCambia(contexto), motivoBaja: datos.motivo })

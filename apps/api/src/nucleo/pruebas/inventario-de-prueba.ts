@@ -12,6 +12,7 @@ import { crearBase } from "../base/conexion.ts";
 import { enAccionDePrueba } from "./accion-de-prueba.ts";
 import { nuevoProducto, siembraDelCatalogo } from "./catalogo-de-prueba.ts";
 import type { ServidorDePrueba } from "./servidor-de-prueba.ts";
+import { pedidoDePrueba } from "./ventas-de-prueba.ts";
 
 /**
  * Las ubicaciones, por su código (`ADU`, `BOD`, `T1`…).
@@ -102,7 +103,7 @@ export function llamarInterna(servidor: ServidorDePrueba, nombre: string, datos:
 export async function pedidoListoEnAduana(servidor: ServidorDePrueba, piezas: number) {
 	const ubicacion = await ubicacionesPorCodigo(servidor);
 	const [variante = ""] = await variantesLibres(servidor, 1);
-	const pedido = uuidv7();
+	const pedido = await pedidoDePrueba(servidor);
 	const lote = await nuevoTraspaso(servidor, {
 		tipo: "lote_cliente",
 		estado: "en_aduana",

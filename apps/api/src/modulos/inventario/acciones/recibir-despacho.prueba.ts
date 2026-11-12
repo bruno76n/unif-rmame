@@ -20,6 +20,7 @@ import {
 import { variantesLibres } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
+import { pedidoDePrueba } from "../../../nucleo/pruebas/ventas-de-prueba.ts";
 
 describe("Solo quien recibe confirma: lo que falta se queda en Tránsito a cargo de Aduana y lo que sobra sale del tramo del primer traspaso", () => {
 	let servidor: ServidorDePrueba;
@@ -220,7 +221,7 @@ describe("Solo quien recibe confirma: lo que falta se queda en Tránsito a cargo
 		await servidor.base.dueno.query(
 			`INSERT INTO reservas (id, ubicacion_id, variante_id, piezas, motivo, pedido_id, traspaso_id, estado)
 			 SELECT $1, u.id, $2, 5, 'pedido_externo', $3, $4, 'activa' FROM ubicaciones u WHERE u.codigo = 'ADU'`,
-			[uuidv7(), variante, uuidv7(), traspaso.id],
+			[uuidv7(), variante, await pedidoDePrueba(servidor), traspaso.id],
 		);
 		// Al llegar al destino del traspaso, la reserva deja su traspaso: se busca por su variante.
 		const dondeEsta = async () =>

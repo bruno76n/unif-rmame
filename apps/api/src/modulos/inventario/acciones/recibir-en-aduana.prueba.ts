@@ -16,6 +16,7 @@ import {
 } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
+import { pedidoDePrueba } from "../../../nucleo/pruebas/ventas-de-prueba.ts";
 
 describe("Recibir lo que viene en camino deja lo que no llegó en su tramo y una devolución de cliente que no llegó no deja nada", () => {
 	let servidor: ServidorDePrueba;
@@ -31,7 +32,7 @@ describe("Recibir lo que viene en camino deja lo que no llegó en su tramo y una
 	/** Un pedido con 3 piezas reservadas en Bodega, ya surtido a aduana: su A- en camino. */
 	async function surtido() {
 		const [variante = ""] = await variantesLibres(servidor, 1);
-		const pedido = uuidv7();
+		const pedido = await pedidoDePrueba(servidor);
 		await meterPiezas(servidor, ubicacion.BOD ?? "", variante, 3);
 		await servidor.base.dueno.query(
 			`INSERT INTO reservas (id, ubicacion_id, variante_id, piezas, motivo, pedido_id, estado)

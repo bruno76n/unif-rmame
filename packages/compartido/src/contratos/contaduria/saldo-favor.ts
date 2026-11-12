@@ -13,7 +13,8 @@ export const aplicarSaldoAFavor = definirAccion({
 	descripcion: "Aplica saldo a favor de un cliente a una nota entregada y baja su cuenta por cobrar",
 	entrada: z.object({
 		cliente_id: z.uuid("Escoge el cliente.").describe("El cliente"),
-		nota_entrega_id: z.uuid("Escoge la nota.").describe("La nota entregada"),
+		nota_entrega_id: z.uuid("Escoge la nota.").optional().describe("La nota entregada"),
+		pedido_id: z.uuid("Escoge el pedido.").optional().describe("O el pedido confirmado, al que entra como anticipo"),
 		monto_centavos: z
 			.number("Escribe el monto.")
 			.int("Escribe el monto.")
@@ -28,6 +29,10 @@ export const aplicarSaldoAFavor = definirAccion({
 		{ codigo: "nota_sin_entregar", mensaje: "{NV} todavía no se entrega: se cobra al confirmar la entrega." },
 		{ codigo: "documento_de_otro_cliente", mensaje: "{folio} no es de {cliente}." },
 		{ codigo: "monto_mayor_que_saldo", mensaje: "El saldo de {folio} es {saldo}." },
+		{
+			codigo: "pedido_no_abierto",
+			mensaje: "{PE} no está confirmado y abierto: no se le puede registrar anticipo.",
+		},
 	],
 });
 

@@ -52,7 +52,7 @@ import { autorizaciones } from "../direccion/tablas.ts";
 import { recetaVersiones } from "../patronaje/tablas.ts";
 import { personas } from "../personal/tablas.ts";
 import { cortes, lotes, ordenesProduccion } from "../produccion/tablas.ts";
-import { clientes } from "../ventas/tablas.ts";
+import { clientes, pedidos } from "../ventas/tablas.ts";
 
 /** Cada lugar donde puede estar una pieza: Aduana, Bodega, las tiendas, el Taller y los dos de paso. */
 export const ubicaciones = pgTable(
@@ -339,8 +339,7 @@ export const traspasos = pgTable(
 		/** @llavePendiente solicitudes_envio.id */
 		solicitudEnvioId: uuid("solicitud_envio_id"),
 		folioRb: text("folio_rb"),
-		/** @llavePendiente pedidos.id */
-		pedidoId: uuid("pedido_id"),
+		pedidoId: uuid("pedido_id").references((): AnyPgColumn => pedidos.id),
 		/** @llavePendiente notas_entrega.id */
 		notaEntregaId: uuid("nota_entrega_id"),
 		/** @llavePendiente pedidos_especiales_tienda.id */
@@ -505,8 +504,7 @@ export const reservas = pgTable(
 			.references(() => variantes.id),
 		piezas: integer("piezas").notNull(),
 		motivo: text("motivo").notNull(),
-		/** @llavePendiente pedidos.id */
-		pedidoId: uuid("pedido_id"),
+		pedidoId: uuid("pedido_id").references((): AnyPgColumn => pedidos.id),
 		/** @llavePendiente notas_entrega.id */
 		notaEntregaId: uuid("nota_entrega_id"),
 		/** @llavePendiente pedidos_linea.id */

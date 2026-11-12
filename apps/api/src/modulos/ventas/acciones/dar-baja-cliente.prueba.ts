@@ -10,7 +10,11 @@ import { z } from "zod";
 import { llamarInterna } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
 import { conGoogle, mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
-import { darDeAltaClienteDePrueba, nombreDeClienteNuevo } from "../../../nucleo/pruebas/ventas-de-prueba.ts";
+import {
+	darDeAltaClienteDePrueba,
+	nombreDeClienteNuevo,
+	pedidoDePrueba,
+} from "../../../nucleo/pruebas/ventas-de-prueba.ts";
 
 describe("Un cliente con saldo no se da de baja, y el monto solo se ve con Contaduría", () => {
 	let servidor: ServidorDePrueba;
@@ -42,9 +46,10 @@ describe("Un cliente con saldo no se da de baja, y el monto solo se ve con Conta
 	it("con saldo por cobrar: Ventas no ve el monto, la dueña sí; ya pagado, se da de baja con su lista y regresa al reactivar", async () => {
 		const cliente = await darDeAltaClienteDePrueba(servidor);
 		const nota = crypto.randomUUID();
+		const pedido = await pedidoDePrueba(servidor, cliente.cliente_id);
 		await llamarInterna(servidor, "contaduria.crear_cuenta_por_cobrar", {
 			nota_entrega_id: nota,
-			pedido_id: crypto.randomUUID(),
+			pedido_id: pedido,
 			cliente_id: cliente.cliente_id,
 			fecha_entrega: "2026-11-09",
 			dias_credito: 0,
@@ -55,6 +60,14 @@ describe("Un cliente con saldo no se da de baja, y el monto solo se ve con Conta
 			[cliente.cliente_id],
 		);
 		const suNombre = String(nombre[0]?.nombre);
+		// Con su pedido abierto no se da de baja; ya entregado, lo detiene su saldo.
+		expect((await sobre("dar_baja_cliente", cliente.cliente_id, { motivo: "Ya no compra" })).cuerpo).toMatchObject({
+			codigo: "cliente_con_pedidos",
+			mensaje: `${suNombre} tiene 1 pedido(s) abierto(s): no se puede dar de baja.`,
+		});
+		await servidor.base.dueno.query("UPDATE pedidos SET estado = 'entregado', entregado_en = now() WHERE id = $1", [
+			pedido,
+		]);
 		expect((await sobre("dar_baja_cliente", cliente.cliente_id, { motivo: "Ya no compra" })).cuerpo).toMatchObject({
 			codigo: "cliente_con_saldo",
 			mensaje: `${suNombre} tiene saldo por cobrar: no se puede dar de baja hasta que pague.`,

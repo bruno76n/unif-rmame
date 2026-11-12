@@ -21,6 +21,7 @@ import { cuentaDePrueba, personaDePrueba } from "../../../nucleo/pruebas/cuentas
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import { type LoteCortado, loteCortado } from "../../../nucleo/pruebas/produccion-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
+import { pedidoDePrueba } from "../../../nucleo/pruebas/ventas-de-prueba.ts";
 
 describe("Revisar un lote terminado congela sus aprobadas por talla, crea un reproceso por rechazo y deja el lote revisado", () => {
 	let servidor: ServidorDePrueba;
@@ -179,7 +180,7 @@ describe("Revisar un lote terminado congela sus aprobadas por talla, crea un rep
 	it("un reproceso solo se aprueba con su lote en aduana, y se aprueba completo; mientras, cuenta para su pedido en producción", async () => {
 		const lote = await loteTerminado();
 		// El lote es de un pedido (los pedidos llegan en la fase 16).
-		const pedidoId = uuidv7();
+		const pedidoId = await pedidoDePrueba(servidor);
 		await consultar("UPDATE lotes SET destino = 'pedido', pedido_id = $2, ubicacion_destino_id = NULL WHERE id = $1", [
 			lote.loteId,
 			pedidoId,

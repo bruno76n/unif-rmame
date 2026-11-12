@@ -5,7 +5,8 @@
  */
 
 import { resolverExcepcion } from "@uniformame/compartido/contratos/inventario/excepciones";
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
+import { nombreDeCuenta } from "../../../nucleo/acciones/comunes.ts";
 import { tomarVersion } from "../../../nucleo/acciones/pisadas.ts";
 import { ErrorDeApi, errorDeCampo, errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeAccion, implementarAccion } from "../../../nucleo/modulos.ts";
@@ -31,19 +32,6 @@ function revisarBandeja(contexto: ContextoDeAccion, excepcion: { tipo: string; a
 	if (!puede) throw noExiste();
 }
 
-/**
- * El nombre de quien resolvió una excepción: el de su persona, o el de la cuenta.
- * @param contexto El contexto de la acción.
- * @param usuarioId La cuenta.
- */
-async function nombreDeQuienResolvio(contexto: ContextoDeAccion, usuarioId: string | null): Promise<string> {
-	if (usuarioId === null) return "el sistema";
-	const { rows } = await contexto.transaccion.execute(sql`
-		SELECT coalesce(p.nombre, u.nombre, u.correo) AS nombre FROM usuarios u LEFT JOIN personas p ON p.id = u.persona_id
-		WHERE u.id = ${usuarioId}`);
-	return String(rows[0]?.nombre ?? "otra cuenta");
-}
-
 export const accionResolverExcepcion = implementarAccion(resolverExcepcion, async (contexto, datos, version) => {
 	const { transaccion } = contexto;
 	const [excepcion] = await transaccion
@@ -54,7 +42,7 @@ export const accionResolverExcepcion = implementarAccion(resolverExcepcion, asyn
 	if (excepcion === undefined) throw noExiste();
 	revisarBandeja(contexto, excepcion);
 	if (excepcion.estado === "resuelta") {
-		throw errorDeRegla("ya_resuelta", `Ya la resolvió ${await nombreDeQuienResolvio(contexto, excepcion.resueltaPor)}`);
+		throw errorDeRegla("ya_resuelta", `Ya la resolvió ${await nombreDeCuenta(contexto, excepcion.resueltaPor)}`);
 	}
 	const minimo = Number(await contexto.lectura("admin.parametro", { clave: "general.largo_minimo_motivo" }));
 	if (datos.resolucion.length < minimo) throw errorDeCampo("resolucion", "Escribe qué se hizo");

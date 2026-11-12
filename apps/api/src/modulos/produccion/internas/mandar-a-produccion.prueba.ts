@@ -5,7 +5,6 @@
  */
 
 import { Temporal } from "temporal-polyfill";
-import { v7 as uuidv7 } from "uuid";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { crearBase } from "../../../nucleo/base/conexion.ts";
 import { enAccionDePrueba } from "../../../nucleo/pruebas/accion-de-prueba.ts";
@@ -13,6 +12,7 @@ import { type SiembraDelCatalogo, siembraDelCatalogo } from "../../../nucleo/pru
 import { quienesDePrueba } from "../../../nucleo/pruebas/cuentas-de-prueba.ts";
 import { prendaDelTaller } from "../../../nucleo/pruebas/produccion-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
+import { pedidoDePrueba, versionVigenteDePrueba } from "../../../nucleo/pruebas/ventas-de-prueba.ts";
 
 describe("Mandar un pedido suma piezas al lote por cortar sin tela de esa prenda o abre una orden con un lote por prenda", () => {
 	let servidor: ServidorDePrueba;
@@ -42,11 +42,12 @@ describe("Mandar un pedido suma piezas al lote por cortar sin tela de esa prenda
 
 	it("la primera vez, una orden cliente_externo con un lote por prenda; después, las piezas se suman al lote por cortar", async () => {
 		const [polo, pantalon] = [await prendaDelTaller(servidor, siembra), await prendaDelTaller(servidor, siembra)];
-		const pedido = uuidv7();
+		const pedido = await pedidoDePrueba(servidor);
+		const suVersion = await versionVigenteDePrueba(servidor, pedido);
 		const primera = await comoVentas((contexto) =>
 			contexto.interna("produccion.mandar_a_produccion", {
 				pedido_id: pedido,
-				pedido_version_id: uuidv7(),
+				pedido_version_id: suVersion,
 				fecha_entrega: enDias(20),
 				renglones: [
 					{ variante_id: polo.variantes["4"], piezas: 40 },
@@ -74,7 +75,7 @@ describe("Mandar un pedido suma piezas al lote por cortar sin tela de esa prenda
 		const segunda = await comoVentas((contexto) =>
 			contexto.interna("produccion.mandar_a_produccion", {
 				pedido_id: pedido,
-				pedido_version_id: uuidv7(),
+				pedido_version_id: suVersion,
 				fecha_entrega: enDias(20),
 				renglones: [
 					{ variante_id: polo.variantes["4"], piezas: 5 },
@@ -109,12 +110,13 @@ describe("Mandar un pedido suma piezas al lote por cortar sin tela de esa prenda
 	it("una prenda que no se fabrica no entra, y el pedido no deja nada", async () => {
 		const polo = await prendaDelTaller(servidor, siembra);
 		await servidor.base.dueno.query("UPDATE productos SET flujo_id = NULL WHERE id = $1", [polo.productoId]);
-		const pedido = uuidv7();
+		const pedido = await pedidoDePrueba(servidor);
+		const suVersion = await versionVigenteDePrueba(servidor, pedido);
 		await expect(
 			comoVentas((contexto) =>
 				contexto.interna("produccion.mandar_a_produccion", {
 					pedido_id: pedido,
-					pedido_version_id: uuidv7(),
+					pedido_version_id: suVersion,
 					fecha_entrega: enDias(10),
 					renglones: [{ variante_id: polo.variantes["4"], piezas: 4 }],
 				}),

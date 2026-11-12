@@ -26,10 +26,14 @@ export const medioDePago = {
 /** Contaduría registra un pago que un cliente hizo a una de sus notas entregadas. */
 export const registrarPagoRecibido = definirAccion({
 	nombre: "contaduria.registrar_pago_recibido",
-	descripcion: "Registra un pago recibido de un cliente a una nota entregada y baja su cuenta por cobrar",
+	descripcion: "Registra un pago recibido de un cliente: a una nota entregada, o a un pedido como anticipo",
 	entrada: z.object({
 		cliente_id: z.uuid("Escoge el cliente.").describe("El cliente que pagó"),
-		nota_entrega_id: z.uuid("Escoge la nota.").describe("La nota entregada que paga"),
+		nota_entrega_id: z.uuid("Escoge la nota.").optional().describe("La nota entregada que paga"),
+		pedido_id: z
+			.uuid("Escoge el pedido.")
+			.optional()
+			.describe("O el pedido confirmado al que entra como anticipo, en lugar de la nota"),
 		monto_centavos: montoDePago("Escribe el monto en pesos").describe(
 			"El monto en centavos: en pesos enteros, o con centavos si liquida exacto el saldo de la nota",
 		),
@@ -52,6 +56,10 @@ export const registrarPagoRecibido = definirAccion({
 		{ codigo: "nota_sin_entregar", mensaje: "{NV} todavía no se entrega: se cobra al confirmar la entrega." },
 		{ codigo: "documento_de_otro_cliente", mensaje: "{folio} no es de {cliente}." },
 		{ codigo: "monto_mayor_que_saldo", mensaje: "El saldo de {folio} es {saldo}." },
+		{
+			codigo: "pedido_no_abierto",
+			mensaje: "{PE} no está confirmado y abierto: no se le puede registrar anticipo.",
+		},
 	],
 });
 

@@ -219,8 +219,12 @@ export async function aplicarAccion(
 		clave,
 	);
 	const salida = await accion.ejecutar(contexto, peticion.datos, peticion.version);
-	// Una acción que edita tiene que haber tomado la versión que se leyó: si no, la versión no serviría.
-	if (contrato.edita && !tomoSuVersion(contexto)) throw new Error(`${contrato.nombre} edita pero no tomó su versión`);
+	// Una acción que edita tiene que haber tomado la versión que se leyó: si no, la versión no serviría. La que crea o
+	// edita (`versionOpcional`) la toma solo cuando la trajo.
+	const traeVersion = peticion.version !== undefined || !contrato.versionOpcional;
+	if (contrato.edita && traeVersion && !tomoSuVersion(contexto)) {
+		throw new Error(`${contrato.nombre} edita pero no tomó su versión`);
+	}
 	// La salida se revisa aquí, dentro de la transacción: un campo fuera del contrato no se guarda.
 	const resultado = z.parse(contrato.resultado, salida.resultado);
 	// Toda acción deja al menos un renglón de bitácora, salvo la que su archivo dice que no (un borrador, lo

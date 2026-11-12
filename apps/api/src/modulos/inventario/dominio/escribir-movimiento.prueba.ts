@@ -16,6 +16,7 @@ import { llaveDePrueba } from "../../../nucleo/pruebas/cuentas-de-prueba.ts";
 import { nuevoTraspaso, variantesLibres } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
+import { pedidoDePrueba } from "../../../nucleo/pruebas/ventas-de-prueba.ts";
 import { claveDerivada, escribirMovimiento, revertirMovimiento } from "./escribir-movimiento.ts";
 
 describe("el libro de movimientos", () => {
@@ -355,7 +356,7 @@ describe("el libro de movimientos", () => {
 			destino: { ubicacionId: ubicacion.T1 ?? "" },
 			renglones: [{ varianteId: suya, piezas: 5 }],
 		});
-		const pedido = uuidv7();
+		const pedido = await pedidoDePrueba(servidor);
 		await servidor.base.dueno.query(
 			`INSERT INTO reservas (id, ubicacion_id, variante_id, piezas, motivo, pedido_id, traspaso_id, estado)
 			 VALUES ($1, $2, $3, 5, 'pedido_externo', $4, $5, 'activa')`,

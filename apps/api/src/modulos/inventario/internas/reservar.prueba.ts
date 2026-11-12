@@ -15,6 +15,7 @@ import {
 	variantesLibres,
 } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
+import { pedidoDePrueba } from "../../../nucleo/pruebas/ventas-de-prueba.ts";
 
 describe("las reservas nacen sin apartar de más", () => {
 	let servidor: ServidorDePrueba;
@@ -41,16 +42,17 @@ describe("las reservas nacen sin apartar de más", () => {
 		// Diez rondas, cada una con su variante: una carrera que se gana por suerte no pasa diez veces.
 		for (const variante of await variantesLibres(servidor, 10)) {
 			await meterPiezas(servidor, ubicacion.BOD ?? "", variante, 5);
-			const apartar = () =>
+			const [uno, dos] = [await pedidoDePrueba(servidor), await pedidoDePrueba(servidor)];
+			const apartar = (pedido: string) =>
 				llamarInterna(servidor, "inventario.reservar", {
 					motivo: "pedido_externo",
-					pedido_id: uuidv7(),
+					pedido_id: pedido,
 					renglones: [{ variante_id: variante, piezas: 4 }],
 				}).then(
 					() => "aparto",
 					(error: unknown) => (error instanceof ErrorDeApi ? error.cuerpo() : error),
 				);
-			const resultados = await Promise.all([apartar(), apartar()]);
+			const resultados = await Promise.all([apartar(uno), apartar(dos)]);
 			expect(resultados.filter((resultado) => resultado === "aparto")).toHaveLength(1);
 			expect(resultados.find((resultado) => resultado !== "aparto")).toMatchObject({
 				codigo: "sin_libres",
@@ -87,7 +89,7 @@ describe("las reservas nacen sin apartar de más", () => {
 		await servidor.base.dueno.query("UPDATE ubicaciones SET existencia_desde = now() WHERE codigo = 'T2'");
 		await meterPiezas(servidor, ubicacion.T2 ?? "", variante, 4);
 		try {
-			const pedido = uuidv7();
+			const pedido = await pedidoDePrueba(servidor);
 			const apartado = (await llamarInterna(servidor, "inventario.reservar", {
 				motivo: "pedido_linea",
 				pedido_linea_id: pedido,
@@ -125,7 +127,7 @@ describe("las reservas nacen sin apartar de más", () => {
 
 	it("Un pedido en línea sin pieza en ningún lado queda reservado en Bodega, en negativo, con su excepción", async () => {
 		const [variante = ""] = await variantesLibres(servidor, 1);
-		const pedido = uuidv7();
+		const pedido = await pedidoDePrueba(servidor);
 		const apartado = await llamarInterna(servidor, "inventario.reservar", {
 			motivo: "pedido_linea",
 			pedido_linea_id: pedido,

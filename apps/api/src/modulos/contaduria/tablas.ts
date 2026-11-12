@@ -26,7 +26,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { columnasComunes, momento, valores } from "../../nucleo/base/columnas.ts";
 import { listaValores, usuarios } from "../admin/tablas.ts";
-import { clientes } from "../ventas/tablas.ts";
+import { clientes, pedidos } from "../ventas/tablas.ts";
 
 /** Qué es un acreedor nuevo. */
 export const clasesDeTercero = ["persona", "empresa", "banco"] as const;
@@ -101,8 +101,9 @@ export const cuentasPorCobrar = pgTable(
 		id: uuid("id").primaryKey(),
 		/** @llavePendiente notas_entrega.id */
 		notaEntregaId: uuid("nota_entrega_id").notNull(),
-		/** @llavePendiente pedidos.id */
-		pedidoId: uuid("pedido_id").notNull(),
+		pedidoId: uuid("pedido_id")
+			.references((): AnyPgColumn => pedidos.id)
+			.notNull(),
 		clienteId: uuid("cliente_id")
 			.references((): AnyPgColumn => clientes.id)
 			.notNull(),
@@ -177,8 +178,7 @@ export const pagos = pgTable(
 		clienteId: uuid("cliente_id").references((): AnyPgColumn => clientes.id),
 		/** @llavePendiente notas_entrega.id */
 		notaEntregaId: uuid("nota_entrega_id"),
-		/** @llavePendiente pedidos.id */
-		pedidoId: uuid("pedido_id"),
+		pedidoId: uuid("pedido_id").references((): AnyPgColumn => pedidos.id),
 		montoCentavos: bigint("monto_centavos", { mode: "number" }).notNull(),
 		medio: text("medio").notNull(),
 		cuentaFabricaId: uuid("cuenta_fabrica_id").references(() => listaValores.id),
@@ -265,8 +265,7 @@ export const saldoFavorMovimientos = pgTable(
 		origen: text("origen"),
 		montoCentavos: bigint("monto_centavos", { mode: "number" }).notNull(),
 		fecha: date("fecha", { mode: "string" }).notNull(),
-		/** @llavePendiente pedidos.id */
-		pedidoId: uuid("pedido_id"),
+		pedidoId: uuid("pedido_id").references((): AnyPgColumn => pedidos.id),
 		/** @llavePendiente notas_credito.id */
 		notaCreditoId: uuid("nota_credito_id"),
 		cuentaPorCobrarId: uuid("cuenta_por_cobrar_id").references(() => cuentasPorCobrar.id),
@@ -350,8 +349,9 @@ export const anticipos = pgTable(
 	"anticipos",
 	{
 		id: uuid("id").primaryKey(),
-		/** @llavePendiente pedidos.id */
-		pedidoId: uuid("pedido_id").notNull(),
+		pedidoId: uuid("pedido_id")
+			.references((): AnyPgColumn => pedidos.id)
+			.notNull(),
 		clienteId: uuid("cliente_id")
 			.references((): AnyPgColumn => clientes.id)
 			.notNull(),

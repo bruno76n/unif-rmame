@@ -14,6 +14,7 @@ import {
 	reservasActivasDelPedido,
 } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
+import { pedidoDePrueba } from "../../../nucleo/pruebas/ventas-de-prueba.ts";
 
 describe("Crear una nota aparta lo listo y nunca más", () => {
 	let servidor: ServidorDePrueba;
@@ -61,7 +62,7 @@ describe("Crear una nota aparta lo listo y nunca más", () => {
 		expect(
 			await intentar("inventario.apartar_para_nota", {
 				nota_entrega_id: uuidv7(),
-				pedido_id: uuidv7(),
+				pedido_id: await pedidoDePrueba(servidor),
 				renglones: [{ variante_id: variante, piezas: 1 }],
 			}),
 		).toMatchObject({ codigo: "nada_listo", mensaje: "Nada listo en aduana para este pedido" });

@@ -17,7 +17,18 @@ export function cuerpoDeAccion(contrato: ContratoDeAccion) {
 		.object({
 			clave_idempotencia: z.uuid().describe("La hace el cliente al apretar el botón y la reusa en cada reintento"),
 			datos: contrato.entrada,
-			...(contrato.edita ? { version: z.number().int().nonnegative().describe("La versión que se leyó") } : {}),
+			...(contrato.edita
+				? {
+						version: contrato.versionOpcional
+							? z
+									.number()
+									.int()
+									.nonnegative()
+									.optional()
+									.describe("La versión que se leyó, si edita algo que ya existe")
+							: z.number().int().nonnegative().describe("La versión que se leyó"),
+					}
+				: {}),
 		})
 		.strict();
 }

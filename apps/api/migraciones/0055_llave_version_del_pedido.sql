@@ -1,0 +1,1 @@
+ALTER TABLE "ordenes_produccion" ADD CONSTRAINT "ordenes_produccion_pedido_version_id_pedido_versiones_id_fk" FOREIGN KEY ("pedido_version_id") REFERENCES "public"."pedido_versiones"("id") ON DELETE no action ON UPDATE no action;

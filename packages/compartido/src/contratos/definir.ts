@@ -53,6 +53,11 @@ export interface ContratoDeAccion<
 	errores: readonly ErrorDeRegla[];
 	/** Si edita algo que ya existe: entonces el cuerpo trae la `version` que se leyó. */
 	edita: boolean;
+	/**
+	 * Si la acción crea o edita (un borrador nuevo o el mismo): la `version` llega solo cuando edita, y entonces la
+	 * acción la toma como cualquier otra.
+	 */
+	versionOpcional: boolean;
 	/** Los campos del resultado que son secretos: se entregan una vez y nunca se guardan. */
 	secretos: readonly string[];
 	/** Si cierra la sesión de quien llama (`admin.salir`): el servidor borra su cookie al responder. */
@@ -139,7 +144,7 @@ type NombreDeContrato = `${string}.${string}`;
 
 /**
  * Define el contrato de una acción.
- * @param contrato Su nombre, descripción, entrada, salida, permiso y errores; `edita`, `secretos` y
+ * @param contrato Su nombre, descripción, entrada, salida, permiso y errores; `edita`, `versionOpcional`, `secretos` y
  * `cierraLaSesion` son opcionales.
  * @returns El contrato, con el resultado que siempre lleva `mensaje` y, si edita, `version`.
  */
@@ -155,9 +160,13 @@ export function definirAccion<
 	permiso: Permiso;
 	errores?: readonly ErrorDeRegla[];
 	edita?: boolean;
+	versionOpcional?: boolean;
 	secretos?: readonly string[];
 	cierraLaSesion?: boolean;
 }) {
+	if (contrato.versionOpcional === true && contrato.edita !== true) {
+		throw new Error(`${contrato.nombre}: la versión opcional es solo de una acción que edita`);
+	}
 	// Lo que sube por la cola es de un aparato, y su carga se guarda si se aparta: no puede llevar secretos.
 	if (contrato.permiso.cola === true) {
 		if ((contrato.permiso.aparatos ?? []).length === 0) {
@@ -206,6 +215,7 @@ export function definirAccion<
 		permiso: contrato.permiso,
 		errores: contrato.errores ?? [],
 		edita: contrato.edita ?? false,
+		versionOpcional: contrato.versionOpcional ?? false,
 		secretos: contrato.secretos ?? [],
 		cierraLaSesion: contrato.cierraLaSesion ?? false,
 	} satisfies ContratoDeAccion<Nombre, EsquemaDeObjeto, typeof resultado>;

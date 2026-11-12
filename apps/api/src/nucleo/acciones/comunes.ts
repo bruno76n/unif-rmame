@@ -4,6 +4,7 @@
  * Fase 8 · docs/modulos/catalogo/ (las acciones con motivo); desde la fase 10, también Compras
  */
 
+import { sql } from "drizzle-orm";
 import { errorDeCampo } from "../http/errores.ts";
 import type { ContextoDeAccion, ContextoDeConsulta } from "../modulos.ts";
 
@@ -42,4 +43,17 @@ export function contextoDeDibujo(contexto: ContextoDeAccion): ContextoDeConsulta
 		diaDeNegocio: contexto.diaDeNegocio,
 		apuntarConsultaSensible: async () => undefined,
 	};
+}
+
+/**
+ * El nombre de una cuenta para un mensaje o la bitácora: el de su persona, o el de la cuenta.
+ * @param contexto El contexto de la acción.
+ * @param usuarioId La cuenta; sin ella, «el sistema».
+ */
+export async function nombreDeCuenta(contexto: ContextoDeAccion, usuarioId: string | null): Promise<string> {
+	if (usuarioId === null) return "el sistema";
+	const { rows } = await contexto.transaccion.execute(sql`
+		SELECT coalesce(p.nombre, u.nombre, u.correo) AS nombre FROM usuarios u LEFT JOIN personas p ON p.id = u.persona_id
+		WHERE u.id = ${usuarioId}`);
+	return String(rows[0]?.nombre ?? "otra cuenta");
 }

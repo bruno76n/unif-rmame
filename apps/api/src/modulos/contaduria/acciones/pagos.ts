@@ -14,10 +14,10 @@ import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
 import { quienCambia, revisarMotivo } from "../../../nucleo/acciones/comunes.ts";
 import { tomarVersion, versionActual } from "../../../nucleo/acciones/pisadas.ts";
-import { errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
-import { implementarAccion } from "../../../nucleo/modulos.ts";
+import { errorDeCampo, errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
+import { type ContextoDeAccion, implementarAccion } from "../../../nucleo/modulos.ts";
 import { confirmadoConGoogle } from "../../admin/dominio/cuentas.ts";
-import { cancelarAnticipoDelPago } from "../dominio/anticipos.ts";
+import { cancelarAnticipoDelPago, pedidoQueRecibe, recibirAnticipo } from "../dominio/anticipos.ts";
 import { creditoDelCliente } from "../dominio/credito.ts";
 import {
 	aplicarACuenta,
@@ -33,10 +33,18 @@ export const accionRegistrarPagoRecibido = implementarAccion(registrarPagoRecibi
 	const { transaccion } = contexto;
 	const { cuentaFabricaId, referencia } = await revisarMedio(transaccion, datos, false);
 	const credito = await creditoDelCliente(transaccion, datos.cliente_id);
+	if ((datos.nota_entrega_id === undefined) === (datos.pedido_id === undefined)) {
+		throw errorDeCampo("nota_entrega_id", "Escoge la nota o el pedido.");
+	}
+	// A un pedido: entra como anticipo recibido, sin aplicación (regla 4).
+	if (datos.pedido_id !== undefined) {
+		return pagoAPedido(contexto, { ...datos, pedido_id: datos.pedido_id }, credito, cuentaFabricaId, referencia);
+	}
+	const notaId = datos.nota_entrega_id ?? "";
 	// La cuenta de la nota, bloqueada: desde aquí nadie más mueve su saldo (regla 9).
-	const cuenta = await bloquearCuentaDeNota(transaccion, datos.nota_entrega_id);
-	const folios = await foliosDeVentas(contexto, { nota_entrega_ids: [datos.nota_entrega_id] });
-	const nota = folios.get(datos.nota_entrega_id) ?? "La nota";
+	const cuenta = await bloquearCuentaDeNota(transaccion, notaId);
+	const folios = await foliosDeVentas(contexto, { nota_entrega_ids: [notaId] });
+	const nota = folios.get(notaId) ?? "La nota";
 	if (cuenta === undefined) {
 		throw errorDeRegla("nota_sin_entregar", `${nota} todavía no se entrega: se cobra al confirmar la entrega.`);
 	}
@@ -60,7 +68,7 @@ export const accionRegistrarPagoRecibido = implementarAccion(registrarPagoRecibi
 		fecha: contexto.diaDeNegocio.toString(),
 		terceroId: cuenta.terceroId,
 		clienteId: datos.cliente_id,
-		notaEntregaId: datos.nota_entrega_id,
+		notaEntregaId: notaId,
 		montoCentavos: datos.monto_centavos,
 		medio: datos.medio,
 		cuentaFabricaId,
@@ -71,7 +79,7 @@ export const accionRegistrarPagoRecibido = implementarAccion(registrarPagoRecibi
 	const saldo = await aplicarACuenta(contexto, cuenta, datos.monto_centavos, { pagoId });
 	contexto.guardarEvento({
 		tipo: "pago.recibido",
-		datos: { pago_id: pagoId, cliente_id: datos.cliente_id, nota_entrega_id: datos.nota_entrega_id },
+		datos: { pago_id: pagoId, cliente_id: datos.cliente_id, nota_entrega_id: notaId },
 		tablas: ["pagos", "aplicaciones_pago", "cuentas_por_cobrar"],
 		entidad: "pagos",
 		entidadId: pagoId,
@@ -96,6 +104,77 @@ export const accionRegistrarPagoRecibido = implementarAccion(registrarPagoRecibi
 		entidad: { nombre: "pagos", id: pagoId },
 	};
 });
+
+/**
+ * Un pago a un pedido confirmado: entra como anticipo recibido, hasta lo que le falta al pedido, en pesos enteros.
+ * Toma el candado del anticipo del pedido y después el folio PG-.
+ * @returns La respuesta de `contaduria.registrar_pago_recibido`.
+ */
+async function pagoAPedido(
+	contexto: ContextoDeAccion,
+	datos: { cliente_id: string; pedido_id: string; monto_centavos: number; medio: "efectivo" | "cuenta_fabrica" },
+	credito: { cliente: string; terceroId: string },
+	cuentaFabricaId: string | null,
+	referencia: string | null,
+) {
+	const { transaccion } = contexto;
+	const pedido = await pedidoQueRecibe(contexto, datos.pedido_id, { id: datos.cliente_id, nombre: credito.cliente });
+	if (datos.monto_centavos > pedido.falta) {
+		throw errorDeRegla("monto_mayor_que_saldo", `El saldo de ${pedido.folio} es ${enPesos(pedido.falta)}.`);
+	}
+	if (datos.monto_centavos % 100 !== 0) throw errorDeCampo("monto_centavos", "Escribe el monto en pesos");
+	const avisos = await avisoDePagoRepetido(transaccion, referencia, datos.monto_centavos);
+	const { folio } = z
+		.object({ folio: z.string() })
+		.parse(await contexto.interna("admin.tomar_folio", { tipo: "pago" }));
+	const pagoId = uuidv7();
+	await transaccion.insert(pagos).values({
+		id: pagoId,
+		folio,
+		direccion: "recibido",
+		concepto: "pedido",
+		fecha: contexto.diaDeNegocio.toString(),
+		terceroId: credito.terceroId,
+		clienteId: datos.cliente_id,
+		pedidoId: datos.pedido_id,
+		montoCentavos: datos.monto_centavos,
+		medio: datos.medio,
+		cuentaFabricaId,
+		referencia,
+		creadoPor: quienCambia(contexto),
+	});
+	await recibirAnticipo(contexto, {
+		pedidoId: datos.pedido_id,
+		clienteId: datos.cliente_id,
+		montoCentavos: datos.monto_centavos,
+		origen: { pagoId },
+	});
+	contexto.guardarEvento({
+		tipo: "pago.recibido",
+		datos: { pago_id: pagoId, cliente_id: datos.cliente_id, pedido_id: datos.pedido_id },
+		tablas: ["pagos", "anticipos"],
+		entidad: "pagos",
+		entidadId: pagoId,
+		entidadFolio: folio,
+	});
+	contexto.bitacora({
+		descripcion: `Registró el pago ${folio} de ${credito.cliente} por ${enPesos(datos.monto_centavos)}`,
+		entidad: "pagos",
+		entidadId: pagoId,
+		entidadFolio: folio,
+		antes: { falta_centavos: pedido.falta },
+		despues: { falta_centavos: pedido.falta - datos.monto_centavos, monto_centavos: datos.monto_centavos },
+	});
+	return {
+		resultado: {
+			mensaje: `${folio}: ${enPesos(datos.monto_centavos)} de ${credito.cliente}`,
+			pago_id: pagoId,
+			folio,
+		},
+		avisos,
+		entidad: { nombre: "pagos", id: pagoId },
+	};
+}
 
 export const accionCancelarPago = implementarAccion(cancelarPago, async (contexto, datos, version) => {
 	const { transaccion } = contexto;
