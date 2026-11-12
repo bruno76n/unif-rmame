@@ -1,0 +1,91 @@
+/**
+ * El arnés de las pruebas de pantalla: levanta la API de prueba con los datos de la muestra, la web con Vite (su proxy
+ * apunta a esa API) y Chromium, y abre una ruta como una cuenta de prueba, en escritorio o en teléfono. Las capturas
+ * van a `.revision/capturas/`, para el revisor de diseño. Lo usan las pruebas de lo común y las de cada departamento.
+ * Fase 19 · docs/cimientos/PRUEBAS.md («Los niveles»: pantallas) y docs/fases/19-web-principal.md («Cómo se construye»)
+ *
+ * Uso:
+ * `const pantalla = await levantarPantalla(); const pagina = await pantalla.abrir("/bodega", { quien: "bodega" });`
+ * y al final `await pantalla.cerrar()`. La cuenta va en el encabezado `x-prueba-quien`, como en las pruebas de la API.
+ */
+
+import { mkdirSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { type Browser, chromium, type Page } from "@playwright/test";
+import { createServer, type ViteDevServer } from "vite";
+import {
+	crearServidorDePrueba,
+	dominios,
+	type ServidorDePrueba,
+} from "../../../../api/src/nucleo/pruebas/servidor-de-prueba.ts";
+
+/** La carpeta de la web y la de las capturas. */
+const web = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
+const capturas = join(web, "..", "..", ".revision", "capturas");
+
+/** Los tamaños de pantalla de las pruebas y de la muestra. */
+export const tamanos = {
+	escritorio: { width: 1440, height: 900 },
+	telefono: { width: 390, height: 844 },
+} as const;
+
+/** Lo que da el arnés. */
+export interface PantallaDePrueba {
+	/** La API de prueba, con su base. */
+	servidor: ServidorDePrueba;
+	/**
+	 * Abre una ruta de la web como una cuenta de prueba.
+	 * @param ruta La ruta (`/bodega`).
+	 * @param opciones La cuenta y el tamaño.
+	 */
+	abrir: (ruta: string, opciones: { quien: string; tamano?: keyof typeof tamanos }) => Promise<Page>;
+	/**
+	 * Guarda la captura de una página.
+	 * @param pagina La página.
+	 * @param nombre Su nombre, con su carpeta (`comun/armazon-escritorio`).
+	 */
+	capturar: (pagina: Page, nombre: string) => Promise<void>;
+	cerrar: () => Promise<void>;
+}
+
+/** Levanta la API de prueba, la web y el navegador. */
+export async function levantarPantalla(): Promise<PantallaDePrueba> {
+	const servidor = await crearServidorDePrueba();
+	const direccionApi = await servidor.app.listen({ host: "127.0.0.1", port: 0 });
+	// La configuración de la web lee estas dos al cargarse: el proxy apunta a esta API con el origen que espera.
+	process.env.UNIFORMAME_API = direccionApi;
+	process.env.UNIFORMAME_ORIGEN_WEB = dominios.DOMINIO_WEB;
+	const vite: ViteDevServer = await createServer({
+		root: web,
+		configFile: join(web, "vite.config.ts"),
+		logLevel: "error",
+		server: { host: "127.0.0.1", port: 0 },
+	});
+	await vite.listen();
+	const direccionWeb = vite.resolvedUrls?.local[0]?.replace(/\/$/, "") ?? "";
+	const ejecutable = process.env.CHROMIUM_EJECUTABLE;
+	const navegador: Browser = await chromium.launch(ejecutable === undefined ? {} : { executablePath: ejecutable });
+	return {
+		servidor,
+		abrir: async (ruta, { quien, tamano = "escritorio" }) => {
+			const contexto = await navegador.newContext({
+				viewport: tamanos[tamano],
+				extraHTTPHeaders: { "x-prueba-quien": quien },
+			});
+			const pagina = await contexto.newPage();
+			await pagina.goto(`${direccionWeb}${ruta}`);
+			return pagina;
+		},
+		capturar: async (pagina, nombre) => {
+			const archivo = join(capturas, `${nombre}.png`);
+			mkdirSync(dirname(archivo), { recursive: true });
+			await pagina.screenshot({ path: archivo });
+		},
+		cerrar: async () => {
+			await navegador.close();
+			await vite.close();
+			await servidor.cerrar();
+		},
+	};
+}

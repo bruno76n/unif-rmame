@@ -1,0 +1,7 @@
+/*
+ * La hoja de la web: Tailwind con los tokens del sistema de diseño, y que lea las pantallas.
+ * Fase 19 · docs/interfaz/DISENO.md (regla 3)
+ */
+@import "tailwindcss";
+@import "@uniformame/interfaz/tokens.css";
+@source "./";

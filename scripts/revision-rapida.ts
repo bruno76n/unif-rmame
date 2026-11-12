@@ -10,6 +10,7 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { archivosCambiados } from "./archivos.ts";
+import { revisarCarpetas } from "./carpetas.ts";
 import { correr } from "./comandos.ts";
 
 /** Lo que revisa Biome; los `.md` los revisa `pnpm docs:revisar`. */
@@ -46,6 +47,8 @@ export function correrRevisionRapida(raiz: string): boolean {
 					// Las pantallas y el sistema de diseño, si el repositorio ya los tiene.
 					(!existsSync(join(raiz, "tsconfig.web.json")) || correr(raiz, "tsc", ["-p", "tsconfig.web.json"]))),
 		],
+		// En el worktree de un trabajador de la fase 19, que solo haya tocado sus carpetas.
+		["Carpetas del trabajador", () => revisarCarpetas(raiz)],
 		[
 			"Pruebas relacionadas (Vitest)",
 			() =>

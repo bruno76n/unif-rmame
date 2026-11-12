@@ -117,6 +117,7 @@ apps/web/src/
 └── comun/                     lo que comparten todos: menú, barra superior, búsqueda, avisos de la cuenta, sesión
 ```
 
+- **El encargo de un trabajador** va en `.trabajador.json`, en la raíz de su worktree (no entra a git): su departamento, el commit del que salió y lo que el capataz le dio de más. `scripts/carpetas.ts` revisa con él que solo tocó sus carpetas, y la revisión rápida lo corre (decisión 750).
 - **Una ruta solo arma la pantalla:** lee los filtros de la dirección, llama a la consulta del contrato con TanStack Query y entrega los datos a su pestaña. Ninguna regla del negocio vive aquí.
 - **El menú se arma solo** con los `menu.ts` de cada carpeta (`import.meta.glob` de Vite). La cuenta solo ve los departamentos que tiene.
 - **Los componentes** salen de `packages/interfaz`; la carpeta de un departamento no define botones, tablas ni colores propios. Las reglas están en la [regla de pantallas](../../.claude/rules/react.md).
@@ -135,7 +136,7 @@ packages/interfaz/src/
 ├── botones/                   boton.tsx · boton-con-cifra.tsx
 ├── captura/                   campo.tsx · selector.tsx · interruptor.tsx · casilla.tsx · filtros.tsx
 ├── estados/                   estado.tsx · estado-de-pantalla.tsx · aviso.tsx · colores.ts (el color de cada estado)
-├── contenedores/              cajon.tsx · ventana.tsx
+├── contenedores/              cajon.tsx · ventana.tsx · emergente.tsx · menu-de-opciones.tsx
 ├── tablas/                    tabla.tsx · panel-pendientes.tsx
 ├── pagina/                    armazon.tsx · pagina-departamento.tsx · barra-indicadores.tsx · colores-de-tipo.ts
 ├── avance/                    hilo.tsx · barra-avance.tsx · pasos.tsx

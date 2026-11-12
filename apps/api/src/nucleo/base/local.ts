@@ -83,6 +83,12 @@ if (import.meta.main) {
 		cwd: join(raiz, "apps/api"),
 		stdio: "inherit",
 	});
+	// La web, con su proxy a esta API (fase 19).
+	spawn("pnpm", ["--filter", "@uniformame/web", "local"], {
+		cwd: raiz,
+		stdio: "inherit",
+		env: { ...process.env, UNIFORMAME_API: entorno.DOMINIO_API },
+	});
 	if (entorno.GOOGLE_EMISOR !== undefined && new URL(entorno.GOOGLE_EMISOR).hostname === "localhost") {
 		spawn(process.execPath, ["--env-file-if-exists=../../.env", "src/nucleo/acceso/google-local.ts"], {
 			cwd: join(raiz, "apps/api"),

@@ -8,7 +8,14 @@
 	},
 	"files": {
 		"ignoreUnknown": true,
-		"includes": ["**", "!**/*.md", "!docs/interfaz/muestra", "!pnpm-lock.yaml", "!apps/api/openapi.json"]
+		"includes": [
+			"**",
+			"!**/*.md",
+			"!docs/interfaz/muestra",
+			"!pnpm-lock.yaml",
+			"!apps/api/openapi.json",
+			"!apps/web/src/arbol-de-rutas.gen.ts"
+		]
 	},
 	"formatter": {
 		"enabled": true,
