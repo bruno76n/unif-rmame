@@ -78,7 +78,7 @@ async function ladosDeRecepcion(contexto: ContextoDeAccion, diferencia: Diferenc
 		.where(eq(ubicaciones.id, diferencia.ubicacionId));
 	if (traspaso === undefined || hueco === undefined) throw new Error(`${diferencia.folio} sin traspaso o sin hueco`);
 	if (hueco.tipo !== "transito") {
-		return { receptor: aduana, origen: hueco.tipo === "taller" ? null : traspaso.origenUbicacionId, aduana, traspaso };
+		return { receptor: aduana, origen: traspaso.origenUbicacionId, aduana, traspaso };
 	}
 	const [destino] =
 		traspaso.destinoUbicacionId === null

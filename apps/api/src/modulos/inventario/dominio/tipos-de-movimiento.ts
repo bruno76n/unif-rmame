@@ -30,7 +30,8 @@ function de(origen: readonly Lado[], destino: readonly Lado[], forma: Forma): Re
 /** Las reglas, por tipo (sin `reversion`). */
 export const reglasDeTipo: Readonly<Record<Exclude<TipoDeMovimiento, "reversion">, ReglaDeTipo>> = {
 	// Prendas.
-	carga_inicial: de(["fuera"], ["bodega", "aduana", "tienda"], "las_dos"),
+	// Un consumible se carga donde lo toma el taller (`inventario.ubicacion_consumibles`), que puede ser el Taller.
+	carga_inicial: de(["fuera"], ["bodega", "aduana", "tienda", "taller"], "las_dos"),
 	venta_tienda: de(["tienda"], ["fuera"], "prenda"),
 	devolucion_mostrador: de(["fuera"], ["tienda"], "prenda"),
 	merma_tienda: de(["tienda"], ["fuera"], "prenda"),

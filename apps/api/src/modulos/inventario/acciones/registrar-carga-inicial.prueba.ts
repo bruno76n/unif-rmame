@@ -46,6 +46,11 @@ describe("La carga inicial entra sin AJ- y solo donde no hay movimientos", () =>
 		expect(salida.mensaje).toMatch(/^CN-\d{3}: carga inicial de 12 piezas en Bodega$/);
 		expect(await libroPorUbicacion(servidor, [variante])).toEqual([{ codigo: "BOD", piezas: 12 }]);
 		expect(await libroPorUbicacion(servidor, [otra])).toEqual([]);
+		// La que se cargó en 0 ya tiene su carga: tampoco entra otra.
+		expect(
+			(await cargar({ ubicacion_id: ubicacion.BOD, alcance: "toda", renglones: [{ variante_id: otra, piezas: 5 }] }))
+				.cuerpo,
+		).toMatchObject({ codigo: "ya_tiene_movimientos" });
 		const { rows } = await servidor.base.dueno.query(
 			`SELECT c.tipo, c.alcance, l.variante_id, l.piezas_sistema, l.piezas_contadas FROM conteos c
 			 JOIN conteo_lineas l ON l.conteo_id = c.id WHERE c.id = $1 ORDER BY l.piezas_contadas DESC`,

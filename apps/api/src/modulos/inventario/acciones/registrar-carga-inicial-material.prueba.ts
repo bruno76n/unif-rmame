@@ -150,6 +150,17 @@ describe("La carga inicial del material: la tela por rollo con su costo y su par
 		const codigo = { bodega: "BOD", taller: "TAL", aduana: "ADU" }[String(parametro[0]?.valor)];
 		expect(await dondeQuedo(consumible)).toEqual([{ codigo, por_rollo: false, cantidad: "7.000" }]);
 		expect((await cargar({ material_id: avio, cantidad: "1" }, "aduana")).estado).toBe(403);
+		// Con los consumibles en el Taller, la carga de un consumible entra al Taller.
+		await servidor.base.dueno.query(
+			"UPDATE parametros SET valor_texto = 'taller' WHERE clave = 'inventario.ubicacion_consumibles'",
+		);
+		const delTaller = await conCosto("consumible", 80);
+		expect((await cargar({ material_id: delTaller, cantidad: "3" })).estado).toBe(200);
+		expect(await dondeQuedo(delTaller)).toEqual([{ codigo: "TAL", por_rollo: false, cantidad: "3.000" }]);
+		await servidor.base.dueno.query(
+			"UPDATE parametros SET valor_texto = $1 WHERE clave = 'inventario.ubicacion_consumibles'",
+			[parametro[0]?.valor],
+		);
 	});
 
 	it("la tela que entra recalcula los rollos sugeridos: el lote que la espera aparta su rollo", async () => {

@@ -106,9 +106,9 @@ describe("Un ajuste autorizado mueve la diferencia guardada; rechazado, nada cam
 		expect(
 			await consultar("SELECT estado, motivo_rechazo, movimiento_id FROM ajustes WHERE id = $1", [ajusteId]),
 		).toEqual([{ estado: "rechazado", motivo_rechazo: "Búsquenlas otra vez", movimiento_id: null }]);
-		expect(await consultar("SELECT estado, ajuste_id FROM diferencias WHERE id = $1", [diferencia])).toEqual([
-			{ estado: "por_aclarar", ajuste_id: null },
-		]);
+		expect(
+			await consultar("SELECT estado, ajuste_id, motivo_resolucion FROM diferencias WHERE id = $1", [diferencia]),
+		).toEqual([{ estado: "por_aclarar", ajuste_id: null, motivo_resolucion: null }]);
 		// Una DF- por contar que cerró un conteo con diferencias regresa a por contar.
 		const [otra = ""] = await variantesLibres(servidor, 1);
 		await sacarPiezas(servidor, ubicacion.BOD ?? "", otra, 2);

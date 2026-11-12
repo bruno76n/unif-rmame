@@ -19,6 +19,7 @@ import type { Temporal } from "temporal-polyfill";
 import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
 import type { ContextoDeAccion, ContextoDeTrabajo } from "../../../nucleo/modulos.ts";
+import { candadoDeVariantes } from "../dominio/candados.ts";
 import { abrirDiferencia } from "../dominio/diferencias.ts";
 import { cuadres, estadosFinalesDeTraspaso, reservas, ubicaciones } from "../tablas.ts";
 
@@ -351,7 +352,7 @@ async function negativosSinExplicar(
 		WHERE e.cantidad < 0 AND NOT EXISTS (
 			SELECT 1 FROM diferencias d WHERE d.estado <> 'resuelta' AND d.ubicacion_id = e.ubicacion_id
 				AND d.material_id = e.material_id AND d.rollo_id IS NOT DISTINCT FROM e.rollo_id)
-		ORDER BY 1, 4, 5`);
+		ORDER BY 4 NULLS LAST, 1, 5`);
 	const cuenta = { diferencias: 0, excepciones: 0 };
 	const dia = new Intl.DateTimeFormat("es-MX", { day: "numeric", month: "short", timeZone: "UTC" })
 		.format(new Date(`${fecha}T12:00:00Z`))
@@ -375,6 +376,17 @@ async function negativosSinExplicar(
 			});
 			cuenta.excepciones += 1;
 			continue;
+		}
+		// Con el candado de la variante (en orden de variante, como todos) se vuelve a ver: un conteo o un movimiento de
+		// este momento ya pudo explicarlo.
+		if (fila.variante_id !== null) {
+			await candadoDeVariantes(contexto.transaccion, [fila.variante_id]);
+			const { rows: sigue } = await contexto.transaccion.execute(sql`
+				SELECT 1 FROM existencias e WHERE e.ubicacion_id = ${fila.ubicacion_id} AND e.variante_id = ${fila.variante_id}
+					AND e.piezas < 0 AND NOT EXISTS (
+						SELECT 1 FROM diferencias d WHERE d.estado <> 'resuelta' AND d.ubicacion_id = e.ubicacion_id
+							AND d.variante_id = e.variante_id)`);
+			if (sigue.length === 0) continue;
 		}
 		await abrirDiferencia(contexto, {
 			origen: "cuadre",

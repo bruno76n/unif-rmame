@@ -113,8 +113,8 @@ export default definirModulo({
 		conteos: lectoresDelLibro,
 		conteo_lineas: lectoresDelLibro,
 		// Los mínimos los leen Bodega, Dirección y Administración; las sugerencias, Bodega y Producción.
-		minimos: [...lectoresDelLibro, "admin"],
-		sugerencias_reabasto: ["bodega", "produccion", "direccion"],
+		minimos: ["bodega", "direccion", "admin"],
+		sugerencias_reabasto: ["bodega", "produccion"],
 	},
 	acciones: [
 		accionEntregarAlCorte,

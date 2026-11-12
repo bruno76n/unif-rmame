@@ -7,8 +7,11 @@
  */
 
 import { Temporal } from "temporal-polyfill";
+import { v7 as uuidv7 } from "uuid";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
+import { crearBase } from "../../../nucleo/base/conexion.ts";
+import { enAccionDePrueba } from "../../../nucleo/pruebas/accion-de-prueba.ts";
 import { type SiembraDelCatalogo, siembraDelCatalogo } from "../../../nucleo/pruebas/catalogo-de-prueba.ts";
 import { ubicacionesPorCodigo } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
@@ -19,6 +22,7 @@ import {
 	rolloEnBodega,
 } from "../../../nucleo/pruebas/produccion-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
+import { escribirMovimiento } from "../dominio/escribir-movimiento.ts";
 
 describe("Entregar al corte pasa al Taller los rollos de cada tela de la receta y, en la primera entrega, los avíos; libera lo sugerido que no se usó", () => {
 	let servidor: ServidorDePrueba;
@@ -224,6 +228,37 @@ describe("Entregar al corte pasa al Taller los rollos de cada tela de la receta 
 		]);
 		expect(respuestas.map((respuesta) => respuesta.estado)).toEqual([200, 200]);
 		expect(await cierresEnElTaller(prenda)).toEqual([{ cantidad: "60.000" }]);
+	});
+
+	it("dos entregas a la vez de lotes distintos con el mismo avío: la que lo deja en negativo abre su DF- por lo que faltó", async () => {
+		const prenda = await prendaParaCortar(servidor, siembra);
+		const tela = prenda.materiales.gabardina;
+		const [uno, dos] = [
+			await rolloEnBodega(servidor, tela, "70", "P-H"),
+			await rolloEnBodega(servidor, tela, "70", "P-H"),
+		];
+		// En Bodega hay 100 cierres y cada lote pide 60: entre los dos faltan 20.
+		await enAccionDePrueba(crearBase(servidor.base.app), servidor.modulos, (contexto) =>
+			escribirMovimiento(contexto, {
+				tipo: "ajuste",
+				documento: { tipo: "ajuste", id: uuidv7() },
+				renglones: [
+					{ origen: null, destino: ubicacion.BOD ?? "", materialId: prenda.materiales.cierre, cantidad: "100" },
+				],
+				clave: uuidv7(),
+			}),
+		);
+		const [primero, segundo] = [await lote(prenda), await lote(prenda)];
+		const respuestas = await Promise.all([
+			entregar(primero.lote_id, prenda.recetaVersionId, [uno.id]),
+			entregar(segundo.lote_id, prenda.recetaVersionId, [dos.id]),
+		]);
+		expect(respuestas.map((respuesta) => respuesta.estado)).toEqual([200, 200]);
+		expect(
+			await consultar("SELECT origen, cantidad FROM diferencias WHERE material_id = $1 AND estado <> 'resuelta'", [
+				prenda.materiales.cierre,
+			]),
+		).toEqual([{ origen: "material_corte", cantidad: "-20.000" }]);
 	});
 
 	it("sin receta no entrega", async () => {

@@ -6,7 +6,8 @@
  * «Mover» toma primero el candado de cada variante y nunca pasa de los libres de Bodega en ese momento: dos «Mover» a
  * la vez se ponen en fila y el segundo ve lo que dejó el primero. Cada llamada hace un A- `reabasto` por tienda; antes
  * de buscar el RB- del día toma el candado del reabasto de esa tienda y ese día, así dos «Mover» a la vez comparten el
- * mismo. Una tienda sin caja recibe igual (regla 12).
+ * mismo. Los candados de las tiendas se toman todos, en orden, antes de cualquier folio (decisión 658). Una tienda sin
+ * caja recibe igual (regla 12).
  */
 
 import { moverATienda, sugerirFabricar } from "@uniformame/compartido/contratos/inventario/reabasto";
@@ -23,14 +24,21 @@ import { libresEn, nombreDeVariante } from "../dominio/reservas.ts";
 import { crearTraspaso } from "../dominio/traspasos.ts";
 import { minimos, sugerenciasReabasto, traspasos, ubicaciones } from "../tablas.ts";
 
+/** Toma el candado del reabasto de una tienda y del día: dos «Mover» a esa tienda se ponen en fila. */
+async function candadoDeReabasto(contexto: ContextoDeAccion, tiendaId: string): Promise<void> {
+	const hoy = contexto.diaDeNegocio.toString();
+	await contexto.transaccion.execute(
+		sql`SELECT pg_advisory_xact_lock(hashtextextended(${`reabasto:${tiendaId}:${hoy}`}, 0))`,
+	);
+}
+
 /**
- * El RB- de una tienda para hoy: el de los «Mover» de hoy a esa tienda o, si no hay, uno nuevo. Toma antes el candado
- * del reabasto de esa tienda y ese día.
+ * El RB- de una tienda para hoy: el de los «Mover» de hoy a esa tienda o, si no hay, uno nuevo. Quien lo pide ya tiene
+ * el candado del reabasto de esa tienda.
  */
 async function reabastoDeHoy(contexto: ContextoDeAccion, tiendaId: string): Promise<string> {
 	const { transaccion } = contexto;
 	const hoy = contexto.diaDeNegocio.toString();
-	await transaccion.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended(${`reabasto:${tiendaId}:${hoy}`}, 0))`);
 	const [deHoy] = await transaccion
 		.select({ folioRb: traspasos.folioRb })
 		.from(traspasos)
@@ -83,12 +91,19 @@ export const accionMoverATienda = implementarAccion(moverATienda, async (context
 		const { prenda, talla } = await nombreDeVariante(transaccion, primero?.variante_id ?? "");
 		throw errorDeRegla("sin_libres", `${prenda} talla ${talla}: solo hay 0 libres en bodega.`);
 	}
-	// Un A- por tienda, con el RB- de esa tienda de hoy, y su movimiento de Bodega a En camino a aduana.
+	// Los candados del reabasto de cada tienda y su RB- de hoy, todos antes de crear cualquier A-, en orden de tienda:
+	// dos «Mover» a la vez nunca se cruzan con el folio A- (decisión 658).
+	const conPiezas = tiendas
+		.filter((tienda) => movidos.some((movido) => movido.tiendaId === tienda.id))
+		.sort((una, otra) => (una.id < otra.id ? -1 : una.id > otra.id ? 1 : 0));
+	for (const tienda of conPiezas) await candadoDeReabasto(contexto, tienda.id);
+	const rbDe = new Map<string, string>();
+	for (const tienda of conPiezas) rbDe.set(tienda.id, await reabastoDeHoy(contexto, tienda.id));
+	// Un A- por tienda, con su RB-, y su movimiento de Bodega a En camino a aduana.
 	const hechos: { traspaso_id: string; folio: string; folio_rb: string; tienda: string }[] = [];
-	for (const [i, tienda] of tiendas.entries()) {
+	for (const [i, tienda] of conPiezas.entries()) {
 		const suyos = movidos.filter((movido) => movido.tiendaId === tienda.id);
-		if (suyos.length === 0) continue;
-		const folioRb = await reabastoDeHoy(contexto, tienda.id);
+		const folioRb = rbDe.get(tienda.id) ?? "";
 		const nuevo = await crearTraspaso(contexto, {
 			tipo: "reabasto",
 			estado: "en_camino_aduana",

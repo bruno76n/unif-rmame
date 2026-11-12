@@ -194,7 +194,7 @@ Se construye en la [fase 14](../../fases/14-inventario-recepcion-del-taller-cont
 | **Llama** | `inventario.guardar_minimo` |
 | **Regresa** | El mínimo nuevo, con su versión. «Mínimo en {ubicación} ({tipo de talla}): {n}» |
 | **Eventos** | `minimo.cambiado`, de Inventario |
-| **Bitácora** | «Mínimo en {ubicación} ({tipo de talla}): {n}», del departamento Administración del sistema y del módulo `inventario`, con `antes` y `despues` |
+| **Bitácora** | «Mínimo en {ubicación} ({tipo de talla}): {n}», del departamento Administración del sistema y del módulo `admin` (decisión 650), con `antes` y `despues`. Con el mismo valor, ninguna |
 
 ## Lecturas
 

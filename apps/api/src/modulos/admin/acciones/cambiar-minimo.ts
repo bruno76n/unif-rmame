@@ -6,7 +6,9 @@
 
 import { cambiarMinimo } from "@uniformame/compartido/contratos/admin/configuracion";
 import { z } from "zod";
+import { versionActual } from "../../../nucleo/acciones/pisadas.ts";
 import { implementarAccion } from "../../../nucleo/modulos.ts";
+import { minimos } from "../../inventario/tablas.ts";
 
 /** Lo que regresa `inventario.guardar_minimo`. */
 const minimoGuardado = z.object({
@@ -25,15 +27,18 @@ export const accionCambiarMinimo = implementarAccion(cambiarMinimo, async (conte
 		await contexto.interna("inventario.guardar_minimo", { ...datos, ...(version === undefined ? {} : { version }) }),
 	);
 	const texto = `Mínimo en ${guardado.ubicacion} (${nombreDelNivel[datos.nivel]}): ${guardado.piezas}`;
+	const nueva = await versionActual(contexto.transaccion, minimos, guardado.minimo_id);
+	const resultado = { mensaje: texto, minimo_id: guardado.minimo_id, piezas: guardado.piezas, version: nueva };
+	const entidad = { nombre: "minimos", id: guardado.minimo_id };
+	// Con la misma cantidad no se escribe nada: tampoco su bitácora.
+	if (!guardado.cambio) return { resultado, entidad, sinBitacora: true };
 	contexto.bitacora({
 		descripcion: texto,
 		entidad: "minimos",
 		entidadId: guardado.minimo_id,
 		antes: { piezas: guardado.antes },
 		despues: { piezas: guardado.piezas },
+		departamento: "admin",
 	});
-	return {
-		resultado: { mensaje: texto, minimo_id: guardado.minimo_id, piezas: guardado.piezas },
-		entidad: { nombre: "minimos", id: guardado.minimo_id },
-	};
+	return { resultado, entidad };
 });

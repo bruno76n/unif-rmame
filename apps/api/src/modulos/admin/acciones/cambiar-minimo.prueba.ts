@@ -5,6 +5,7 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { z } from "zod";
 import { ubicacionesPorCodigo } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
@@ -63,8 +64,17 @@ describe("Solo la dueña cambia un mínimo: el anterior queda de baja y el nuevo
 			{ piezas: 8, de_baja: true },
 			{ piezas: 10, de_baja: false },
 		]);
-		expect((await cambiar(10)).estado).toBe(200);
-		expect(await minimosDeT1()).toHaveLength(2);
+		// Regresa la versión del vigente: con ella se vuelve a cambiar sin leer otra vez.
+		const { version } = z.object({ version: z.number() }).parse(respuesta.cuerpo.resultado);
+		expect((await cambiar(11, "duena", version)).estado).toBe(200);
+		const bitacoras = async () =>
+			(await servidor.base.dueno.query("SELECT count(*)::int AS n FROM bitacora WHERE entidad = 'minimos'")).rows;
+		const antes = await bitacoras();
+		expect(antes[0]?.n).toBe(2);
+		expect((await cambiar(11)).estado).toBe(200);
+		expect(await minimosDeT1()).toHaveLength(3);
+		// La misma cantidad no escribe nada, ni su bitácora.
+		expect(await bitacoras()).toEqual(antes);
 	});
 
 	it("solo la dueña; con la versión vieja, 409; cero no; sin mínimo en Aduana", async () => {

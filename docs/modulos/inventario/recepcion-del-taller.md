@@ -11,7 +11,7 @@ Lo que hace el taller no es inventario de nadie hasta que Aduana lo cuenta. Ejem
 
 ## Reglas
 
-1. **Solo Aduana mueve piezas del Taller a Aduana,** y solo con estas dos acciones. El «Aprobar» de Calidad no mueve inventario: el lote y el reproceso se quedan en el Taller hasta que Aduana los cuenta.
+1. **Solo Aduana mueve piezas del Taller a Aduana,** y solo con estas dos acciones; lo que el Taller trae después de la recepción entra cuando Bodega aclara su DF- como `llego` (ver [diferencias, ajustes y mermas](diferencias-ajustes-y-mermas.md#cómo-se-aclara-una-de-recepción)). El «Aprobar» de Calidad no mueve inventario: el lote y el reproceso se quedan en el Taller hasta que Aduana los cuenta.
 2. **Se recibe un lote revisado o un reproceso aprobado** (`listo`), una sola vez.
 3. **A ciegas:** Aduana escribe lo que contó de cada talla, aunque sea 0, sin ver lo que aprobó Calidad. Lo aprobado viaja solo al servidor, que lo guarda como lo esperado; la diferencia no detiene la recepción.
 4. **El reparto por talla y destino:**

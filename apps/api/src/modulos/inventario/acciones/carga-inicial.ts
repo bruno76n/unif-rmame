@@ -69,8 +69,24 @@ export const accionRegistrarCargaInicial = implementarAccion(registrarCargaInici
 			),
 		)
 		.limit(1);
-	if (conMovimientos?.varianteId != null) {
-		const { prenda, talla } = await nombreDeVariante(transaccion, conMovimientos.varianteId);
+	// Una carga inicial en 0 no deja movimiento, pero ya es su carga: tampoco entra otra (decisión 649).
+	const [yaCargada] =
+		conMovimientos === undefined
+			? await transaccion
+					.select({ varianteId: conteoLineas.varianteId })
+					.from(conteoLineas)
+					.innerJoin(conteos, eq(conteos.id, conteoLineas.conteoId))
+					.where(
+						and(
+							eq(conteos.tipo, "inicial"),
+							eq(conteos.ubicacionId, ubicacion.id),
+							inArray(conteoLineas.varianteId, varianteIds),
+						),
+					)
+					.limit(1)
+			: [conMovimientos];
+	if (yaCargada?.varianteId != null) {
+		const { prenda, talla } = await nombreDeVariante(transaccion, yaCargada.varianteId);
 		throw errorDeRegla(
 			"ya_tiene_movimientos",
 			`${prenda} talla ${talla} ya tiene movimientos en ${ubicacion.nombre}: usa un conteo.`,

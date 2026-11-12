@@ -83,6 +83,10 @@ export const guardarConteo = definirAccion({
 		{ codigo: "ubicacion_no_contable", mensaje: "Aquí solo se cuenta en Bodega o en Aduana." },
 		{ codigo: "variante_ajena", mensaje: "{prenda} talla {t} no es de {sección}." },
 		{ codigo: "diferencia_no_por_contar", mensaje: "{DF} ya no está por contar." },
+		{
+			codigo: "ajuste_pendiente",
+			mensaje: "{prenda} talla {t} tiene el {AJ} esperando autorización: cuéntala cuando Dirección lo decida.",
+		},
 	],
 });
 

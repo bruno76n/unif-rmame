@@ -123,6 +123,26 @@ describe("«Mover» nunca pasa de lo disponible; los del día a una tienda compa
 		expect(new Set(folios).size).toBe(1);
 	});
 
+	it("dos «Mover» de variantes distintas a la vez: a la misma tienda comparten su RB-; uno a dos tiendas y otro a una de ellas no se traban", async () => {
+		const [v1 = "", v2 = "", v3 = "", v4 = ""] = await variantesLibres(servidor, 4);
+		for (const variante of [v1, v2, v3, v4]) await meterPiezas(servidor, ubicacion.BOD ?? "", variante, 5);
+		const [uno, dos] = await Promise.all([
+			mover([{ variante_id: v1, ubicacion_destino_id: ubicacion.T1, piezas: 1 }]),
+			mover([{ variante_id: v2, ubicacion_destino_id: ubicacion.T1, piezas: 1 }]),
+		]);
+		expect(new Set([...hechos(uno), ...hechos(dos)].map((hecho) => hecho.folio_rb)).size).toBe(1);
+		const [varias, una] = await Promise.all([
+			mover([
+				{ variante_id: v3, ubicacion_destino_id: ubicacion.T1, piezas: 1 },
+				{ variante_id: v3, ubicacion_destino_id: ubicacion.T2, piezas: 1 },
+			]),
+			mover([{ variante_id: v4, ubicacion_destino_id: ubicacion.T2, piezas: 1 }]),
+		]);
+		expect([varias.estado, una.estado]).toEqual([200, 200]);
+		const aT2 = [...hechos(varias), ...hechos(una)].filter((hecho) => hecho.folio_rb !== hechos(uno)[0]?.folio_rb);
+		expect(new Set(aT2.map((hecho) => hecho.folio_rb)).size).toBe(1);
+	});
+
 	it("Bodega sugiere fabricar para Bodega o una tienda, no para donde no hay mínimo", async () => {
 		const [variante = ""] = await variantesLibres(servidor, 1);
 		const sugerir = (ubicacionId: string | undefined) =>

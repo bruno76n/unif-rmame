@@ -6,7 +6,7 @@
  * Lo que decía el sistema sale del libro hasta la hora del conteo (`ocurrido_en`): lo que pasó mientras se contaba no
  * se pisa. Si no cuadra, nace un AJ- con un renglón por variante; la existencia no cambia hasta que Dirección lo
  * autoriza. El conteo cierra las DF- por contar de esa ubicación y esas variantes: las que cuadran quedan resueltas y
- * las demás esperan con el AJ-.
+ * las demás esperan con el AJ-. Una variante con un AJ- esperando en esa ubicación no se cuenta otra vez (decisión 656).
  */
 
 import { guardarConteo } from "@uniformame/compartido/contratos/inventario/diferencias";
@@ -21,7 +21,8 @@ import { pedirAjuste, revisarMotivoDeAjuste } from "../dominio/ajustes.ts";
 import { candadoDeVariantes } from "../dominio/candados.ts";
 import { revisarVariantes, ubicacionContable } from "../dominio/conteos.ts";
 import { type Diferencia, diferenciaBloqueada, diferenciasBloqueadas } from "../dominio/diferencias.ts";
-import { conteoLineas, conteos, diferencias } from "../tablas.ts";
+import { nombreDeVariante } from "../dominio/reservas.ts";
+import { ajusteLineas, ajustes, conteoLineas, conteos, diferencias } from "../tablas.ts";
 
 /**
  * Lo que decía el libro de unas variantes en una ubicación a una hora: la suma de sus renglones con `ocurrido_en`
@@ -76,6 +77,27 @@ export const accionGuardarConteo = implementarAccion(guardarConteo, async (conte
 		}
 	} else {
 		if (datos.seccion_id === undefined) throw errorDeCampo("seccion_id", "Elige la sección que vas a contar.");
+	}
+	// Una variante con un AJ- esperando en esa ubicación no se vuelve a contar: su diferencia ya se vio, y dos AJ-
+	// autorizados la moverían dos veces (decisión 656).
+	const [pendiente] = await transaccion
+		.select({ folio: ajustes.folio, varianteId: ajusteLineas.varianteId })
+		.from(ajusteLineas)
+		.innerJoin(ajustes, eq(ajustes.id, ajusteLineas.ajusteId))
+		.where(
+			and(
+				eq(ajustes.ubicacionId, ubicacion.id),
+				eq(ajustes.estado, "esperando_autorizacion"),
+				inArray(ajusteLineas.varianteId, varianteIds),
+			),
+		)
+		.limit(1);
+	if (pendiente?.varianteId != null) {
+		const { prenda, talla } = await nombreDeVariante(transaccion, pendiente.varianteId);
+		throw errorDeRegla(
+			"ajuste_pendiente",
+			`${prenda} talla ${talla} tiene el ${pendiente.folio} esperando autorización: cuéntala cuando Dirección lo decida.`,
+		);
 	}
 	const que = await revisarVariantes(
 		contexto,

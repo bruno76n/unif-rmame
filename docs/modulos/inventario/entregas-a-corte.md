@@ -179,3 +179,5 @@ Los cambia solo la dueña, en Configuración (ver [configuración](../admin/conf
 - **Pruebas:** `acciones/entregar-al-corte.prueba.ts` (también lo sugerido que se libera, la segunda entrega sin avíos, dos entregas a la vez y sin receta), `internas/recalcular-rollos-sugeridos.prueba.ts` (con fast-check) e `internas/devolver-entrega-corte.prueba.ts` (también recibir del corte, el comprometido y el desperdicio medido).
 
 **Fase 14, parte 1.** El avío que no alcanzó abre su DF- `material_corte` en Bodega, a cargo de Bodega, por lo que faltaba, con su lote, su entrega y su movimiento. Lo prueba `acciones/entregar-al-corte.prueba.ts`.
+
+**Fase 14, cierre.** Lo que faltó de un avío se calcula con la existencia que dejó el movimiento de la entrega, ya bloqueada: dos entregas a la vez del mismo avío abren la DF- de lo que de verdad faltó (decisión 659). Lo prueba `acciones/entregar-al-corte.prueba.ts`.

@@ -90,7 +90,7 @@ Cada hueco del inventario tiene su diferencia, que se cuenta o se aclara, y solo
 | En el cuadre, un traspaso `con_diferencia` tiene en sus tramos justo sus DF- abiertas, y un negativo sin DF- abre una `cuadre` (por contar en prenda, por aclarar en material) o `cuadre_proyeccion` en el Taller y en los tramos | `modulos/inventario/internas/correr-cuadre.prueba.ts` |
 | Con recepciones, aclaraciones y ajustes al azar, el cuadre corre sin residuo | `modulos/inventario/diferencias.azar.prueba.ts`, con fast-check |
 | Un lote se recibe a ciegas: un A- por destino con sus etiquetas por imprimir, una DF- por talla que no cuadró, sus avíos consumidos y el lote en aduana; la respuesta nunca trae lo aprobado | `modulos/inventario/acciones/recibir-del-taller.prueba.ts` |
-| Un reproceso solo se recibe aprobado y una vez, con el reparto de su lote | `recibir-reproceso.prueba.ts` |
+| Un reproceso solo se recibe aprobado y una vez, con el reparto de su lote | `recibir-del-taller.prueba.ts` |
 | De un lote recibido solo quedan en el Taller sus reprocesos sin recibir y lo de sus DF- abiertas, y el paso 4 lo revisa | `correr-cuadre.prueba.ts` |
 | La carga inicial entra sin AJ- y solo donde no hay movimientos; la de tela crea sus rollos con su costo y la partida del proveedor habitual, y recalcula los sugeridos | `registrar-carga-inicial.prueba.ts` y `registrar-carga-inicial-material.prueba.ts` |
 | «Mover» nunca pasa de lo disponible, aun con dos conexiones; los del día a una tienda comparten RB- y cada uno es su A- | `modulos/inventario/acciones/mover-a-tienda.prueba.ts` |

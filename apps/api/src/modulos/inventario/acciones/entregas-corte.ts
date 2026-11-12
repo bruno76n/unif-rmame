@@ -89,8 +89,14 @@ export const accionEntregarAlCorte = implementarAccion(entregarAlCorte, async (c
 			cantidad: deMilesimos(milesimosDeCuenta(avio.cantidad ?? 0)),
 		})),
 	];
-	// Lo que había de cada avío en Bodega antes de entregar, para el que no alcanzó.
-	const enBodega =
+	const movimiento = await escribirMovimiento(contexto, {
+		tipo: "entrega_corte",
+		documento: { tipo: "entrega_corte", id: entregaId, folio: lote.folio },
+		renglones,
+	});
+	// Lo que quedó de cada avío en Bodega después de entregar: el movimiento ya bloqueó su renglón, así que dos entregas
+	// a la vez del mismo avío ven, cada una, lo que dejó la otra.
+	const quedo =
 		avios.length === 0
 			? []
 			: await transaccion
@@ -106,11 +112,6 @@ export const accionEntregarAlCorte = implementarAccion(entregarAlCorte, async (c
 							),
 						),
 					);
-	const movimiento = await escribirMovimiento(contexto, {
-		tipo: "entrega_corte",
-		documento: { tipo: "entrega_corte", id: entregaId, folio: lote.folio },
-		renglones,
-	});
 	const quien = quienCambia(contexto);
 	if (quien === null) throw new Error("una entrega al corte la hace una cuenta de Bodega");
 	await transaccion.insert(entregasCorte).values({
@@ -164,10 +165,11 @@ export const accionEntregarAlCorte = implementarAccion(entregarAlCorte, async (c
 	// El avío que no alcanzó se entregó igual: Bodega queda en negativo y nace su DF-, a cargo de Bodega (regla 6).
 	const noAlcanzo: string[] = [];
 	for (const avio of avios) {
-		const habia = aMilesimosConSigno(enBodega.find((suyo) => suyo.materialId === avio.materialId)?.cantidad ?? "0");
+		const despues = aMilesimosConSigno(quedo.find((suyo) => suyo.materialId === avio.materialId)?.cantidad ?? "0");
+		if (despues >= 0n) continue;
+		// Faltó lo que la entrega dejó en negativo, hasta lo que pidió (lo de antes ya tenía su DF-).
 		const pide = milesimosDeCuenta(avio.cantidad ?? 0);
-		if (habia >= pide) continue;
-		const falta = pide - (habia > 0n ? habia : 0n);
+		const falta = -despues < pide ? -despues : pide;
 		const texto = `${cantidadEnTexto(falta)} ${avio.unidad} de ${avio.nombre}`;
 		noAlcanzo.push(texto);
 		await abrirDiferencia(contexto, {

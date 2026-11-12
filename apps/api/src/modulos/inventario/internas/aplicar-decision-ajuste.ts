@@ -47,7 +47,7 @@ function renglonDelAjuste(ubicacionId: string, linea: typeof ajusteLineas.$infer
 	}
 	const milesimos = aMilesimosConSigno(linea.cantidadDiferencia ?? "0");
 	return {
-		traspasoId: linea.traspasoId,
+		...ligas,
 		origen: milesimos > 0n ? null : ubicacionId,
 		destino: milesimos > 0n ? ubicacionId : null,
 		materialId: linea.materialId ?? "",
@@ -77,8 +77,12 @@ export async function aplicarDecisionAjuste(contexto: ContextoDeAccion, datos: u
 		traspasoIds: lineas.flatMap((linea) => (linea.traspasoId === null ? [] : [linea.traspasoId])),
 	});
 	const [ajuste] = await transaccion.select().from(ajustes).where(eq(ajustes.id, pedido.ajuste_id)).for("update");
-	if (ajuste === undefined || ajuste.estado !== "esperando_autorizacion") {
-		throw new Error(`el ajuste ${pedido.ajuste_id} no espera autorización`);
+	if (
+		ajuste === undefined ||
+		ajuste.estado !== "esperando_autorizacion" ||
+		ajuste.autorizacionId !== pedido.autorizacion_id
+	) {
+		throw new Error(`el ajuste ${pedido.ajuste_id} no espera la autorización ${pedido.autorizacion_id}`);
 	}
 	const suyas = await transaccion
 		.select({
@@ -101,7 +105,12 @@ export async function aplicarDecisionAjuste(contexto: ContextoDeAccion, datos: u
 		for (const diferencia of suyas) {
 			await transaccion
 				.update(diferencias)
-				.set({ estado: estadoDeNacimiento(diferencia.origen, diferencia.materialId !== null), ajusteId: null })
+				.set({
+					estado: estadoDeNacimiento(diferencia.origen, diferencia.materialId !== null),
+					ajusteId: null,
+					conteoId: null,
+					motivoResolucion: null,
+				})
 				.where(eq(diferencias.id, diferencia.id));
 		}
 		contexto.guardarEvento({

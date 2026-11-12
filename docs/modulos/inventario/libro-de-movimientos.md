@@ -67,7 +67,7 @@ El catálogo completo. **Fuera** es un origen o un destino vacío. Cada tipo lo 
 
 | Tipo | Qué es | De → a | Lo pide | Fase |
 |---|---|---|---|---|
-| `carga_inicial` | La existencia de arranque, o la de una tienda nueva | Fuera → Bodega, Aduana o una tienda | [conteos](conteos.md) | 14 |
+| `carga_inicial` | La existencia de arranque, o la de una tienda nueva | Fuera → Bodega, Aduana o una tienda; un consumible, al Taller si ahí los toma (`inventario.ubicacion_consumibles`) | [conteos](conteos.md) | 14 |
 | `venta_tienda` | Venta de mostrador, entrega de un apartado o de un pedido especial (también las ventas en papel, con su hora real) | Tienda → Fuera | La caja | Con el POS |
 | `devolucion_mostrador` | La prenda que regresa en un cambio | Fuera → Tienda | La caja | Con el POS |
 | `merma_tienda` | Merma de tienda | Tienda → Fuera | La caja | Con el POS |
@@ -223,3 +223,5 @@ Ninguno propio: cada acción guarda los suyos, con `existencias` entre sus tabla
 **Fase 14, parte 1.** `aclaracion_recepcion` acepta Fuera del lado del lugar que recibió: lo entregado a una tienda sin caja ya salió del inventario (decisión 636).
 
 **Fase 14, parte 3.** `escribirMovimiento` acepta el id del movimiento cuando su documento es él mismo: la carga inicial de material (decisión 646).
+
+**Fase 14, cierre.** `carga_inicial` entra también al Taller, para un consumible (decisión 657).

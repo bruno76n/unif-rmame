@@ -1,7 +1,7 @@
 /**
- * Los candados del inventario, en el orden fijo: primero el de cada variante, después los traspasos por id, los
- * renglones de `existencias` por (`ubicacion_id`, `variante_id`) y los de `existencias_material` por
- * (`ubicacion_id`, `material_id`, `rollo_id`, el rollo vacío primero). Una acción que hace varias cosas con el
+ * Los candados del inventario, en el orden fijo: primero el de cada variante, después los traspasos por id, las DF-
+ * por id (fase 14, decisión 640), los renglones de `existencias` por (`ubicacion_id`, `variante_id`) y los de
+ * `existencias_material` por (`ubicacion_id`, `material_id`, `rollo_id`, el rollo vacío primero). Una acción que hace varias cosas con el
  * inventario toma al principio, con `tomarCandadosDeInventario`, las variantes y los traspasos de todas.
  * Fase 9 · docs/cimientos/BASE-DE-DATOS.md («Candados») y docs/modulos/inventario/libro-de-movimientos.md
  * («Cómo se escribe un movimiento», paso 2)

@@ -146,6 +146,13 @@ describe("El conteo guarda lo que decía el sistema a su hora, pide un AJ- si no
 		expect(await consultar("SELECT estado, ajuste_id FROM diferencias WHERE id = $1", [df.diferenciaId])).toEqual([
 			{ estado: "esperando_autorizacion", ajuste_id: salida.ajuste_id },
 		]);
+		// Mientras su AJ- espera, esa variante no se cuenta otra vez: dos AJ- moverían la misma diferencia dos veces.
+		expect((await contarDePrueba(servidor, { ...datos, motivo_id: motivo })).cuerpo).toMatchObject({
+			codigo: "ajuste_pendiente",
+			mensaje: expect.stringMatching(
+				/ tiene el AJ-\d{4} esperando autorización: cuéntala cuando Dirección lo decida\.$/,
+			),
+		});
 	});
 
 	it("el conteo de una DF-: solo su variante y donde está; si cuadra, la aclara; una que ya no está por contar, no", async () => {
@@ -194,7 +201,12 @@ describe("El conteo guarda lo que decía el sistema a su hora, pide un AJ- si no
 		const [variante = ""] = await variantesLibres(servidor, 1);
 		const seccion = await seccionDe(servidor, variante);
 		const datos = { seccion_id: seccion, renglones: [{ variante_id: variante, piezas: 0 }] };
-		expect((await contarDePrueba(servidor, { ...datos, ubicacion_id: ubicacion.BOD }, "aduana")).estado).toBe(403);
+		expect((await contarDePrueba(servidor, { ...datos, ubicacion_id: ubicacion.BOD }, "aduana")).cuerpo).toMatchObject({
+			error: "sin_permiso",
+			codigo: "sin_departamento",
+		});
+		// Bodega cuenta también en Aduana.
+		expect((await contarDePrueba(servidor, { ...datos, ubicacion_id: ubicacion.ADU }, "bodega")).estado).toBe(200);
 		expect((await contarDePrueba(servidor, { ...datos, ubicacion_id: ubicacion.ADU }, "aduana")).estado).toBe(200);
 		expect((await contarDePrueba(servidor, { ...datos, ubicacion_id: ubicacion.ADU }, "ventas")).estado).toBe(403);
 		expect((await contarDePrueba(servidor, { ...datos, ubicacion_id: ubicacion.T1 })).cuerpo).toMatchObject({
