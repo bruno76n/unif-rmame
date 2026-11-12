@@ -12,6 +12,7 @@ import { guardarEventosConAdmin } from "../acciones/corredor.ts";
 import { crearBase } from "../base/conexion.ts";
 import { cargarModulos, registrarModulos } from "../modulos.ts";
 import { trabajoDePrueba } from "../pruebas/modulos/prueba/index.ts";
+import { conUnSoloEfecto } from "../pruebas/servidor-de-prueba.ts";
 import { esquemaDelWorker } from "./esquema.ts";
 import { correrReloj, vueltaQueToca } from "./reloj.ts";
 import { contextoDeTrabajo, type DependenciasDelTrabajador, listaDeTareas } from "./trabajador.ts";
@@ -27,7 +28,7 @@ describe("un trabajo corre a la hora de México de su parámetro, una sola vez p
 		const deLasPruebas = await cargarModulos(join(import.meta.dirname, "../pruebas/modulos"));
 		dependencias = {
 			base: crearBase(prueba.app),
-			registro: registrarModulos([...deLaApi.modulos, ...deLasPruebas.modulos]),
+			registro: registrarModulos(conUnSoloEfecto(deLaApi.modulos, deLasPruebas.modulos, undefined)),
 			servicios: { guardarEventos: guardarEventosConAdmin, escribirBitacora: async () => undefined },
 			avisarFalla: async (trabajo, error) => void avisos.push(`${trabajo} falló: ${error}`),
 			enviarCorreo: async () => undefined,

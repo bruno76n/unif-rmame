@@ -25,6 +25,7 @@ import { subirVersion, tomarVersion, versionActual } from "../../../nucleo/accio
 import { errorDeCampo, errorDeRegla } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeAccion, implementarAccion } from "../../../nucleo/modulos.ts";
 import {
+	avisoDePrecio,
 	leerProveedor,
 	materialCambiado,
 	precioATexto,
@@ -55,16 +56,6 @@ const hojaDeLaOrden = "orden_compra";
 
 /** El mensaje del precio de una línea. */
 const mensajeDelPrecio = "Escribe el precio.";
-
-/**
- * El aviso de un precio distinto del último que se le pagó a ese proveedor por ese material.
- * @returns «{material}: sube {n} % · antes ${precio}» o «baja…», o nada si es el mismo o no hay anterior.
- */
-function avisoDePrecio(material: string, anterior: number | undefined, nuevo: number): string[] {
-	if (anterior === undefined || anterior === nuevo) return [];
-	const cambio = Math.round((Math.abs(nuevo - anterior) * 100) / anterior);
-	return [`${material}: ${nuevo > anterior ? "sube" : "baja"} ${cambio} % · antes ${precioATexto(anterior)}`];
-}
 
 /**
  * Busca el borrador de un proveedor o lo crea, con un candado por proveedor: quien llega segundo ve el de quien

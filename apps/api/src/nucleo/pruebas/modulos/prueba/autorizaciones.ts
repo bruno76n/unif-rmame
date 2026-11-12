@@ -2,9 +2,10 @@
  * Las autorizaciones del módulo de prueba: pedir y cancelar la de un pago de prueba, y su efecto.
  * Fase 7 · docs/fases/07-autorizaciones-y-personal.md («Criterios de terminado»: «con un efecto de prueba»)
  *
- * Usa el tipo `pago_fuera_de_lo_normal`, cuyo módulo llega en la fase 17 (decisión 533): el efecto deja una nota
- * `efecto:{decision}:{factura}`; falla con `factura_bloqueada` si hay una nota `bloquea:{factura}`, e intenta
- * escribir bitácora si hay una nota `escribe:{factura}`.
+ * Usa el tipo `pago_fuera_de_lo_normal` (decisión 533), con facturas de proveedor de verdad. Desde la fase 17 ese
+ * tipo tiene su efecto en Contaduría: el de prueba corre solo en el servidor con `efectoDePrueba` (decisión 699). El
+ * efecto deja una nota `efecto:{decision}:{factura}`; falla con `factura_bloqueada` si hay una nota
+ * `bloquea:{factura}`, e intenta escribir bitácora si hay una nota `escribe:{factura}`.
  */
 
 import { eq } from "drizzle-orm";

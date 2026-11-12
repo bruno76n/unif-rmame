@@ -23,7 +23,7 @@ import { escribirBitacoraConAdmin, guardarEventosConAdmin } from "../acciones/co
 import type { Almacen } from "../almacen.ts";
 import { crearBase } from "../base/conexion.ts";
 import { type Semilla, sembrarSistema } from "../base/siembra.ts";
-import { cargarModulos, type RegistroDeModulos, registrarModulos } from "../modulos.ts";
+import { cargarModulos, type Modulo, type RegistroDeModulos, registrarModulos } from "../modulos.ts";
 import { alcanceDeLaBajada } from "../sincronizacion/bajar.ts";
 import { llaveDelCursor } from "../sincronizacion/cursor.ts";
 import { crearAvisosEnVivo } from "../sincronizacion/eventos-en-vivo.ts";
@@ -103,12 +103,41 @@ async function crearBaseConTablasDePrueba(semillas: readonly Semilla[]): Promise
 }
 
 /**
+ * Junta los módulos de la API y los de prueba con un solo efecto por tipo de autorización: el de la API, o con
+ * `deLaPrueba` el del módulo de prueba (sus tipos le quitan el suyo a la API).
+ * @param deLaApi Los módulos de la API.
+ * @param deLaPrueba Los módulos de prueba.
+ * @param efectoDePrueba Si gana el efecto de prueba.
+ */
+export function conUnSoloEfecto(
+	deLaApi: readonly Modulo[],
+	deLaPrueba: readonly Modulo[],
+	efectoDePrueba: true | undefined,
+): Modulo[] {
+	const tiposDe = (modulos: readonly Modulo[]) =>
+		new Set(modulos.flatMap((modulo) => Object.keys(modulo.efectosDeAutorizacion)));
+	const sinLosDe = (modulo: Modulo, quitar: ReadonlySet<string>): Modulo => ({
+		...modulo,
+		efectosDeAutorizacion: Object.fromEntries(
+			Object.entries(modulo.efectosDeAutorizacion).filter(([tipo]) => !quitar.has(tipo)),
+		),
+	});
+	if (efectoDePrueba === true) {
+		const deLaPruebaTipos = tiposDe(deLaPrueba);
+		return [...deLaApi.map((modulo) => sinLosDe(modulo, deLaPruebaTipos)), ...deLaPrueba];
+	}
+	const deLaApiTipos = tiposDe(deLaApi);
+	return [...deLaApi, ...deLaPrueba.map((modulo) => sinLosDe(modulo, deLaApiTipos))];
+}
+
+/**
  * Arma la API de prueba: una base copia con las tablas del módulo de prueba y el registro de esta carpeta.
  * @param opciones `entorno` (por omisión, `pruebas`); `avisosEnVivo` para tener `GET /v1/eventos` (con su
  * latido); `otraInstanciaDe` para levantar una segunda instancia sobre la base de otra, como en Render;
  * `almacen` para los archivos (el de R2, sobre su simulador); `conGoogle` para la entrada con Google, contra
  * el simulador de Google (`clienteDeGooglePrueba`); `sesionReal` para identificar con la cookie `ua_sesion`
- * en lugar de `x-prueba-quien`.
+ * en lugar de `x-prueba-quien`; `efectoDePrueba` para que `pago_fuera_de_lo_normal` corra el efecto del módulo de
+ * prueba (las pruebas de Dirección que prueban el efecto mismo) y no el de Contaduría.
  */
 export async function crearServidorDePrueba(
 	opciones: {
@@ -119,6 +148,7 @@ export async function crearServidorDePrueba(
 		almacen?: Almacen;
 		conGoogle?: true;
 		sesionReal?: true;
+		efectoDePrueba?: true;
 	} = {},
 ): Promise<ServidorDePrueba> {
 	const modulosDePrueba = await cargarModulos(join(import.meta.dirname, "modulos"));
@@ -131,7 +161,7 @@ export async function crearServidorDePrueba(
 		);
 	}
 	const deLaApi = await cargarModulos(join(import.meta.dirname, "../../modulos"));
-	const registro = registrarModulos([...deLaApi.modulos, ...modulosDePrueba.modulos]);
+	const registro = registrarModulos(conUnSoloEfecto(deLaApi.modulos, modulosDePrueba.modulos, opciones.efectoDePrueba));
 	const pedidos: ServidorDePrueba["pedidos"] = { bitacora: [], eventos: [] };
 	const lineas: string[] = [];
 	const parametros = { versionMinima: "1.0.0" };

@@ -96,6 +96,25 @@ export function precioATexto(precio: number): string {
 	return centavosATexto(precio, { conCentavos: precio % 100 !== 0 });
 }
 
+/**
+ * El aviso de un precio distinto del anterior: lo usan la orden (contra el último que se le pagó a ese proveedor) y
+ * la nota del proveedor (contra el vigente de la línea).
+ * @param material El nombre del material.
+ * @param anterior El precio anterior, si hay.
+ * @param nuevo El precio nuevo.
+ * @param umbral Desde qué cambio, en por ciento, se avisa; sin umbral, cualquier cambio.
+ * @returns «{material}: sube {n} % · antes ${precio}» o «baja…», o nada si es el mismo, no hay anterior o no llega
+ * al umbral.
+ */
+export function avisoDePrecio(material: string, anterior: number | undefined, nuevo: number, umbral = 0): string[] {
+	if (anterior === undefined || anterior === nuevo) return [];
+	const cambio = (Math.abs(nuevo - anterior) * 100) / anterior;
+	if (cambio < umbral) return [];
+	return [
+		`${material}: ${nuevo > anterior ? "sube" : "baja"} ${Math.round(cambio)} % · antes ${precioATexto(anterior)}`,
+	];
+}
+
 /** Lo más que cabe en `numeric(6,3)`. */
 const cambioMaximo = 999.999;
 

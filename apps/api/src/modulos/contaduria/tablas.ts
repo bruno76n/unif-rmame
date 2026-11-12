@@ -5,9 +5,12 @@
  * Fase 15 · docs/modulos/contaduria/credito-de-clientes.md («La tabla `credito_clientes`») y
  * docs/modulos/contaduria/cuentas-por-cobrar.md («La tabla `cuentas_por_cobrar`») y
  * docs/modulos/contaduria/pagos-y-saldo-a-favor.md (las tres tablas) y docs/modulos/contaduria/anticipos.md
+ * Fase 17 · docs/modulos/contaduria/facturas-de-proveedor.md (las dos tablas) y cuentas-por-pagar.md («La tabla
+ * `cuentas_por_pagar`»)
  *
- * Las columnas que apuntan a los clientes, los pedidos y las notas son llaves a las tablas de Ventas. Lo demás de
- * Contaduría (compensaciones, deudas, cuentas por pagar) llega en la fase 17.
+ * Las columnas que apuntan a los clientes, los pedidos y las notas son llaves a las tablas de Ventas; las de las
+ * facturas, a los proveedores y las órdenes de Compras. Las compensaciones y las deudas llegan en la parte 2 de la
+ * fase 17.
  */
 
 import { sql } from "drizzle-orm";
@@ -25,7 +28,9 @@ import {
 	uuid,
 } from "drizzle-orm/pg-core";
 import { columnasComunes, momento, valores } from "../../nucleo/base/columnas.ts";
-import { listaValores, usuarios } from "../admin/tablas.ts";
+import { archivos, listaValores, usuarios } from "../admin/tablas.ts";
+import { ordenesCompra, proveedores } from "../compras/tablas.ts";
+import { autorizaciones } from "../direccion/tablas.ts";
 import { clientes, notasCredito, notasEntrega, pedidos } from "../ventas/tablas.ts";
 
 /** Qué es un acreedor nuevo. */
@@ -212,12 +217,13 @@ export const pagos = pgTable(
 			sql`(${tabla.notaEntregaId} is not null) = (${tabla.concepto} = 'nota')
 				and (${tabla.pedidoId} is not null) = (${tabla.concepto} = 'pedido')`,
 		),
-		// En pesos enteros; con centavos solo un pago a una nota o una devolución, cuando liquidan exacto lo que queda (la
-		// acción revisa que sea exacto, decisión 674).
+		// En pesos enteros; con centavos solo un pago a una nota, a una cuenta por pagar o una devolución, cuando liquidan
+		// exacto lo que queda (la acción revisa que sea exacto, decisiones 674 y 697).
 		check(
 			"pagos_monto",
 			sql`${tabla.montoCentavos} > 0
-				and (${tabla.montoCentavos} % 100 = 0 or ${tabla.concepto} in ('nota', 'devolucion_saldo_favor'))`,
+				and (${tabla.montoCentavos} % 100 = 0
+					or ${tabla.concepto} in ('nota', 'cuenta_por_pagar', 'devolucion_saldo_favor'))`,
 		),
 		check(
 			"pagos_medio",
@@ -311,8 +317,7 @@ export const aplicacionesPago = pgTable(
 		notaCreditoId: uuid("nota_credito_id").references((): AnyPgColumn => notasCredito.id),
 		saldoFavorMovimientoId: uuid("saldo_favor_movimiento_id").references((): AnyPgColumn => saldoFavorMovimientos.id),
 		cuentaPorCobrarId: uuid("cuenta_por_cobrar_id").references(() => cuentasPorCobrar.id),
-		/** @llavePendiente cuentas_por_pagar.id */
-		cuentaPorPagarId: uuid("cuenta_por_pagar_id"),
+		cuentaPorPagarId: uuid("cuenta_por_pagar_id").references((): AnyPgColumn => cuentasPorPagar.id),
 		montoCentavos: bigint("monto_centavos", { mode: "number" }).notNull(),
 		fecha: date("fecha", { mode: "string" }).notNull(),
 		estado: text("estado").notNull().default("vigente"),
@@ -384,6 +389,192 @@ export const anticipos = pgTable(
 		check(
 			"anticipos_cancelado",
 			sql`(${tabla.estado} = 'cancelado') = (${tabla.canceladoEn} is not null and ${tabla.motivoCancelacion} is not null)`,
+		),
+	],
+);
+
+/** Los estados de una factura de proveedor. */
+export const estadosDeFacturaProveedor = [
+	"detenida",
+	"esperando_autorizacion",
+	"conciliada",
+	"autorizada",
+	"cancelada",
+] as const;
+
+/** Un estado de una factura de proveedor. */
+export type EstadoDeFacturaProveedor = (typeof estadosDeFacturaProveedor)[number];
+
+/** A cargo de quién está una factura detenida. */
+export const responsablesDeDetencion = ["aduana", "contaduria"] as const;
+
+/** La factura o nota FP- de un proveedor, tal como llegó, con sus tres puntas. */
+export const facturasProveedor = pgTable(
+	"facturas_proveedor",
+	{
+		id: uuid("id").primaryKey(),
+		folio: text("folio").notNull(),
+		/** El de su factura, en mayúsculas. */
+		folioProveedor: text("folio_proveedor").notNull(),
+		uuidCfdi: text("uuid_cfdi"),
+		proveedorId: uuid("proveedor_id")
+			.notNull()
+			.references((): AnyPgColumn => proveedores.id),
+		terceroId: uuid("tercero_id")
+			.notNull()
+			.references(() => terceros.id),
+		fechaCaptura: date("fecha_captura", { mode: "string" }).notNull(),
+		fechaFactura: date("fecha_factura", { mode: "string" }),
+		subtotalCentavos: bigint("subtotal_centavos", { mode: "number" }).notNull(),
+		ivaCentavos: bigint("iva_centavos", { mode: "number" }).notNull(),
+		totalFacturadoCentavos: bigint("total_facturado_centavos", { mode: "number" }).notNull(),
+		/** La suma de sus órdenes en la última revisión. */
+		valorRecibidoCentavos: bigint("valor_recibido_centavos", { mode: "number" }).notNull(),
+		estado: text("estado").notNull(),
+		motivoDetencion: text("motivo_detencion"),
+		responsableDetencion: text("responsable_detencion"),
+		/** La última «Pago fuera de lo normal». */
+		autorizacionId: uuid("autorizacion_id").references((): AnyPgColumn => autorizaciones.id),
+		montoAutorizadoCentavos: bigint("monto_autorizado_centavos", { mode: "number" }),
+		diferenciaPorAclararCentavos: bigint("diferencia_por_aclarar_centavos", { mode: "number" }),
+		notaCreditoProveedor: text("nota_credito_proveedor"),
+		diferenciaAclaradaEn: momento("diferencia_aclarada_en"),
+		diferenciaAclaradaPor: uuid("diferencia_aclarada_por").references(() => usuarios.id),
+		diferenciaAclaradaArchivoId: uuid("diferencia_aclarada_archivo_id").references(() => archivos.id),
+		archivoXmlId: uuid("archivo_xml_id").references(() => archivos.id),
+		archivoPdfId: uuid("archivo_pdf_id").references(() => archivos.id),
+		...columnasDeCancelacion(),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		uniqueIndex("facturas_proveedor_folio").on(tabla.folio),
+		uniqueIndex("facturas_proveedor_folio_proveedor")
+			.on(tabla.proveedorId, tabla.folioProveedor)
+			.where(sql`${tabla.estado} <> 'cancelada'`),
+		uniqueIndex("facturas_proveedor_uuid_cfdi").on(tabla.uuidCfdi).where(sql`${tabla.uuidCfdi} is not null`),
+		index("facturas_proveedor_estado").on(tabla.estado),
+		check(
+			"facturas_proveedor_folio_proveedor",
+			sql`char_length(${tabla.folioProveedor}) between 3 and 12 and ${tabla.folioProveedor} = upper(${tabla.folioProveedor})`,
+		),
+		check(
+			"facturas_proveedor_importes",
+			sql`${tabla.subtotalCentavos} > 0 and ${tabla.ivaCentavos} >= 0
+				and ${tabla.subtotalCentavos} + ${tabla.ivaCentavos} = ${tabla.totalFacturadoCentavos}
+				and ${tabla.valorRecibidoCentavos} >= 0`,
+		),
+		check("facturas_proveedor_fecha", sql`${tabla.fechaFactura} <= ${tabla.fechaCaptura}`),
+		check("facturas_proveedor_estado", sql`${tabla.estado} in (${valores(estadosDeFacturaProveedor)})`),
+		check(
+			"facturas_proveedor_detenida",
+			sql`${tabla.responsableDetencion} in (${valores(responsablesDeDetencion)})
+				and (${tabla.estado} not in ('detenida', 'esperando_autorizacion')
+					or (${tabla.motivoDetencion} is not null and ${tabla.responsableDetencion} is not null))
+				and (${tabla.estado} <> 'esperando_autorizacion' or ${tabla.autorizacionId} is not null)`,
+		),
+		check(
+			"facturas_proveedor_autorizada",
+			sql`(${tabla.estado} <> 'autorizada'
+					or (${tabla.montoAutorizadoCentavos} is not null and ${tabla.diferenciaPorAclararCentavos} is not null))
+				and ${tabla.montoAutorizadoCentavos} between 1 and ${tabla.totalFacturadoCentavos}
+				and ${tabla.diferenciaPorAclararCentavos} = ${tabla.totalFacturadoCentavos} - ${tabla.montoAutorizadoCentavos}`,
+		),
+		check(
+			"facturas_proveedor_aclarada",
+			sql`(${tabla.notaCreditoProveedor} is null) = (${tabla.diferenciaAclaradaEn} is null)
+				and (${tabla.notaCreditoProveedor} is null or ${tabla.estado} = 'autorizada')`,
+		),
+		check(
+			"facturas_proveedor_cancelada",
+			sql`(${tabla.estado} = 'cancelada') = (${tabla.canceladoEn} is not null and ${tabla.motivoCancelacion} is not null)`,
+		),
+	],
+);
+
+/** Lo que toca a cada orden de una factura de proveedor, sin IVA, y su valor recibido en la última revisión. */
+export const facturaProveedorOrdenes = pgTable(
+	"factura_proveedor_ordenes",
+	{
+		id: uuid("id").primaryKey(),
+		facturaProveedorId: uuid("factura_proveedor_id")
+			.notNull()
+			.references(() => facturasProveedor.id),
+		ordenCompraId: uuid("orden_compra_id")
+			.notNull()
+			.references((): AnyPgColumn => ordenesCompra.id),
+		importeFacturadoCentavos: bigint("importe_facturado_centavos", { mode: "number" }).notNull(),
+		valorRecibidoCentavos: bigint("valor_recibido_centavos", { mode: "number" }).notNull(),
+		/** Si de esta orden no había llegado nada. */
+		sinRecepcion: boolean("sin_recepcion").notNull(),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		uniqueIndex("factura_proveedor_ordenes_orden").on(tabla.facturaProveedorId, tabla.ordenCompraId),
+		index("factura_proveedor_ordenes_orden_compra").on(tabla.ordenCompraId),
+		check(
+			"factura_proveedor_ordenes_importes",
+			sql`${tabla.importeFacturadoCentavos} > 0 and ${tabla.valorRecibidoCentavos} >= 0`,
+		),
+	],
+);
+
+/** Los estados de una cuenta por pagar. */
+export const estadosDeCuentaPorPagar = ["detenida", "por_pagar", "pagada_en_parte", "pagada", "cancelada"] as const;
+
+/** Un estado de una cuenta por pagar. */
+export type EstadoDeCuentaPorPagar = (typeof estadosDeCuentaPorPagar)[number];
+
+/** Lo que la fábrica le debe a un proveedor por cada factura y a un acreedor por cada mensualidad. */
+export const cuentasPorPagar = pgTable(
+	"cuentas_por_pagar",
+	{
+		id: uuid("id").primaryKey(),
+		terceroId: uuid("tercero_id")
+			.notNull()
+			.references(() => terceros.id),
+		tipo: text("tipo").notNull(),
+		facturaProveedorId: uuid("factura_proveedor_id").references(() => facturasProveedor.id),
+		/** @llavePendiente deuda_mensualidades.id */
+		deudaMensualidadId: uuid("deuda_mensualidad_id"),
+		/** El día en que nació. */
+		fecha: date("fecha", { mode: "string" }).notNull(),
+		vence: date("vence", { mode: "string" }).notNull(),
+		importeCentavos: bigint("importe_centavos", { mode: "number" }).notNull(),
+		saldoCentavos: bigint("saldo_centavos", { mode: "number" }).notNull(),
+		estado: text("estado").notNull(),
+		pagadaEn: momento("pagada_en"),
+		...columnasDeCancelacion(),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		uniqueIndex("cuentas_por_pagar_factura")
+			.on(tabla.facturaProveedorId)
+			.where(sql`${tabla.facturaProveedorId} is not null`),
+		uniqueIndex("cuentas_por_pagar_mensualidad")
+			.on(tabla.deudaMensualidadId)
+			.where(sql`${tabla.deudaMensualidadId} is not null`),
+		index("cuentas_por_pagar_tercero").on(tabla.terceroId, tabla.estado),
+		index("cuentas_por_pagar_vence").on(tabla.vence).where(sql`${tabla.estado} not in ('pagada', 'cancelada')`),
+		check("cuentas_por_pagar_tipo", sql`${tabla.tipo} in ('proveedor', 'acreedor')`),
+		check(
+			"cuentas_por_pagar_documento",
+			sql`(${tabla.facturaProveedorId} is not null) = (${tabla.tipo} = 'proveedor')
+				and (${tabla.deudaMensualidadId} is not null) = (${tabla.tipo} = 'acreedor')`,
+		),
+		check("cuentas_por_pagar_importe", sql`${tabla.importeCentavos} > 0`),
+		check("cuentas_por_pagar_saldo", sql`${tabla.saldoCentavos} between 0 and ${tabla.importeCentavos}`),
+		check("cuentas_por_pagar_estado", sql`${tabla.estado} in (${valores(estadosDeCuentaPorPagar)})`),
+		check(
+			"cuentas_por_pagar_pagada",
+			sql`(${tabla.estado} = 'pagada') = (${tabla.saldoCentavos} = 0)
+				and (${tabla.estado} = 'pagada') = (${tabla.pagadaEn} is not null)
+				and (${tabla.estado} not in ('detenida', 'por_pagar', 'cancelada')
+					or ${tabla.saldoCentavos} = ${tabla.importeCentavos})
+				and (${tabla.estado} <> 'pagada_en_parte' or ${tabla.saldoCentavos} < ${tabla.importeCentavos})`,
+		),
+		check(
+			"cuentas_por_pagar_cancelada",
+			sql`(${tabla.estado} = 'cancelada') = (${tabla.canceladoEn} is not null and ${tabla.motivoCancelacion} is not null)`,
 		),
 	],
 );

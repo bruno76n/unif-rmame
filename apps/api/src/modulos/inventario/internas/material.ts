@@ -3,6 +3,7 @@
  * línea y los consumibles que toma el taller.
  * Fase 11 · docs/modulos/inventario/recepciones-en-aduana.md (regla 5, «`inventario.aplicar_decision_recepcion_de_mas`»)
  * y material-en-bodega.md (reglas 3 y 6, «Acciones internas»)
+ * Fase 17 · la revisión de las facturas de la orden al rechazar lo de más (`contaduria.revisar_facturas_de_orden`)
  */
 
 import { aMilesimosConSigno, deMilesimos, menor } from "@uniformame/compartido/calculos/cuenta-material";
@@ -12,7 +13,7 @@ import { z } from "zod";
 import { errorDeRegla } from "../../../nucleo/http/errores.ts";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
 import { escribirMovimiento } from "../dominio/escribir-movimiento.ts";
-import { candadoDeLoRecibido, ubicacionDeTipo } from "../dominio/recepciones.ts";
+import { candadoDeLoRecibido, facturasRevisadas, ubicacionDeTipo } from "../dominio/recepciones.ts";
 import { crearTraspaso } from "../dominio/traspasos.ts";
 import { recepciones, recepcionLineas, rollos } from "../tablas.ts";
 
@@ -108,9 +109,19 @@ export async function aplicarDecisionRecepcionDeMas(contexto: ContextoDeAccion, 
 		});
 		devoluciones.push({ traspaso_id: creado.traspasoId, folio: creado.folio, donde, cantidad: deMilesimos(cantidad) });
 	}
-	// La línea bajó su recibido: la orden se recalcula.
+	// La línea bajó su recibido: la orden se recalcula y Contaduría vuelve a revisar sus facturas; lo que cambió va en
+	// el renglón de Dirección (un efecto no escribe bitácora).
 	await contexto.interna("compras.recalcular_estado_orden", { orden_compra_id: ordenCompraId });
-	return { despues: { devoluciones }, datos: { devoluciones } };
+	const { facturas } = facturasRevisadas.parse(
+		await contexto.interna("contaduria.revisar_facturas_de_orden", { orden_compra_id: ordenCompraId }),
+	);
+	return {
+		despues: {
+			devoluciones,
+			...(facturas.length === 0 ? {} : { facturas: facturas.map((factura) => factura.descripcion) }),
+		},
+		datos: { devoluciones },
+	};
 }
 
 /** Lo que recibe `inventario.actualizar_costo_rollos`. */

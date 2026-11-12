@@ -154,4 +154,19 @@ Ninguno propio: la marca del cambio de precio es `compras.umbral_cambio_precio_p
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 17.*
+**Fase 17, parte 1.**
+
+- **Las tablas** `facturas_proveedor` y `factura_proveedor_ordenes` están en `apps/api/src/modulos/contaduria/tablas.ts` (migración `0058`), con sus CHECK (importes que suman, folio del proveedor de 3 a 12 en mayúsculas, motivo y responsable en `detenida` y `esperando_autorizacion`, lo autorizado y la diferencia en `autorizada`, la nota de crédito solo en una autorizada, la cancelación completa) y sus índices únicos. La misma migración pone la llave de `autorizaciones.factura_proveedor_id`.
+- **Lo común** (`dominio/facturas.ts`):
+  - `bloquearOrdenes` lee las órdenes con `compras.ordenes_para_factura`, que las bloquea en orden de id. El orden de los candados es órdenes, facturas en orden de id, cuentas y folio (decisión 698).
+  - `recibidoDeOrdenes` da el valor recibido de cada orden: lo recibido (`inventario.recibido_de_ordenes`) por el precio vigente (`compras.precio_vigente_lineas`), redondeado al centavo.
+  - `puntasDeOrdenes` encadena las facturas de cada orden en el orden en que se capturaron: cada una cubre lo suyo hasta su valor recibido (regla 4, decisión 700).
+  - `tresPuntas` es la regla 5, una función pura.
+  - `revisarFacturas` es la regla 6: las detenidas y conciliadas sin pagos cambian y su cuenta las sigue; las que tienen pagos, esperan o están autorizadas no cambian, y si lo recibido bajó y ya no cuadran, guardan el evento `factura_proveedor.dejo_de_cuadrar` (decisión 702).
+- **Las acciones** (`acciones/facturas.ts`, contratos en `packages/compartido/src/contratos/contaduria/por-pagar.ts`):
+  - `capturar_factura_proveedor` revisa los importes y las órdenes, bloquea las órdenes, pasa primero los precios de la nota a `compras.registrar_precios_nota` (que regresa el material y el aviso desde el umbral, decisión 704), toma el FP-, escribe la factura con sus órdenes, compara sus tres puntas y crea su cuenta por pagar. La bitácora lleva un renglón por precio nuevo, con la misma clave. El archivo se liga con `admin.ligar_archivo`, propósito `factura_proveedor`.
+  - `cancelar_factura_proveedor` cancela la factura y su cuenta y vuelve a revisar las de sus órdenes.
+  - `registrar_nota_credito_proveedor` aclara la diferencia de una autorizada, una sola vez.
+- **La interna** `revisar_facturas_de_orden` (`internas/facturas.ts`) no escribe bitácora: regresa las facturas que cambiaron con su renglón. `inventario.recibir_de_proveedor` los escribe con su clave y suma a su mensaje «. {FP} ya se puede pagar» o «. {FP} no cuadra con lo recibido», sin montos. `inventario.aplicar_decision_recepcion_de_mas` los pone en el `despues` del renglón de Dirección (decisión 701).
+- **La lectura** `facturacion_de_orden` (`lecturas/facturas.ts`) da, por orden, sus facturas no canceladas, sin montos.
+- **Pruebas:** `acciones/capturar-factura-proveedor.prueba.ts` (las tres puntas, los precios de la nota con su bitácora y su aviso, varias órdenes, lo que se rechaza y la lectura), `internas/revisar-facturas-de-orden.prueba.ts` (recibir, recibir en parte, rechazar lo de más, una con pagos que avisa) y `acciones/cancelar-factura-proveedor.prueba.ts`. Las ayudas están en `nucleo/pruebas/por-pagar-de-prueba.ts`, con órdenes y recepciones reales.

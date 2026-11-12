@@ -126,4 +126,16 @@ Los cambia solo la dueña, en Configuración (ver [configuración](../admin/conf
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 17.*
+**Fase 17, parte 1.**
+
+- **La tabla** `cuentas_por_pagar` está en `apps/api/src/modulos/contaduria/tablas.ts` (migración `0058`), con sus CHECK (su documento según su tipo, el saldo entre 0 y el importe, `pagada` con saldo 0 y su fecha, y sin aplicaciones el saldo igual al importe en `detenida`, `por_pagar` y `cancelada`). La migración pone la llave de `aplicaciones_pago.cuenta_por_pagar_id`. `deuda_mensualidad_id` conserva su `@llavePendiente` hasta la parte 2.
+- **Nace con su factura** (`acciones/facturas.ts`): vence en la fecha de la factura, o la de captura, más los días de crédito menores de sus órdenes (`venceLaFactura`), `detenida` o `por_pagar` según sus tres puntas.
+- **Las acciones** (`acciones/por-pagar.ts`):
+  - `pagar_cuenta_por_pagar` bloquea las órdenes de su factura y luego la cuenta (decisión 698), revisa el estado y el saldo, y escribe el PG- `emitido` con su confirmación de Google y su aplicación. Si la cuenta queda pagada, llama `compras.cerrar_orden_pagada` por cada orden cuyas facturas quedaron todas pagadas (`ordenesPagadas`). Los montos van en pesos enteros, salvo el saldo exacto (decisión 697).
+  - `pedir_pago_lo_recibido` pide la AU- con lo recibido más su IVA proporcional (`montoLoRecibido`, redondeado al centavo). Responde `nada_recibido` si no queda nada recibido por pagar (decisión 703).
+- **El efecto** `aplicar_decision_pago_fuera_de_lo_normal` (`internas/facturas.ts`) vuelve a calcular el monto de la factura, que no cambia mientras espera. Autorizada, la cuenta queda por pagar por ese monto; rechazada, la factura vuelve a detenida. Su renglón es el de Dirección, con la factura antes y después.
+- **La antigüedad, el saldo por pagar y el flujo** son funciones puras en `dominio/saldo-por-pagar.ts`, sin detenidas salvo en el saldo. Los parámetros `contaduria.ventana_dias` y `contaduria.pago_atrasado_rojo_dias` están en `parametros.ts`.
+- **Pruebas:**
+  - `acciones/pagar-cuenta-por-pagar.prueba.ts`: el vencimiento, la detenida, Google, por partes, dos pagos a la vez y la orden que se cierra aun con dos pagos a la vez;
+  - `acciones/pedir-pago-lo-recibido.prueba.ts` e `internas/aplicar-decision-pago-fuera-de-lo-normal.prueba.ts`, que también prueba la nota de crédito del proveedor;
+  - `dominio/saldo-por-pagar.prueba.ts`, también con fast-check.

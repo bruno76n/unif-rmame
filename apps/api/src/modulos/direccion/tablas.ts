@@ -23,6 +23,7 @@ import {
 import { columnasComunes, columnasDeAparato, columnasDeCancelacion, momento } from "../../nucleo/base/columnas.ts";
 import { departamentos, usuarios } from "../admin/tablas.ts";
 import { ordenCompraLineas } from "../compras/tablas.ts";
+import { facturasProveedor } from "../contaduria/tablas.ts";
 import { ajustes, recepciones } from "../inventario/tablas.ts";
 import { desarrollos } from "../patronaje/tablas.ts";
 import { notasCredito, notasEntrega } from "../ventas/tablas.ts";
@@ -73,8 +74,7 @@ export const autorizaciones = pgTable(
 		ordenCompraLineaId: uuid("orden_compra_linea_id").references((): AnyPgColumn => ordenCompraLineas.id),
 		notaEntregaId: uuid("nota_entrega_id").references((): AnyPgColumn => notasEntrega.id),
 		notaCreditoId: uuid("nota_credito_id").references((): AnyPgColumn => notasCredito.id),
-		/** @llavePendiente facturas_proveedor.id */
-		facturaProveedorId: uuid("factura_proveedor_id"),
+		facturaProveedorId: uuid("factura_proveedor_id").references((): AnyPgColumn => facturasProveedor.id),
 		desarrolloId: uuid("desarrollo_id").references((): AnyPgColumn => desarrollos.id),
 		usuarioSolicitadoId: uuid("usuario_solicitado_id").references((): AnyPgColumn => usuarios.id),
 		decididaEn: momento("decidida_en"),

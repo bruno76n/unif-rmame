@@ -164,3 +164,15 @@ export async function ordenesDeCompras(
 		await contexto.lectura("compras.ordenes_por_recibir", { orden_compra_ids: ordenIds }),
 	).ordenes;
 }
+
+/** Lo que regresa `contaduria.revisar_facturas_de_orden`: las facturas que cambiaron y su renglón de bitácora. */
+export const facturasRevisadas = z.object({
+	facturas: z.array(
+		z.object({
+			factura_proveedor_id: z.uuid(),
+			folio: z.string(),
+			estado: z.enum(["conciliada", "detenida"]),
+			descripcion: z.string(),
+		}),
+	),
+});

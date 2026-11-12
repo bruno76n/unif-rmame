@@ -87,7 +87,7 @@ export default definirModulo({
 	lectores: { prueba_notas: ["ventas"] },
 	semillas: semillasDePrueba,
 	bajada: bajadaDePrueba,
-	// El efecto de prueba de una autorización: el de un tipo cuyo módulo todavía no existe.
+	// El efecto de prueba de una autorización: gana sobre el de Contaduría solo en el servidor con `efectoDePrueba`.
 	efectosDeAutorizacion: { pago_fuera_de_lo_normal: "aplicar_decision_pago" },
 	// Como lo hará Personal con el pago por día: un campo de sueldo que hace sensible la bitácora.
 	camposDeSueldo: ["pago_dia_centavos"],

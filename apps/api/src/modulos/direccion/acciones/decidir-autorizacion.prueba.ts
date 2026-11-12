@@ -10,6 +10,7 @@ import { z } from "zod";
 import { cuentaDePrueba } from "../../../nucleo/pruebas/cuentas-de-prueba.ts";
 import { conGoogle, mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import { nuevaPersona } from "../../../nucleo/pruebas/personas-de-prueba.ts";
+import { facturaDePrueba } from "../../../nucleo/pruebas/por-pagar-de-prueba.ts";
 import {
 	crearServidorDePrueba,
 	encabezadosDeLaWeb,
@@ -22,15 +23,19 @@ const laPedida = z.object({ autorizacion_id: z.uuid(), folio: z.string() });
 describe("una autorización se decide una sola vez, con Google, con el efecto de su módulo en la misma transacción", () => {
 	let servidor: ServidorDePrueba;
 	beforeAll(async () => {
-		servidor = await crearServidorDePrueba();
+		servidor = await crearServidorDePrueba({ efectoDePrueba: true });
 	});
 	afterAll(async () => {
 		await servidor.cerrar();
 	});
+	/** Una factura de proveedor de verdad, detenida porque nada ha llegado: la liga de la autorización de prueba. */
+	async function facturaParaAutorizar(): Promise<string> {
+		return (await facturaDePrueba(servidor, { metros: 0, piezas: 0 })).id;
+	}
 
 	/** Ventas (o quien se diga) pide autorizar el pago de una factura nueva. */
 	async function pedir(quien = "ventas", resumen = "Pagar lo recibido de Textiles Aurora") {
-		const factura = uuidv7();
+		const factura = await facturaParaAutorizar();
 		const pedida = await mandarAccion(
 			servidor,
 			"prueba.pedir_aprobacion",

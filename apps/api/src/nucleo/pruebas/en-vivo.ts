@@ -4,11 +4,9 @@
  * Fase 4 · docs/fases/04-servicios-comunes.md (parte 1)
  */
 
-import { join } from "node:path";
 import { Temporal } from "temporal-polyfill";
 import { expect } from "vitest";
 import { crearBase } from "../base/conexion.ts";
-import { cargarModulos, registrarModulos } from "../modulos.ts";
 import { procesarEventos, repartirConLosModulos } from "../trabajos/procesar-eventos.ts";
 import type { ServidorDePrueba } from "./servidor-de-prueba.ts";
 
@@ -88,13 +86,10 @@ export async function esperarA(condicion: () => boolean): Promise<void> {
  * @param servidor El servidor de prueba, por su base.
  */
 export async function procesarComoElWorker(servidor: ServidorDePrueba): Promise<void> {
-	const deLaApi = await cargarModulos(join(import.meta.dirname, "../../modulos"));
-	const deLasPruebas = await cargarModulos(join(import.meta.dirname, "modulos"));
 	await procesarEventos({
 		base: crearBase(servidor.base.app),
-		repartir: repartirConLosModulos(registrarModulos([...deLaApi.modulos, ...deLasPruebas.modulos]), () =>
-			Temporal.Now.instant(),
-		),
+		// Los mismos módulos que registró el servidor de prueba.
+		repartir: repartirConLosModulos(servidor.modulos, () => Temporal.Now.instant()),
 		avisarFalla: async () => undefined,
 		ahora: () => Temporal.Now.instant(),
 	});

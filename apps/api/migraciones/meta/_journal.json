@@ -407,6 +407,13 @@
 			"when": 1794465107421,
 			"tag": "0057_notas",
 			"breakpoints": true
+		},
+		{
+			"idx": 58,
+			"version": "7",
+			"when": 1794471394062,
+			"tag": "0058_facturas_proveedor",
+			"breakpoints": true
 		}
 	]
 }

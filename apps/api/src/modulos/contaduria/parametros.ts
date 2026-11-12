@@ -1,8 +1,9 @@
 /**
  * Los parámetros que declara `contaduria`: con cuántos días de crédito nace un cliente, cuándo sugiere el sistema
- * «Cerca del límite» o «Detenido» y los tramos de la antigüedad de saldos.
+ * «Cerca del límite» o «Detenido», los tramos de la antigüedad de saldos y la ventana de los pagos.
  * Fase 15 · docs/modulos/contaduria/credito-de-clientes.md y docs/modulos/contaduria/cuentas-por-cobrar.md
  * («Parámetros»)
+ * Fase 17 · docs/modulos/contaduria/cuentas-por-pagar.md («Parámetros»)
  */
 
 import { semillaDeParametros } from "../../nucleo/parametros.ts";
@@ -62,5 +63,27 @@ export const semillaDeParametrosDeContaduria = semillaDeParametros("contaduria",
 		tipo: "texto",
 		inicial: "15,30",
 		orden: 5,
+	},
+	{
+		clave: "contaduria.ventana_dias",
+		seccion: "parametro",
+		nombre: "Días de la ventana de pagos",
+		explicacion: "El flujo neto, «vencen esta semana» y los pagos en Pendientes miran estos días",
+		tipo: "entero",
+		unidad: "días",
+		inicial: 7,
+		minimo: 1,
+		orden: 6,
+	},
+	{
+		clave: "contaduria.pago_atrasado_rojo_dias",
+		seccion: "parametro",
+		nombre: "Días de un pago atrasado en rojo",
+		explicacion: "Desde cuántos días de vencido un pago pone en rojo el conteo del menú",
+		tipo: "entero",
+		unidad: "días",
+		inicial: 7,
+		minimo: 1,
+		orden: 7,
 	},
 ]);

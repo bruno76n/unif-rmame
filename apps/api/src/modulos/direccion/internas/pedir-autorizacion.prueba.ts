@@ -4,12 +4,12 @@
  * Fase 7 · docs/fases/07-autorizaciones-y-personal.md (parte 1)
  */
 
-import { v7 as uuidv7 } from "uuid";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { cuentaDePrueba } from "../../../nucleo/pruebas/cuentas-de-prueba.ts";
 import { procesarComoElWorker } from "../../../nucleo/pruebas/en-vivo.ts";
 import { conGoogle, mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
+import { facturaDePrueba } from "../../../nucleo/pruebas/por-pagar-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 
 /** Lo que regresa pedir una aprobación. */
@@ -18,11 +18,15 @@ const laPedida = z.object({ autorizacion_id: z.uuid(), folio: z.string() });
 describe("un documento no puede tener dos autorizaciones esperando; uno que se cancela cancela la suya", () => {
 	let servidor: ServidorDePrueba;
 	beforeAll(async () => {
-		servidor = await crearServidorDePrueba();
+		servidor = await crearServidorDePrueba({ efectoDePrueba: true });
 	});
 	afterAll(async () => {
 		await servidor.cerrar();
 	});
+	/** Una factura de proveedor de verdad, detenida porque nada ha llegado: la liga de la autorización de prueba. */
+	async function facturaParaAutorizar(): Promise<string> {
+		return (await facturaDePrueba(servidor, { metros: 0, piezas: 0 })).id;
+	}
 
 	/** Pide autorizar el pago de una factura. */
 	function pedir(factura: string) {
@@ -32,7 +36,7 @@ describe("un documento no puede tener dos autorizaciones esperando; uno que se c
 	}
 
 	it("nace por autorizar con su folio AU-, quién la pidió y su departamento, y avisa a Dirección", async () => {
-		const factura = uuidv7();
+		const factura = await facturaParaAutorizar();
 		const pedida = await pedir(factura);
 		expect(pedida.cuerpo).toMatchObject({ resultado: { folio: expect.stringMatching(/^AU-\d{4}$/) } });
 		const { rows } = await servidor.base.dueno.query(
@@ -57,7 +61,7 @@ describe("un documento no puede tener dos autorizaciones esperando; uno que se c
 	});
 
 	it("al pedirla avisa a Dirección; al decidirla, a quien la pidió, con el motivo si se rechazó", async () => {
-		const factura = uuidv7();
+		const factura = await facturaParaAutorizar();
 		const pedida = laPedida.parse((await pedir(factura)).cuerpo.resultado);
 		await procesarComoElWorker(servidor);
 		const avisos = async (tipo: string) =>
@@ -99,7 +103,7 @@ describe("un documento no puede tener dos autorizaciones esperando; uno que se c
 	});
 
 	it("la segunda autorización del mismo documento, también a la vez, responde ya_pedida con el folio que espera", async () => {
-		const factura = uuidv7();
+		const factura = await facturaParaAutorizar();
 		const respuestas = await Promise.all([pedir(factura), pedir(factura)]);
 		expect(respuestas.map((respuesta) => respuesta.estado).sort()).toEqual([200, 422]);
 		const folio = laPedida.parse(respuestas.find((respuesta) => respuesta.estado === 200)?.cuerpo.resultado);
@@ -110,7 +114,7 @@ describe("un documento no puede tener dos autorizaciones esperando; uno que se c
 	});
 
 	it("si el documento se cancela, su autorización queda cancelada con su motivo, ya no se decide y el documento puede pedir otra", async () => {
-		const factura = uuidv7();
+		const factura = await facturaParaAutorizar();
 		const pedida = await pedir(factura);
 		const id = laPedida.parse(pedida.cuerpo.resultado).autorizacion_id;
 		expect((await mandarAccion(servidor, "prueba.cancelar_factura", { datos: { factura_id: factura } })).estado).toBe(

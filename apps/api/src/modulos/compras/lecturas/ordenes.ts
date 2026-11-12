@@ -1,7 +1,8 @@
 /**
- * Las lecturas de las órdenes que usa Inventario: las órdenes por recibir, sin precios, y el precio vigente de unas
- * líneas, para el costo de los rollos.
+ * Las lecturas de las órdenes que usan Inventario y Contaduría: las órdenes por recibir, sin precios; el precio
+ * vigente de unas líneas, para el costo de los rollos y el valor recibido; y las órdenes para capturar su factura.
  * Fase 10 · docs/modulos/compras/ordenes-de-compra.md (reglas 8 a 10, «Lecturas»)
+ * Fase 17 · docs/modulos/compras/ordenes-de-compra.md («`compras.ordenes_para_factura(ordenes)`»)
  */
 
 import { deMilesimos } from "@uniformame/compartido/calculos/cuenta-material";
@@ -16,6 +17,9 @@ import { ordenCompraLineas, ordenesCompra, proveedores } from "../tablas.ts";
 
 /** Lo que recibe `compras.ordenes_por_recibir`: unas órdenes, o ninguna para todas. */
 const pedidoPorRecibir = z.object({ orden_compra_ids: z.array(z.uuid()).optional() }).strict();
+
+/** Lo que recibe `compras.ordenes_para_factura`. */
+const pedidoParaFactura = z.object({ orden_compra_ids: z.array(z.uuid()).min(1) }).strict();
 
 /** Lo que recibe `compras.precio_vigente_lineas`. */
 const pedidoDePrecios = z.object({ orden_compra_linea_ids: z.array(z.uuid()) }).strict();
@@ -109,4 +113,55 @@ export async function precioVigenteLineas(contexto: ContextoDeAccion, datos: unk
 		.from(ordenCompraLineas)
 		.where(inArray(ordenCompraLineas.id, orden_compra_linea_ids));
 	return Object.fromEntries(lineas.map((linea) => [linea.id, precioVigente(linea)]));
+}
+
+/**
+ * `compras.ordenes_para_factura`: por orden, su folio, su estado, su proveedor con su tercero y los días de crédito
+ * que se copiaron al enviarla; por línea, su material, su unidad y lo pedido. La que no existe no viene.
+ * Bloquea las órdenes en orden de id hasta el final de la acción: las facturas de una orden se capturan, se revisan,
+ * se cancelan y se pagan una a la vez (el orden de los candados de las cuentas por pagar, decisión 698).
+ * @param contexto El contexto de quien lee (Contaduría, al capturar una nota o factura).
+ * @param datos `orden_compra_ids`.
+ */
+export async function ordenesParaFactura(contexto: ContextoDeAccion, datos: unknown) {
+	const { orden_compra_ids } = pedidoParaFactura.parse(datos);
+	const ordenes = await contexto.transaccion
+		.select({
+			id: ordenesCompra.id,
+			folio: ordenesCompra.folio,
+			estado: ordenesCompra.estado,
+			diasCredito: ordenesCompra.diasCredito,
+			proveedorId: ordenesCompra.proveedorId,
+			terceroId: proveedores.terceroId,
+			proveedor: terceros.nombre,
+		})
+		.from(ordenesCompra)
+		.innerJoin(proveedores, eq(proveedores.id, ordenesCompra.proveedorId))
+		.innerJoin(terceros, eq(terceros.id, proveedores.terceroId))
+		.where(inArray(ordenesCompra.id, orden_compra_ids))
+		.orderBy(asc(ordenesCompra.id))
+		.for("update", { of: ordenesCompra });
+	const lineas = await lineasDeOrdenes(
+		contexto.transaccion,
+		ordenes.map((orden) => orden.id),
+	);
+	return {
+		ordenes: ordenes.map((orden) => ({
+			orden_compra_id: orden.id,
+			folio: orden.folio,
+			estado: orden.estado,
+			dias_credito: orden.diasCredito,
+			proveedor_id: orden.proveedorId,
+			tercero_id: orden.terceroId,
+			proveedor: orden.proveedor,
+			lineas: lineas
+				.filter((linea) => linea.ordenCompraId === orden.id)
+				.map((linea) => ({
+					orden_compra_linea_id: linea.id,
+					material: linea.material,
+					unidad: linea.unidad,
+					pedido: linea.cantidad,
+				})),
+		})),
+	};
 }

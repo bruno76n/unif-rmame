@@ -65,7 +65,17 @@ describe("La nota cambia el precio vigente de la línea, deja su renglón «seg�
 				{ orden_compra_linea_id: orden.lineaBoton, precio_centavos: 38 },
 				{ orden_compra_linea_id: orden.lineaCierre, precio_centavos: 650 },
 			]),
-		).toEqual({ lineas: [{ orden_compra_linea_id: orden.lineaCierre, antes: 600, nuevo: 650 }] });
+		).toEqual({
+			// Sube 8 %: menos que `compras.umbral_cambio_precio_pct`, sin aviso.
+			lineas: [
+				{
+					orden_compra_linea_id: orden.lineaCierre,
+					material: expect.stringMatching(/^Cierre 14 cm/),
+					antes: 600,
+					nuevo: 650,
+				},
+			],
+		});
 		const { rows: lineas } = await servidor.base.dueno.query(
 			"SELECT id, precio_orden_centavos::int AS orden, precio_nota_centavos::int AS nota, precio_nota_por IS NOT NULL AS con_quien FROM orden_compra_lineas WHERE orden_compra_id = $1 ORDER BY precio_orden_centavos",
 			[orden.id],

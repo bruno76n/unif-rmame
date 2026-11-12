@@ -142,3 +142,5 @@ Cada fase que crea un tipo de documento agrega su liga (quita su `@llavePendient
 **Fase 11, parte 1.** `inventario` registra el efecto de `recepcion_de_mas` (`inventario.aplicar_decision_recepcion_de_mas`), y la migración `0036` pone la llave de `recepcion_id`. La decisión le pasa al efecto, además de sus ligas, la cantidad y la unidad de la autorización si las tiene (decisión 566).
 
 **Fase 14, parte 1.** `inventario` registra el efecto de `ajuste_inventario` (`inventario.aplicar_decision_ajuste`), y la migración `0045` pone la llave de `ajuste_id`. La dueña lo decide también desde Bodega; lo prueba `modulos/inventario/internas/aplicar-decision-ajuste.prueba.ts`.
+
+**Fase 17, parte 1.** `contaduria` registra el efecto de `pago_fuera_de_lo_normal` (`contaduria.aplicar_decision_pago_fuera_de_lo_normal`), y la migración `0058` pone la llave de `factura_proveedor_id`. El efecto de prueba del módulo de prueba corre solo en el servidor de prueba con `efectoDePrueba`, y las pruebas de Dirección ligan facturas de verdad (decisión 699).

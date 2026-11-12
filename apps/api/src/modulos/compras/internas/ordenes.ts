@@ -13,7 +13,7 @@ import { quienCambia } from "../../../nucleo/acciones/comunes.ts";
 import { subirVersion } from "../../../nucleo/acciones/pisadas.ts";
 import { errorDeRegla } from "../../../nucleo/http/errores.ts";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
-import { materialCambiado, registrarPrecio } from "../dominio/comunes.ts";
+import { avisoDePrecio, materialCambiado, parametroNumero, registrarPrecio } from "../dominio/comunes.ts";
 import {
 	bloquearMaterialesDeOrden,
 	eventoDeOrden,
@@ -96,18 +96,29 @@ export async function reabrirOrdenPagada(contexto: ContextoDeAccion, datos: unkn
 	return { reabierta: true };
 }
 
+/** Una línea cuyo precio cambió con la nota. */
+interface PrecioDeNota {
+	orden_compra_linea_id: string;
+	material: string;
+	antes: number;
+	nuevo: number;
+	/** «{material}: sube {n} % · antes ${precio}», si cambió `compras.umbral_cambio_precio_pct` o más. */
+	aviso?: string;
+}
+
 /**
  * `compras.registrar_precios_nota`: en cada línea con un precio distinto del vigente, el de la nota, su renglón
  * «según la nota» en el historial y el último precio del par. Una línea con el mismo precio no cambia.
  * @param contexto El contexto de la captura de la nota (Contaduría).
  * @param datos La orden y el precio de cada línea.
- * @returns Las líneas que cambiaron, con su precio anterior y el nuevo.
+ * @returns Las líneas que cambiaron, con su material, su precio anterior, el nuevo y el aviso si cambió el umbral o
+ * más (regla 8 de proveedores y precios).
  * @throws `422 orden_no_enviada`: «{OC} no se ha enviado: no tiene nota que capturar.» (en borrador o cancelada).
  */
 export async function registrarPreciosNota(
 	contexto: ContextoDeAccion,
 	datos: unknown,
-): Promise<{ lineas: { orden_compra_linea_id: string; antes: number; nuevo: number }[] }> {
+): Promise<{ lineas: PrecioDeNota[] }> {
 	const pedido = pedidoDeNota.parse(datos);
 	// El último precio de cada par es parte del material: primero los materiales, luego la orden.
 	await bloquearMaterialesDeOrden(contexto, pedido.orden_compra_id);
@@ -116,7 +127,8 @@ export async function registrarPreciosNota(
 		throw errorDeRegla("orden_no_enviada", `${orden.folio} no se ha enviado: no tiene nota que capturar.`);
 	}
 	const lineas = await lineasDeOrdenes(contexto.transaccion, [orden.id]);
-	const cambiaron: { orden_compra_linea_id: string; antes: number; nuevo: number }[] = [];
+	const umbral = await parametroNumero(contexto, "compras.umbral_cambio_precio_pct");
+	const cambiaron: PrecioDeNota[] = [];
 	for (const renglon of pedido.lineas) {
 		const linea = lineas.find((suya) => suya.id === renglon.orden_compra_linea_id);
 		if (linea === undefined) throw new Error(`la línea ${renglon.orden_compra_linea_id} no es de ${orden.folio}`);
@@ -144,7 +156,14 @@ export async function registrarPreciosNota(
 			orden_compra_linea_id: linea.id,
 			costo_metro_centavos: renglon.precio_centavos,
 		});
-		cambiaron.push({ orden_compra_linea_id: linea.id, antes, nuevo: renglon.precio_centavos });
+		const [aviso] = avisoDePrecio(linea.material, antes, renglon.precio_centavos, umbral);
+		cambiaron.push({
+			orden_compra_linea_id: linea.id,
+			material: linea.material,
+			antes,
+			nuevo: renglon.precio_centavos,
+			...(aviso === undefined ? {} : { aviso }),
+		});
 	}
 	if (cambiaron.length > 0) {
 		await subirVersion(contexto.transaccion, ordenesCompra, orden.id);

@@ -4,6 +4,9 @@
  * movimiento de Fuera a Aduana; lo de más pide autorización a Dirección. Todo en una transacción.
  * Fase 11 · docs/modulos/inventario/recepciones-en-aduana.md (reglas 3, 4 y 9; «`inventario.recibir_de_proveedor`»)
  *
+ * Fase 17 · la revisión de las facturas de la orden (`contaduria.revisar_facturas_de_orden`), con su mensaje sin
+ * montos y su renglón de bitácora con la misma clave
+ *
  * Aduana nunca recibe un costo: el del metro lo pone el servidor con `compras.precio_vigente_lineas`.
  */
 
@@ -24,6 +27,7 @@ import { escribirMovimiento } from "../dominio/escribir-movimiento.ts";
 import { partidasDe } from "../dominio/partidas.ts";
 import {
 	candadoDeLoRecibido,
+	facturasRevisadas,
 	type OrdenParaInventario,
 	ordenesDeCompras,
 	recibidoDeLineas,
@@ -251,6 +255,10 @@ export const accionRecibirDeProveedor = implementarAccion(recibirDeProveedor, as
 		await contexto.interna("compras.recalcular_estado_orden", { orden_compra_id: orden.orden_compra_id }),
 	);
 	if (estado !== "recibida" && estado !== "recibida_en_parte") throw noRecibible();
+	// Lo recibido cambió: Contaduría vuelve a revisar las facturas de la orden (sin montos para Aduana).
+	const { facturas } = facturasRevisadas.parse(
+		await contexto.interna("contaduria.revisar_facturas_de_orden", { orden_compra_id: orden.orden_compra_id }),
+	);
 	// Lo de más, por línea, pide autorización a Dirección.
 	const porcentajeTela = aMilesimos(
 		String(await contexto.lectura("admin.parametro", { clave: "inventario.porcentaje_de_mas_tela" })),
@@ -284,6 +292,15 @@ export const accionRecibirDeProveedor = implementarAccion(recibirDeProveedor, as
 			de_mas: deMas,
 		},
 	});
+	for (const factura of facturas) {
+		contexto.bitacora({
+			descripcion: factura.descripcion,
+			entidad: "facturas_proveedor",
+			entidadId: factura.factura_proveedor_id,
+			entidadFolio: factura.folio,
+			despues: { estado: factura.estado },
+		});
+	}
 	contexto.guardarEvento({
 		tipo: "recepcion.de_proveedor",
 		datos: { recepcion_id: recepcionId, orden_compra_id: orden.orden_compra_id },
@@ -325,7 +342,13 @@ export const accionRecibirDeProveedor = implementarAccion(recibirDeProveedor, as
 			traspaso_id: traspaso.traspasoId,
 			folio: traspaso.folio,
 			rollos: rollosNuevos.map((nuevo) => ({ rollo_id: nuevo.rolloId, folio: nuevo.folio })),
-			mensaje: `${orden.folio} recibida: queda en aduana hasta que bodega la confirme${conDeMas}`,
+			mensaje: `${orden.folio} recibida: queda en aduana hasta que bodega la confirme${conDeMas}${facturas
+				.map((factura) =>
+					factura.estado === "conciliada"
+						? `. ${factura.folio} ya se puede pagar`
+						: `. ${factura.folio} no cuadra con lo recibido`,
+				)
+				.join("")}`,
 		},
 		avisos,
 		entidad: { nombre: "recepciones", id: recepcionId },
