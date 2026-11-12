@@ -111,3 +111,5 @@ Los de cada interna, arriba.
 - **`acciones/no-la-encuentro.ts`:** con el candado de la variante relee la reserva (activa, en Bodega, de un pedido externo), abre la DF- `no_la_encontro` por las piezas en negativo con lo que decía la existencia, y libera la reserva con su nota. El folio del pedido sale de `ventas.folios_de_documentos`.
 - **Despachar a un cliente externo** lleva una sola nota por despacho (decisión 689); un padre de una devolución de cliente espera a Calidad y no sale (`espera_calidad`).
 - **Pruebas:** `acciones/no-la-encuentro.prueba.ts`; las entregas, el paso a bodega y las devoluciones, en `modulos/ventas/acciones/confirmar-entrega.prueba.ts`, `pasar-a-bodega.prueba.ts` y `aplicar-decision-nota-credito.prueba.ts`, y en `modulos/calidad/acciones/revisar-devolucion.prueba.ts`.
+
+**Fase 18, parte 1.** `no_la_encuentro` acepta la reserva de un W- en Bodega: su folio sale de `linea.folios_de_pedidos`, la DF- nace igual y la pieza se vuelve a apartar con `inventario.reservar`, sin contar como libre la que no se encontró (`no_encontradas_en_bodega`): en otra ubicación con libres o, si no hay, en Bodega con `pedido_linea_sin_pieza` (decisión 721).

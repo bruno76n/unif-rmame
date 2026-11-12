@@ -49,6 +49,7 @@ import { defectos, reprocesos, revisiones } from "../calidad/tablas.ts";
 import { productos, secciones, variantes } from "../catalogo/tablas.ts";
 import { materiales, ordenCompraLineas, ordenesCompra, proveedores } from "../compras/tablas.ts";
 import { autorizaciones } from "../direccion/tablas.ts";
+import { pedidoLineaRenglones, pedidosLinea } from "../linea/tablas.ts";
 import { recetaVersiones } from "../patronaje/tablas.ts";
 import { personas } from "../personal/tablas.ts";
 import { cortes, lotes, ordenesProduccion } from "../produccion/tablas.ts";
@@ -437,8 +438,7 @@ export const traspasoLineas = pgTable(
 		cantidadRepartida: numeric("cantidad_repartida", { precision: 12, scale: 3 }).notNull().default("0"),
 		cantidadRecibidaDestino: numeric("cantidad_recibida_destino", { precision: 12, scale: 3 }),
 		defectoId: uuid("defecto_id").references((): AnyPgColumn => defectos.id),
-		/** @llavePendiente pedidos_linea.id */
-		pedidoLineaId: uuid("pedido_linea_id"),
+		pedidoLineaId: uuid("pedido_linea_id").references((): AnyPgColumn => pedidosLinea.id),
 		nota: text("nota"),
 		...columnasComunes(),
 	},
@@ -505,10 +505,8 @@ export const reservas = pgTable(
 		motivo: text("motivo").notNull(),
 		pedidoId: uuid("pedido_id").references((): AnyPgColumn => pedidos.id),
 		notaEntregaId: uuid("nota_entrega_id").references((): AnyPgColumn => notasEntrega.id),
-		/** @llavePendiente pedidos_linea.id */
-		pedidoLineaId: uuid("pedido_linea_id"),
-		/** @llavePendiente pedido_linea_renglones.id */
-		pedidoLineaRenglonId: uuid("pedido_linea_renglon_id"),
+		pedidoLineaId: uuid("pedido_linea_id").references((): AnyPgColumn => pedidosLinea.id),
+		pedidoLineaRenglonId: uuid("pedido_linea_renglon_id").references((): AnyPgColumn => pedidoLineaRenglones.id),
 		/** @llavePendiente apartados_tienda.id */
 		apartadoTiendaId: uuid("apartado_tienda_id"),
 		/** @llavePendiente pedidos_especiales_tienda.id */

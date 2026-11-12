@@ -90,6 +90,11 @@ export const accionDescontinuarProductos = implementarAccion(descontinuarProduct
 			despues: { activo: false, motivo: datos.motivo },
 		});
 		eventoDeProducto(contexto, "producto.descontinuado", producto, ["productos"]);
+		// Sus publicaciones en línea se pausan (fase 18).
+		await contexto.interna("linea.pausar_publicaciones_producto", {
+			producto_id: producto.id,
+			motivo: "descontinuado",
+		});
 		descontinuados.push(producto.nombre);
 	}
 	const [unico] = descontinuados;

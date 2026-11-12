@@ -11,6 +11,7 @@
  * después el anticipo de su pedido, el saldo a favor del cliente y sus cuentas en orden de id.
  */
 
+import { enPesos } from "@uniformame/compartido/calculos/dinero";
 import { cancelarPago, registrarPagoRecibido } from "@uniformame/compartido/contratos/contaduria/pagos";
 import { and, eq, inArray } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
@@ -36,7 +37,7 @@ import {
 	regresarAplicacionesPorPagar,
 } from "../dominio/cuentas-por-pagar.ts";
 import { aplicarDeposito } from "../dominio/depositos.ts";
-import { avisoDePagoRepetido, enPesos, revisarMedio, revisarPesosEnteros } from "../dominio/pagos.ts";
+import { avisoDePagoRepetido, revisarMedio, revisarPesosEnteros } from "../dominio/pagos.ts";
 import { bloquearSaldoAFavor } from "../dominio/saldo-favor.ts";
 import { cuentasPorPagar, pagos, saldoFavorMovimientos, terceros } from "../tablas.ts";
 

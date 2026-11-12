@@ -131,6 +131,16 @@ export const quienesDePrueba: Record<string, QuienLlama> = {
 		confirmadoConGoogleEn: undefined,
 	},
 	// Contaduría con «ven sueldos y tarifas»: la que paga la nómina y pone descuentos.
+	linea: {
+		tipo: "cuenta",
+		usuarioId: "01936f2e-0000-7000-8000-000000000090",
+		sesionId: "01936f2e-0000-7000-8000-000000000091",
+		esDuena: false,
+		esSoporte: false,
+		departamentos: ["linea"],
+		permisosFinos: [],
+		confirmadoConGoogleEn: undefined,
+	},
 	contaduria_sueldos: {
 		tipo: "cuenta",
 		usuarioId: "01936f2e-0000-7000-8000-000000000080",
@@ -209,6 +219,12 @@ export const quienesDePrueba: Record<string, QuienLlama> = {
 		tipoDeAparato: "tablet",
 		personaId: undefined,
 	},
+	sitio: {
+		tipo: "aparato",
+		dispositivoId: "01936f2e-0000-7000-8000-000000000041",
+		tipoDeAparato: "sitio",
+		personaId: undefined,
+	},
 };
 
 /**
@@ -284,11 +300,15 @@ export function cuentaDePrueba(nombre: string): string {
 	return quien.usuarioId;
 }
 
-/** Los aparatos de prueba: su tipo registrado, su ubicación, su nombre y su llave conocida. */
+/**
+ * Los aparatos de prueba: su tipo registrado, su ubicación, su nombre y su llave conocida. `sitio` es la credencial de
+ * uniformame.mx, sin ubicación.
+ */
 export const aparatosRegistradosDePrueba = {
 	tablet: { tipo: "tablet_taller", ubicacion: "TAL", nombre: "Tablet del taller", llaveId: "prueba21" },
 	puente: { tipo: "puente_impresion", ubicacion: "ADU", nombre: "Puente de Aduana", llaveId: "prueba31" },
 	otro_puente: { tipo: "puente_impresion", ubicacion: "TAL", nombre: "Puente del Taller", llaveId: "prueba32" },
+	sitio: { tipo: "credencial_servidor", ubicacion: null, nombre: "uniformame.mx", llaveId: "prueba41" },
 } as const;
 
 /** El secreto de la llave de cada aparato de prueba: 43 letras de base64url, solo de pruebas. */
@@ -310,14 +330,15 @@ export function llaveDePrueba(nombre: keyof typeof aparatosRegistradosDePrueba):
  * @param base La base plantilla, con el rol dueño.
  */
 export async function sembrarAparatosDePrueba(base: Base): Promise<void> {
-	for (const nombre of ["tablet", "puente", "otro_puente"] as const) {
+	for (const nombre of ["tablet", "puente", "otro_puente", "sitio"] as const) {
 		const aparato = aparatosRegistradosDePrueba[nombre];
 		const quien = quienesDePrueba[nombre];
 		if (quien?.tipo !== "aparato") throw new Error(`no hay aparato de prueba ${nombre}`);
-		const [ubicacion] = await base
-			.select({ id: ubicaciones.id })
-			.from(ubicaciones)
-			.where(eq(ubicaciones.codigo, aparato.ubicacion));
+		// La credencial de uniformame.mx no tiene ubicación.
+		const [ubicacion] =
+			aparato.ubicacion === null
+				? []
+				: await base.select({ id: ubicaciones.id }).from(ubicaciones).where(eq(ubicaciones.codigo, aparato.ubicacion));
 		await base
 			.insert(dispositivos)
 			.values({

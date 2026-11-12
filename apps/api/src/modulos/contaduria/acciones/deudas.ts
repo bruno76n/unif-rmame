@@ -4,6 +4,7 @@
  * «`contaduria.cancelar_deuda`»)
  */
 
+import { enPesos } from "@uniformame/compartido/calculos/dinero";
 import { textoDeDia } from "@uniformame/compartido/calculos/fechas";
 import { cancelarDeuda, registrarDeuda } from "@uniformame/compartido/contratos/contaduria/por-pagar";
 import { asc, eq, inArray } from "drizzle-orm";
@@ -15,7 +16,7 @@ import { tomarVersion } from "../../../nucleo/acciones/pisadas.ts";
 import { errorDeCampo, errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeAccion, implementarAccion } from "../../../nucleo/modulos.ts";
 import { nombreDelTercero } from "../dominio/facturas.ts";
-import { enPesos } from "../dominio/pagos.ts";
+
 import { cuentasPorPagar, deudaMensualidades, deudas, terceros } from "../tablas.ts";
 
 /** Lo que regresa `admin.tomar_folio`. */

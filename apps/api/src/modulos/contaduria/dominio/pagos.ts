@@ -4,8 +4,7 @@
  * Fase 15 · docs/modulos/contaduria/pagos-y-saldo-a-favor.md (reglas 3 y 10)
  */
 
-import { centavosATexto } from "@uniformame/compartido/calculos/dinero";
-import { centavos } from "@uniformame/compartido/tipos/base";
+import { enPesos } from "@uniformame/compartido/calculos/dinero";
 import { and, eq, isNull } from "drizzle-orm";
 import type { Transaccion } from "../../../nucleo/base/transacciones.ts";
 import { errorDeCampo } from "../../../nucleo/http/errores.ts";
@@ -90,14 +89,6 @@ export async function avisoDePagoRepetido(
 		.where(and(eq(pagos.referencia, referencia), eq(pagos.montoCentavos, monto), eq(pagos.estado, "registrado")))
 		.limit(1);
 	return repetido === undefined ? [] : [`Ya hay un pago con la referencia ${referencia}: ${repetido.folio}`];
-}
-
-/**
- * Un monto como se lee: «$8,000», o «$999.50» si trae centavos (un saldo que dejó una NC).
- * @param monto Los centavos.
- */
-export function enPesos(monto: number): string {
-	return centavosATexto(centavos(monto), { conCentavos: monto % 100 !== 0 });
 }
 
 /**

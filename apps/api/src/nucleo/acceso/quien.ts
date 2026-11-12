@@ -28,7 +28,8 @@ export interface CuentaQueLlama {
 export interface AparatoQueLlama {
 	tipo: "aparato";
 	dispositivoId: string;
-	tipoDeAparato: "tablet" | "puente";
+	/** `sitio` es la credencial de servidor de uniformame.mx (fase 18). */
+	tipoDeAparato: "tablet" | "puente" | "sitio";
 	/** Quien lo usa en ese momento (la costurera con su PIN), si lo hay. */
 	personaId: string | undefined;
 }
@@ -39,7 +40,9 @@ export type QuienLlama = CuentaQueLlama | AparatoQueLlama;
 /**
  * La app con la que llama, para revisar su versión mínima.
  * @param quien Quién llama.
+ * @returns Su app, o nada para la credencial de uniformame.mx: es un servidor y no manda `X-App-Version`.
  */
-export function appDe(quien: QuienLlama): App {
-	return quien.tipo === "cuenta" ? "web" : quien.tipoDeAparato;
+export function appDe(quien: QuienLlama): App | undefined {
+	if (quien.tipo === "cuenta") return "web";
+	return quien.tipoDeAparato === "sitio" ? undefined : quien.tipoDeAparato;
 }

@@ -8,6 +8,7 @@
  * cuentas por cobrar y luego las cuentas por pagar, en orden de id.
  */
 
+import { enPesos } from "@uniformame/compartido/calculos/dinero";
 import { cancelarCompensacion, compensar } from "@uniformame/compartido/contratos/contaduria/por-pagar";
 import { and, eq, gt, inArray } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
@@ -26,7 +27,7 @@ import {
 	regresarAplicacionesPorPagar,
 } from "../dominio/cuentas-por-pagar.ts";
 import { nombreDelTercero } from "../dominio/facturas.ts";
-import { enPesos } from "../dominio/pagos.ts";
+
 import { compensaciones, cuentasPorCobrar, cuentasPorPagar, terceros } from "../tablas.ts";
 
 /** Lo que una cuenta tiene para ordenar: primero las que vencen antes. */

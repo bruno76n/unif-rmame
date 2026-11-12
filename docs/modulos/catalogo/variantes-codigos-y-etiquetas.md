@@ -174,3 +174,5 @@ Los cambia solo la dueña, en Configuración (ver [configuración](../admin/conf
 - **El aviso de códigos** dice el último código con lo que da `admin.siguiente_folio` (el siguiente más los que quedan), no con un número fijo.
 
 **Fase 13, parte 2.** La lectura `catalogo.variante_por_codigo` (`lecturas/variantes.ts`) regresa la variante de un código con su producto y su talla, también la dada de baja (la prenda ya se hizo), o nada. Lo prueba `calidad/acciones/registrar-reclamo.prueba.ts`.
+
+**Fase 18, parte 1.** `catalogo.datos_variantes` (`lecturas/variantes.ts`) regresa, por variante, su producto, su nombre, su talla, si está dada de baja y si se vende en línea (producto sin baja y con el canal «Tienda en línea»). La que no existe no viene: Tienda en línea responde `400`.

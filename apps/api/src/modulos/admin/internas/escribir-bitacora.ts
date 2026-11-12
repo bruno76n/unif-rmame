@@ -94,12 +94,13 @@ export function armarDescripciones(descripcion: string | DescripcionConSueldos):
 }
 
 /**
- * Desde qué lado se hizo: la fábrica (la web y el puente), la tablet o el sistema.
+ * Desde qué lado se hizo: la fábrica (la web y el puente), la tablet, el servidor de uniformame.mx o el sistema.
  * @param quien Quién escribe.
  */
-function origenDe(quien: QuienEscribe): "fabrica" | "tablet" | "sistema" {
+function origenDe(quien: QuienEscribe): "fabrica" | "tablet" | "servidor_linea" | "sistema" {
 	if (quien.tipo === "sistema") return "sistema";
-	return quien.tipo === "aparato" && quien.tipoDeAparato === "tablet" ? "tablet" : "fabrica";
+	if (quien.tipo === "aparato" && quien.tipoDeAparato === "tablet") return "tablet";
+	return quien.tipo === "aparato" && quien.tipoDeAparato === "sitio" ? "servidor_linea" : "fabrica";
 }
 
 /**

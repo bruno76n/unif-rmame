@@ -130,6 +130,7 @@ export function deUnRevocado(ocurridoEn: string, revocadoEn: string): ComandoHec
 const areaDelAparato: Readonly<Record<AparatoQueLlama["tipoDeAparato"], string>> = {
 	tablet: "taller",
 	puente: "taller",
+	sitio: "ninguna",
 };
 
 /** La persona de un comando: su nombre, su área y si tiene baja. */

@@ -264,14 +264,18 @@ export const accionDarBajaTalla = implementarAccion(darBajaTalla, async (context
 			`La talla ${variante.talla} está en lotes sin terminar: ${enLotes.folios.join(", ")}.`,
 		);
 	}
-	// Ni en pedidos abiertos de Ventas (borrador o confirmados) con piezas de esta talla.
-	const enPedidos = z
-		.object({ folios: z.array(z.string()) })
-		.parse(await contexto.lectura("ventas.pedidos_abiertos_de_variante", { variante_id: variante.id }));
-	if (enPedidos.folios.length > 0) {
+	// Ni en pedidos abiertos de Ventas (borrador o confirmados) ni en W- abiertos (fase 18) con piezas de esta talla.
+	const folios: string[] = [];
+	for (const lectura of ["ventas.pedidos_abiertos_de_variante", "linea.pedidos_abiertos_de_variante"]) {
+		const { folios: suyos } = z
+			.object({ folios: z.array(z.string()) })
+			.parse(await contexto.lectura(lectura, { variante_id: variante.id }));
+		folios.push(...suyos);
+	}
+	if (folios.length > 0) {
 		throw errorDeRegla(
 			"talla_con_pedidos",
-			`La talla ${variante.talla} está en pedidos abiertos: ${enPedidos.folios.join(", ")}.`,
+			`La talla ${variante.talla} está en pedidos abiertos: ${folios.join(", ")}.`,
 		);
 	}
 	await contexto.transaccion

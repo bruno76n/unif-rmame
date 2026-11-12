@@ -169,3 +169,5 @@ Todas son de la web: surtir, con el departamento Bodega; despachar, recordar y l
 **Fase 16, parte 4.** Despachar a un cliente externo lleva una sola nota (dos notas en un despacho son `destinos_distintos`, decisión 689) y llama `ventas.marcar_nota_en_camino`, que regresa el folio de la nota y el nombre del cliente para el mensaje «{NV} sale con {D} a {cliente}…». Lo prueba `modulos/ventas/acciones/confirmar-entrega.prueba.ts`.
 
 **Fase 14, parte 1.** Al confirmar la llegada (`recibir_despacho` y `entregar_a_tienda_sin_caja`), cada renglón que no cuadró abre su DF- en Tránsito, a cargo de Aduana: lo que faltó con su traspaso; lo que sobró o no venía, con el primero del despacho (decisión 634). Lo prueba `acciones/recibir-despacho.prueba.ts`.
+
+**Fase 18, parte 1.** `surtir_a_aduana` de un W- llama `linea.prendas_en_camino`: el W- por surtir queda esperando prendas.

@@ -89,6 +89,15 @@ export function centavosATexto(monto: Centavos, opciones: { conCentavos?: boolea
 }
 
 /**
+ * Un monto como se lee en un mensaje o en la bitácora: «$1,250», o «$1,250.50» si trae centavos.
+ * @param monto En centavos, entero.
+ * Es la forma de escribir un monto de todos los módulos: Contaduría, la nómina y Tienda en línea.
+ */
+export function enPesos(monto: number): string {
+	return centavosATexto(centavos(monto), { conCentavos: monto % 100 !== 0 });
+}
+
+/**
  * Dice si un texto es un número decimal que `Intl.NumberFormat` lee tal cual.
  * @param texto El texto que se revisa.
  * @returns `true` si es «-123.45» o parecido; entonces TypeScript lo acepta como número en texto.

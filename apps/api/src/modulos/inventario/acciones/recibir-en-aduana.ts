@@ -9,7 +9,8 @@
  * inventario. Por tipo: una devolución al proveedor surtida de Bodega queda lista para «Devolver al proveedor»; lo
  * surtido para un pedido externo deja su reserva en Aduana, o regresa a Bodega si el pedido ya se canceló (fase 16);
  * de una devolución de cliente, lo bueno pasa a Bodega en un hijo y lo que llegó con defecto espera a Calidad
- * (fase 16); lo demás de cada tipo llega con su fase (decisión 574).
+ * (fase 16); lo surtido para un W- avisa a Tienda en línea con `linea.prendas_en_aduana`, o regresa a su origen si el
+ * W- ya se canceló (fase 18); lo demás de cada tipo llega con su fase (decisión 574).
  */
 
 import { aMilesimosConSigno, cantidadEnTexto, deMilesimos } from "@uniformame/compartido/calculos/cuenta-material";
@@ -25,17 +26,36 @@ import { tomarCandadosDeInventario } from "../dominio/candados.ts";
 import { abrirDiferencia } from "../dominio/diferencias.ts";
 import { escribirMovimiento, type RenglonDeMovimiento } from "../dominio/escribir-movimiento.ts";
 import { ubicacionDeTipo, ubicacionPorId } from "../dominio/recepciones.ts";
+import { reservasActivas } from "../dominio/reservas.ts";
 import { cambiarEstadoTraspaso, type TraspasoCreado } from "../dominio/traspasos.ts";
 import { repartirLoBueno } from "../internas/devoluciones.ts";
 import { regresarAlOrigen } from "../internas/reservas.ts";
-import { recepciones, recepcionLineas, tiposDeTraspaso, traspasoLineas, traspasos } from "../tablas.ts";
+import { recepciones, recepcionLineas, reservas, tiposDeTraspaso, traspasoLineas, traspasos } from "../tablas.ts";
 
-/** Lo que regresa `ventas.documentos_abiertos` que importa aquí: los pedidos que siguen abiertos. */
-const pedidosAbiertos = z.object({ pedido_ids: z.array(z.uuid()) });
+/** Lo que regresan `ventas.documentos_abiertos` y `linea.pedidos_abiertos`: los documentos que siguen abiertos. */
+const siguenAbiertos = z.record(z.string(), z.array(z.uuid()));
 
 /**
- * Si lo que llegó es lo surtido para un pedido externo que ya no está abierto (se canceló), lo reparte en un `regresa`
- * a Bodega: sus reservas se liberaron al cancelarlo y nada lo espera en Aduana.
+ * El pedido para el que se surtió lo que llegó, con la lectura que dice si sigue abierto: un PE- (fase 16) o un W-
+ * (fase 18). Otro tipo de traspaso no tiene.
+ */
+function pedidoDelSurtido(
+	traspaso: typeof traspasos.$inferSelect,
+	contados: readonly { linea: typeof traspasoLineas.$inferSelect }[],
+): { lectura: string; campo: string; id: string } | null {
+	if (traspaso.tipo === "surtido_pedido_externo" && traspaso.pedidoId !== null) {
+		return { lectura: "ventas.documentos_abiertos", campo: "pedido_ids", id: traspaso.pedidoId };
+	}
+	const pedidoLineaId = contados.find(({ linea }) => linea.pedidoLineaId !== null)?.linea.pedidoLineaId;
+	if (traspaso.tipo === "pedido_linea" && pedidoLineaId != null) {
+		return { lectura: "linea.pedidos_abiertos", campo: "pedido_linea_ids", id: pedidoLineaId };
+	}
+	return null;
+}
+
+/**
+ * Si lo que llegó es lo surtido para un pedido (PE- o W-) que ya no está abierto (se canceló), lo reparte en un
+ * `regresa` a su origen: sus reservas se liberaron al cancelarlo y nada lo espera en Aduana.
  * @returns El hijo `regresa`, o `null` si no aplica.
  */
 async function regresaSiSeCancelo(
@@ -43,17 +63,35 @@ async function regresaSiSeCancelo(
 	traspaso: typeof traspasos.$inferSelect,
 	contados: readonly { linea: typeof traspasoLineas.$inferSelect; llego: bigint }[],
 ): Promise<TraspasoCreado | null> {
-	if (traspaso.tipo !== "surtido_pedido_externo" || traspaso.pedidoId === null) return null;
-	const abiertos = pedidosAbiertos.parse(
-		await contexto.lectura("ventas.documentos_abiertos", { pedido_ids: [traspaso.pedidoId] }),
-	);
-	if (abiertos.pedido_ids.includes(traspaso.pedidoId)) return null;
+	const pedido = pedidoDelSurtido(traspaso, contados);
+	if (pedido === null) return null;
+	const abiertos = siguenAbiertos.parse(await contexto.lectura(pedido.lectura, { [pedido.campo]: [pedido.id] }));
+	if ((abiertos[pedido.campo] ?? []).includes(pedido.id)) return null;
 	const porVariante = new Map<string, number>();
 	for (const { linea, llego } of contados) {
 		if (linea.varianteId === null || llego === 0n) continue;
 		porVariante.set(linea.varianteId, (porVariante.get(linea.varianteId) ?? 0) + Number(llego));
 	}
 	return regresarAlOrigen(contexto, traspaso.id, porVariante);
+}
+
+/**
+ * Lo surtido para un W- que sigue abierto llegó: Tienda en línea lo sabe, con si ya están en Aduana todas sus
+ * reservas activas (entonces queda listo para empacar).
+ */
+async function avisarATiendaEnLinea(
+	contexto: ContextoDeAccion,
+	traspaso: typeof traspasos.$inferSelect,
+	contados: readonly { linea: typeof traspasoLineas.$inferSelect }[],
+): Promise<void> {
+	const pedido = pedidoDelSurtido(traspaso, contados);
+	if (traspaso.tipo !== "pedido_linea" || pedido === null) return;
+	const aduana = await ubicacionDeTipo(contexto.transaccion, "aduana");
+	const activas = await reservasActivas(contexto.transaccion, eq(reservas.pedidoLineaId, pedido.id));
+	await contexto.interna("linea.prendas_en_aduana", {
+		pedido_linea_id: pedido.id,
+		completo: activas.every((reserva) => reserva.ubicacionId === aduana),
+	});
 }
 
 export const accionRecibirEnAduana = implementarAccion(recibirEnAduana, async (contexto, datos, version) => {
@@ -200,6 +238,7 @@ export const accionRecibirEnAduana = implementarAccion(recibirEnAduana, async (c
 	// Lo surtido para un pedido que se canceló mientras venía en camino regresa a Bodega; si sigue, su reserva quedó
 	// en Aduana con la pieza.
 	const regresa = await regresaSiSeCancelo(contexto, traspaso, contados);
+	if (regresa === null) await avisarATiendaEnLinea(contexto, traspaso, contados);
 	// Una devolución de un cliente: lo bueno pasa a Bodega en un hijo; lo de defecto se queda para Calidad.
 	const paraCalidad = deCliente && contados.some(({ conDefecto, llego }) => conDefecto && llego > 0n);
 	if (deCliente) {

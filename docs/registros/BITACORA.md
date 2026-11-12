@@ -112,3 +112,4 @@ La línea de la bitácora se escribe al final, con el resultado ya conocido. Esc
 | 12 nov 2026 | 17 | 4 · Nómina | [2026-11-12-fase-17](sesiones/2026-11-12-fase-17.md) |
 | 12 nov 2026 | 17 | Cierre · Muestra y auditoría | [2026-11-12-fase-17](sesiones/2026-11-12-fase-17.md) |
 | 12 nov 2026 | 17 | Cierre · Revisión distinta | [2026-11-12-fase-17](sesiones/2026-11-12-fase-17.md) |
+| 12 nov 2026 | 18 | 1 · Pedidos en línea | [2026-11-12-fase-18](sesiones/2026-11-12-fase-18.md) |

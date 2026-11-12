@@ -9,6 +9,7 @@
  */
 
 import { aMilesimosConSigno } from "@uniformame/compartido/calculos/cuenta-material";
+import { enPesos } from "@uniformame/compartido/calculos/dinero";
 import { and, asc, eq, inArray, ne, sql } from "drizzle-orm";
 import { z } from "zod";
 import type { Transaccion } from "../../../nucleo/base/transacciones.ts";
@@ -21,7 +22,6 @@ import {
 	facturasProveedor,
 	terceros,
 } from "../tablas.ts";
-import { enPesos } from "./pagos.ts";
 
 /** Una factura de proveedor como la lee quien la cambia. */
 export type FacturaProveedor = typeof facturasProveedor.$inferSelect;

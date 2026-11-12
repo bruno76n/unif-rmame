@@ -92,6 +92,7 @@ El protocolo completo está en [API](API.md).
 |---|---|
 | `pesosACentavos(texto)` | Acepta signo, `$`, pesos con comas de miles bien puestas o sin comas, y hasta dos decimales; regresa `null` con cualquier otra cosa o si no cabe en un entero seguro |
 | `centavosATexto(monto, { conCentavos })` | `Intl.NumberFormat("es-MX", MXN)` con el monto como texto decimal exacto: «$1,250» o «$1,250.50». Sin centavos, primero redondea con `aPesoEntero`, así la pantalla dice el mismo peso que se guarda (y falla igual que él cerca del entero seguro más grande) |
+| `enPesos(monto)` | Un monto como se lee en un mensaje o en la bitácora: «$1,250», o «$1,250.50» si trae centavos (con `centavosATexto`). Lo usan Contaduría, la nómina y Tienda en línea (fase 18, decisión 723) |
 | `aPesoEntero(monto)` | Al múltiplo de 100 más cercano, la mitad lejos del cero (123.50 → 124 y −123.50 → −124); falla con `RangeError` si el resultado ya no cabe en un entero seguro |
 | `aplicarPorcentaje(monto, porcentaje)` | El porcentaje (`12.5` o `"12.500"`) se pasa a milésimas enteras; monto × milésimas ÷ 100 000, al centavo y con la mitad lejos del cero. Un porcentaje negativo o con más de tres decimales es `RangeError` |
 | `repartir(total, proporciones)` | Restos mayores: cada renglón recibe la parte entera de su proporción, y los centavos que faltan van a los restos más grandes (en empate, al primero). Un total negativo se reparte igual, con su signo. Sin renglones, con un peso que no es entero de cero en adelante, o con todos en cero y algo que repartir, es `RangeError` |

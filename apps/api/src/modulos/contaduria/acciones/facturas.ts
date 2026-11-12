@@ -4,6 +4,7 @@
  * Fase 17 · docs/modulos/contaduria/facturas-de-proveedor.md (reglas 1 a 8, «Acciones»)
  */
 
+import { enPesos } from "@uniformame/compartido/calculos/dinero";
 import {
 	cancelarFacturaProveedor,
 	capturarFacturaProveedor,
@@ -31,7 +32,7 @@ import {
 	revisarFacturas,
 	tresPuntas,
 } from "../dominio/facturas.ts";
-import { enPesos } from "../dominio/pagos.ts";
+
 import { cuentasPorPagar, facturaProveedorOrdenes, facturasProveedor } from "../tablas.ts";
 
 /** Lo que regresa `admin.tomar_folio`. */

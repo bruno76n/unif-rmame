@@ -188,15 +188,19 @@ export async function crearServidor(dependencias: DependenciasDelServidor) {
 		return quien;
 	}
 
-	/** La versión mínima que vale hoy para la app de quien llama: la del código o la del parámetro. */
-	async function minimaDe(quien: QuienLlama): Promise<string> {
+	/**
+	 * La versión mínima que vale hoy para la app de quien llama: la del código o la del parámetro. La credencial de
+	 * uniformame.mx no tiene app: no se le revisa versión.
+	 */
+	async function minimaDe(quien: QuienLlama): Promise<string | undefined> {
 		const app = appDe(quien);
-		return versionMinima(app, await servicios.versionMinimaDelParametro(app));
+		return app === undefined ? undefined : versionMinima(app, await servicios.versionMinimaDelParametro(app));
 	}
 
 	/** Pasos 1 y 2: quién llama y la versión de su app. */
 	async function identificarYRevisarVersion(peticion: FastifyRequest): Promise<void> {
 		const minima = await minimaDe(await identificar(peticion));
+		if (minima === undefined) return;
 		const version = peticion.headers["x-app-version"];
 		if (typeof version !== "string" || (compararVersiones(version, minima) ?? -1) < 0) {
 			throw new ErrorDeApi("actualizar", null, undefined, { version_minima: minima });

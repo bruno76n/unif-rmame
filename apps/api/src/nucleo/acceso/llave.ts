@@ -25,6 +25,7 @@ const formaDeLaLlave = /^Llave ([a-z0-9]{6,16})\.([A-Za-z0-9_-]{43})$/;
 export const tipoQueLlama: Readonly<Record<string, AparatoQueLlama["tipoDeAparato"]>> = {
 	tablet_taller: "tablet",
 	puente_impresion: "puente",
+	credencial_servidor: "sitio",
 };
 
 /** Un aparato que entró con su llave. */

@@ -122,6 +122,8 @@ async function surtirPedido(contexto: ContextoDeAccion, pedido: Pedido) {
 		despues: { piezas: total, documento: pedido.documento_tipo },
 	});
 	enCamino(contexto, traspaso);
+	// El W- surtido queda esperando sus prendas (fase 18).
+	if (esLinea) await contexto.interna("linea.prendas_en_camino", { pedido_linea_id: pedido.documento_id });
 	return {
 		resultado: {
 			traspaso_id: traspaso.traspasoId,

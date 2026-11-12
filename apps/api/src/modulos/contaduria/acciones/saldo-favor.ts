@@ -7,6 +7,7 @@
  * cuenta de la nota: el orden de `dominio/cuentas.ts`. Nunca pasan del saldo a favor, aun dos a la vez.
  */
 
+import { enPesos } from "@uniformame/compartido/calculos/dinero";
 import { aplicarSaldoAFavor, devolverSaldoAFavor } from "@uniformame/compartido/contratos/contaduria/saldo-favor";
 import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
@@ -17,7 +18,7 @@ import { confirmadoConGoogle } from "../../admin/dominio/cuentas.ts";
 import { pedidoQueRecibe, recibirAnticipo } from "../dominio/anticipos.ts";
 import { creditoDelCliente } from "../dominio/credito.ts";
 import { aplicarACuenta, bloquearCuentaDeNota, foliosDeVentas } from "../dominio/cuentas.ts";
-import { enPesos, revisarMedio, revisarPesosEnteros } from "../dominio/pagos.ts";
+import { revisarMedio, revisarPesosEnteros } from "../dominio/pagos.ts";
 import { bloquearSaldoAFavor, saldoAFavor } from "../dominio/saldo-favor.ts";
 import { pagos, saldoFavorMovimientos } from "../tablas.ts";
 

@@ -18,6 +18,7 @@ import {
 	ubicacionesPorCodigo,
 	variantesLibres,
 } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
+import { pedidoLineaDePrueba } from "../../../nucleo/pruebas/linea-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 import { pedidoDePrueba } from "../../../nucleo/pruebas/ventas-de-prueba.ts";
 import { tomarCandadosDeInventario } from "./candados.ts";
@@ -103,6 +104,7 @@ describe("Con varias conexiones al mismo tiempo no hay bloqueos cruzados: el ord
 			});
 			await meterPiezas(servidor, ubicacion.ADU ?? "", menor, 3);
 			await meterPiezas(servidor, ubicacion.ADU ?? "", mayor, 3);
+			const pedidoLinea = await pedidoLineaDePrueba(servidor);
 			const errores = await Promise.all([
 				// Un movimiento de las dos, en el orden fijo: toma la menor y espera.
 				sinReintento(async (contexto) => {
@@ -124,7 +126,7 @@ describe("Con varias conexiones al mismo tiempo no hay bloqueos cruzados: el ord
 				sinReintento((contexto) =>
 					contexto.interna("inventario.reservar", {
 						motivo: "pedido_linea",
-						pedido_linea_id: uuidv7(),
+						pedido_linea_id: pedidoLinea,
 						renglones: [{ variante_id: mayor, piezas: 2 }],
 					}),
 				),

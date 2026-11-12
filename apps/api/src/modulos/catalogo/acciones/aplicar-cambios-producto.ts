@@ -319,6 +319,13 @@ export const accionAplicarCambiosProducto = implementarAccion(
 				})
 				.where(eq(productos.id, producto.id));
 			eventoDeProducto(contexto, "producto.cambiado", producto, ["productos"]);
+			// Sin «Tienda en línea», sus publicaciones se pausan (fase 18).
+			if (producto.canalEnLinea && !canales.en_linea) {
+				await contexto.interna("linea.pausar_publicaciones_producto", {
+					producto_id: producto.id,
+					motivo: "canal_apagado",
+				});
+			}
 		}
 		// Los precios: cada uno cierra el vigente y crea otro, con las etiquetas de Mostrador por reimprimir.
 		const mostrador = [...listas.values()].find((lista) => lista.tipo === "mostrador");

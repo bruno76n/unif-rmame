@@ -23,7 +23,7 @@ export interface Permiso {
 	/** Pide «Confirmar con Google» reciente, con su propósito. */
 	confirmarConGoogle?: string;
 	/** Los aparatos en cuyo alcance está. Sin esto, ningún aparato la llama. */
-	aparatos?: readonly ("tablet" | "puente" | "caja")[];
+	aparatos?: readonly ("tablet" | "puente" | "caja" | "sitio")[];
 	/**
 	 * Esos aparatos también la suben por su cola, sin internet (`POST /v1/sync/subir`), con la hora en que
 	 * pasó. Sin esto es solo en línea: la subida la aparta con `fuera_de_alcance` (rotar la llave, el puente).

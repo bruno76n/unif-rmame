@@ -7,6 +7,7 @@
  * Cada una toma el candado del anticipo del pedido antes de leer su disponible.
  */
 
+import { enPesos } from "@uniformame/compartido/calculos/dinero";
 import { and, eq, sql } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
@@ -15,7 +16,7 @@ import { errorDeRegla } from "../../../nucleo/http/errores.ts";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
 import { anticipoDelPedido, candadoDeAnticipo, pasarDisponibleAFavor } from "../dominio/anticipos.ts";
 import { foliosDeVentas } from "../dominio/cuentas.ts";
-import { enPesos } from "../dominio/pagos.ts";
+
 import { anticipos } from "../tablas.ts";
 
 /** Lo que recibe `contaduria.aplicar_anticipo_a_nota`. */

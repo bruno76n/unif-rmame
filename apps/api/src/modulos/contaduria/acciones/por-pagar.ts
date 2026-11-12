@@ -4,6 +4,7 @@
  * Fase 17 · docs/modulos/contaduria/cuentas-por-pagar.md (reglas 3 a 6, «Acciones»)
  */
 
+import { enPesos } from "@uniformame/compartido/calculos/dinero";
 import { pagarCuentaPorPagar, pedirPagoLoRecibido } from "@uniformame/compartido/contratos/contaduria/por-pagar";
 import { eq } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
@@ -21,7 +22,7 @@ import {
 	documentoDeCuenta,
 } from "../dominio/cuentas-por-pagar.ts";
 import { bloquearFactura, montoLoRecibido, nombreDelTercero } from "../dominio/facturas.ts";
-import { avisoDePagoRepetido, enPesos, revisarMedio, revisarPesosEnteros } from "../dominio/pagos.ts";
+import { avisoDePagoRepetido, revisarMedio, revisarPesosEnteros } from "../dominio/pagos.ts";
 import { cuentasPorPagar, facturasProveedor, pagos } from "../tablas.ts";
 
 /** Lo que regresa `admin.tomar_folio`. */

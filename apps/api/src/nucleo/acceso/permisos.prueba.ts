@@ -70,6 +70,7 @@ function aJson(esquema: z.ZodType, io: "input" | "output"): EsquemaJson {
 const ejemplosPorCampo: Record<string, string> = {
 	cantidad: "1",
 	codigo: "100001",
+	codigo_postal: "59600",
 	correo: "alguien@alameda.invalid",
 	rfc: "UAL010101AB1",
 	telefono: "4775550100",

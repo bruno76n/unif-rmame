@@ -4,6 +4,7 @@
  * Fase 17 · docs/modulos/contaduria/gastos.md (reglas 1 a 3, «Acciones»)
  */
 
+import { enPesos } from "@uniformame/compartido/calculos/dinero";
 import { cancelarGasto, registrarGasto } from "@uniformame/compartido/contratos/contaduria/gastos";
 import { eq } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
@@ -14,7 +15,7 @@ import { implementarAccion } from "../../../nucleo/modulos.ts";
 import { ubicaciones } from "../../inventario/tablas.ts";
 import { servicios } from "../../mantenimiento/tablas.ts";
 import { folioDeGasto, valorDeLista } from "../dominio/gastos.ts";
-import { cuentaFabricaEscogida, enPesos } from "../dominio/pagos.ts";
+import { cuentaFabricaEscogida } from "../dominio/pagos.ts";
 import { listaDeCategoriasGasto, listaDeTiposComprobante } from "../siembra.ts";
 import { gastos } from "../tablas.ts";
 

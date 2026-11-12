@@ -14,6 +14,7 @@ import {
 	ubicacionesPorCodigo,
 	variantesLibres,
 } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
+import { pedidoLineaDePrueba } from "../../../nucleo/pruebas/linea-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 import { pedidoDePrueba } from "../../../nucleo/pruebas/ventas-de-prueba.ts";
 
@@ -89,7 +90,7 @@ describe("las reservas nacen sin apartar de más", () => {
 		await servidor.base.dueno.query("UPDATE ubicaciones SET existencia_desde = now() WHERE codigo = 'T2'");
 		await meterPiezas(servidor, ubicacion.T2 ?? "", variante, 4);
 		try {
-			const pedido = await pedidoDePrueba(servidor);
+			const pedido = await pedidoLineaDePrueba(servidor);
 			const apartado = (await llamarInterna(servidor, "inventario.reservar", {
 				motivo: "pedido_linea",
 				pedido_linea_id: pedido,
@@ -127,7 +128,7 @@ describe("las reservas nacen sin apartar de más", () => {
 
 	it("Un pedido en línea sin pieza en ningún lado queda reservado en Bodega, en negativo, con su excepción", async () => {
 		const [variante = ""] = await variantesLibres(servidor, 1);
-		const pedido = await pedidoDePrueba(servidor);
+		const pedido = await pedidoLineaDePrueba(servidor);
 		const apartado = await llamarInterna(servidor, "inventario.reservar", {
 			motivo: "pedido_linea",
 			pedido_linea_id: pedido,

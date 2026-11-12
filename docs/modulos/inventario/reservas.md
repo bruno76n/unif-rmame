@@ -206,3 +206,11 @@ Ninguno propio. Cada acción que llama a estas revisa el suyo: por ejemplo, «Su
   - `internas/reservas.azar.prueba.ts`: cuatro conexiones a la vez, cada paso en su transacción sin el reintento del núcleo, meten piezas, apartan y liberan todo o una parte, al azar; nunca se aparta en Bodega más de lo que hay, y lo apartado es lo pedido menos lo liberado.
   - `internas/liberar-reservas.prueba.ts` (también el pago confirmado mientras se libera por vencer), `internas/apartar-para-nota.prueba.ts` y `internas/devolver-de-nota.prueba.ts`.
   - `dominio/escribir-movimiento.prueba.ts` (la reserva que viaja) y `dominio/repartir-traspaso.prueba.ts` (la que pasa al hijo).
+
+**Fase 18, parte 1** (con los pedidos en línea):
+
+- **El trabajo «Vencer reservas»** (`trabajos/vencer-reservas.ts`) corre cada `inventario.minutos_vencer_reservas`. Por W- con reservas activas ya vencidas, en una transacción, llama primero `linea.vencer_pedido`, que bloquea el W-, y solo si quedó vencido libera sus reservas con `vencio_pago`: así se pone en fila con un pago que llega a la vez, que también bloquea el W- primero. Guarda `reserva.vencida` y un renglón «{W} venció sin pago» (decisión 722).
+- **`confirmar_pago_reserva`** regresa también la promesa que dan las reservas activas (decisión 720).
+- **`liberar_reservas`** regresa también dónde estaba cada prenda liberada (`liberadas`), para la bitácora de quien cancela.
+- **`reservar`** de un W- recibe `no_encontradas_en_bodega`: las piezas que Bodega no encontró siguen en su existencia hasta contarlas y no cuentan como libres (decisión 721).
+- Las pruebas de reservas usan W- de verdad (`pedidoLineaDePrueba`), porque `reservas.pedido_linea_id` ya tiene su llave.

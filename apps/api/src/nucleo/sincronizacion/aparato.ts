@@ -34,6 +34,8 @@ export async function identificarAparato(
 	const aparato = await identificarConLlave(base, peticion, ahora, opciones);
 	if (aparato === undefined) throw new ErrorDeApi("sin_sesion", "sin_sesion");
 	const app = appDe(aparato.quien);
+	// La credencial de uniformame.mx no sincroniza (ver docs/cimientos/SINCRONIZACION.md).
+	if (app === undefined) throw new ErrorDeApi("sin_permiso", "fuera_de_alcance");
 	const minima = versionMinima(app, await versionMinimaDelParametro(app));
 	const version = peticion.headers["x-app-version"];
 	if (typeof version !== "string" || (compararVersiones(version, minima) ?? -1) < 0) {

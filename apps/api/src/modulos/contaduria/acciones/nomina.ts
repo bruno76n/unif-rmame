@@ -7,9 +7,8 @@
  * sueldo que declara Contaduría.
  */
 
-import { centavosATexto } from "@uniformame/compartido/calculos/dinero";
+import { enPesos } from "@uniformame/compartido/calculos/dinero";
 import { guardarDescuentoSemanal, pagarNomina } from "@uniformame/compartido/contratos/contaduria/nomina";
-import { centavos } from "@uniformame/compartido/tipos/base";
 import { and, asc, eq, lt, sql } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
 import { quienCambia } from "../../../nucleo/acciones/comunes.ts";
@@ -27,11 +26,6 @@ import {
 	fichasDePersonas,
 } from "../dominio/nomina.ts";
 import { descuentosNomina, nominaLineaPiezas, nominaLineas, nominas } from "../tablas.ts";
-
-/** Un monto de sueldo como se lee: «$1,252» o «$962.50». */
-function enPesos(monto: number): string {
-	return centavosATexto(centavos(monto), { conCentavos: monto % 100 !== 0 });
-}
 
 export const accionGuardarDescuentoSemanal = implementarAccion(
 	guardarDescuentoSemanal,

@@ -62,6 +62,7 @@ import { semillaDeMinimos, semillaDeMotivosAjuste } from "./siembra.ts";
 import { ubicaciones } from "./tablas.ts";
 import { cuadreNocturno } from "./trabajos/cuadre-nocturno.ts";
 import { rollosSugeridos } from "./trabajos/rollos-sugeridos.ts";
+import { vencerReservas } from "./trabajos/vencer-reservas.ts";
 
 /** Los departamentos que leen el libro y el material. */
 const lectoresDelLibro = ["aduana", "bodega", "direccion"];
@@ -185,7 +186,7 @@ export default definirModulo({
 		sugerencias_de_fabricar: sugerenciasDeFabricar,
 		minimos_vigentes: minimosVigentes,
 	},
-	trabajos: [cuadreNocturno, rollosSugeridos],
+	trabajos: [cuadreNocturno, rollosSugeridos, vencerReservas],
 	semillas: [
 		{ tabla: ubicaciones, filas: ubicacionesDeLaSiembra.map((ubicacion) => ({ id: uuidv7(), ...ubicacion })) },
 		semillaDeParametrosDeInventario,

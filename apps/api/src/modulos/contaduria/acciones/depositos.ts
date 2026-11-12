@@ -4,6 +4,7 @@
  * Fase 17 · docs/modulos/contaduria/pagos-y-saldo-a-favor.md (regla 4, «`contaduria.aplicar_deposito_a_tercero`»)
  */
 
+import { enPesos } from "@uniformame/compartido/calculos/dinero";
 import { aplicarDepositoATercero } from "@uniformame/compartido/contratos/contaduria/por-pagar";
 import { eq } from "drizzle-orm";
 import { nombreDeCuenta, quienCambia } from "../../../nucleo/acciones/comunes.ts";
@@ -12,7 +13,7 @@ import { errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
 import { implementarAccion } from "../../../nucleo/modulos.ts";
 import { bloquearDocumentosDeCuentas } from "../dominio/cuentas-por-pagar.ts";
 import { aplicarDeposito } from "../dominio/depositos.ts";
-import { enPesos } from "../dominio/pagos.ts";
+
 import { pagos } from "../tablas.ts";
 
 export const accionAplicarDepositoATercero = implementarAccion(

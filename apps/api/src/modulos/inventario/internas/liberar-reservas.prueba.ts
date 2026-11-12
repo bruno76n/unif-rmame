@@ -16,6 +16,7 @@ import {
 	ubicacionesPorCodigo,
 	variantesLibres,
 } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
+import { pedidoLineaDePrueba } from "../../../nucleo/pruebas/linea-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 import { pedidoDePrueba } from "../../../nucleo/pruebas/ventas-de-prueba.ts";
 
@@ -77,7 +78,7 @@ describe("liberar reservas", () => {
 			motivo_fin: "documento_cancelado",
 			documento_cancelado: true,
 		});
-		expect(otraVez).toEqual({ reserva_ids: [], regresa_ids: [] });
+		expect(otraVez).toEqual({ reserva_ids: [], regresa_ids: [], liberadas: [] });
 		expect((await reservasDe("pedido_id", pedido)).filter((reserva) => reserva.estado === "activa")).toEqual([]);
 		const { rows } = await servidor.base.dueno.query(
 			"SELECT count(*)::int AS n FROM eventos WHERE tipo = 'reserva.liberada'",
@@ -131,7 +132,7 @@ describe("liberar reservas", () => {
 	it("un pago que llega antes del vencimiento quita el vencimiento; uno que llega tarde vuelve a apartar", async () => {
 		const [variante = ""] = await variantesLibres(servidor, 1);
 		await meterPiezas(servidor, ubicacion.BOD ?? "", variante, 3);
-		const enTiempo = uuidv7();
+		const enTiempo = await pedidoLineaDePrueba(servidor);
 		await llamarInterna(servidor, "inventario.reservar", {
 			motivo: "pedido_linea",
 			pedido_linea_id: enTiempo,
@@ -141,13 +142,14 @@ describe("liberar reservas", () => {
 		expect(await llamarInterna(servidor, "inventario.confirmar_pago_reserva", { pedido_linea_id: enTiempo })).toEqual({
 			volvio_a_apartar: false,
 			renglones: [],
+			promesa: "sale_hoy",
 		});
 		const { rows } = await servidor.base.dueno.query("SELECT vence_en FROM reservas WHERE pedido_linea_id = $1", [
 			enTiempo,
 		]);
 		expect(rows).toEqual([{ vence_en: null }]);
 		// Otro W- con pago pendiente vence y se libera; el pago llega después.
-		const tarde = uuidv7();
+		const tarde = await pedidoLineaDePrueba(servidor);
 		await llamarInterna(servidor, "inventario.reservar", {
 			motivo: "pedido_linea",
 			pedido_linea_id: tarde,
@@ -174,7 +176,7 @@ describe("liberar reservas", () => {
 	it("si el pago se confirma mientras se liberan sus reservas, espera y vuelve a apartar: el W- pagado nunca se queda sin reserva", async () => {
 		const [variante = ""] = await variantesLibres(servidor, 1);
 		await meterPiezas(servidor, ubicacion.BOD ?? "", variante, 2);
-		const pedido = await pedidoDePrueba(servidor);
+		const pedido = await pedidoLineaDePrueba(servidor);
 		await llamarInterna(servidor, "inventario.reservar", {
 			motivo: "pedido_linea",
 			pedido_linea_id: pedido,

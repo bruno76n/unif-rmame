@@ -1,12 +1,20 @@
 /**
  * Prueba de `inventario.no_la_encuentro`: la pieza apartada para un pedido externo que Bodega no encuentra abre su DF-
- * por contar y su reserva se libera; una que ya no está apartada no.
+ * por contar y su reserva se libera; una que ya no está apartada no. La de un W- se vuelve a apartar.
  * Fase 16 · docs/fases/16-ventas-a-externos.md (parte 4)
+ * Fase 18 · docs/fases/18-tienda-en-linea-direccion-y-contador.md (criterio «"No la encuentro" con un W- abre su DF- y
+ * reasigna la reserva, o la deja sin pieza con su excepción»)
  */
 
 import { v7 as uuidv7 } from "uuid";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { meterPiezas, ubicacionesPorCodigo, variantesLibres } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
+import {
+	meterPiezas,
+	nuevoTraspaso,
+	ubicacionesPorCodigo,
+	variantesLibres,
+} from "../../../nucleo/pruebas/inventario-de-prueba.ts";
+import { pedidoLineaComoQuedo, pedidoLineaEnBodega } from "../../../nucleo/pruebas/linea-de-prueba.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 import { pedidoDePrueba } from "../../../nucleo/pruebas/ventas-de-prueba.ts";
@@ -62,5 +70,44 @@ describe("«No la encuentro» abre la DF- por contar y la pieza vuelve a lo que 
 			codigo: "reserva_no_activa",
 			mensaje: "Esa pieza ya no está apartada aquí.",
 		});
+	});
+
+	it("con una pieza de un W-: la DF- nace igual y la reserva pasa a otra ubicación con libres, o se queda con su excepción (fase 18)", async () => {
+		const ubicacion = await ubicacionesPorCodigo(servidor);
+		for (const otraPieza of [true, false]) {
+			const pedido = await pedidoLineaEnBodega(servidor);
+			// Hay otra pieza en Aduana, con destino a Bodega, para tomarla.
+			if (otraPieza) {
+				await nuevoTraspaso(servidor, {
+					tipo: "lote_temporada",
+					estado: "en_aduana",
+					origen: { ubicacionId: ubicacion.TAL ?? "" },
+					destino: { ubicacionId: ubicacion.BOD ?? "" },
+					renglones: [{ varianteId: pedido.variante, piezas: 1 }],
+				});
+				await meterPiezas(servidor, ubicacion.ADU ?? "", pedido.variante, 1);
+			}
+			const { rows } = await servidor.base.dueno.query(
+				"SELECT id FROM reservas WHERE pedido_linea_id = $1 AND estado = 'activa'",
+				[pedido.id],
+			);
+			const respuesta = await mandarAccion(
+				servidor,
+				"inventario.no_la_encuentro",
+				{ datos: { reserva_id: rows[0]?.id } },
+				"bodega",
+			);
+			expect(respuesta.cuerpo.resultado).toMatchObject({
+				mensaje: expect.stringMatching(new RegExp(`queda en diferencias\\. ${pedido.folio} se vuelve a apartar$`)),
+			});
+			expect(await pedidoLineaComoQuedo(servidor, pedido.id)).toMatchObject({
+				reservas: [{ ubicacion: otraPieza ? "ADU" : "BOD", piezas: 1 }],
+			});
+			const { rows: excepciones } = await servidor.base.dueno.query(
+				"SELECT tipo FROM excepciones WHERE documento_id = $1 AND estado = 'por_revisar'",
+				[pedido.id],
+			);
+			expect(excepciones).toEqual(otraPieza ? [] : [{ tipo: "pedido_linea_sin_pieza" }]);
+		}
 	});
 });

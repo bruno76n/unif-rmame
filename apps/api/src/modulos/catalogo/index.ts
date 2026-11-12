@@ -38,7 +38,7 @@ import {
 	sincronizarNombreCliente,
 } from "./internas/listas-de-cliente.ts";
 import { precioSugerido, precioTalla } from "./lecturas/precios.ts";
-import { variantePorCodigo } from "./lecturas/variantes.ts";
+import { datosVariantes, variantePorCodigo } from "./lecturas/variantes.ts";
 import { semillaDeParametrosDeCatalogo } from "./parametros.ts";
 import { lectoresDeCatalogo } from "./permisos.ts";
 import {
@@ -80,7 +80,12 @@ export default definirModulo({
 		reactivar_lista_cliente: reactivarListaCliente,
 		cambiar_precio_en_linea: cambiarPrecioEnLinea,
 	},
-	lecturas: { precio_talla: precioTalla, precio_sugerido: precioSugerido, variante_por_codigo: variantePorCodigo },
+	lecturas: {
+		precio_talla: precioTalla,
+		precio_sugerido: precioSugerido,
+		variante_por_codigo: variantePorCodigo,
+		datos_variantes: datosVariantes,
+	},
 	semillas: [
 		semillaDeSecciones,
 		semillaDeGruposTalla,

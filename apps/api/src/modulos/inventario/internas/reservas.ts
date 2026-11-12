@@ -103,6 +103,8 @@ const pedidoDeReservar = z
 			.min(1),
 		pago_pendiente: z.boolean().optional(),
 		vence_en: z.iso.datetime({ offset: true }).optional(),
+		/** En un W-: piezas que Bodega no encontró y siguen en su existencia hasta contarlas; no cuentan como libres. */
+		no_encontradas_en_bodega: z.number().int().positive().optional(),
 	})
 	.strict();
 
@@ -183,7 +185,9 @@ async function apartar(
 				reservas: [{ reserva_id: id, ubicacion_id: renglon.ubicacion_id, piezas: renglon.piezas }],
 			});
 		} else {
-			apartados.push(await apartarEnLinea(contexto, lugares, base, renglon.piezas, sinPieza));
+			apartados.push(
+				await apartarEnLinea(contexto, lugares, base, renglon.piezas, sinPieza, pedido.no_encontradas_en_bodega ?? 0),
+			);
 		}
 	}
 	eventoDeReservas(contexto, "reserva.creada", {
@@ -234,6 +238,7 @@ async function apartarEnLinea(
 	base: Omit<Parameters<typeof crearReserva>[1], "ubicacionId" | "piezas">,
 	piezas: number,
 	sinPieza: "pedido_linea_sin_pieza" | "pago_despues_de_vencer",
+	noEncontradas = 0,
 ): Promise<RenglonApartado> {
 	const { transaccion } = contexto;
 	const varianteId = base.varianteId;
@@ -247,7 +252,8 @@ async function apartarEnLinea(
 	for (const paso of orden) {
 		if (falta <= 0) break;
 		if (paso === "bodega") {
-			const libres = await libresEn(transaccion, lugares.bodega, varianteId);
+			// Lo que Bodega no encontró sigue en su existencia hasta contarlo: no es libre.
+			const libres = (await libresEn(transaccion, lugares.bodega, varianteId)) - noEncontradas;
 			const toma = Math.min(falta, Math.max(0, libres));
 			if (toma > 0) {
 				const id = await crearReserva(contexto, { ...base, ubicacionId: lugares.bodega, piezas: toma });
@@ -430,12 +436,16 @@ const columnaDelDocumento = {
  * @param contexto El contexto de la acción.
  * @param datos El documento (motivo e id) o las reservas, el motivo del fin, si se canceló y, si es una parte,
  * las piezas por variante.
- * @returns Las reservas liberadas y los traspasos `regresa` que nacieron.
+ * @returns Las reservas liberadas, dónde estaba cada una, y los traspasos `regresa` que nacieron.
  */
 export async function liberarReservas(
 	contexto: ContextoDeAccion,
 	datos: unknown,
-): Promise<{ reserva_ids: string[]; regresa_ids: string[] }> {
+): Promise<{
+	reserva_ids: string[];
+	regresa_ids: string[];
+	liberadas: { variante_id: string; ubicacion_id: string; piezas: number; en_traspaso: boolean }[];
+}> {
 	const pedido = pedidoDeLiberar.parse(datos);
 	const { transaccion } = contexto;
 	const filtro =
@@ -474,7 +484,17 @@ export async function liberarReservas(
 			regresaIds.length > 0 ? ["traspasos", "traspaso_lineas"] : [],
 		);
 	}
-	return { reserva_ids: aLiberar.map((liberada) => liberada.id), regresa_ids: regresaIds };
+	return {
+		reserva_ids: aLiberar.map((liberada) => liberada.id),
+		regresa_ids: regresaIds,
+		// Dónde estaba cada prenda, para la bitácora de quien libera.
+		liberadas: aLiberar.map((liberada) => ({
+			variante_id: liberada.varianteId,
+			ubicacion_id: liberada.ubicacionId,
+			piezas: liberada.piezas,
+			en_traspaso: liberada.traspasoId !== null,
+		})),
+	};
 }
 
 /**
@@ -537,12 +557,12 @@ const pedidoDeConfirmarPago = z.object({ pedido_linea_id: z.uuid() }).strict();
  * vencimiento; si ya vencieron, se vuelve a apartar lo que tenían, como en `inventario.reservar`.
  * @param contexto El contexto de la acción.
  * @param datos `pedido_linea_id`.
- * @returns Si se volvió a apartar y, entonces, lo apartado.
+ * @returns Si se volvió a apartar y, entonces, lo apartado; y la promesa que dan sus reservas activas.
  */
 export async function confirmarPagoReserva(
 	contexto: ContextoDeAccion,
 	datos: unknown,
-): Promise<{ volvio_a_apartar: boolean; renglones: RenglonApartado[] }> {
+): Promise<{ volvio_a_apartar: boolean; renglones: RenglonApartado[]; promesa: "sale_hoy" | "sale_manana" }> {
 	const { pedido_linea_id } = pedidoDeConfirmarPago.parse(datos);
 	const { transaccion } = contexto;
 	// El candado de sus variantes antes de decidir: «Vencer reservas» no puede liberarlas a la mitad.
@@ -568,7 +588,7 @@ export async function confirmarPagoReserva(
 					eq(reservas.estado, "activa"),
 				),
 			);
-		return { volvio_a_apartar: false, renglones: [] };
+		return { volvio_a_apartar: false, renglones: [], promesa: await promesaDelPedidoLinea(contexto, pedido_linea_id) };
 	}
 	// El pago llegó tarde: lo que se liberó al vencer se vuelve a apartar.
 	const vencidas = await transaccion
@@ -582,7 +602,9 @@ export async function confirmarPagoReserva(
 			),
 		)
 		.orderBy(reservas.creadoEn);
-	if (vencidas.length === 0) return { volvio_a_apartar: false, renglones: [] };
+	if (vencidas.length === 0) {
+		return { volvio_a_apartar: false, renglones: [], promesa: await promesaDelPedidoLinea(contexto, pedido_linea_id) };
+	}
 	const { renglones } = await apartar(
 		contexto,
 		{
@@ -596,7 +618,22 @@ export async function confirmarPagoReserva(
 		},
 		"pago_despues_de_vencer",
 	);
-	return { volvio_a_apartar: true, renglones };
+	return { volvio_a_apartar: true, renglones, promesa: await promesaDelPedidoLinea(contexto, pedido_linea_id) };
+}
+
+/**
+ * La promesa de un W- según sus reservas activas: «Sale mañana» si alguna está en una tienda; si no, «Sale hoy».
+ * @param contexto El contexto de la acción.
+ * @param pedidoLineaId El W-.
+ * Tienda en línea la congela al quedar pagado (regla 4 de los pedidos en línea).
+ */
+async function promesaDelPedidoLinea(
+	contexto: ContextoDeAccion,
+	pedidoLineaId: string,
+): Promise<"sale_hoy" | "sale_manana"> {
+	const lugares = await leerUbicaciones(contexto);
+	const activas = await reservasActivas(contexto.transaccion, eq(reservas.pedidoLineaId, pedidoLineaId));
+	return activas.some((reserva) => lugares.tipoDe.get(reserva.ubicacionId) === "tienda") ? "sale_manana" : "sale_hoy";
 }
 
 // ---------------------------------------------------------------------------------------------------------------

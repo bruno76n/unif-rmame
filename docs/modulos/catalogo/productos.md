@@ -231,3 +231,5 @@ Usa también `general.largo_minimo_motivo` ([configuración](../admin/configurac
 **Fase 10, parte 2.** En una sección que lleva receta (y que no es un servicio), `catalogo.crear_producto` llama `patronaje.iniciar_receta` después de dar de alta las variantes, y regresa `receta_id` y `receta_estado` para «Crear y seguir con la receta». A partir de otro con receta, las medidas del alta van a la versión 1 copiada; si el base no tiene receta, se descartan con su aviso (ver [recetas](../patronaje/recetas.md#cómo-está-hecho)).
 
 **Fase 10, parte 3.** Con `origen = desarrollo`, `desarrollo_id` es obligatorio (`400` «Escoge el desarrollo.», decisión 537); después de crear el producto, `patronaje.ligar_producto_desarrollo` deja el desarrollo «En catálogo», y si ya no está en ficha técnica responde `desarrollo_no_disponible` y no se crea nada.
+
+**Fase 18, parte 1.** «Aplicar cambios» que apaga «Tienda en línea» y «Descontinuar» llaman `linea.pausar_publicaciones_producto` (con `canal_apagado` o `descontinuado`), que no escribe nada mientras no haya publicaciones.

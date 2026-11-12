@@ -18,6 +18,7 @@ import {
 	versionDelProducto,
 } from "../../../nucleo/pruebas/catalogo-de-prueba.ts";
 import { llamarInterna, meterPiezas, ubicacionesPorCodigo } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
+import { pedidoLineaDePrueba } from "../../../nucleo/pruebas/linea-de-prueba.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 import { escribirMovimiento } from "../../inventario/dominio/escribir-movimiento.ts";
@@ -104,7 +105,7 @@ describe("dar de baja una talla retira su código para siempre y sube la versió
 		// Sin existencia pero apartada para un pedido en línea.
 		await llamarInterna(servidor, "inventario.reservar", {
 			motivo: "pedido_linea",
-			pedido_linea_id: uuidv7(),
+			pedido_linea_id: await pedidoLineaDePrueba(servidor),
 			renglones: [{ variante_id: cuatro?.variante_id, piezas: 2 }],
 		});
 		expect((await darDeBaja(producto.producto_id, cuatro?.variante_id ?? "")).cuerpo).toMatchObject({
