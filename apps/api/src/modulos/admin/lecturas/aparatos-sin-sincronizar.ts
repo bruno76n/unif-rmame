@@ -5,13 +5,12 @@
  * Fase 18 · docs/modulos/admin/dispositivos.md («Lecturas») y docs/modulos/direccion/alertas-e-indicadores.md
  */
 
-import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { asc, eq, sql } from "drizzle-orm";
 import { Temporal } from "temporal-polyfill";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
-import { leerParametro } from "../../../nucleo/parametros.ts";
 import { ubicaciones } from "../../inventario/tablas.ts";
+import { reglaSinSincronizar, tiempoParaLeer } from "../dominio/dispositivos.ts";
 import { dispositivos, dispositivosSync } from "../tablas.ts";
-import { tiempoParaLeer, tiposQueSincronizan } from "../trabajos/aparatos-sin-sincronizar.ts";
 
 /**
  * Los aparatos sin sincronizar de este momento.
@@ -19,9 +18,7 @@ import { tiempoParaLeer, tiposQueSincronizan } from "../trabajos/aparatos-sin-si
  * @returns Por aparato: su id, su nombre, su ubicación, desde cuándo no sincroniza y ese tiempo para leer («5 horas»).
  */
 export async function aparatosSinSincronizar(contexto: ContextoDeAccion) {
-	const horas = Number(await leerParametro(contexto.transaccion, { clave: "admin.horas_sin_sincronizar_aviso" }));
-	const limite = contexto.ahora.subtract({ hours: horas }).toString();
-	const desde = sql<string>`coalesce(${dispositivosSync.ultimaSincronizacionEn}, ${dispositivos.creadoEn})`;
+	const { desde, cumple } = await reglaSinSincronizar(contexto.transaccion, contexto.ahora);
 	const aparatos = await contexto.transaccion
 		.select({
 			dispositivo_id: dispositivos.id,
@@ -32,9 +29,7 @@ export async function aparatosSinSincronizar(contexto: ContextoDeAccion) {
 		.from(dispositivos)
 		.innerJoin(dispositivosSync, eq(dispositivosSync.dispositivoId, dispositivos.id))
 		.leftJoin(ubicaciones, eq(ubicaciones.id, dispositivos.ubicacionId))
-		.where(
-			and(inArray(dispositivos.tipo, tiposQueSincronizan), isNull(dispositivos.bajaEn), sql`${desde} <= ${limite}`),
-		)
+		.where(cumple)
 		.orderBy(asc(desde));
 	return {
 		aparatos: aparatos.map((aparato) => ({

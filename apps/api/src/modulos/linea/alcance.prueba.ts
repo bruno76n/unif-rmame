@@ -107,6 +107,47 @@ describe("La credencial de uniformame.mx solo alcanza sus dos acciones; Aduana y
 			headers: { authorization: llaveDePrueba("sitio"), "x-app-version": "1.0.0" },
 		});
 		expect(bajar.json()).toMatchObject({ codigo: "fuera_de_alcance" });
+		// Tampoco sube comandos ni archivos.
+		const conSuLlave = { authorization: llaveDePrueba("sitio") };
+		const subir = await servidor.app.inject({
+			method: "POST",
+			url: "/v1/sync/subir",
+			headers: { ...conSuLlave, "x-app-version": "1.0.0" },
+			payload: {
+				enviado_en: new Date().toISOString(),
+				pendientes_por_subir: 1,
+				comandos: [
+					{
+						clave_idempotencia: "01936f2e-0000-7000-8000-00000000c0e0",
+						accion: "linea.confirmar_pago",
+						datos: {},
+						ocurrido_en: new Date().toISOString(),
+					},
+				],
+			},
+		});
+		expect(subir.json(), subir.body).toMatchObject({ codigo: "fuera_de_alcance" });
+		const subida = await servidor.app.inject({
+			method: "POST",
+			url: "/v1/archivos/subida",
+			headers: conSuLlave,
+			payload: {
+				proposito: "comprobante",
+				modulo: "contaduria",
+				nombre_original: "recibo.pdf",
+				tipo_mime: "application/pdf",
+				tamano_bytes: 10,
+				sha256: "0".repeat(64),
+			},
+		});
+		expect(subida.json()).toMatchObject({ codigo: "fuera_de_alcance" });
+		// Un archivo que no subió ni ve su documento no existe para él: nunca recibe una dirección firmada.
+		const archivo = await servidor.app.inject({
+			method: "GET",
+			url: "/v1/archivos/01936f2e-0000-7000-8000-00000000c0df",
+			headers: conSuLlave,
+		});
+		expect(archivo.statusCode).toBe(404);
 	});
 
 	it("lo que Bodega y Aduana reciben al surtir y recibir un W- no trae precios ni datos del pago", async () => {

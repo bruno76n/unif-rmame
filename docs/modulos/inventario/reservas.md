@@ -97,7 +97,7 @@ Si una regla no se cumple, la acción que llamó termina con **422** y el códig
   - `pedido_linea`: escoge la ubicación de cada renglón en el orden de `inventario.orden_surtido_linea`, y puede partir un renglón en varias ubicaciones. Si no hay pieza en ningún lado, aplica la regla 5.
   - Las reservas de una nota nacen con `apartar_para_nota`, y las de un pedido especial de tienda, al recibir su lote (proyecto del POS).
 - **Escribe:** una reserva `activa` por renglón y ubicación. Si toma piezas que están en aduana con destino a Bodega, ese traspaso se reparte en un hijo `pedido_linea` (ver [traspasos](traspasos.md)) y la reserva apunta al hijo.
-- **Regresa,** por renglón: `reserva_id`, `ubicacion_id` y, en un W-, la promesa: `sale_hoy` si todo está en Bodega o en Aduana, `sale_manana` si algo está en una tienda. Tienda en línea la congela en su pedido.
+- **Regresa,** por renglón: `reserva_id`, `ubicacion_id` y, en un W-, la promesa: `sale_hoy` si todo está en Bodega o en Aduana, `sale_manana` si algo está en una tienda. Tienda en línea la congela en su pedido. En un W-, también `todo_en_aduana`: si todas sus reservas activas quedaron en Aduana (entonces queda listo para empacar).
 - **Eventos:** `reserva.creada` · `excepcion.creada` si no hubo pieza.
 
 ### `inventario.liberar_reservas`

@@ -28,7 +28,6 @@ import {
 } from "../dominio/cuentas-por-pagar.ts";
 import { nombreDelTercero } from "../dominio/facturas.ts";
 import { mesYaEnviado } from "../dominio/paquete-mes.ts";
-
 import { compensaciones, cuentasPorCobrar, cuentasPorPagar, terceros } from "../tablas.ts";
 
 /** Lo que una cuenta tiene para ordenar: primero las que vencen antes. */

@@ -58,10 +58,10 @@ Todas son de la web: surtir, con el departamento Bodega; despachar, recordar y l
 |---|---|
 | **Pantalla** | Bodega · Pendientes · «Surtir a aduana» en «Pedido externo», «Pedido en línea» y «Devolución a proveedor» (este último, pantalla nueva) |
 | **Recibe** | `documento_tipo` (`pedido_externo`, `pedido_linea` o `devolucion_proveedor`) · `documento_id` (el PE-, el W- o la devolución) · `rollo_ids`, en una devolución de tela: los rollos que regresan |
-| **Reglas y errores** | `422 nada_en_bodega`: «Nada que surtir de bodega para {folio}» (sin reservas activas en Bodega, o la devolución no espera en Bodega)<br>`422 no_hay_en_bodega`: «No hay {prenda} {talla} en bodega: hay que pedirla a una tienda» (la existencia de Bodega no cubre lo reservado ahí)<br>`422 rollo_ajeno`: «{rollo} no es de {material} de {OC}, o no está en bodega.» |
+| **Reglas y errores** | `422 esperando_pago`, de `linea.prendas_en_camino`: «{W} espera su pago: se surte cuando se pague.»<br>`422 nada_en_bodega`: «Nada que surtir de bodega para {folio}» (sin reservas activas en Bodega, o la devolución no espera en Bodega)<br>`422 no_hay_en_bodega`: «No hay {prenda} {talla} en bodega: hay que pedirla a una tienda» (la existencia de Bodega no cubre lo reservado ahí)<br>`422 rollo_ajeno`: «{rollo} no es de {material} de {OC}, o no está en bodega.» |
 | **Escribe** | El PE-: un A- `surtido_pedido_externo`, con destino el cliente externo y la fecha de entrega del pedido como salida esperada. El W-: un A- `pedido_linea`, con destino el cliente en línea y salida esperada hoy. La devolución: pasa de `esperado` a `en_camino_aduana`, con sus rollos o su cantidad. Todos con `enviado_en`. El movimiento `surtido_bodega`, de Bodega a En camino a aduana; las reservas viajan con el traspaso |
 | **Regresa** | «{PE}: {n} piezas van a aduana. Quedan en camino hasta que aduana las reciba» · «{W} va a aduana: queda en camino hasta que aduana lo reciba» · «{cantidad} {unidad} de {material} van a aduana para regresar a {proveedor}» |
-| **Llama** | Con un W-: `linea.prendas_en_camino` (fase 18) |
+| **Llama** | Con un W-: `linea.prendas_en_camino` (fase 18), antes de surtir |
 | **Eventos** | `traspaso.en_camino_aduana` |
 | **Bitácora** | «Surtió a aduana {folio}», con las piezas o el material |
 

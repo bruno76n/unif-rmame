@@ -36,6 +36,7 @@ const datosDeVariantes = z.object({
 /** Lo que regresa `inventario.reservar` de un W-: la promesa de cada renglón. */
 const apartado = z.object({
 	renglones: z.array(z.object({ promesa: z.enum(["sale_hoy", "sale_manana"]).optional() })),
+	todo_en_aduana: z.boolean(),
 });
 
 /** Lo que regresa `admin.tomar_folio`. */
@@ -116,13 +117,14 @@ export const accionRecibirPedido = implementarAccion(recibirPedido, async (conte
 	// El mismo W- o el mismo pago, uno a la vez (regla 6).
 	await candadoDelPedido(transaccion, datos.id);
 	await candadoDelPago(transaccion, datos.pago.pasarela, datos.pago.referencia);
-	const conElPago = await folioConElPago(transaccion, datos.pago);
-	if (conElPago !== undefined) throw errorDeRegla("pago_repetido", `Ese pago ya está en ${conElPago}.`);
+	// Primero el id: el mismo W- con otra clave trae también el mismo pago, y lo que pasó es que el pedido ya está.
 	const [existente] = await transaccion
 		.select({ folio: pedidosLinea.folio })
 		.from(pedidosLinea)
 		.where(eq(pedidosLinea.id, datos.id));
 	if (existente !== undefined) throw errorDeRegla("pedido_repetido", `Ese pedido ya está en ${existente.folio}.`);
+	const conElPago = await folioConElPago(transaccion, datos.pago);
+	if (conElPago !== undefined) throw errorDeRegla("pago_repetido", `Ese pago ya está en ${conElPago}.`);
 	const { variantes } = datosDeVariantes.parse(
 		await contexto.lectura("catalogo.datos_variantes", {
 			variante_ids: datos.renglones.map((renglon) => renglon.variante_id),
@@ -136,7 +138,7 @@ export const accionRecibirPedido = implementarAccion(recibirPedido, async (conte
 	}
 	const { folio } = folioTomado.parse(await contexto.interna("admin.tomar_folio", { tipo: "pedido_linea" }));
 	const pagado = datos.pago.estado === "pagado";
-	const estado = pagado ? "por_surtir" : "esperando_pago";
+	let estado: "por_surtir" | "esperando_pago" | "listo_para_empacar" = pagado ? "por_surtir" : "esperando_pago";
 	await transaccion.insert(pedidosLinea).values({
 		id: datos.id,
 		folio,
@@ -208,9 +210,12 @@ export const accionRecibirPedido = implementarAccion(recibirPedido, async (conte
 			...(pagado ? {} : { pago_pendiente: true, ...(venceEn === null ? {} : { vence_en: venceEn }) }),
 		}),
 	);
-	// La promesa se congela al quedar pagado.
+	// La promesa se congela al quedar pagado; con todas sus prendas ya en Aduana, queda listo para empacar.
 	const promesa = pagado ? promesaDePedido(reservado.renglones.map((renglon) => renglon.promesa)) : null;
-	if (promesa !== null) await transaccion.update(pedidosLinea).set({ promesa }).where(eq(pedidosLinea.id, datos.id));
+	if (pagado && reservado.todo_en_aduana) estado = "listo_para_empacar";
+	if (promesa !== null) {
+		await transaccion.update(pedidosLinea).set({ promesa, estado }).where(eq(pedidosLinea.id, datos.id));
+	}
 	await abrirExcepciones(contexto, { id: datos.id, folio }, datos, [...deVariante.values()]);
 	eventoDePedido(contexto, "pedido_linea.recibido", { id: datos.id, folio });
 	const prendas = renglones.reduce((suma, renglon) => suma + renglon.cantidad, 0);

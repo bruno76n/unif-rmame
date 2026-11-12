@@ -1,6 +1,7 @@
 /**
  * `linea.confirmar_pago`: la pasarela avisa al sitio y el sitio confirma el pago de un W-. Esperando el pago o
- * vencido, pasa a por surtir con la promesa que dan sus reservas; cancelado, se guarda el pago y Contaduría lo ve.
+ * vencido, pasa a por surtir con la promesa que dan sus reservas (o listo para empacar, si todas están en Aduana);
+ * cancelado, se guarda el pago y Contaduría lo ve.
  * Fase 18 · docs/modulos/linea/pedidos-en-linea.md (reglas 5 y 6, «`linea.confirmar_pago`»)
  */
 
@@ -14,7 +15,7 @@ import { bloquearPedidoLinea, candadoDelPago, enPalabras, eventoDePedido, folioC
 import { pedidosLinea } from "../tablas.ts";
 
 /** Lo que regresa `inventario.confirmar_pago_reserva`. */
-const pagoEnReservas = z.object({ promesa: z.enum(["sale_hoy", "sale_manana"]) });
+const pagoEnReservas = z.object({ promesa: z.enum(["sale_hoy", "sale_manana"]), todo_en_aduana: z.boolean() });
 
 export const accionConfirmarPago = implementarAccion(confirmarPago, async (contexto, datos) => {
 	const { transaccion } = contexto;
@@ -60,10 +61,14 @@ export const accionConfirmarPago = implementarAccion(confirmarPago, async (conte
 		});
 	} else {
 		// Sus reservas pierden el vencimiento o, si ya vencieron, se vuelven a apartar (regla 5).
-		({ promesa } = pagoEnReservas.parse(
+		const enReservas = pagoEnReservas.parse(
 			await contexto.interna("inventario.confirmar_pago_reserva", { pedido_linea_id: pedido.id }),
-		));
-		estado = pedido.estado === "esperando_pago" || pedido.estado === "vencido" ? "por_surtir" : pedido.estado;
+		);
+		promesa = enReservas.promesa;
+		// Con todas sus prendas ya en Aduana no hay nada que surtir: queda listo para empacar.
+		if (pedido.estado === "esperando_pago" || pedido.estado === "vencido") {
+			estado = enReservas.todo_en_aduana ? "listo_para_empacar" : "por_surtir";
+		}
 		await transaccion
 			.update(pedidosLinea)
 			.set({

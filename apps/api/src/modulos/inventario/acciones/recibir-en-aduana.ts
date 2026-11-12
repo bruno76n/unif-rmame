@@ -26,11 +26,11 @@ import { tomarCandadosDeInventario } from "../dominio/candados.ts";
 import { abrirDiferencia } from "../dominio/diferencias.ts";
 import { escribirMovimiento, type RenglonDeMovimiento } from "../dominio/escribir-movimiento.ts";
 import { ubicacionDeTipo, ubicacionPorId } from "../dominio/recepciones.ts";
-import { reservasActivas } from "../dominio/reservas.ts";
+import { todoEnAduana } from "../dominio/reservas.ts";
 import { cambiarEstadoTraspaso, type TraspasoCreado } from "../dominio/traspasos.ts";
 import { repartirLoBueno } from "../internas/devoluciones.ts";
 import { regresarAlOrigen } from "../internas/reservas.ts";
-import { recepciones, recepcionLineas, reservas, tiposDeTraspaso, traspasoLineas, traspasos } from "../tablas.ts";
+import { recepciones, recepcionLineas, tiposDeTraspaso, traspasoLineas, traspasos } from "../tablas.ts";
 
 /** Lo que regresan `ventas.documentos_abiertos` y `linea.pedidos_abiertos`: los documentos que siguen abiertos. */
 const siguenAbiertos = z.record(z.string(), z.array(z.uuid()));
@@ -87,10 +87,9 @@ async function avisarATiendaEnLinea(
 	const pedido = pedidoDelSurtido(traspaso, contados);
 	if (traspaso.tipo !== "pedido_linea" || pedido === null) return;
 	const aduana = await ubicacionDeTipo(contexto.transaccion, "aduana");
-	const activas = await reservasActivas(contexto.transaccion, eq(reservas.pedidoLineaId, pedido.id));
 	await contexto.interna("linea.prendas_en_aduana", {
 		pedido_linea_id: pedido.id,
-		completo: activas.every((reserva) => reserva.ubicacionId === aduana),
+		completo: await todoEnAduana(contexto.transaccion, pedido.id, aduana),
 	});
 }
 

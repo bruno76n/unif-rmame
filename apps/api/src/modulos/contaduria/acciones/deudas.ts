@@ -16,7 +16,6 @@ import { tomarVersion } from "../../../nucleo/acciones/pisadas.ts";
 import { errorDeCampo, errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeAccion, implementarAccion } from "../../../nucleo/modulos.ts";
 import { nombreDelTercero } from "../dominio/facturas.ts";
-
 import { cuentasPorPagar, deudaMensualidades, deudas, terceros } from "../tablas.ts";
 
 /** Lo que regresa `admin.tomar_folio`. */

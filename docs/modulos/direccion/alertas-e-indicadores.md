@@ -7,7 +7,7 @@
 
 ## Para qué sirve
 
-Dirección ve en un solo lugar lo que cruza departamentos y no está bien, sin tener que buscarlo. Ejemplo: a las 10:30 el trabajo de alertas encuentra que el L-2026-118 lleva 3 días de trabajo atorado en «Costados» porque la recta de Ana está parada: nace la alerta roja «L-2026-118 detenido en Costados desde hace 3 días · Recta 04 parada», y las cuentas con Dirección reciben el aviso. Cuando Mantenimiento resuelve la falla y el lote avanza, la alerta desaparece sola; nadie tuvo que cerrarla.
+Dirección ve en un solo lugar lo que cruza departamentos y no está bien, sin tener que buscarlo. Ejemplo: a las 10:30 el trabajo de alertas encuentra que el L-2026-118 lleva 3 días de trabajo atorado en «Costados» porque la recta de Ana está parada: nace la alerta roja «L-2026-118 detenido en Costados · Recta 04 parada (FM-0007)», y las cuentas con Dirección reciben el aviso. Cuando Mantenimiento resuelve la falla y el lote avanza, la alerta desaparece sola; nadie tuvo que cerrarla.
 
 ## Reglas
 
@@ -21,7 +21,7 @@ Dirección ve en un solo lugar lo que cruza departamentos y no está bien, sin t
 
 | Alerta | Cuándo sale | De dónde | Color | «Ver» lleva a |
 |---|---|---|---|---|
-| «{lote} detenido en {operación} desde hace {n} días», más « · {máquina} parada» si la causa es una falla | Un lote en proceso atorado, por falta de avance o por una máquina parada (ver [lotes](../produccion/lotes.md#reglas), regla 7) | `produccion.lotes_atorados` | Rojo | Producción, cajón del lote |
+| «{lote} detenido en {operación} desde hace {n} días»; si la causa es una falla, «{lote} detenido en {operación} · {máquina} parada ({FM})» | Un lote en proceso atorado, por falta de avance o por una máquina parada (ver [lotes](../produccion/lotes.md#reglas), regla 7) | `produccion.lotes_atorados` | Rojo | Producción, cajón del lote |
 | «{producto}: consumo de tela {n}% sobre patrón» | Su desperdicio medido es alto (más de `patronaje.desperdicio_alto_pct`, 10 %); salen las de más desperdicio, hasta `direccion.alerta_consumo_tela_max` (2) | `patronaje.desperdicio_prenda`, de todas las prendas cortadas | Ámbar | Patronaje, Rendimiento |
 | «{cliente} concentra el {n}% del saldo por cobrar», más «, con {monto} de más de {d} días» si tiene vencido de más de `direccion.alerta_concentracion_vencido_dias` (30) días | El cliente con más saldo pasa de `direccion.alerta_concentracion_cliente_pct` (35 %) del saldo total | `contaduria.resumen_direccion` | Rojo con ese vencido; si no, ámbar | Contaduría, Cuentas por cobrar |
 | «{producto} descontinuado con {n} piezas en existencia» | Un producto descontinuado con piezas en alguna ubicación; una por producto | `catalogo.productos_descontinuados` e `inventario.existencia_de_variantes` | Ámbar | Bodega, Existencias |

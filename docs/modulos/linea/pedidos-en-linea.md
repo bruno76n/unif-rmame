@@ -24,11 +24,11 @@ Lo que se vende en uniformame.mx sale de la misma existencia que todo lo demás,
 
 | De | A | Qué pasa | Quién |
 |---|---|---|---|
-| — | `por_surtir` · `esperando_pago` | Llega pagado, o con pago pendiente | El sitio |
-| `esperando_pago` · `vencido` | `por_surtir` | Se confirma el pago | El sitio |
+| — | `por_surtir` · `esperando_pago` · `listo_para_empacar` | Llega pagado, o con pago pendiente; pagado y con todo apartado ya en aduana, listo para empacar | El sitio |
+| `esperando_pago` · `vencido` | `por_surtir` · `listo_para_empacar` | Se confirma el pago (listo para empacar si todo está apartado en aduana) | El sitio |
 | `esperando_pago` | `vencido` | Sus reservas vencen sin pago | El trabajo «Vencer reservas» |
 | `por_surtir` | `esperando_prendas` | Bodega lo surte a aduana | Bodega |
-| `por_surtir` · `esperando_prendas` | `listo_para_empacar` | Aduana recibe lo último (o todo ya estaba en aduana) | Aduana |
+| `por_surtir` · `esperando_prendas` | `listo_para_empacar` | Aduana recibe lo último, o «No la encuentro» aparta en aduana lo que faltaba | Aduana · Bodega |
 | `esperando_pago` · `por_surtir` · `esperando_prendas` · `listo_para_empacar` | `cancelado` | «Cancelar pedido», con motivo | Tienda en línea |
 
 Empacar, pedir la guía, «La recogió la paquetería» y la entrega llegan con uniformame.mx.
@@ -84,8 +84,8 @@ Lleva las columnas comunes. **Índices:** único (`pedido_linea_id`, `renglon`) 
 | **Pantalla** | Ninguna en la fábrica: llega del sitio al cobrar, o al escoger un pago pendiente |
 | **Quién** | La credencial de uniformame.mx |
 | **Recibe** | `id` (lo hace el sitio) · `cliente`: nombre, correo y teléfono · `envio`: la dirección de la tabla, método, paquetería y costo · `renglones`: al menos uno, con `renglon`, `variante_id`, `cantidad`, `precio_unitario_centavos`, `paquete_numero` y sus dos descuentos · `cupon_codigo`, opcional · los cuatro totales · `pago`: estado (`pagado` o `pendiente`), pasarela, referencia, método, monto, comisión, `pagado_en` o `vence_en`, y la respuesta de la pasarela |
-| **Reglas y errores** | `400`: falta un dato obligatorio o una variante no existe<br>`422 pago_repetido`: «Ese pago ya está en {W}.»<br>`422 pago_pendiente_apagado`: «La tienda en línea no acepta pago pendiente.»<br>Nada más lo rechaza (regla 2) |
-| **Escribe** | El W-, con todo congelado, `por_surtir` si llegó pagado o `esperando_pago` si no, y la promesa si está pagado; sus renglones |
+| **Reglas y errores** | `400`: falta un dato obligatorio o una variante no existe<br>`422 pedido_repetido`: «Ese pedido ya está en {W}.» (el mismo `id` con otra clave)<br>`422 pago_repetido`: «Ese pago ya está en {W}.»<br>`422 pago_pendiente_apagado`: «La tienda en línea no acepta pago pendiente.»<br>Nada más lo rechaza (regla 2) |
+| **Escribe** | El W-, con todo congelado, `por_surtir` si llegó pagado (`listo_para_empacar` si todo lo apartado ya está en aduana) o `esperando_pago` si no, y la promesa si está pagado; sus renglones |
 | **Llama** | `admin.tomar_folio` (`pedido_linea`) · `catalogo.datos_variantes` (nombre, talla y si se vende en línea) · `inventario.reservar`, motivo `pedido_linea`, un renglón por renglón del W-, con el vencimiento si el pago está pendiente · `inventario.registrar_excepcion`, con `totales_no_cuadran` o `variante_sin_canal_linea` |
 | **Regresa** | El folio, el estado y la promesa |
 | **Eventos** | `pedido_linea.recibido`: Pendientes de Tienda en línea y de Bodega |
@@ -99,7 +99,7 @@ Lleva las columnas comunes. **Índices:** único (`pedido_linea_id`, `renglon`) 
 | **Quién** | La credencial de uniformame.mx |
 | **Recibe** | `pedido_linea_id` · pasarela y referencia · monto · comisión, opcional · `pagado_en` · la respuesta, opcional |
 | **Reglas y errores** | `404 no_existe`: el W- todavía no llega; el sitio reintenta<br>`422 pago_repetido`: «Ese pago ya está en {W}.»<br>Un W- ya pagado contesta lo mismo que la primera vez. A un W- cancelado se le guarda el pago y se abre `pago_de_pedido_cancelado`. Un monto distinto del total se acepta y abre `totales_no_cuadran` |
-| **Escribe** | El pago, `pagado`, con su hora, su comisión y su respuesta. Un W- `esperando_pago` o `vencido` pasa a `por_surtir`, con la promesa que dan sus reservas |
+| **Escribe** | El pago, `pagado`, con su hora, su comisión y su respuesta. Un W- `esperando_pago` o `vencido` pasa a `por_surtir` (o a `listo_para_empacar`, si todas sus reservas están en aduana), con la promesa que dan sus reservas |
 | **Llama** | `inventario.confirmar_pago_reserva` · `inventario.registrar_excepcion`, si aplica |
 | **Regresa** | El estado y la promesa |
 | **Eventos** | `pedido_linea.pagado` |
@@ -129,6 +129,7 @@ Su bitácora es el renglón de la acción o del trabajo que las llama.
 |---|---|
 | **La llama** | `inventario.surtir_a_aduana`, cuando Bodega surte un W- (ver [surtido y despachos](../inventario/surtido-y-despachos.md)) |
 | **Recibe** | `pedido_linea_id` |
+| **Reglas y errores** | `422 esperando_pago`: «{W} espera su pago: se surte cuando se pague.» (sus reservas todavía pueden vencer) |
 | **Escribe** | Un W- `por_surtir` pasa a `esperando_prendas`; en otro estado, nada |
 | **Eventos** | `pedido_linea.esperando_prendas` |
 
@@ -167,6 +168,13 @@ Su bitácora es el renglón de la acción o del trabajo que las llama.
 |---|---|
 | **La usa** | Catálogo, al dar de baja una talla: `talla_con_pedidos` (ver [tallas y tipos de prenda](../catalogo/tallas-y-tipos-de-prenda.md)) |
 | **Regresa** | Los folios de los W- no cancelados ni vencidos con esa variante |
+
+### `linea.folios_de_pedidos(pedidos)`
+
+| | |
+|---|---|
+| **La usa** | Inventario, en «No la encuentro», para nombrar el W- de la reserva (ver [entregas y devoluciones de clientes](../inventario/entregas-y-devoluciones-de-clientes.md)) |
+| **Regresa** | El folio de cada W- |
 
 ### `linea.pedidos_abiertos(pedidos)`
 
@@ -218,3 +226,10 @@ El plazo de un pago pendiente, cada cuánto se vencen las reservas y el orden de
 - **Las lecturas** (`lecturas/pedidos.ts`): `pedidos_abiertos_de_variante`, `pedidos_abiertos` y `folios_de_pedidos`, para «No la encuentro» (decisión 721).
 - **Los parámetros** `linea.acepta_pago_pendiente` y `linea.dias_pedido_rojo` están en `linea/parametros.ts`. Leen `pedidos_linea` y sus renglones Tienda en línea, Aduana y Bodega: el aviso solo lleva la tabla y el id.
 - **Pruebas:** `acciones/recibir-pedido.prueba.ts`, `acciones/confirmar-pago.prueba.ts`, `acciones/cancelar-pedido.prueba.ts`, `internas/prendas-en-camino.prueba.ts`, `internas/prendas-en-aduana.prueba.ts`, `lecturas/pedidos.prueba.ts` y `alcance.prueba.ts` (la revisión de permisos de cada contrato con la credencial, su llave sin versión, y que Bodega y Aduana no reciben precios ni el pago); en Inventario, `trabajos/vencer-reservas.prueba.ts` y el caso del W- de `acciones/no-la-encuentro.prueba.ts`. Las ayudas están en `nucleo/pruebas/linea-de-prueba.ts`; las pruebas llaman como el sitio, con la credencial de prueba `sitio`, y cancelan con la cuenta de prueba `linea`.
+
+**Fase 18, cierre.**
+
+- `recibir_pedido` busca primero el `id`: el mismo W- con otra clave responde `pedido_repetido` («Ese pedido ya está en {W}.») antes que `pago_repetido` (decisión 719).
+- Con todas sus reservas activas en Aduana no hay nada que surtir: `recibir_pedido` pagado y `confirmar_pago` lo dejan `listo_para_empacar`, y «No la encuentro» llama `prendas_en_aduana` con `completo`. Lo sabe Inventario: `inventario.reservar` y `confirmar_pago_reserva` regresan `todo_en_aduana`, con la función `todoEnAduana` de `inventario/dominio/reservas.ts` que usa también la recepción en aduana (decisión 734).
+- `inventario.surtir_a_aduana` llama `prendas_en_camino` antes de surtir, y esta responde `422 esperando_pago` a un W- que espera su pago; así el W- se bloquea antes que sus variantes, como al pagar o vencer (decisión 735).
+- **Pruebas:** los casos nuevos de `recibir-pedido.prueba.ts` (llega listo para empacar; `pedido_repetido`), `confirmar-pago.prueba.ts` (el pago lo deja listo para empacar), `internas/prendas-en-camino.prueba.ts` (no se surte esperando el pago), `inventario/acciones/no-la-encuentro.prueba.ts` (el mensaje del archivo y listo para empacar) y `alcance.prueba.ts` (la credencial no sube comandos ni archivos, y no abre archivos ajenos).

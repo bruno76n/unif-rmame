@@ -21,6 +21,7 @@ import {
 	type Reserva,
 	reservasActivas,
 	terminarReserva,
+	todoEnAduana,
 	tomarDeReservas,
 } from "../dominio/reservas.ts";
 import { type LadoDeTraspaso, repartirTraspaso, type TraspasoCreado } from "../dominio/traspasos.ts";
@@ -121,11 +122,19 @@ interface RenglonApartado {
  * `inventario.reservar`: aparta piezas para un PE-, un apartado de tienda o un W-.
  * @param contexto El contexto de la acción que aparta.
  * @param datos El motivo con su documento, los renglones y, en un W- con pago pendiente, su vencimiento.
- * @returns Por renglón, sus reservas y, en un W-, la promesa.
+ * @returns Por renglón, sus reservas y, en un W-, la promesa; y en un W-, si todas sus reservas activas quedaron en
+ * Aduana (`todo_en_aduana`).
  * @throws `422 sin_libres` si un PE- pide más de lo libre en Bodega.
  */
-export function reservar(contexto: ContextoDeAccion, datos: unknown): Promise<{ renglones: RenglonApartado[] }> {
-	return apartar(contexto, pedidoDeReservar.parse(datos), "pedido_linea_sin_pieza");
+export async function reservar(
+	contexto: ContextoDeAccion,
+	datos: unknown,
+): Promise<{ renglones: RenglonApartado[]; todo_en_aduana?: boolean }> {
+	const pedido = pedidoDeReservar.parse(datos);
+	const apartado = await apartar(contexto, pedido, "pedido_linea_sin_pieza");
+	if (pedido.motivo !== "pedido_linea" || pedido.pedido_linea_id === undefined) return apartado;
+	const { todo_en_aduana } = await comoQuedaElPedidoLinea(contexto, pedido.pedido_linea_id);
+	return { ...apartado, todo_en_aduana };
 }
 
 /**
@@ -557,12 +566,15 @@ const pedidoDeConfirmarPago = z.object({ pedido_linea_id: z.uuid() }).strict();
  * vencimiento; si ya vencieron, se vuelve a apartar lo que tenían, como en `inventario.reservar`.
  * @param contexto El contexto de la acción.
  * @param datos `pedido_linea_id`.
- * @returns Si se volvió a apartar y, entonces, lo apartado; y la promesa que dan sus reservas activas.
+ * @returns Si se volvió a apartar y, entonces, lo apartado; la promesa que dan sus reservas activas y si todas están
+ * en Aduana.
  */
 export async function confirmarPagoReserva(
 	contexto: ContextoDeAccion,
 	datos: unknown,
-): Promise<{ volvio_a_apartar: boolean; renglones: RenglonApartado[]; promesa: "sale_hoy" | "sale_manana" }> {
+): Promise<
+	{ volvio_a_apartar: boolean; renglones: RenglonApartado[] } & Awaited<ReturnType<typeof comoQuedaElPedidoLinea>>
+> {
 	const { pedido_linea_id } = pedidoDeConfirmarPago.parse(datos);
 	const { transaccion } = contexto;
 	// El candado de sus variantes antes de decidir: «Vencer reservas» no puede liberarlas a la mitad.
@@ -588,7 +600,7 @@ export async function confirmarPagoReserva(
 					eq(reservas.estado, "activa"),
 				),
 			);
-		return { volvio_a_apartar: false, renglones: [], promesa: await promesaDelPedidoLinea(contexto, pedido_linea_id) };
+		return { volvio_a_apartar: false, renglones: [], ...(await comoQuedaElPedidoLinea(contexto, pedido_linea_id)) };
 	}
 	// El pago llegó tarde: lo que se liberó al vencer se vuelve a apartar.
 	const vencidas = await transaccion
@@ -603,7 +615,7 @@ export async function confirmarPagoReserva(
 		)
 		.orderBy(reservas.creadoEn);
 	if (vencidas.length === 0) {
-		return { volvio_a_apartar: false, renglones: [], promesa: await promesaDelPedidoLinea(contexto, pedido_linea_id) };
+		return { volvio_a_apartar: false, renglones: [], ...(await comoQuedaElPedidoLinea(contexto, pedido_linea_id)) };
 	}
 	const { renglones } = await apartar(
 		contexto,
@@ -618,22 +630,29 @@ export async function confirmarPagoReserva(
 		},
 		"pago_despues_de_vencer",
 	);
-	return { volvio_a_apartar: true, renglones, promesa: await promesaDelPedidoLinea(contexto, pedido_linea_id) };
+	return { volvio_a_apartar: true, renglones, ...(await comoQuedaElPedidoLinea(contexto, pedido_linea_id)) };
 }
 
 /**
- * La promesa de un W- según sus reservas activas: «Sale mañana» si alguna está en una tienda; si no, «Sale hoy».
+ * Cómo dejan a un W- sus reservas activas: la promesa («Sale mañana» si alguna está en una tienda; si no, «Sale hoy»)
+ * y si todas ya están en Aduana.
  * @param contexto El contexto de la acción.
  * @param pedidoLineaId El W-.
- * Tienda en línea la congela al quedar pagado (regla 4 de los pedidos en línea).
+ * Tienda en línea congela la promesa al quedar pagado (regla 4 de los pedidos en línea) y, con todo en Aduana, lo deja
+ * listo para empacar.
  */
-async function promesaDelPedidoLinea(
+async function comoQuedaElPedidoLinea(
 	contexto: ContextoDeAccion,
 	pedidoLineaId: string,
-): Promise<"sale_hoy" | "sale_manana"> {
+): Promise<{ promesa: "sale_hoy" | "sale_manana"; todo_en_aduana: boolean }> {
 	const lugares = await leerUbicaciones(contexto);
 	const activas = await reservasActivas(contexto.transaccion, eq(reservas.pedidoLineaId, pedidoLineaId));
-	return activas.some((reserva) => lugares.tipoDe.get(reserva.ubicacionId) === "tienda") ? "sale_manana" : "sale_hoy";
+	return {
+		promesa: activas.some((reserva) => lugares.tipoDe.get(reserva.ubicacionId) === "tienda")
+			? "sale_manana"
+			: "sale_hoy",
+		todo_en_aduana: await todoEnAduana(contexto.transaccion, pedidoLineaId, lugares.aduana),
+	};
 }
 
 // ---------------------------------------------------------------------------------------------------------------

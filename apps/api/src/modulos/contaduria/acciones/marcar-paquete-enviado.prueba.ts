@@ -10,6 +10,7 @@
 import { Temporal } from "temporal-polyfill";
 import { v7 as uuidv7 } from "uuid";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { z } from "zod";
 import { hoyEnMexico, registrarGastoDePrueba } from "../../../nucleo/pruebas/gastos-de-prueba.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import { pagarNominaDePrueba, semanaConNomina } from "../../../nucleo/pruebas/nomina-de-prueba.ts";
@@ -148,5 +149,73 @@ describe("El paquete de un mes suma cada concepto con sus documentos; al mandarl
 	it("solo Contaduría lo manda", async () => {
 		const paquete = await paqueteDe("2026-08-01");
 		expect((await mandar(paquete, "ventas")).cuerpo).toMatchObject({ codigo: "sin_departamento" });
+	});
+
+	/** Espera a que haya al menos tantas conexiones esperando un candado; dice si llegaron. */
+	async function esperarQueEsperen(cuantas: number): Promise<boolean> {
+		for (let vuelta = 0; vuelta < 200; vuelta++) {
+			const [fila] = await consultar(
+				"SELECT count(*)::int AS n FROM pg_stat_activity WHERE wait_event_type = 'Lock' AND datname = current_database()",
+			);
+			if (z.object({ n: z.number() }).parse(fila).n >= cuantas) return true;
+			await new Promise((listo) => setTimeout(listo, 50));
+		}
+		return false;
+	}
+
+	/**
+	 * Detiene un gasto con otra conexión mientras corre `mientras`, y al final hace `alSoltar` en esa conexión y la
+	 * confirma.
+	 */
+	async function conElGastoDetenido<T>(gasto: string, esperan: number, mientras: () => Promise<T>, alSoltar = "") {
+		const conexion = await servidor.base.dueno.connect();
+		await conexion.query("BEGIN");
+		await conexion.query("SELECT id FROM gastos WHERE id = $1 FOR UPDATE", [gasto]);
+		if (alSoltar !== "") await conexion.query(alSoltar, [gasto]);
+		const resultado = mientras();
+		try {
+			expect(await esperarQueEsperen(esperan)).toBe(true);
+		} finally {
+			await conexion.query("COMMIT");
+			conexion.release();
+		}
+		return resultado;
+	}
+
+	it("un gasto que se cancela mientras se manda el paquete no sale en él ni queda ligado", async () => {
+		const gasto = await registrarGastoDePrueba(servidor, { fecha: "2024-02-10", monto_centavos: 77_700 });
+		const { gasto_id: id } = z.object({ gasto_id: z.uuid() }).parse(gasto.cuerpo.resultado);
+		const febrero = await paqueteDe("2024-02-01");
+		// La cancelación tiene el gasto mientras el envío lo quiere contar: el envío la espera.
+		const envio = await conElGastoDetenido(
+			id,
+			1,
+			() => mandar(febrero),
+			"UPDATE gastos SET estado = 'cancelado', cancelado_en = now(), motivo_cancelacion = 'Cancelado a la vez' WHERE id = $1",
+		);
+		expect(envio.estado, JSON.stringify(envio.cuerpo)).toBe(200);
+		expect(await consultar("SELECT estado, paquete_contador_id AS p FROM gastos WHERE id = $1", [id])).toEqual([
+			{ estado: "cancelado", p: null },
+		]);
+		expect(Object.keys(await congelados(febrero)).filter((llave) => llave.startsWith("gasto/"))).toEqual([]);
+	});
+
+	it("dos paquetes mandados a la vez no se llevan el mismo gasto de meses anteriores", async () => {
+		expect((await mandar(await paqueteDe("2024-03-01"))).estado).toBe(200);
+		const tarde = await registrarGastoDePrueba(servidor, { fecha: "2024-03-15", monto_centavos: 55_500 });
+		const { gasto_id: id } = z.object({ gasto_id: z.uuid() }).parse(tarde.cuerpo.resultado);
+		const abril = await paqueteDe("2024-04-01");
+		const mayo = await paqueteDe("2024-05-01");
+		// Los dos envíos llegan al gasto mientras otra conexión lo tiene; al soltarlo, uno espera al otro.
+		const envios = await conElGastoDetenido(id, 2, () => Promise.all([mandar(abril), mandar(mayo)]));
+		expect(envios.map((envio) => envio.estado)).toEqual([200, 200]);
+		const conElGasto = [];
+		for (const paquete of [abril, mayo]) {
+			if ((await congelados(paquete))["gasto/Luz/anteriores"] !== undefined) conElGasto.push(paquete);
+		}
+		expect(conElGasto).toHaveLength(1);
+		expect(await consultar("SELECT paquete_contador_id AS p FROM gastos WHERE id = $1", [id])).toEqual([
+			{ p: conElGasto[0] },
+		]);
 	});
 });

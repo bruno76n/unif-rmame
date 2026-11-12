@@ -6,7 +6,7 @@
 
 import { textoDeDia, textoDeMes } from "@uniformame/compartido/calculos/fechas";
 import { adjuntarDocumentoContador, marcarPaqueteEnviado } from "@uniformame/compartido/contratos/contaduria/contador";
-import { and, eq, gte, inArray, lt } from "drizzle-orm";
+import { and, eq, gte, inArray, lt, sql } from "drizzle-orm";
 import { Temporal } from "temporal-polyfill";
 import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
@@ -128,6 +128,8 @@ export const accionAdjuntarDocumentoContador = implementarAccion(adjuntarDocumen
 	if (!tiposValidos.test(archivo.tipo_mime)) {
 		throw errorDeRegla("archivo_invalido", "El archivo debe ser PDF, imagen, XML o ZIP.");
 	}
+	// Uno a la vez por archivo: dos guardados del mismo archivo a la vez dejan uno y el otro responde que ya está.
+	await transaccion.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`documento_contador:${datos.archivo_id}`}))`);
 	const [yaGuardado] = await transaccion
 		.select({ id: documentosContador.id })
 		.from(documentosContador)

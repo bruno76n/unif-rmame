@@ -10,6 +10,7 @@
 import { noLaEncuentro } from "@uniformame/compartido/contratos/inventario/despachos";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
+import type { Transaccion } from "../../../nucleo/base/transacciones.ts";
 import { errorDeRegla } from "../../../nucleo/http/errores.ts";
 import { implementarAccion } from "../../../nucleo/modulos.ts";
 import { candadoDeVariantes } from "../dominio/candados.ts";
@@ -35,6 +36,34 @@ function documentoDeLaReserva(
 		return { id: reserva.pedidoLineaId, lectura: "linea.folios_de_pedidos", campo: "pedido_linea_ids" };
 	}
 	return null;
+}
+
+/** Lo que regresa `inventario.reservar` de la pieza de un W-. */
+const deLoApartado = z.object({
+	renglones: z.array(
+		z.object({ reservas: z.array(z.object({ ubicacion_id: z.uuid() })), sin_pieza: z.boolean().optional() }),
+	),
+	todo_en_aduana: z.boolean(),
+});
+
+/**
+ * Cómo queda el W- después de volver a apartar su pieza: «{W} se surte de {ubicación}» o «{W} queda sin pieza».
+ * @param transaccion La transacción.
+ * @param folio El W-.
+ * @param apartado Lo que regresó `inventario.reservar`.
+ */
+async function dondeQuedaElW(
+	transaccion: Transaccion,
+	folio: string,
+	apartado: z.infer<typeof deLoApartado>,
+): Promise<string> {
+	const [renglon] = apartado.renglones;
+	if (renglon === undefined || renglon.sin_pieza === true) return `${folio} queda sin pieza`;
+	const nombres: string[] = [];
+	for (const id of new Set(renglon.reservas.map((suya) => suya.ubicacion_id))) {
+		nombres.push((await ubicacionPorId(transaccion, id))?.nombre ?? "otra ubicación");
+	}
+	return `${folio} se surte de ${nombres.join(" y ")}`;
 }
 
 export const accionNoLaEncuentro = implementarAccion(noLaEncuentro, async (contexto, datos) => {
@@ -77,20 +106,28 @@ export const accionNoLaEncuentro = implementarAccion(noLaEncuentro, async (conte
 		tablas: ["reservas", "diferencias"],
 	});
 	// La de un W- se vuelve a apartar: en otra ubicación con libres o, si no hay, en Bodega con su excepción.
+	let comoQueda = `Vuelve a lo que falta mandar de ${folio}`;
 	if (reserva.motivo === "pedido_linea") {
-		await contexto.interna("inventario.reservar", {
-			motivo: "pedido_linea",
-			pedido_linea_id: documento.id,
-			renglones: [
-				{
-					variante_id: reserva.varianteId,
-					piezas: reserva.piezas,
-					...(reserva.pedidoLineaRenglonId === null ? {} : { pedido_linea_renglon_id: reserva.pedidoLineaRenglonId }),
-				},
-			],
-			// La que no se encontró sigue en la existencia de Bodega hasta contarla: no se vuelve a tomar.
-			no_encontradas_en_bodega: reserva.piezas,
-		});
+		const apartado = deLoApartado.parse(
+			await contexto.interna("inventario.reservar", {
+				motivo: "pedido_linea",
+				pedido_linea_id: documento.id,
+				renglones: [
+					{
+						variante_id: reserva.varianteId,
+						piezas: reserva.piezas,
+						...(reserva.pedidoLineaRenglonId === null ? {} : { pedido_linea_renglon_id: reserva.pedidoLineaRenglonId }),
+					},
+				],
+				// La que no se encontró sigue en la existencia de Bodega hasta contarla: no se vuelve a tomar.
+				no_encontradas_en_bodega: reserva.piezas,
+			}),
+		);
+		comoQueda = await dondeQuedaElW(transaccion, folio, apartado);
+		// Si todo lo del W- ya está en Aduana, no queda nada que surtir: listo para empacar.
+		if (apartado.todo_en_aduana) {
+			await contexto.interna("linea.prendas_en_aduana", { pedido_linea_id: documento.id, completo: true });
+		}
 	}
 	const lugar = (await ubicacionPorId(transaccion, bodega))?.nombre ?? "Bodega";
 	contexto.bitacora({
@@ -102,10 +139,7 @@ export const accionNoLaEncuentro = implementarAccion(noLaEncuentro, async (conte
 	});
 	return {
 		resultado: {
-			mensaje:
-				reserva.motivo === "pedido_linea"
-					? `${diferencia.folio}: ${prenda} talla ${talla} queda en diferencias. ${folio} se vuelve a apartar`
-					: `${diferencia.folio}: ${prenda} talla ${talla} queda en diferencias. Vuelve a lo que falta mandar de ${folio}`,
+			mensaje: `${diferencia.folio}: ${prenda} talla ${talla} queda en diferencias. ${comoQueda}`,
 			diferencia_id: diferencia.diferenciaId,
 			folio: diferencia.folio,
 		},

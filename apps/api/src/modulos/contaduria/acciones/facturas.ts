@@ -32,7 +32,6 @@ import {
 	revisarFacturas,
 	tresPuntas,
 } from "../dominio/facturas.ts";
-
 import { cuentasPorPagar, facturaProveedorOrdenes, facturasProveedor } from "../tablas.ts";
 
 /** Lo que regresa `admin.tomar_folio`. */

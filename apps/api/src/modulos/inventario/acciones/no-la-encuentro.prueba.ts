@@ -1,6 +1,7 @@
 /**
  * Prueba de `inventario.no_la_encuentro`: la pieza apartada para un pedido externo que Bodega no encuentra abre su DF-
- * por contar y su reserva se libera; una que ya no está apartada no. La de un W- se vuelve a apartar.
+ * por contar y su reserva se libera; una que ya no está apartada no. La de un W- se vuelve a apartar y dice de dónde se
+ * surte, o que queda sin pieza; con todo ya en Aduana, el W- queda listo para empacar.
  * Fase 16 · docs/fases/16-ventas-a-externos.md (parte 4)
  * Fase 18 · docs/fases/18-tienda-en-linea-direccion-y-contador.md (criterio «"No la encuentro" con un W- abre su DF- y
  * reasigna la reserva, o la deja sin pieza con su excepción»)
@@ -97,10 +98,14 @@ describe("«No la encuentro» abre la DF- por contar y la pieza vuelve a lo que 
 				{ datos: { reserva_id: rows[0]?.id } },
 				"bodega",
 			);
+			const { rows: aduana } = await servidor.base.dueno.query("SELECT nombre FROM ubicaciones WHERE codigo = 'ADU'");
+			const comoQueda = otraPieza ? `se surte de ${aduana[0]?.nombre}` : "queda sin pieza";
 			expect(respuesta.cuerpo.resultado).toMatchObject({
-				mensaje: expect.stringMatching(new RegExp(`queda en diferencias\\. ${pedido.folio} se vuelve a apartar$`)),
+				mensaje: expect.stringMatching(new RegExp(`queda en diferencias\\. ${pedido.folio} ${comoQueda}$`)),
 			});
+			// Con su única prenda ya en Aduana, no queda nada que surtir: listo para empacar.
 			expect(await pedidoLineaComoQuedo(servidor, pedido.id)).toMatchObject({
+				estado: otraPieza ? "listo_para_empacar" : "por_surtir",
 				reservas: [{ ubicacion: otraPieza ? "ADU" : "BOD", piezas: 1 }],
 			});
 			const { rows: excepciones } = await servidor.base.dueno.query(

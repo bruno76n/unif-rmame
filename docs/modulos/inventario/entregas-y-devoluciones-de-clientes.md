@@ -113,3 +113,5 @@ Los de cada interna, arriba.
 - **Pruebas:** `acciones/no-la-encuentro.prueba.ts`; las entregas, el paso a bodega y las devoluciones, en `modulos/ventas/acciones/confirmar-entrega.prueba.ts`, `pasar-a-bodega.prueba.ts` y `aplicar-decision-nota-credito.prueba.ts`, y en `modulos/calidad/acciones/revisar-devolucion.prueba.ts`.
 
 **Fase 18, parte 1.** `no_la_encuentro` acepta la reserva de un W- en Bodega: su folio sale de `linea.folios_de_pedidos`, la DF- nace igual y la pieza se vuelve a apartar con `inventario.reservar`, sin contar como libre la que no se encontró (`no_encontradas_en_bodega`): en otra ubicación con libres o, si no hay, en Bodega con `pedido_linea_sin_pieza` (decisión 721).
+
+**Fase 18, cierre.** «No la encuentro» con un W- arma el mensaje del archivo con lo que regresa `inventario.reservar`: «… {W} se surte de {ubicación}» (sus nombres) o «… {W} queda sin pieza»; si todo lo del W- quedó en Aduana, llama `linea.prendas_en_aduana` con `completo` (decisión 734). Lo prueba el caso del W- de `acciones/no-la-encuentro.prueba.ts`.

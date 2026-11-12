@@ -143,6 +143,7 @@ describe("liberar reservas", () => {
 			volvio_a_apartar: false,
 			renglones: [],
 			promesa: "sale_hoy",
+			todo_en_aduana: false,
 		});
 		const { rows } = await servidor.base.dueno.query("SELECT vence_en FROM reservas WHERE pedido_linea_id = $1", [
 			enTiempo,

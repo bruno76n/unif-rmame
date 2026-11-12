@@ -170,6 +170,18 @@ export function reservasActivas(transaccion: Transaccion, donde: ReturnType<type
 }
 
 /**
+ * Si todas las reservas activas de un W- ya están en Aduana: entonces queda listo para empacar (ver pedidos en línea,
+ * «Estados»). Lo usan la recepción en aduana, «No la encuentro» y lo que aparta para un W-.
+ * @param transaccion La transacción.
+ * @param pedidoLineaId El W-.
+ * @param aduana El id de Aduana.
+ */
+export async function todoEnAduana(transaccion: Transaccion, pedidoLineaId: string, aduana: string): Promise<boolean> {
+	const activas = await reservasActivas(transaccion, eq(reservas.pedidoLineaId, pedidoLineaId));
+	return activas.length > 0 && activas.every((reserva) => reserva.ubicacionId === aduana);
+}
+
+/**
  * Las piezas libres de una variante en una ubicación: existencia menos reservas activas. Puede ser negativo.
  * @param transaccion La transacción (quien decide con esto ya tomó el candado de la variante).
  * @param ubicacionId La ubicación.

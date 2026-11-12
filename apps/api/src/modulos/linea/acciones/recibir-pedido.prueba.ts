@@ -7,7 +7,7 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { meterPiezas, ubicacionesPorCodigo } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
+import { meterPiezas, nuevoTraspaso, ubicacionesPorCodigo } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
 import {
 	comoElSitio,
 	pedidoDelSitio,
@@ -91,6 +91,28 @@ describe("Un W- pagado nunca se rechaza; la misma referencia de pago no entra a 
 		expect(eventos.map((evento) => evento.tipo)).toContain("pedido_linea.recibido");
 	});
 
+	it("Con todas sus prendas ya en Aduana (en camino a Bodega), llega listo para empacar: no hay nada que surtir", async () => {
+		const [cuatro = ""] = await prendaEnLinea(servidor);
+		await nuevoTraspaso(servidor, {
+			tipo: "lote_temporada",
+			estado: "en_aduana",
+			origen: { ubicacionId: ubicacion.TAL ?? "" },
+			destino: { ubicacionId: ubicacion.BOD ?? "" },
+			renglones: [{ varianteId: cuatro, piezas: 1 }],
+		});
+		await meterPiezas(servidor, ubicacion.ADU ?? "", cuatro, 1);
+		const pedido = pedidoDelSitio([{ variante_id: cuatro, cantidad: 1 }]);
+		const respuesta = await comoElSitio(servidor, "linea.recibir_pedido", pedido);
+		expect(respuesta.cuerpo.resultado, JSON.stringify(respuesta.cuerpo)).toMatchObject({
+			estado: "listo_para_empacar",
+			promesa: "sale_hoy",
+		});
+		expect(await pedidoLineaComoQuedo(servidor, pedido.id)).toMatchObject({
+			estado: "listo_para_empacar",
+			reservas: [{ ubicacion: "ADU", piezas: 1 }],
+		});
+	});
+
 	it("Sin pieza en ningún lado se aparta igual en Bodega, en negativo, con su excepción; el W- entra", async () => {
 		const [cuatro = ""] = await prendaEnLinea(servidor);
 		const pedido = pedidoDelSitio([{ variante_id: cuatro, cantidad: 3 }]);
@@ -146,9 +168,10 @@ describe("Un W- pagado nunca se rechaza; la misma referencia de pago no entra a 
 			codigo: "pago_repetido",
 			mensaje: `Ese pago ya está en ${folio}.`,
 		});
-		// El mismo W- con otra clave tampoco entra dos veces.
+		// El mismo W- con otra clave tampoco entra dos veces: dice en qué folio ya está.
 		expect((await comoElSitio(servidor, "linea.recibir_pedido", pedido)).cuerpo).toMatchObject({
-			codigo: "pago_repetido",
+			codigo: "pedido_repetido",
+			mensaje: `Ese pedido ya está en ${folio}.`,
 		});
 		expect(await consultar("SELECT count(*)::int AS n FROM pedidos_linea WHERE id = $1", [pedido.id])).toEqual([
 			{ n: 1 },

@@ -318,3 +318,5 @@ Los dos primeros van en `parametro`; los demás, en `tecnico`. La ventana de int
 - **Prueba:** `aplicar-comando-retenido.prueba.ts` (con Google, la versión vieja, dos a la vez, lo que sigue retenido).
 
 **Fase 18, parte 3.** `admin.aparatos_sin_sincronizar` (`lecturas/aparatos-sin-sincronizar.ts`) usa la misma regla que el trabajo, sin ver si ya se avisó: por aparato, su id, su nombre, su ubicación, desde cuándo y ese tiempo para leer, con la misma cuenta del aviso (`tiempoParaLeer`: en horas hasta dos días, luego en días). La alerta de Dirección dice «{aparato} de {ubicación} sin sincronizar desde hace {tiempo}» (decisión 730). La prueba `direccion/trabajos/alertas-direccion.prueba.ts`.
+
+**Fase 18, cierre.** La regla de los sin sincronizar vive en `dominio/dispositivos.ts` (`reglaSinSincronizar`, con `tiposQueSincronizan` y `tiempoParaLeer`): el trabajo y la lectura la comparten, así los dos ven lo mismo.

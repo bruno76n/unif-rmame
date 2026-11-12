@@ -106,7 +106,7 @@ describe("El paquete de un mes suma cada concepto; cada gasto sale en un solo pa
 				const primero = Temporal.PlainDate.from("2026-01-01");
 				const gastos: GastoDelPaquete[] = [];
 				const enviados = new Set<string>();
-				const congelados = new Map<string, { renglones: RenglonDelPaquete[]; copia: string }>();
+				const congelados = new Map<string, RenglonDelPaquete[]>();
 				meses.forEach((sucesos, i) => {
 					const mes = primero.add({ months: i });
 					for (const evento of sucesos) {
@@ -132,7 +132,7 @@ describe("El paquete de un mes suma cada concepto; cada gasto sale en un solo pa
 					const { renglones, gastoIds } = cuentaDelPaquete(mes.toString(), [], gastos, enviados);
 					for (const gasto of gastos) if (gastoIds.includes(gasto.id)) gasto.paqueteContadorId = mes.toString();
 					enviados.add(mes.toString());
-					congelados.set(mes.toString(), { renglones, copia: JSON.stringify(renglones) });
+					congelados.set(mes.toString(), renglones);
 				});
 				// Cada gasto no cancelado salió exactamente una vez; uno cancelado, nunca; nadie salió antes de su mes.
 				for (const gasto of gastos) {
@@ -142,9 +142,9 @@ describe("El paquete de un mes suma cada concepto; cada gasto sale en un solo pa
 						expect((gasto.paqueteContadorId ?? "") >= mesDe(gasto.fecha)).toBe(true);
 					}
 				}
-				// Lo de los gastos de cada paquete es exactamente lo de los gastos ligados a él, y nada cambió después.
-				for (const [mes, { renglones, copia }] of congelados) {
-					expect(JSON.stringify(renglones)).toBe(copia);
+				// Lo de los gastos de cada paquete es exactamente lo de los gastos ligados a él al final: lo que llegó o se
+				// canceló después no lo movió (en la base, sus renglones además solo crecen: `marcar_solo_crece`).
+				for (const [mes, renglones] of congelados) {
 					const suyos = gastos.filter((gasto) => gasto.paqueteContadorId === mes);
 					const sumaRenglones = renglones
 						.filter((renglon) => renglon.concepto === "gasto")

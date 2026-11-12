@@ -13,7 +13,6 @@ import { errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
 import { implementarAccion } from "../../../nucleo/modulos.ts";
 import { bloquearDocumentosDeCuentas } from "../dominio/cuentas-por-pagar.ts";
 import { aplicarDeposito } from "../dominio/depositos.ts";
-
 import { pagos } from "../tablas.ts";
 
 export const accionAplicarDepositoATercero = implementarAccion(

@@ -8,6 +8,7 @@
 
 import { eq } from "drizzle-orm";
 import { z } from "zod";
+import { errorDeRegla } from "../../../nucleo/http/errores.ts";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
 import { bloquearPedidoLinea, type EventoDePedidoLinea, eventoDePedido, type PedidoLinea } from "../dominio/pedidos.ts";
 import { type EstadoDePedidoLinea, pedidosLinea } from "../tablas.ts";
@@ -31,14 +32,18 @@ async function pasarA(
 }
 
 /**
- * `linea.prendas_en_camino`: Bodega surtió el W- a aduana; un W- por surtir queda esperando prendas.
- * @param contexto El contexto de `inventario.surtir_a_aduana`.
+ * `linea.prendas_en_camino`: Bodega surte el W- a aduana; un W- por surtir queda esperando prendas.
+ * @param contexto El contexto de `inventario.surtir_a_aduana`, que la llama antes de surtir.
  * @param datos `pedido_linea_id`.
  * @returns Si cambió; en otro estado no hace nada.
+ * @throws `422 esperando_pago`: un W- que espera su pago no se surte (sus reservas pueden vencer).
  */
 export async function prendasEnCamino(contexto: ContextoDeAccion, datos: unknown): Promise<{ cambio: boolean }> {
 	const { pedido_linea_id } = deUnPedido.parse(datos);
 	const pedido = await bloquearPedidoLinea(contexto.transaccion, pedido_linea_id);
+	if (pedido.estado === "esperando_pago") {
+		throw errorDeRegla("esperando_pago", `${pedido.folio} espera su pago: se surte cuando se pague.`);
+	}
 	if (pedido.estado !== "por_surtir") return { cambio: false };
 	await pasarA(contexto, pedido, "esperando_prendas", "pedido_linea.esperando_prendas");
 	return { cambio: true };

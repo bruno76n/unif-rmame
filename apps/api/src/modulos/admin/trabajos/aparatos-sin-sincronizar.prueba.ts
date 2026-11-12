@@ -16,7 +16,8 @@ import {
 	correrTrabajo,
 	type DependenciasDelTrabajador,
 } from "../../../nucleo/trabajos/trabajador.ts";
-import { aparatosSinSincronizar, tiempoParaLeer } from "./aparatos-sin-sincronizar.ts";
+import { tiempoParaLeer } from "../dominio/dispositivos.ts";
+import { aparatosSinSincronizar } from "./aparatos-sin-sincronizar.ts";
 
 /** El id de la tablet de prueba. */
 function tablet(): string {

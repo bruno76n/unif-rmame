@@ -137,7 +137,7 @@ describe("el paquete nace el día 1, al mandarlo se arma su ZIP, y los documento
 		expect(archivos).toEqual([{ n: 1 }]);
 	});
 
-	it("un documento del contador se guarda una vez y solo si es PDF, imagen, XML o ZIP", async () => {
+	it("un documento del contador se guarda una vez, también si llega dos veces a la vez, y solo si es PDF, imagen, XML o ZIP", async () => {
 		const paquete = await paqueteEnviadoDePrueba(servidor, "2026-04-01");
 		const acuse = await subir("documento_contador", "acuse abril.pdf", "application/pdf");
 		const adjuntar = (archivoId: string) =>
@@ -161,6 +161,11 @@ describe("el paquete nace el día 1, al mandarlo se arma su ZIP, y los documento
 			codigo: "archivo_ya_guardado",
 			mensaje: "Ese archivo ya está guardado.",
 		});
+		// El mismo archivo guardado dos veces a la vez: uno se guarda y el otro responde que ya está.
+		const otro = await subir("documento_contador", "acuse mayo.pdf", "application/pdf");
+		const aLaVez = await Promise.all([adjuntar(otro), adjuntar(otro)]);
+		expect(aLaVez.map((respuesta) => respuesta.estado).sort()).toEqual([200, 422]);
+		expect(aLaVez.map((respuesta) => respuesta.cuerpo.codigo ?? "ok").sort()).toEqual(["archivo_ya_guardado", "ok"]);
 		// La subida ya pide esos tipos; el que se cuela con otro tipo tampoco entra.
 		const texto = await subir("documento_contador", "notas.pdf", "application/pdf");
 		await servidor.base.dueno.query("UPDATE archivos SET tipo_mime = 'text/plain' WHERE id = $1", [texto]);

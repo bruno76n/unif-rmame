@@ -8,7 +8,7 @@
  */
 
 import { textoDeMes } from "@uniformame/compartido/calculos/fechas";
-import { and, eq, gte, isNotNull, isNull, lt, sql } from "drizzle-orm";
+import { and, asc, eq, gte, isNotNull, isNull, lt, sql } from "drizzle-orm";
 import { Temporal } from "temporal-polyfill";
 import type { Transaccion } from "../../../nucleo/base/transacciones.ts";
 import {
@@ -120,7 +120,8 @@ export function cuentaDelPaquete(
 
 /**
  * Lee lo que lleva un mes: los pagos, los anticipos aplicados, lo abonado a cuentas por pagar y las nóminas pagadas de
- * ese mes; los gastos sin paquete hasta su fin; y los meses ya mandados.
+ * ese mes; los gastos sin paquete hasta su fin, con candado; y los meses ya mandados, leídos después del candado.
+ * La usa solo `marcar_paquete_enviado`.
  * @param transaccion La transacción.
  * @param mes El primer día del mes.
  */
@@ -186,7 +187,11 @@ export async function lecturaDelPaquete(transaccion: Transaccion, mes: string) {
 			cancelado: sql<boolean>`${gastos.estado} = 'cancelado'`,
 		})
 		.from(gastos)
-		.where(and(isNull(gastos.paqueteContadorId), eq(gastos.estado, "registrado"), lt(gastos.fecha, siguiente)));
+		.where(and(isNull(gastos.paqueteContadorId), eq(gastos.estado, "registrado"), lt(gastos.fecha, siguiente)))
+		// Con candado y en orden de id: una cancelación o el envío de otro mes a la vez se ponen en fila, y al soltarse
+		// Postgres vuelve a revisar la condición, así que el gasto que ya se canceló o ya salió en otro paquete no entra.
+		.orderBy(asc(gastos.id))
+		.for("update");
 	const enviados = await transaccion
 		.select({ mes: paquetesContador.mes })
 		.from(paquetesContador)

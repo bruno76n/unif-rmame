@@ -44,7 +44,8 @@ function enCamino(contexto: ContextoDeAccion, traspaso: { traspasoId: string; fo
 /**
  * Surte lo reservado en Bodega de un pedido externo o un pedido en línea: un A- en camino a aduana con destino su
  * cliente, sus reservas atadas a él, y el movimiento `surtido_bodega`.
- * @throws `422 nada_en_bodega` sin reservas en Bodega; `422 no_hay_en_bodega` si la existencia no cubre lo reservado.
+ * @throws `422 esperando_pago` si el W- espera su pago; `422 nada_en_bodega` sin reservas en Bodega;
+ * `422 no_hay_en_bodega` si la existencia no cubre lo reservado.
  */
 async function surtirPedido(contexto: ContextoDeAccion, pedido: Pedido) {
 	const { transaccion } = contexto;
@@ -55,6 +56,9 @@ async function surtirPedido(contexto: ContextoDeAccion, pedido: Pedido) {
 		isNull(reservas.traspasoId),
 		esLinea ? eq(reservas.pedidoLineaId, pedido.documento_id) : eq(reservas.pedidoId, pedido.documento_id),
 	);
+	// Primero el W-, como el pago y el vencimiento (el mismo orden de candados): uno que espera su pago no se surte, y
+	// uno por surtir queda esperando sus prendas. Si después no hay qué surtir, todo se deshace.
+	if (esLinea) await contexto.interna("linea.prendas_en_camino", { pedido_linea_id: pedido.documento_id });
 	const antes = await reservasActivas(transaccion, delDocumento);
 	const varianteIds = [
 		...new Set(antes.flatMap((reserva) => (reserva.varianteId === null ? [] : [reserva.varianteId]))),
@@ -122,8 +126,6 @@ async function surtirPedido(contexto: ContextoDeAccion, pedido: Pedido) {
 		despues: { piezas: total, documento: pedido.documento_tipo },
 	});
 	enCamino(contexto, traspaso);
-	// El W- surtido queda esperando sus prendas (fase 18).
-	if (esLinea) await contexto.interna("linea.prendas_en_camino", { pedido_linea_id: pedido.documento_id });
 	return {
 		resultado: {
 			traspaso_id: traspaso.traspasoId,

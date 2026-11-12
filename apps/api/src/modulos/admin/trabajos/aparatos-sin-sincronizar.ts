@@ -7,24 +7,13 @@
  * episodio: `aviso_sin_sincronizar_en` lo marca, y la bajada lo limpia cuando el aparato vuelve a sincronizar.
  */
 
-import { and, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { Temporal } from "temporal-polyfill";
 import type { ContextoDeAccion, Trabajo } from "../../../nucleo/modulos.ts";
 import { leerParametro } from "../../../nucleo/parametros.ts";
 import { ubicaciones } from "../../inventario/tablas.ts";
+import { reglaSinSincronizar, tiempoParaLeer } from "../dominio/dispositivos.ts";
 import { dispositivos, dispositivosSync } from "../tablas.ts";
-
-/** Los tipos de aparato que trabajan sin internet y tienen que sincronizar: la tablet y, con el POS, la caja. */
-export const tiposQueSincronizan = ["tablet_taller", "computadora_tienda"];
-
-/**
- * El tiempo para leer: en horas hasta dos días, luego en días.
- * @param horas Las horas completas.
- */
-export function tiempoParaLeer(horas: number): string {
-	if (horas < 48) return horas === 1 ? "1 hora" : `${horas} horas`;
-	return `${Math.floor(horas / 24)} días`;
-}
 
 /**
  * Avisa de cada aparato que lleva el tiempo sin sincronizar y todavía no tiene su aviso.
@@ -32,9 +21,7 @@ export function tiempoParaLeer(horas: number): string {
  */
 async function avisarLosSinSincronizar(contexto: ContextoDeAccion): Promise<void> {
 	const { transaccion, ahora } = contexto;
-	const horas = Number(await leerParametro(transaccion, { clave: "admin.horas_sin_sincronizar_aviso" }));
-	const limite = ahora.subtract({ hours: horas }).toString();
-	const desde = sql<string>`coalesce(${dispositivosSync.ultimaSincronizacionEn}, ${dispositivos.creadoEn})`;
+	const { desde, cumple } = await reglaSinSincronizar(transaccion, ahora);
 	const pendientes = await transaccion
 		.select({
 			id: dispositivos.id,
@@ -46,14 +33,7 @@ async function avisarLosSinSincronizar(contexto: ContextoDeAccion): Promise<void
 		.from(dispositivos)
 		.innerJoin(dispositivosSync, eq(dispositivosSync.dispositivoId, dispositivos.id))
 		.leftJoin(ubicaciones, eq(ubicaciones.id, dispositivos.ubicacionId))
-		.where(
-			and(
-				inArray(dispositivos.tipo, tiposQueSincronizan),
-				isNull(dispositivos.bajaEn),
-				isNull(dispositivosSync.avisoSinSincronizarEn),
-				sql`${desde} <= ${limite}`,
-			),
-		)
+		.where(and(cumple, isNull(dispositivosSync.avisoSinSincronizarEn)))
 		.for("update", { of: dispositivosSync, skipLocked: true });
 	for (const aparato of pendientes) {
 		await transaccion

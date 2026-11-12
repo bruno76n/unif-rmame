@@ -9,7 +9,12 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { llamarInterna, meterPiezas, ubicacionesPorCodigo } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
+import {
+	llamarInterna,
+	meterPiezas,
+	nuevoTraspaso,
+	ubicacionesPorCodigo,
+} from "../../../nucleo/pruebas/inventario-de-prueba.ts";
 import {
 	comoElSitio,
 	pedidoDelSitio,
@@ -92,6 +97,29 @@ describe("El pago confirma un W-; la misma referencia no entra a dos W- y un com
 		});
 		const [guardado] = await consultar("SELECT pago_referencia FROM pedidos_linea WHERE id = $1", [pedido.id]);
 		expect(guardado?.pago_referencia).toBe(`OXXO-${pedido.id.slice(-10)}`);
+	});
+
+	it("con su prenda ya apartada en Aduana (en camino a Bodega), el pago lo deja listo para empacar", async () => {
+		const [cuatro = ""] = await prendaEnLinea(servidor);
+		await nuevoTraspaso(servidor, {
+			tipo: "lote_temporada",
+			estado: "en_aduana",
+			origen: { ubicacionId: ubicacion.TAL ?? "" },
+			destino: { ubicacionId: ubicacion.BOD ?? "" },
+			renglones: [{ varianteId: cuatro, piezas: 1 }],
+		});
+		await meterPiezas(servidor, ubicacion.ADU ?? "", cuatro, 1);
+		const pedido = pedidoDelSitio([{ variante_id: cuatro, cantidad: 1 }], {
+			pago: { estado: "pendiente", pagado_en: undefined, metodo: "oxxo" },
+		});
+		const recibido = await comoElSitio(servidor, "linea.recibir_pedido", pedido);
+		expect(recibido.cuerpo.resultado, JSON.stringify(recibido.cuerpo)).toMatchObject({ estado: "esperando_pago" });
+		const pagado = await comoElSitio(servidor, "linea.confirmar_pago", pagoDe(pedido));
+		expect(pagado.cuerpo.resultado, JSON.stringify(pagado.cuerpo)).toMatchObject({ estado: "listo_para_empacar" });
+		expect(await pedidoLineaComoQuedo(servidor, pedido.id)).toMatchObject({
+			estado: "listo_para_empacar",
+			reservas: [{ ubicacion: "ADU", piezas: 1, vence: false }],
+		});
 	});
 
 	it("La misma referencia de pago no entra a dos W-; un W- que no existe responde 404", async () => {

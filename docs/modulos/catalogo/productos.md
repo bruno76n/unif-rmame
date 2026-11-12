@@ -170,6 +170,15 @@ Se construye en la [fase 18](../../fases/18-tienda-en-linea-direccion-y-contador
 | **La usa** | Dirección, para la alerta «{producto} descontinuado con {n} piezas en existencia» (ver [alertas e indicadores](../direccion/alertas-e-indicadores.md)) |
 | **Regresa** | Por producto descontinuado: su nombre y sus variantes |
 
+### `catalogo.nombres_de_productos(productos)`
+
+Se construye en la [fase 18](../../fases/18-tienda-en-linea-direccion-y-contador.md), con las alertas de Dirección.
+
+| | |
+|---|---|
+| **La usa** | Dirección, para el título de la alerta de consumo de tela (ver [alertas e indicadores](../direccion/alertas-e-indicadores.md)) |
+| **Regresa** | El nombre de cada producto |
+
 ## Lo que baja a la tablet
 
 | Tabla | Filtro | Columnas |

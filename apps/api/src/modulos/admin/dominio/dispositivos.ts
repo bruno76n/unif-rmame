@@ -1,8 +1,9 @@
 /**
  * Lo que comparten las acciones de los aparatos: el código de registro, la parte pública de la llave, la
  * ubicación que le toca a cada tipo, leer un aparato, leer un comando apartado, si le toca rotar la llave y
- * pedirle la foto.
+ * pedirle la foto; y la regla de los aparatos sin sincronizar.
  * Fase 6 · docs/modulos/admin/dispositivos.md
+ * Fase 18 · la regla de los sin sincronizar, que comparten su trabajo y su lectura
  */
 
 import { randomBytes, randomInt } from "node:crypto";
@@ -190,4 +191,39 @@ export async function pedirLaFoto(contexto: ContextoDeAccion, tipos: readonly st
 		datos: { dispositivo_ids: pedidos.map((pedido) => pedido.dispositivoId).join(","), motivo },
 		tablas: ["dispositivos_sync"],
 	});
+}
+
+/** Los tipos de aparato que trabajan sin internet y tienen que sincronizar: la tablet y, con el POS, la caja. */
+export const tiposQueSincronizan = ["tablet_taller", "computadora_tienda"];
+
+/**
+ * El tiempo para leer: en horas hasta dos días, luego en días.
+ * @param horas Las horas completas.
+ */
+export function tiempoParaLeer(horas: number): string {
+	if (horas < 48) return horas === 1 ? "1 hora" : `${horas} horas`;
+	return `${Math.floor(horas / 24)} días`;
+}
+
+/**
+ * La regla de «Aparatos sin sincronizar»: una tablet o una caja vigente cuya última sincronización completa (o su
+ * registro, si nunca sincronizó) tiene `admin.horas_sin_sincronizar_aviso` o más. La usan el trabajo que avisa y la
+ * lectura de Dirección, así los dos ven lo mismo.
+ * @param transaccion La transacción.
+ * @param ahora La hora de quien revisa.
+ * @returns Desde cuándo cuenta cada aparato (para leerlo) y la condición, para la consulta con `dispositivos` y
+ * `dispositivos_sync`.
+ */
+export async function reglaSinSincronizar(transaccion: Transaccion, ahora: Temporal.Instant) {
+	const horas = Number(await leerParametro(transaccion, { clave: "admin.horas_sin_sincronizar_aviso" }));
+	const limite = ahora.subtract({ hours: horas }).toString();
+	const desde = sql<string>`coalesce(${dispositivosSync.ultimaSincronizacionEn}, ${dispositivos.creadoEn})`;
+	return {
+		desde,
+		cumple: and(
+			inArray(dispositivos.tipo, tiposQueSincronizan),
+			isNull(dispositivos.bajaEn),
+			sql`${desde} <= ${limite}`,
+		),
+	};
 }
