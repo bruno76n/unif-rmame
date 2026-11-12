@@ -121,6 +121,10 @@ export const accionNoLaEncuentro = implementarAccion(noLaEncuentro, async (conte
 				],
 				// La que no se encontró sigue en la existencia de Bodega hasta contarla: no se vuelve a tomar.
 				no_encontradas_en_bodega: reserva.piezas,
+				// La de un W- que espera su pago sigue venciendo cuando vencía.
+				...(reserva.venceEn === null
+					? {}
+					: { pago_pendiente: true, vence_en: new Date(reserva.venceEn).toISOString() }),
 			}),
 		);
 		comoQueda = await dondeQuedaElW(transaccion, folio, apartado);

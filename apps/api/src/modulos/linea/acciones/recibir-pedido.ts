@@ -218,6 +218,8 @@ export const accionRecibirPedido = implementarAccion(recibirPedido, async (conte
 	}
 	await abrirExcepciones(contexto, { id: datos.id, folio }, datos, [...deVariante.values()]);
 	eventoDePedido(contexto, "pedido_linea.recibido", { id: datos.id, folio });
+	if (estado === "listo_para_empacar")
+		eventoDePedido(contexto, "pedido_linea.listo_para_empacar", { id: datos.id, folio });
 	const prendas = renglones.reduce((suma, renglon) => suma + renglon.cantidad, 0);
 	contexto.bitacora({
 		descripcion: `Llegó ${folio} de ${datos.cliente.nombre}: ${prendas} ${prendas === 1 ? "prenda" : "prendas"}, ${enPalabras(estado)}`,

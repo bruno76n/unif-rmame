@@ -88,7 +88,7 @@ Lleva las columnas comunes. **Índices:** único (`pedido_linea_id`, `renglon`) 
 | **Escribe** | El W-, con todo congelado, `por_surtir` si llegó pagado (`listo_para_empacar` si todo lo apartado ya está en aduana) o `esperando_pago` si no, y la promesa si está pagado; sus renglones |
 | **Llama** | `admin.tomar_folio` (`pedido_linea`) · `catalogo.datos_variantes` (nombre, talla y si se vende en línea) · `inventario.reservar`, motivo `pedido_linea`, un renglón por renglón del W-, con el vencimiento si el pago está pendiente · `inventario.registrar_excepcion`, con `totales_no_cuadran` o `variante_sin_canal_linea` |
 | **Regresa** | El folio, el estado y la promesa |
-| **Eventos** | `pedido_linea.recibido`: Pendientes de Tienda en línea y de Bodega |
+| **Eventos** | `pedido_linea.recibido`: Pendientes de Tienda en línea y de Bodega · `pedido_linea.listo_para_empacar` si llega listo |
 | **Bitácora** | «Llegó {W} de {cliente}: {n} prendas, {estado}», con la credencial; los renglones, el estado y la promesa en `despues`, sin la respuesta de la pasarela |
 
 ### `linea.confirmar_pago`
@@ -102,7 +102,7 @@ Lleva las columnas comunes. **Índices:** único (`pedido_linea_id`, `renglon`) 
 | **Escribe** | El pago, `pagado`, con su hora, su comisión y su respuesta. Un W- `esperando_pago` o `vencido` pasa a `por_surtir` (o a `listo_para_empacar`, si todas sus reservas están en aduana), con la promesa que dan sus reservas |
 | **Llama** | `inventario.confirmar_pago_reserva` · `inventario.registrar_excepcion`, si aplica |
 | **Regresa** | El estado y la promesa |
-| **Eventos** | `pedido_linea.pagado` |
+| **Eventos** | `pedido_linea.pagado` · `pedido_linea.listo_para_empacar` si queda listo |
 | **Bitácora** | «Se pagó {W}: {monto}», con la credencial |
 
 ### `linea.cancelar_pedido`
@@ -137,7 +137,7 @@ Su bitácora es el renglón de la acción o del trabajo que las llama.
 
 | | |
 |---|---|
-| **La llama** | `inventario.recibir_en_aduana`, al recibir un traspaso `pedido_linea` (ver [recepciones en aduana](../inventario/recepciones-en-aduana.md)) |
+| **La llama** | `inventario.recibir_en_aduana`, al recibir un traspaso `pedido_linea` (ver [recepciones en aduana](../inventario/recepciones-en-aduana.md)), e `inventario.no_la_encuentro`, cuando lo que volvió a apartar dejó todo en Aduana (ver [entregas y devoluciones de clientes](../inventario/entregas-y-devoluciones-de-clientes.md)) |
 | **Recibe** | `pedido_linea_id` · `completo`: si todas sus reservas ya están en Aduana (lo calcula Inventario) |
 | **Escribe** | Con `completo`, el W- pasa a `listo_para_empacar`; si no, se queda esperando prendas. Un W- cancelado no cambia |
 | **Eventos** | `pedido_linea.listo_para_empacar`: Aduana lo ve para empacar |

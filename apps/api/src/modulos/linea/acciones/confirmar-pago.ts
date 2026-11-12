@@ -88,6 +88,9 @@ export const accionConfirmarPago = implementarAccion(confirmarPago, async (conte
 		});
 	}
 	eventoDePedido(contexto, "pedido_linea.pagado", pedido);
+	if (estado === "listo_para_empacar" && pedido.estado !== estado) {
+		eventoDePedido(contexto, "pedido_linea.listo_para_empacar", pedido);
+	}
 	contexto.bitacora({
 		descripcion: `Se pagó ${pedido.folio}: ${enPesos(datos.monto_centavos)}`,
 		entidad: "pedidos_linea",

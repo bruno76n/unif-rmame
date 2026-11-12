@@ -56,6 +56,18 @@ describe("el paquete nace el día 1, al mandarlo se arma su ZIP, y los documento
 		await servidor.cerrar();
 	});
 
+	/** Espera a que haya al menos tantas conexiones esperando un candado; dice si llegaron. */
+	async function esperarQueEsperen(cuantas: number): Promise<boolean> {
+		for (let vuelta = 0; vuelta < 200; vuelta++) {
+			const { rows } = await servidor.base.dueno.query(
+				"SELECT count(*)::int AS n FROM pg_stat_activity WHERE wait_event_type = 'Lock' AND datname = current_database()",
+			);
+			if (z.object({ n: z.number() }).parse(rows[0]).n >= cuantas) return true;
+			await new Promise((listo) => setTimeout(listo, 50));
+		}
+		return false;
+	}
+
 	/** Sube un archivo como Contaduría, con su propósito y su tipo. */
 	async function subir(proposito: string, nombre: string, tipo: string, texto = `contenido ${Math.random()}`) {
 		const contenido = new TextEncoder().encode(texto);
@@ -161,9 +173,20 @@ describe("el paquete nace el día 1, al mandarlo se arma su ZIP, y los documento
 			codigo: "archivo_ya_guardado",
 			mensaje: "Ese archivo ya está guardado.",
 		});
-		// El mismo archivo guardado dos veces a la vez: uno se guarda y el otro responde que ya está.
+		// El mismo archivo guardado dos veces a la vez: uno se guarda y el otro responde que ya está. Otra conexión
+		// detiene el archivo hasta que los dos esperan, para que se crucen siempre.
 		const otro = await subir("documento_contador", "acuse mayo.pdf", "application/pdf");
-		const aLaVez = await Promise.all([adjuntar(otro), adjuntar(otro)]);
+		const conexion = await servidor.base.dueno.connect();
+		await conexion.query("BEGIN");
+		await conexion.query("SELECT id FROM archivos WHERE id = $1 FOR UPDATE", [otro]);
+		const ambos = Promise.all([adjuntar(otro), adjuntar(otro)]);
+		try {
+			expect(await esperarQueEsperen(2)).toBe(true);
+		} finally {
+			await conexion.query("COMMIT");
+			conexion.release();
+		}
+		const aLaVez = await ambos;
 		expect(aLaVez.map((respuesta) => respuesta.estado).sort()).toEqual([200, 422]);
 		expect(aLaVez.map((respuesta) => respuesta.cuerpo.codigo ?? "ok").sort()).toEqual(["archivo_ya_guardado", "ok"]);
 		// La subida ya pide esos tipos; el que se cuela con otro tipo tampoco entra.

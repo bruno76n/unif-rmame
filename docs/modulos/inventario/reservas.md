@@ -117,6 +117,7 @@ Si una regla no se cumple, la acción que llamó termina con **422** y el códig
 - **Recibe:** `pedido_linea_id`.
 - **Reglas:** si sus reservas siguen activas, se les quita el vencimiento. Si ya vencieron (el pago llegó tarde), se vuelve a reservar como en `reservar`; si no hay pieza en ningún lado, nace la excepción `pago_despues_de_vencer`.
 - **Escribe:** `vence_en` vacío, o reservas nuevas.
+- **Regresa:** si se volvió a reservar y lo reservado; la promesa que dan sus reservas activas; y `todo_en_aduana`, si todas están en Aduana (Tienda en línea lo deja listo para empacar).
 - **Eventos:** `reserva.creada` si se volvió a reservar · `excepcion.creada` si no hubo pieza.
 
 ### `inventario.apartar_para_nota`

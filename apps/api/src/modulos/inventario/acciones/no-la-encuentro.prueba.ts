@@ -15,7 +15,13 @@ import {
 	ubicacionesPorCodigo,
 	variantesLibres,
 } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
-import { pedidoLineaComoQuedo, pedidoLineaEnBodega } from "../../../nucleo/pruebas/linea-de-prueba.ts";
+import {
+	comoElSitio,
+	pedidoDelSitio,
+	pedidoLineaComoQuedo,
+	pedidoLineaEnBodega,
+	prendaEnLinea,
+} from "../../../nucleo/pruebas/linea-de-prueba.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 import { pedidoDePrueba } from "../../../nucleo/pruebas/ventas-de-prueba.ts";
@@ -114,5 +120,36 @@ describe("«No la encuentro» abre la DF- por contar y la pieza vuelve a lo que 
 			);
 			expect(excepciones).toEqual(otraPieza ? [] : [{ tipo: "pedido_linea_sin_pieza" }]);
 		}
+	});
+
+	it("con una pieza de un W- que espera su pago, la reserva nueva vence cuando vencía la que no se encontró", async () => {
+		await servidor.base.dueno.query(
+			"UPDATE parametros SET valor_booleano = true WHERE clave = 'linea.acepta_pago_pendiente'",
+		);
+		const ubicacion = await ubicacionesPorCodigo(servidor);
+		const [variante = ""] = await prendaEnLinea(servidor);
+		await meterPiezas(servidor, ubicacion.BOD ?? "", variante, 1);
+		const pedido = pedidoDelSitio([{ variante_id: variante, cantidad: 1 }], {
+			pago: { estado: "pendiente", pagado_en: undefined, metodo: "oxxo" },
+		});
+		expect((await comoElSitio(servidor, "linea.recibir_pedido", pedido)).estado).toBe(200);
+		const { rows: antes } = await servidor.base.dueno.query(
+			"SELECT id, vence_en FROM reservas WHERE pedido_linea_id = $1 AND estado = 'activa'",
+			[pedido.id],
+		);
+		const respuesta = await mandarAccion(
+			servidor,
+			"inventario.no_la_encuentro",
+			{ datos: { reserva_id: antes[0]?.id } },
+			"bodega",
+		);
+		expect(respuesta.estado, JSON.stringify(respuesta.cuerpo)).toBe(200);
+		const { rows: despues } = await servidor.base.dueno.query(
+			"SELECT vence_en FROM reservas WHERE pedido_linea_id = $1 AND estado = 'activa'",
+			[pedido.id],
+		);
+		expect(despues).toEqual([{ vence_en: antes[0]?.vence_en }]);
+		expect(antes[0]?.vence_en).not.toBeNull();
+		expect(await pedidoLineaComoQuedo(servidor, pedido.id)).toMatchObject({ estado: "esperando_pago" });
 	});
 });

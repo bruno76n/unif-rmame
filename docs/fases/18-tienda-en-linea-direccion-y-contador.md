@@ -1,7 +1,7 @@
 # Fase 18: Tienda en línea, Dirección y contador
 
 > **Etapa:** Módulos.
-> **Estado:** Pendiente.
+> **Estado:** Terminada.
 > **Antes de empezar:** lee la [forma de trabajo](../trabajo/FORMA-DE-TRABAJO.md) y la [revisión de fase](../trabajo/REVISION-DE-FASE.md).
 > **Se conecta con:** [fases](FASES.md) · [fase 17](17-contaduria-por-pagar-facturas-gastos-y-nomina.md) · [fase 19](19-web-principal.md)
 

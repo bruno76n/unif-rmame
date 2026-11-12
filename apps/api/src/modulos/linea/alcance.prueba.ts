@@ -141,13 +141,16 @@ describe("La credencial de uniformame.mx solo alcanza sus dos acciones; Aduana y
 			},
 		});
 		expect(subida.json()).toMatchObject({ codigo: "fuera_de_alcance" });
-		// Un archivo que no subió ni ve su documento no existe para él: nunca recibe una dirección firmada.
-		const archivo = await servidor.app.inject({
-			method: "GET",
-			url: "/v1/archivos/01936f2e-0000-7000-8000-00000000c0df",
-			headers: conSuLlave,
-		});
-		expect(archivo.statusCode).toBe(404);
+		// Un archivo que subió Contaduría, sin documento, no existe para él: nunca recibe una dirección firmada.
+		const contaduria = quienesDePrueba.contaduria;
+		const { rows } = await servidor.base.dueno.query(
+			`INSERT INTO archivos (id, proposito, modulo, nombre_original, tipo_mime, tamano_bytes, sha256, almacen_clave, creado_por)
+			 VALUES (gen_random_uuid(), 'comprobante', 'contaduria', 'recibo.pdf', 'application/pdf', 10, $1, 'prueba/recibo.pdf', $2)
+			 RETURNING id`,
+			["0".repeat(64), contaduria?.tipo === "cuenta" ? contaduria.usuarioId : null],
+		);
+		const ajeno = await servidor.app.inject({ method: "GET", url: `/v1/archivos/${rows[0]?.id}`, headers: conSuLlave });
+		expect(ajeno.statusCode, ajeno.body).toBe(404);
 	});
 
 	it("lo que Bodega y Aduana reciben al surtir y recibir un W- no trae precios ni datos del pago", async () => {
