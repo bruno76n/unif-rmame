@@ -209,3 +209,10 @@ Ninguno propio: el largo del motivo es `general.largo_minimo_motivo` (ver [confi
 - **`registrar_pago_recibido`** (`acciones/pagos.ts`, contratos en `packages/compartido/src/contratos/contaduria/pagos.ts`): revisa el medio (`dominio/pagos.ts`, decisión 668), bloquea la cuenta de la nota, revisa que sea del cliente y que no pase del saldo, y solo después toma el folio PG- (decisión 667). El pago repetido avisa sin detener.
 - **`cancelar_pago`** toma la versión del pago, cancela sus aplicaciones vigentes y regresa el saldo, el estado y `pagada_en` de sus cuentas, con la confirmación con Google en su bitácora.
 - **Pruebas:** `acciones/registrar-pago-recibido.prueba.ts` (también dos pagos a la vez) y `acciones/cancelar-pago.prueba.ts`.
+
+**Fase 15, parte 3.**
+
+- **El saldo a favor** vive en `dominio/saldo-favor.ts`: `bloquearSaldoAFavor` (el renglón del crédito del cliente), `saldoAFavor` y `entrarAFavor`, que usan la NC, el anticipo que pasa a favor y nada más.
+- **`aplicar_saldo_a_favor`** y **`devolver_saldo_a_favor`** (`acciones/saldo-favor.ts`, contratos en `packages/compartido/src/contratos/contaduria/saldo-favor.ts`) toman el saldo a favor con su candado; aplicar toma después la cuenta de la nota y acepta centavos; devolver es un pago `emitido` en pesos enteros, con su confirmación con Google, y su `devuelto` (decisión 672).
+- **`cancelar_pago`** cancela además su anticipo recibido y, si el pedido ya lo pasó a favor, ese saldo a favor (decisión 671); en una devolución, su `devuelto`.
+- **Pruebas:** `acciones/aplicar-saldo-a-favor.prueba.ts` y `acciones/devolver-saldo-a-favor.prueba.ts` (las dos con dos a la vez), `acciones/cancelar-pago.prueba.ts` y `saldos.azar.prueba.ts`, que mezcla también el saldo a favor.

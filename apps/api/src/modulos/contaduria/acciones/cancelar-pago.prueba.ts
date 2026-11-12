@@ -1,15 +1,20 @@
 /**
- * Prueba de `contaduria.cancelar_pago`: pide «Confirmar con Google», regresa saldos y estados y no se cancela dos veces.
+ * Prueba de `contaduria.cancelar_pago`: pide «Confirmar con Google», regresa saldos y estados, cancela su anticipo y lo
+ * que dejó a favor; no se cancela dos veces, ni si su anticipo ya se aplicó o lo que dejó a favor ya se usó.
  * Fase 15 · docs/fases/15-contaduria-terceros-credito-y-cobranza.md («Criterios de terminado»)
  */
 
+import { v7 as uuidv7 } from "uuid";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
 import {
+	anticipoRecibidoDePrueba,
 	clienteDePrueba,
 	cuentaComoQuedo,
+	internaDeContaduria,
 	notaEntregadaDePrueba,
 	pagarDePrueba,
+	saldoAFavorDePrueba,
 } from "../../../nucleo/pruebas/contaduria-de-prueba.ts";
 import { conGoogle, mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
@@ -98,5 +103,77 @@ describe("Cancelar un pago pide «Confirmar con Google» y regresa saldos y esta
 			mensaje: `${segundo.folio} ya está cancelado.`,
 		});
 		expect((await cancelar(otraVez, conGoogle())).estado).toBe(422);
+	});
+
+	/** La versión de un pago escrito por la prueba. */
+	async function conVersion(pagoId: string, folio: string) {
+		return pagoDe({ cuerpo: { resultado: { pago_id: pagoId, folio } } });
+	}
+
+	/** Lo que lee Ventas del anticipo del pedido. */
+	async function disponible(pedidoId: string) {
+		const { rows } = await servidor.base.dueno.query(
+			`SELECT coalesce(sum(CASE WHEN tipo IN ('recibido', 'regresado') THEN monto_centavos ELSE -monto_centavos END), 0)::int AS d
+			 FROM anticipos WHERE pedido_id = $1 AND estado = 'vigente'`,
+			[pedidoId],
+		);
+		return rows[0]?.d;
+	}
+
+	it("un anticipo sin usar: se cancela su `recibido`; ya aplicado a una nota, `anticipo_ya_aplicado`", async () => {
+		const cliente = await clienteDePrueba(servidor);
+		const libre = await anticipoRecibidoDePrueba(servidor, cliente, 300_000);
+		await cancelar(await conVersion(libre.pagoId, libre.folio));
+		expect(await disponible(libre.pedidoId)).toBe(0);
+		const usado = await anticipoRecibidoDePrueba(servidor, cliente, 300_000);
+		await internaDeContaduria(servidor, "aplicar_anticipo_a_nota", {
+			pedido_id: usado.pedidoId,
+			cliente_id: cliente.clienteId,
+			nota_entrega_id: uuidv7(),
+			monto_centavos: 100_000,
+		});
+		expect((await cancelar(await conVersion(usado.pagoId, usado.folio))).cuerpo).toMatchObject({
+			codigo: "anticipo_ya_aplicado",
+			mensaje: `El anticipo de ${usado.folio} ya se aplicó a una nota: ya no se puede cancelar.`,
+		});
+		expect(await disponible(usado.pedidoId)).toBe(200_000);
+	});
+
+	it("un anticipo que el pedido pasó a favor: se cancelan el `a_favor` y su `entra`; lo de otro pago vuelve a favor", async () => {
+		const cliente = await clienteDePrueba(servidor);
+		const primero = await anticipoRecibidoDePrueba(servidor, cliente, 300_000);
+		await anticipoRecibidoDePrueba(servidor, cliente, 200_000, primero.pedidoId);
+		await internaDeContaduria(servidor, "pasar_anticipo_a_favor", {
+			pedido_id: primero.pedidoId,
+			causa: "pedido_cancelado",
+		});
+		expect(await saldoAFavorDePrueba(servidor, cliente.clienteId)).toBe(500_000);
+		await cancelar(await conVersion(primero.pagoId, primero.folio));
+		expect(await saldoAFavorDePrueba(servidor, cliente.clienteId)).toBe(200_000);
+		expect(await disponible(primero.pedidoId)).toBe(0);
+	});
+
+	it("si lo que dejó a favor ya se usó: `saldo_a_favor_ya_usado`; cancelar una devolución regresa el saldo a favor", async () => {
+		const cliente = await clienteDePrueba(servidor);
+		const anticipo = await anticipoRecibidoDePrueba(servidor, cliente, 300_000);
+		await internaDeContaduria(servidor, "pasar_anticipo_a_favor", {
+			pedido_id: anticipo.pedidoId,
+			causa: "pedido_entregado",
+		});
+		const devuelto = await mandarAccion(
+			servidor,
+			"contaduria.devolver_saldo_a_favor",
+			{ datos: { cliente_id: cliente.clienteId, monto_centavos: 200_000, medio: "efectivo", referencia: "Recibo 9" } },
+			"contaduria",
+			conGoogle(),
+		);
+		expect((await cancelar(await conVersion(anticipo.pagoId, anticipo.folio))).cuerpo).toMatchObject({
+			codigo: "saldo_a_favor_ya_usado",
+			mensaje: `Lo que dejó ${anticipo.folio} a favor ya se usó: ya no se puede cancelar.`,
+		});
+		await cancelar(await pagoDe(devuelto));
+		expect(await saldoAFavorDePrueba(servidor, cliente.clienteId)).toBe(300_000);
+		await cancelar(await conVersion(anticipo.pagoId, anticipo.folio));
+		expect(await saldoAFavorDePrueba(servidor, cliente.clienteId)).toBe(0);
 	});
 });

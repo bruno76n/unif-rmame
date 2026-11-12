@@ -351,6 +351,13 @@
 			"when": 1794453921491,
 			"tag": "0049_pagos_y_saldo_a_favor",
 			"breakpoints": true
+		},
+		{
+			"idx": 50,
+			"version": "7",
+			"when": 1794454815818,
+			"tag": "0050_anticipos",
+			"breakpoints": true
 		}
 	]
 }

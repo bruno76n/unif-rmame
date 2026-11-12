@@ -1,6 +1,7 @@
 /**
  * Las ayudas de las pruebas de Contaduría: un cliente de prueba con su tercero y su crédito, la versión de su crédito,
- * una cuenta por cobrar escrita directo en la base o nacida de una nota entregada de prueba, y registrar un pago.
+ * una cuenta por cobrar escrita directo en la base o nacida de una nota entregada de prueba, registrar un pago, un
+ * anticipo recibido en un pedido de prueba y el saldo a favor de un cliente.
  * Fase 15 · docs/fases/15-contaduria-terceros-credito-y-cobranza.md («Cómo se construye»)
  *
  * Ventas todavía no existe: el cliente es solo un id, con su tercero real y su crédito abierto con la interna que Ventas
@@ -10,6 +11,7 @@
 import { Temporal } from "temporal-polyfill";
 import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
+import { ErrorDeApi } from "../http/errores.ts";
 import { llamarInterna } from "./inventario-de-prueba.ts";
 import { mandarAccion } from "./llamadas.ts";
 import { foliosDePrueba } from "./modulos/ventas/index.ts";
@@ -182,4 +184,73 @@ export async function cuentaComoQuedo(servidor: ServidorDePrueba, cuentaId: stri
 		[cuentaId],
 	);
 	return rows[0];
+}
+
+/** Un pedido de prueba con un anticipo recibido: el pedido, su pago y su folio. */
+export interface AnticipoDePrueba {
+	pedidoId: string;
+	pagoId: string;
+	folio: string;
+}
+
+/** El último número de PE- de prueba. */
+let ultimoPedido = 0;
+
+/**
+ * Escribe directo un anticipo recibido en un pedido de prueba: el pago `recibido` al pedido y su renglón `recibido`.
+ * El pago a un pedido llega en la fase 16; hasta entonces, la prueba lo escribe como lo escribirá «Registrar pago».
+ * @param servidor El servidor de prueba.
+ * @param cliente El cliente.
+ * @param montoCentavos El anticipo, en pesos enteros.
+ * @param pedidoId El pedido; uno nuevo si no se dice.
+ */
+export async function anticipoRecibidoDePrueba(
+	servidor: ServidorDePrueba,
+	cliente: ClienteDePrueba,
+	montoCentavos: number,
+	pedidoId = uuidv7(),
+): Promise<AnticipoDePrueba> {
+	if (!foliosDePrueba.has(pedidoId)) {
+		ultimoPedido += 1;
+		foliosDePrueba.set(pedidoId, `PE-${String(ultimoPedido).padStart(4, "0")}`);
+	}
+	const pagoId = uuidv7();
+	const folio = `PG-P${pagoId.slice(-8)}`;
+	await servidor.base.dueno.query(
+		`INSERT INTO pagos (id, folio, direccion, concepto, fecha, tercero_id, cliente_id, pedido_id, monto_centavos, medio)
+		 VALUES ($1, $2, 'recibido', 'pedido', (now() AT TIME ZONE 'America/Mexico_City')::date, $3, $4, $5, $6, 'efectivo')`,
+		[pagoId, folio, cliente.terceroId, cliente.clienteId, pedidoId, montoCentavos],
+	);
+	await servidor.base.dueno.query(
+		`INSERT INTO anticipos (id, pedido_id, cliente_id, tipo, monto_centavos, fecha, pago_id)
+		 VALUES ($1, $2, $3, 'recibido', $4, (now() AT TIME ZONE 'America/Mexico_City')::date, $5)`,
+		[uuidv7(), pedidoId, cliente.clienteId, montoCentavos, pagoId],
+	);
+	return { pedidoId, pagoId, folio };
+}
+
+/**
+ * El saldo a favor vigente de un cliente.
+ * @param servidor El servidor de prueba.
+ * @param clienteId El cliente.
+ */
+export async function saldoAFavorDePrueba(servidor: ServidorDePrueba, clienteId: string): Promise<number> {
+	const { rows } = await servidor.base.dueno.query(
+		`SELECT coalesce(sum(CASE WHEN tipo = 'entra' THEN monto_centavos ELSE -monto_centavos END), 0)::int AS saldo
+		 FROM saldo_favor_movimientos WHERE cliente_id = $1 AND estado = 'vigente'`,
+		[clienteId],
+	);
+	return z.number().parse(rows[0]?.saldo);
+}
+
+/**
+ * Llama una interna de Contaduría en su propia transacción; regresa lo que regresó o el cuerpo de su error.
+ * @param servidor El servidor de prueba.
+ * @param nombre La interna, sin el módulo (`aplicar_anticipo_a_nota`).
+ * @param datos Lo que recibe.
+ */
+export function internaDeContaduria(servidor: ServidorDePrueba, nombre: string, datos: unknown): Promise<unknown> {
+	return llamarInterna(servidor, `contaduria.${nombre}`, datos).catch((error: unknown) =>
+		error instanceof ErrorDeApi ? error.cuerpo() : Promise.reject(error),
+	);
 }

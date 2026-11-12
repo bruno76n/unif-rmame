@@ -110,4 +110,10 @@ Ninguno propio.
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 15.*
+**Fase 15, parte 3.** En `modulos/contaduria/`:
+
+- **La tabla** `anticipos` (migración `0050`), con sus CHECK: el monto mayor que 0, exactamente un origen en `recibido` y ninguno en los demás, la nota en `aplicado` y `regresado`, y el `aplicado` que deshace cada `regresado` (único).
+- **El libro** vive en `dominio/anticipos.ts`: `candadoDeAnticipo` (un candado por pedido, en el orden de la decisión 670), `anticipoDelPedido` (por tipo y el disponible), `pasarDisponibleAFavor` y `cancelarAnticipoDelPago`, que usa `contaduria.cancelar_pago`.
+- **Las internas** `aplicar_anticipo_a_nota`, `regresar_anticipo_a_pedido` y `pasar_anticipo_a_favor` (`internas/anticipos.ts`) toman el candado y leen el disponible con él. `crear_cuenta_por_cobrar` descuenta de la nota sus `aplicado` vigentes que ningún `regresado` deshizo.
+- **La lectura** `anticipo_del_pedido` (`lecturas/anticipos.ts`) da lo aplicado sin lo regresado (decisión 673).
+- **Pruebas:** `internas/aplicar-anticipo-a-nota.prueba.ts` (también dos notas a la vez, y la cuenta que nace con el anticipo descontado), `internas/regresar-anticipo-a-pedido.prueba.ts`, `internas/pasar-anticipo-a-favor.prueba.ts` y `acciones/cancelar-pago.prueba.ts`. El anticipo recibido lo escribe la prueba (`anticipoRecibidoDePrueba`): el pago a un pedido llega en la fase 16.

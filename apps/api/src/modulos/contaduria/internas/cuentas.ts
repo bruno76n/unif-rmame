@@ -6,7 +6,7 @@
  * Las llama Ventas en su misma transacción (fase 16); su bitácora es el renglón de la acción de Ventas o de Dirección.
  */
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { Temporal } from "temporal-polyfill";
 import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
@@ -15,7 +15,21 @@ import { errorDeRegla } from "../../../nucleo/http/errores.ts";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
 import { creditoDelCliente } from "../dominio/credito.ts";
 import { aplicarACuenta, bloquearCuentaDeNota, estadoDeCuenta, foliosDeVentas } from "../dominio/cuentas.ts";
+import { entrarAFavor } from "../dominio/saldo-favor.ts";
 import { aplicacionesPago, cuentasPorCobrar, saldoFavorMovimientos } from "../tablas.ts";
+
+/**
+ * El anticipo que una nota ya trae descontado: sus renglones `aplicado` vigentes que ningún `regresado` deshizo.
+ * @param contexto El contexto de la acción.
+ * @param notaEntregaId La nota.
+ */
+async function anticipoDeLaNota(contexto: ContextoDeAccion, notaEntregaId: string): Promise<number> {
+	const { rows } = await contexto.transaccion.execute(sql`
+		SELECT coalesce(sum(a.monto_centavos), 0)::text AS monto FROM anticipos a
+		WHERE a.nota_entrega_id = ${notaEntregaId} AND a.tipo = 'aplicado' AND a.estado = 'vigente'
+			AND NOT EXISTS (SELECT 1 FROM anticipos r WHERE r.anticipo_aplicado_id = a.id AND r.estado = 'vigente')`);
+	return Number(z.object({ monto: z.string() }).parse(rows[0]).monto);
+}
 
 /** Lo que recibe `contaduria.crear_cuenta_por_cobrar`. */
 const pedidoDeCuenta = z
@@ -41,8 +55,7 @@ export async function crearCuentaPorCobrar(contexto: ContextoDeAccion, datos: un
 	const pedido = pedidoDeCuenta.parse(datos);
 	const credito = await creditoDelCliente(contexto.transaccion, pedido.cliente_id);
 	const vence = Temporal.PlainDate.from(pedido.fecha_entrega).add({ days: pedido.dias_credito }).toString();
-	// Todavía no hay anticipos (llegan en la parte 3): la nota llega con su total.
-	const anticipo = 0;
+	const anticipo = await anticipoDeLaNota(contexto, pedido.nota_entrega_id);
 	const importe = pedido.total_nota_centavos - anticipo;
 	const estado = estadoDeCuenta(importe, importe);
 	const id = uuidv7();
@@ -130,24 +143,11 @@ export async function aplicarNotaCredito(contexto: ContextoDeAccion, datos: unkn
 	const aFavor = pedido.monto_centavos - aplicado;
 	if (aplicado > 0) await aplicarACuenta(contexto, cuenta, aplicado, { notaCreditoId: pedido.nota_credito_id });
 	if (aFavor > 0) {
-		const movimientoId = uuidv7();
-		await transaccion.insert(saldoFavorMovimientos).values({
-			id: movimientoId,
+		await entrarAFavor(contexto, {
 			clienteId: cuenta.clienteId,
 			terceroId: cuenta.terceroId,
-			tipo: "entra",
-			origen: "nota_credito",
 			montoCentavos: aFavor,
-			fecha: contexto.diaDeNegocio.toString(),
-			notaCreditoId: pedido.nota_credito_id,
-			creadoPor: quienCambia(contexto),
-		});
-		contexto.guardarEvento({
-			tipo: "saldo_favor.creado",
-			datos: { movimiento_id: movimientoId, cliente_id: cuenta.clienteId },
-			tablas: ["saldo_favor_movimientos"],
-			entidad: "saldo_favor_movimientos",
-			entidadId: movimientoId,
+			origen: { tipo: "nota_credito", notaCreditoId: pedido.nota_credito_id },
 		});
 	}
 	return { aplicado_centavos: aplicado, a_favor_centavos: aFavor };

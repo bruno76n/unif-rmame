@@ -1,10 +1,10 @@
 /**
  * Las tablas de `contaduria`: los terceros (fase 10, porque un proveedor no tiene nombre sin su tercero), el crédito de
- * cada cliente, sus cuentas por cobrar, los pagos con sus aplicaciones y el libro del saldo a favor.
+ * cada cliente, sus cuentas por cobrar, los pagos con sus aplicaciones, el libro del saldo a favor y el de los anticipos.
  * Fase 10 · docs/modulos/contaduria/terceros-y-deudas.md («La tabla `terceros`»)
  * Fase 15 · docs/modulos/contaduria/credito-de-clientes.md («La tabla `credito_clientes`») y
  * docs/modulos/contaduria/cuentas-por-cobrar.md («La tabla `cuentas_por_cobrar`») y
- * docs/modulos/contaduria/pagos-y-saldo-a-favor.md (las tres tablas)
+ * docs/modulos/contaduria/pagos-y-saldo-a-favor.md (las tres tablas) y docs/modulos/contaduria/anticipos.md
  *
  * Las columnas que apuntan a los clientes, los pedidos y las notas de Ventas llevan su `@llavePendiente` hasta la
  * fase 16. Lo demás de Contaduría (compensaciones, deudas, cuentas por pagar) llega en la fase 17.
@@ -329,6 +329,54 @@ export const aplicacionesPago = pgTable(
 		check(
 			"aplicaciones_pago_cancelada",
 			sql`(${tabla.estado} = 'cancelada') = (${tabla.canceladoEn} is not null and ${tabla.motivoCancelacion} is not null)`,
+		),
+	],
+);
+
+/** Los renglones del libro de anticipos: `recibido` y `regresado` suman; `aplicado` y `a_favor` restan. */
+export const tiposDeAnticipo = ["recibido", "aplicado", "regresado", "a_favor"] as const;
+
+/** El libro de los anticipos de cada pedido. Solo crece: un renglón solo se cancela con lo que lo originó. */
+export const anticipos = pgTable(
+	"anticipos",
+	{
+		id: uuid("id").primaryKey(),
+		/** @llavePendiente pedidos.id */
+		pedidoId: uuid("pedido_id").notNull(),
+		/** @llavePendiente clientes.id */
+		clienteId: uuid("cliente_id").notNull(),
+		tipo: text("tipo").notNull(),
+		montoCentavos: bigint("monto_centavos", { mode: "number" }).notNull(),
+		fecha: date("fecha", { mode: "string" }).notNull(),
+		pagoId: uuid("pago_id").references(() => pagos.id),
+		saldoFavorMovimientoId: uuid("saldo_favor_movimiento_id").references(() => saldoFavorMovimientos.id),
+		/** @llavePendiente notas_entrega.id */
+		notaEntregaId: uuid("nota_entrega_id"),
+		anticipoAplicadoId: uuid("anticipo_aplicado_id").references((): AnyPgColumn => anticipos.id),
+		estado: text("estado").notNull().default("vigente"),
+		...columnasDeCancelacion(),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		index("anticipos_pedido").on(tabla.pedidoId, tabla.estado),
+		index("anticipos_nota").on(tabla.notaEntregaId),
+		index("anticipos_pago").on(tabla.pagoId),
+		uniqueIndex("anticipos_aplicado").on(tabla.anticipoAplicadoId),
+		check("anticipos_tipo", sql`${tabla.tipo} in (${valores(tiposDeAnticipo)})`),
+		check("anticipos_monto", sql`${tabla.montoCentavos} > 0`),
+		check(
+			"anticipos_origen",
+			sql`num_nonnulls(${tabla.pagoId}, ${tabla.saldoFavorMovimientoId}) = case when ${tabla.tipo} = 'recibido' then 1 else 0 end`,
+		),
+		check(
+			"anticipos_nota",
+			sql`(${tabla.notaEntregaId} is not null) = (${tabla.tipo} in ('aplicado', 'regresado'))
+				and (${tabla.anticipoAplicadoId} is not null) = (${tabla.tipo} = 'regresado')`,
+		),
+		check("anticipos_estado", sql`${tabla.estado} in ('vigente', 'cancelado')`),
+		check(
+			"anticipos_cancelado",
+			sql`(${tabla.estado} = 'cancelado') = (${tabla.canceladoEn} is not null and ${tabla.motivoCancelacion} is not null)`,
 		),
 	],
 );

@@ -4,14 +4,14 @@
  * Fase 15 · docs/modulos/contaduria/pagos-y-saldo-a-favor.md (reglas 1 a 5, 9 y 10, «Acciones»)
  *
  * Registrar toma primero la cuenta de la nota y después el folio PG-: dos pagos a la vez a la misma nota se ponen en
- * fila y el segundo ve el saldo que dejó el primero. Cancelar toma el pago con su versión y después sus cuentas, en
- * orden de id (el orden de `dominio/cuentas.ts`).
+ * fila y el segundo ve el saldo que dejó el primero. Cancelar toma el pago con su versión, después el anticipo de su
+ * pedido, el saldo a favor del cliente y sus cuentas en orden de id (el orden de `dominio/cuentas.ts`).
  */
 
 import { centavosATexto } from "@uniformame/compartido/calculos/dinero";
 import { cancelarPago, registrarPagoRecibido } from "@uniformame/compartido/contratos/contaduria/pagos";
 import { centavos } from "@uniformame/compartido/tipos/base";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
 import { quienCambia, revisarMotivo } from "../../../nucleo/acciones/comunes.ts";
@@ -19,6 +19,7 @@ import { tomarVersion, versionActual } from "../../../nucleo/acciones/pisadas.ts
 import { errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
 import { implementarAccion } from "../../../nucleo/modulos.ts";
 import { confirmadoConGoogle } from "../../admin/dominio/cuentas.ts";
+import { cancelarAnticipoDelPago } from "../dominio/anticipos.ts";
 import { creditoDelCliente } from "../dominio/credito.ts";
 import {
 	aplicarACuenta,
@@ -27,7 +28,8 @@ import {
 	regresarAplicacionesDelPago,
 } from "../dominio/cuentas.ts";
 import { avisoDePagoRepetido, revisarMedio } from "../dominio/pagos.ts";
-import { pagos, terceros } from "../tablas.ts";
+import { bloquearSaldoAFavor } from "../dominio/saldo-favor.ts";
+import { pagos, saldoFavorMovimientos, terceros } from "../tablas.ts";
 
 /** Un monto como se lee: «$8,000». */
 const enPesos = (monto: number) => centavosATexto(centavos(monto));
@@ -121,6 +123,21 @@ export const accionCancelarPago = implementarAccion(cancelarPago, async (context
 	if (pago.estado === "cancelado") throw errorDeRegla("pago_cancelado", `${pago.folio} ya está cancelado.`);
 	const motivo = datos.motivo.trim();
 	const quien = quienCambia(contexto);
+	// Su anticipo recibido y lo que el pedido pasó a favor con él (regla 5).
+	const anticipo = await cancelarAnticipoDelPago(contexto, pago, motivo);
+	// Una devolución de saldo a favor: su `devuelto` se cancela y el saldo a favor regresa.
+	if (pago.concepto === "devolucion_saldo_favor" && pago.clienteId !== null) {
+		await bloquearSaldoAFavor(transaccion, pago.clienteId);
+		await transaccion
+			.update(saldoFavorMovimientos)
+			.set({
+				estado: "cancelado",
+				canceladoEn: contexto.ahora.toString(),
+				canceladoPor: quien,
+				motivoCancelacion: motivo,
+			})
+			.where(and(eq(saldoFavorMovimientos.pagoId, pago.id), eq(saldoFavorMovimientos.estado, "vigente")));
+	}
 	await transaccion
 		.update(pagos)
 		.set({
@@ -135,7 +152,7 @@ export const accionCancelarPago = implementarAccion(cancelarPago, async (context
 	contexto.guardarEvento({
 		tipo: "pago.cancelado",
 		datos: { pago_id: pago.id, cliente_id: pago.clienteId },
-		tablas: ["pagos", "aplicaciones_pago", "cuentas_por_cobrar"],
+		tablas: ["pagos", "aplicaciones_pago", "cuentas_por_cobrar", "anticipos", "saldo_favor_movimientos"],
 		entidad: "pagos",
 		entidadId: pago.id,
 		entidadFolio: pago.folio,
@@ -152,6 +169,8 @@ export const accionCancelarPago = implementarAccion(cancelarPago, async (context
 		despues: {
 			estado: "cancelado",
 			cuentas: cuentas.map(({ cuenta_por_cobrar_id, despues }) => ({ cuenta_por_cobrar_id, saldo_centavos: despues })),
+			anticipo_cancelado_centavos: anticipo.anticipo_centavos,
+			a_favor_cancelado_centavos: anticipo.a_favor_centavos,
 		},
 		confirmadoConGoogleEn: confirmadoConGoogle(contexto),
 	});
