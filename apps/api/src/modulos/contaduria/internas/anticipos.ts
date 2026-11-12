@@ -7,8 +7,6 @@
  * Cada una toma el candado del anticipo del pedido antes de leer su disponible.
  */
 
-import { centavosATexto } from "@uniformame/compartido/calculos/dinero";
-import { centavos } from "@uniformame/compartido/tipos/base";
 import { and, eq, sql } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
@@ -17,6 +15,7 @@ import { errorDeRegla } from "../../../nucleo/http/errores.ts";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
 import { anticipoDelPedido, candadoDeAnticipo, pasarDisponibleAFavor } from "../dominio/anticipos.ts";
 import { foliosDeVentas } from "../dominio/cuentas.ts";
+import { enPesos } from "../dominio/pagos.ts";
 import { anticipos } from "../tablas.ts";
 
 /** Lo que recibe `contaduria.aplicar_anticipo_a_nota`. */
@@ -44,7 +43,7 @@ export async function aplicarAnticipoANota(contexto: ContextoDeAccion, datos: un
 		const folios = await foliosDeVentas(contexto, { pedido_ids: [pedido.pedido_id] });
 		throw errorDeRegla(
 			"anticipo_insuficiente",
-			`El pedido ${folios.get(pedido.pedido_id) ?? ""} solo tiene ${centavosATexto(centavos(Math.max(0, disponible)))} de anticipo.`,
+			`El pedido ${folios.get(pedido.pedido_id) ?? ""} solo tiene ${enPesos(Math.max(0, disponible))} de anticipo.`,
 		);
 	}
 	const id = uuidv7();
@@ -93,7 +92,7 @@ export async function regresarAnticipoAPedido(contexto: ContextoDeAccion, datos:
 	const { rows } = await transaccion.execute(sql`
 		SELECT a.id, a.cliente_id, a.monto_centavos::text AS monto FROM anticipos a
 		WHERE a.nota_entrega_id = ${nota_entrega_id} AND a.tipo = 'aplicado' AND a.estado = 'vigente'
-			AND NOT EXISTS (SELECT 1 FROM anticipos r WHERE r.anticipo_aplicado_id = a.id)
+			AND NOT EXISTS (SELECT 1 FROM anticipos r WHERE r.anticipo_aplicado_id = a.id AND r.estado = 'vigente')
 		ORDER BY a.id`);
 	const aplicados = z.array(z.object({ id: z.uuid(), cliente_id: z.uuid(), monto: z.string() })).parse(rows);
 	let regresado = 0;

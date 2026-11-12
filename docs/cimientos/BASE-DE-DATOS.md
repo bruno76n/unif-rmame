@@ -87,7 +87,7 @@ Varias acciones pelean por los mismos renglones (una venta, un surtido y una res
 3. **Si Postgres corta por bloqueo o por serialización** (`40P01`, `40001`), el núcleo reintenta la transacción completa hasta tres veces, con la misma clave de idempotencia. Después responde el error.
 4. **Transacciones cortas.** Una transacción abierta frena el tope seguro de la sincronización para todos los aparatos. La base lleva `idle_in_transaction_session_timeout`, y los trabajos largos van por tramos.
 
-Cada archivo que mueve inventario dice qué candados toma; el detalle de las reservas está en [reservas](../modulos/inventario/reservas.md).
+Cada archivo que mueve inventario dice qué candados toma; el detalle de las reservas está en [reservas](../modulos/inventario/reservas.md). El dinero de un cliente tiene su propio orden: el pago que se cancela, el anticipo del pedido, el crédito del cliente, sus cuentas por cobrar en orden de id y, al final, el folio (ver [pagos y saldo a favor](../modulos/contaduria/pagos-y-saldo-a-favor.md#cómo-está-hecho)).
 
 ## Migraciones
 

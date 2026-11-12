@@ -1,9 +1,11 @@
 /**
- * Lo que comparten los pagos que entran y salen: la cuenta de la fábrica donde se recibió o de donde salió, y el aviso
- * del pago repetido.
+ * Lo que comparten los pagos que entran y salen: la cuenta de la fábrica donde se recibió o de donde salió, el monto en
+ * pesos enteros, cómo se lee un monto y el aviso del pago repetido.
  * Fase 15 · docs/modulos/contaduria/pagos-y-saldo-a-favor.md (reglas 3 y 10)
  */
 
+import { centavosATexto } from "@uniformame/compartido/calculos/dinero";
+import { centavos } from "@uniformame/compartido/tipos/base";
 import { and, eq, isNull } from "drizzle-orm";
 import type { Transaccion } from "../../../nucleo/base/transacciones.ts";
 import { errorDeCampo } from "../../../nucleo/http/errores.ts";
@@ -74,4 +76,22 @@ export async function avisoDePagoRepetido(
 		.where(and(eq(pagos.referencia, referencia), eq(pagos.montoCentavos, monto), eq(pagos.estado, "registrado")))
 		.limit(1);
 	return repetido === undefined ? [] : [`Ya hay un pago con la referencia ${referencia}: ${repetido.folio}`];
+}
+
+/**
+ * Un monto como se lee: «$8,000», o «$999.50» si trae centavos (un saldo que dejó una NC).
+ * @param monto Los centavos.
+ */
+export function enPesos(monto: number): string {
+	return centavosATexto(centavos(monto), { conCentavos: monto % 100 !== 0 });
+}
+
+/**
+ * Revisa que un monto vaya en pesos enteros; con centavos solo entra si liquida exacto lo que queda (decisión 674).
+ * @param monto El monto del pago o de la devolución.
+ * @param loQueQueda El saldo de la nota o el saldo a favor.
+ * @throws `400` en `monto_centavos`: «Escribe el monto en pesos».
+ */
+export function revisarPesosEnteros(monto: number, loQueQueda: number): void {
+	if (monto % 100 !== 0 && monto !== loQueQueda) throw errorDeCampo("monto_centavos", "Escribe el monto en pesos");
 }

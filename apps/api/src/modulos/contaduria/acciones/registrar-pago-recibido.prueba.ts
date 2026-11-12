@@ -4,10 +4,12 @@
  * Fase 15 · docs/fases/15-contaduria-terceros-credito-y-cobranza.md («Criterios de terminado»)
  */
 
+import { v7 as uuidv7 } from "uuid";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
 	clienteDePrueba,
 	cuentaComoQuedo,
+	internaDeContaduria,
 	notaEntregadaDePrueba,
 	pagarDePrueba,
 } from "../../../nucleo/pruebas/contaduria-de-prueba.ts";
@@ -118,5 +120,24 @@ describe("Un pago a una nota baja su saldo y cambia su estado; nunca pasa del sa
 		expect(otraVez.cuerpo.avisos).toEqual([
 			`Ya hay un pago con la referencia ${conReferencia.referencia}: ${String((primero.cuerpo.resultado as { folio: string }).folio)}`,
 		]);
+	});
+
+	it("una NC con centavos deja $5.50: el saldo se dice con centavos, el pago exacto lo liquida y uno con centavos que no liquida no entra", async () => {
+		const cliente = await clienteDePrueba(servidor);
+		const nota = await notaEntregadaDePrueba(servidor, cliente, { totalCentavos: 100_000 });
+		await internaDeContaduria(servidor, "aplicar_nota_credito", {
+			nota_credito_id: uuidv7(),
+			nota_entrega_id: nota.notaId,
+			monto_centavos: 99_450,
+		});
+		expect((await pagarDePrueba(servidor, cliente, nota, 600)).cuerpo).toMatchObject({
+			codigo: "monto_mayor_que_saldo",
+			mensaje: `El saldo de ${nota.folio} es $5.50.`,
+		});
+		expect((await pagarDePrueba(servidor, cliente, nota, 250)).cuerpo).toMatchObject({
+			campos: { monto_centavos: "Escribe el monto en pesos" },
+		});
+		expect((await pagarDePrueba(servidor, cliente, nota, 550)).cuerpo.resultado).toMatchObject({ saldo_centavos: 0 });
+		expect(await cuentaComoQuedo(servidor, nota.cuentaId)).toEqual({ saldo: 0, estado: "pagada", con_pagada_en: true });
 	});
 });

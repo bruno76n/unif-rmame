@@ -86,14 +86,14 @@ La bitácora es el renglón de Dirección.
 | | |
 |---|---|
 | **La usa** | Ventas: sus notas y el avance del pedido |
-| **Regresa** | Por nota, «Sin pagar», «Pagada en parte» o «Pagada», y su saldo. La consulta de Ventas solo pasa el saldo a quien tiene Contaduría |
+| **Regresa** | Por nota, «Sin pagar», «Pagada en parte» o «Pagada»; el saldo, solo a la dueña o a quien tiene Contaduría: lo quita la propia lectura (decisión 666) |
 
 ### `contaduria.saldo_por_cobrar_de_cliente(cliente)`
 
 | | |
 |---|---|
 | **La usa** | Ventas, al dar de baja un cliente: `cliente_con_saldo` (ver [clientes](../ventas/clientes.md)) |
-| **Regresa** | La suma de los saldos de sus cuentas por cobrar. Ventas solo muestra el monto a quien tiene Contaduría |
+| **Regresa** | Si debe algo (`con_saldo`) y, solo a la dueña o a quien tiene Contaduría, la suma de los saldos de sus cuentas por cobrar (decisión 666) |
 
 ## Parámetros
 

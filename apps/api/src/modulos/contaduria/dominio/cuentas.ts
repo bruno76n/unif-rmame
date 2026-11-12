@@ -4,8 +4,8 @@
  * Fase 15 · docs/modulos/contaduria/cuentas-por-cobrar.md (reglas 2 y 3, «Estados») y
  * docs/modulos/contaduria/pagos-y-saldo-a-favor.md (reglas 4 y 9)
  *
- * El orden de los candados del dinero de un cliente: el pago que se cancela, el crédito del cliente (su saldo a favor),
- * las cuentas por cobrar en orden de id y, al final, el folio. Quien aplica toma antes la cuenta: dos pagos a la vez no
+ * El orden de los candados del dinero de un cliente (decisiones 667 y 670): el pago que se cancela, el anticipo de su
+ * pedido, el crédito del cliente (su saldo a favor), las cuentas por cobrar en orden de id y, al final, el folio. Quien aplica toma antes la cuenta: dos pagos a la vez no
  * pasan del saldo.
  */
 

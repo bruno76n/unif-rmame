@@ -5,7 +5,7 @@
 
 import { z } from "zod";
 import { definirAccion } from "../definir.ts";
-import { medioDePago, montoEnPesos } from "./pagos.ts";
+import { medioDePago, montoDePago } from "./pagos.ts";
 
 /** Contaduría aplica saldo a favor de un cliente a una de sus notas entregadas. */
 export const aplicarSaldoAFavor = definirAccion({
@@ -37,7 +37,9 @@ export const devolverSaldoAFavor = definirAccion({
 	descripcion: "Devuelve saldo a favor a un cliente con un pago emitido",
 	entrada: z.object({
 		cliente_id: z.uuid("Escoge el cliente.").describe("El cliente"),
-		monto_centavos: montoEnPesos("Escribe el monto en pesos").describe("Lo que se devuelve, en pesos enteros"),
+		monto_centavos: montoDePago("Escribe el monto en pesos").describe(
+			"Lo que se devuelve: en pesos enteros, o con centavos si es todo el saldo a favor",
+		),
 		...medioDePago,
 		referencia: z
 			.string("Escribe la referencia")

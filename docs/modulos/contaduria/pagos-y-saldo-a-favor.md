@@ -13,7 +13,7 @@ Cada peso que entra o sale queda con su folio, de dónde vino y qué bajó. Ejem
 
 1. **Un pago, un folio PG-:** un solo contador para lo que entra (`recibido`) y lo que sale (`emitido`).
 2. **Un pago recibido es de un cliente** y va a una nota entregada con saldo o a un pedido confirmado y abierto, como anticipo. No pasa del saldo de la nota ni de lo que le falta al pedido: el total del pedido menos su anticipo neto menos lo de sus notas no canceladas que el anticipo no cubrió.
-3. **Dónde se recibió:** en efectivo, en una cuenta de la fábrica (la lista «Cuentas de la fábrica»: con una sola, la pone el servidor) o en la cuenta de un tercero a quien la fábrica le debe. Lo que no es efectivo lleva su referencia (SPEI, folio, ficha o recibo), de 3 a 30 caracteres. Los montos van en pesos enteros.
+3. **Dónde se recibió:** en efectivo, en una cuenta de la fábrica (la lista «Cuentas de la fábrica»: con una sola, la pone el servidor) o en la cuenta de un tercero a quien la fábrica le debe. Lo que no es efectivo lleva su referencia (SPEI, folio, ficha o recibo), de 3 a 30 caracteres. Los montos van en pesos enteros, salvo el que liquida exacto un saldo con centavos (el que deja una nota de crédito): el saldo de la nota o todo el saldo a favor.
 4. **De las aplicaciones salen los saldos.** Un pago a una nota es una aplicación a su cuenta por cobrar por el monto completo, aunque el dinero haya ido a un tercero; un pago a un pedido es un anticipo recibido, sin aplicación. Un depósito a la cuenta de un tercero también se aplica a lo que la fábrica le debe a ese tercero: al registrarlo («Ahora») o después («Aplicar»), sin pasar del monto; lo que sobre queda a favor con ese tercero y se aplica después a otra de sus deudas.
 5. **Cancelar un pago** pide motivo y «Confirmar con Google». Cancela sus aplicaciones, su anticipo y el saldo a favor que dejó, y regresa los saldos y los estados. No se cancela si su anticipo ya se aplicó a una nota o si lo que dejó a favor ya se usó.
 6. **El saldo a favor de un cliente** es lo que entra (el anticipo de un pedido cancelado o entregado sin usarlo, y lo que una nota de crédito pasa del saldo de su nota) menos lo aplicado y lo devuelto, vigente.
@@ -43,7 +43,7 @@ Cada peso que entra o sale queda con su folio, de dónde vino y qué bajó. Ejem
 | `tercero_id` | uuid | no | → `terceros.id`: quien pagó o a quien se le paga |
 | `cliente_id` | uuid | sí | → `clientes.id`. CHECK: lleno en `recibido` y en `devolucion_saldo_favor` |
 | `nota_entrega_id` · `pedido_id` | uuid | sí | El documento del pago recibido. CHECK: uno en `nota`, el otro en `pedido` |
-| `monto_centavos` | bigint | no | CHECK > 0, en pesos enteros |
+| `monto_centavos` | bigint | no | CHECK > 0. En pesos enteros, salvo el que liquida exacto un saldo con centavos (regla 3); lo revisa la acción |
 | `medio` | text | no | CHECK (`efectivo`, `cuenta_fabrica`, `cuenta_tercero`). `cuenta_tercero` solo en `recibido` |
 | `cuenta_fabrica_id` | uuid | sí | → `lista_valores.id`, de «Cuentas de la fábrica». CHECK: lleno con `cuenta_fabrica` |
 | `tercero_deposito_id` | uuid | sí | → `terceros.id`: «Cuenta de quién». CHECK: lleno con `cuenta_tercero` y distinto de `tercero_id` |
@@ -109,7 +109,7 @@ Todas son de la web, con el departamento Contaduría.
 | | |
 |---|---|
 | **Pantalla** | Cajón «Registrar pago» · «Registrar pago». Se abre con la acción principal, desde Pagos recibidos y desde los cajones del cliente y del tercero |
-| **Recibe** | `cliente_id` · `nota_entrega_id` · `monto_centavos` (en pesos enteros) · `medio` (`efectivo` o `cuenta_fabrica`) · `cuenta_fabrica_id`, si hay más de una · `referencia`, si no es efectivo |
+| **Recibe** | `cliente_id` · `nota_entrega_id` · `monto_centavos` (en pesos enteros, o el saldo exacto de la nota) · `medio` (`efectivo` o `cuenta_fabrica`) · `cuenta_fabrica_id`, si hay más de una · `referencia`, si no es efectivo |
 | **Reglas y errores** | `400`: «Escribe el monto en pesos» · «Escribe la referencia del depósito»<br>`422 nota_sin_entregar`: «{NV} todavía no se entrega: se cobra al confirmar la entrega.» (no tiene cuenta por cobrar)<br>`422 documento_de_otro_cliente`: «{folio} no es de {cliente}.»<br>`422 monto_mayor_que_saldo`: «El saldo de {folio} es {saldo}.»<br>Aviso que no detiene: el pago repetido (regla 10) |
 | **Escribe** | El pago, `recibido`, concepto `nota`, con la fecha de hoy, el tercero del cliente, dónde se recibió y la referencia. Su aplicación a la cuenta de la nota por el monto completo; el saldo, el estado y `pagada_en` de la cuenta |
 | **Llama** | `admin.tomar_folio` (`pago`) |
@@ -216,3 +216,5 @@ Ninguno propio: el largo del motivo es `general.largo_minimo_motivo` (ver [confi
 - **`aplicar_saldo_a_favor`** y **`devolver_saldo_a_favor`** (`acciones/saldo-favor.ts`, contratos en `packages/compartido/src/contratos/contaduria/saldo-favor.ts`) toman el saldo a favor con su candado; aplicar toma después la cuenta de la nota y acepta centavos; devolver es un pago `emitido` en pesos enteros, con su confirmación con Google, y su `devuelto` (decisión 672).
 - **`cancelar_pago`** cancela además su anticipo recibido y, si el pedido ya lo pasó a favor, ese saldo a favor (decisión 671); en una devolución, su `devuelto`.
 - **Pruebas:** `acciones/aplicar-saldo-a-favor.prueba.ts` y `acciones/devolver-saldo-a-favor.prueba.ts` (las dos con dos a la vez), `acciones/cancelar-pago.prueba.ts` y `saldos.azar.prueba.ts`, que mezcla también el saldo a favor.
+
+**Fase 15, cierre.** Con la auditoría: un pago o una devolución con centavos entran solo si liquidan exacto lo que queda, y los mensajes dicen los centavos (`revisarPesosEnteros` y `enPesos` en `dominio/pagos.ts`; migración `0051`; decisión 674). Cancelar un pago cuyo pedido pasó a favor revisa el saldo a favor total del cliente contra todo lo que el pedido pasó a favor (decisión 671). Las pruebas cruzan a la vez cancelar contra aplicar saldo a favor y contra aplicar el anticipo, y la prueba al azar revisa cada respuesta, mezcla anticipos y centavos y mide las trabas.

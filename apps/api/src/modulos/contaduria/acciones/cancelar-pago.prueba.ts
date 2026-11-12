@@ -176,4 +176,45 @@ describe("Cancelar un pago pide «Confirmar con Google» y regresa saldos y esta
 		await cancelar(await conVersion(anticipo.pagoId, anticipo.folio));
 		expect(await saldoAFavorDePrueba(servidor, cliente.clienteId)).toBe(0);
 	});
+
+	it("cancelar el anticipo que pasó a favor y aplicar ese saldo a favor a la vez: una de las dos y el saldo a favor nunca negativo", async () => {
+		const cliente = await clienteDePrueba(servidor);
+		const grande = await anticipoRecibidoDePrueba(servidor, cliente, 200_000);
+		await anticipoRecibidoDePrueba(servidor, cliente, 100_000, grande.pedidoId);
+		await internaDeContaduria(servidor, "pasar_anticipo_a_favor", {
+			pedido_id: grande.pedidoId,
+			causa: "pedido_cancelado",
+		});
+		const nota = await notaEntregadaDePrueba(servidor, cliente, { totalCentavos: 500_000 });
+		const [cancelado, aplicado] = await Promise.all([
+			cancelar(await conVersion(grande.pagoId, grande.folio)),
+			mandarAccion(
+				servidor,
+				"contaduria.aplicar_saldo_a_favor",
+				{ datos: { cliente_id: cliente.clienteId, nota_entrega_id: nota.notaId, monto_centavos: 250_000 } },
+				"contaduria",
+			),
+		]);
+		expect([cancelado.estado, aplicado.estado]).toContain(200);
+		expect([cancelado.estado, aplicado.estado].every((estado) => estado === 200 || estado === 422)).toBe(true);
+		expect(await saldoAFavorDePrueba(servidor, cliente.clienteId)).toBeGreaterThanOrEqual(0);
+	});
+
+	it("cancelar un anticipo y aplicarlo a una nota a la vez: una de las dos y el disponible nunca negativo", async () => {
+		const cliente = await clienteDePrueba(servidor);
+		const anticipo = await anticipoRecibidoDePrueba(servidor, cliente, 300_000);
+		const [cancelado, aplicado] = await Promise.all([
+			cancelar(await conVersion(anticipo.pagoId, anticipo.folio)),
+			internaDeContaduria(servidor, "aplicar_anticipo_a_nota", {
+				pedido_id: anticipo.pedidoId,
+				cliente_id: cliente.clienteId,
+				nota_entrega_id: uuidv7(),
+				monto_centavos: 200_000,
+			}),
+		]);
+		const aplicoNota = typeof aplicado === "object" && aplicado !== null && "anticipo_id" in aplicado;
+		// O se canceló y el anticipo ya no alcanzó, o se aplicó y la cancelación ya no entró.
+		expect([cancelado.estado === 200, aplicoNota].filter(Boolean)).toHaveLength(1);
+		expect(await disponible(anticipo.pedidoId)).toBeGreaterThanOrEqual(0);
+	});
 });

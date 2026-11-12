@@ -9623,8 +9623,7 @@
                         "minimum": 0,
                         "exclusiveMinimum": true,
                         "maximum": 9007199254740991,
-                        "multipleOf": 100,
-                        "description": "El monto en centavos, en pesos enteros"
+                        "description": "El monto en centavos: en pesos enteros, o con centavos si liquida exacto el saldo de la nota"
                       },
                       "medio": {
                         "type": "string",
@@ -10027,8 +10026,7 @@
                         "minimum": 0,
                         "exclusiveMinimum": true,
                         "maximum": 9007199254740991,
-                        "multipleOf": 100,
-                        "description": "Lo que se devuelve, en pesos enteros"
+                        "description": "Lo que se devuelve: en pesos enteros, o con centavos si es todo el saldo a favor"
                       },
                       "medio": {
                         "type": "string",

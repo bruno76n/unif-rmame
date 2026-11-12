@@ -96,4 +96,16 @@ describe("Devolver saldo a favor es un pago emitido con «Confirmar con Google»
 		expect([uno.estado, dos.estado].sort()).toEqual([200, 400]);
 		expect(await saldoAFavorDePrueba(servidor, cliente.clienteId)).toBe(30_000);
 	});
+
+	it("con centavos solo se devuelve todo el saldo a favor: $999.50 completos sí, $500.50 no", async () => {
+		const cliente = await clienteDePrueba(servidor);
+		await dejarAFavor(cliente, 99_950);
+		expect((await devolver(cliente, 50_050)).cuerpo).toMatchObject({
+			campos: { monto_centavos: "Escribe el monto en pesos" },
+		});
+		expect((await devolver(cliente, 99_950)).cuerpo.resultado).toMatchObject({
+			mensaje: `$999.50 devueltos a ${cliente.nombre}`,
+		});
+		expect(await saldoAFavorDePrueba(servidor, cliente.clienteId)).toBe(0);
+	});
 });

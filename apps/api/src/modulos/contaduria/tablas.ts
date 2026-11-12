@@ -210,7 +210,8 @@ export const pagos = pgTable(
 			sql`(${tabla.notaEntregaId} is not null) = (${tabla.concepto} = 'nota')
 				and (${tabla.pedidoId} is not null) = (${tabla.concepto} = 'pedido')`,
 		),
-		check("pagos_monto", sql`${tabla.montoCentavos} > 0 and ${tabla.montoCentavos} % 100 = 0`),
+		// En pesos enteros, salvo el que liquida exacto un saldo con centavos: lo revisa la acción (decisión 674).
+		check("pagos_monto", sql`${tabla.montoCentavos} > 0`),
 		check(
 			"pagos_medio",
 			sql`${tabla.medio} in (${valores(mediosDePago)})

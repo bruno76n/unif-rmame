@@ -6,9 +6,11 @@
 import { z } from "zod";
 import { definirAccion } from "../definir.ts";
 
-/** Un monto en centavos, en pesos enteros. */
-export const montoEnPesos = (mensaje: string) =>
-	z.number(mensaje).int(mensaje).positive(mensaje).multipleOf(100, mensaje);
+/**
+ * Un monto en centavos. Va en pesos enteros, salvo el que liquida exacto lo que queda, que puede traer centavos: lo
+ * revisa la acción, que conoce el saldo (decisión 674).
+ */
+export const montoDePago = (mensaje: string) => z.number(mensaje).int(mensaje).positive(mensaje);
 
 /** Dónde se recibió o de dónde sale el dinero: en efectivo o en una cuenta de la fábrica, con su referencia. */
 export const medioDePago = {
@@ -28,7 +30,9 @@ export const registrarPagoRecibido = definirAccion({
 	entrada: z.object({
 		cliente_id: z.uuid("Escoge el cliente.").describe("El cliente que pagó"),
 		nota_entrega_id: z.uuid("Escoge la nota.").describe("La nota entregada que paga"),
-		monto_centavos: montoEnPesos("Escribe el monto en pesos").describe("El monto en centavos, en pesos enteros"),
+		monto_centavos: montoDePago("Escribe el monto en pesos").describe(
+			"El monto en centavos: en pesos enteros, o con centavos si liquida exacto el saldo de la nota",
+		),
 		...medioDePago,
 		referencia: z
 			.string("Escribe la referencia del depósito")

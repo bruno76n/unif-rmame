@@ -58,7 +58,8 @@ export default definirModulo({
 	},
 	semillas: [semillaDeParametrosDeContaduria, semillaDeCuentasFabrica],
 	// El crédito, las cuentas, los pagos y el saldo a favor llevan montos: solo Contaduría. Ventas recibe el aviso de que
-	// el crédito o una cuenta cambió y vuelve a leer sus lecturas, sin montos (decisión 664).
+	// el crédito, una cuenta o un anticipo cambió (el aviso solo lleva la tabla) y vuelve a leer sus lecturas (decisiones
+	// 664 y 675).
 	lectores: {
 		terceros: ["contaduria", "compras", "ventas", "direccion"],
 		credito_clientes: ["contaduria", "ventas"],

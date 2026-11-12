@@ -8,9 +8,7 @@
  * pedido, el saldo a favor del cliente y sus cuentas en orden de id (el orden de `dominio/cuentas.ts`).
  */
 
-import { centavosATexto } from "@uniformame/compartido/calculos/dinero";
 import { cancelarPago, registrarPagoRecibido } from "@uniformame/compartido/contratos/contaduria/pagos";
-import { centavos } from "@uniformame/compartido/tipos/base";
 import { and, eq } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
@@ -27,12 +25,9 @@ import {
 	foliosDeVentas,
 	regresarAplicacionesDelPago,
 } from "../dominio/cuentas.ts";
-import { avisoDePagoRepetido, revisarMedio } from "../dominio/pagos.ts";
+import { avisoDePagoRepetido, enPesos, revisarMedio, revisarPesosEnteros } from "../dominio/pagos.ts";
 import { bloquearSaldoAFavor } from "../dominio/saldo-favor.ts";
 import { pagos, saldoFavorMovimientos, terceros } from "../tablas.ts";
-
-/** Un monto como se lee: «$8,000». */
-const enPesos = (monto: number) => centavosATexto(centavos(monto));
 
 export const accionRegistrarPagoRecibido = implementarAccion(registrarPagoRecibido, async (contexto, datos) => {
 	const { transaccion } = contexto;
@@ -51,6 +46,7 @@ export const accionRegistrarPagoRecibido = implementarAccion(registrarPagoRecibi
 	if (datos.monto_centavos > cuenta.saldoCentavos) {
 		throw errorDeRegla("monto_mayor_que_saldo", `El saldo de ${nota} es ${enPesos(cuenta.saldoCentavos)}.`);
 	}
+	revisarPesosEnteros(datos.monto_centavos, cuenta.saldoCentavos);
 	const avisos = await avisoDePagoRepetido(transaccion, referencia, datos.monto_centavos);
 	const { folio } = z
 		.object({ folio: z.string() })

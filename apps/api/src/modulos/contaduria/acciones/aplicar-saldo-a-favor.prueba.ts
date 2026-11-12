@@ -99,4 +99,15 @@ describe("El saldo a favor se aplica sin pasar de lo que hay, aun con dos accion
 		expect([uno.estado, dos.estado].sort()).toEqual([200, 422]);
 		expect(await saldoAFavorDePrueba(servidor, cliente.clienteId)).toBe(30_000);
 	});
+
+	it("un saldo a favor con centavos ($999.50) se aplica completo y queda en 0", async () => {
+		const cliente = await clienteDePrueba(servidor);
+		await dejarAFavor(cliente, 99_950);
+		const nota = await notaEntregadaDePrueba(servidor, cliente, { totalCentavos: 200_000 });
+		expect((await aplicar(cliente, nota, 99_950)).cuerpo.resultado).toMatchObject({
+			mensaje: `$999.50 a favor aplicados a ${nota.folio}`,
+		});
+		expect(await saldoAFavorDePrueba(servidor, cliente.clienteId)).toBe(0);
+		expect(await cuentaComoQuedo(servidor, nota.cuentaId)).toMatchObject({ saldo: 100_050 });
+	});
 });

@@ -7,9 +7,7 @@
  * cuenta de la nota: el orden de `dominio/cuentas.ts`. Nunca pasan del saldo a favor, aun dos a la vez.
  */
 
-import { centavosATexto } from "@uniformame/compartido/calculos/dinero";
 import { aplicarSaldoAFavor, devolverSaldoAFavor } from "@uniformame/compartido/contratos/contaduria/saldo-favor";
-import { centavos } from "@uniformame/compartido/tipos/base";
 import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
 import { quienCambia } from "../../../nucleo/acciones/comunes.ts";
@@ -18,12 +16,9 @@ import { implementarAccion } from "../../../nucleo/modulos.ts";
 import { confirmadoConGoogle } from "../../admin/dominio/cuentas.ts";
 import { creditoDelCliente } from "../dominio/credito.ts";
 import { aplicarACuenta, bloquearCuentaDeNota, foliosDeVentas } from "../dominio/cuentas.ts";
-import { revisarMedio } from "../dominio/pagos.ts";
+import { enPesos, revisarMedio, revisarPesosEnteros } from "../dominio/pagos.ts";
 import { bloquearSaldoAFavor, saldoAFavor } from "../dominio/saldo-favor.ts";
 import { pagos, saldoFavorMovimientos } from "../tablas.ts";
-
-/** Un monto como se lee: «$1,000». */
-const enPesos = (monto: number) => centavosATexto(centavos(monto), { conCentavos: monto % 100 !== 0 });
 
 export const accionAplicarSaldoAFavor = implementarAccion(aplicarSaldoAFavor, async (contexto, datos) => {
 	const { transaccion } = contexto;
@@ -85,6 +80,7 @@ export const accionDevolverSaldoAFavor = implementarAccion(devolverSaldoAFavor, 
 	const aFavor = await saldoAFavor(transaccion, datos.cliente_id);
 	if (aFavor <= 0) throw errorDeRegla("sin_saldo_a_favor", `${credito.cliente} no tiene saldo a favor.`);
 	if (datos.monto_centavos > aFavor) throw errorDeCampo("monto_centavos", `Hasta ${enPesos(aFavor)}`);
+	revisarPesosEnteros(datos.monto_centavos, aFavor);
 	const { folio } = z
 		.object({ folio: z.string() })
 		.parse(await contexto.interna("admin.tomar_folio", { tipo: "pago" }));
