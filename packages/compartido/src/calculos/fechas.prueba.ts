@@ -12,6 +12,7 @@ import {
 	diasHabilesEntre,
 	inicioDeSemana,
 	sumarDiasHabiles,
+	textoDeDiaCorto,
 	zonaDelNegocio,
 } from "./fechas.ts";
 
@@ -122,5 +123,13 @@ describe("los días hábiles saltan los días que no son de trabajo", () => {
 	it("sin días de trabajo no hay días hábiles que contar", () => {
 		expect(() => sumarDiasHabiles(Temporal.PlainDate.from("2026-11-13"), 1, [])).toThrow(RangeError);
 		expect(() => sumarDiasHabiles(Temporal.PlainDate.from("2026-11-13"), -1, lunesASabado)).toThrow(RangeError);
+	});
+});
+
+describe("los días cortos de las líneas del hilo: «13 oct», sin punto", () => {
+	it("el día y el mes abreviado, en español", () => {
+		expect(textoDeDiaCorto("2026-10-13")).toBe("13 oct");
+		expect(textoDeDiaCorto(Temporal.PlainDate.from("2026-09-01"))).toBe("1 sep");
+		expect(textoDeDiaCorto("2026-12-31")).toBe("31 dic");
 	});
 });

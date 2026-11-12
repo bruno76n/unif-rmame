@@ -14,6 +14,7 @@ import type { ContratoDeAccion, ContratoDeConsulta, EsquemaDeObjeto } from "@uni
 import type { SQL } from "drizzle-orm";
 import type { Temporal } from "temporal-polyfill";
 import type { z } from "zod";
+import { departamentosDelModulo } from "./acceso/departamentos.ts";
 import type { QuienLlama } from "./acceso/quien.ts";
 import type { Almacen } from "./almacen.ts";
 import type { Base } from "./base/conexion.ts";
@@ -132,7 +133,26 @@ export interface ContextoDeConsulta {
 	 * de un cliente): una vez por cuenta y documento cada `admin.minutos_consulta_sensible`.
 	 */
 	apuntarConsultaSensible: (consulta: ConsultaSensible) => Promise<void>;
+	/**
+	 * Lo que registraron los módulos: las pastillas del menú de cada departamento y qué departamentos leen cada tabla
+	 * (el armazón y el historial de un documento).
+	 */
+	registro: RegistroDeModulos;
+	/**
+	 * Una lectura de otro módulo (la salud de los lotes, la cuenta de un material), en una transacción corta que solo
+	 * lee: así la consulta usa la regla del dueño en vez de repetirla.
+	 */
+	lectura: (nombre: string, datos: unknown) => Promise<unknown>;
 }
+
+/** Lo que cuenta la pastilla de un departamento en el menú: lo que tiene que hacer ya, y si algo va atrasado. */
+export interface ConteoDePastilla {
+	conteo: number;
+	rojo: boolean;
+}
+
+/** Cómo calcula un módulo la pastilla de uno de sus departamentos, con lo que puede ver quien pregunta. */
+export type Pastilla = (contexto: ContextoDeConsulta) => Promise<ConteoDePastilla>;
 
 /** Lo que regresa una acción. */
 export interface SalidaDeAccion<Resultado> {
@@ -226,8 +246,6 @@ export interface ContextoDeRuta extends ContextoDeConsulta {
 	enTransaccion: <T>(hacer: (contexto: ContextoDeAccion) => Promise<T>) => Promise<T>;
 	/** El almacén de archivos (R2). */
 	almacen: Almacen | undefined;
-	/** Lo que registraron los módulos (sus tipos de etiqueta, por ejemplo). */
-	registro: RegistroDeModulos;
 }
 
 /** Lo que regresa una ruta fija: un cuerpo JSON con su estado, un contenido con su tipo, o una redirección. */
@@ -366,6 +384,8 @@ export interface Modulo {
 	 * (`alta_usuario: "aplicar_decision_alta_usuario"`). Dirección la llama al decidir, en la misma transacción.
 	 */
 	efectosDeAutorizacion: Readonly<Record<string, string>>;
+	/** Por departamento suyo, cómo se calcula su pastilla del menú. */
+	pastillas: Readonly<Record<string, Pastilla>>;
 }
 
 /**
@@ -430,6 +450,7 @@ export function definirModulo(modulo: Pick<Modulo, "nombre"> & Partial<Modulo>):
 		camposDeSueldo: [],
 		bajada: [],
 		efectosDeAutorizacion: {},
+		pastillas: {},
 		...modulo,
 	};
 }
@@ -459,6 +480,27 @@ export interface RegistroDeModulos {
 	bajada: ReadonlyMap<string, readonly TablaQueBaja[]>;
 	/** Por tipo de autorización, el nombre completo de la interna que aplica su decisión. */
 	efectosDeAutorizacion: ReadonlyMap<string, string>;
+	/** Por departamento, cómo se calcula su pastilla del menú. */
+	pastillas: ReadonlyMap<string, Pastilla>;
+}
+
+/**
+ * Junta las pastillas del menú: cada una, del módulo dueño de su departamento.
+ * @param modulos Los módulos.
+ * @throws Error si un departamento no es de su módulo o tiene dos pastillas.
+ */
+function juntarPastillas(modulos: readonly Modulo[]): ReadonlyMap<string, Pastilla> {
+	const pastillas = new Map<string, Pastilla>();
+	for (const modulo of modulos) {
+		for (const [departamento, pastilla] of Object.entries(modulo.pastillas)) {
+			if (!(departamentosDelModulo[modulo.nombre] ?? []).includes(departamento)) {
+				throw new Error(`la pastilla de ${departamento} no es del módulo ${modulo.nombre}`);
+			}
+			if (pastillas.has(departamento)) throw new Error(`${departamento} tiene dos pastillas`);
+			pastillas.set(departamento, pastilla);
+		}
+	}
+	return pastillas;
 }
 
 /**
@@ -570,6 +612,7 @@ export function registrarModulos(modulos: readonly Modulo[]): RegistroDeModulos 
 		camposDeSueldo: new Set(modulos.flatMap((modulo) => modulo.camposDeSueldo)),
 		bajada: juntarBajada(modulos),
 		efectosDeAutorizacion: juntarEfectos(modulos, internas),
+		pastillas: juntarPastillas(modulos),
 	};
 }
 

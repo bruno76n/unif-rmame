@@ -39,6 +39,10 @@ import { accionSalir } from "./acciones/salir.ts";
 import { accionTrabajosImpresion } from "./acciones/trabajos-impresion.ts";
 import { alEventoDeAdmin } from "./al-evento.ts";
 import { bajadaDeAdmin } from "./bajada.ts";
+import { consultaArmazon } from "./consultas/armazon.ts";
+import { consultaHistorialEntidad } from "./consultas/historial-entidad.ts";
+import { consultaMisAvisos } from "./consultas/mis-avisos.ts";
+import { consultaMisSesiones } from "./consultas/mis-sesiones.ts";
 import { semillaDeContadores } from "./dominio/contadores.ts";
 import { semillaDeDepartamentos } from "./dominio/departamentos.ts";
 import { enVivoDeAdmin } from "./en-vivo.ts";
@@ -74,6 +78,7 @@ import { respaldoSemanal } from "./trabajos/respaldo-semanal.ts";
 
 export default definirModulo({
 	nombre: "admin",
+	consultas: [consultaArmazon, consultaMisSesiones, consultaMisAvisos, consultaHistorialEntidad],
 	acciones: [
 		accionCambiarParametro,
 		accionCambiarMinimo,

@@ -15,6 +15,7 @@ import {
 	accionTomarConsumibleTaller,
 } from "./acciones/registros.ts";
 import { bajadaDeProduccion } from "./bajada.ts";
+import { consultaHiloPedido } from "./consultas/hilo-pedido.ts";
 import {
 	cambiarFechaEntregaPedido,
 	mandarAProduccion,
@@ -32,7 +33,7 @@ import {
 	lotesSinTerminarDeVariante,
 	piezasEnProduccion,
 } from "./lecturas/lotes.ts";
-import { lotesAtorados } from "./lecturas/lotes-atorados.ts";
+import { lotesAtorados, saludDeLotes } from "./lecturas/lotes-atorados.ts";
 import { personaQueLaHizo } from "./lecturas/persona-que-la-hizo.ts";
 import { semillaDeParametrosDeProduccion } from "./parametros.ts";
 import { lectoresDeProduccion } from "./permisos.ts";
@@ -65,8 +66,10 @@ export default definirModulo({
 		poner_tarifa_a_registros: ponerTarifaARegistros,
 		recalcular_proyecciones: recalcularProyecciones,
 	},
+	consultas: [consultaHiloPedido],
 	lecturas: {
 		lotes_atorados: lotesAtorados,
+		salud_de_lotes: saludDeLotes,
 		flujo_vigente: flujoVigente,
 		piezas_en_produccion: piezasEnProduccion,
 		lotes_por_cortar: lotesPorCortar,

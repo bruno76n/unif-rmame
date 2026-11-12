@@ -38,6 +38,29 @@ export async function mandarAccion(
 	return { estado: respuesta.statusCode, cuerpo: respuesta.json() };
 }
 
+/**
+ * Pide una consulta como la web, con sus parámetros en la dirección.
+ * @param servidor El servidor de prueba.
+ * @param nombre La consulta (`admin.armazon`).
+ * @param parametros Sus parámetros.
+ * @param quien La cuenta de prueba que la pide.
+ * @returns El estado y el cuerpo.
+ */
+export async function pedirConsulta(
+	servidor: ServidorDePrueba,
+	nombre: string,
+	parametros: Record<string, string> = {},
+	quien = "ventas",
+): Promise<{ estado: number; cuerpo: Record<string, unknown> }> {
+	const busqueda = new URLSearchParams(parametros).toString();
+	const respuesta = await servidor.app.inject({
+		method: "GET",
+		url: `/v1/consultas/${nombre}${busqueda === "" ? "" : `?${busqueda}`}`,
+		headers: encabezadosDeLaWeb(quien),
+	});
+	return { estado: respuesta.statusCode, cuerpo: respuesta.json() };
+}
+
 /** Cuenta los renglones de una tabla de la base de prueba (con el dueño, para ver todo). */
 export async function contar(servidor: ServidorDePrueba, tabla: string): Promise<number> {
 	const { rows } = await servidor.base.dueno.query(`SELECT count(*)::int AS n FROM ${tabla}`);

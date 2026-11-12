@@ -24121,6 +24121,562 @@
         }
       }
     },
+    "/v1/consultas/admin.armazon": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "description": "El menú, la cuenta y sus pastillas: los departamentos de la cuenta con su conteo, sus permisos finos, sus avisos sin leer y la versión mínima de la web\n\nPermiso: cualquier cuenta con sesión.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "cuenta": {
+                          "type": "object",
+                          "properties": {
+                            "nombre": {
+                              "type": "string"
+                            },
+                            "iniciales": {
+                              "type": "string"
+                            },
+                            "correo": {
+                              "type": "string"
+                            },
+                            "puesto": {
+                              "type": "string",
+                              "description": "Su departamento, «Varios» si tiene más, o «Administradora principal»"
+                            },
+                            "es_duena": {
+                              "type": "boolean"
+                            },
+                            "es_soporte": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "nombre",
+                            "iniciales",
+                            "correo",
+                            "puesto",
+                            "es_duena",
+                            "es_soporte"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "departamentos": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "clave": {
+                                "type": "string",
+                                "enum": [
+                                  "direccion",
+                                  "compras",
+                                  "catalogo",
+                                  "patronaje",
+                                  "ventas",
+                                  "linea",
+                                  "produccion",
+                                  "puerta_taller",
+                                  "calidad",
+                                  "mantenimiento",
+                                  "aduana",
+                                  "bodega",
+                                  "contaduria",
+                                  "personal",
+                                  "admin"
+                                ]
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "grupo": {
+                                "nullable": true,
+                                "type": "string",
+                                "enum": [
+                                  "operacion",
+                                  "taller",
+                                  "almacen",
+                                  "administracion"
+                                ]
+                              },
+                              "orden": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "conteo": {
+                                "nullable": true,
+                                "description": "Lo que tiene que hacer ya; nulo si no lleva pastilla",
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "rojo": {
+                                "type": "boolean",
+                                "description": "Si algo está atrasado"
+                              }
+                            },
+                            "required": [
+                              "clave",
+                              "nombre",
+                              "grupo",
+                              "orden",
+                              "conteo",
+                              "rojo"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "permisos_finos": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "avisos_sin_leer": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "confirmado_hasta": {
+                          "nullable": true,
+                          "description": "Hasta cuándo vale su «Confirmar con Google»",
+                          "type": "string"
+                        },
+                        "version_minima_web": {
+                          "type": "string"
+                        },
+                        "servidor_en": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "cuenta",
+                        "departamentos",
+                        "permisos_finos",
+                        "avisos_sin_leer",
+                        "confirmado_hasta",
+                        "version_minima_web",
+                        "servidor_en"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/admin.mis_sesiones": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "description": "Las sesiones abiertas de la cuenta, con cuál es esta\n\nPermiso: cualquier cuenta con sesión.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "sesiones": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "aparato": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "ciudad": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "ip": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "entro_en": {
+                                "type": "string"
+                              },
+                              "ultima_actividad_en": {
+                                "type": "string"
+                              },
+                              "es_esta": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "aparato",
+                              "ciudad",
+                              "ip",
+                              "entro_en",
+                              "ultima_actividad_en",
+                              "es_esta"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "sesiones"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/admin.mis_avisos": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "description": "Los avisos de la cuenta, el más nuevo arriba, y cuántos van sin leer\n\nPermiso: cualquier cuenta con sesión.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "si",
+                "no"
+              ]
+            },
+            "in": "query",
+            "name": "solo_sin_leer",
+            "required": false,
+            "description": "«si» para ver solo los que no ha leído"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "description": "El cursor que regresó la página anterior; opaco"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            },
+            "in": "query",
+            "name": "limite",
+            "required": false,
+            "description": "Cuántos renglones, hasta 50"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "renglones": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "tipo": {
+                                "type": "string"
+                              },
+                              "texto": {
+                                "type": "string"
+                              },
+                              "enlace": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "creado_en": {
+                                "type": "string"
+                              },
+                              "leido": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "tipo",
+                              "texto",
+                              "enlace",
+                              "creado_en",
+                              "leido"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Los renglones de esta página"
+                        },
+                        "cursor": {
+                          "nullable": true,
+                          "description": "El cursor para pedir la página siguiente; nulo si no hay más",
+                          "type": "string"
+                        },
+                        "hay_mas": {
+                          "type": "boolean",
+                          "description": "Si hay más renglones después de esta página"
+                        },
+                        "sin_leer": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "renglones",
+                        "cursor",
+                        "hay_mas",
+                        "sin_leer"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/admin.historial_entidad": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "description": "El historial de un documento, de su bitácora: lo ve quien lee su tabla; sin montos para quien solo tiene Aduana o Bodega, y con el recorte de sueldos\n\nPermiso: cualquier cuenta con sesión.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80
+            },
+            "in": "query",
+            "name": "entidad",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "entidad_id",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "description": "El cursor que regresó la página anterior; opaco"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            },
+            "in": "query",
+            "name": "limite",
+            "required": false,
+            "description": "Cuántos renglones, hasta 50"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "renglones": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "ocurrido_en": {
+                                "type": "string"
+                              },
+                              "quien": {
+                                "type": "string"
+                              },
+                              "departamento": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "descripcion": {
+                                "type": "string"
+                              },
+                              "antes": {
+                                "nullable": true,
+                                "type": "object",
+                                "additionalProperties": {}
+                              },
+                              "despues": {
+                                "nullable": true,
+                                "type": "object",
+                                "additionalProperties": {}
+                              }
+                            },
+                            "required": [
+                              "ocurrido_en",
+                              "quien",
+                              "departamento",
+                              "descripcion",
+                              "antes",
+                              "despues"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Los renglones de esta página"
+                        },
+                        "cursor": {
+                          "nullable": true,
+                          "description": "El cursor para pedir la página siguiente; nulo si no hay más",
+                          "type": "string"
+                        },
+                        "hay_mas": {
+                          "type": "boolean",
+                          "description": "Si hay más renglones después de esta página"
+                        }
+                      },
+                      "required": [
+                        "renglones",
+                        "cursor",
+                        "hay_mas"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/consultas/direccion.autorizaciones": {
       "get": {
         "tags": [
@@ -24405,6 +24961,299 @@
                         "resueltas",
                         "cursor_resueltas",
                         "hay_mas_resueltas"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/inventario.pastillas_menu": {
+      "get": {
+        "tags": [
+          "inventario"
+        ],
+        "description": "Las pastillas de Aduana y Bodega, solo las de los departamentos de la cuenta\n\nPermiso: departamento aduana o bodega.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "aduana": {
+                          "nullable": true,
+                          "description": "Nula si la cuenta no tiene Aduana",
+                          "type": "object",
+                          "properties": {
+                            "conteo": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "Lo que el área tiene que hacer ya"
+                            },
+                            "rojo": {
+                              "type": "boolean",
+                              "description": "Si algo está atrasado o urge"
+                            }
+                          },
+                          "required": [
+                            "conteo",
+                            "rojo"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "bodega": {
+                          "nullable": true,
+                          "description": "Nula si la cuenta no tiene Bodega",
+                          "type": "object",
+                          "properties": {
+                            "conteo": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "Lo que el área tiene que hacer ya"
+                            },
+                            "rojo": {
+                              "type": "boolean",
+                              "description": "Si algo está atrasado o urge"
+                            }
+                          },
+                          "required": [
+                            "conteo",
+                            "rojo"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "aduana",
+                        "bodega"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/inventario.donde_esta": {
+      "get": {
+        "tags": [
+          "inventario"
+        ],
+        "description": "«¿Dónde está?»: por código (4 dígitos o más) o por prenda y talla, hasta 5 variantes con sus piezas en cada ubicación, lo apartado y lo que va de camino\n\nPermiso: departamento aduana o bodega o direccion.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80
+            },
+            "in": "query",
+            "name": "texto",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5
+            },
+            "in": "query",
+            "name": "limite",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "variantes": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "variante_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "prenda": {
+                                "type": "string"
+                              },
+                              "talla": {
+                                "type": "string"
+                              },
+                              "codigo": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "ubicaciones": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "codigo": {
+                                      "type": "string"
+                                    },
+                                    "nombre": {
+                                      "type": "string"
+                                    },
+                                    "piezas": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    }
+                                  },
+                                  "required": [
+                                    "codigo",
+                                    "nombre",
+                                    "piezas"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "total": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "comprometidas": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "libres": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "apartadas": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "documento": {
+                                      "type": "string"
+                                    },
+                                    "ubicacion": {
+                                      "type": "string"
+                                    },
+                                    "piezas": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    }
+                                  },
+                                  "required": [
+                                    "documento",
+                                    "ubicacion",
+                                    "piezas"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "en_camino": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "folio": {
+                                      "type": "string"
+                                    },
+                                    "piezas": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "destino": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "folio",
+                                    "piezas",
+                                    "destino"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "required": [
+                              "variante_id",
+                              "prenda",
+                              "talla",
+                              "codigo",
+                              "ubicaciones",
+                              "total",
+                              "comprometidas",
+                              "libres",
+                              "apartadas",
+                              "en_camino"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "variantes"
                       ],
                       "additionalProperties": false
                     },
@@ -24723,6 +25572,196 @@
                       },
                       "required": [
                         "personas"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/produccion.hilo_pedido": {
+      "get": {
+        "tags": [
+          "produccion"
+        ],
+        "description": "El hilo de un pedido: por prenda, las seis paradas con sus piezas y su línea, y sus lotes con su salud. Sin dinero\n\nPermiso: departamento produccion o ventas.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "pedido_id",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "producto_id",
+            "required": false,
+            "description": "Solo esa prenda"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "prendas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "producto_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "prenda": {
+                                "type": "string"
+                              },
+                              "paradas": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "parada": {
+                                      "type": "string",
+                                      "enum": [
+                                        "pedido",
+                                        "corte",
+                                        "costura",
+                                        "calidad",
+                                        "aduana",
+                                        "entrega"
+                                      ]
+                                    },
+                                    "piezas": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "linea": {
+                                      "type": "string"
+                                    },
+                                    "tono": {
+                                      "type": "string",
+                                      "enum": [
+                                        "normal",
+                                        "ambar",
+                                        "rojo"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "parada",
+                                    "piezas",
+                                    "linea",
+                                    "tono"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "lotes": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "lote_id": {
+                                      "type": "string",
+                                      "format": "uuid",
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                    },
+                                    "folio": {
+                                      "type": "string"
+                                    },
+                                    "estado": {
+                                      "type": "string"
+                                    },
+                                    "salud": {
+                                      "nullable": true,
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "lote_id",
+                                    "folio",
+                                    "estado",
+                                    "salud"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "de_mas": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "talla": {
+                                      "type": "string"
+                                    },
+                                    "piezas": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    }
+                                  },
+                                  "required": [
+                                    "talla",
+                                    "piezas"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "required": [
+                              "producto_id",
+                              "prenda",
+                              "paradas",
+                              "lotes",
+                              "de_mas"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "prendas"
                       ],
                       "additionalProperties": false
                     },

@@ -42,6 +42,8 @@ export function contextoDeDibujo(contexto: ContextoDeAccion): ContextoDeConsulta
 		ahora: contexto.ahora,
 		diaDeNegocio: contexto.diaDeNegocio,
 		apuntarConsultaSensible: async () => undefined,
+		registro: contexto.registro,
+		lectura: contexto.lectura,
 	};
 }
 

@@ -8,7 +8,7 @@
  * «Sin datos de la tablet» no cuenta como atorado.
  */
 
-import { saludDeLote } from "@uniformame/compartido/calculos/salud-lote";
+import { type SaludDeLote, saludDeLote } from "@uniformame/compartido/calculos/salud-lote";
 import { sql } from "drizzle-orm";
 import { Temporal } from "temporal-polyfill";
 import { z } from "zod";
@@ -120,11 +120,18 @@ export interface LoteAtorado {
 	ultimo_recibido: string | null;
 }
 
+/** La salud de hoy de un lote en proceso, con la máquina parada que lo detiene, si es por máquina. */
+export interface SaludDeLoteEnProceso {
+	lote: z.infer<typeof deLosLotes>[number];
+	salud: SaludDeLote;
+	paradaDesde: string | null;
+}
+
 /**
- * Los lotes en proceso que hoy están atorados (regla 7).
+ * La salud de hoy de cada lote en proceso (regla 7): la usan los lotes atorados y el hilo del pedido.
  * @param contexto La transacción de quien lee.
  */
-export async function lotesAtoradosDeHoy(contexto: ContextoDeAccion): Promise<LoteAtorado[]> {
+export async function saludDeLotesEnProceso(contexto: ContextoDeAccion): Promise<SaludDeLoteEnProceso[]> {
 	const { transaccion } = contexto;
 	const hoy = contexto.diaDeNegocio;
 	const numero = async (clave: string) => Number(await leerParametro(transaccion, { clave }));
@@ -174,8 +181,7 @@ export async function lotesAtoradosDeHoy(contexto: ContextoDeAccion): Promise<Lo
 	) {
 		if (!subio.has(dia.toString())) diasSinSubir.push(dia);
 	}
-	const atorados: LoteAtorado[] = [];
-	for (const lote of lotes) {
+	return lotes.map((lote) => {
 		const esperando = esperandoPorOperacion(porLote.filter((operacion) => operacion.lote_id === lote.id));
 		const porMaquina = atoradoPorMaquina(esperando, paradas);
 		const salud = saludDeLote({
@@ -191,18 +197,30 @@ export async function lotesAtoradosDeHoy(contexto: ContextoDeAccion): Promise<Lo
 			loteAtoradoDias,
 			riesgoAtrasoDias,
 		});
-		if (salud.tipo !== "atorado" && salud.tipo !== "atorado_maquina") continue;
-		atorados.push({
-			lote_id: lote.id,
-			folio: lote.folio,
-			fecha_entrega: lote.fecha_entrega,
-			pedido_id: lote.pedido_id,
-			operacion: salud.operacion ?? "su primera operación",
-			dias: salud.tipo === "atorado" ? salud.dias : 0,
-			falla: salud.tipo === "atorado_maquina" ? salud.falla : null,
-			parada_desde: salud.tipo === "atorado_maquina" ? (porMaquina?.desde ?? null) : null,
-			ultimo_recibido: lote.ultimo_recibido,
-		});
-	}
-	return atorados;
+		return { lote, salud, paradaDesde: salud.tipo === "atorado_maquina" ? (porMaquina?.desde ?? null) : null };
+	});
+}
+
+/**
+ * Los lotes en proceso que hoy están atorados (regla 7).
+ * @param contexto La transacción de quien lee.
+ */
+export async function lotesAtoradosDeHoy(contexto: ContextoDeAccion): Promise<LoteAtorado[]> {
+	return (await saludDeLotesEnProceso(contexto)).flatMap(({ lote, salud, paradaDesde }) =>
+		salud.tipo !== "atorado" && salud.tipo !== "atorado_maquina"
+			? []
+			: [
+					{
+						lote_id: lote.id,
+						folio: lote.folio,
+						fecha_entrega: lote.fecha_entrega,
+						pedido_id: lote.pedido_id,
+						operacion: salud.operacion ?? "su primera operación",
+						dias: salud.tipo === "atorado" ? salud.dias : 0,
+						falla: salud.tipo === "atorado_maquina" ? salud.falla : null,
+						parada_desde: paradaDesde,
+						ultimo_recibido: lote.ultimo_recibido,
+					},
+				],
+	);
 }

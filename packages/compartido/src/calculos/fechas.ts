@@ -103,6 +103,16 @@ export function textoDeDia(dia: DiaNegocio | string): string {
 }
 
 /**
+ * Cómo se escribe un día en las líneas cortas (el hilo, los estados): «13 oct».
+ * @param dia El día de negocio, o su texto ISO («2026-10-13»).
+ */
+export function textoDeDiaCorto(dia: DiaNegocio | string): string {
+	const fecha = Temporal.PlainDate.from(dia);
+	const mes = fecha.toLocaleString("es-MX", { month: "short" }).replace(".", "");
+	return `${fecha.day} ${mes}`;
+}
+
+/**
  * Cómo se escribe un mes en los mensajes: «octubre de 2026».
  * @param dia Cualquier día del mes, o su texto ISO («2026-10-01»).
  */

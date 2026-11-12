@@ -282,6 +282,19 @@ export async function crearServidor(dependencias: DependenciasDelServidor) {
 						diaDeNegocio: diaDeNegocio(ahora),
 						apuntarConsultaSensible: (renglon) =>
 							apuntarConsultaSensible(quienDe(peticion), contrato.nombre, ahora, renglon),
+						registro,
+						lectura: (nombre, datos) =>
+							enTransaccion(base, (transaccion) =>
+								crearContexto(
+									registro,
+									transaccion,
+									quienDe(peticion),
+									contrato.nombre,
+									ahora,
+									undefined,
+									dependencias.almacen,
+								).contexto.lectura(nombre, datos),
+							),
 					},
 					peticion.query,
 				);
@@ -342,6 +355,18 @@ export async function crearServidor(dependencias: DependenciasDelServidor) {
 					almacen: dependencias.almacen,
 					registro,
 					apuntarConsultaSensible: (renglon) => apuntarConsultaSensible(quien, ruta.nombre, ahora, renglon),
+					lectura: (nombre, datos) =>
+						enTransaccion(base, (transaccion) =>
+							crearContexto(
+								registro,
+								transaccion,
+								quien,
+								ruta.nombre,
+								ahora,
+								undefined,
+								dependencias.almacen,
+							).contexto.lectura(nombre, datos),
+						),
 					enTransaccion: (hacer) =>
 						enTransaccion(base, (transaccion) =>
 							hacer(

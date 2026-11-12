@@ -33,6 +33,8 @@ import { accionRecibirDelTaller, accionRecibirReproceso } from "./acciones/recib
 import { accionRecibirEnAduana } from "./acciones/recibir-en-aduana.ts";
 import { accionResolverExcepcion } from "./acciones/resolver-excepcion.ts";
 import { accionSurtirAAduana } from "./acciones/surtir-a-aduana.ts";
+import { consultaDondeEsta } from "./consultas/donde-esta.ts";
+import { consultaPastillasMenu, pastillaAduana, pastillaBodega } from "./consultas/pastillas-menu.ts";
 import { aplicarDecisionAjuste } from "./internas/aplicar-decision-ajuste.ts";
 import { aplicarRevisionDevolucion, esperarDevolucion } from "./internas/devoluciones.ts";
 import { registrarEntradaDelTaller } from "./internas/entrada-del-taller.ts";
@@ -88,6 +90,8 @@ const ubicacionesDeLaSiembra = [
 
 export default definirModulo({
 	nombre: "inventario",
+	consultas: [consultaPastillasMenu, consultaDondeEsta],
+	pastillas: { aduana: pastillaAduana, bodega: pastillaBodega },
 	// Las ubicaciones salen en las pantallas de todos los departamentos.
 	lectores: {
 		ubicaciones: todosLosDepartamentos,
