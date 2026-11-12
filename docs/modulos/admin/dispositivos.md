@@ -316,3 +316,5 @@ Los dos primeros van en `parametro`; los demás, en `tecnico`. La ventana de int
 - **Quién:** pide Bodega, solo la dueña y «Confirmar con Google» (`aplicar_retenido`).
 - **Si Bodega ya la resolvió:** el comando sigue retenido y la dueña aún lo puede aplicar; la excepción se queda con la resolución de Bodega, y `comandos_recibidos` guarda quién y cuándo lo aplicó (decisión 510).
 - **Prueba:** `aplicar-comando-retenido.prueba.ts` (con Google, la versión vieja, dos a la vez, lo que sigue retenido).
+
+**Fase 18, parte 3.** `admin.aparatos_sin_sincronizar` (`lecturas/aparatos-sin-sincronizar.ts`) usa la misma regla que el trabajo, sin ver si ya se avisó: por aparato, su id, su nombre, su ubicación, desde cuándo y ese tiempo para leer, con la misma cuenta del aviso (`tiempoParaLeer`: en horas hasta dos días, luego en días). La alerta de Dirección dice «{aparato} de {ubicación} sin sincronizar desde hace {tiempo}» (decisión 730). La prueba `direccion/trabajos/alertas-direccion.prueba.ts`.

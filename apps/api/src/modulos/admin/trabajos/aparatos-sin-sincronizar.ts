@@ -15,7 +15,7 @@ import { ubicaciones } from "../../inventario/tablas.ts";
 import { dispositivos, dispositivosSync } from "../tablas.ts";
 
 /** Los tipos de aparato que trabajan sin internet y tienen que sincronizar: la tablet y, con el POS, la caja. */
-const tiposQueSincronizan = ["tablet_taller", "computadora_tienda"];
+export const tiposQueSincronizan = ["tablet_taller", "computadora_tienda"];
 
 /**
  * El tiempo para leer: en horas hasta dos días, luego en días.

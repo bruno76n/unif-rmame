@@ -52,6 +52,7 @@ import { ligarArchivo } from "./internas/ligar-archivo.ts";
 import { mandarAImprimir } from "./internas/mandar-a-imprimir.ts";
 import { registrarRespaldo } from "./internas/registrar-respaldo.ts";
 import { tomarFolio } from "./internas/tomar-folio.ts";
+import { aparatosSinSincronizar as lecturaAparatosSinSincronizar } from "./lecturas/aparatos-sin-sincronizar.ts";
 import { correoDeCuenta } from "./lecturas/correo-de-cuenta.ts";
 import { cuentasPorRegla } from "./lecturas/cuentas-por-regla.ts";
 import { datosDeAparato } from "./lecturas/datos-de-aparato.ts";
@@ -115,6 +116,7 @@ export default definirModulo({
 	},
 	efectosDeAutorizacion: { alta_usuario: "aplicar_decision_alta_usuario" },
 	lecturas: {
+		aparatos_sin_sincronizar: lecturaAparatosSinSincronizar,
 		ultima_sincronizacion: ultimaSincronizacion,
 		parametro,
 		siguiente_folio: siguienteFolio,

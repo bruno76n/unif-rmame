@@ -233,3 +233,5 @@ Usa también `general.largo_minimo_motivo` ([configuración](../admin/configurac
 **Fase 10, parte 3.** Con `origen = desarrollo`, `desarrollo_id` es obligatorio (`400` «Escoge el desarrollo.», decisión 537); después de crear el producto, `patronaje.ligar_producto_desarrollo` deja el desarrollo «En catálogo», y si ya no está en ficha técnica responde `desarrollo_no_disponible` y no se crea nada.
 
 **Fase 18, parte 1.** «Aplicar cambios» que apaga «Tienda en línea» y «Descontinuar» llaman `linea.pausar_publicaciones_producto` (con `canal_apagado` o `descontinuado`), que no escribe nada mientras no haya publicaciones.
+
+**Fase 18, parte 3.** `catalogo.productos_descontinuados` (`lecturas/descontinuados.ts`) regresa por producto dado de baja su nombre y todas sus variantes, también las dadas de baja: la pieza ya existe. En el mismo archivo, `catalogo.nombres_de_productos` da el nombre de unos productos, para los títulos de la alerta de consumo de tela (decisión 730). Lo prueba `direccion/trabajos/alertas-direccion.prueba.ts`.

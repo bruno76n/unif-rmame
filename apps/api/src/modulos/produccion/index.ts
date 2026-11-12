@@ -32,6 +32,7 @@ import {
 	lotesSinTerminarDeVariante,
 	piezasEnProduccion,
 } from "./lecturas/lotes.ts";
+import { lotesAtorados } from "./lecturas/lotes-atorados.ts";
 import { personaQueLaHizo } from "./lecturas/persona-que-la-hizo.ts";
 import { semillaDeParametrosDeProduccion } from "./parametros.ts";
 import { lectoresDeProduccion } from "./permisos.ts";
@@ -65,6 +66,7 @@ export default definirModulo({
 		recalcular_proyecciones: recalcularProyecciones,
 	},
 	lecturas: {
+		lotes_atorados: lotesAtorados,
 		flujo_vigente: flujoVigente,
 		piezas_en_produccion: piezasEnProduccion,
 		lotes_por_cortar: lotesPorCortar,

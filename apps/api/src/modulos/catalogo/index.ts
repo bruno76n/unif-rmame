@@ -37,6 +37,7 @@ import {
 	reactivarListaCliente,
 	sincronizarNombreCliente,
 } from "./internas/listas-de-cliente.ts";
+import { nombresDeProductos, productosDescontinuados } from "./lecturas/descontinuados.ts";
 import { precioSugerido, precioTalla } from "./lecturas/precios.ts";
 import { datosVariantes, variantePorCodigo } from "./lecturas/variantes.ts";
 import { semillaDeParametrosDeCatalogo } from "./parametros.ts";
@@ -81,6 +82,8 @@ export default definirModulo({
 		cambiar_precio_en_linea: cambiarPrecioEnLinea,
 	},
 	lecturas: {
+		productos_descontinuados: productosDescontinuados,
+		nombres_de_productos: nombresDeProductos,
 		precio_talla: precioTalla,
 		precio_sugerido: precioSugerido,
 		variante_por_codigo: variantePorCodigo,

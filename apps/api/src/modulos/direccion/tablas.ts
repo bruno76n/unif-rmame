@@ -1,6 +1,7 @@
 /**
- * Las tablas de `direccion`: las autorizaciones (AU-).
+ * Las tablas de `direccion`: las autorizaciones (AU-) y la memoria del trabajo de las alertas.
  * Fase 7 · docs/modulos/direccion/autorizaciones.md («La tabla `autorizaciones`»)
+ * Fase 18 · docs/modulos/direccion/alertas-e-indicadores.md («La tabla `alertas_direccion_vistas`»)
  *
  * Cada tipo lleva su liga a su documento y las demás van vacías. Las ligas a documentos de fases posteriores
  * llevan su `@llavePendiente`. Un documento no tiene dos autorizaciones esperando: un único parcial por liga.
@@ -120,5 +121,30 @@ export const autorizaciones = pgTable(
 			sql`${tabla.estado} not in ('autorizada', 'rechazada') or (${tabla.decididaEn} is not null and ${tabla.decididaPor} is not null)`,
 		),
 		check("autorizaciones_cancelacion", sql`${tabla.estado} <> 'cancelada' or ${tabla.canceladoEn} is not null`),
+	],
+);
+
+/**
+ * La memoria del trabajo de las alertas de Dirección, para avisar solo las nuevas: cuándo vio cada clave por primera
+ * y por última vez y cuándo dejó de salir. No es el estado de la alerta: la pantalla la calcula al leer.
+ */
+export const alertasDireccionVistas = pgTable(
+	"alertas_direccion_vistas",
+	{
+		id: uuid("id").primaryKey(),
+		clave: text("clave").notNull(),
+		regla: text("regla").notNull(),
+		entidadId: uuid("entidad_id"),
+		titulo: text("titulo").notNull(),
+		color: text("color").notNull(),
+		primeraVezEn: momento("primera_vez_en").notNull(),
+		ultimaVezEn: momento("ultima_vez_en").notNull(),
+		desaparecioEn: momento("desaparecio_en"),
+		avisadaEn: momento("avisada_en"),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		uniqueIndex("alertas_direccion_vistas_clave").on(tabla.clave).where(sql`${tabla.desaparecioEn} is null`),
+		check("alertas_direccion_vistas_color", sql`${tabla.color} in ('rojo', 'ambar')`),
 	],
 );

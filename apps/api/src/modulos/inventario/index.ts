@@ -53,6 +53,7 @@ import {
 import { recalcularRollosSugeridos } from "./internas/rollos-sugeridos.ts";
 import { existenciaMaterial, piezasDeVariante } from "./lecturas/existencias.ts";
 import { existenciasDeMateriales, salidasDeMateriales } from "./lecturas/materiales.ts";
+import { existenciaDeVariantes, ultimoCuadre } from "./lecturas/para-direccion.ts";
 import { minimosVigentes, sugerenciasDeFabricar } from "./lecturas/reabasto.ts";
 import { recibidoDeOrdenes } from "./lecturas/recibido-de-ordenes.ts";
 import { libres, listoEnAduana } from "./lecturas/reservas.ts";
@@ -174,6 +175,8 @@ export default definirModulo({
 		ajuste_inventario: "aplicar_decision_ajuste",
 	},
 	lecturas: {
+		existencia_de_variantes: existenciaDeVariantes,
+		ultimo_cuadre: ultimoCuadre,
 		lotes_con_tela_entregada: lotesConTelaEntregada,
 		rollos_para_corte: rollosParaCorte,
 		existencia_material: existenciaMaterial,
