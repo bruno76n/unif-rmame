@@ -4,7 +4,6 @@
  * Fase 15 · docs/fases/15-contaduria-terceros-credito-y-cobranza.md («Criterios de terminado»)
  */
 
-import { v7 as uuidv7 } from "uuid";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { crearBase } from "../../../nucleo/base/conexion.ts";
 import { enAccionDePrueba } from "../../../nucleo/pruebas/accion-de-prueba.ts";
@@ -14,6 +13,7 @@ import {
 	internaDeContaduria,
 } from "../../../nucleo/pruebas/contaduria-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
+import { notaDePrueba } from "../../../nucleo/pruebas/ventas-de-prueba.ts";
 
 describe("El anticipo disponible nunca queda negativo, aun con dos notas al mismo tiempo", () => {
 	let servidor: ServidorDePrueba;
@@ -34,7 +34,7 @@ describe("El anticipo disponible nunca queda negativo, aun con dos notas al mism
 	it("Zamora deja $10,000 al PE-; la NV- de $18,400 descuenta $5,000: quedan $5,000 y la cuenta nace por $13,400", async () => {
 		const zamora = await clienteDePrueba(servidor);
 		const { pedidoId } = await anticipoRecibidoDePrueba(servidor, zamora, 1_000_000);
-		const nota = uuidv7();
+		const { notaId: nota } = await notaDePrueba(servidor, { pedidoId });
 		const aplicado = await internaDeContaduria(servidor, "aplicar_anticipo_a_nota", {
 			pedido_id: pedidoId,
 			cliente_id: zamora.clienteId,
@@ -71,23 +71,23 @@ describe("El anticipo disponible nunca queda negativo, aun con dos notas al mism
 			await internaDeContaduria(servidor, "aplicar_anticipo_a_nota", {
 				pedido_id: pedidoId,
 				cliente_id: cliente.clienteId,
-				nota_entrega_id: uuidv7(),
+				nota_entrega_id: (await notaDePrueba(servidor, { pedidoId })).notaId,
 				monto_centavos: 300_100,
 			}),
 		).toMatchObject({
 			codigo: "anticipo_insuficiente",
-			mensaje: expect.stringMatching(/^El pedido PE-\d{4} solo tiene \$3,000 de anticipo\.$/),
+			mensaje: expect.stringMatching(/^El pedido PE-P[0-9a-f]{8} solo tiene \$3,000 de anticipo\.$/),
 		});
 	});
 
 	it("dos notas a la vez que juntas pasan del disponible: entra una y el disponible no queda negativo", async () => {
 		const cliente = await clienteDePrueba(servidor);
 		const { pedidoId } = await anticipoRecibidoDePrueba(servidor, cliente, 1_000_000);
-		const aplicar = () =>
+		const aplicar = async () =>
 			internaDeContaduria(servidor, "aplicar_anticipo_a_nota", {
 				pedido_id: pedidoId,
 				cliente_id: cliente.clienteId,
-				nota_entrega_id: uuidv7(),
+				nota_entrega_id: (await notaDePrueba(servidor, { pedidoId })).notaId,
 				monto_centavos: 600_000,
 			});
 		const resultados = await Promise.all([aplicar(), aplicar()]);

@@ -1,6 +1,7 @@
 /**
- * Los contratos de los reclamos: registrar uno, del código de la prenda a su lote, y marcarlo resuelto.
- * Fase 13 · docs/modulos/calidad/reclamos-y-devoluciones.md («Acciones»)
+ * Los contratos de los reclamos y las devoluciones: registrar un reclamo, del código de la prenda a su lote, marcarlo
+ * resuelto y revisar lo que regresó con defecto.
+ * Fases 13 y 16 · docs/modulos/calidad/reclamos-y-devoluciones.md («Acciones»)
  */
 
 import { z } from "zod";
@@ -83,5 +84,33 @@ export const resolverReclamo = definirAccion({
 	salida: z.object({}),
 	permiso: { departamento: "calidad" },
 	errores: [{ codigo: "reclamo_ya_resuelto", mensaje: "Ese reclamo ya está resuelto." }],
+	edita: true,
+});
+
+/** Calidad revisa lo que regresó con defecto: lo que sirve pasa a Bodega y la merma sale. */
+export const revisarDevolucion = definirAccion({
+	nombre: "calidad.revisar_devolucion",
+	descripcion: "Revisa una devolución en aduana: lo que sirve pasa a bodega y lo demás sale como merma",
+	entrada: z.object({
+		traspaso_id: z.uuid().describe("La devolución en aduana"),
+		renglones: z
+			.array(
+				z.object({
+					traspaso_linea_id: z.uuid().describe("El renglón de la devolución"),
+					piezas: z.number("¿Cuántas piezas?").int("Número entero").positive("¿Cuántas piezas?").describe("Cuántas"),
+					decision: z.enum(["sirve", "merma"]).describe("«Sirve: pasa a bodega» o «Es merma»"),
+					defecto_id: z.uuid().optional().describe("El defecto, si se sabe"),
+					motivo: z.string().trim().max(200).optional().describe("Con qué tiene; obligatorio en merma"),
+				}),
+			)
+			.min(1)
+			.describe("Por renglón y decisión"),
+	}),
+	salida: z.object({ a_bodega: z.number().int(), merma: z.number().int() }),
+	permiso: { departamento: "calidad" },
+	errores: [
+		{ codigo: "devolucion_no_en_aduana", mensaje: "Esa devolución todavía no está en aduana." },
+		{ codigo: "piezas_mas_que_pendientes", mensaje: "En ese renglón quedan {n} piezas por revisar." },
+	],
 	edita: true,
 });

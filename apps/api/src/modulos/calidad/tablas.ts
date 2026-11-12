@@ -3,6 +3,7 @@
  * rechazos, el catálogo de defectos con las operaciones que suelen causarlos y los reclamos.
  * Fase 13 · docs/modulos/calidad/revision-de-lotes.md («La tabla `revisiones`», `revision_tallas`, `rechazos`,
  * `reprocesos`, `defectos` y `defecto_operaciones`); parte 2 · reclamos-y-devoluciones.md («La tabla `reclamos`»)
+ * Fase 16 · docs/modulos/calidad/reclamos-y-devoluciones.md («La tabla `revisiones_devolucion`»)
  *
  * La revisión nace cerrada y no cambia: ella, sus tallas y sus rechazos solo crecen. Ninguna baja a un aparato todavía
  * (los defectos bajan a la caja con el POS).
@@ -24,10 +25,10 @@ import {
 import { columnasComunes, columnasDeBaja, momento, valores } from "../../nucleo/base/columnas.ts";
 import { usuarios } from "../admin/tablas.ts";
 import { variantes } from "../catalogo/tablas.ts";
-import { ubicaciones } from "../inventario/tablas.ts";
+import { traspasoLineas, traspasos, ubicaciones } from "../inventario/tablas.ts";
 import { personas } from "../personal/tablas.ts";
 import { flujoOperaciones, lotes, operaciones } from "../produccion/tablas.ts";
-import { clientes } from "../ventas/tablas.ts";
+import { clientes, notasCredito, notasEntrega } from "../ventas/tablas.ts";
 
 /** De dónde viene un reclamo. */
 export const origenesDeReclamo = ["cliente_externo", "tienda"] as const;
@@ -209,8 +210,7 @@ export const reclamos = pgTable(
 		ubicacionId: uuid("ubicacion_id").references(() => ubicaciones.id),
 		/** @llavePendiente salidas_tienda.id */
 		salidaTiendaId: uuid("salida_tienda_id"),
-		/** @llavePendiente notas_entrega.id */
-		notaEntregaId: uuid("nota_entrega_id"),
+		notaEntregaId: uuid("nota_entrega_id").references((): AnyPgColumn => notasEntrega.id),
 		varianteId: uuid("variante_id")
 			.notNull()
 			.references(() => variantes.id),
@@ -247,5 +247,50 @@ export const reclamos = pgTable(
 			sql`(${tabla.estado} = 'resuelto') = (${tabla.resueltoEn} is not null and ${tabla.resueltoPor} is not null)`,
 		),
 		check("reclamos_resolucion", sql`${tabla.resolucion} is null or char_length(${tabla.resolucion}) <= 200`),
+	],
+);
+
+/** De dónde viene una devolución que revisa Calidad: sale del tipo de su traspaso. */
+export const origenesDeDevolucion = ["salida_tienda", "nota_credito", "devolucion_linea"] as const;
+
+/** Lo que decide Calidad de una devolución. */
+export const decisionesDeDevolucion = ["sirve", "merma"] as const;
+
+/** La revisión de Calidad de lo que regresó con defecto: una por renglón y decisión. Solo crece. */
+export const revisionesDevolucion = pgTable(
+	"revisiones_devolucion",
+	{
+		id: uuid("id").primaryKey(),
+		traspasoId: uuid("traspaso_id")
+			.notNull()
+			.references((): AnyPgColumn => traspasos.id),
+		traspasoLineaId: uuid("traspaso_linea_id")
+			.notNull()
+			.references((): AnyPgColumn => traspasoLineas.id),
+		origen: text("origen").notNull(),
+		/** @llavePendiente salidas_tienda.id */
+		salidaTiendaId: uuid("salida_tienda_id"),
+		notaCreditoId: uuid("nota_credito_id").references((): AnyPgColumn => notasCredito.id),
+		varianteId: uuid("variante_id")
+			.notNull()
+			.references(() => variantes.id),
+		loteId: uuid("lote_id").references(() => lotes.id),
+		piezas: integer("piezas").notNull(),
+		decision: text("decision").notNull(),
+		defectoId: uuid("defecto_id").references(() => defectos.id),
+		motivo: text("motivo"),
+		revisadoPor: uuid("revisado_por")
+			.notNull()
+			.references(() => usuarios.id),
+		revisadoEn: momento("revisado_en").notNull(),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		index("revisiones_devolucion_traspaso").on(tabla.traspasoId),
+		index("revisiones_devolucion_linea").on(tabla.traspasoLineaId),
+		check("revisiones_devolucion_origen", sql`${tabla.origen} in (${valores(origenesDeDevolucion)})`),
+		check("revisiones_devolucion_decision", sql`${tabla.decision} in (${valores(decisionesDeDevolucion)})`),
+		check("revisiones_devolucion_piezas", sql`${tabla.piezas} > 0`),
+		check("revisiones_devolucion_motivo", sql`${tabla.decision} <> 'merma' or char_length(trim(${tabla.motivo})) > 0`),
 	],
 );

@@ -8,6 +8,7 @@ import { and, eq, gt, inArray, isNull } from "drizzle-orm";
 import { z } from "zod";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
 import { avanceDelPedido } from "../dominio/avance-de-pedido.ts";
+import { notasDelPedido } from "../dominio/notas.ts";
 import { leerPedido, renglonesVigentes, totalDe } from "../dominio/pedidos.ts";
 import { pedidoRenglones, pedidos } from "../tablas.ts";
 
@@ -57,8 +58,7 @@ export async function pedidoParaCobro(contexto: ContextoDeAccion, datos: unknown
 		folio: pedido.folio,
 		abierto: pedido.estado === "confirmado",
 		total_centavos: totalDe(await renglonesVigentes(contexto.transaccion, pedido_id)),
-		// Las notas de entrega llegan en la parte 4: hasta entonces, un pedido no tiene notas.
-		notas_centavos: 0,
+		notas_centavos: (await notasDelPedido(contexto.transaccion, pedido_id)).subtotalCentavos,
 	};
 }
 

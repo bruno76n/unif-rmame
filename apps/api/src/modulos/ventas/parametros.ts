@@ -1,7 +1,7 @@
 /**
- * Los parámetros que declara `ventas`: con qué forma de pago abre un pedido, lo más que lleva una talla y los días de
- * las alertas de entrega.
- * Fase 16 · docs/modulos/ventas/pedidos.md («Parámetros»)
+ * Los parámetros que declara `ventas`: con qué forma de pago abre un pedido, lo más que lleva una talla, los días de
+ * las alertas de entrega y lo menos que llevan «quién recibió» y «qué pasó».
+ * Fase 16 · docs/modulos/ventas/pedidos.md, notas-de-entrega.md y notas-de-credito.md («Parámetros»)
  */
 
 import { semillaDeParametros } from "../../nucleo/parametros.ts";
@@ -50,5 +50,27 @@ export const semillaDeParametrosDeVentas = semillaDeParametros("ventas", [
 		inicial: 7,
 		minimo: 1,
 		orden: 4,
+	},
+	{
+		clave: "ventas.largo_minimo_quien_recibio",
+		seccion: "parametro",
+		nombre: "Largo mínimo de «quién recibió»",
+		explicacion: "Lo menos que lleva «quién recibió» al confirmar una entrega",
+		tipo: "entero",
+		unidad: "letras",
+		inicial: 3,
+		minimo: 1,
+		orden: 5,
+	},
+	{
+		clave: "ventas.largo_minimo_que_paso",
+		seccion: "parametro",
+		nombre: "Largo mínimo de «qué pasó»",
+		explicacion: "Lo menos que lleva «qué pasó» al pedir una nota de crédito",
+		tipo: "entero",
+		unidad: "letras",
+		inicial: 10,
+		minimo: 1,
+		orden: 6,
 	},
 ]);

@@ -26,6 +26,7 @@ import {
 import { accionDevolverAProveedor } from "./acciones/devolver-a-proveedor.ts";
 import { accionEntregarAlCorte, accionRecibirDelCorte } from "./acciones/entregas-corte.ts";
 import { accionGuardarConteo } from "./acciones/guardar-conteo.ts";
+import { accionNoLaEncuentro } from "./acciones/no-la-encuentro.ts";
 import { accionMoverATienda, accionSugerirFabricar } from "./acciones/reabasto.ts";
 import { accionRecibirDeProveedor } from "./acciones/recibir-de-proveedor.ts";
 import { accionRecibirDelTaller, accionRecibirReproceso } from "./acciones/recibir-del-taller.ts";
@@ -33,8 +34,10 @@ import { accionRecibirEnAduana } from "./acciones/recibir-en-aduana.ts";
 import { accionResolverExcepcion } from "./acciones/resolver-excepcion.ts";
 import { accionSurtirAAduana } from "./acciones/surtir-a-aduana.ts";
 import { aplicarDecisionAjuste } from "./internas/aplicar-decision-ajuste.ts";
+import { aplicarRevisionDevolucion, esperarDevolucion } from "./internas/devoluciones.ts";
 import { registrarEntradaDelTaller } from "./internas/entrada-del-taller.ts";
 import { devolverEntregaCorte, lotesConTelaEntregada } from "./internas/entregas-corte.ts";
+import { entregarAClienteExterno, pasarABodega } from "./internas/entregas-de-clientes.ts";
 import { marcarExcepcionResuelta, registrarExcepcion, tomarVersionExcepcion } from "./internas/excepciones.ts";
 import { actualizarCostoRollos, aplicarDecisionRecepcionDeMas, tomarConsumible } from "./internas/material.ts";
 import { registrarMermaProduccion, revertirMermaProduccion } from "./internas/merma-produccion.ts";
@@ -137,6 +140,7 @@ export default definirModulo({
 		accionRegistrarCargaInicialMaterial,
 		accionMoverATienda,
 		accionSugerirFabricar,
+		accionNoLaEncuentro,
 	],
 	internas: {
 		recalcular_rollos_sugeridos: recalcularRollosSugeridos,
@@ -159,6 +163,10 @@ export default definirModulo({
 		registrar_entrada_del_taller: registrarEntradaDelTaller,
 		guardar_minimo: guardarMinimo,
 		decidir_sugerencia: decidirSugerencia,
+		entregar_a_cliente_externo: entregarAClienteExterno,
+		pasar_a_bodega: pasarABodega,
+		esperar_devolucion: esperarDevolucion,
+		aplicar_revision_devolucion: aplicarRevisionDevolucion,
 	},
 	efectosDeAutorizacion: {
 		recepcion_de_mas: "aplicar_decision_recepcion_de_mas",

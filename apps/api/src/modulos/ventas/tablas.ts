@@ -1,17 +1,34 @@
 /**
- * Las tablas de `ventas`: los clientes externos y sus pedidos, con sus renglones y sus versiones.
- * Fase 16 · docs/modulos/ventas/clientes.md («La tabla `clientes`») y docs/modulos/ventas/pedidos.md (las tres tablas)
+ * Las tablas de `ventas`: los clientes externos y sus pedidos, con sus renglones y sus versiones, y las notas de
+ * entrega con sus renglones.
+ * Fase 16 · docs/modulos/ventas/clientes.md («La tabla `clientes`»), docs/modulos/ventas/pedidos.md (las tres tablas)
+ * docs/modulos/ventas/notas-de-entrega.md y docs/modulos/ventas/notas-de-credito.md (las dos tablas de cada una)
  *
  * El nombre y el RFC del cliente viven en su tercero; aquí, lo que necesita Ventas para venderle y Aduana para
- * despacharle. Con esta tabla dejan su `@llavePendiente` las columnas que apuntan a los clientes.
+ * despacharle. Con estas tablas dejan su `@llavePendiente` las columnas que apuntan a los clientes, los pedidos y las
+ * notas.
  */
 
 import { sql } from "drizzle-orm";
-import { bigint, check, date, index, integer, numeric, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import {
+	type AnyPgColumn,
+	bigint,
+	check,
+	date,
+	index,
+	integer,
+	numeric,
+	pgTable,
+	text,
+	uniqueIndex,
+	uuid,
+} from "drizzle-orm/pg-core";
 import { columnasComunes, columnasDeBaja, momento, valores } from "../../nucleo/base/columnas.ts";
 import { usuarios } from "../admin/tablas.ts";
 import { escuelas, variantes } from "../catalogo/tablas.ts";
 import { terceros } from "../contaduria/tablas.ts";
+import { autorizaciones } from "../direccion/tablas.ts";
+import { despachos } from "../inventario/tablas.ts";
 
 /** Los tres tipos de cliente; el tipo no cambia. */
 export const tiposDeCliente = ["escuela", "mayorista", "empresa_otro"] as const;
@@ -170,5 +187,156 @@ export const pedidoVersiones = pgTable(
 		uniqueIndex("pedido_versiones_numero").on(tabla.pedidoId, tabla.numero),
 		check("pedido_versiones_origen", sql`${tabla.origen} in (${valores(origenesDeVersion)})`),
 		check("pedido_versiones_forma_pago", sql`${tabla.formaPago} in (${valores(formasDePago)})`),
+	],
+);
+
+/** El estado de una nota de entrega; `entregada` y `cancelada` son finales. */
+export const estadosDeNotaEntrega = ["por_despachar", "en_camino", "entregada", "cancelada"] as const;
+
+/** La nota de entrega NV- con que sale de aduana lo listo de un pedido. Su subtotal no cambia desde que nace. */
+export const notasEntrega = pgTable(
+	"notas_entrega",
+	{
+		id: uuid("id").primaryKey(),
+		folio: text("folio").notNull(),
+		pedidoId: uuid("pedido_id")
+			.notNull()
+			.references(() => pedidos.id),
+		clienteId: uuid("cliente_id")
+			.notNull()
+			.references(() => clientes.id),
+		numeroEnPedido: integer("numero_en_pedido").notNull(),
+		estado: text("estado").notNull(),
+		subtotalCentavos: bigint("subtotal_centavos", { mode: "number" }).notNull(),
+		anticipoAplicadoCentavos: bigint("anticipo_aplicado_centavos", { mode: "number" }).notNull().default(0),
+		despachoId: uuid("despacho_id").references((): AnyPgColumn => despachos.id),
+		despachadoEn: momento("despachado_en"),
+		fechaEntrega: date("fecha_entrega", { mode: "string" }),
+		entregadaEn: momento("entregada_en"),
+		recibioNombre: text("recibio_nombre"),
+		entregadaPor: uuid("entregada_por").references(() => usuarios.id),
+		canceladoEn: momento("cancelado_en"),
+		canceladoPor: uuid("cancelado_por").references(() => usuarios.id),
+		motivoCancelacion: text("motivo_cancelacion"),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		uniqueIndex("notas_entrega_folio").on(tabla.folio),
+		uniqueIndex("notas_entrega_numero").on(tabla.pedidoId, tabla.numeroEnPedido),
+		index("notas_entrega_abiertas").on(tabla.estado).where(sql`${tabla.estado} in ('por_despachar', 'en_camino')`),
+		index("notas_entrega_despacho").on(tabla.despachoId),
+		check("notas_entrega_estado", sql`${tabla.estado} in (${valores(estadosDeNotaEntrega)})`),
+		check("notas_entrega_numero", sql`${tabla.numeroEnPedido} >= 1`),
+		check(
+			"notas_entrega_montos",
+			sql`${tabla.subtotalCentavos} > 0 and ${tabla.anticipoAplicadoCentavos} between 0 and ${tabla.subtotalCentavos}`,
+		),
+		check(
+			"notas_entrega_despachada",
+			sql`(${tabla.estado} in ('en_camino', 'entregada')) = (${tabla.despachoId} is not null and ${tabla.despachadoEn} is not null)`,
+		),
+		check(
+			"notas_entrega_entregada",
+			sql`(${tabla.estado} = 'entregada') = (${tabla.fechaEntrega} is not null and ${tabla.entregadaEn} is not null
+				and ${tabla.recibioNombre} is not null and ${tabla.entregadaPor} is not null)`,
+		),
+		check(
+			"notas_entrega_cancelada",
+			sql`(${tabla.estado} = 'cancelada') = (${tabla.canceladoEn} is not null and ${tabla.canceladoPor} is not null
+				and ${tabla.motivoCancelacion} is not null)`,
+		),
+	],
+);
+
+/** Un renglón por talla de una nota de entrega, con el precio que copió del pedido. */
+export const notaEntregaLineas = pgTable(
+	"nota_entrega_lineas",
+	{
+		id: uuid("id").primaryKey(),
+		notaEntregaId: uuid("nota_entrega_id")
+			.notNull()
+			.references(() => notasEntrega.id),
+		pedidoRenglonId: uuid("pedido_renglon_id")
+			.notNull()
+			.references(() => pedidoRenglones.id),
+		varianteId: uuid("variante_id")
+			.notNull()
+			.references(() => variantes.id),
+		cantidad: integer("cantidad").notNull(),
+		precioUnitarioCentavos: bigint("precio_unitario_centavos", { mode: "number" }).notNull(),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		uniqueIndex("nota_entrega_lineas_variante").on(tabla.notaEntregaId, tabla.varianteId),
+		index("nota_entrega_lineas_por_variante").on(tabla.varianteId),
+		check("nota_entrega_lineas_cantidad", sql`${tabla.cantidad} > 0`),
+		check("nota_entrega_lineas_precio", sql`${tabla.precioUnitarioCentavos} > 0`),
+	],
+);
+
+/** El estado de una nota de crédito: `autorizada` y `rechazada` ya no cambian. */
+export const estadosDeNotaCredito = ["por_autorizar", "autorizada", "rechazada"] as const;
+
+/** La nota de crédito NC- que corrige una nota de entrega ya entregada. Su folio nace al autorizarse. */
+export const notasCredito = pgTable(
+	"notas_credito",
+	{
+		id: uuid("id").primaryKey(),
+		folio: text("folio"),
+		notaEntregaId: uuid("nota_entrega_id")
+			.notNull()
+			.references(() => notasEntrega.id),
+		pedidoId: uuid("pedido_id")
+			.notNull()
+			.references(() => pedidos.id),
+		clienteId: uuid("cliente_id")
+			.notNull()
+			.references(() => clientes.id),
+		estado: text("estado").notNull(),
+		quePaso: text("que_paso").notNull(),
+		montoCentavos: bigint("monto_centavos", { mode: "number" }).notNull(),
+		autorizacionId: uuid("autorizacion_id").references((): AnyPgColumn => autorizaciones.id),
+		autorizadaEn: momento("autorizada_en"),
+		rechazadaEn: momento("rechazada_en"),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		uniqueIndex("notas_credito_folio").on(tabla.folio).where(sql`${tabla.folio} is not null`),
+		uniqueIndex("notas_credito_por_autorizar").on(tabla.notaEntregaId).where(sql`${tabla.estado} = 'por_autorizar'`),
+		uniqueIndex("notas_credito_autorizacion").on(tabla.autorizacionId),
+		index("notas_credito_cliente").on(tabla.clienteId),
+		check("notas_credito_estado", sql`${tabla.estado} in (${valores(estadosDeNotaCredito)})`),
+		check("notas_credito_monto", sql`${tabla.montoCentavos} > 0`),
+		check(
+			"notas_credito_autorizada",
+			sql`(${tabla.estado} = 'autorizada') = (${tabla.folio} is not null and ${tabla.autorizadaEn} is not null)`,
+		),
+		check("notas_credito_rechazada", sql`(${tabla.estado} = 'rechazada') = (${tabla.rechazadaEn} is not null)`),
+	],
+);
+
+/** Las piezas que regresan con una nota de crédito, por renglón de su nota. */
+export const notaCreditoLineas = pgTable(
+	"nota_credito_lineas",
+	{
+		id: uuid("id").primaryKey(),
+		notaCreditoId: uuid("nota_credito_id")
+			.notNull()
+			.references(() => notasCredito.id),
+		notaEntregaLineaId: uuid("nota_entrega_linea_id")
+			.notNull()
+			.references(() => notaEntregaLineas.id),
+		varianteId: uuid("variante_id")
+			.notNull()
+			.references(() => variantes.id),
+		cantidad: integer("cantidad").notNull(),
+		precioUnitarioCentavos: bigint("precio_unitario_centavos", { mode: "number" }).notNull(),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		uniqueIndex("nota_credito_lineas_renglon").on(tabla.notaCreditoId, tabla.notaEntregaLineaId),
+		index("nota_credito_lineas_por_renglon").on(tabla.notaEntregaLineaId),
+		check("nota_credito_lineas_cantidad", sql`${tabla.cantidad} > 0`),
+		check("nota_credito_lineas_precio", sql`${tabla.precioUnitarioCentavos} > 0`),
 	],
 );

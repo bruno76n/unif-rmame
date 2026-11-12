@@ -157,4 +157,13 @@ Los cambia solo la dueña, en Configuración (ver [configuración](../admin/conf
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 16.*
+**Fase 16, parte 4.** En `modulos/ventas/`:
+
+- **Las tablas** `notas_entrega` y `nota_entrega_lineas` (`tablas.ts`, migración `0057`, que también pone las llaves a las notas de traspasos, reservas, despachos, anticipos, pagos, cuentas por cobrar, autorizaciones y reclamos), con sus CHECK: el estado, el número en el pedido, el anticipo de 0 al subtotal, y lo lleno en cada estado. `nota_entrega_lineas` solo crece. Las leen Ventas, Contaduría y Dirección; Aduana la ve sin precios en sus consultas (fase 19). El parámetro `ventas.largo_minimo_quien_recibio` está en `parametros.ts`.
+- **Las acciones** (`acciones/notas.ts`, contratos en `packages/compartido/src/contratos/ventas/notas.ts`) toman primero el pedido y después su nota (decisión 690):
+  - `armar_nota_entrega` toma la versión del pedido, copia el precio del renglón vigente (una talla que ya no está en el pedido es `talla_fuera_del_pedido`, decisión 688), da el número que sigue en el pedido aunque haya canceladas, aparta con `inventario.apartar_para_nota` y descuenta lo menor entre el disponible de `contaduria.anticipo_del_pedido` y el subtotal con `contaduria.aplicar_anticipo_a_nota`. Regresa el subtotal, el anticipo y lo que queda por cobrar.
+  - `cancelar_nota_entrega` toma la versión de la nota; solo por despachar; llama `inventario.devolver_de_nota` y `contaduria.regresar_anticipo_a_pedido`.
+  - `confirmar_entrega` (Ventas o Aduana) toma la versión de la nota; revisa «quién recibió» con el parámetro; llama `inventario.entregar_a_cliente_externo` y `contaduria.crear_cuenta_por_cobrar` con los días de crédito del pedido, y deja el pedido entregado si ya cubre lo pedido (`entregarSiCubre`, el mismo de guardar una versión). Lo que queda por cobrar solo regresa a Ventas, Contaduría y la dueña (decisión 690).
+  - `pasar_a_bodega` toma la versión del pedido, revisa lo listo sin nota (`piezas_de_mas`), abre la versión `pasar_a_bodega` con esas tallas bajadas y su mismo precio, y llama `inventario.pasar_a_bodega`.
+- **La interna** `marcar_nota_en_camino` la llama `inventario.despachar`: la nota pasa a en camino con su D- y regresa su folio y el nombre del cliente para el mensaje de Aduana (decisión 689).
+- **Pruebas:** `acciones/notas-de-entrega.prueba.ts` (armar con su precio y su anticipo, nota i de n y nunca más de lo listo; cancelar y su anticipo; despachar y entregar hasta el pedido entregado; pasar a bodega; un pedido con notas no se cancela y su avance cuenta lo que va en nota). Las ayudas `notaDePrueba` y `listoEnAduanaDePrueba` están en `nucleo/pruebas/`.

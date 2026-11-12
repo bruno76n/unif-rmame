@@ -1,7 +1,7 @@
 /**
  * Las ayudas de las pruebas de Ventas: un cliente dado de alta con `ventas.crear_cliente`, o solo su renglón (con su
- * tercero) para las pruebas que crean su lista o su crédito con las internas; un pedido escrito directo, una prenda
- * que se vende a externos y guardar o confirmar un pedido con las acciones.
+ * tercero) para las pruebas que crean su lista o su crédito con las internas; un pedido y una nota de entrega escritos
+ * directo, una prenda que se vende a externos y guardar o confirmar un pedido con las acciones.
  * Fase 16 · docs/fases/16-ventas-a-externos.md («Cómo se construye»)
  */
 
@@ -115,6 +115,66 @@ export async function pedidoDePrueba(servidor: ServidorDePrueba, clienteId?: str
 		`INSERT INTO pedido_versiones (id, pedido_id, numero, origen, fecha_entrega, forma_pago, dias_credito)
 		 SELECT $1, id, 1, 'confirmacion', fecha_entrega, forma_pago, dias_credito FROM pedidos WHERE id = $2`,
 		[uuidv7(), id],
+	);
+	return id;
+}
+
+/**
+ * El número en su pedido de la siguiente nota escrita directo: uno por nota, que nunca se repite aunque dos pruebas
+ * escriban notas del mismo pedido a la vez.
+ */
+let numeroDeNotaDePrueba = 0;
+
+/** Una nota de entrega escrita directo: su id, su pedido y su folio. */
+export interface NotaEscritaDePrueba {
+	notaId: string;
+	pedidoId: string;
+	folio: string;
+}
+
+/**
+ * Escribe directo una nota de entrega por despachar, sin renglones, para las pruebas que solo necesitan una nota de
+ * verdad a la que apunten sus reservas, sus traspasos, sus cuentas por cobrar o sus anticipos.
+ * @param servidor El servidor de prueba.
+ * @param datos Su pedido (uno nuevo del cliente si no se dice), su cliente (el del pedido), su folio (`NV-P…` si no se
+ * dice) y su subtotal en centavos (10,000 si no se dice).
+ */
+export async function notaDePrueba(
+	servidor: ServidorDePrueba,
+	datos: { pedidoId?: string; clienteId?: string; folio?: string; subtotalCentavos?: number } = {},
+): Promise<NotaEscritaDePrueba> {
+	const pedidoId = datos.pedidoId ?? (await pedidoDePrueba(servidor, datos.clienteId));
+	const notaId = uuidv7();
+	const folio = datos.folio ?? `NV-P${notaId.slice(-8)}`;
+	numeroDeNotaDePrueba += 1;
+	await servidor.base.dueno.query(
+		`INSERT INTO notas_entrega (id, folio, pedido_id, cliente_id, numero_en_pedido, estado, subtotal_centavos)
+		 SELECT $1, $2, p.id, p.cliente_id, $5, 'por_despachar', $4 FROM pedidos p WHERE p.id = $3`,
+		[notaId, folio, pedidoId, datos.subtotalCentavos ?? 10_000, numeroDeNotaDePrueba],
+	);
+	return { notaId, pedidoId, folio };
+}
+
+/**
+ * Escribe directo una nota de crédito autorizada de una nota, sin piezas, para las pruebas de Contaduría que solo
+ * necesitan una de verdad a la que apunten sus aplicaciones y su saldo a favor.
+ * @param servidor El servidor de prueba.
+ * @param notaId La nota de entrega.
+ * @param datos Su folio (`NC-P…` si no se dice) y su monto (10,000 centavos si no se dice).
+ * @returns Su id.
+ */
+export async function notaCreditoDePrueba(
+	servidor: ServidorDePrueba,
+	notaId: string,
+	datos: { folio?: string; montoCentavos?: number } = {},
+): Promise<string> {
+	const id = uuidv7();
+	await servidor.base.dueno.query(
+		`INSERT INTO notas_credito (id, folio, nota_entrega_id, pedido_id, cliente_id, estado, que_paso, monto_centavos,
+			autorizada_en)
+		 SELECT $1, $2, n.id, n.pedido_id, n.cliente_id, 'autorizada', 'Nota de crédito de prueba', $4, now()
+		 FROM notas_entrega n WHERE n.id = $3`,
+		[id, datos.folio ?? `NC-P${id.slice(-8)}`, notaId, datos.montoCentavos ?? 10_000],
 	);
 	return id;
 }

@@ -52,7 +52,7 @@ import { autorizaciones } from "../direccion/tablas.ts";
 import { recetaVersiones } from "../patronaje/tablas.ts";
 import { personas } from "../personal/tablas.ts";
 import { cortes, lotes, ordenesProduccion } from "../produccion/tablas.ts";
-import { clientes, pedidos } from "../ventas/tablas.ts";
+import { clientes, notasCredito, notasEntrega, pedidos } from "../ventas/tablas.ts";
 
 /** Cada lugar donde puede estar una pieza: Aduana, Bodega, las tiendas, el Taller y los dos de paso. */
 export const ubicaciones = pgTable(
@@ -340,8 +340,7 @@ export const traspasos = pgTable(
 		solicitudEnvioId: uuid("solicitud_envio_id"),
 		folioRb: text("folio_rb"),
 		pedidoId: uuid("pedido_id").references((): AnyPgColumn => pedidos.id),
-		/** @llavePendiente notas_entrega.id */
-		notaEntregaId: uuid("nota_entrega_id"),
+		notaEntregaId: uuid("nota_entrega_id").references((): AnyPgColumn => notasEntrega.id),
 		/** @llavePendiente pedidos_especiales_tienda.id */
 		pedidoEspecialTiendaId: uuid("pedido_especial_tienda_id"),
 		loteId: uuid("lote_id").references((): AnyPgColumn => lotes.id),
@@ -349,8 +348,7 @@ export const traspasos = pgTable(
 		ordenCompraId: uuid("orden_compra_id").references(() => ordenesCompra.id),
 		/** @llavePendiente devoluciones_linea.id */
 		devolucionLineaId: uuid("devolucion_linea_id"),
-		/** @llavePendiente notas_credito.id */
-		notaCreditoId: uuid("nota_credito_id"),
+		notaCreditoId: uuid("nota_credito_id").references((): AnyPgColumn => notasCredito.id),
 		traspasoPadreId: uuid("traspaso_padre_id").references((): AnyPgColumn => traspasos.id),
 		recepcionAduanaId: uuid("recepcion_aduana_id").references((): AnyPgColumn => recepciones.id),
 		despachoId: uuid("despacho_id").references((): AnyPgColumn => despachos.id),
@@ -394,12 +392,13 @@ export const traspasos = pgTable(
 			sql`(${tabla.origenUbicacionId} is null) <> (${tabla.origenExterno} is null)
 				or (${tabla.tipo} = 'regresa' and ${tabla.origenUbicacionId} is null and ${tabla.origenExterno} is null)`,
 		),
-		// A lo más un destino; ninguno solo mientras está en camino o en aduana y su destino se decide después.
+		// A lo más un destino; ninguno solo mientras se espera, viene en camino o está en aduana y su destino se decide
+		// después (lo que regresa de un cliente espera sin destino), o cuando ya se repartió todo a sus hijos.
 		check(
 			"traspasos_un_destino",
 			sql`not (${tabla.destinoUbicacionId} is not null and ${tabla.destinoExterno} is not null)
 				and (${tabla.destinoUbicacionId} is not null or ${tabla.destinoExterno} is not null
-					or (${tabla.estado} in ('en_camino_aduana', 'en_aduana') and ${tabla.tipo} in (${valores(tiposConDestinoPorDecidir)})))`,
+					or (${tabla.estado} in ('esperado', 'en_camino_aduana', 'en_aduana', 'repartido') and ${tabla.tipo} in (${valores(tiposConDestinoPorDecidir)})))`,
 		),
 		check(
 			"traspasos_esperado",
@@ -505,8 +504,7 @@ export const reservas = pgTable(
 		piezas: integer("piezas").notNull(),
 		motivo: text("motivo").notNull(),
 		pedidoId: uuid("pedido_id").references((): AnyPgColumn => pedidos.id),
-		/** @llavePendiente notas_entrega.id */
-		notaEntregaId: uuid("nota_entrega_id"),
+		notaEntregaId: uuid("nota_entrega_id").references((): AnyPgColumn => notasEntrega.id),
 		/** @llavePendiente pedidos_linea.id */
 		pedidoLineaId: uuid("pedido_linea_id"),
 		/** @llavePendiente pedido_linea_renglones.id */
@@ -877,8 +875,7 @@ export const despachos = pgTable(
 		destinoUbicacionId: uuid("destino_ubicacion_id").references(() => ubicaciones.id),
 		destinoExterno: text("destino_externo"),
 		clienteId: uuid("cliente_id").references((): AnyPgColumn => clientes.id),
-		/** @llavePendiente notas_entrega.id */
-		notaEntregaId: uuid("nota_entrega_id"),
+		notaEntregaId: uuid("nota_entrega_id").references((): AnyPgColumn => notasEntrega.id),
 		estado: text("estado").notNull(),
 		despachadoEn: momento("despachado_en").notNull(),
 		despachadoPor: uuid("despachado_por")

@@ -11,7 +11,7 @@ import { enAccionDePrueba } from "../../../nucleo/pruebas/accion-de-prueba.ts";
 import { materialesDePrueba } from "../../../nucleo/pruebas/compras-de-prueba.ts";
 import { nuevoTraspaso, ubicacionesPorCodigo } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
-import { pedidoDePrueba } from "../../../nucleo/pruebas/ventas-de-prueba.ts";
+import { notaDePrueba, pedidoDePrueba } from "../../../nucleo/pruebas/ventas-de-prueba.ts";
 import { type PedidoDeReparto, repartirTraspaso } from "./traspasos.ts";
 
 describe("Repartir nunca pasa de lo que queda en aduana, no mueve existencia, lleva las reservas al hijo y deja al padre `repartido` cuando no le queda nada", () => {
@@ -72,7 +72,7 @@ describe("Repartir nunca pasa de lo que queda en aduana, no mueve existencia, ll
 	it("reparte una parte a un hijo `{padre}-1` en aduana, con el origen y la antigüedad del padre, sin mover nada", async () => {
 		const lote = await loteEnAduana();
 		const movimientosAntes = (await servidor.base.dueno.query("SELECT count(*)::int AS n FROM movimientos")).rows[0]?.n;
-		const nota = uuidv7();
+		const { notaId: nota } = await notaDePrueba(servidor);
 		const hijo = await repartir({
 			padreId: lote.traspasoId,
 			renglones: [

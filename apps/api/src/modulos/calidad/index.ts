@@ -1,11 +1,11 @@
 /**
- * El módulo `calidad`: la revisión de lotes, los reprocesos, el catálogo de defectos y los reclamos.
- * Fase 13 · docs/modulos/calidad/revision-de-lotes.md y reclamos-y-devoluciones.md
- *
- * La revisión de devoluciones llega en la fase 16.
+ * El módulo `calidad`: la revisión de lotes, los reprocesos, el catálogo de defectos, los reclamos y la revisión de
+ * lo que regresa con defecto.
+ * Fases 13 y 16 · docs/modulos/calidad/revision-de-lotes.md y reclamos-y-devoluciones.md
  */
 
 import { definirModulo } from "../../nucleo/modulos.ts";
+import { accionRevisarDevolucion } from "./acciones/devoluciones.ts";
 import { accionRegistrarReclamo, accionResolverReclamo } from "./acciones/reclamos.ts";
 import { accionAgregarDefecto, accionAprobarReproceso, accionRevisarLote } from "./acciones/revision.ts";
 import { aprobadasDelLote, enReprocesoDePedido, reprocesoParaAduana } from "./lecturas/revision.ts";
@@ -19,6 +19,7 @@ export default definirModulo({
 		accionAgregarDefecto,
 		accionRegistrarReclamo,
 		accionResolverReclamo,
+		accionRevisarDevolucion,
 	],
 	lecturas: {
 		aprobadas_del_lote: aprobadasDelLote,
@@ -35,5 +36,6 @@ export default definirModulo({
 		rechazos: ["calidad", "produccion", "direccion"],
 		reprocesos: ["calidad", "produccion", "aduana", "ventas", "direccion"],
 		reclamos: ["calidad", "produccion", "ventas", "direccion"],
+		revisiones_devolucion: ["calidad", "aduana", "bodega", "ventas", "direccion"],
 	},
 });

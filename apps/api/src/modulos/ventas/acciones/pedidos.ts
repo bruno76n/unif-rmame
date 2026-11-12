@@ -22,7 +22,9 @@ import { nombreDeCuenta, quienCambia, revisarMotivo } from "../../../nucleo/acci
 import { tomarVersion, versionActual } from "../../../nucleo/acciones/pisadas.ts";
 import { errorDeCampo, errorDeRegla } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeAccion, implementarAccion } from "../../../nucleo/modulos.ts";
+import type { AvanceDeTalla } from "../dominio/avance.ts";
 import { avanceDeLasTallas } from "../dominio/avance-de-pedido.ts";
+import { notasDelPedido } from "../dominio/notas.ts";
 import {
 	enPesos,
 	eventoDePedido,
@@ -37,7 +39,7 @@ import {
 	revisarRenglones,
 	totalDe,
 } from "../dominio/pedidos.ts";
-import { pedidoRenglones, pedidos, pedidoVersiones } from "../tablas.ts";
+import { type origenesDeVersion, pedidoRenglones, pedidos, pedidoVersiones } from "../tablas.ts";
 
 /** El pedido como lo traen guardar, confirmar y guardar una versión. */
 interface PedidoQueLlega {
@@ -64,7 +66,7 @@ function revisarEntrega(contexto: ContextoDeAccion, fecha: string, laQueTenia?: 
  * @param pedidoId El pedido.
  * @param version La versión que trajo la acción.
  */
-async function pedidoConSuVersion(
+export async function pedidoConSuVersion(
 	contexto: ContextoDeAccion,
 	pedidoId: string,
 	version: number | undefined,
@@ -243,11 +245,11 @@ export const accionGuardarBorradorPedido = implementarAccion(
  * @param forma Su fecha, su forma de pago y sus días.
  * @returns El id de la versión.
  */
-async function escribirVersion(
+export async function escribirVersion(
 	contexto: ContextoDeAccion,
 	pedidoId: string,
 	numero: number,
-	origen: "confirmacion" | "modificacion",
+	origen: (typeof origenesDeVersion)[number],
 	forma: { fechaEntrega: string; formaPago: string; diasCredito: number },
 ): Promise<string> {
 	const id = uuidv7();
@@ -385,6 +387,29 @@ async function confirmado(
 		avisos,
 		entidad: { nombre: "pedidos", id: pedido.id },
 	};
+}
+
+/**
+ * Deja entregado un pedido cuando lo entregado cubre lo pedido en cada talla (regla 8): su anticipo sin usar pasa a
+ * favor del cliente y avisa `pedido.entregado`.
+ * @param contexto El contexto de la acción.
+ * @param pedido El pedido, confirmado.
+ * @param tallas Su avance de ahora.
+ * @returns Si quedó entregado.
+ */
+export async function entregarSiCubre(
+	contexto: ContextoDeAccion,
+	pedido: PedidoConCliente,
+	tallas: readonly AvanceDeTalla[],
+): Promise<boolean> {
+	if (tallas.length === 0 || tallas.some((talla) => talla.entregado < talla.pedido)) return false;
+	await contexto.transaccion
+		.update(pedidos)
+		.set({ estado: "entregado", entregadoEn: contexto.ahora.toString() })
+		.where(eq(pedidos.id, pedido.id));
+	await contexto.interna("contaduria.pasar_anticipo_a_favor", { pedido_id: pedido.id, causa: "pedido_entregado" });
+	eventoDePedido(contexto, "pedido.entregado", pedido);
+	return true;
 }
 
 export const accionGuardarVersionPedido = implementarAccion(guardarVersionPedido, async (contexto, datos, version) => {
@@ -551,16 +576,7 @@ export const accionGuardarVersionPedido = implementarAccion(guardarVersionPedido
 	if (deMas > 0) {
 		await contexto.interna("produccion.crear_cambio_pedido", { pedido_id: pedido.id, pedido_version_id: versionId });
 	}
-	// Queda entregado cuando lo entregado cubre lo pedido en cada talla (regla 8).
-	const entregado = despues.length > 0 && despues.every((talla) => talla.entregado >= talla.pedido);
-	if (entregado) {
-		await transaccion.update(pedidos).set({ estado: "entregado", entregadoEn: ahora }).where(eq(pedidos.id, pedido.id));
-		await contexto.interna("contaduria.pasar_anticipo_a_favor", {
-			pedido_id: pedido.id,
-			causa: "pedido_entregado",
-		});
-		eventoDePedido(contexto, "pedido.entregado", pedido);
-	}
+	await entregarSiCubre(contexto, pedido, despues);
 	eventoDePedido(contexto, "pedido.version_guardada", pedido);
 	const textoDeCambios = [
 		...nuevos.map((nuevo) =>
@@ -620,6 +636,10 @@ export const accionCancelarPedido = implementarAccion(cancelarPedido, async (con
 	const pedido = await pedidoConSuVersion(contexto, datos.pedido_id, version);
 	if (pedido.estado === "entregado" || pedido.estado === "cancelado") {
 		throw errorDeRegla("pedido_terminado", `${pedido.folio} ya está ${pedido.estado}.`);
+	}
+	// Solo sin notas de entrega no canceladas (regla 9).
+	if ((await notasDelPedido(transaccion, pedido.id)).cuantas > 0) {
+		throw errorDeRegla("pedido_con_notas", `${pedido.folio} ya tiene notas de entrega: no se puede cancelar.`);
 	}
 	const motivo = datos.motivo.trim();
 	await transaccion

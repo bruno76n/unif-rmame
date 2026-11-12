@@ -1,8 +1,6 @@
 /**
- * El módulo `ventas`: los clientes externos y sus pedidos.
- * Fase 16 · docs/modulos/ventas/clientes.md y docs/modulos/ventas/pedidos.md
- *
- * Mandar a producción, las notas de entrega y las notas de crédito llegan en las partes siguientes de la fase 16.
+ * El módulo `ventas`: los clientes externos, sus pedidos, mandarlos a producción y sus notas de entrega y de crédito.
+ * Fase 16 · docs/modulos/ventas/ (clientes, pedidos, mandar a producción, notas de entrega y notas de crédito)
  */
 
 import { definirModulo } from "../../nucleo/modulos.ts";
@@ -14,12 +12,21 @@ import {
 } from "./acciones/clientes.ts";
 import { accionMandarAProduccion, accionSurtirDeBodega } from "./acciones/mandar.ts";
 import {
+	accionArmarNotaEntrega,
+	accionCancelarNotaEntrega,
+	accionConfirmarEntrega,
+	accionPasarABodega,
+	marcarNotaEnCamino,
+} from "./acciones/notas.ts";
+import { accionPedirNotaCredito, aplicarDecisionNotaCredito } from "./acciones/notas-credito.ts";
+import {
 	accionCancelarPedido,
 	accionConfirmarPedido,
 	accionGuardarBorradorPedido,
 	accionGuardarVersionPedido,
 } from "./acciones/pedidos.ts";
 import { clienteActivoDeEscuela, estadoCliente } from "./lecturas/clientes.ts";
+import { documentosAbiertos, foliosDeDocumentos } from "./lecturas/documentos.ts";
 import { avancePedido, pedidoParaCobro, pedidosAbiertosDeVariante } from "./lecturas/pedidos.ts";
 import { semillaDeParametrosDeVentas } from "./parametros.ts";
 
@@ -36,13 +43,25 @@ export default definirModulo({
 		accionCancelarPedido,
 		accionMandarAProduccion,
 		accionSurtirDeBodega,
+		accionArmarNotaEntrega,
+		accionCancelarNotaEntrega,
+		accionConfirmarEntrega,
+		accionPasarABodega,
+		accionPedirNotaCredito,
 	],
+	internas: {
+		marcar_nota_en_camino: marcarNotaEnCamino,
+		aplicar_decision_nota_credito: aplicarDecisionNotaCredito,
+	},
+	efectosDeAutorizacion: { nota_credito: "aplicar_decision_nota_credito" },
 	lecturas: {
 		estado_cliente: estadoCliente,
 		cliente_activo_de_escuela: clienteActivoDeEscuela,
 		avance_pedido: avancePedido,
 		pedido_para_cobro: pedidoParaCobro,
 		pedidos_abiertos_de_variante: pedidosAbiertosDeVariante,
+		documentos_abiertos: documentosAbiertos,
+		folios_de_documentos: foliosDeDocumentos,
 	},
 	semillas: [semillaDeParametrosDeVentas],
 	// Los clientes los leen Ventas y Contaduría (su crédito y su cobranza), Calidad (sus reclamos) y Dirección.
@@ -52,5 +71,9 @@ export default definirModulo({
 		pedidos: ["ventas", "contaduria", "produccion", "direccion"],
 		pedido_renglones: ["ventas", "contaduria", "produccion", "direccion"],
 		pedido_versiones: ["ventas", "direccion"],
+		notas_entrega: ["ventas", "contaduria", "direccion"],
+		nota_entrega_lineas: ["ventas", "contaduria", "direccion"],
+		notas_credito: ["ventas", "contaduria", "direccion"],
+		nota_credito_lineas: ["ventas", "contaduria", "direccion"],
 	},
 });

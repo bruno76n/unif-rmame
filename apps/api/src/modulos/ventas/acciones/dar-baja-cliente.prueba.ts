@@ -13,6 +13,7 @@ import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pr
 import {
 	darDeAltaClienteDePrueba,
 	nombreDeClienteNuevo,
+	notaDePrueba,
 	pedidoDePrueba,
 } from "../../../nucleo/pruebas/ventas-de-prueba.ts";
 
@@ -45,8 +46,8 @@ describe("Un cliente con saldo no se da de baja, y el monto solo se ve con Conta
 
 	it("con saldo por cobrar: Ventas no ve el monto, la dueña sí; ya pagado, se da de baja con su lista y regresa al reactivar", async () => {
 		const cliente = await darDeAltaClienteDePrueba(servidor);
-		const nota = crypto.randomUUID();
 		const pedido = await pedidoDePrueba(servidor, cliente.cliente_id);
+		const { notaId: nota } = await notaDePrueba(servidor, { pedidoId: pedido });
 		await llamarInterna(servidor, "contaduria.crear_cuenta_por_cobrar", {
 			nota_entrega_id: nota,
 			pedido_id: pedido,

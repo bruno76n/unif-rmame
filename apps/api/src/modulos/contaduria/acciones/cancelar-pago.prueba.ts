@@ -18,6 +18,7 @@ import {
 } from "../../../nucleo/pruebas/contaduria-de-prueba.ts";
 import { conGoogle, mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
+import { notaDePrueba } from "../../../nucleo/pruebas/ventas-de-prueba.ts";
 
 describe("Cancelar un pago pide «Confirmar con Google» y regresa saldos y estados", () => {
 	let servidor: ServidorDePrueba;
@@ -129,7 +130,7 @@ describe("Cancelar un pago pide «Confirmar con Google» y regresa saldos y esta
 		await internaDeContaduria(servidor, "aplicar_anticipo_a_nota", {
 			pedido_id: usado.pedidoId,
 			cliente_id: cliente.clienteId,
-			nota_entrega_id: uuidv7(),
+			nota_entrega_id: (await notaDePrueba(servidor, { pedidoId: usado.pedidoId })).notaId,
 			monto_centavos: 100_000,
 		});
 		expect((await cancelar(await conVersion(usado.pagoId, usado.folio))).cuerpo).toMatchObject({
@@ -222,7 +223,12 @@ describe("Cancelar un pago pide «Confirmar con Google» y regresa saldos y esta
 			await conexion.query(
 				`INSERT INTO anticipos (id, pedido_id, cliente_id, tipo, monto_centavos, fecha, nota_entrega_id)
 				 VALUES ($1, $2, $3, 'aplicado', 200000, current_date, $4)`,
-				[uuidv7(), anticipo.pedidoId, cliente.clienteId, uuidv7()],
+				[
+					uuidv7(),
+					anticipo.pedidoId,
+					cliente.clienteId,
+					(await notaDePrueba(servidor, { pedidoId: anticipo.pedidoId })).notaId,
+				],
 			);
 			await conexion.query("COMMIT");
 			expect((await cancelado).cuerpo).toMatchObject({ codigo: "anticipo_ya_aplicado" });

@@ -14,9 +14,8 @@ import { z } from "zod";
 import { ErrorDeApi } from "../http/errores.ts";
 import { llamarInterna } from "./inventario-de-prueba.ts";
 import { mandarAccion } from "./llamadas.ts";
-import { foliosDePrueba } from "./modulos/ventas/index.ts";
 import type { ServidorDePrueba } from "./servidor-de-prueba.ts";
-import { pedidoDePrueba, renglonDeClienteDePrueba } from "./ventas-de-prueba.ts";
+import { notaDePrueba, pedidoDePrueba, renglonDeClienteDePrueba } from "./ventas-de-prueba.ts";
 
 /** Un cliente de prueba: su id, su tercero, su crédito y su nombre. */
 export interface ClienteDePrueba {
@@ -78,6 +77,7 @@ export async function cuentaEscritaDePrueba(
 	cuenta: { importeCentavos: number; saldoCentavos: number; venceEnDias: number },
 ): Promise<string> {
 	const id = uuidv7();
+	const nota = await notaDePrueba(servidor, { clienteId: cliente.clienteId, subtotalCentavos: cuenta.importeCentavos });
 	const estado =
 		cuenta.saldoCentavos === 0
 			? "pagada"
@@ -87,7 +87,7 @@ export async function cuentaEscritaDePrueba(
 	await servidor.base.dueno.query(
 		`INSERT INTO cuentas_por_cobrar (id, nota_entrega_id, pedido_id, cliente_id, tercero_id, fecha_entrega, dias_credito,
 			vence, total_nota_centavos, importe_centavos, saldo_centavos, estado, pagada_en)
-		 VALUES ($1, gen_random_uuid(), $8, $2, $3, (now() AT TIME ZONE 'America/Mexico_City')::date + $4::int,
+		 VALUES ($1, $9, $8, $2, $3, (now() AT TIME ZONE 'America/Mexico_City')::date + $4::int,
 			0, (now() AT TIME ZONE 'America/Mexico_City')::date + $4::int, $5, $5, $6, $7,
 			CASE WHEN $7 = 'pagada' THEN now() END)`,
 		[
@@ -98,7 +98,8 @@ export async function cuentaEscritaDePrueba(
 			cuenta.importeCentavos,
 			cuenta.saldoCentavos,
 			estado,
-			await pedidoDePrueba(servidor, cliente.clienteId),
+			nota.pedidoId,
+			nota.notaId,
 		],
 	);
 	return id;
@@ -116,8 +117,8 @@ export interface NotaDePrueba {
 let ultimaNota = 0;
 
 /**
- * Entrega una nota de prueba del cliente: le da su folio NV- y crea su cuenta por cobrar con la interna que Ventas
- * llamará al confirmar la entrega.
+ * Una nota de prueba del cliente, escrita directo con su folio NV-, y su cuenta por cobrar creada con la interna que
+ * Ventas llama al confirmar la entrega.
  * @param servidor El servidor de prueba.
  * @param cliente El cliente.
  * @param nota El total de la nota en centavos y, si no se dice, 0 días de crédito y entregada hoy.
@@ -128,10 +129,12 @@ export async function notaEntregadaDePrueba(
 	nota: { totalCentavos: number; diasCredito?: number; fechaEntrega?: string },
 ): Promise<NotaDePrueba> {
 	ultimaNota += 1;
-	const notaId = uuidv7();
-	const pedidoId = await pedidoDePrueba(servidor, cliente.clienteId);
-	const folio = `NV-${String(ultimaNota).padStart(4, "0")}`;
-	foliosDePrueba.set(notaId, folio);
+	const { notaId, pedidoId, folio } = await notaDePrueba(servidor, {
+		clienteId: cliente.clienteId,
+		folio: `NV-${String(ultimaNota).padStart(4, "0")}`,
+		// Una nota siempre vale algo; la cuenta en 0 es la que su anticipo cubrió toda.
+		subtotalCentavos: Math.max(nota.totalCentavos, 100),
+	});
 	const { cuenta_por_cobrar_id: cuentaId } = z.object({ cuenta_por_cobrar_id: z.uuid() }).parse(
 		await llamarInterna(servidor, "contaduria.crear_cuenta_por_cobrar", {
 			nota_entrega_id: notaId,
@@ -191,9 +194,6 @@ export interface AnticipoDePrueba {
 	folio: string;
 }
 
-/** El último número de PE- de prueba. */
-let ultimoPedido = 0;
-
 /**
  * Escribe directo un anticipo recibido en un pedido de prueba: el pago `recibido` al pedido y su renglón `recibido`.
  * El pago a un pedido llega en la fase 16; hasta entonces, la prueba lo escribe como lo escribirá «Registrar pago».
@@ -209,10 +209,6 @@ export async function anticipoRecibidoDePrueba(
 	pedidoIdDado?: string,
 ): Promise<AnticipoDePrueba> {
 	const pedidoId = pedidoIdDado ?? (await pedidoDePrueba(servidor, cliente.clienteId));
-	if (!foliosDePrueba.has(pedidoId)) {
-		ultimoPedido += 1;
-		foliosDePrueba.set(pedidoId, `PE-${String(ultimoPedido).padStart(4, "0")}`);
-	}
 	const pagoId = uuidv7();
 	const folio = `PG-P${pagoId.slice(-8)}`;
 	await servidor.base.dueno.query(

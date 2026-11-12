@@ -7,7 +7,6 @@
  */
 
 import fc from "fast-check";
-import { v7 as uuidv7 } from "uuid";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
 import {
@@ -24,6 +23,7 @@ import {
 import { trabasDeLaBase } from "../../nucleo/pruebas/inventario-de-prueba.ts";
 import { conGoogle, mandarAccion } from "../../nucleo/pruebas/llamadas.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../nucleo/pruebas/servidor-de-prueba.ts";
+import { notaCreditoDePrueba, notaDePrueba } from "../../nucleo/pruebas/ventas-de-prueba.ts";
 
 /** Una operación al azar sobre las notas, el pedido y el saldo a favor de un cliente. */
 const operacion = fc.oneof(
@@ -86,7 +86,7 @@ describe("Con pagos, notas de crédito, saldo a favor y cancelaciones al azar, n
 		if (op.tipo === "nc" && nota !== undefined) {
 			return revisarInterna(
 				await internaDeContaduria(servidor, "aplicar_nota_credito", {
-					nota_credito_id: uuidv7(),
+					nota_credito_id: await notaCreditoDePrueba(servidor, nota.notaId),
 					nota_entrega_id: nota.notaId,
 					monto_centavos: op.centavos,
 				}),
@@ -139,7 +139,7 @@ describe("Con pagos, notas de crédito, saldo a favor y cancelaciones al azar, n
 				await internaDeContaduria(servidor, "aplicar_anticipo_a_nota", {
 					pedido_id: anticipo.pedidoId,
 					cliente_id: cliente.clienteId,
-					nota_entrega_id: uuidv7(),
+					nota_entrega_id: (await notaDePrueba(servidor, { pedidoId: anticipo.pedidoId })).notaId,
 					monto_centavos: op.pesos * 100,
 				}),
 			);
@@ -185,7 +185,7 @@ describe("Con pagos, notas de crédito, saldo a favor y cancelaciones al azar, n
 					const pagada = await notaEntregadaDePrueba(servidor, cliente, { totalCentavos: 10_000 });
 					await pagarDePrueba(servidor, cliente, pagada, 10_000);
 					await internaDeContaduria(servidor, "aplicar_nota_credito", {
-						nota_credito_id: uuidv7(),
+						nota_credito_id: await notaCreditoDePrueba(servidor, pagada.notaId),
 						nota_entrega_id: pagada.notaId,
 						monto_centavos: 200_050,
 					});

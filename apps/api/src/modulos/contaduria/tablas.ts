@@ -6,8 +6,8 @@
  * docs/modulos/contaduria/cuentas-por-cobrar.md («La tabla `cuentas_por_cobrar`») y
  * docs/modulos/contaduria/pagos-y-saldo-a-favor.md (las tres tablas) y docs/modulos/contaduria/anticipos.md
  *
- * Las columnas que apuntan a los clientes, los pedidos y las notas de Ventas llevan su `@llavePendiente` hasta la
- * fase 16. Lo demás de Contaduría (compensaciones, deudas, cuentas por pagar) llega en la fase 17.
+ * Las columnas que apuntan a los clientes, los pedidos y las notas son llaves a las tablas de Ventas. Lo demás de
+ * Contaduría (compensaciones, deudas, cuentas por pagar) llega en la fase 17.
  */
 
 import { sql } from "drizzle-orm";
@@ -26,7 +26,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { columnasComunes, momento, valores } from "../../nucleo/base/columnas.ts";
 import { listaValores, usuarios } from "../admin/tablas.ts";
-import { clientes, pedidos } from "../ventas/tablas.ts";
+import { clientes, notasCredito, notasEntrega, pedidos } from "../ventas/tablas.ts";
 
 /** Qué es un acreedor nuevo. */
 export const clasesDeTercero = ["persona", "empresa", "banco"] as const;
@@ -99,8 +99,9 @@ export const cuentasPorCobrar = pgTable(
 	"cuentas_por_cobrar",
 	{
 		id: uuid("id").primaryKey(),
-		/** @llavePendiente notas_entrega.id */
-		notaEntregaId: uuid("nota_entrega_id").notNull(),
+		notaEntregaId: uuid("nota_entrega_id")
+			.references((): AnyPgColumn => notasEntrega.id)
+			.notNull(),
 		pedidoId: uuid("pedido_id")
 			.references((): AnyPgColumn => pedidos.id)
 			.notNull(),
@@ -176,8 +177,7 @@ export const pagos = pgTable(
 			.notNull()
 			.references(() => terceros.id),
 		clienteId: uuid("cliente_id").references((): AnyPgColumn => clientes.id),
-		/** @llavePendiente notas_entrega.id */
-		notaEntregaId: uuid("nota_entrega_id"),
+		notaEntregaId: uuid("nota_entrega_id").references((): AnyPgColumn => notasEntrega.id),
 		pedidoId: uuid("pedido_id").references((): AnyPgColumn => pedidos.id),
 		montoCentavos: bigint("monto_centavos", { mode: "number" }).notNull(),
 		medio: text("medio").notNull(),
@@ -266,8 +266,7 @@ export const saldoFavorMovimientos = pgTable(
 		montoCentavos: bigint("monto_centavos", { mode: "number" }).notNull(),
 		fecha: date("fecha", { mode: "string" }).notNull(),
 		pedidoId: uuid("pedido_id").references((): AnyPgColumn => pedidos.id),
-		/** @llavePendiente notas_credito.id */
-		notaCreditoId: uuid("nota_credito_id"),
+		notaCreditoId: uuid("nota_credito_id").references((): AnyPgColumn => notasCredito.id),
 		cuentaPorCobrarId: uuid("cuenta_por_cobrar_id").references(() => cuentasPorCobrar.id),
 		pagoId: uuid("pago_id").references(() => pagos.id),
 		estado: text("estado").notNull().default("vigente"),
@@ -309,8 +308,7 @@ export const aplicacionesPago = pgTable(
 		pagoId: uuid("pago_id").references(() => pagos.id),
 		/** @llavePendiente compensaciones.id */
 		compensacionId: uuid("compensacion_id"),
-		/** @llavePendiente notas_credito.id */
-		notaCreditoId: uuid("nota_credito_id"),
+		notaCreditoId: uuid("nota_credito_id").references((): AnyPgColumn => notasCredito.id),
 		saldoFavorMovimientoId: uuid("saldo_favor_movimiento_id").references((): AnyPgColumn => saldoFavorMovimientos.id),
 		cuentaPorCobrarId: uuid("cuenta_por_cobrar_id").references(() => cuentasPorCobrar.id),
 		/** @llavePendiente cuentas_por_pagar.id */
@@ -360,8 +358,7 @@ export const anticipos = pgTable(
 		fecha: date("fecha", { mode: "string" }).notNull(),
 		pagoId: uuid("pago_id").references(() => pagos.id),
 		saldoFavorMovimientoId: uuid("saldo_favor_movimiento_id").references(() => saldoFavorMovimientos.id),
-		/** @llavePendiente notas_entrega.id */
-		notaEntregaId: uuid("nota_entrega_id"),
+		notaEntregaId: uuid("nota_entrega_id").references((): AnyPgColumn => notasEntrega.id),
 		anticipoAplicadoId: uuid("anticipo_aplicado_id").references((): AnyPgColumn => anticipos.id),
 		estado: text("estado").notNull().default("vigente"),
 		...columnasDeCancelacion(),

@@ -75,10 +75,12 @@ export const recibirEnAduana = definirAccion({
 						.regex(/^\d{1,9}(\.\d{1,3})?$/)
 						.optional()
 						.describe("Lo que llegó, si es material"),
+					con_defecto: z.boolean().optional().describe("Solo en una devolución: si llegó con defecto, para Calidad"),
+					defecto_id: z.uuid().optional().describe("Solo en una devolución con defecto: cuál"),
 				}),
 			)
 			.optional()
-			.describe("Obligatorios con diferencias: cada renglón, aunque sea 0"),
+			.describe("Obligatorios con diferencias y en una devolución: cada renglón, aunque sea 0"),
 	}),
 	salida: z.object({ recepcion_id: z.uuid().describe("La recepción") }),
 	permiso: { departamento: "aduana" },

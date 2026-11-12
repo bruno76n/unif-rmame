@@ -3,7 +3,6 @@
  * Fase 9 · docs/fases/09-inventario-libro-existencias-reservas-y-traspasos.md (parte 3)
  */
 
-import { v7 as uuidv7 } from "uuid";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { crearBase } from "../../../nucleo/base/conexion.ts";
 import { ErrorDeApi } from "../../../nucleo/http/errores.ts";
@@ -14,7 +13,7 @@ import {
 	reservasActivasDelPedido,
 } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
-import { pedidoDePrueba } from "../../../nucleo/pruebas/ventas-de-prueba.ts";
+import { notaDePrueba, pedidoDePrueba } from "../../../nucleo/pruebas/ventas-de-prueba.ts";
 
 describe("Crear una nota aparta lo listo y nunca más", () => {
 	let servidor: ServidorDePrueba;
@@ -34,7 +33,7 @@ describe("Crear una nota aparta lo listo y nunca más", () => {
 
 	it("la nota se lleva 6 de 10: un hijo `nota_entrega` con su reserva; nunca más de lo listo; sin nada listo, `nada_listo`", async () => {
 		const { variante, pedido, lote } = await pedidoListoEnAduana(servidor, 10);
-		const nota = uuidv7();
+		const { notaId: nota } = await notaDePrueba(servidor, { pedidoId: pedido });
 		const hecha = (await llamarInterna(servidor, "inventario.apartar_para_nota", {
 			nota_entrega_id: nota,
 			pedido_id: pedido,
@@ -53,7 +52,7 @@ describe("Crear una nota aparta lo listo y nunca más", () => {
 		// Más de lo que queda listo.
 		expect(
 			await intentar("inventario.apartar_para_nota", {
-				nota_entrega_id: uuidv7(),
+				nota_entrega_id: (await notaDePrueba(servidor, { pedidoId: pedido })).notaId,
 				pedido_id: pedido,
 				renglones: [{ variante_id: variante, piezas: 5 }],
 			}),
@@ -61,7 +60,7 @@ describe("Crear una nota aparta lo listo y nunca más", () => {
 		// Un pedido sin nada en aduana.
 		expect(
 			await intentar("inventario.apartar_para_nota", {
-				nota_entrega_id: uuidv7(),
+				nota_entrega_id: (await notaDePrueba(servidor)).notaId,
 				pedido_id: await pedidoDePrueba(servidor),
 				renglones: [{ variante_id: variante, piezas: 1 }],
 			}),

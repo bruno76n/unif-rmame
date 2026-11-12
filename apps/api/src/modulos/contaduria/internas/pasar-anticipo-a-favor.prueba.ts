@@ -4,7 +4,6 @@
  * Fase 15 · docs/fases/15-contaduria-terceros-credito-y-cobranza.md («Criterios de terminado»)
  */
 
-import { v7 as uuidv7 } from "uuid";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
 	anticipoRecibidoDePrueba,
@@ -13,7 +12,7 @@ import {
 	saldoAFavorDePrueba,
 } from "../../../nucleo/pruebas/contaduria-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
-import { pedidoDePrueba } from "../../../nucleo/pruebas/ventas-de-prueba.ts";
+import { notaDePrueba, pedidoDePrueba } from "../../../nucleo/pruebas/ventas-de-prueba.ts";
 
 describe("Pasar el anticipo a favor sigue sus reglas", () => {
 	let servidor: ServidorDePrueba;
@@ -30,7 +29,7 @@ describe("Pasar el anticipo a favor sigue sus reglas", () => {
 		await internaDeContaduria(servidor, "aplicar_anticipo_a_nota", {
 			pedido_id: pedidoId,
 			cliente_id: zamora.clienteId,
-			nota_entrega_id: uuidv7(),
+			nota_entrega_id: (await notaDePrueba(servidor, { pedidoId })).notaId,
 			monto_centavos: 500_000,
 		});
 		const pasar = () =>

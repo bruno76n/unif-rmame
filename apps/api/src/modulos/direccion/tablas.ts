@@ -25,6 +25,7 @@ import { departamentos, usuarios } from "../admin/tablas.ts";
 import { ordenCompraLineas } from "../compras/tablas.ts";
 import { ajustes, recepciones } from "../inventario/tablas.ts";
 import { desarrollos } from "../patronaje/tablas.ts";
+import { notasCredito, notasEntrega } from "../ventas/tablas.ts";
 
 /** Las ligas de cada tipo: la que lleva (no nula) y, por omisión, las demás vacías. */
 const ligasDelTipo: Readonly<Record<(typeof tiposDeAutorizacion)[number], readonly string[]>> = {
@@ -70,10 +71,8 @@ export const autorizaciones = pgTable(
 		ajusteId: uuid("ajuste_id").references((): AnyPgColumn => ajustes.id),
 		recepcionId: uuid("recepcion_id").references((): AnyPgColumn => recepciones.id),
 		ordenCompraLineaId: uuid("orden_compra_linea_id").references((): AnyPgColumn => ordenCompraLineas.id),
-		/** @llavePendiente notas_entrega.id */
-		notaEntregaId: uuid("nota_entrega_id"),
-		/** @llavePendiente notas_credito.id */
-		notaCreditoId: uuid("nota_credito_id"),
+		notaEntregaId: uuid("nota_entrega_id").references((): AnyPgColumn => notasEntrega.id),
+		notaCreditoId: uuid("nota_credito_id").references((): AnyPgColumn => notasCredito.id),
 		/** @llavePendiente facturas_proveedor.id */
 		facturaProveedorId: uuid("factura_proveedor_id"),
 		desarrolloId: uuid("desarrollo_id").references((): AnyPgColumn => desarrollos.id),

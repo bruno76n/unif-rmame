@@ -423,3 +423,10 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 12 nov 2026 | 16 | Lo que llega después de un lote de pedido, en varios A- (decisión 685) | Todo al primer destino · un A- por destino, con el primero en la DF- | Lo segundo: es el mismo reparto, sin columnas nuevas | No |
 | 12 nov 2026 | 16 | Lo surtido a un pedido que se canceló en camino (decisión 686) | Dejarlo en aduana sin destino · un `regresa` a Bodega al recibirlo | Lo segundo, como pide su tabla, con la misma función que liberar | No |
 | 12 nov 2026 | 16 | Las piezas de cada lote en la bitácora de mandar a producción (decisión 687) | El total del pedido en cada lote · las de cada lote, que regresa Producción | Las de cada lote | No |
+| 12 nov 2026 | 16 | Una talla que ya no está en el pedido, en una nota (decisión 688) | Tomar el último precio · no dejarla y pasarla a bodega | Lo segundo: la nota copia el precio vigente | No |
+| 12 nov 2026 | 16 | Cuántas notas lleva un despacho a un cliente (decisión 689) | Varias · una | Una: el despacho guarda una sola nota | No |
+| 12 nov 2026 | 16 | El orden de candados de las notas y quién ve lo que queda por cobrar (decisión 690) | Solo la nota · el pedido y después la nota; Ventas, Contaduría y la dueña | Lo segundo | No |
+| 12 nov 2026 | 16 | Lo que regresa de un cliente y espera a Calidad (decisión 691) | Bodega de destino desde que se espera · sin destino, lo bueno a un hijo y el padre no sale | Lo segundo, como dicen las reglas 3 y 4 | No |
+| 12 nov 2026 | 16 | Quién toma la versión del traspaso al revisar una devolución (decisión 692) | Calidad · Inventario | Inventario: la tabla es suya | No |
+| 12 nov 2026 | 16 | Una talla que queda en 0 al pasar a bodega (decisión 693) | Quitarla · dejarla con 0 | Dejarla con 0 y su precio | No |
+| 12 nov 2026 | 16 | El módulo `ventas` de prueba (decisión 694) | Dejarlo · quitarlo | Quitarlo, como decía la 498 | No |

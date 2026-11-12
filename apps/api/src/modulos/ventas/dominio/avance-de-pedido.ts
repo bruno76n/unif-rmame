@@ -1,10 +1,7 @@
 /**
- * El avance de un pedido con lo que dicen Inventario y Producción: lo listo en Aduana, lo de Bodega y lo que está en
- * producción, junto con sus renglones vigentes.
+ * El avance de un pedido con lo que dicen sus notas, Inventario y Producción: lo entregado y lo que va en nota, lo
+ * listo en Aduana, lo de Bodega y lo que está en producción, junto con sus renglones vigentes.
  * Fase 16 · docs/modulos/ventas/pedidos.md («El avance, la etapa y la alerta»)
- *
- * Lo entregado y lo que está en nota salen de las notas de entrega, que llegan en la parte 4 de la fase: hasta
- * entonces, un pedido no tiene notas.
  */
 
 import { and, eq } from "drizzle-orm";
@@ -12,6 +9,7 @@ import { z } from "zod";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
 import { cambiosPedido, ordenesProduccion } from "../../produccion/tablas.ts";
 import { type AvanceDeTalla, alertaDelPedido, avanceDeTalla, etapaDelPedido } from "./avance.ts";
+import { piezasEnNotas } from "./notas.ts";
 import type { PedidoConCliente, Renglon } from "./pedidos.ts";
 
 /** Lo que regresa `inventario.listo_en_aduana`. */
@@ -39,9 +37,11 @@ export async function avanceDeLasTallas(
 	const produccion = enProduccion.parse(
 		await contexto.lectura("produccion.piezas_en_produccion", { pedido_id: pedidoId }),
 	);
-	// Las tallas del pedido y también las que tienen algo listo o en producción aunque ya no estén en él.
+	const enNotas = await piezasEnNotas(contexto.transaccion, pedidoId);
+	// Las tallas del pedido y también las que tienen algo en nota, listo o en producción aunque ya no estén en él.
 	const ids = new Set([
 		...renglones.map((renglon) => renglon.varianteId),
+		...enNotas.keys(),
 		...listo.variantes.map((suya) => suya.variante_id),
 		...produccion.variantes.map((suya) => suya.variante_id),
 	]);
@@ -50,8 +50,8 @@ export async function avanceDeLasTallas(
 		return avanceDeTalla({
 			varianteId,
 			pedido: renglones.find((renglon) => renglon.varianteId === varianteId)?.cantidad ?? 0,
-			entregado: 0,
-			enNota: 0,
+			entregado: enNotas.get(varianteId)?.entregado ?? 0,
+			enNota: enNotas.get(varianteId)?.enNota ?? 0,
 			listo: deAduana?.listas ?? 0,
 			deBodega: (deAduana?.de_bodega ?? 0) + (deAduana?.en_camino ?? 0),
 			enProduccion: produccion.variantes.find((suya) => suya.variante_id === varianteId)?.piezas ?? 0,

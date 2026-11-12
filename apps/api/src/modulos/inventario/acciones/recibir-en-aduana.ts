@@ -8,8 +8,8 @@
  * Una devolución de un cliente llega `esperado`, de Fuera: lo que llegó entra a Aduana y lo que no llegó nunca fue
  * inventario. Por tipo: una devolución al proveedor surtida de Bodega queda lista para «Devolver al proveedor»; lo
  * surtido para un pedido externo deja su reserva en Aduana, o regresa a Bodega si el pedido ya se canceló (fase 16);
- * lo bueno de una devolución de cliente a un hijo para Bodega, y lo demás de cada tipo, llegan con sus fases
- * (decisión 574).
+ * de una devolución de cliente, lo bueno pasa a Bodega en un hijo y lo que llegó con defecto espera a Calidad
+ * (fase 16); lo demás de cada tipo llega con su fase (decisión 574).
  */
 
 import { aMilesimosConSigno, cantidadEnTexto, deMilesimos } from "@uniformame/compartido/calculos/cuenta-material";
@@ -26,8 +26,9 @@ import { abrirDiferencia } from "../dominio/diferencias.ts";
 import { escribirMovimiento, type RenglonDeMovimiento } from "../dominio/escribir-movimiento.ts";
 import { ubicacionDeTipo, ubicacionPorId } from "../dominio/recepciones.ts";
 import { cambiarEstadoTraspaso, type TraspasoCreado } from "../dominio/traspasos.ts";
+import { repartirLoBueno } from "../internas/devoluciones.ts";
 import { regresarAlOrigen } from "../internas/reservas.ts";
-import { recepciones, recepcionLineas, traspasoLineas, traspasos } from "../tablas.ts";
+import { recepciones, recepcionLineas, tiposDeTraspaso, traspasoLineas, traspasos } from "../tablas.ts";
 
 /** Lo que regresa `ventas.avance_pedido` que importa aquí: el estado del pedido. */
 const estadoDelPedido = z.object({ estado: z.string() });
@@ -96,7 +97,9 @@ export const accionRecibirEnAduana = implementarAccion(recibirEnAduana, async (c
 				campos: { renglones: "Escribe cuántas llegaron de cada prenda, aunque sea 0" },
 			});
 		}
-		return { linea, esPrenda, enviado, llego };
+		// Solo en una devolución, lo que llegó con defecto se queda para Calidad.
+		const conDefecto = deCliente && esPrenda && suyo?.con_defecto === true;
+		return { linea, esPrenda, enviado, llego, conDefecto, defectoId: conDefecto ? (suyo?.defecto_id ?? null) : null };
 	});
 	const aduana = await ubicacionDeTipo(transaccion, "aduana");
 	const enCamino = await ubicacionDeTipo(transaccion, "en_camino_aduana");
@@ -139,7 +142,7 @@ export const accionRecibirEnAduana = implementarAccion(recibirEnAduana, async (c
 	}
 	const quien = quienCambia(contexto);
 	await transaccion.insert(recepcionLineas).values(
-		contados.map(({ linea, esPrenda, enviado, llego }, i) => ({
+		contados.map(({ linea, esPrenda, enviado, llego, conDefecto, defectoId }, i) => ({
 			id: uuidv7(),
 			recepcionId,
 			renglon: i + 1,
@@ -148,16 +151,22 @@ export const accionRecibirEnAduana = implementarAccion(recibirEnAduana, async (c
 			materialId: linea.materialId,
 			rolloId: linea.rolloId,
 			loteId: linea.loteId,
+			conDefecto,
+			defectoId,
 			...(esPrenda
 				? { piezasEsperadas: Number(enviado), piezasContadas: Number(llego) }
 				: { cantidadEsperada: deMilesimos(enviado), cantidadContada: deMilesimos(llego) }),
 			creadoPor: quien,
 		})),
 	);
-	for (const { linea, esPrenda, llego } of contados) {
+	for (const { linea, esPrenda, llego, defectoId } of contados) {
 		await transaccion
 			.update(traspasoLineas)
-			.set(esPrenda ? { piezasRecibidasAduana: Number(llego) } : { cantidadRecibidaAduana: deMilesimos(llego) })
+			.set(
+				esPrenda
+					? { piezasRecibidasAduana: Number(llego), ...(defectoId === null ? {} : { defectoId }) }
+					: { cantidadRecibidaAduana: deMilesimos(llego) },
+			)
 			.where(eq(traspasoLineas.id, linea.id));
 	}
 	// Lo que no cuadró se queda en el tramo, a cargo de quien lo mandó: una DF- por renglón. Lo que no llegó de una
@@ -191,6 +200,18 @@ export const accionRecibirEnAduana = implementarAccion(recibirEnAduana, async (c
 	// Lo surtido para un pedido que se canceló mientras venía en camino regresa a Bodega; si sigue, su reserva quedó
 	// en Aduana con la pieza.
 	const regresa = await regresaSiSeCancelo(contexto, traspaso, contados);
+	// Una devolución de un cliente: lo bueno pasa a Bodega en un hijo; lo de defecto se queda para Calidad.
+	const paraCalidad = deCliente && contados.some(({ conDefecto, llego }) => conDefecto && llego > 0n);
+	if (deCliente) {
+		await repartirLoBueno(
+			contexto,
+			{ id: traspaso.id, tipo: z.enum(tiposDeTraspaso).parse(traspaso.tipo) },
+			contados.map(({ linea, llego, conDefecto }) => ({
+				lineaId: linea.id,
+				piezas: conDefecto ? 0 : Number(llego),
+			})),
+		);
+	}
 	contexto.bitacora({
 		descripcion: `Recibió ${traspaso.folio}`,
 		entidad: "traspasos",
@@ -230,11 +251,13 @@ export const accionRecibirEnAduana = implementarAccion(recibirEnAduana, async (c
 	const faltoMaterial = contados.some(({ esPrenda, enviado, llego }) => !esPrenda && llego < enviado);
 	const destino = (await ubicacionPorId(transaccion, traspaso.destinoUbicacionId)) ?? { nombre: "", tipo: "" };
 	const soloMaterial = contados.every(({ esPrenda }) => !esPrenda);
-	const base = soloMaterial
-		? `${traspaso.folio} recibido en aduana`
-		: ["solicitud_tienda", "reabasto"].includes(traspaso.tipo) && destino.tipo === "tienda"
-			? `${traspaso.folio} recibido en aduana: ${piezas} piezas para ${destino.nombre}`
-			: `${traspaso.folio} recibido en aduana: ${piezas} piezas`;
+	const base = paraCalidad
+		? `${traspaso.folio} recibida: pasa a Calidad`
+		: soloMaterial
+			? `${traspaso.folio} recibido en aduana`
+			: ["solicitud_tienda", "reabasto"].includes(traspaso.tipo) && destino.tipo === "tienda"
+				? `${traspaso.folio} recibido en aduana: ${piezas} piezas para ${destino.nombre}`
+				: `${traspaso.folio} recibido en aduana: ${piezas} piezas`;
 	const falto = deCliente
 		? ""
 		: faltaron > 0

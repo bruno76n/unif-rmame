@@ -104,4 +104,10 @@ Los de cada interna, arriba.
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 16.*
+**Fase 16, parte 4.** En `modulos/inventario/`:
+
+- **`internas/entregas-de-clientes.ts`:** `entregar_a_cliente_externo` bloquea el despacho de la nota y confirma su llegada con la misma función que los despachos (`confirmarLlegada`, `acciones/despachos.ts`): la recepción `entrega_cliente` en Tránsito, el movimiento `entrega_cliente_externo` que cumple las reservas de la nota, y el despacho y sus traspasos recibidos con quién recibió. `pasar_a_bodega` toma lo listo de las reservas del pedido en Aduana, las libera (`quitada_del_pedido`) y reparte sus traspasos en hijos `quitado_de_pedido` hacia Bodega, uno por padre, con `renglonesARepartir` (`internas/reservas.ts`).
+- **`internas/devoluciones.ts`:** `esperar_devolucion` crea el A- `esperado` sin destino; al recibirlo, `repartirLoBueno` pasa lo que llegó sin defecto a un hijo del mismo tipo hacia Bodega, y lo de defecto se queda en el padre; `aplicar_revision_devolucion` toma la versión del traspaso (la que trae Calidad), reparte lo que sirve a Bodega y la merma a un hijo hacia merma que sale con `merma_calidad` (decisiones 691 y 692). Para que un A- espere o se reparta sin destino, `traspasos_un_destino` acepta también `esperado` y `repartido` (migración `0057`).
+- **`acciones/no-la-encuentro.ts`:** con el candado de la variante relee la reserva (activa, en Bodega, de un pedido externo), abre la DF- `no_la_encontro` por las piezas en negativo con lo que decía la existencia, y libera la reserva con su nota. El folio del pedido sale de `ventas.folios_de_documentos`.
+- **Despachar a un cliente externo** lleva una sola nota por despacho (decisión 689); un padre de una devolución de cliente espera a Calidad y no sale (`espera_calidad`).
+- **Pruebas:** `acciones/no-la-encuentro.prueba.ts`; las entregas, el paso a bodega y las devoluciones, en `modulos/ventas/acciones/notas-de-entrega.prueba.ts` y `notas-de-credito.prueba.ts`.

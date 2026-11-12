@@ -94,16 +94,21 @@ export function llamarInterna(servidor: ServidorDePrueba, nombre: string, datos:
 }
 
 /**
- * Un pedido externo con un lote listo en aduana: el traspaso `lote_cliente`, las piezas en Aduana y su reserva
- * `pedido_externo` ligada al traspaso.
+ * Pone listo en aduana para un pedido externo un lote de una variante: el traspaso `lote_cliente`, las piezas en
+ * Aduana y su reserva `pedido_externo` ligada al traspaso, como las deja la recepción del taller.
  * @param servidor El servidor de prueba.
+ * @param pedido El pedido.
+ * @param variante La variante.
  * @param piezas Las piezas del lote.
- * @returns La variante, el pedido y el traspaso del lote.
+ * @returns El traspaso del lote.
  */
-export async function pedidoListoEnAduana(servidor: ServidorDePrueba, piezas: number) {
+export async function listoEnAduanaDePrueba(
+	servidor: ServidorDePrueba,
+	pedido: string,
+	variante: string,
+	piezas: number,
+) {
 	const ubicacion = await ubicacionesPorCodigo(servidor);
-	const [variante = ""] = await variantesLibres(servidor, 1);
-	const pedido = await pedidoDePrueba(servidor);
 	const lote = await nuevoTraspaso(servidor, {
 		tipo: "lote_cliente",
 		estado: "en_aduana",
@@ -118,6 +123,19 @@ export async function pedidoListoEnAduana(servidor: ServidorDePrueba, piezas: nu
 		 VALUES ($1, $2, $3, $4, 'pedido_externo', $5, $6, 'activa')`,
 		[uuidv7(), ubicacion.ADU, variante, piezas, pedido, lote.traspasoId],
 	);
+	return lote;
+}
+
+/**
+ * Un pedido externo de prueba con un lote listo en aduana de una variante libre (`listoEnAduanaDePrueba`).
+ * @param servidor El servidor de prueba.
+ * @param piezas Las piezas del lote.
+ * @returns La variante, el pedido y el traspaso del lote.
+ */
+export async function pedidoListoEnAduana(servidor: ServidorDePrueba, piezas: number) {
+	const [variante = ""] = await variantesLibres(servidor, 1);
+	const pedido = await pedidoDePrueba(servidor);
+	const lote = await listoEnAduanaDePrueba(servidor, pedido, variante, piezas);
 	return { variante, pedido, lote };
 }
 

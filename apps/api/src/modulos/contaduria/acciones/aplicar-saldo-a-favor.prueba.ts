@@ -4,7 +4,6 @@
  * Fase 15 · docs/fases/15-contaduria-terceros-credito-y-cobranza.md («Criterios de terminado»)
  */
 
-import { v7 as uuidv7 } from "uuid";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
 	type ClienteDePrueba,
@@ -18,6 +17,7 @@ import {
 } from "../../../nucleo/pruebas/contaduria-de-prueba.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
+import { notaCreditoDePrueba } from "../../../nucleo/pruebas/ventas-de-prueba.ts";
 
 describe("El saldo a favor se aplica sin pasar de lo que hay, aun con dos acciones al mismo tiempo", () => {
 	let servidor: ServidorDePrueba;
@@ -33,7 +33,7 @@ describe("El saldo a favor se aplica sin pasar de lo que hay, aun con dos accion
 		const pagada = await notaEntregadaDePrueba(servidor, cliente, { totalCentavos: 100_000 });
 		await pagarDePrueba(servidor, cliente, pagada, 100_000);
 		await internaDeContaduria(servidor, "aplicar_nota_credito", {
-			nota_credito_id: uuidv7(),
+			nota_credito_id: await notaCreditoDePrueba(servidor, pagada.notaId),
 			nota_entrega_id: pagada.notaId,
 			monto_centavos: monto,
 		});

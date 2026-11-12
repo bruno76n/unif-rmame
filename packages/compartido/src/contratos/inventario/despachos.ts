@@ -159,3 +159,16 @@ export const surtirAAduana = definirAccion({
 		{ codigo: "rollo_ajeno", mensaje: "{rollo} no es de {material} de {OC}, o no está en bodega." },
 	],
 });
+
+/** Bodega no encuentra una pieza apartada para un pedido externo: nace su DF- y la pieza vuelve a lo que falta mandar. */
+export const noLaEncuentro = definirAccion({
+	nombre: "inventario.no_la_encuentro",
+	descripcion: "Bodega no encuentra una pieza apartada: nace su DF- por contar y la reserva se libera",
+	entrada: z.object({
+		reserva_id: z.uuid().describe("La reserva en Bodega de un pedido externo"),
+		nota: z.string().trim().max(200).optional().describe("Lo que Bodega quiera dejar dicho"),
+	}),
+	salida: z.object({ diferencia_id: z.uuid().describe("La DF- que nació"), folio: z.string() }),
+	permiso: { departamento: "bodega" },
+	errores: [{ codigo: "reserva_no_activa", mensaje: "Esa pieza ya no está apartada aquí." }],
+});

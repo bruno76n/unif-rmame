@@ -4,14 +4,13 @@
  * Fase 15 · docs/fases/15-contaduria-terceros-credito-y-cobranza.md («Criterios de terminado»)
  */
 
-import { v7 as uuidv7 } from "uuid";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { crearBase } from "../../../nucleo/base/conexion.ts";
 import { ErrorDeApi } from "../../../nucleo/http/errores.ts";
 import { enAccionDePrueba } from "../../../nucleo/pruebas/accion-de-prueba.ts";
 import { clienteDePrueba, notaEntregadaDePrueba } from "../../../nucleo/pruebas/contaduria-de-prueba.ts";
-import { foliosDePrueba } from "../../../nucleo/pruebas/modulos/ventas/index.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
+import { notaDePrueba } from "../../../nucleo/pruebas/ventas-de-prueba.ts";
 
 describe("La cuenta por cobrar nace con su vencimiento y su importe; con importe 0 nace pagada; una sola por nota", () => {
 	let servidor: ServidorDePrueba;
@@ -85,8 +84,11 @@ describe("La cuenta por cobrar nace con su vencimiento y su importe; con importe
 			codigo: "cuenta_ya_existe",
 			mensaje: `${nota.folio} ya tiene su cuenta por cobrar.`,
 		});
-		const otra = uuidv7();
-		foliosDePrueba.set(otra, "NV-9001");
+		const { notaId: otra } = await notaDePrueba(servidor, {
+			pedidoId: nota.pedidoId,
+			folio: "NV-9001",
+			subtotalCentavos: 500_000,
+		});
 		const resultados = await Promise.all([crear(datos(otra)), crear(datos(otra))]);
 		const con = (llave: string) =>
 			resultados.filter((resultado) => typeof resultado === "object" && resultado !== null && llave in resultado);

@@ -43,6 +43,7 @@
 		"./contratos/ventas/clientes": "./src/contratos/ventas/clientes.ts",
 		"./contratos/ventas/mandar": "./src/contratos/ventas/mandar.ts",
 		"./contratos/ventas/pedidos": "./src/contratos/ventas/pedidos.ts",
+		"./contratos/ventas/notas": "./src/contratos/ventas/notas.ts",
 		"./contratos/direccion/autorizaciones": "./src/contratos/direccion/autorizaciones.ts",
 		"./contratos/personal/asistencia": "./src/contratos/personal/asistencia.ts",
 		"./contratos/personal/personas": "./src/contratos/personal/personas.ts",

@@ -29,7 +29,6 @@ import {
 	variantesLibres,
 } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
-import { documentosAbiertosDePrueba } from "../../../nucleo/pruebas/modulos/ventas/index.ts";
 import { loteCortado } from "../../../nucleo/pruebas/produccion-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 import { pedidoDePrueba } from "../../../nucleo/pruebas/ventas-de-prueba.ts";
@@ -199,16 +198,17 @@ describe("el cuadre de la noche", () => {
 				[uuidv7(), ubicacion.BOD, variante, pedido],
 			);
 		}
-		documentosAbiertosDePrueba.add(abierto);
-		try {
-			const cuadre = await cuadrar("2026-10-05");
-			const sinDocumento = (await excepcionesDe(cuadre)).filter(
-				(excepcion) => excepcion.tipo === "reserva_sin_documento",
-			);
-			expect(sinDocumento.map((excepcion) => excepcion.datos.documento_id)).toEqual([cerrado]);
-		} finally {
-			documentosAbiertosDePrueba.delete(abierto);
-		}
+		// El cerrado se canceló; el abierto sigue confirmado.
+		await servidor.base.dueno.query(
+			`UPDATE pedidos SET estado = 'cancelado', cancelado_en = now(), motivo_cancelacion = 'Prueba del cuadre'
+			 WHERE id = $1`,
+			[cerrado],
+		);
+		const cuadre = await cuadrar("2026-10-05");
+		const sinDocumento = (await excepcionesDe(cuadre)).filter(
+			(excepcion) => excepcion.tipo === "reserva_sin_documento",
+		);
+		expect(sinDocumento.map((excepcion) => excepcion.datos.documento_id)).toEqual([cerrado]);
 	});
 
 	it("El cuadre no frena las ventas: cada tanda es su propia transacción corta, y lo que se mueve a media corrida no descuadra", async () => {

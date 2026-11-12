@@ -4,7 +4,6 @@
  * Fase 15 · docs/fases/15-contaduria-terceros-credito-y-cobranza.md («Criterios de terminado»)
  */
 
-import { v7 as uuidv7 } from "uuid";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
 	anticipoRecibidoDePrueba,
@@ -12,6 +11,7 @@ import {
 	internaDeContaduria,
 } from "../../../nucleo/pruebas/contaduria-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
+import { notaDePrueba } from "../../../nucleo/pruebas/ventas-de-prueba.ts";
 
 describe("Regresar el anticipo de una nota sigue sus reglas", () => {
 	let servidor: ServidorDePrueba;
@@ -25,7 +25,7 @@ describe("Regresar el anticipo de una nota sigue sus reglas", () => {
 	it("la nota que se cancela regresa sus $5,000 al pedido, con su `aplicado`; otra vez, nada", async () => {
 		const cliente = await clienteDePrueba(servidor);
 		const { pedidoId } = await anticipoRecibidoDePrueba(servidor, cliente, 1_000_000);
-		const nota = uuidv7();
+		const { notaId: nota } = await notaDePrueba(servidor, { pedidoId });
 		const { anticipo_id: aplicadoId } = (await internaDeContaduria(servidor, "aplicar_anticipo_a_nota", {
 			pedido_id: pedidoId,
 			cliente_id: cliente.clienteId,
@@ -46,7 +46,11 @@ describe("Regresar el anticipo de una nota sigue sus reglas", () => {
 	});
 
 	it("una nota sin anticipo aplicado no hace nada", async () => {
-		expect(await internaDeContaduria(servidor, "regresar_anticipo_a_pedido", { nota_entrega_id: uuidv7() })).toEqual({
+		expect(
+			await internaDeContaduria(servidor, "regresar_anticipo_a_pedido", {
+				nota_entrega_id: (await notaDePrueba(servidor)).notaId,
+			}),
+		).toEqual({
 			regresado_centavos: 0,
 		});
 	});

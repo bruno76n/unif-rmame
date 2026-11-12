@@ -1,0 +1,289 @@
+/**
+ * Prueba de las notas de crédito y sus devoluciones: Ventas la pide de una nota entregada, nunca de más; Dirección la
+ * autoriza y baja el saldo de la nota con su folio NC-, y Aduana espera las piezas; al recibirlas, lo bueno pasa a
+ * Bodega y lo de defecto espera a Calidad, que decide qué sirve y qué es merma. Rechazada, no cambia nada.
+ * Fase 16 · docs/fases/16-ventas-a-externos.md (parte 4)
+ */
+
+import { Temporal } from "temporal-polyfill";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { z } from "zod";
+import { decidirDePrueba, despacharDePrueba, versionDeTraspaso } from "../../../nucleo/pruebas/aduana-de-prueba.ts";
+import { listoEnAduanaDePrueba } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
+import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
+import type { PrendaDelTaller } from "../../../nucleo/pruebas/produccion-de-prueba.ts";
+import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
+import {
+	darDeAltaClienteDePrueba,
+	pedidoConfirmadoDePrueba,
+	prendaParaVender,
+	versionDelPedido,
+} from "../../../nucleo/pruebas/ventas-de-prueba.ts";
+
+describe("Una nota de crédito corrige una nota entregada: Dirección la autoriza, baja el saldo y lo que regresa pasa por Calidad", () => {
+	let servidor: ServidorDePrueba;
+	let prenda: PrendaDelTaller;
+	beforeAll(async () => {
+		servidor = await crearServidorDePrueba();
+		prenda = await prendaParaVender(servidor);
+	});
+	afterAll(async () => {
+		await servidor.cerrar();
+	});
+
+	/** Una consulta con el rol dueño. */
+	async function consultar(texto: string, valores: unknown[]) {
+		return (await servidor.base.dueno.query(texto, valores)).rows;
+	}
+
+	/** La versión de una fila. */
+	async function version(tabla: "notas_entrega" | "traspasos", id: string): Promise<number> {
+		const [fila] = await consultar(`SELECT version::int AS v FROM ${tabla} WHERE id = $1`, [id]);
+		return z.number().parse(fila?.v);
+	}
+
+	/** Una nota de tantas piezas de la talla 4, armada, despachada y entregada: su id, su folio, su renglón y su cuenta. */
+	async function notaEntregada(piezas: number) {
+		const cliente = await darDeAltaClienteDePrueba(servidor);
+		const pedido = await pedidoConfirmadoDePrueba(servidor, {
+			cliente_id: cliente.cliente_id,
+			fecha_entrega: Temporal.Now.plainDateISO("America/Mexico_City").add({ days: 30 }).toString(),
+			renglones: [{ variante_id: prenda.variantes["4"], cantidad: piezas }],
+		});
+		await listoEnAduanaDePrueba(servidor, pedido.pedido_id, prenda.variantes["4"] ?? "", piezas);
+		const armada = await mandarAccion(
+			servidor,
+			"ventas.armar_nota_entrega",
+			{
+				datos: { pedido_id: pedido.pedido_id, renglones: [{ variante_id: prenda.variantes["4"], cantidad: piezas }] },
+				version: await versionDelPedido(servidor, pedido.pedido_id),
+			},
+			"ventas",
+		);
+		const { nota_id: notaId, folio } = z
+			.object({ nota_id: z.uuid(), folio: z.string() })
+			.parse(armada.cuerpo.resultado);
+		const traspasos = await consultar("SELECT id FROM traspasos WHERE nota_entrega_id = $1", [notaId]);
+		await despacharDePrueba(
+			servidor,
+			traspasos.map((fila) => String(fila.id)),
+		);
+		const entregada = await mandarAccion(
+			servidor,
+			"ventas.confirmar_entrega",
+			{ datos: { nota_id: notaId, recibio_nombre: "Laura Méndez" }, version: await version("notas_entrega", notaId) },
+			"ventas",
+		);
+		expect(entregada.estado).toBe(200);
+		const [linea] = await consultar(
+			"SELECT id, precio_unitario_centavos::int AS precio FROM nota_entrega_lineas WHERE nota_entrega_id = $1",
+			[notaId],
+		);
+		return {
+			notaId,
+			folio,
+			lineaId: String(linea?.id),
+			subtotal: piezas * z.number().parse(linea?.precio),
+		};
+	}
+
+	/** Ventas pide una nota de crédito. */
+	function pedir(notaId: string, monto: number, piezas?: { nota_entrega_linea_id: string; cantidad: number }[]) {
+		return mandarAccion(
+			servidor,
+			"ventas.pedir_nota_credito",
+			{
+				datos: {
+					nota_id: notaId,
+					que_paso: "Regresan con la costura abierta",
+					monto_centavos: monto,
+					...(piezas === undefined ? {} : { piezas }),
+				},
+			},
+			"ventas",
+		);
+	}
+
+	/** La autorización de una nota de crédito. */
+	async function autorizacionDe(notaCreditoId: string): Promise<string> {
+		const [fila] = await consultar("SELECT autorizacion_id FROM notas_credito WHERE id = $1", [notaCreditoId]);
+		return z.uuid().parse(fila?.autorizacion_id);
+	}
+
+	/** El saldo de la cuenta por cobrar de una nota. */
+	async function saldoDe(notaId: string): Promise<number> {
+		const [fila] = await consultar(
+			"SELECT saldo_centavos::int AS s FROM cuentas_por_cobrar WHERE nota_entrega_id = $1",
+			[notaId],
+		);
+		return z.number().parse(fila?.s);
+	}
+
+	it("pedirla: solo de una entregada, nunca de más ni con piezas de más; una a la vez", async () => {
+		const nota = await notaEntregada(4);
+		expect((await pedir(nota.notaId, nota.subtotal + 100)).cuerpo).toMatchObject({
+			codigo: "monto_de_mas",
+			mensaje: expect.stringMatching(
+				new RegExp(`^La nota de crédito no puede pasar de \\$[\\d,.]+: es lo que queda de ${nota.folio}\\.$`),
+			),
+		});
+		expect(
+			(await pedir(nota.notaId, 1_000, [{ nota_entrega_linea_id: nota.lineaId, cantidad: 5 }])).cuerpo,
+		).toMatchObject({
+			codigo: "piezas_de_mas",
+			mensaje: `${prenda.nombre} talla 4: solo pueden regresar 4.`,
+		});
+		const pedida = await pedir(nota.notaId, 1_000);
+		expect(pedida.cuerpo.resultado).toMatchObject({
+			mensaje: `Nota de crédito para ${nota.folio} enviada a Dirección`,
+		});
+		expect((await pedir(nota.notaId, 1_000)).cuerpo).toMatchObject({
+			codigo: "nota_credito_esperando",
+			mensaje: `${nota.folio} ya tiene una nota de crédito esperando autorización.`,
+		});
+		const { rows } = await servidor.base.dueno.query(
+			"SELECT a.tipo, a.estado, a.importe_centavos::int AS importe FROM autorizaciones a WHERE a.nota_entrega_id = $1",
+			[nota.notaId],
+		);
+		expect(rows).toEqual([{ tipo: "nota_credito", estado: "por_autorizar", importe: 1_000 }]);
+	});
+
+	it("autorizada: toma su NC-, baja el saldo y Aduana espera las piezas; lo de defecto espera a Calidad, que decide", async () => {
+		const nota = await notaEntregada(4);
+		const saldo = await saldoDe(nota.notaId);
+		const pedida = await pedir(nota.notaId, 30_000, [{ nota_entrega_linea_id: nota.lineaId, cantidad: 3 }]);
+		const { nota_credito_id: ncId } = z.object({ nota_credito_id: z.uuid() }).parse(pedida.cuerpo.resultado);
+		const decidida = await decidirDePrueba(servidor, await autorizacionDe(ncId), { decision: "autorizar" });
+		expect(decidida.estado).toBe(200);
+		expect(await consultar("SELECT estado, folio FROM notas_credito WHERE id = $1", [ncId])).toEqual([
+			{ estado: "autorizada", folio: expect.stringMatching(/^NC-\d{4}$/) },
+		]);
+		expect(await saldoDe(nota.notaId)).toBe(Math.max(0, saldo - 30_000));
+		// Aduana espera las 3: un A- `esperado`, de cliente externo y sin destino.
+		const [esperada] = await consultar(
+			`SELECT t.id, t.folio, t.estado, t.origen_externo, t.destino_ubicacion_id, l.id AS linea, l.piezas_enviadas AS piezas
+			 FROM traspasos t JOIN traspaso_lineas l ON l.traspaso_id = t.id WHERE t.nota_credito_id = $1`,
+			[ncId],
+		);
+		expect(esperada).toMatchObject({
+			estado: "esperado",
+			origen_externo: "cliente_externo",
+			destino_ubicacion_id: null,
+			piezas: 3,
+		});
+		const devolucion = String(esperada?.id);
+		// Llegan las 3 con defecto: se quedan en aduana para Calidad y no salen.
+		const recibida = await mandarAccion(
+			servidor,
+			"inventario.recibir_en_aduana",
+			{
+				datos: {
+					traspaso_id: devolucion,
+					modo: "con_diferencias",
+					renglones: [{ traspaso_linea_id: esperada?.linea, piezas: 3, con_defecto: true }],
+				},
+				version: await versionDeTraspaso(servidor, devolucion),
+			},
+			"aduana",
+		);
+		expect(recibida.cuerpo.resultado).toMatchObject({ mensaje: `${esperada?.folio} recibida: pasa a Calidad` });
+		expect((await despacharDePrueba(servidor, [devolucion], undefined)).cuerpo).toMatchObject({
+			codigo: "espera_calidad",
+		});
+		// Calidad: 2 sirven y 1 es merma.
+		const revisar = async (renglones: unknown[]) =>
+			mandarAccion(
+				servidor,
+				"calidad.revisar_devolucion",
+				{ datos: { traspaso_id: devolucion, renglones }, version: await version("traspasos", devolucion) },
+				"calidad",
+			);
+		expect(
+			(await revisar([{ traspaso_linea_id: esperada?.linea, piezas: 1, decision: "merma" }])).cuerpo,
+		).toMatchObject({ campos: { motivo: "Escribe con qué tiene." } });
+		expect(
+			(await revisar([{ traspaso_linea_id: esperada?.linea, piezas: 4, decision: "sirve" }])).cuerpo,
+		).toMatchObject({
+			codigo: "piezas_mas_que_pendientes",
+			mensaje: "En ese renglón quedan 3 piezas por revisar.",
+		});
+		const revisada = await revisar([
+			{ traspaso_linea_id: esperada?.linea, piezas: 2, decision: "sirve" },
+			{ traspaso_linea_id: esperada?.linea, piezas: 1, decision: "merma", motivo: "Tela rota" },
+		]);
+		expect(revisada.cuerpo.resultado).toMatchObject({ mensaje: `${esperada?.folio}: 2 a bodega, 1 como merma` });
+		expect(
+			await consultar(
+				`SELECT t.estado, coalesce(d.codigo, t.destino_externo) AS destino, l.piezas_recibidas_aduana AS piezas
+				 FROM traspasos t JOIN traspaso_lineas l ON l.traspaso_id = t.id LEFT JOIN ubicaciones d ON d.id = t.destino_ubicacion_id
+				 WHERE t.traspaso_padre_id = $1 ORDER BY t.folio`,
+				[devolucion],
+			),
+		).toEqual([
+			{ estado: "en_aduana", destino: "BOD", piezas: 2 },
+			{ estado: "salio", destino: "merma", piezas: 1 },
+		]);
+		expect(await consultar("SELECT estado FROM traspasos WHERE id = $1", [devolucion])).toEqual([
+			{ estado: "repartido" },
+		]);
+		expect(
+			await consultar(
+				"SELECT decision, piezas, motivo, origen FROM revisiones_devolucion WHERE traspaso_id = $1 ORDER BY decision DESC",
+				[devolucion],
+			),
+		).toEqual([
+			{ decision: "sirve", piezas: 2, motivo: null, origen: "nota_credito" },
+			{ decision: "merma", piezas: 1, motivo: "Tela rota", origen: "nota_credito" },
+		]);
+		// Ya no regresan más de lo entregado menos lo que ya regresó.
+		expect(
+			(await pedir(nota.notaId, 100, [{ nota_entrega_linea_id: nota.lineaId, cantidad: 2 }])).cuerpo,
+		).toMatchObject({
+			codigo: "piezas_de_mas",
+			mensaje: `${prenda.nombre} talla 4: solo pueden regresar 1.`,
+		});
+	});
+
+	it("lo que regresa bueno pasa a Bodega al recibirlo; una rechazada no cambia el saldo", async () => {
+		const nota = await notaEntregada(2);
+		const saldo = await saldoDe(nota.notaId);
+		const rechazar = await pedir(nota.notaId, 5_000);
+		const { nota_credito_id: rechazadaId } = z.object({ nota_credito_id: z.uuid() }).parse(rechazar.cuerpo.resultado);
+		await decidirDePrueba(servidor, await autorizacionDe(rechazadaId), { decision: "rechazar", motivo: "No procede" });
+		expect(await consultar("SELECT estado, folio FROM notas_credito WHERE id = $1", [rechazadaId])).toEqual([
+			{ estado: "rechazada", folio: null },
+		]);
+		expect(await saldoDe(nota.notaId)).toBe(saldo);
+		const pedida = await pedir(nota.notaId, 5_000, [{ nota_entrega_linea_id: nota.lineaId, cantidad: 2 }]);
+		const { nota_credito_id: ncId } = z.object({ nota_credito_id: z.uuid() }).parse(pedida.cuerpo.resultado);
+		await decidirDePrueba(servidor, await autorizacionDe(ncId), { decision: "autorizar" });
+		const [esperada] = await consultar(
+			"SELECT t.id, l.id AS linea FROM traspasos t JOIN traspaso_lineas l ON l.traspaso_id = t.id WHERE t.nota_credito_id = $1",
+			[ncId],
+		);
+		const devolucion = String(esperada?.id);
+		await mandarAccion(
+			servidor,
+			"inventario.recibir_en_aduana",
+			{
+				datos: {
+					traspaso_id: devolucion,
+					modo: "con_diferencias",
+					renglones: [{ traspaso_linea_id: esperada?.linea, piezas: 2 }],
+				},
+				version: await versionDeTraspaso(servidor, devolucion),
+			},
+			"aduana",
+		);
+		expect(
+			await consultar(
+				`SELECT t.estado, d.codigo AS destino FROM traspasos t JOIN ubicaciones d ON d.id = t.destino_ubicacion_id
+				 WHERE t.traspaso_padre_id = $1`,
+				[devolucion],
+			),
+		).toEqual([{ estado: "en_aduana", destino: "BOD" }]);
+		expect(await consultar("SELECT estado FROM traspasos WHERE id = $1", [devolucion])).toEqual([
+			{ estado: "repartido" },
+		]);
+	});
+});

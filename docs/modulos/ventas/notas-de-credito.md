@@ -109,4 +109,10 @@ Los cambia solo la dueña, en Configuración (ver [configuración](../admin/conf
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 16.*
+**Fase 16, parte 4.** En `modulos/ventas/`:
+
+- **Las tablas** `notas_credito` y `nota_credito_lineas` (`tablas.ts`, migración `0057`, con las llaves de autorizaciones, aplicaciones de pago, saldo a favor, traspasos y revisiones de devolución), con sus CHECK: el estado, el monto mayor que 0, el folio y la hora al autorizarse, la hora al rechazarse. Una por autorizar por nota (índice único). `nota_credito_lineas` solo crece. El parámetro `ventas.largo_minimo_que_paso` está en `parametros.ts`.
+- **`ventas.pedir_nota_credito`** (`acciones/notas-credito.ts`, contrato en `packages/compartido/src/contratos/ventas/notas.ts`) bloquea la nota y revisa lo de las reglas 1 a 4: el tope es el subtotal menos sus notas de crédito no rechazadas; lo que regresa de un renglón, lo entregado menos lo que regresa en otras no rechazadas. Pide su AU- con `direccion.pedir_autorizacion` en la misma transacción.
+- **`ventas.aplicar_decision_nota_credito`** es el efecto de `nota_credito`: autorizada toma su NC-, llama `contaduria.aplicar_nota_credito` y, si regresan piezas, `inventario.esperar_devolucion`; rechazada solo queda rechazada.
+- **`ventas.folios_de_documentos`** (`lecturas/documentos.ts`) nombra también las NC-; una sin autorizar sale con su id.
+- **Pruebas:** `acciones/notas-de-credito.prueba.ts` (pedirla y lo que no deja; autorizada con su devolución, Aduana y Calidad; lo bueno que regresa pasa a Bodega; rechazada no cambia el saldo).

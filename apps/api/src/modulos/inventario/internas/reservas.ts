@@ -366,7 +366,7 @@ async function apartarDeAduana(
  * @param traspasoId El traspaso padre.
  * @param porVariante Por variante, las piezas.
  */
-async function renglonesARepartir(
+export async function renglonesARepartir(
 	contexto: ContextoDeAccion,
 	traspasoId: string,
 	porVariante: ReadonlyMap<string, number>,

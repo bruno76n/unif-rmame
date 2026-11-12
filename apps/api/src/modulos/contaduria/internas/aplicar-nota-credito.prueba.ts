@@ -4,7 +4,6 @@
  * Fase 15 · docs/fases/15-contaduria-terceros-credito-y-cobranza.md («Criterios de terminado»)
  */
 
-import { v7 as uuidv7 } from "uuid";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { crearBase } from "../../../nucleo/base/conexion.ts";
 import { ErrorDeApi } from "../../../nucleo/http/errores.ts";
@@ -15,8 +14,8 @@ import {
 	notaEntregadaDePrueba,
 	pagarDePrueba,
 } from "../../../nucleo/pruebas/contaduria-de-prueba.ts";
-import { foliosDePrueba } from "../../../nucleo/pruebas/modulos/ventas/index.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
+import { notaCreditoDePrueba } from "../../../nucleo/pruebas/ventas-de-prueba.ts";
 
 describe("Una nota de crédito baja la cuenta hasta su saldo, lo demás entra a favor del cliente, y no se aplica dos veces", () => {
 	let servidor: ServidorDePrueba;
@@ -55,7 +54,7 @@ describe("Una nota de crédito baja la cuenta hasta su saldo, lo demás entra a 
 	it("una NC de $1,000 a una nota con $5,400: baja a $4,400, sin nada a favor", async () => {
 		const cliente = await clienteDePrueba(servidor);
 		const nota = await notaEntregadaDePrueba(servidor, cliente, { totalCentavos: 540_000 });
-		const nc = uuidv7();
+		const nc = await notaCreditoDePrueba(servidor, nota.notaId);
 		expect(await aplicar(nc, nota.notaId, 100_000)).toEqual({ aplicado_centavos: 100_000, a_favor_centavos: 0 });
 		expect(await cuentaComoQuedo(servidor, nota.cuentaId)).toMatchObject({ saldo: 440_000, estado: "pagada_en_parte" });
 		expect(await aFavor(cliente.clienteId)).toEqual([]);
@@ -65,13 +64,13 @@ describe("Una nota de crédito baja la cuenta hasta su saldo, lo demás entra a 
 		const cliente = await clienteDePrueba(servidor);
 		const pagada = await notaEntregadaDePrueba(servidor, cliente, { totalCentavos: 200_000 });
 		await pagarDePrueba(servidor, cliente, pagada, 200_000);
-		const nc = uuidv7();
+		const nc = await notaCreditoDePrueba(servidor, pagada.notaId);
 		expect(await aplicar(nc, pagada.notaId, 100_000)).toEqual({ aplicado_centavos: 0, a_favor_centavos: 100_000 });
 		expect(await aFavor(cliente.clienteId)).toEqual([
 			{ tipo: "entra", origen: "nota_credito", monto: 100_000, nota_credito_id: nc },
 		]);
 		const casi = await notaEntregadaDePrueba(servidor, cliente, { totalCentavos: 30_000 });
-		const otra = uuidv7();
+		const otra = await notaCreditoDePrueba(servidor, casi.notaId);
 		expect(await aplicar(otra, casi.notaId, 100_000)).toEqual({ aplicado_centavos: 30_000, a_favor_centavos: 70_000 });
 		expect(await cuentaComoQuedo(servidor, casi.cuentaId)).toEqual({ saldo: 0, estado: "pagada", con_pagada_en: true });
 		const { rows } = await servidor.base.dueno.query(
@@ -84,8 +83,7 @@ describe("Una nota de crédito baja la cuenta hasta su saldo, lo demás entra a 
 	it("no se aplica dos veces, aun a la vez: `nota_credito_ya_aplicada` con su folio", async () => {
 		const cliente = await clienteDePrueba(servidor);
 		const nota = await notaEntregadaDePrueba(servidor, cliente, { totalCentavos: 500_000 });
-		const nc = uuidv7();
-		foliosDePrueba.set(nc, "NC-0007");
+		const nc = await notaCreditoDePrueba(servidor, nota.notaId, { folio: "NC-0007" });
 		const [uno, dos] = await Promise.all([aplicar(nc, nota.notaId, 100_000), aplicar(nc, nota.notaId, 100_000)]);
 		expect([uno, dos]).toContainEqual({ aplicado_centavos: 100_000, a_favor_centavos: 0 });
 		expect([uno, dos]).toContainEqual(
@@ -94,7 +92,7 @@ describe("Una nota de crédito baja la cuenta hasta su saldo, lo demás entra a 
 		expect(await cuentaComoQuedo(servidor, nota.cuentaId)).toMatchObject({ saldo: 400_000 });
 		// Una que quedó toda a favor tampoco se aplica otra vez.
 		await pagarDePrueba(servidor, cliente, nota, 400_000);
-		const toda = uuidv7();
+		const toda = await notaCreditoDePrueba(servidor, nota.notaId);
 		await aplicar(toda, nota.notaId, 50_000);
 		expect(await aplicar(toda, nota.notaId, 50_000)).toMatchObject({ codigo: "nota_credito_ya_aplicada" });
 	});

@@ -34,6 +34,7 @@ import { abrirDiferencia } from "../dominio/diferencias.ts";
 import { escribirMovimiento, type RenglonDeMovimiento } from "../dominio/escribir-movimiento.ts";
 import { candadoDeLoRecibido, ordenesDeCompras, ubicacionDeTipo, ubicacionPorId } from "../dominio/recepciones.ts";
 import { cambiarEstadoTraspaso } from "../dominio/traspasos.ts";
+import { tiposDeDevolucionDeCliente } from "../internas/devoluciones.ts";
 import {
 	despachos,
 	diferencias,
@@ -140,7 +141,11 @@ async function revisarQueSalga(contexto: ContextoDeAccion, traspaso: Traspaso): 
 			"Lo de más que regresa al proveedor sale con «Devolver al proveedor».",
 		);
 	}
-	if (traspaso.tipo === "devolucion_defecto") {
+	// Lo que regresó de un cliente con defecto se queda en el padre, sin destino, hasta que Calidad lo revisa.
+	if (
+		traspaso.tipo === "devolucion_defecto" ||
+		(tiposDeDevolucionDeCliente.some((tipo) => tipo === traspaso.tipo) && traspaso.traspasoPadreId === null)
+	) {
 		throw errorDeRegla("espera_calidad", `${traspaso.folio} espera la revisión de Calidad`);
 	}
 	if (
@@ -175,6 +180,9 @@ async function revisarQueSalga(contexto: ContextoDeAccion, traspaso: Traspaso): 
 		}
 	}
 }
+
+/** Lo que regresa `ventas.marcar_nota_en_camino`: el folio de la nota y el nombre de su cliente. */
+const notaEnCamino = z.object({ folio: z.string(), cliente: z.string() });
 
 export const accionDespachar = implementarAccion(despachar, async (contexto, datos) => {
 	const { transaccion } = contexto;
@@ -213,6 +221,10 @@ export const accionDespachar = implementarAccion(despachar, async (contexto, dat
 	if (destinos.size !== 1) throw errorDeRegla("destinos_distintos", "Un despacho va a un solo destino");
 	const [destino = ""] = destinos;
 	const esCliente = destino === "cliente_externo";
+	// A un cliente externo, un despacho lleva una sola nota: cada nota es su propio destino.
+	const notas = new Set(salen.flatMap((traspaso) => (traspaso.notaEntregaId === null ? [] : [traspaso.notaEntregaId])));
+	if (esCliente && notas.size !== 1) throw errorDeRegla("destinos_distintos", "Un despacho va a un solo destino");
+	const [notaEntregaId] = notas;
 	const lugar = esCliente ? undefined : await nombreDe(contexto, destino);
 	const nombreDestino = lugar?.nombre ?? "el cliente";
 	if (lugar !== undefined && !["bodega", "tienda"].includes(lugar.tipo)) {
@@ -227,7 +239,7 @@ export const accionDespachar = implementarAccion(despachar, async (contexto, dat
 		folio,
 		destinoUbicacionId: esCliente ? null : destino,
 		destinoExterno: esCliente ? "cliente_externo" : null,
-		notaEntregaId: salen.find((traspaso) => traspaso.notaEntregaId !== null)?.notaEntregaId ?? null,
+		notaEntregaId: notaEntregaId ?? null,
 		estado: "en_transito",
 		despachadoEn: contexto.ahora.toString(),
 		despachadoPor: quien,
@@ -279,6 +291,17 @@ export const accionDespachar = implementarAccion(despachar, async (contexto, dat
 	if (renglones.length > 0) {
 		await escribirMovimiento(contexto, { tipo: "despacho", documento: { tipo: "despacho", id, folio }, renglones });
 	}
+	// Su nota pasa a en camino; Ventas dice su folio y su cliente, sin precios.
+	const nota =
+		esCliente && notaEntregaId !== undefined
+			? notaEnCamino.parse(
+					await contexto.interna("ventas.marcar_nota_en_camino", {
+						nota_entrega_id: notaEntregaId,
+						despacho_id: id,
+						despachado_en: contexto.ahora.toString(),
+					}),
+				)
+			: undefined;
 	contexto.bitacora({
 		descripcion: `Despachó ${folio} a ${nombreDestino}`,
 		entidad: "despachos",
@@ -298,7 +321,10 @@ export const accionDespachar = implementarAccion(despachar, async (contexto, dat
 		resultado: {
 			despacho_id: id,
 			folio,
-			mensaje: `${folio} sale a ${nombreDestino}. Queda en tránsito hasta que lo confirmen`,
+			mensaje:
+				nota === undefined
+					? `${folio} sale a ${nombreDestino}. Queda en tránsito hasta que lo confirmen`
+					: `${nota.folio} sale con ${folio} a ${nota.cliente}. Queda en camino hasta que firme de recibido`,
 		},
 		entidad: { nombre: "despachos", id },
 	};
@@ -426,7 +452,7 @@ interface Contado {
  * cada renglón.
  * @throws `400 falta_renglon` si con diferencias falta un renglón.
  */
-function contar(
+export function contar(
 	lineas: readonly LineaDeTraspaso[],
 	modo: "completo" | "con_diferencias",
 	renglones: readonly { traspaso_linea_id: string; piezas?: number | undefined; cantidad?: string | undefined }[] = [],
@@ -510,15 +536,16 @@ async function abrirDiferenciasDeLaLlegada(
 /**
  * Confirma la llegada de un despacho del otro lado: la recepción y sus renglones, el movimiento desde Tránsito (al
  * destino o a Fuera), lo que confirmó el destino en cada renglón, cada traspaso y el despacho. Lo que faltó se queda
- * en Tránsito; lo que sobró o no venía sale del tramo del primer traspaso.
+ * en Tránsito; lo que sobró o no venía sale del tramo del primer traspaso. La entrega a un cliente externo es la
+ * recepción `entrega_cliente`, en Tránsito.
  * @returns La recepción y cuánto llegó y faltó.
  */
-async function confirmarLlegada(
+export async function confirmarLlegada(
 	contexto: ContextoDeAccion,
 	despacho: Despacho,
 	pedido: {
 		destino: string;
-		tipoMovimiento: "recepcion_despacho" | "entrega_tienda_sin_caja";
+		tipoMovimiento: "recepcion_despacho" | "entrega_tienda_sin_caja" | "entrega_cliente_externo";
 		modo: "completo" | "con_diferencias";
 		contados: Contado[];
 		noVenia: readonly { variante_id: string; piezas: number }[];
@@ -535,10 +562,11 @@ async function confirmarLlegada(
 		pedido.contados.some(
 			({ esperado, llego }) => esperado.piezas !== llego.piezas || esperado.milesimos !== llego.milesimos,
 		);
+	const aCliente = pedido.tipoMovimiento === "entrega_cliente_externo";
 	await transaccion.insert(recepciones).values({
 		id: recepcionId,
-		tipo: "destino_despacho",
-		ubicacionId: pedido.destino,
+		tipo: aCliente ? "entrega_cliente" : "destino_despacho",
+		ubicacionId: aCliente ? transito : pedido.destino,
 		modo: pedido.modo,
 		despachoId: despacho.id,
 		recibidoEn: contexto.ahora.toString(),
@@ -712,7 +740,7 @@ async function confirmarLlegada(
 }
 
 /** Los renglones de un despacho y sus traspasos, con los candados tomados. */
-async function loDelDespacho(contexto: ContextoDeAccion, despacho: Despacho, otrasVariantes: string[] = []) {
+export async function loDelDespacho(contexto: ContextoDeAccion, despacho: Despacho, otrasVariantes: string[] = []) {
 	const suyos = await contexto.transaccion
 		.select({ id: traspasos.id })
 		.from(traspasos)
