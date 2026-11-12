@@ -12,6 +12,7 @@ import { Temporal } from "temporal-polyfill";
 import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
 import { ErrorDeApi } from "../http/errores.ts";
+import { cuentaDePrueba } from "./cuentas-de-prueba.ts";
 import { llamarInterna } from "./inventario-de-prueba.ts";
 import { mandarAccion } from "./llamadas.ts";
 import type { ServidorDePrueba } from "./servidor-de-prueba.ts";
@@ -248,4 +249,22 @@ export function internaDeContaduria(servidor: ServidorDePrueba, nombre: string, 
 	return llamarInterna(servidor, `contaduria.${nombre}`, datos).catch((error: unknown) =>
 		error instanceof ErrorDeApi ? error.cuerpo() : Promise.reject(error),
 	);
+}
+
+/**
+ * El paquete del contador de un mes, ya mandado, directo en la base: para probar lo que el paquete mandado ya no deja
+ * cancelar. Si el mes ya tiene paquete, lo marca mandado.
+ * @param servidor El servidor de prueba.
+ * @param mes El primer día del mes.
+ * @returns Su id.
+ */
+export async function paqueteEnviadoDePrueba(servidor: ServidorDePrueba, mes: string): Promise<string> {
+	const { rows } = await servidor.base.dueno.query(
+		`INSERT INTO paquetes_contador (id, mes, fecha_limite, estado, enviado_en, enviado_por)
+		 VALUES ($1, $2, ($2::date + interval '1 month 16 days')::date, 'enviado', now(), $3)
+		 ON CONFLICT (mes) DO UPDATE SET estado = 'enviado', enviado_en = now(), enviado_por = $3
+		 RETURNING id`,
+		[uuidv7(), mes, cuentaDePrueba("contaduria")],
+	);
+	return z.uuid().parse(rows[0]?.id);
 }

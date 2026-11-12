@@ -129,3 +129,5 @@ Ninguno propio. Usa los dos de Mantenimiento de la regla 2 y `general.largo_mini
   - `cancelar_gasto` cancela con motivo; el de un servicio responde `gasto_de_mantenimiento` con su SM-.
 - **La interna** `registrar_gasto_mantenimiento` (`internas/gastos.ts`) lee la categoría y la ubicación de los dos parámetros de Mantenimiento, de tipo texto: la clave de la categoría y el código de la ubicación. Regresa el gasto, su folio y el nombre de su categoría para el renglón de bitácora del servicio.
 - **Pruebas:** `acciones/registrar-gasto.prueba.ts`, `acciones/cancelar-gasto.prueba.ts` e `internas/registrar-gasto-mantenimiento.prueba.ts`. Las ayudas están en `nucleo/pruebas/gastos-de-prueba.ts`.
+
+**Fase 18, parte 2.** Registrar un gasto con fecha de un mes cuyo paquete ya se mandó avisa «El paquete de {mes} ya se mandó: este gasto sale en el siguiente»; cancelar uno que ya salió en un paquete responde `paquete_ya_enviado` (ver [contador y cuadres](contador-y-cuadres.md#cómo-está-hecho)).

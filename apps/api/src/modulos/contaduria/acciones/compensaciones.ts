@@ -27,6 +27,7 @@ import {
 	regresarAplicacionesPorPagar,
 } from "../dominio/cuentas-por-pagar.ts";
 import { nombreDelTercero } from "../dominio/facturas.ts";
+import { mesYaEnviado } from "../dominio/paquete-mes.ts";
 
 import { compensaciones, cuentasPorCobrar, cuentasPorPagar, terceros } from "../tablas.ts";
 
@@ -174,6 +175,14 @@ export const accionCancelarCompensacion = implementarAccion(cancelarCompensacion
 	}));
 	if (compensacion.estado === "cancelada") {
 		throw errorDeRegla("compensacion_cancelada", "Esa compensación ya está cancelada.");
+	}
+	// Lo mandado al contador no se toca (fase 18).
+	const enviado = await mesYaEnviado(transaccion, compensacion.fecha);
+	if (enviado !== null) {
+		throw errorDeRegla(
+			"paquete_ya_enviado",
+			`El paquete de ${enviado} ya se mandó al contador: esa compensación ya no se puede cancelar.`,
+		);
 	}
 	const origen = { compensacionId: compensacion.id };
 	const porCobrar = await regresarAplicacionesPorCobrar(contexto, origen, motivo);

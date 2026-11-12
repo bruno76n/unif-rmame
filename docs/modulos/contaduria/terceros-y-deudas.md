@@ -228,3 +228,5 @@ Ninguno propio: el largo del motivo es `general.largo_minimo_motivo` (ver [confi
 - **Pruebas:** `acciones/registrar-deuda.prueba.ts`, `cancelar-deuda.prueba.ts` y `compensar.prueba.ts` (también la cancelación), y la prueba al azar `saldos-por-pagar.azar.prueba.ts`.
 
 **Cierre de la fase 17** (decisión 716): con mensualidades iguales, una deuda con menos de $1 por mensualidad responde `400` en `numero_mensualidades` («Cada mensualidad lleva al menos $1.»), sin escribir nada. La muestra de lo que la fábrica debe está en `apps/api/semillas/por-pagar.ts` (decisión 715).
+
+**Fase 18, parte 2.** `cancelar_compensacion` responde `paquete_ya_enviado` si el paquete del contador del mes de la compensación ya se mandó.

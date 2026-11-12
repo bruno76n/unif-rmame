@@ -442,6 +442,13 @@
 			"when": 1794501929881,
 			"tag": "0062_pedidos_linea",
 			"breakpoints": true
+		},
+		{
+			"idx": 63,
+			"version": "7",
+			"when": 1794504285895,
+			"tag": "0063_paquete_contador",
+			"breakpoints": true
 		}
 	]
 }

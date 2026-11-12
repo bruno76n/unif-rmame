@@ -154,3 +154,5 @@ Los dos van en la sección `tecnico`.
   - `acciones/subir-archivo.prueba.ts` (tipo, tamaño, departamento, la firma que vence y quién abre);
   - `internas/ligar-archivo.prueba.ts` (no llegó, suma distinta, ajeno, ya ligado, otro propósito, no existe, y `guardar_archivo`).
   - La lectura de prueba es `prueba.ve_documento`.
+
+**Fase 18, parte 2.** `admin.datos_de_archivo` da también `nombre_original` y `almacen_clave`, y el almacén lee un objeto (`leer`, con `GetObject`): así el trabajo del paquete del contador arma su ZIP con los comprobantes (decisión 724).

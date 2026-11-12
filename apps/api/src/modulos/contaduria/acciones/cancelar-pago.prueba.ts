@@ -14,6 +14,7 @@ import {
 	internaDeContaduria,
 	notaEntregadaDePrueba,
 	pagarDePrueba,
+	paqueteEnviadoDePrueba,
 	saldoAFavorDePrueba,
 } from "../../../nucleo/pruebas/contaduria-de-prueba.ts";
 import { conGoogle, mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
@@ -236,5 +237,23 @@ describe("Cancelar un pago pide «Confirmar con Google» y regresa saldos y esta
 			conexion.release();
 		}
 		expect(await disponible(anticipo.pedidoId)).toBe(100_000);
+	});
+
+	// Va al final: el paquete del mes queda mandado para lo que sigue.
+	it("Con el paquete del mes mandado, un pago de ese mes ya no se cancela (fase 18)", async () => {
+		const zamora = await clienteDePrueba(servidor);
+		const nota = await notaEntregadaDePrueba(servidor, zamora, { totalCentavos: 200_000 });
+		const pago = await pagoDe(await pagarDePrueba(servidor, zamora, nota, 200_000));
+		const { rows } = await servidor.base.dueno.query("SELECT fecha::text AS fecha FROM pagos WHERE id = $1", [
+			pago.pagoId,
+		]);
+		const mes = `${String(rows[0]?.fecha).slice(0, 7)}-01`;
+		await paqueteEnviadoDePrueba(servidor, mes);
+		expect((await cancelar(pago)).cuerpo).toMatchObject({
+			codigo: "paquete_ya_enviado",
+			mensaje: expect.stringMatching(
+				new RegExp(`^El paquete de .+ ya se mandó al contador: ${pago.folio} ya no se puede cancelar\\.$`),
+			),
+		});
 	});
 });

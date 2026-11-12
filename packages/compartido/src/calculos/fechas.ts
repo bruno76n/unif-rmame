@@ -101,3 +101,11 @@ export function sumarDiasHabiles(
 export function textoDeDia(dia: DiaNegocio | string): string {
 	return Temporal.PlainDate.from(dia).toLocaleString("es-MX", { day: "numeric", month: "long" });
 }
+
+/**
+ * Cómo se escribe un mes en los mensajes: «octubre de 2026».
+ * @param dia Cualquier día del mes, o su texto ISO («2026-10-01»).
+ */
+export function textoDeMes(dia: DiaNegocio | string): string {
+	return Temporal.PlainDate.from(dia).toLocaleString("es-MX", { month: "long", year: "numeric" });
+}

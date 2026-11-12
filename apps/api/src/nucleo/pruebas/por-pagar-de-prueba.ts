@@ -13,6 +13,7 @@ import { z } from "zod";
 import { crearBase } from "../base/conexion.ts";
 import { enAccionDePrueba } from "./accion-de-prueba.ts";
 import { type OrdenParaRecibir, ordenParaRecibir, recibirDePrueba } from "./aduana-de-prueba.ts";
+import { clienteDePrueba, notaEntregadaDePrueba } from "./contaduria-de-prueba.ts";
 import { conGoogle, mandarAccion } from "./llamadas.ts";
 import type { ServidorDePrueba } from "./servidor-de-prueba.ts";
 
@@ -250,4 +251,21 @@ export async function cuentaPorPagarComoQuedo(servidor: ServidorDePrueba, cuenta
 		[cuentaId],
 	);
 	return rows[0];
+}
+
+/**
+ * Un cliente que también es acreedor: dos notas que nos debe (una vieja, del 1 de octubre) y una deuda de dos
+ * mensualidades con él, para compensar.
+ * @param servidor El servidor de prueba.
+ */
+export async function clienteQueTambienEsAcreedor(servidor: ServidorDePrueba) {
+	const cliente = await clienteDePrueba(servidor);
+	const vieja = await notaEntregadaDePrueba(servidor, cliente, { totalCentavos: 30_000, fechaEntrega: "2026-10-01" });
+	const nueva = await notaEntregadaDePrueba(servidor, cliente, { totalCentavos: 50_000 });
+	const deuda = await deudaDePrueba(servidor, {
+		totalCentavos: 100_000,
+		mensualidades: 2,
+		terceroId: cliente.terceroId,
+	});
+	return { cliente, notas: [vieja.cuentaId, nueva.cuentaId], deuda };
 }

@@ -38,6 +38,7 @@ import {
 } from "../dominio/cuentas-por-pagar.ts";
 import { aplicarDeposito } from "../dominio/depositos.ts";
 import { avisoDePagoRepetido, revisarMedio, revisarPesosEnteros } from "../dominio/pagos.ts";
+import { mesYaEnviado } from "../dominio/paquete-mes.ts";
 import { bloquearSaldoAFavor } from "../dominio/saldo-favor.ts";
 import { cuentasPorPagar, pagos, saldoFavorMovimientos, terceros } from "../tablas.ts";
 
@@ -379,6 +380,14 @@ export const accionCancelarPago = implementarAccion(cancelarPago, async (context
 	if (leido === undefined) throw noExiste();
 	const { fila: pago } = leido;
 	if (pago.estado === "cancelado") throw errorDeRegla("pago_cancelado", `${pago.folio} ya está cancelado.`);
+	// Lo mandado al contador no se toca (fase 18).
+	const enviado = await mesYaEnviado(transaccion, pago.fecha);
+	if (enviado !== null) {
+		throw errorDeRegla(
+			"paquete_ya_enviado",
+			`El paquete de ${enviado} ya se mandó al contador: ${pago.folio} ya no se puede cancelar.`,
+		);
+	}
 	const motivo = datos.motivo.trim();
 	const quien = quienCambia(contexto);
 	// Su anticipo recibido y lo que el pedido pasó a favor con él (regla 5).

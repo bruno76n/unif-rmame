@@ -6,14 +6,9 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import {
-	type ClienteDePrueba,
-	clienteDePrueba,
-	cuentaComoQuedo,
-	notaEntregadaDePrueba,
-} from "../../../nucleo/pruebas/contaduria-de-prueba.ts";
+import { cuentaComoQuedo } from "../../../nucleo/pruebas/contaduria-de-prueba.ts";
 import { conGoogle, mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
-import { cuentaPorPagarComoQuedo, deudaDePrueba } from "../../../nucleo/pruebas/por-pagar-de-prueba.ts";
+import { clienteQueTambienEsAcreedor, cuentaPorPagarComoQuedo } from "../../../nucleo/pruebas/por-pagar-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 
 describe("Compensar descuenta lo que un tercero nos debe de lo que le debemos, y se cancela como un pago", () => {
@@ -50,20 +45,8 @@ describe("Compensar descuenta lo que un tercero nos debe de lo que le debemos, y
 	}
 
 	/** Un cliente que también es acreedor: dos notas que nos debe y una deuda de dos mensualidades. */
-	async function clienteYAcreedor(): Promise<{
-		cliente: ClienteDePrueba;
-		notas: string[];
-		deuda: Awaited<ReturnType<typeof deudaDePrueba>>;
-	}> {
-		const cliente = await clienteDePrueba(servidor);
-		const vieja = await notaEntregadaDePrueba(servidor, cliente, { totalCentavos: 30_000, fechaEntrega: "2026-10-01" });
-		const nueva = await notaEntregadaDePrueba(servidor, cliente, { totalCentavos: 50_000 });
-		const deuda = await deudaDePrueba(servidor, {
-			totalCentavos: 100_000,
-			mensualidades: 2,
-			terceroId: cliente.terceroId,
-		});
-		return { cliente, notas: [vieja.cuentaId, nueva.cuentaId], deuda };
+	function clienteYAcreedor() {
+		return clienteQueTambienEsAcreedor(servidor);
 	}
 
 	it("baja el mismo monto de cada lado, primero lo que vence antes, hasta lo menor de los dos", async () => {

@@ -25,6 +25,7 @@ import {
 	numeric,
 	pgTable,
 	text,
+	unique,
 	uniqueIndex,
 	uuid,
 } from "drizzle-orm/pg-core";
@@ -691,8 +692,7 @@ export const gastos = pgTable(
 		/** @llavePendiente movimientos_caja.id */
 		movimientoCajaId: uuid("movimiento_caja_id"),
 		motivo: text("motivo"),
-		/** @llavePendiente paquetes_contador.id */
-		paqueteContadorId: uuid("paquete_contador_id"),
+		paqueteContadorId: uuid("paquete_contador_id").references((): AnyPgColumn => paquetesContador.id),
 		estado: text("estado").notNull().default("registrado"),
 		...columnasDeCancelacion(),
 		...columnasDeAparato(),
@@ -910,3 +910,110 @@ export const descuentosNomina = pgTable(
 		check("descuentos_nomina_terminado", sql`(${tabla.estado} = 'terminado') = (${tabla.terminadoEn} is not null)`),
 	],
 );
+
+/** Los conceptos del paquete del contador (ver «Lo que lleva el paquete»). */
+export const conceptosDelPaquete = [
+	"cobranza_clientes",
+	"anticipos_recibidos",
+	"anticipos_aplicados",
+	"ventas_tiendas",
+	"anticipos_tiendas",
+	"ventas_en_linea",
+	"comisiones_pasarela",
+	"reembolsos_en_linea",
+	"devoluciones_saldo_favor",
+	"pagos_proveedores_acreedores",
+	"nomina",
+	"gasto",
+] as const;
+
+/** Un concepto del paquete. */
+export type ConceptoDelPaquete = (typeof conceptosDelPaquete)[number];
+
+/** El paquete de un mes para el contador externo: se calcula al momento hasta que se manda, y entonces se congela. */
+export const paquetesContador = pgTable(
+	"paquetes_contador",
+	{
+		id: uuid("id").primaryKey(),
+		mes: date("mes", { mode: "string" }).notNull(),
+		fechaLimite: date("fecha_limite", { mode: "string" }).notNull(),
+		estado: text("estado").notNull().default("por_enviar"),
+		enviadoEn: momento("enviado_en"),
+		enviadoPor: uuid("enviado_por").references(() => usuarios.id),
+		archivoId: uuid("archivo_id").references(() => archivos.id),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		uniqueIndex("paquetes_contador_mes").on(tabla.mes),
+		check("paquetes_contador_estado", sql`${tabla.estado} in ('por_enviar', 'enviado')`),
+		check(
+			"paquetes_contador_primer_dia",
+			sql`extract(day from ${tabla.mes}) = 1 and ${tabla.fechaLimite} > ${tabla.mes}`,
+		),
+		check(
+			"paquetes_contador_enviado",
+			sql`(${tabla.estado} = 'enviado') = (${tabla.enviadoEn} is not null and ${tabla.enviadoPor} is not null)`,
+		),
+	],
+);
+
+/** Las cifras de un paquete, congeladas al mandarlo. Solo crecen. */
+export const paqueteContadorRenglones = pgTable(
+	"paquete_contador_renglones",
+	{
+		id: uuid("id").primaryKey(),
+		paqueteContadorId: uuid("paquete_contador_id")
+			.notNull()
+			.references(() => paquetesContador.id),
+		concepto: text("concepto").notNull(),
+		categoriaId: uuid("categoria_id").references(() => listaValores.id),
+		deMesesAnteriores: boolean("de_meses_anteriores").notNull().default(false),
+		montoCentavos: bigint("monto_centavos", { mode: "number" }).notNull(),
+		documentos: integer("documentos").notNull(),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		unique("paquete_contador_renglones_unico")
+			.on(tabla.paqueteContadorId, tabla.concepto, tabla.categoriaId, tabla.deMesesAnteriores)
+			.nullsNotDistinct(),
+		check("paquete_contador_renglones_concepto", sql`${tabla.concepto} in (${valores(conceptosDelPaquete)})`),
+		check(
+			"paquete_contador_renglones_gasto",
+			sql`(${tabla.categoriaId} is not null) = (${tabla.concepto} = 'gasto')
+				and (not ${tabla.deMesesAnteriores} or ${tabla.concepto} = 'gasto')`,
+		),
+		check("paquete_contador_renglones_montos", sql`${tabla.montoCentavos} >= 0 and ${tabla.documentos} >= 0`),
+	],
+);
+
+/** Los tipos de un documento que regresa el contador. */
+export const tiposDeDocumentoContador = ["declaracion", "acuse", "facturas", "documento"] as const;
+
+/** Lo que el contador regresa: declaraciones, acuses, facturas y otros. */
+export const documentosContador = pgTable(
+	"documentos_contador",
+	{
+		id: uuid("id").primaryKey(),
+		archivoId: uuid("archivo_id")
+			.notNull()
+			.references(() => archivos.id),
+		nombre: text("nombre").notNull(),
+		tipo: text("tipo").notNull().default("documento"),
+		mes: date("mes", { mode: "string" }),
+		paqueteContadorId: uuid("paquete_contador_id").references(() => paquetesContador.id),
+		llegoEn: date("llego_en", { mode: "string" })
+			.notNull()
+			.default(sql`(now() at time zone 'America/Mexico_City')::date`),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		uniqueIndex("documentos_contador_archivo").on(tabla.archivoId),
+		index("documentos_contador_mes").on(tabla.mes),
+		index("documentos_contador_paquete").on(tabla.paqueteContadorId),
+		check("documentos_contador_tipo", sql`${tabla.tipo} in (${valores(tiposDeDocumentoContador)})`),
+		check("documentos_contador_mes", sql`${tabla.mes} is null or extract(day from ${tabla.mes}) = 1`),
+	],
+);
+
+/** El tipo de aviso que suma Contaduría: los saldos que no cuadran con sus pagos. */
+export const tiposDeAvisoDeContaduria = ["saldos_no_cuadran"] as const;

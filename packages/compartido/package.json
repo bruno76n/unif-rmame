@@ -37,6 +37,7 @@
 		"./contratos/catalogo/precios": "./src/contratos/catalogo/precios.ts",
 		"./contratos/catalogo/productos": "./src/contratos/catalogo/productos.ts",
 		"./contratos/catalogo/tallas": "./src/contratos/catalogo/tallas.ts",
+		"./contratos/contaduria/contador": "./src/contratos/contaduria/contador.ts",
 		"./contratos/contaduria/credito": "./src/contratos/contaduria/credito.ts",
 		"./contratos/contaduria/gastos": "./src/contratos/contaduria/gastos.ts",
 		"./contratos/contaduria/nomina": "./src/contratos/contaduria/nomina.ts",

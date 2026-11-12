@@ -5,6 +5,7 @@
  */
 
 import { enPesos } from "@uniformame/compartido/calculos/dinero";
+import { textoDeMes } from "@uniformame/compartido/calculos/fechas";
 import { cancelarGasto, registrarGasto } from "@uniformame/compartido/contratos/contaduria/gastos";
 import { eq } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
@@ -16,8 +17,9 @@ import { ubicaciones } from "../../inventario/tablas.ts";
 import { servicios } from "../../mantenimiento/tablas.ts";
 import { folioDeGasto, valorDeLista } from "../dominio/gastos.ts";
 import { cuentaFabricaEscogida } from "../dominio/pagos.ts";
+import { mesYaEnviado } from "../dominio/paquete-mes.ts";
 import { listaDeCategoriasGasto, listaDeTiposComprobante } from "../siembra.ts";
-import { gastos } from "../tablas.ts";
+import { gastos, paquetesContador } from "../tablas.ts";
 
 export const accionRegistrarGasto = implementarAccion(registrarGasto, async (contexto, datos) => {
 	const { transaccion } = contexto;
@@ -92,7 +94,13 @@ export const accionRegistrarGasto = implementarAccion(registrarGasto, async (con
 		entidadFolio: folio,
 		despues: { fecha: datos.fecha, monto_centavos: datos.monto_centavos, area: datos.area, medio: datos.medio },
 	});
-	return { resultado: { mensaje: `${folio} registrado`, gasto_id: id, folio }, entidad: { nombre: "gastos", id } };
+	// Con fecha de un mes ya mandado, sale en el siguiente paquete (regla 4 del contador).
+	const enviado = await mesYaEnviado(transaccion, datos.fecha);
+	return {
+		resultado: { mensaje: `${folio} registrado`, gasto_id: id, folio },
+		avisos: enviado === null ? [] : [`El paquete de ${enviado} ya se mandó: este gasto sale en el siguiente`],
+		entidad: { nombre: "gastos", id },
+	};
 });
 
 export const accionCancelarGasto = implementarAccion(cancelarGasto, async (contexto, datos, version) => {
@@ -103,6 +111,17 @@ export const accionCancelarGasto = implementarAccion(cancelarGasto, async (conte
 	if (gasto === undefined) throw noExiste();
 	await tomarVersion(contexto, gastos, gasto.id, version, async () => ({ gasto_id: gasto.id, estado: gasto.estado }));
 	if (gasto.estado === "cancelado") throw errorDeRegla("gasto_cancelado", `${gasto.folio} ya está cancelado.`);
+	// El que ya salió en un paquete mandado al contador no se toca (fase 18).
+	if (gasto.paqueteContadorId !== null) {
+		const [paquete] = await transaccion
+			.select({ mes: paquetesContador.mes })
+			.from(paquetesContador)
+			.where(eq(paquetesContador.id, gasto.paqueteContadorId));
+		throw errorDeRegla(
+			"paquete_ya_enviado",
+			`${gasto.folio} ya salió en el paquete de ${textoDeMes(paquete?.mes ?? gasto.fecha)}: ya no se puede cancelar.`,
+		);
+	}
 	// El de un servicio se corrige desde Mantenimiento (regla 3).
 	if (gasto.origen === "mantenimiento" && gasto.servicioId !== null) {
 		const [servicio] = await transaccion

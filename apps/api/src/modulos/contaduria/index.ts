@@ -11,6 +11,7 @@
 
 import { definirModulo } from "../../nucleo/modulos.ts";
 import { accionCancelarCompensacion, accionCompensar } from "./acciones/compensaciones.ts";
+import { accionAdjuntarDocumentoContador, accionMarcarPaqueteEnviado } from "./acciones/contador.ts";
 import {
 	accionCambiarDiasCredito,
 	accionCambiarLimiteCredito,
@@ -48,10 +49,13 @@ import { anticipoDelPedidoLectura } from "./lecturas/anticipos.ts";
 import { creditoDeCliente } from "./lecturas/credito.ts";
 import { estadoPagoNotas, saldoPorCobrarDeCliente } from "./lecturas/cuentas.ts";
 import { facturacionDeOrden } from "./lecturas/facturas.ts";
+import { resumenDireccion } from "./lecturas/resumen-direccion.ts";
 import { datosTerceros } from "./lecturas/terceros.ts";
 import { semillaDeParametrosDeContaduria } from "./parametros.ts";
 import { camposDeSueldoDeContaduria } from "./permisos.ts";
 import { semillaDeCuentasFabrica, semillaDeListasDeGastos } from "./siembra.ts";
+import { cuadreSaldos } from "./trabajos/cuadre-saldos.ts";
+import { armarArchivoPaquete, crearPaqueteMes } from "./trabajos/paquete-contador.ts";
 
 export default definirModulo({
 	nombre: "contaduria",
@@ -77,6 +81,8 @@ export default definirModulo({
 		accionCancelarGasto,
 		accionGuardarDescuentoSemanal,
 		accionPagarNomina,
+		accionMarcarPaqueteEnviado,
+		accionAdjuntarDocumentoContador,
 	],
 	internas: {
 		crear_tercero: crearTercero,
@@ -104,7 +110,9 @@ export default definirModulo({
 		facturacion_de_orden: facturacionDeOrden,
 		estado_nomina_semana: estadoNominaSemana,
 		fin_ultima_nomina_pagada: finUltimaNominaPagada,
+		resumen_direccion: resumenDireccion,
 	},
+	trabajos: [crearPaqueteMes, armarArchivoPaquete, cuadreSaldos],
 	semillas: [semillaDeParametrosDeContaduria, semillaDeCuentasFabrica, semillaDeListasDeGastos],
 	// El crédito, las cuentas, los pagos y el saldo a favor llevan montos: solo Contaduría. Ventas recibe el aviso de que
 	// el crédito, una cuenta o un anticipo cambió (el aviso solo lleva la tabla) y vuelve a leer sus lecturas (decisiones
@@ -129,6 +137,9 @@ export default definirModulo({
 		nomina_lineas: ["contaduria"],
 		nomina_linea_piezas: ["contaduria"],
 		descuentos_nomina: ["contaduria"],
+		paquetes_contador: ["contaduria"],
+		paquete_contador_renglones: ["contaduria"],
+		documentos_contador: ["contaduria"],
 	},
 	camposDeSueldo: camposDeSueldoDeContaduria,
 });

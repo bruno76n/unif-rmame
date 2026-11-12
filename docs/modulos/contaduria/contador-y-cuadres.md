@@ -184,4 +184,18 @@ Los cambia solo la dueña, en Configuración (ver [configuración](../admin/conf
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 18.*
+**Fase 18, parte 2.**
+
+- **Las tablas** `paquetes_contador`, `paquete_contador_renglones` (solo crecen) y `documentos_contador` están en `apps/api/src/modulos/contaduria/tablas.ts` (migración `0063`), con sus CHECK. El único de los renglones trata la categoría vacía como un valor (`NULLS NOT DISTINCT`). La migración pone la llave de `gastos.paquete_contador_id` y suma `saldos_no_cuadran` al CHECK de `avisos.tipo`.
+- **La cuenta** es `cuentaDelPaquete` (`dominio/paquete-mes.ts`), una función pura: cada concepto con lo de su mes (aunque sea cero) y los gastos del mes sin paquete más, «de meses anteriores», los de un mes cuyo paquete ya se mandó (decisión 726). `lecturaDelPaquete` lee los pagos, los anticipos aplicados, lo abonado a cuentas por pagar, las nóminas pagadas (por el día de México en que se pagaron) y los gastos sin paquete.
+- **Las acciones** (`acciones/contador.ts`, contratos en `packages/compartido/src/contratos/contaduria/contador.ts`):
+  - `marcar_paquete_enviado` bloquea el paquete con su versión, congela la cuenta, liga sus gastos, avisa de cada nómina del mes por pagar y deja la bitácora como plantilla, con la nómina en un campo de sueldos.
+  - `adjuntar_documento_contador` revisa el tipo con `admin.datos_de_archivo` (que da también el nombre y la clave del archivo) y lo liga con `admin.ligar_archivo`.
+- **Lo mandado no se toca:** `mesYaEnviado` lee el paquete del mes con candado compartido; cancelar un pago o una compensación de ese mes responde `paquete_ya_enviado`, cancelar un gasto que salió en un paquete también, y registrar un gasto de un mes mandado avisa que sale en el siguiente.
+- **Los trabajos** (`trabajos/`):
+  - «Crear el paquete del mes» corre el día 1 a las 00:20 (horario `mes`) y crea el del mes que terminó si no existe (decisión 725).
+  - «Armar el archivo del paquete» corre tras `paquete_contador.enviado` y arma el de cada paquete mandado sin archivo: un ZIP (`dominio/zip.ts`, con `deflateRawSync` y `crc32` de Node) con `relacion.csv` y los comprobantes de sus gastos y de las facturas del mes, que lee con el nuevo `almacen.leer`, y lo guarda con `admin.guardar_archivo` (decisión 724).
+  - «Cuadre de saldos» corre tras `cuadre.terminado`: `saldosQueNoCuadran` revisa cada cuenta por cobrar y por pagar, el anticipo de cada pedido y el saldo a favor de cada cliente; si algo no cuadra avisa a la dueña con un renglón de bitácora del sistema, una vez por día (decisión 727).
+- **La lectura** `resumen_direccion` (`lecturas/resumen-direccion.ts`) da los saldos con lo vencido y el cliente que más debe, con su parte en milésimas (decisión 728).
+- **Los parámetros** `contaduria.contador_dia_limite` y `avisos.correo_saldos_no_cuadran` están en `contaduria/parametros.ts`.
+- **Pruebas:** `dominio/paquete-mes.prueba.ts` (con fast-check: cada gasto en un solo paquete y lo congelado sin cambios), `dominio/zip.prueba.ts`, `acciones/marcar-paquete-enviado.prueba.ts` (octubre de la muestra contra su suma en SQL, el gasto que llega tarde y la nómina), `cancelar-pago.prueba.ts`, `cancelar-compensacion.prueba.ts` y `cancelar-gasto.prueba.ts` (`paquete_ya_enviado`), `trabajos/cuadre-saldos.prueba.ts`, `trabajos/paquete-contador.prueba.ts` (el paquete del mes, el ZIP con el simulador de R2 y los documentos) y `lecturas/resumen-direccion.prueba.ts`.

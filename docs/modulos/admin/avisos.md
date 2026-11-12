@@ -142,3 +142,5 @@ Van en la sección `parametro`. Cada tipo que agregue otro módulo trae su propi
   - `internas/crear-aviso.prueba.ts` (también el mismo aviso pedido a la vez);
   - `trabajos/enviar-correos.prueba.ts` (con el simulador de Resend y el SDK de verdad);
   - el caso de `aviso` en `nucleo/sincronizacion/eventos-en-vivo.prueba.ts`.
+
+**Fase 18, parte 2.** Contaduría suma el tipo `saldos_no_cuadran` (migración `0063`, con la lista completa del CHECK), que manda el trabajo «Cuadre de saldos» a la dueña, con su parámetro `avisos.correo_saldos_no_cuadran` en «No».

@@ -51,6 +51,8 @@ export interface Almacen {
 	revisar(clave: string): Promise<ObjetoGuardado | undefined>;
 	/** Guarda un objeto que generó el servidor, con su suma. */
 	guardar(clave: string, contenido: Uint8Array, tipo: string): Promise<void>;
+	/** El contenido de un objeto, o `undefined` si no está: para armar otro archivo con él (el ZIP del contador). */
+	leer(clave: string): Promise<Uint8Array | undefined>;
 	/**
 	 * Guarda lo que va saliendo de un flujo, por partes y sin pasar por disco, cada parte con su suma. Antes
 	 * de cerrar la subida espera `antesDeCerrar` (que quien produce el flujo terminó bien): si falla, la
@@ -214,6 +216,15 @@ export function crearAlmacen(conexion: ConexionDelAlmacen): Almacen {
 				throw error;
 			}
 			return { tamano, sha256: suma.digest("hex") };
+		},
+		async leer(clave) {
+			try {
+				const objeto = await cliente.send(new GetObjectCommand({ Bucket, Key: clave }));
+				return objeto.Body === undefined ? undefined : await objeto.Body.transformToByteArray();
+			} catch (error) {
+				if (noEsta(error)) return undefined;
+				throw error;
+			}
 		},
 		async guardar(clave, contenido, tipo) {
 			await cliente.send(

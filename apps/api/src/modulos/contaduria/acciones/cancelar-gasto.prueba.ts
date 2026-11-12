@@ -6,6 +6,7 @@
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
+import { paqueteEnviadoDePrueba } from "../../../nucleo/pruebas/contaduria-de-prueba.ts";
 import { registrarGastoDePrueba, servicioConCostoDePrueba } from "../../../nucleo/pruebas/gastos-de-prueba.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
@@ -55,6 +56,18 @@ describe("Un gasto se cancela con motivo; el de un servicio no se cancela desde 
 		expect((await cancelar(String(rows[0]?.gasto_id))).cuerpo).toMatchObject({
 			codigo: "gasto_de_mantenimiento",
 			mensaje: `Este gasto viene del servicio ${servicio.folio} de Mantenimiento.`,
+		});
+	});
+
+	it("Con el paquete mandado, un gasto que salió en él ya no se cancela (fase 18)", async () => {
+		const { gasto_id: id, folio } = z
+			.object({ gasto_id: z.uuid(), folio: z.string() })
+			.parse((await registrarGastoDePrueba(servidor)).cuerpo.resultado);
+		const paquete = await paqueteEnviadoDePrueba(servidor, "2026-07-01");
+		await servidor.base.dueno.query("UPDATE gastos SET paquete_contador_id = $1 WHERE id = $2", [paquete, id]);
+		expect((await cancelar(id)).cuerpo).toMatchObject({
+			codigo: "paquete_ya_enviado",
+			mensaje: `${folio} ya salió en el paquete de julio de 2026: ya no se puede cancelar.`,
 		});
 	});
 });
