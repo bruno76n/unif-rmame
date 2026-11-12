@@ -2,7 +2,7 @@
  * La revisión del permiso de cada llamada: el paso 4 del corredor, antes de abrir la transacción.
  * Fase 5 · docs/cimientos/ACCESO-Y-PERMISOS.md («Cómo se revisa cada llamada», pasos 3 a 7)
  *
- * En este orden: el departamento que pide el contrato (`403 sin_departamento`), su permiso fino
+ * En este orden: el departamento que pide el contrato, o uno de los que pide (`403 sin_departamento`), su permiso fino
  * (`403 sin_permiso_fino`), `solo_duena` (`403 solo_duena`) y «Confirmar con Google» de hace menos de
  * `admin.reautenticacion_minutos` (`401 reautenticar`, con su propósito). La dueña tiene todos los
  * departamentos y permisos finos, pero también confirma con Google. Un aparato solo llama lo que está en
@@ -35,7 +35,9 @@ export function revisionDePermisos(
 		if (permiso.aparatos !== undefined && permiso.departamento === undefined && permiso.soloDuena !== true) {
 			throw new ErrorDeApi("sin_permiso", "fuera_de_alcance");
 		}
-		if (permiso.departamento !== undefined && !quien.esDuena && !quien.departamentos.includes(permiso.departamento)) {
+		// Un contrato puede pedir uno de varios departamentos (`guardar_conteo`, de Bodega o de Aduana).
+		const pedidos = permiso.departamento === undefined ? [] : [permiso.departamento].flat();
+		if (pedidos.length > 0 && !quien.esDuena && !pedidos.some((clave) => quien.departamentos.includes(clave))) {
 			throw new ErrorDeApi("sin_permiso", "sin_departamento");
 		}
 		if (permiso.permisoFino !== undefined && !quien.esDuena && !quien.permisosFinos.includes(permiso.permisoFino)) {

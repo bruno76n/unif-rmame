@@ -3,6 +3,7 @@
  * Fase 4 · docs/modulos/inventario/libro-de-movimientos.md («La tabla `ubicaciones`»)
  * Fase 9 · docs/modulos/inventario/libro-de-movimientos.md y existencias-y-cuadre.md
  * Fase 11 · docs/modulos/inventario/material-en-bodega.md y recepciones-en-aduana.md
+ * Fase 14 · docs/modulos/inventario/diferencias-ajustes-y-mermas.md y conteos.md
  *
  * Las ubicaciones nacen en la fase 4 porque las usan antes los parámetros, las impresoras, las cuentas,
  * los aparatos y las personas; sus responsables nacen vacíos. El libro no tiene acciones propias: lo escribe
@@ -12,6 +13,7 @@
 import { v7 as uuidv7 } from "uuid";
 import { todosLosDepartamentos } from "../../nucleo/acceso/departamentos.ts";
 import { definirModulo } from "../../nucleo/modulos.ts";
+import { accionAclararDiferencia } from "./acciones/aclarar-diferencia.ts";
 import {
 	accionDespachar,
 	accionEntregarATiendaSinCaja,
@@ -21,10 +23,12 @@ import {
 } from "./acciones/despachos.ts";
 import { accionDevolverAProveedor } from "./acciones/devolver-a-proveedor.ts";
 import { accionEntregarAlCorte, accionRecibirDelCorte } from "./acciones/entregas-corte.ts";
+import { accionGuardarConteo } from "./acciones/guardar-conteo.ts";
 import { accionRecibirDeProveedor } from "./acciones/recibir-de-proveedor.ts";
 import { accionRecibirEnAduana } from "./acciones/recibir-en-aduana.ts";
 import { accionResolverExcepcion } from "./acciones/resolver-excepcion.ts";
 import { accionSurtirAAduana } from "./acciones/surtir-a-aduana.ts";
+import { aplicarDecisionAjuste } from "./internas/aplicar-decision-ajuste.ts";
 import { devolverEntregaCorte, lotesConTelaEntregada } from "./internas/entregas-corte.ts";
 import { marcarExcepcionResuelta, registrarExcepcion, tomarVersionExcepcion } from "./internas/excepciones.ts";
 import { actualizarCostoRollos, aplicarDecisionRecepcionDeMas, tomarConsumible } from "./internas/material.ts";
@@ -44,6 +48,7 @@ import { recibidoDeOrdenes } from "./lecturas/recibido-de-ordenes.ts";
 import { libres, listoEnAduana } from "./lecturas/reservas.ts";
 import { rollosParaCorte } from "./lecturas/rollos-para-corte.ts";
 import { semillaDeParametrosDeInventario } from "./parametros.ts";
+import { semillaDeMotivosAjuste } from "./siembra.ts";
 import { ubicaciones } from "./tablas.ts";
 import { cuadreNocturno } from "./trabajos/cuadre-nocturno.ts";
 import { rollosSugeridos } from "./trabajos/rollos-sugeridos.ts";
@@ -94,6 +99,12 @@ export default definirModulo({
 		recepciones: [...lectoresDelLibro, "compras"],
 		recepcion_lineas: [...lectoresDelLibro, "compras"],
 		despachos: lectoresDelLibro,
+		// Las DF-, los AJ- y los conteos los ven Bodega, Aduana y Dirección, sin precios ni costos.
+		diferencias: lectoresDelLibro,
+		ajustes: lectoresDelLibro,
+		ajuste_lineas: lectoresDelLibro,
+		conteos: lectoresDelLibro,
+		conteo_lineas: lectoresDelLibro,
 	},
 	acciones: [
 		accionEntregarAlCorte,
@@ -108,6 +119,8 @@ export default definirModulo({
 		accionSurtirAAduana,
 		accionRecibirEnAduana,
 		accionDevolverAProveedor,
+		accionAclararDiferencia,
+		accionGuardarConteo,
 	],
 	internas: {
 		recalcular_rollos_sugeridos: recalcularRollosSugeridos,
@@ -126,8 +139,12 @@ export default definirModulo({
 		aplicar_decision_recepcion_de_mas: aplicarDecisionRecepcionDeMas,
 		actualizar_costo_rollos: actualizarCostoRollos,
 		tomar_consumible: tomarConsumible,
+		aplicar_decision_ajuste: aplicarDecisionAjuste,
 	},
-	efectosDeAutorizacion: { recepcion_de_mas: "aplicar_decision_recepcion_de_mas" },
+	efectosDeAutorizacion: {
+		recepcion_de_mas: "aplicar_decision_recepcion_de_mas",
+		ajuste_inventario: "aplicar_decision_ajuste",
+	},
 	lecturas: {
 		lotes_con_tela_entregada: lotesConTelaEntregada,
 		rollos_para_corte: rollosParaCorte,
@@ -143,5 +160,6 @@ export default definirModulo({
 	semillas: [
 		{ tabla: ubicaciones, filas: ubicacionesDeLaSiembra.map((ubicacion) => ({ id: uuidv7(), ...ubicacion })) },
 		semillaDeParametrosDeInventario,
+		semillaDeMotivosAjuste,
 	],
 });

@@ -3,11 +3,12 @@
  * confirma y el total.
  * Fase 9 · docs/modulos/inventario/existencias-y-cuadre.md («El cuadre de la noche», pasos 1, 3, 6, 7 y 8)
  * Fase 11 · el paso 2, con los rollos
+ * Fase 14 · docs/modulos/inventario/diferencias-ajustes-y-mermas.md («El cuadre»): el paso 3 con las DF- abiertas y el 5
  *
  * Corre en tandas, cada una en su propia transacción corta, para no frenar las ventas: el paso 1 una por
  * ubicación, y cada paso que sigue en la suya. Nunca toca el libro: si una existencia no es la del libro, la corrige
  * y deja la excepción con los dos valores. Antes de los pasos corre, por tramos, el recálculo de las proyecciones de
- * Producción (fase 12); el paso 4 compara el Taller por lote (12), el 5 llega con las DF- (14); en el paso 6,
+ * Producción (fase 12); el paso 4 compara el Taller por lote (12) y el 5 abre las DF- del cuadre (14); en el paso 6,
  * cada documento con su fase.
  */
 
@@ -17,13 +18,15 @@ import type { Temporal } from "temporal-polyfill";
 import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
 import type { ContextoDeAccion, ContextoDeTrabajo } from "../../../nucleo/modulos.ts";
-import { cuadres, reservas, ubicaciones } from "../tablas.ts";
+import { abrirDiferencia } from "../dominio/diferencias.ts";
+import { cuadres, estadosFinalesDeTraspaso, reservas, ubicaciones } from "../tablas.ts";
 
 /** Lo que va encontrando el cuadre. */
 interface Cuenta {
 	revisados: number;
 	corregidas: number;
 	excepciones: number;
+	diferencias: number;
 }
 
 /** Abre una excepción del cuadre. */
@@ -91,7 +94,12 @@ async function existenciasContraLibro(
 				FROM guardada g FULL JOIN libro l ON l.material_id = g.material_id AND l.rollo_id IS NOT DISTINCT FROM g.rollo_id`)
 		).rows,
 	);
-	const cuenta: Cuenta = { revisados: prendas.length + materiales.length, corregidas: 0, excepciones: 0 };
+	const cuenta: Cuenta = {
+		revisados: prendas.length + materiales.length,
+		corregidas: 0,
+		excepciones: 0,
+		diferencias: 0,
+	};
 	for (const fila of prendas) {
 		if ((fila.guardada ?? 0) === fila.libro) continue;
 		// El libro manda: la existencia toma lo que dice, y nace si no estaba.
@@ -212,18 +220,24 @@ async function tallerPorLote(contexto: ContextoDeAccion, cuadreId: string): Prom
 }
 
 /**
- * Paso 3: un traspaso que terminó ese día `recibido`, `salio`, `repartido` o `cancelado` tiene cero en Tránsito y cero
- * en En camino a aduana, por renglón: cada tramo y cada variante (o material y rollo) por separado, para que un
- * residuo no tape a otro. (Uno `con_diferencia` se revisa contra sus DF- abiertas desde la fase 14.) Abre una
- * excepción por traspaso, con lo que quedó en cada tramo.
+ * Paso 3: los tramos de camino de cada traspaso terminado (los que terminaron ese día y los que tienen alguna DF-) tienen
+ * en el libro justo lo que dicen sus DF- abiertas: cero si no tiene ninguna (`recibido`, `salio`, `repartido`,
+ * `cancelado`), y lo pendiente de cada una si es `con_diferencia` (una DF- de −2 deja +2 en su tramo). Por renglón:
+ * cada tramo y cada variante (o material y rollo) por separado, para que un residuo no tape a otro. Abre una
+ * excepción por traspaso, con lo que quedó en cada tramo sin explicar.
+ * Fase 14 · docs/modulos/inventario/traspasos.md («Lo que queda en cada tramo y quién responde»)
  * @returns Las excepciones que abrió.
  */
 async function tramosDeCamino(contexto: ContextoDeAccion, cuadreId: string, fecha: string): Promise<number> {
 	const { rows } = await contexto.transaccion.execute(sql`
 		WITH terminados AS (
-			SELECT id, folio FROM traspasos
-			WHERE estado IN ('recibido', 'salio', 'repartido', 'cancelado')
-				AND (terminado_en AT TIME ZONE 'America/Mexico_City')::date = ${fecha}::date
+			SELECT id, folio FROM traspasos t
+			WHERE estado IN (${sql.join(
+				estadosFinalesDeTraspaso.map((estado) => sql`${estado}`),
+				sql`, `,
+			)})
+				AND ((terminado_en AT TIME ZONE 'America/Mexico_City')::date = ${fecha}::date
+					OR EXISTS (SELECT 1 FROM diferencias d WHERE d.traspaso_id = t.id))
 		), efectos AS (
 			SELECT l.traspaso_id, l.destino_ubicacion_id AS tramo, l.variante_id, l.material_id, l.rollo_id,
 				coalesce(l.piezas, l.cantidad) AS cuanto
@@ -233,6 +247,12 @@ async function tramosDeCamino(contexto: ContextoDeAccion, cuadreId: string, fech
 			SELECT l.traspaso_id, l.origen_ubicacion_id, l.variante_id, l.material_id, l.rollo_id, -coalesce(l.piezas, l.cantidad)
 			FROM movimiento_lineas l JOIN ubicaciones u ON u.id = l.origen_ubicacion_id
 			WHERE l.traspaso_id IN (SELECT id FROM terminados) AND u.tipo IN ('transito', 'en_camino_aduana')
+			UNION ALL
+			-- Lo que explican sus DF- abiertas, con su signo al revés: lo que faltó se quedó en el tramo.
+			SELECT d.traspaso_id, d.ubicacion_id, d.variante_id, d.material_id, d.rollo_id, coalesce(d.piezas, d.cantidad)
+			FROM diferencias d JOIN ubicaciones u ON u.id = d.ubicacion_id
+			WHERE d.traspaso_id IN (SELECT id FROM terminados) AND d.estado <> 'resuelta'
+				AND u.tipo IN ('transito', 'en_camino_aduana')
 		)
 		SELECT t.id, t.folio, u.nombre AS tramo, e.variante_id, e.material_id, e.rollo_id, sum(e.cuanto)::text AS en_tramo
 		FROM efectos e JOIN terminados t ON t.id = e.traspaso_id JOIN ubicaciones u ON u.id = e.tramo
@@ -258,7 +278,7 @@ async function tramosDeCamino(contexto: ContextoDeAccion, cuadreId: string, fech
 		const folio = suyos[0]?.folio ?? "";
 		await abrir(contexto, cuadreId, {
 			tipo: "cuadre_proyeccion",
-			descripcion: `${folio} ya terminó y le quedó algo en camino: ${suyos.map((residuo) => `${Number(residuo.en_tramo)} en ${residuo.tramo}`).join(", ")}`,
+			descripcion: `${folio} ya terminó y le quedó algo en camino que ninguna diferencia explica: ${suyos.map((residuo) => `${Number(residuo.en_tramo)} en ${residuo.tramo}`).join(", ")}`,
 			documento_tipo: "traspaso",
 			documento_id: id,
 			documento_folio: folio,
@@ -274,6 +294,84 @@ async function tramosDeCamino(contexto: ContextoDeAccion, cuadreId: string, fech
 		});
 	}
 	return porTraspaso.size;
+}
+
+/** Un negativo sin explicar: su ubicación, qué y cuánto. */
+const negativo = z.object({
+	ubicacion_id: z.uuid(),
+	ubicacion: z.string(),
+	tipo: z.string(),
+	variante_id: z.uuid().nullable(),
+	material_id: z.uuid().nullable(),
+	rollo_id: z.uuid().nullable(),
+	cuanto: z.string(),
+});
+
+/**
+ * Paso 5: una existencia negativa sin DF- abierta de esa ubicación y esa variante (o ese material y rollo). En
+ * prenda, en Bodega, en Aduana o en una tienda nace una DF- `cuadre` por contar; en el Taller o en un tramo no se
+ * cuenta: abre `cuadre_proyeccion` (una vez, mientras siga abierta). En material nace una DF- `cuadre` por aclarar,
+ * donde esté. Corre después del paso 1, con las existencias ya iguales al libro.
+ * Fase 14 · docs/modulos/inventario/diferencias-ajustes-y-mermas.md («El cuadre»)
+ * @returns Las DF- y las excepciones que abrió.
+ */
+async function negativosSinExplicar(
+	contexto: ContextoDeAccion,
+	cuadreId: string,
+	fecha: string,
+): Promise<{ diferencias: number; excepciones: number }> {
+	const { rows } = await contexto.transaccion.execute(sql`
+		SELECT e.ubicacion_id, u.nombre AS ubicacion, u.tipo, e.variante_id, NULL::uuid AS material_id,
+			NULL::uuid AS rollo_id, e.piezas::text AS cuanto
+		FROM existencias e JOIN ubicaciones u ON u.id = e.ubicacion_id
+		WHERE e.piezas < 0 AND NOT EXISTS (
+			SELECT 1 FROM diferencias d WHERE d.estado <> 'resuelta' AND d.ubicacion_id = e.ubicacion_id
+				AND d.variante_id = e.variante_id)
+		UNION ALL
+		SELECT e.ubicacion_id, u.nombre, u.tipo, NULL, e.material_id, e.rollo_id, e.cantidad::text
+		FROM existencias_material e JOIN ubicaciones u ON u.id = e.ubicacion_id
+		WHERE e.cantidad < 0 AND NOT EXISTS (
+			SELECT 1 FROM diferencias d WHERE d.estado <> 'resuelta' AND d.ubicacion_id = e.ubicacion_id
+				AND d.material_id = e.material_id AND d.rollo_id IS NOT DISTINCT FROM e.rollo_id)
+		ORDER BY 1, 4, 5`);
+	const cuenta = { diferencias: 0, excepciones: 0 };
+	const dia = new Intl.DateTimeFormat("es-MX", { day: "numeric", month: "short", timeZone: "UTC" })
+		.format(new Date(`${fecha}T12:00:00Z`))
+		.replace(".", "");
+	for (const fila of z.array(negativo).parse(rows)) {
+		const descripcion = `El cuadre del ${dia} halló ${Number(fila.cuanto)} en ${fila.ubicacion}`;
+		if (
+			fila.variante_id !== null &&
+			(fila.tipo === "taller" || fila.tipo === "transito" || fila.tipo === "en_camino_aduana")
+		) {
+			const { rows: abiertas } = await contexto.transaccion.execute(sql`
+				SELECT 1 FROM excepciones WHERE tipo = 'cuadre_proyeccion' AND estado = 'por_revisar'
+					AND ubicacion_id = ${fila.ubicacion_id} AND variante_id = ${fila.variante_id} AND datos->>'paso' = 'negativo'`);
+			if (abiertas.length > 0) continue;
+			await abrir(contexto, cuadreId, {
+				tipo: "cuadre_proyeccion",
+				descripcion: `${descripcion}: no se cuenta ahí`,
+				ubicacion_id: fila.ubicacion_id,
+				variante_id: fila.variante_id,
+				datos: { paso: "negativo", piezas: Number(fila.cuanto) },
+			});
+			cuenta.excepciones += 1;
+			continue;
+		}
+		await abrirDiferencia(contexto, {
+			origen: "cuadre",
+			ubicacionId: fila.ubicacion_id,
+			aCargoUbicacionId: fila.ubicacion_id,
+			hueco:
+				fila.variante_id !== null
+					? { varianteId: fila.variante_id, piezas: Number(fila.cuanto), sistemaDecia: Number(fila.cuanto) }
+					: { materialId: fila.material_id ?? "", rolloId: fila.rollo_id, cantidad: fila.cuanto },
+			descripcion,
+			cuadreId,
+		});
+		cuenta.diferencias += 1;
+	}
+	return cuenta;
 }
 
 /** De cada motivo de reserva, la lectura que dice qué documentos siguen abiertos y la columna de su documento. */
@@ -432,7 +530,7 @@ export async function correrCuadre(
 		if (anterior === undefined) throw new Error(`el cuadre del ${fecha} no nació ni estaba`);
 		return { yaCorrio: true, cuadreId: anterior.id, estado: anterior.estado };
 	}
-	const cuenta: Cuenta = { revisados: 0, corregidas: 0, excepciones: 0 };
+	const cuenta: Cuenta = { revisados: 0, corregidas: 0, excepciones: 0, diferencias: 0 };
 	try {
 		// Primero, las proyecciones de Producción: un tramo de lotes por transacción.
 		for (let despuesDe: string | null | undefined; despuesDe !== null; ) {
@@ -464,13 +562,19 @@ export async function correrCuadre(
 			(accion: ContextoDeAccion) => rollosEnUnLugar(accion, cuadreId),
 			(accion: ContextoDeAccion) => tramosDeCamino(accion, cuadreId, fecha),
 			(accion: ContextoDeAccion) => tallerPorLote(accion, cuadreId),
+			async (accion: ContextoDeAccion) => {
+				const negativos = await negativosSinExplicar(accion, cuadreId, fecha);
+				cuenta.diferencias += negativos.diferencias;
+				return negativos.excepciones;
+			},
 			(accion: ContextoDeAccion) => reservasSinDocumento(accion, cuadreId),
 			(accion: ContextoDeAccion) => sinConfirmar(accion, cuadreId),
 			(accion: ContextoDeAccion) => elTotal(accion, cuadreId),
 		]) {
 			cuenta.excepciones += await contexto.enTransaccion(paso);
 		}
-		const estado = cuenta.corregidas === 0 && cuenta.excepciones === 0 ? "cuadro" : "con_residuo";
+		const estado =
+			cuenta.corregidas === 0 && cuenta.excepciones === 0 && cuenta.diferencias === 0 ? "cuadro" : "con_residuo";
 		await terminar(contexto, cuadreId, fecha, estado, cuenta);
 		return { cuadreId, estado };
 	} catch (error) {
@@ -491,7 +595,7 @@ export function marcarCuadreCortado(contexto: ContextoDeTrabajo, cuadreId: strin
 		cuadreId,
 		fecha,
 		"fallo",
-		{ revisados: 0, corregidas: 0, excepciones: 0 },
+		{ revisados: 0, corregidas: 0, excepciones: 0, diferencias: 0 },
 		"El cuadre se cortó sin terminar",
 	);
 }
@@ -514,13 +618,14 @@ async function terminar(
 				renglonesRevisados: cuenta.revisados,
 				proyeccionesCorregidas: cuenta.corregidas,
 				excepcionesCreadas: cuenta.excepciones,
+				diferenciasCreadas: cuenta.diferencias,
 				error: error ?? null,
 			})
 			.where(eq(cuadres.id, cuadreId));
 		accion.guardarEvento({
 			tipo: "cuadre.terminado",
 			datos: { cuadre_id: cuadreId, fecha, estado },
-			tablas: ["cuadres", "existencias", "excepciones"],
+			tablas: ["cuadres", "existencias", "excepciones", "diferencias"],
 			entidad: "cuadres",
 			entidadId: cuadreId,
 		});

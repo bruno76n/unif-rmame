@@ -144,4 +144,11 @@ Ninguno propio en la primera versión.
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 14.*
+**Fase 14, parte 1.** `inventario.guardar_conteo` vive en `modulos/inventario/acciones/guardar-conteo.ts` (contrato en `packages/compartido/src/contratos/inventario/diferencias.ts`), con las tablas `conteos` y `conteo_lineas` de la migración `0045` (`conteo_lineas` solo crece y su diferencia es columna generada).
+
+- **Quién:** el contrato pide Bodega o Aduana (decisión 632); dentro, una cuenta sin Bodega que cuenta en Bodega recibe `403 sin_departamento`. Solo se cuenta en Bodega o Aduana (`ubicacion_no_contable`).
+- **Sin versión:** el conteo es un documento nuevo; la DF- que se cuenta la cuidan su candado y su estado (decisión 633).
+- **Lo que decía el sistema** sale del libro con `ocurrido_en` hasta `contado_en`; `contado_en` nunca es después de ahora.
+- **Si no cuadra,** pide el motivo de la lista y el AJ- de origen `conteo` con un renglón por variante (sistema, contado y diferencia, ligado a su renglón del conteo), con `pedirAjuste`.
+- **Regla 4:** después de tomar el candado de las variantes, bloquea las DF- por contar de esa ubicación y esas variantes: las que cuadraron quedan `resuelta` (`cuadro`) con el conteo; las otras, `esperando_autorizacion` con el AJ-.
+- **Pruebas:** `acciones/guardar-conteo.prueba.ts` (movimientos antes y después de la hora del conteo, el AJ- y su autorización, las DF- que cierra, el conteo de una DF-, quién cuenta y dónde, los `400`).

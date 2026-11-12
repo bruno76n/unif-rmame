@@ -3,6 +3,8 @@
  * terminado con algo en un tramo, uno sin confirmar y una reserva sin documento abren la suya; corre una sola vez
  * por fecha; y no frena las ventas.
  * Fase 9 · docs/fases/09-inventario-libro-existencias-reservas-y-traspasos.md (parte 5)
+ * Fase 14 · «En el cuadre, un traspaso `con_diferencia` tiene en sus tramos justo sus DF- abiertas, y un negativo sin DF-
+ * abre una `cuadre` (por contar en prenda, por aclarar en material) o `cuadre_proyeccion` en el Taller y en los tramos»
  */
 
 import { join } from "node:path";
@@ -16,6 +18,7 @@ import { cargarModulos } from "../../../nucleo/modulos.ts";
 import { enAccionDePrueba } from "../../../nucleo/pruebas/accion-de-prueba.ts";
 import { siembraDelCatalogo } from "../../../nucleo/pruebas/catalogo-de-prueba.ts";
 import { materialesDePrueba, rollosDePrueba } from "../../../nucleo/pruebas/compras-de-prueba.ts";
+import { diferenciaEnTransito, sacarPiezas } from "../../../nucleo/pruebas/diferencias-de-prueba.ts";
 import {
 	meterPiezas,
 	nuevoTraspaso,
@@ -26,6 +29,7 @@ import { documentosAbiertosDePrueba } from "../../../nucleo/pruebas/modulos/vent
 import { loteCortado } from "../../../nucleo/pruebas/produccion-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 import { correrTrabajo } from "../../../nucleo/trabajos/trabajador.ts";
+import { abrirDiferencia } from "../dominio/diferencias.ts";
 import { escribirMovimiento } from "../dominio/escribir-movimiento.ts";
 import { cambiarEstadoTraspaso } from "../dominio/traspasos.ts";
 import { type CuadreCorrido, correrCuadre } from "./correr-cuadre.ts";
@@ -306,5 +310,89 @@ describe("el cuadre de la noche", () => {
 		]);
 		await ajuste(false);
 		expect(await cuadrar("2027-01-03")).toMatchObject({ estado: "cuadro" });
+	});
+
+	it("un traspaso `con_diferencia` tiene en sus tramos justo sus DF- abiertas; si no, `cuadre_proyeccion`", async () => {
+		const { traspasoId, diferencia } = await diferenciaEnTransito(servidor, 4);
+		const delTraspaso = async (fecha: string) =>
+			(await excepcionesDe(await cuadrar(fecha))).filter((excepcion) => excepcion.documento_id === traspasoId);
+		expect(await delTraspaso("2027-02-01")).toEqual([]);
+		// Si la DF- se resolviera sin su movimiento, el tramo ya no cuadraría con lo abierto.
+		await servidor.base.dueno.query(
+			"UPDATE diferencias SET estado = 'resuelta', resolucion = 'aclarada' WHERE id = $1",
+			[diferencia],
+		);
+		const encontradas = await delTraspaso("2027-02-02");
+		expect(encontradas.map((excepcion) => [excepcion.tipo, excepcion.datos.tramos])).toEqual([
+			["cuadre_proyeccion", [expect.objectContaining({ tramo: "Tránsito", en_tramo: "1" })]],
+		]);
+	});
+
+	it("un negativo sin DF- abierta abre una DF- `cuadre`: por contar en prenda, por aclarar en material; en el Taller, `cuadre_proyeccion`", async () => {
+		const [enBodega = "", enTaller = "", explicada = ""] = await variantesLibres(servidor, 3);
+		const [material = ""] = await materialesDePrueba(servidor, 1, "avio");
+		await sacarPiezas(servidor, ubicacion.BOD ?? "", enBodega, 2);
+		await sacarPiezas(servidor, ubicacion.TAL ?? "", enTaller, 1);
+		await sacarPiezas(servidor, ubicacion.BOD ?? "", explicada, 1);
+		await enAccionDePrueba(crearBase(servidor.base.app), servidor.modulos, async (contexto) => {
+			await escribirMovimiento(contexto, {
+				tipo: "ajuste",
+				documento: { tipo: "ajuste", id: uuidv7() },
+				renglones: [{ origen: ubicacion.BOD ?? "", destino: null, materialId: material, cantidad: "1.5" }],
+				clave: uuidv7(),
+			});
+			// Esta ya tiene su DF- abierta: el cuadre no abre otra.
+			await abrirDiferencia(contexto, {
+				origen: "cuadre",
+				ubicacionId: ubicacion.BOD ?? "",
+				aCargoUbicacionId: ubicacion.BOD ?? "",
+				hueco: { varianteId: explicada, piezas: -1 },
+				descripcion: "Ya explicada",
+			});
+		});
+		const cuadre = await cuadrar("2027-03-08");
+		if ("yaCorrio" in cuadre) throw new Error("ya había corrido");
+		expect(cuadre.estado).toBe("con_residuo");
+		const nacidas = await servidor.base.dueno.query(
+			`SELECT d.variante_id, d.material_id, coalesce(d.piezas, d.cantidad)::text AS cuanto, d.estado, d.descripcion,
+				u.codigo, c.codigo AS a_cargo FROM diferencias d JOIN ubicaciones u ON u.id = d.ubicacion_id
+			 JOIN ubicaciones c ON c.id = d.a_cargo_ubicacion_id WHERE d.cuadre_id = $1 AND (d.variante_id = ANY($2::uuid[]) OR d.material_id = $3)
+			 ORDER BY d.folio`,
+			[cuadre.cuadreId, [enBodega, enTaller, explicada], material],
+		);
+		expect(nacidas.rows).toEqual([
+			{
+				variante_id: enBodega,
+				material_id: null,
+				cuanto: "-2",
+				estado: "por_contar",
+				descripcion: "El cuadre del 8 mar halló -2 en Bodega",
+				codigo: "BOD",
+				a_cargo: "BOD",
+			},
+			{
+				variante_id: null,
+				material_id: material,
+				cuanto: "-1.500",
+				estado: "por_aclarar",
+				descripcion: expect.stringMatching(/^El cuadre del 8 mar halló -1\.5 en Bodega$/),
+				codigo: "BOD",
+				a_cargo: "BOD",
+			},
+		]);
+		expect(
+			(await excepcionesDe(cuadre))
+				.filter((excepcion) => excepcion.variante_id === enTaller)
+				.map((excepcion) => [excepcion.tipo, excepcion.datos]),
+		).toEqual([["cuadre_proyeccion", { paso: "negativo", piezas: -1 }]]);
+		// La noche siguiente ya están explicados: no abre nada otra vez.
+		const siguiente = await cuadrar("2027-03-09");
+		if ("yaCorrio" in siguiente) throw new Error("ya había corrido");
+		const otraVez = await servidor.base.dueno.query(
+			"SELECT count(*)::int AS n FROM diferencias WHERE cuadre_id = $1 AND (variante_id = ANY($2::uuid[]) OR material_id = $3)",
+			[siguiente.cuadreId, [enBodega, enTaller, explicada], material],
+		);
+		expect(otraVez.rows).toEqual([{ n: 0 }]);
+		expect((await excepcionesDe(siguiente)).filter((excepcion) => excepcion.variante_id === enTaller)).toEqual([]);
 	});
 });

@@ -1,15 +1,16 @@
 /**
  * `inventario.recibir_en_aduana`: Aduana recibe lo que viene en camino de Bodega o de una tienda. Lo que llegó pasa
  * de En camino a aduana a Aduana; lo que no llegó se queda en su tramo, a cargo de quien lo mandó; lo que llegó de
- * más sale igual del tramo. Lo que sigue al traspaso cambia con él.
+ * más sale igual del tramo. Cada renglón que no cuadró abre su DF-. Lo que sigue al traspaso cambia con él.
  * Fase 11 · docs/modulos/inventario/recepciones-en-aduana.md (regla 7, «`inventario.recibir_en_aduana`»)
+ * Fase 14 · docs/modulos/inventario/diferencias-ajustes-y-mermas.md (regla 2): la DF- `recepcion` de cada renglón
  *
  * Una devolución de un cliente llega `esperado`, de Fuera: lo que llegó entra a Aduana y lo que no llegó nunca fue
  * inventario. Por tipo: una devolución al proveedor surtida de Bodega queda lista para «Devolver al proveedor»; lo
  * bueno de una devolución de cliente a un hijo para Bodega, y lo demás de cada tipo, llegan con sus fases (decisión 574).
  */
 
-import { aMilesimosConSigno, deMilesimos } from "@uniformame/compartido/calculos/cuenta-material";
+import { aMilesimosConSigno, cantidadEnTexto, deMilesimos } from "@uniformame/compartido/calculos/cuenta-material";
 import { recibirEnAduana } from "@uniformame/compartido/contratos/inventario/recepciones";
 import { asc, eq } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
@@ -18,6 +19,7 @@ import { tomarVersion, versionActual } from "../../../nucleo/acciones/pisadas.ts
 import { ErrorDeApi, errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
 import { implementarAccion } from "../../../nucleo/modulos.ts";
 import { tomarCandadosDeInventario } from "../dominio/candados.ts";
+import { abrirDiferencia } from "../dominio/diferencias.ts";
 import { escribirMovimiento, type RenglonDeMovimiento } from "../dominio/escribir-movimiento.ts";
 import { ubicacionDeTipo, ubicacionPorId } from "../dominio/recepciones.ts";
 import { cambiarEstadoTraspaso } from "../dominio/traspasos.ts";
@@ -88,6 +90,7 @@ export const accionRecibirEnAduana = implementarAccion(recibirEnAduana, async (c
 			? [{ ...lados, varianteId: linea.varianteId ?? "", piezas: Number(llego), loteId: linea.loteId }]
 			: [{ ...lados, materialId: linea.materialId ?? "", rolloId: linea.rolloId, cantidad: deMilesimos(llego) }];
 	});
+	let movimientoId: string | null = null;
 	if (renglones.length > 0) {
 		const movimiento = await escribirMovimiento(contexto, {
 			tipo: deCliente
@@ -98,6 +101,7 @@ export const accionRecibirEnAduana = implementarAccion(recibirEnAduana, async (c
 			documento: { tipo: "recepcion", id: recepcionId, folio: traspaso.folio },
 			renglones,
 		});
+		movimientoId = movimiento.movimientoId;
 		await transaccion
 			.update(recepciones)
 			.set({ movimientoId: movimiento.movimientoId })
@@ -126,6 +130,32 @@ export const accionRecibirEnAduana = implementarAccion(recibirEnAduana, async (c
 			.set(esPrenda ? { piezasRecibidasAduana: Number(llego) } : { cantidadRecibidaAduana: deMilesimos(llego) })
 			.where(eq(traspasoLineas.id, linea.id));
 	}
+	// Lo que no cuadró se queda en el tramo, a cargo de quien lo mandó: una DF- por renglón. Lo que no llegó de una
+	// devolución de un cliente nunca fue inventario: no deja diferencia.
+	const origen = (await ubicacionPorId(transaccion, traspaso.origenUbicacionId)) ?? {
+		nombre: "quien lo mandó",
+		tipo: "",
+	};
+	if (!deCliente) {
+		for (const { linea, esPrenda, enviado, llego } of contados) {
+			if (enviado === llego) continue;
+			if (traspaso.origenUbicacionId === null) throw new Error(`${traspaso.folio} en camino sin origen`);
+			await abrirDiferencia(contexto, {
+				origen: "recepcion",
+				ubicacionId: enCamino,
+				aCargoUbicacionId: traspaso.origenUbicacionId,
+				hueco: esPrenda
+					? { varianteId: linea.varianteId ?? "", piezas: Number(llego - enviado), sistemaDecia: Number(enviado) }
+					: { materialId: linea.materialId ?? "", rolloId: linea.rolloId, cantidad: deMilesimos(llego - enviado) },
+				descripcion: `${origen.nombre} mandó ${esPrenda ? enviado : cantidadEnTexto(enviado)} en ${traspaso.folio} y Aduana recibió ${esPrenda ? llego : cantidadEnTexto(llego)}`,
+				traspasoId: traspaso.id,
+				traspasoLineaId: linea.id,
+				recepcionId,
+				loteId: linea.loteId,
+				movimientoId,
+			});
+		}
+	}
 	await cambiarEstadoTraspaso(contexto, traspaso.id, "en_aduana");
 	await transaccion.update(traspasos).set({ recepcionAduanaId: recepcionId }).where(eq(traspasos.id, traspaso.id));
 	contexto.bitacora({
@@ -153,6 +183,7 @@ export const accionRecibirEnAduana = implementarAccion(recibirEnAduana, async (c
 			"existencias",
 			"existencias_material",
 			"reservas",
+			"diferencias",
 		],
 		entidad: "traspasos",
 		entidadId: traspaso.id,
@@ -165,10 +196,6 @@ export const accionRecibirEnAduana = implementarAccion(recibirEnAduana, async (c
 		.reduce((suma, { enviado, llego }) => suma + Math.max(0, Number(enviado - llego)), 0);
 	const faltoMaterial = contados.some(({ esPrenda, enviado, llego }) => !esPrenda && llego < enviado);
 	const destino = (await ubicacionPorId(transaccion, traspaso.destinoUbicacionId)) ?? { nombre: "", tipo: "" };
-	const origen = (await ubicacionPorId(transaccion, traspaso.origenUbicacionId)) ?? {
-		nombre: "quien lo mandó",
-		tipo: "",
-	};
 	const soloMaterial = contados.every(({ esPrenda }) => !esPrenda);
 	const base = soloMaterial
 		? `${traspaso.folio} recibido en aduana`

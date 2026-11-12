@@ -27,6 +27,7 @@
 		"./contratos/catalogo/escuelas": "./src/contratos/catalogo/escuelas.ts",
 		"./contratos/catalogo/etiquetas": "./src/contratos/catalogo/etiquetas.ts",
 		"./contratos/inventario/despachos": "./src/contratos/inventario/despachos.ts",
+		"./contratos/inventario/diferencias": "./src/contratos/inventario/diferencias.ts",
 		"./contratos/inventario/corte": "./src/contratos/inventario/corte.ts",
 		"./contratos/inventario/excepciones": "./src/contratos/inventario/excepciones.ts",
 		"./contratos/inventario/recepciones": "./src/contratos/inventario/recepciones.ts",

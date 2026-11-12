@@ -219,3 +219,5 @@ Ninguno propio: cada acción guarda los suyos, con `existencias` entre sus tabla
   - `dominio/escribir-movimiento.azar.prueba.ts`: cuatro conexiones a la vez, sin reintento, con ajustes y aclaraciones entre Taller y Bodega, de prendas y de material con milésimos y rollos; las existencias de los dos son siempre la suma del libro. Con el orden de los candados quitado a propósito, sale en rojo.
   - `dominio/candados.prueba.ts`: sin reintento, dos movimientos en una acción contra otra que mueve las mismas variantes al revés, y un cambio de estado de un traspaso con su movimiento contra el reparto de sus reservas; ninguna da `40P01`.
   - `tablas.prueba.ts`: `42501` al cambiar o borrar el libro.
+
+**Fase 14, parte 1.** `aclaracion_recepcion` acepta Fuera del lado del lugar que recibió: lo entregado a una tienda sin caja ya salió del inventario (decisión 636).

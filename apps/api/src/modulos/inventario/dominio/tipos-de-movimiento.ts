@@ -68,10 +68,17 @@ export const reglasDeTipo: Readonly<Record<Exclude<TipoDeMovimiento, "reversion"
 		],
 		forma: "las_dos",
 	},
+	// Fuera es el lugar que recibió lo entregado a una tienda sin caja: esa entrega ya salió del inventario.
 	aclaracion_recepcion: {
 		caminos: [
-			[["transito", "en_camino_aduana", "taller"], todas],
-			[todas, ["transito", "en_camino_aduana", "taller"]],
+			[
+				["transito", "en_camino_aduana", "taller"],
+				[...todas, "fuera"],
+			],
+			[
+				[...todas, "fuera"],
+				["transito", "en_camino_aduana", "taller"],
+			],
 		],
 		forma: "las_dos",
 	},

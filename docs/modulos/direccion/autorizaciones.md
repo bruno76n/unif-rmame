@@ -140,3 +140,5 @@ Cada fase que crea un tipo de documento agrega su liga (quita su `@llavePendient
 **Fase 10, parte 4.** La migración `0035` pone la llave de `orden_compra_linea_id`; el tipo `recepcion_de_mas` registra su efecto en la fase 11.
 
 **Fase 11, parte 1.** `inventario` registra el efecto de `recepcion_de_mas` (`inventario.aplicar_decision_recepcion_de_mas`), y la migración `0036` pone la llave de `recepcion_id`. La decisión le pasa al efecto, además de sus ligas, la cantidad y la unidad de la autorización si las tiene (decisión 566).
+
+**Fase 14, parte 1.** `inventario` registra el efecto de `ajuste_inventario` (`inventario.aplicar_decision_ajuste`), y la migración `0045` pone la llave de `ajuste_id`. La dueña lo decide también desde Bodega; lo prueba `modulos/inventario/internas/aplicar-decision-ajuste.prueba.ts`.

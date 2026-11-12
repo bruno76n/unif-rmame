@@ -267,14 +267,14 @@ describe("cada acción y consulta revisa en el servidor su departamento, su perm
 		expect(conPermisoFino.length).toBeGreaterThan(0);
 		expect(deLaDuena.length).toBeGreaterThan(5);
 		for (const contrato of conPermisoFino) {
-			const sesion = await sesionDe([contrato.permiso.departamento ?? "admin"]);
+			const sesion = await sesionDe([contrato.permiso.departamento ?? "admin"].flat());
 			expect([contrato.nombre, (await llamar(contrato, sesion)).cuerpo.codigo]).toEqual([
 				contrato.nombre,
 				"sin_permiso_fino",
 			]);
 		}
 		for (const contrato of deLaDuena) {
-			const sesion = await sesionDe([contrato.permiso.departamento ?? "admin"], { permisos: ["imprime_guias"] });
+			const sesion = await sesionDe([contrato.permiso.departamento ?? "admin"].flat(), { permisos: ["imprime_guias"] });
 			expect([contrato.nombre, (await llamar(contrato, sesion)).cuerpo.codigo]).toEqual([
 				contrato.nombre,
 				"solo_duena",

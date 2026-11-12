@@ -14,8 +14,8 @@ export type EsquemaDeObjeto = z.ZodObject<z.core.$ZodShape, z.core.$ZodObjectCon
 
 /** Quién puede llamar una acción o consulta (ver docs/cimientos/ACCESO-Y-PERMISOS.md). */
 export interface Permiso {
-	/** El departamento que pide; la dueña los tiene todos. */
-	departamento?: string;
+	/** El departamento que pide, o los departamentos de los que basta uno; la dueña los tiene todos. */
+	departamento?: string | readonly string[];
 	/** El permiso fino que pide (`ven_sueldos_y_tarifas`); la dueña los tiene todos. */
 	permisoFino?: string;
 	/** Solo la dueña, no el departamento. */

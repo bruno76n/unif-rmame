@@ -23,7 +23,7 @@ import {
 import { columnasComunes, columnasDeAparato, columnasDeCancelacion, momento } from "../../nucleo/base/columnas.ts";
 import { departamentos, usuarios } from "../admin/tablas.ts";
 import { ordenCompraLineas } from "../compras/tablas.ts";
-import { recepciones } from "../inventario/tablas.ts";
+import { ajustes, recepciones } from "../inventario/tablas.ts";
 import { desarrollos } from "../patronaje/tablas.ts";
 
 /** Las ligas de cada tipo: la que lleva (no nula) y, por omisión, las demás vacías. */
@@ -67,8 +67,7 @@ export const autorizaciones = pgTable(
 		importeFacturadoCentavos: bigint("importe_facturado_centavos", { mode: "number" }),
 		cantidad: numeric("cantidad", { precision: 12, scale: 3 }),
 		unidad: text("unidad"),
-		/** @llavePendiente ajustes.id */
-		ajusteId: uuid("ajuste_id"),
+		ajusteId: uuid("ajuste_id").references((): AnyPgColumn => ajustes.id),
 		recepcionId: uuid("recepcion_id").references((): AnyPgColumn => recepciones.id),
 		ordenCompraLineaId: uuid("orden_compra_linea_id").references((): AnyPgColumn => ordenCompraLineas.id),
 		/** @llavePendiente notas_entrega.id */

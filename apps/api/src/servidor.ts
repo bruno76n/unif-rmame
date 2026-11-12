@@ -493,7 +493,7 @@ function cuerpoValidado(cuerpo: unknown): CuerpoDeAccion {
  */
 function describir(descripcion: string, permiso: Permiso, recortables: readonly string[]): string {
 	const partes = [
-		permiso.departamento === undefined ? undefined : `departamento ${permiso.departamento}`,
+		permiso.departamento === undefined ? undefined : `departamento ${[permiso.departamento].flat().join(" o ")}`,
 		permiso.permisoFino === undefined ? undefined : `permiso fino ${permiso.permisoFino}`,
 		permiso.soloDuena === true ? "solo la dueña" : undefined,
 		permiso.confirmarConGoogle === undefined ? undefined : `«Confirmar con Google» (${permiso.confirmarConGoogle})`,

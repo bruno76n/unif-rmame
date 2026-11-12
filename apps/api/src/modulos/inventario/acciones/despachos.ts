@@ -5,9 +5,16 @@
  *
  * Lo que va en tránsito es, por renglón, lo recibido en aduana menos lo repartido. Lo que falta al recibir se queda en
  * Tránsito a cargo de Aduana; lo que sobra o no venía sale del tramo del primer traspaso del despacho.
+ * Fase 14 · docs/modulos/inventario/diferencias-ajustes-y-mermas.md (reglas 2 y 9): cada renglón que no cuadró abre
+ * su DF-, y un traspaso que tuvo alguna (de este tramo o del de camino a aduana) termina `con_diferencia`.
  */
 
-import { aMilesimosConSigno, deMilesimos, menor } from "@uniformame/compartido/calculos/cuenta-material";
+import {
+	aMilesimosConSigno,
+	cantidadEnTexto,
+	deMilesimos,
+	menor,
+} from "@uniformame/compartido/calculos/cuenta-material";
 import {
 	despachar,
 	entregarATiendaSinCaja,
@@ -23,11 +30,13 @@ import { tomarVersion, versionActual } from "../../../nucleo/acciones/pisadas.ts
 import { ErrorDeApi, errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeAccion, implementarAccion } from "../../../nucleo/modulos.ts";
 import { tomarCandadosDeInventario } from "../dominio/candados.ts";
+import { abrirDiferencia } from "../dominio/diferencias.ts";
 import { escribirMovimiento, type RenglonDeMovimiento } from "../dominio/escribir-movimiento.ts";
 import { candadoDeLoRecibido, ordenesDeCompras, ubicacionDeTipo, ubicacionPorId } from "../dominio/recepciones.ts";
 import { cambiarEstadoTraspaso } from "../dominio/traspasos.ts";
 import {
 	despachos,
+	diferencias,
 	recepciones,
 	recepcionLineas,
 	rollos,
@@ -442,6 +451,63 @@ function contar(
 }
 
 /**
+ * Abre una DF- por renglón que no cuadró al confirmar la llegada, en Tránsito y a cargo de Aduana: lo que faltó con
+ * su traspaso; lo que sobró o no venía, con el primero del despacho, de cuyo tramo salió.
+ * Fase 14 · docs/modulos/inventario/diferencias-ajustes-y-mermas.md (regla 2)
+ */
+async function abrirDiferenciasDeLaLlegada(
+	contexto: ContextoDeAccion,
+	despacho: Despacho,
+	llegada: {
+		transito: string;
+		destino: string;
+		primero: string | null;
+		recepcionId: string;
+		movimientoId: string | null;
+		contados: readonly Contado[];
+		noVenia: readonly { variante_id: string; piezas: number }[];
+	},
+): Promise<void> {
+	const { transaccion } = contexto;
+	const aduana = await ubicacionDeTipo(transaccion, "aduana");
+	const destino = (await ubicacionPorId(transaccion, llegada.destino))?.nombre ?? "El destino";
+	const comun = {
+		origen: "recepcion" as const,
+		ubicacionId: llegada.transito,
+		aCargoUbicacionId: aduana,
+		recepcionId: llegada.recepcionId,
+		movimientoId: llegada.movimientoId,
+	};
+	for (const { linea, esperado, llego } of llegada.contados) {
+		const esPrenda = linea.varianteId !== null;
+		const piezas = llego.piezas - esperado.piezas;
+		const milesimos = llego.milesimos - esperado.milesimos;
+		if (esPrenda ? piezas === 0 : milesimos === 0n) continue;
+		const sobro = esPrenda ? piezas > 0 : milesimos > 0n;
+		await abrirDiferencia(contexto, {
+			...comun,
+			hueco: esPrenda
+				? { varianteId: linea.varianteId ?? "", piezas, sistemaDecia: esperado.piezas }
+				: { materialId: linea.materialId ?? "", rolloId: linea.rolloId, cantidad: deMilesimos(milesimos) },
+			descripcion: esPrenda
+				? `Aduana mandó ${esperado.piezas} en ${despacho.folio} y ${destino} recibió ${llego.piezas}`
+				: `Aduana mandó ${cantidadEnTexto(esperado.milesimos)} en ${despacho.folio} y ${destino} recibió ${cantidadEnTexto(llego.milesimos)}`,
+			traspasoId: sobro ? llegada.primero : linea.traspasoId,
+			traspasoLineaId: linea.id,
+			loteId: linea.loteId,
+		});
+	}
+	for (const suyo of llegada.noVenia) {
+		await abrirDiferencia(contexto, {
+			...comun,
+			hueco: { varianteId: suyo.variante_id, piezas: suyo.piezas, sistemaDecia: 0 },
+			descripcion: `${destino} recibió ${suyo.piezas} en ${despacho.folio} que no venían`,
+			traspasoId: llegada.primero,
+		});
+	}
+}
+
+/**
  * Confirma la llegada de un despacho del otro lado: la recepción y sus renglones, el movimiento desde Tránsito (al
  * destino o a Fuera), lo que confirmó el destino en cada renglón, cada traspaso y el despacho. Lo que faltó se queda
  * en Tránsito; lo que sobró o no venía sale del tramo del primer traspaso.
@@ -565,22 +631,35 @@ async function confirmarLlegada(
 			)
 			.where(eq(traspasoLineas.id, linea.id));
 	}
-	// Cada traspaso y el despacho: recibido, o con diferencia si algo no cuadró.
+	await abrirDiferenciasDeLaLlegada(contexto, despacho, {
+		transito,
+		destino: pedido.destino,
+		primero,
+		recepcionId,
+		movimientoId: movimiento?.movimientoId ?? null,
+		contados: pedido.contados,
+		noVenia: pedido.noVenia,
+	});
+	// Cada traspaso y el despacho: recibido, o con diferencia si alguno de sus renglones no cuadró o tuvo alguna DF-,
+	// de este tramo o del de camino a aduana (el primero, también por lo de más de los demás y lo que no venía).
 	const traspasoIds = [...new Set(pedido.contados.map(({ linea }) => linea.traspasoId))];
+	const conDiferencia = new Set(
+		(
+			await transaccion
+				.select({ traspasoId: diferencias.traspasoId })
+				.from(diferencias)
+				.where(inArray(diferencias.traspasoId, traspasoIds))
+		).map((suya) => suya.traspasoId),
+	);
 	for (const traspasoId of traspasoIds) {
-		const suyos = pedido.contados.filter(({ linea }) => linea.traspasoId === traspasoId);
-		const cuadra = suyos.every(
-			({ esperado, llego }) => esperado.piezas === llego.piezas && esperado.milesimos === llego.milesimos,
+		const cuadra = pedido.contados
+			.filter(({ linea }) => linea.traspasoId === traspasoId)
+			.every(({ esperado, llego }) => esperado.piezas === llego.piezas && esperado.milesimos === llego.milesimos);
+		await cambiarEstadoTraspaso(
+			contexto,
+			traspasoId,
+			cuadra && !conDiferencia.has(traspasoId) ? "recibido" : "con_diferencia",
 		);
-		// Del tramo del primero sale lo que no venía y lo de más de los demás: tampoco cuadra.
-		const conSobrante =
-			traspasoId === primero &&
-			(pedido.noVenia.length > 0 ||
-				pedido.contados.some(
-					({ linea, esperado, llego }) =>
-						linea.traspasoId !== primero && (llego.piezas > esperado.piezas || llego.milesimos > esperado.milesimos),
-				));
-		await cambiarEstadoTraspaso(contexto, traspasoId, cuadra && !conSobrante ? "recibido" : "con_diferencia");
 		await transaccion.update(traspasos).set({ recepcionDestinoId: recepcionId }).where(eq(traspasos.id, traspasoId));
 	}
 	await transaccion
@@ -615,6 +694,7 @@ async function confirmarLlegada(
 			"existencias",
 			"existencias_material",
 			"reservas",
+			"diferencias",
 		],
 		entidad: "despachos",
 		entidadId: despacho.id,

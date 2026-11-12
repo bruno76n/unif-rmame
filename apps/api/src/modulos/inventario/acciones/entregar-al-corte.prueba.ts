@@ -3,6 +3,7 @@
  * las partidas; entregar pasa al Taller los rollos de cada tela de la receta y, en la primera entrega, los avíos;
  * libera lo sugerido que no se usó; un rollo entregado a otro lote no se entrega; sin la receta vigente no entrega.
  * Fase 12 · docs/fases/12-produccion.md (parte 3)
+ * Fase 14 · «Un avío entregado sin existencia deja Bodega en negativo con su DF- `material_corte`»
  */
 
 import { Temporal } from "temporal-polyfill";
@@ -115,6 +116,37 @@ describe("Entregar al corte pasa al Taller los rollos de cada tela de la receta 
 				[prenda.materiales.cierre],
 			),
 		).toEqual([{ cantidad: "60.000" }]);
+		// Fase 14: Bodega no tenía cierres; se entregaron igual y Bodega queda en −60, con su DF- `material_corte`, a
+		// cargo de Bodega, por aclarar, con su lote y su entrega.
+		expect(
+			await consultar(
+				`SELECT e.cantidad FROM existencias_material e JOIN ubicaciones u ON u.id = e.ubicacion_id
+				 WHERE u.codigo = 'BOD' AND e.material_id = $1 AND e.rollo_id IS NULL`,
+				[prenda.materiales.cierre],
+			),
+		).toEqual([{ cantidad: "-60.000" }]);
+		expect(
+			await consultar(
+				`SELECT d.origen, d.cantidad, d.estado, u.codigo AS hueco, c.codigo AS a_cargo, d.lote_id,
+					d.entrega_corte_id IS NOT NULL AS con_entrega, d.descripcion
+				 FROM diferencias d JOIN ubicaciones u ON u.id = d.ubicacion_id JOIN ubicaciones c ON c.id = d.a_cargo_ubicacion_id
+				 WHERE d.material_id = $1`,
+				[prenda.materiales.cierre],
+			),
+		).toEqual([
+			{
+				origen: "material_corte",
+				cantidad: "-60.000",
+				estado: "por_aclarar",
+				hueco: "BOD",
+				a_cargo: "BOD",
+				lote_id,
+				con_entrega: true,
+				descripcion: expect.stringMatching(
+					new RegExp(`^Se entregaron 60 .+ a ${lote_folio} sin existencia en Bodega$`),
+				),
+			},
+		]);
 		// La P-B sigue libre: nadie la sugirió.
 		expect(await consultar("SELECT estado FROM apartados_rollo WHERE rollo_id = $1", [otra.id])).toEqual([]);
 	});

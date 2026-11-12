@@ -399,3 +399,9 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 11 nov 2026 | 13 | Las máquinas de una persona que se da de baja (decisión 629) | Dejarlas · soltarlas | Soltarlas, como dice la tabla `maquinas` | No |
 | 11 nov 2026 | 13 | La bitácora de un reporte de la tablet que no crea falla (decisión 630) | Sin bitácora · en la máquina | En la máquina: toda acción deja su renglón | No |
 | 12 nov 2026 | 13 | Qué carga la muestra de Calidad y Mantenimiento (decisión 631) | Todo, inventando lotes viejos · lo que tiene sus lotes y sus máquinas | Lo segundo: se carga con las acciones sin inventar lo que la muestra no tiene | No |
+| 12 nov 2026 | 14 | Quién guarda un conteo (decisión 632) | Dos acciones · un contrato con uno de varios departamentos | Lo segundo: «Guardar conteo» es una acción, de Bodega o de Aduana | No |
+| 12 nov 2026 | 14 | La versión del conteo (decisión 633) | Pedirla siempre · no pedirla | No pedirla: el conteo es nuevo; la DF- la cuidan su candado y su estado | No |
+| 12 nov 2026 | 14 | A qué traspaso va la DF- de lo que sobró en un despacho (decisión 634) | El del renglón · el primero del despacho | El primero: su tramo tiene el hueco | No |
+| 12 nov 2026 | 14 | El final de un traspaso que tuvo DF- (decisión 635) | Transiciones nuevas a `con_diferencia` · solo al recibir el despacho | Solo al recibir; el cuadre revisa los demás contra sus DF- | No |
+| 12 nov 2026 | 14 | `llego` en una tienda sin caja (decisión 636) | No aplica · a Fuera | A Fuera: esa entrega ya salió del inventario | No |
+| 12 nov 2026 | 14 | Qué revisa el cuadre y cuándo abre otra vez (decisión 638) | Solo lo del día · también lo que tiene DF- | Lo segundo, y un negativo del Taller abre su excepción una sola vez | No |

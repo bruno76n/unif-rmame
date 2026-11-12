@@ -1,0 +1,49 @@
+/**
+ * Lo que siembra `inventario` en las listas: «Motivos de ajuste».
+ * Fase 14 · docs/modulos/inventario/diferencias-ajustes-y-mermas.md («La lista «Motivos de ajuste»») y
+ * docs/modulos/admin/configuracion.md («Las listas que hay»)
+ *
+ * Agrega lo que falta y nunca cambia lo que ya está, para no pisar lo que agregó la dueña.
+ */
+
+import { eq, sql } from "drizzle-orm";
+import { v7 as uuidv7 } from "uuid";
+import type { Base } from "../../nucleo/base/conexion.ts";
+import type { Semilla } from "../../nucleo/base/siembra.ts";
+import { listas, listaValores } from "../admin/tablas.ts";
+
+/** La clave de la lista de los motivos de ajuste. */
+export const listaDeMotivosAjuste = "motivos_ajuste";
+
+/** Los motivos de ajuste, en su orden. */
+const motivos = [
+	"Venta que no tenía existencia en el sistema",
+	"Pieza dañada o manchada",
+	"Error al capturar una entrada o salida",
+	"No se encontró: posible extravío",
+	"Apareció mercancía sin registrar",
+];
+
+/**
+ * Siembra la lista «Motivos de ajuste» y los motivos que falten.
+ * @returns Cuántos renglones nuevos agregó.
+ */
+async function sembrarMotivosAjuste(base: Base): Promise<number> {
+	const nueva = await base
+		.insert(listas)
+		.values({ id: uuidv7(), clave: listaDeMotivosAjuste, nombre: "Motivos de ajuste", modulo: "inventario" })
+		.onConflictDoNothing();
+	const [lista] = await base.select({ id: listas.id }).from(listas).where(eq(listas.clave, listaDeMotivosAjuste));
+	if (lista === undefined) throw new Error("no se sembró la lista de motivos de ajuste");
+	let nuevos = nueva.rowCount ?? 0;
+	for (const [i, nombre] of motivos.entries()) {
+		const hecho = await base
+			.insert(listaValores)
+			.values({ id: uuidv7(), listaId: lista.id, nombre, nombreNormalizado: sql`sin_acentos(${nombre})`, orden: i + 1 })
+			.onConflictDoNothing();
+		nuevos += hecho.rowCount ?? 0;
+	}
+	return nuevos;
+}
+
+export const semillaDeMotivosAjuste: Semilla = { sembrar: sembrarMotivosAjuste };

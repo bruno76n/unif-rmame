@@ -8,6 +8,8 @@
  * Fase 11 · docs/modulos/inventario/material-en-bodega.md («La tabla `rollos`», «La tabla `partidas_tela`») y
  * recepciones-en-aduana.md («La tabla `recepciones`», «La tabla `recepcion_lineas`») y surtido-y-despachos.md («La
  * tabla `despachos`»)
+ * Fase 14 · docs/modulos/inventario/diferencias-ajustes-y-mermas.md («La tabla `diferencias`», «La tabla `ajustes`»,
+ * «La tabla `ajuste_lineas`») y conteos.md («La tabla `conteos`», «La tabla `conteo_lineas`»)
  *
  * `ubicaciones` nace en la fase 4 con su siembra porque antes la usan los parámetros, las impresoras, las
  * cuentas, los aparatos y las personas. El libro solo crece: el rol de la app no lo puede cambiar.
@@ -41,10 +43,11 @@ import {
 	momento,
 	valores,
 } from "../../nucleo/base/columnas.ts";
-import { comandosRecibidos, usuarios } from "../admin/tablas.ts";
+import { comandosRecibidos, listaValores, usuarios } from "../admin/tablas.ts";
 import { defectos, reprocesos, revisiones } from "../calidad/tablas.ts";
-import { variantes } from "../catalogo/tablas.ts";
+import { productos, secciones, variantes } from "../catalogo/tablas.ts";
 import { materiales, ordenCompraLineas, ordenesCompra, proveedores } from "../compras/tablas.ts";
+import { autorizaciones } from "../direccion/tablas.ts";
 import { recetaVersiones } from "../patronaje/tablas.ts";
 import { personas } from "../personal/tablas.ts";
 import { cortes, lotes } from "../produccion/tablas.ts";
@@ -982,5 +985,268 @@ export const apartadosRollo = pgTable(
 			"apartados_rollo_entregado",
 			sql`${tabla.estado} not in ('entregado', 'usado') or ${tabla.entregaCorteId} is not null`,
 		),
+	],
+);
+
+/** Dónde nace una diferencia (docs/modulos/inventario/diferencias-ajustes-y-mermas.md, regla 2). */
+export const origenesDeDiferencia = [
+	"recepcion",
+	"recepcion_taller",
+	"material_corte",
+	"cuadre",
+	"no_la_encontro",
+	"venta_sin_existencia",
+	"venta_pieza_reservada",
+	"conteo",
+] as const;
+
+/** Los estados de una diferencia («Estados», la diferencia). */
+export const estadosDeDiferencia = [
+	"por_contar",
+	"conteo_pedido",
+	"esperando_autorizacion",
+	"por_aclarar",
+	"resuelta",
+] as const;
+
+/** Cómo se aclara una diferencia: las de recepción y las de material. */
+export const aclaracionesDeRecepcion = ["llego", "no_salio", "venia_en_otro", "perdida"] as const;
+export const aclaracionesDeMaterial = ["ajuste", "aclarada"] as const;
+
+/** La diferencia DF-: un hueco del inventario explicado, de prenda o de material, con signo. */
+export const diferencias = pgTable(
+	"diferencias",
+	{
+		id: uuid("id").primaryKey(),
+		folio: text("folio").notNull(),
+		origen: text("origen", { enum: origenesDeDiferencia }).notNull(),
+		ubicacionId: uuid("ubicacion_id")
+			.notNull()
+			.references(() => ubicaciones.id),
+		varianteId: uuid("variante_id").references(() => variantes.id),
+		piezas: integer("piezas"),
+		materialId: uuid("material_id").references(() => materiales.id),
+		rolloId: uuid("rollo_id").references(() => rollos.id),
+		cantidad: numeric("cantidad", { precision: 12, scale: 3 }),
+		descripcion: text("descripcion").notNull(),
+		sistemaDecia: integer("sistema_decia"),
+		aCargoUbicacionId: uuid("a_cargo_ubicacion_id")
+			.notNull()
+			.references(() => ubicaciones.id),
+		traspasoId: uuid("traspaso_id").references((): AnyPgColumn => traspasos.id),
+		traspasoLineaId: uuid("traspaso_linea_id").references((): AnyPgColumn => traspasoLineas.id),
+		recepcionId: uuid("recepcion_id").references((): AnyPgColumn => recepciones.id),
+		loteId: uuid("lote_id").references((): AnyPgColumn => lotes.id),
+		entregaCorteId: uuid("entrega_corte_id").references((): AnyPgColumn => entregasCorte.id),
+		movimientoId: uuid("movimiento_id").references((): AnyPgColumn => movimientos.id),
+		cuadreId: uuid("cuadre_id").references((): AnyPgColumn => cuadres.id),
+		/** @llavePendiente ventas_tienda.id */
+		ventaTiendaId: uuid("venta_tienda_id"),
+		estado: text("estado", { enum: estadosDeDiferencia }).notNull(),
+		conteoId: uuid("conteo_id").references((): AnyPgColumn => conteos.id),
+		ajusteId: uuid("ajuste_id").references((): AnyPgColumn => ajustes.id),
+		resolucion: text("resolucion", { enum: ["cuadro", "ajuste", "aclarada"] }),
+		aclaracion: text("aclaracion", { enum: [...aclaracionesDeRecepcion, ...aclaracionesDeMaterial] }),
+		aclaradaConDiferenciaId: uuid("aclarada_con_diferencia_id").references((): AnyPgColumn => diferencias.id),
+		traspasoNuevoId: uuid("traspaso_nuevo_id").references((): AnyPgColumn => traspasos.id),
+		motivoResolucion: text("motivo_resolucion"),
+		resueltaEn: momento("resuelta_en"),
+		resueltaPor: uuid("resuelta_por").references((): AnyPgColumn => usuarios.id),
+		...columnasDeAparato(),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		uniqueIndex("diferencias_folio").on(tabla.folio),
+		index("diferencias_abiertas").on(tabla.estado).where(sql`${tabla.estado} <> 'resuelta'`),
+		index("diferencias_prenda_abierta")
+			.on(tabla.ubicacionId, tabla.varianteId)
+			.where(sql`${tabla.estado} <> 'resuelta'`),
+		index("diferencias_material_abierta")
+			.on(tabla.ubicacionId, tabla.materialId)
+			.where(sql`${tabla.estado} <> 'resuelta'`),
+		index("diferencias_traspaso").on(tabla.traspasoId),
+		index("diferencias_lote").on(tabla.loteId),
+		index("diferencias_recepcion").on(tabla.recepcionId),
+		index("diferencias_ajuste").on(tabla.ajusteId),
+		check("diferencias_origen", sql`${tabla.origen} in (${valores(origenesDeDiferencia)})`),
+		check("diferencias_estado", sql`${tabla.estado} in (${valores(estadosDeDiferencia)})`),
+		check(
+			"diferencias_forma",
+			sql`(${tabla.varianteId} is not null and ${tabla.piezas} is not null and ${tabla.piezas} <> 0
+					and ${tabla.materialId} is null and ${tabla.cantidad} is null)
+				or (${tabla.materialId} is not null and ${tabla.cantidad} is not null and ${tabla.cantidad} <> 0
+					and ${tabla.varianteId} is null and ${tabla.piezas} is null)`,
+		),
+		check("diferencias_resuelta", sql`(${tabla.estado} = 'resuelta') = (${tabla.resolucion} is not null)`),
+		check(
+			"diferencias_aclaracion",
+			sql`${tabla.aclaracion} is null
+				or (${tabla.aclaracion} in (${valores(aclaracionesDeRecepcion)})
+					and ${tabla.origen} in ('recepcion', 'recepcion_taller'))
+				or (${tabla.aclaracion} in (${valores(aclaracionesDeMaterial)}) and ${tabla.materialId} is not null
+					and ${tabla.origen} in ('material_corte', 'cuadre'))`,
+		),
+	],
+);
+
+/** Los estados de un ajuste («Estados», el ajuste). */
+export const estadosDeAjuste = ["esperando_autorizacion", "autorizado", "rechazado"] as const;
+
+/** El ajuste AJ-: la diferencia que se vio, que solo se mueve cuando Dirección lo autoriza. */
+export const ajustes = pgTable(
+	"ajustes",
+	{
+		id: uuid("id").primaryKey(),
+		folio: text("folio").notNull(),
+		ubicacionId: uuid("ubicacion_id")
+			.notNull()
+			.references(() => ubicaciones.id),
+		origen: text("origen", { enum: ["conteo", "diferencia_recepcion", "diferencia_material"] }).notNull(),
+		conteoId: uuid("conteo_id").references((): AnyPgColumn => conteos.id),
+		diferenciaId: uuid("diferencia_id").references((): AnyPgColumn => diferencias.id),
+		motivoId: uuid("motivo_id")
+			.notNull()
+			.references(() => listaValores.id),
+		motivoTexto: text("motivo_texto"),
+		estado: text("estado", { enum: estadosDeAjuste }).notNull().default("esperando_autorizacion"),
+		autorizacionId: uuid("autorizacion_id").references((): AnyPgColumn => autorizaciones.id),
+		decididoEn: momento("decidido_en"),
+		decididoPor: uuid("decidido_por").references((): AnyPgColumn => usuarios.id),
+		motivoRechazo: text("motivo_rechazo"),
+		movimientoId: uuid("movimiento_id").references((): AnyPgColumn => movimientos.id),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		uniqueIndex("ajustes_folio").on(tabla.folio),
+		index("ajustes_esperando").on(tabla.estado).where(sql`${tabla.estado} = 'esperando_autorizacion'`),
+		index("ajustes_ubicacion").on(tabla.ubicacionId),
+		check("ajustes_estado", sql`${tabla.estado} in (${valores(estadosDeAjuste)})`),
+		check(
+			"ajustes_origen",
+			sql`(${tabla.origen} = 'conteo' and ${tabla.conteoId} is not null)
+				or (${tabla.origen} in ('diferencia_recepcion', 'diferencia_material') and ${tabla.diferenciaId} is not null)`,
+		),
+		check("ajustes_motivo_texto", sql`${tabla.motivoTexto} is null or char_length(${tabla.motivoTexto}) <= 200`),
+		check(
+			"ajustes_decidido",
+			sql`(${tabla.estado} = 'esperando_autorizacion') = (${tabla.decididoEn} is null and ${tabla.decididoPor} is null)`,
+		),
+		check("ajustes_rechazado", sql`(${tabla.estado} = 'rechazado') = (${tabla.motivoRechazo} is not null)`),
+		check("ajustes_autorizado", sql`(${tabla.estado} = 'autorizado') = (${tabla.movimientoId} is not null)`),
+	],
+);
+
+/** Cada diferencia que mueve un ajuste, fija desde que se vio. */
+export const ajusteLineas = pgTable(
+	"ajuste_lineas",
+	{
+		id: uuid("id").primaryKey(),
+		ajusteId: uuid("ajuste_id")
+			.notNull()
+			.references(() => ajustes.id),
+		renglon: smallint("renglon").notNull(),
+		varianteId: uuid("variante_id").references(() => variantes.id),
+		materialId: uuid("material_id").references(() => materiales.id),
+		rolloId: uuid("rollo_id").references(() => rollos.id),
+		conteoLineaId: uuid("conteo_linea_id").references((): AnyPgColumn => conteoLineas.id),
+		diferenciaId: uuid("diferencia_id").references(() => diferencias.id),
+		traspasoId: uuid("traspaso_id").references(() => traspasos.id),
+		loteId: uuid("lote_id").references((): AnyPgColumn => lotes.id),
+		piezasSistema: integer("piezas_sistema"),
+		piezasContadas: integer("piezas_contadas"),
+		piezasDiferencia: integer("piezas_diferencia"),
+		cantidadDiferencia: numeric("cantidad_diferencia", { precision: 12, scale: 3 }),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		uniqueIndex("ajuste_lineas_renglon").on(tabla.ajusteId, tabla.renglon),
+		index("ajuste_lineas_diferencia").on(tabla.diferenciaId),
+		check(
+			"ajuste_lineas_forma",
+			sql`(${tabla.varianteId} is not null and ${tabla.piezasDiferencia} is not null and ${tabla.piezasDiferencia} <> 0
+					and ${tabla.materialId} is null and ${tabla.cantidadDiferencia} is null)
+				or (${tabla.materialId} is not null and ${tabla.cantidadDiferencia} is not null
+					and ${tabla.cantidadDiferencia} <> 0 and ${tabla.varianteId} is null and ${tabla.piezasDiferencia} is null)`,
+		),
+	],
+);
+
+/** Los tipos de conteo: los de Bodega y Aduana; los de tienda llegan con el POS. */
+export const tiposDeConteo = ["nuevo", "diferencia", "inicial", "pedido_tienda", "propio_tienda"] as const;
+
+/** El conteo CN-: ciego, con lo que decía el sistema a su hora. */
+export const conteos = pgTable(
+	"conteos",
+	{
+		id: uuid("id").primaryKey(),
+		folio: text("folio").notNull(),
+		tipo: text("tipo", { enum: tiposDeConteo }).notNull(),
+		ubicacionId: uuid("ubicacion_id")
+			.notNull()
+			.references(() => ubicaciones.id),
+		alcance: text("alcance", { enum: ["prenda", "seccion", "toda"] }),
+		productoId: uuid("producto_id").references(() => productos.id),
+		seccionId: uuid("seccion_id").references(() => secciones.id),
+		diferenciaId: uuid("diferencia_id").references((): AnyPgColumn => diferencias.id),
+		estado: text("estado", { enum: ["pedido", "contado", "cancelado"] })
+			.notNull()
+			.default("contado"),
+		contadoEn: momento("contado_en"),
+		contadoPor: uuid("contado_por").references((): AnyPgColumn => usuarios.id),
+		dondeBuscar: text("donde_buscar"),
+		porQue: text("por_que"),
+		paraCuando: date("para_cuando", { mode: "string" }),
+		pedidoEn: momento("pedido_en"),
+		pedidoPor: uuid("pedido_por").references((): AnyPgColumn => usuarios.id),
+		...columnasDeAparato(),
+		...columnasDeCancelacion(),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		uniqueIndex("conteos_folio").on(tabla.folio),
+		index("conteos_ubicacion").on(tabla.ubicacionId, tabla.contadoEn.desc()),
+		index("conteos_diferencia").on(tabla.diferenciaId),
+		check("conteos_tipo", sql`${tabla.tipo} in (${valores(tiposDeConteo)})`),
+		check("conteos_estado", sql`${tabla.estado} in ('pedido', 'contado', 'cancelado')`),
+		check("conteos_alcance", sql`(${tabla.tipo} = 'inicial') = (${tabla.alcance} is not null)`),
+		check("conteos_producto", sql`(${tabla.alcance} = 'prenda') = (${tabla.productoId} is not null)`),
+		check(
+			"conteos_seccion",
+			sql`(${tabla.tipo} = 'nuevo' or ${tabla.alcance} = 'seccion') = (${tabla.seccionId} is not null)`,
+		),
+		check("conteos_diferencia", sql`(${tabla.tipo} = 'diferencia') = (${tabla.diferenciaId} is not null)`),
+		check(
+			"conteos_contado",
+			sql`${tabla.estado} <> 'contado' or (${tabla.contadoEn} is not null and ${tabla.contadoPor} is not null)`,
+		),
+		check(
+			"conteos_pedido_tienda",
+			sql`${tabla.tipo} <> 'pedido_tienda' or (${tabla.dondeBuscar} is not null and ${tabla.porQue} is not null
+				and ${tabla.paraCuando} is not null and ${tabla.pedidoEn} is not null and ${tabla.pedidoPor} is not null)`,
+		),
+	],
+);
+
+/** Lo que decía el sistema y lo que se contó, congelado al contar. */
+export const conteoLineas = pgTable(
+	"conteo_lineas",
+	{
+		id: uuid("id").primaryKey(),
+		conteoId: uuid("conteo_id")
+			.notNull()
+			.references(() => conteos.id),
+		varianteId: uuid("variante_id")
+			.notNull()
+			.references(() => variantes.id),
+		piezasSistema: integer("piezas_sistema").notNull(),
+		piezasSistemaAparato: integer("piezas_sistema_aparato"),
+		piezasContadas: integer("piezas_contadas").notNull(),
+		diferencia: integer("diferencia").notNull().generatedAlwaysAs(sql`piezas_contadas - piezas_sistema`),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		uniqueIndex("conteo_lineas_variante_del_conteo").on(tabla.conteoId, tabla.varianteId),
+		index("conteo_lineas_variante").on(tabla.varianteId),
+		check("conteo_lineas_contadas", sql`${tabla.piezasContadas} >= 0`),
 	],
 );

@@ -2,6 +2,7 @@
  * Prueba de `inventario.recibir_en_aduana`: lo que llegó pasa a Aduana, lo que no llegó se queda en su tramo a cargo de
  * quien lo mandó, y una devolución de cliente que no llegó no deja nada.
  * Fase 11 · docs/fases/11-aduana-y-bodega.md (parte 3)
+ * Fase 14 · «Recibir con diferencias en aduana o un despacho abre una DF- por renglón, a cargo de quien lo mandó»
  */
 
 import { v7 as uuidv7 } from "uuid";
@@ -123,6 +124,24 @@ describe("Recibir lo que viene en camino deja lo que no llegó en su tramo y una
 		expect(await piezas(a.variante)).toEqual([
 			{ codigo: "ADU", piezas: 2 },
 			{ codigo: "ECA", piezas: 1 },
+		]);
+		// Fase 14: su DF- de recepción, en En camino a aduana, a cargo de Bodega, con su renglón y por aclarar.
+		const { rows } = await servidor.base.dueno.query(
+			`SELECT d.piezas, d.sistema_decia, d.estado, d.traspaso_linea_id, u.codigo AS hueco, c.codigo AS a_cargo, d.descripcion
+			 FROM diferencias d JOIN ubicaciones u ON u.id = d.ubicacion_id JOIN ubicaciones c ON c.id = d.a_cargo_ubicacion_id
+			 WHERE d.traspaso_id = $1`,
+			[a.id],
+		);
+		expect(rows).toEqual([
+			{
+				piezas: -1,
+				sistema_decia: 3,
+				estado: "por_aclarar",
+				traspaso_linea_id: a.linea,
+				hueco: "ECA",
+				a_cargo: "BOD",
+				descripcion: `Bodega mandó 3 en ${a.folio} y Aduana recibió 2`,
+			},
 		]);
 	});
 

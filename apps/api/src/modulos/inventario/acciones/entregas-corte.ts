@@ -4,7 +4,8 @@
  * Fase 12 · docs/modulos/inventario/entregas-a-corte.md (reglas 3 a 6, 8 y 11, «Acciones»)
  *
  * Los rollos se bloquean en orden de id antes de revisarlos: dos entregas no toman el mismo rollo. Un avío que no
- * alcanza se entrega igual y Bodega queda en negativo; su diferencia llega con la fase 14.
+ * alcanza se entrega igual y Bodega queda en negativo, con su DF- `material_corte`.
+ * Fase 14 · docs/modulos/inventario/diferencias-ajustes-y-mermas.md (regla 2)
  */
 
 import { aMilesimosConSigno, cantidadEnTexto, deMilesimos } from "@uniformame/compartido/calculos/cuenta-material";
@@ -24,6 +25,7 @@ import {
 	suma,
 	telasRecibidas,
 } from "../dominio/corte.ts";
+import { abrirDiferencia } from "../dominio/diferencias.ts";
 import { escribirMovimiento, type RenglonDeMovimiento } from "../dominio/escribir-movimiento.ts";
 import { ubicacionDeTipo } from "../dominio/recepciones.ts";
 import {
@@ -87,7 +89,7 @@ export const accionEntregarAlCorte = implementarAccion(entregarAlCorte, async (c
 			cantidad: deMilesimos(milesimosDeCuenta(avio.cantidad ?? 0)),
 		})),
 	];
-	// Lo que había de cada avío en Bodega, para avisar el que no alcanzó (su diferencia llega con la fase 14).
+	// Lo que había de cada avío en Bodega antes de entregar, para el que no alcanzó.
 	const enBodega =
 		avios.length === 0
 			? []
@@ -159,13 +161,26 @@ export const accionEntregarAlCorte = implementarAccion(entregarAlCorte, async (c
 		if (tiene < pide)
 			avisos.push(`Faltan ${cantidadEnTexto(pide - tiene)} m de ${tela.nombre} para el corte completo.`);
 	}
-	const noAlcanzo = avios.flatMap((avio) => {
+	// El avío que no alcanzó se entregó igual: Bodega queda en negativo y nace su DF-, a cargo de Bodega (regla 6).
+	const noAlcanzo: string[] = [];
+	for (const avio of avios) {
 		const habia = aMilesimosConSigno(enBodega.find((suyo) => suyo.materialId === avio.materialId)?.cantidad ?? "0");
 		const pide = milesimosDeCuenta(avio.cantidad ?? 0);
-		return habia < pide
-			? [`${cantidadEnTexto(pide - (habia > 0n ? habia : 0n))} ${avio.unidad} de ${avio.nombre}`]
-			: [];
-	});
+		if (habia >= pide) continue;
+		const falta = pide - (habia > 0n ? habia : 0n);
+		const texto = `${cantidadEnTexto(falta)} ${avio.unidad} de ${avio.nombre}`;
+		noAlcanzo.push(texto);
+		await abrirDiferencia(contexto, {
+			origen: "material_corte",
+			ubicacionId: bodega,
+			aCargoUbicacionId: bodega,
+			hueco: { materialId: avio.materialId, rolloId: null, cantidad: deMilesimos(-falta) },
+			descripcion: `Se entregaron ${texto} a ${lote.folio} sin existencia en Bodega`,
+			loteId: lote.loteId,
+			entregaCorteId: entregaId,
+			movimientoId: movimiento.movimientoId,
+		});
+	}
 	contexto.bitacora({
 		descripcion: `Entregó al corte ${lote.folio}`,
 		entidad: "entregas_corte",
@@ -179,7 +194,7 @@ export const accionEntregarAlCorte = implementarAccion(entregarAlCorte, async (c
 	contexto.guardarEvento({
 		tipo: "entrega_corte.entregada",
 		datos: { entrega_corte_id: entregaId, lote_id: lote.loteId },
-		tablas: ["entregas_corte", "apartados_rollo", "rollos", "existencias_material"],
+		tablas: ["entregas_corte", "apartados_rollo", "rollos", "existencias_material", "diferencias"],
 		entidad: "entregas_corte",
 		entidadId: entregaId,
 		entidadFolio: lote.folio,

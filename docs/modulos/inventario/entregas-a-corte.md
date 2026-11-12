@@ -177,3 +177,5 @@ Los cambia solo la dueña, en Configuración (ver [configuración](../admin/conf
 - **`lotes_con_tela_entregada`** y **`devolver_entrega_corte`** (`internas/entregas-corte.ts`); los avíos de una entrega devuelta regresan con la fase 16 (decisión 601).
 - **El parámetro** `inventario.dias_entrega_corte`.
 - **Pruebas:** `acciones/entregar-al-corte.prueba.ts` (también lo sugerido que se libera, la segunda entrega sin avíos, dos entregas a la vez y sin receta), `internas/recalcular-rollos-sugeridos.prueba.ts` (con fast-check) e `internas/devolver-entrega-corte.prueba.ts` (también recibir del corte, el comprometido y el desperdicio medido).
+
+**Fase 14, parte 1.** El avío que no alcanzó abre su DF- `material_corte` en Bodega, a cargo de Bodega, por lo que faltaba, con su lote, su entrega y su movimiento. Lo prueba `acciones/entregar-al-corte.prueba.ts`.

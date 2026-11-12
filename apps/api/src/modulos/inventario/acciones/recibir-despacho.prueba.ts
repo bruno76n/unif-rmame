@@ -3,6 +3,8 @@
  * falta se queda en Tránsito a cargo de Aduana y lo que sobra o no venía sale del tramo del primer traspaso; el
  * material queda en Bodega.
  * Fase 11 · docs/fases/11-aduana-y-bodega.md (parte 2)
+ * Fase 14 · «Recibir con diferencias en aduana o un despacho abre una DF- por renglón, a cargo de quien lo mandó, y el
+ * traspaso queda `con_diferencia`»
  */
 
 import { v7 as uuidv7 } from "uuid";
@@ -126,6 +128,49 @@ describe("Solo quien recibe confirma: lo que falta se queda en Tránsito a cargo
 		expect(await consultar("SELECT estado FROM despachos WHERE id = $1", [despacho])).toEqual([
 			{ estado: "con_diferencia" },
 		]);
+		// Fase 14: una DF- por renglón que no cuadró, en Tránsito y a cargo de Aduana, por aclarar; lo que sobró o no
+		// venía, con el primer traspaso. Lo que dicen las DF- de cada traspaso es justo lo que quedó en su tramo.
+		const nacidas = await consultar(
+			`SELECT d.traspaso_id, d.piezas, d.sistema_decia, d.estado, u.codigo AS hueco, c.codigo AS a_cargo, d.descripcion
+			 FROM diferencias d JOIN ubicaciones u ON u.id = d.ubicacion_id JOIN ubicaciones c ON c.id = d.a_cargo_ubicacion_id
+			 WHERE d.recepcion_id = $1 ORDER BY d.folio`,
+			[z.object({ recepcion_id: z.uuid() }).parse(respuesta.cuerpo.resultado).recepcion_id],
+		);
+		const comun = { estado: "por_aclarar", hueco: "TRA", a_cargo: "ADU" };
+		expect(nacidas).toEqual([
+			{
+				...comun,
+				traspaso_id: primero.id,
+				piezas: -1,
+				sistema_decia: 5,
+				descripcion: expect.stringMatching(/^Aduana mandó 5 en D-\d{4} y Bodega recibió 4$/),
+			},
+			{
+				...comun,
+				traspaso_id: primero.id,
+				piezas: 2,
+				sistema_decia: 5,
+				descripcion: expect.stringMatching(/recibió 7$/),
+			},
+			{
+				...comun,
+				traspaso_id: segundo.id,
+				piezas: -3,
+				sistema_decia: 3,
+				descripcion: expect.stringMatching(/recibió 0$/),
+			},
+			{
+				...comun,
+				traspaso_id: primero.id,
+				piezas: 2,
+				sistema_decia: 0,
+				descripcion: expect.stringMatching(/^Bodega recibió 2 en D-\d{4} que no venían$/),
+			},
+		]);
+		for (const traspaso of [primero, segundo]) {
+			const suyas = nacidas.filter((nacida) => nacida.traspaso_id === traspaso.id);
+			expect(queda.get(traspaso.id)).toBe(-suyas.reduce((suma, suya) => suma + suya.piezas, 0));
+		}
 	});
 
 	it("con diferencias: el primer traspaso que cuadra queda con diferencia si de su tramo salió lo de más de otro", async () => {

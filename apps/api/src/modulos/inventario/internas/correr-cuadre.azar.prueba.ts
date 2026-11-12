@@ -3,6 +3,7 @@
  * azar desde otra conexión mientras el cuadre corre. Al terminar, toda existencia es la suma del libro, y el cuadre
  * abrió una excepción por cada existencia alterada (con la diferencia que se le metió) y ninguna más.
  * Fase 9 · docs/fases/09-inventario-libro-existencias-reservas-y-traspasos.md (parte 5)
+ * Fase 14 · los negativos que dejan los movimientos abren su DF- del cuadre (paso 5), que también es residuo.
  */
 
 import { join } from "node:path";
@@ -227,7 +228,15 @@ describe("El cuadre corrige desde el libro toda existencia alterada, aunque al m
 						alteraciones.map((suya) => [`${suya.lugar.cosa}:${suya.lugar.ubicacion}`, suya.diferencia]),
 					),
 				);
-				expect(cuadre).toMatchObject({ estado: alteraciones.length > 0 ? "con_residuo" : "cuadro" });
+				// El paso 5: cada negativo sin explicar abrió su DF- del cuadre, con lo que halló (negativo).
+				const { rows: abiertas } = await servidor.base.dueno.query(
+					"SELECT origen, coalesce(piezas, cantidad)::numeric AS cuanto FROM diferencias WHERE cuadre_id = $1",
+					["yaCorrio" in cuadre ? "" : cuadre.cuadreId],
+				);
+				for (const abierta of abiertas) expect([abierta.origen, Number(abierta.cuanto) < 0]).toEqual(["cuadre", true]);
+				expect(cuadre).toMatchObject({
+					estado: alteraciones.length > 0 || abiertas.length > 0 ? "con_residuo" : "cuadro",
+				});
 			}),
 			{ numRuns: 40 },
 		);
