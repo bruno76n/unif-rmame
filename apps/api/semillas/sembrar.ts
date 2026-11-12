@@ -14,6 +14,7 @@ import { cargarAduanaYBodegaDeLaMuestra } from "./aduana-y-bodega.ts";
 import { cargarCalidadYMantenimientoDeLaMuestra } from "./calidad-y-mantenimiento.ts";
 import { cargarCatalogoDeLaMuestra } from "./catalogo.ts";
 import { cargarComprasYPatronajeDeLaMuestra } from "./compras-y-patronaje.ts";
+import { cargarConteosYAjustesDeLaMuestra } from "./conteos-y-ajustes.ts";
 import { cargarCuentasDeLaMuestra } from "./cuentas.ts";
 import { cargarPersonasDeLaMuestra } from "./personas.ts";
 import { cargarProduccionDeLaMuestra } from "./produccion.ts";
@@ -30,6 +31,7 @@ export const cargasDeLaMuestra: readonly CargaDeLaMuestra[] = [
 	cargarAduanaYBodegaDeLaMuestra,
 	cargarProduccionDeLaMuestra,
 	cargarCalidadYMantenimientoDeLaMuestra,
+	cargarConteosYAjustesDeLaMuestra,
 ];
 
 if (import.meta.main) {

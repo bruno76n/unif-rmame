@@ -9,6 +9,7 @@ import { escribirMovimiento } from "../../modulos/inventario/dominio/escribir-mo
 import { crearTraspaso, type PedidoDeTraspaso } from "../../modulos/inventario/dominio/traspasos.ts";
 import { crearBase } from "../base/conexion.ts";
 import { enAccionDePrueba } from "./accion-de-prueba.ts";
+import { nuevoProducto, siembraDelCatalogo } from "./catalogo-de-prueba.ts";
 import type { ServidorDePrueba } from "./servidor-de-prueba.ts";
 
 /**
@@ -33,7 +34,9 @@ export function nuevoTraspaso(servidor: ServidorDePrueba, pedido: PedidoDeTraspa
 }
 
 /**
- * Variantes de la muestra para una prueba: cada llamada da otras, para que las pruebas de un archivo no se pisen.
+ * Variantes para una prueba, sin existencia, reservas ni traspasos: cada llamada da otras, para que las pruebas de un
+ * archivo no se pisen. Primero las de la muestra que siguen libres; si ya no alcanzan (la muestra trae existencia en
+ * Bodega desde la fase 14), da de alta una playera nueva con sus tallas 4, 6 y 8 como Catálogo, las veces que haga falta.
  * @param servidor El servidor de prueba.
  * @param cuantas Cuántas.
  */
@@ -43,11 +46,16 @@ export async function variantesLibres(servidor: ServidorDePrueba, cuantas: numbe
 			AND NOT EXISTS (SELECT 1 FROM existencias e WHERE e.variante_id = v.id)
 			AND NOT EXISTS (SELECT 1 FROM reservas r WHERE r.variante_id = v.id)
 			AND NOT EXISTS (SELECT 1 FROM traspaso_lineas l WHERE l.variante_id = v.id)
+			AND NOT EXISTS (SELECT 1 FROM conteo_lineas c WHERE c.variante_id = v.id)
 		 ORDER BY random() LIMIT $1`,
 		[cuantas],
 	);
-	if (rows.length < cuantas) throw new Error("no quedan variantes libres en la muestra");
-	return rows.map((fila) => fila.id);
+	const libres: string[] = rows.map((fila) => fila.id);
+	while (libres.length < cuantas) {
+		const nueva = await nuevoProducto(servidor, await siembraDelCatalogo(servidor));
+		libres.push(...nueva.variantes.map((variante) => variante.variante_id).slice(0, cuantas - libres.length));
+	}
+	return libres;
 }
 
 /**

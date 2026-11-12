@@ -107,3 +107,5 @@ En la fase 21 se prueban los 11 flujos de la fábrica, cada uno con su archivo e
 - **fast-check** ya estaba desde la fase 1, en el paquete compartido.
 
 **Las pruebas de la base de pruebas:** `pruebas/simuladores/google.prueba.ts`, `resend.prueba.ts` y `r2.prueba.ts` (cada uno responde como su servicio y falla como él) y `pruebas/base.prueba.ts` (cada copia es otra base con las migraciones; lo que escribe una no se ve en la otra; una prueba en su transacción deshecha deja la base igual, aunque falle).
+
+**Fase 14.** `variantesLibres` (`nucleo/pruebas/inventario-de-prueba.ts`) da primero las variantes de la muestra sin existencia, reservas, traspasos ni conteos y, si no alcanzan, da de alta una playera nueva como Catálogo (decisión 655). Las ayudas de las diferencias y los conteos están en `nucleo/pruebas/diferencias-de-prueba.ts`.

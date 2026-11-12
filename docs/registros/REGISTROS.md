@@ -411,3 +411,4 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 12 nov 2026 | 14 | El costo de un rollo de carga inicial sin precio (decisión 648) | Inventar uno · sin costo | Sin costo: el CHECK no deja 0 | No |
 | 12 nov 2026 | 14 | El módulo de la bitácora de «Cambiar mínimo» (decisión 650) | `inventario` · el de la acción | El de la acción: así lo escribe el núcleo | No |
 | 12 nov 2026 | 14 | Cómo se reparte lo disponible de Bodega entre tiendas (decisión 652) | En proporción · en orden | En orden: nunca se promete dos veces | No |
+| 12 nov 2026 | 14 | Qué carga la muestra de la fase 14 (decisión 654) | Todo, inventando lotes viejos · lo que la muestra tiene y el sistema hace | Lo segundo: la existencia de Bodega, sus conteos y sus ajustes | No |
