@@ -54,3 +54,22 @@ export const editarEmpresa = definirAccion({
 	permiso: { departamento: "admin", soloDuena: true },
 	edita: true,
 });
+
+/** La dueña cambia un mínimo de existencia: el vigente queda de baja y nace el nuevo. */
+export const cambiarMinimo = definirAccion({
+	nombre: "admin.cambiar_minimo",
+	descripcion: "Cambia el mínimo de existencia de una ubicación y un nivel; el anterior queda de baja",
+	entrada: z.object({
+		ubicacion_id: z.uuid().describe("Bodega o una tienda"),
+		nivel: z.enum(["mayor_venta", "demas"]).describe("Las tallas de mayor venta o las demás"),
+		piezas: z
+			.number("Escribe un número mayor que cero")
+			.int("Escribe un número mayor que cero")
+			.positive("Escribe un número mayor que cero")
+			.describe("El mínimo nuevo"),
+	}),
+	salida: z.object({ minimo_id: z.uuid().describe("El mínimo vigente"), piezas: z.number().int() }),
+	permiso: { departamento: "admin", soloDuena: true },
+	errores: [{ codigo: "ubicacion_sin_minimo", mensaje: "{ubicación} no lleva mínimo." }],
+	edita: true,
+});

@@ -157,4 +157,10 @@ Los cambia solo la dueña, en Configuración (ver [configuración](../admin/conf
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 14.*
+**Fase 14, parte 4.** En `modulos/inventario/`:
+
+- **Las tablas** `minimos` y `sugerencias_reabasto` (migración `0047`), con sus CHECK: el nivel, las piezas mayores que 0, un vigente por ubicación y nivel, y la sugerencia levantada con su orden, su lote, quién y cuándo. La siembra (`siembra.ts`, `semillaDeMinimos`) trae los seis mínimos de la regla 1. Los parámetros `inventario.factor_meta_reabasto` e `inventario.tallas_mayor_venta` están en `parametros.ts`.
+- **La cuenta** es `cuentaDelReabasto` (`dominio/cuenta-reabasto.ts`), una función pura: deja fuera a las tiendas sin caja y reparte lo disponible de Bodega entre las tiendas en el orden en que vienen (decisión 652).
+- **`mover_a_tienda`** y **`sugerir_fabricar`** (`acciones/reabasto.ts`, contratos en `packages/compartido/src/contratos/inventario/reabasto.ts`). «Mover» toma el candado de las variantes, mueve hasta los libres de Bodega y avisa lo que no alcanzó; por tienda, toma el candado de su reabasto del día, busca el RB- de hoy (decisión 651) y escribe el A- `reabasto` en camino a aduana con su movimiento `surtido_bodega`. Aduana lo recibe con `recibir_en_aduana` y lo despacha como cualquier otro. «Sugerir» solo va donde hay mínimo.
+- **Las internas** `guardar_minimo` (revisa la versión del vigente; con la misma cantidad no escribe) y `decidir_sugerencia` (toma las sugerencias en orden de id) están en `internas/reabasto.ts`; las lecturas `sugerencias_de_fabricar` y `minimos_vigentes`, en `lecturas/reabasto.ts`.
+- **Pruebas:** `dominio/cuenta-reabasto.prueba.ts` (el ejemplo y fast-check), `acciones/mover-a-tienda.prueba.ts` (el RB- compartido, lo disponible con dos conexiones, el despacho y las sugerencias), `modulos/produccion/acciones/levantar-orden-sugerencia.prueba.ts` y `modulos/admin/acciones/cambiar-minimo.prueba.ts`.

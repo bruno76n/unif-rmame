@@ -3,7 +3,8 @@
  * Fase 4 · docs/modulos/inventario/libro-de-movimientos.md («La tabla `ubicaciones`»)
  * Fase 9 · docs/modulos/inventario/libro-de-movimientos.md y existencias-y-cuadre.md
  * Fase 11 · docs/modulos/inventario/material-en-bodega.md y recepciones-en-aduana.md
- * Fase 14 · docs/modulos/inventario/diferencias-ajustes-y-mermas.md, conteos.md y recepcion-del-taller.md
+ * Fase 14 · docs/modulos/inventario/diferencias-ajustes-y-mermas.md, conteos.md, recepcion-del-taller.md y
+ * minimos-y-reabasto.md
  *
  * Las ubicaciones nacen en la fase 4 porque las usan antes los parámetros, las impresoras, las cuentas,
  * los aparatos y las personas; sus responsables nacen vacíos. El libro no tiene acciones propias: lo escribe
@@ -25,6 +26,7 @@ import {
 import { accionDevolverAProveedor } from "./acciones/devolver-a-proveedor.ts";
 import { accionEntregarAlCorte, accionRecibirDelCorte } from "./acciones/entregas-corte.ts";
 import { accionGuardarConteo } from "./acciones/guardar-conteo.ts";
+import { accionMoverATienda, accionSugerirFabricar } from "./acciones/reabasto.ts";
 import { accionRecibirDeProveedor } from "./acciones/recibir-de-proveedor.ts";
 import { accionRecibirDelTaller, accionRecibirReproceso } from "./acciones/recibir-del-taller.ts";
 import { accionRecibirEnAduana } from "./acciones/recibir-en-aduana.ts";
@@ -36,6 +38,7 @@ import { devolverEntregaCorte, lotesConTelaEntregada } from "./internas/entregas
 import { marcarExcepcionResuelta, registrarExcepcion, tomarVersionExcepcion } from "./internas/excepciones.ts";
 import { actualizarCostoRollos, aplicarDecisionRecepcionDeMas, tomarConsumible } from "./internas/material.ts";
 import { registrarMermaProduccion, revertirMermaProduccion } from "./internas/merma-produccion.ts";
+import { decidirSugerencia, guardarMinimo } from "./internas/reabasto.ts";
 import { registrarCorte } from "./internas/registrar-corte.ts";
 import {
 	apartarParaNota,
@@ -47,11 +50,12 @@ import {
 import { recalcularRollosSugeridos } from "./internas/rollos-sugeridos.ts";
 import { existenciaMaterial, piezasDeVariante } from "./lecturas/existencias.ts";
 import { existenciasDeMateriales, salidasDeMateriales } from "./lecturas/materiales.ts";
+import { minimosVigentes, sugerenciasDeFabricar } from "./lecturas/reabasto.ts";
 import { recibidoDeOrdenes } from "./lecturas/recibido-de-ordenes.ts";
 import { libres, listoEnAduana } from "./lecturas/reservas.ts";
 import { rollosParaCorte } from "./lecturas/rollos-para-corte.ts";
 import { semillaDeParametrosDeInventario } from "./parametros.ts";
-import { semillaDeMotivosAjuste } from "./siembra.ts";
+import { semillaDeMinimos, semillaDeMotivosAjuste } from "./siembra.ts";
 import { ubicaciones } from "./tablas.ts";
 import { cuadreNocturno } from "./trabajos/cuadre-nocturno.ts";
 import { rollosSugeridos } from "./trabajos/rollos-sugeridos.ts";
@@ -108,6 +112,9 @@ export default definirModulo({
 		ajuste_lineas: lectoresDelLibro,
 		conteos: lectoresDelLibro,
 		conteo_lineas: lectoresDelLibro,
+		// Los mínimos los leen Bodega, Dirección y Administración; las sugerencias, Bodega y Producción.
+		minimos: [...lectoresDelLibro, "admin"],
+		sugerencias_reabasto: ["bodega", "produccion", "direccion"],
 	},
 	acciones: [
 		accionEntregarAlCorte,
@@ -128,6 +135,8 @@ export default definirModulo({
 		accionRecibirReproceso,
 		accionRegistrarCargaInicial,
 		accionRegistrarCargaInicialMaterial,
+		accionMoverATienda,
+		accionSugerirFabricar,
 	],
 	internas: {
 		recalcular_rollos_sugeridos: recalcularRollosSugeridos,
@@ -148,6 +157,8 @@ export default definirModulo({
 		tomar_consumible: tomarConsumible,
 		aplicar_decision_ajuste: aplicarDecisionAjuste,
 		registrar_entrada_del_taller: registrarEntradaDelTaller,
+		guardar_minimo: guardarMinimo,
+		decidir_sugerencia: decidirSugerencia,
 	},
 	efectosDeAutorizacion: {
 		recepcion_de_mas: "aplicar_decision_recepcion_de_mas",
@@ -163,11 +174,14 @@ export default definirModulo({
 		libres,
 		listo_en_aduana: listoEnAduana,
 		recibido_de_ordenes: recibidoDeOrdenes,
+		sugerencias_de_fabricar: sugerenciasDeFabricar,
+		minimos_vigentes: minimosVigentes,
 	},
 	trabajos: [cuadreNocturno, rollosSugeridos],
 	semillas: [
 		{ tabla: ubicaciones, filas: ubicacionesDeLaSiembra.map((ubicacion) => ({ id: uuidv7(), ...ubicacion })) },
 		semillaDeParametrosDeInventario,
 		semillaDeMotivosAjuste,
+		semillaDeMinimos,
 	],
 });

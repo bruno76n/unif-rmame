@@ -9,7 +9,8 @@
  * recepciones-en-aduana.md («La tabla `recepciones`», «La tabla `recepcion_lineas`») y surtido-y-despachos.md («La
  * tabla `despachos`»)
  * Fase 14 · docs/modulos/inventario/diferencias-ajustes-y-mermas.md («La tabla `diferencias`», «La tabla `ajustes`»,
- * «La tabla `ajuste_lineas`») y conteos.md («La tabla `conteos`», «La tabla `conteo_lineas`»)
+ * «La tabla `ajuste_lineas`»), conteos.md («La tabla `conteos`», «La tabla `conteo_lineas`») y minimos-y-reabasto.md
+ * («La tabla `minimos`», «La tabla `sugerencias_reabasto`»)
  *
  * `ubicaciones` nace en la fase 4 con su siembra porque antes la usan los parámetros, las impresoras, las
  * cuentas, los aparatos y las personas. El libro solo crece: el rol de la app no lo puede cambiar.
@@ -50,7 +51,7 @@ import { materiales, ordenCompraLineas, ordenesCompra, proveedores } from "../co
 import { autorizaciones } from "../direccion/tablas.ts";
 import { recetaVersiones } from "../patronaje/tablas.ts";
 import { personas } from "../personal/tablas.ts";
-import { cortes, lotes } from "../produccion/tablas.ts";
+import { cortes, lotes, ordenesProduccion } from "../produccion/tablas.ts";
 
 /** Cada lugar donde puede estar una pieza: Aduana, Bodega, las tiendas, el Taller y los dos de paso. */
 export const ubicaciones = pgTable(
@@ -1255,5 +1256,66 @@ export const conteoLineas = pgTable(
 		uniqueIndex("conteo_lineas_variante_del_conteo").on(tabla.conteoId, tabla.varianteId),
 		index("conteo_lineas_variante").on(tabla.varianteId),
 		check("conteo_lineas_contadas", sql`${tabla.piezasContadas} >= 0`),
+	],
+);
+
+/** Los dos niveles de mínimo: las tallas de mayor venta y las demás. */
+export const nivelesDeMinimo = ["mayor_venta", "demas"] as const;
+
+/** El mínimo de existencia de una ubicación y un nivel: el vigente es el que no tiene baja. */
+export const minimos = pgTable(
+	"minimos",
+	{
+		id: uuid("id").primaryKey(),
+		ubicacionId: uuid("ubicacion_id")
+			.notNull()
+			.references(() => ubicaciones.id),
+		nivel: text("nivel", { enum: nivelesDeMinimo }).notNull(),
+		piezas: integer("piezas").notNull(),
+		bajaEn: momento("baja_en"),
+		bajaPor: uuid("baja_por").references((): AnyPgColumn => usuarios.id),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		uniqueIndex("minimos_vigente").on(tabla.ubicacionId, tabla.nivel).where(sql`${tabla.bajaEn} is null`),
+		check("minimos_nivel", sql`${tabla.nivel} in (${valores(nivelesDeMinimo)})`),
+		check("minimos_piezas", sql`${tabla.piezas} > 0`),
+	],
+);
+
+/** La sugerencia de fabricar de Bodega: qué variante, para qué ubicación y cuántas piezas. */
+export const sugerenciasReabasto = pgTable(
+	"sugerencias_reabasto",
+	{
+		id: uuid("id").primaryKey(),
+		varianteId: uuid("variante_id")
+			.notNull()
+			.references(() => variantes.id),
+		ubicacionId: uuid("ubicacion_id")
+			.notNull()
+			.references(() => ubicaciones.id),
+		piezas: integer("piezas").notNull(),
+		estado: text("estado", { enum: ["por_decidir", "levantada"] })
+			.notNull()
+			.default("por_decidir"),
+		ordenProduccionId: uuid("orden_produccion_id").references((): AnyPgColumn => ordenesProduccion.id),
+		loteId: uuid("lote_id").references((): AnyPgColumn => lotes.id),
+		decididaEn: momento("decidida_en"),
+		decididaPor: uuid("decidida_por").references((): AnyPgColumn => usuarios.id),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		index("sugerencias_reabasto_por_decidir")
+			.on(tabla.ubicacionId, tabla.estado)
+			.where(sql`${tabla.estado} = 'por_decidir'`),
+		index("sugerencias_reabasto_variante").on(tabla.varianteId),
+		index("sugerencias_reabasto_lote").on(tabla.loteId),
+		check("sugerencias_reabasto_piezas", sql`${tabla.piezas} > 0`),
+		check("sugerencias_reabasto_estado", sql`${tabla.estado} in ('por_decidir', 'levantada')`),
+		check(
+			"sugerencias_reabasto_levantada",
+			sql`(${tabla.estado} = 'levantada') = (${tabla.ordenProduccionId} is not null and ${tabla.loteId} is not null
+				and ${tabla.decididaEn} is not null and ${tabla.decididaPor} is not null)`,
+		),
 	],
 );

@@ -15,6 +15,7 @@ import { definirModulo } from "../../nucleo/modulos.ts";
 import { accionAgregarALista } from "./acciones/agregar-a-lista.ts";
 import { accionAplicarComandoRetenido } from "./acciones/aplicar-comando-retenido.ts";
 import { accionCambiarDepartamentos } from "./acciones/cambiar-departamentos.ts";
+import { accionCambiarMinimo } from "./acciones/cambiar-minimo.ts";
 import { accionCambiarParametro } from "./acciones/cambiar-parametro.ts";
 import { accionCambiarPermisoFino } from "./acciones/cambiar-permiso-fino.ts";
 import { accionCancelarCodigoRegistro } from "./acciones/cancelar-codigo-registro.ts";
@@ -74,6 +75,7 @@ export default definirModulo({
 	nombre: "admin",
 	acciones: [
 		accionCambiarParametro,
+		accionCambiarMinimo,
 		accionAgregarALista,
 		accionEditarEmpresa,
 		accionMarcarAlertaRevisada,

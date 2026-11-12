@@ -2,6 +2,7 @@
  * Los parámetros de `inventario`.
  * Fase 9 · docs/modulos/inventario/traspasos.md, reservas.md y existencias-y-cuadre.md («Parámetros»)
  * Fase 11 · docs/modulos/inventario/material-en-bodega.md y recepciones-en-aduana.md («Parámetros»)
+ * Fase 14 · docs/modulos/inventario/minimos-y-reabasto.md («Parámetros»)
  *
  * `inventario.ubicacion_consumibles` guarda el tipo de la ubicación (`bodega`, `taller` o `aduana`): hay una de
  * cada una.
@@ -167,5 +168,25 @@ export const semillaDeParametrosDeInventario = semillaDeParametros("inventario",
 		inicial: 3,
 		minimo: 0,
 		orden: 20,
+	},
+	{
+		clave: "inventario.factor_meta_reabasto",
+		seccion: "parametro",
+		nombre: "Factor de la meta del reabasto",
+		explicacion: "La meta de una talla es su mínimo por esto",
+		tipo: "entero",
+		unidad: "veces",
+		inicial: 2,
+		minimo: 1,
+		orden: 30,
+	},
+	{
+		clave: "inventario.tallas_mayor_venta",
+		seccion: "parametro",
+		nombre: "Tallas de mayor venta",
+		explicacion: "Las tallas que llevan el mínimo de mayor venta: sus nombres, separados por comas",
+		tipo: "texto",
+		inicial: "8,10,12,M",
+		orden: 31,
 	},
 ]);

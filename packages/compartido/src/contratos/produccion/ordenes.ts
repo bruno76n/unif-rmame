@@ -42,3 +42,25 @@ export const crearOrden = definirAccion({
 		{ codigo: "destino_no_valido", mensaje: "Escoge para quién es: temporada o una tienda." },
 	],
 });
+
+/** Producción levanta una orden con las sugerencias de Bodega de una prenda y una ubicación. */
+export const levantarOrdenSugerencia = definirAccion({
+	nombre: "produccion.levantar_orden_sugerencia",
+	descripcion: "Levanta una orden con las sugerencias de Bodega de una prenda y una ubicación, por talla redondeada",
+	entrada: z.object({
+		sugerencia_ids: z.array(z.uuid()).min(1, "Escoge las sugerencias.").describe("Las sugerencias por decidir"),
+	}),
+	salida: z.object({
+		orden_produccion_id: z.uuid().describe("La orden"),
+		folio: z.string().describe("Su OP-"),
+		lote_id: z.uuid().describe("Su lote por cortar"),
+		lote_folio: z.string().describe("Su L-"),
+	}),
+	permiso: { departamento: "produccion" },
+	errores: [
+		{ codigo: "sugerencia_ya_decidida", mensaje: "Esa sugerencia ya se levantó: {OP}." },
+		{ codigo: "sugerencias_mezcladas", mensaje: "Las sugerencias deben ser de una prenda y una ubicación." },
+		{ codigo: "talla_descontinuada", mensaje: "La talla {t} ya no se fabrica." },
+		{ codigo: "prenda_no_se_fabrica", mensaje: "{prenda} no pasa por el taller." },
+	],
+});

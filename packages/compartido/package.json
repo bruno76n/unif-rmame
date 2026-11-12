@@ -30,6 +30,7 @@
 		"./contratos/inventario/diferencias": "./src/contratos/inventario/diferencias.ts",
 		"./contratos/inventario/corte": "./src/contratos/inventario/corte.ts",
 		"./contratos/inventario/excepciones": "./src/contratos/inventario/excepciones.ts",
+		"./contratos/inventario/reabasto": "./src/contratos/inventario/reabasto.ts",
 		"./contratos/inventario/recepciones": "./src/contratos/inventario/recepciones.ts",
 		"./contratos/inventario/taller": "./src/contratos/inventario/taller.ts",
 		"./contratos/catalogo/listas": "./src/contratos/catalogo/listas.ts",

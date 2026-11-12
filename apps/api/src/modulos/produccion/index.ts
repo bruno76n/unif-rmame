@@ -6,7 +6,7 @@
 import { definirModulo } from "../../nucleo/modulos.ts";
 import { accionCerrarCorte, accionImprimirEtiquetasBulto } from "./acciones/corte.ts";
 import { accionAgregarOperacionFlujo, accionCrearFlujo, accionQuitarOperacionFlujo } from "./acciones/flujos.ts";
-import { accionCrearOrden } from "./acciones/ordenes.ts";
+import { accionCrearOrden, accionLevantarOrdenSugerencia } from "./acciones/ordenes.ts";
 import {
 	accionCancelarRegistro,
 	accionRegistrarBloqueoPin,
@@ -44,6 +44,7 @@ export default definirModulo({
 		accionAgregarOperacionFlujo,
 		accionQuitarOperacionFlujo,
 		accionCrearOrden,
+		accionLevantarOrdenSugerencia,
 		accionCerrarCorte,
 		accionImprimirEtiquetasBulto,
 		accionRegistrarOperacion,

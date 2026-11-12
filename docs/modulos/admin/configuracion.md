@@ -265,3 +265,5 @@ Dentro de una acción, cada clave se lee una sola vez y se recuerda hasta que la
 - **La siembra de prueba** (parámetros de cada tipo, dos listas y la empresa) está en `nucleo/pruebas/modulos/prueba/siembra.ts`.
 
 **Fase 10.** «Unidades de material» la siembra `modulos/compras/siembra.ts`, con sus seis unidades. Las reglas propias de esa lista se prueban con ella: el módulo de prueba ya no siembra una propia (decisión 516).
+
+**Fase 14, parte 4.** `admin.cambiar_minimo` (`acciones/cambiar-minimo.ts`, contrato en `packages/compartido/src/contratos/admin/configuracion.ts`), solo de la dueña: llama `inventario.guardar_minimo` con la versión del vigente y deja su bitácora, de su propio módulo (decisión 650). Lo prueba `acciones/cambiar-minimo.prueba.ts`.
