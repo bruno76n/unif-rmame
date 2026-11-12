@@ -163,3 +163,5 @@ Nunca bajan el pago por día, el puesto, correos ni nada de las cuentas. Asignar
 - **Las pruebas:** `modulos/personal/acciones/editar-persona.prueba.ts` (el alta con y sin el permiso; los errores de la ficha; editar sin el permiso; la ficha recortada y su consulta sensible; `tiene_cuenta`) y `dar-baja-persona.prueba.ts` (la baja, su motivo, la reactivación y la dueña); el PIN anulado al dar de baja o salir del Taller, «PIN del taller» y lo que baja a la tablet, en las pruebas del [PIN del taller](pin-del-taller.md#cómo-está-hecho).
 
 **Fase 13.** `dar_baja_persona` llama también `mantenimiento.soltar_maquinas_de_persona`: las máquinas que traía quedan sin quién las trae, y su bitácora dice cuántas (`maquinas_soltadas`, decisión 629).
+
+**Fase 17, parte 4.** La lectura `personal.fichas_para_nomina` (`lecturas/nomina.ts`) regresa, por persona, su nombre, su área y su tienda, su puesto, su forma de pago, su pago por día, su ingreso y el día de su baja en hora de México. La pide Contaduría con «ven sueldos y tarifas».

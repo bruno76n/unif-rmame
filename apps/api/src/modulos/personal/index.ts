@@ -24,6 +24,7 @@ import { copiarTarifasFlujo, tocarTarifasOperacion } from "./internas/tarifas.ts
 import { datosDePersona } from "./lecturas/datos-de-persona.ts";
 import { diasDeSemana } from "./lecturas/dias-de-semana.ts";
 import { entraAlSistema } from "./lecturas/entra-al-sistema.ts";
+import { asistenciaParaNomina, fichasParaNomina } from "./lecturas/nomina.ts";
 import { resumenPin } from "./lecturas/resumen-pin.ts";
 import { tarifaVigente } from "./lecturas/tarifa-vigente.ts";
 import { semillaDeParametrosDePersonal } from "./parametros.ts";
@@ -59,6 +60,8 @@ export default definirModulo({
 		datos_de_persona: datosDePersona,
 		dias_de_semana: diasDeSemana,
 		tarifa_vigente: tarifaVigente,
+		asistencia_para_nomina: asistenciaParaNomina,
+		fichas_para_nomina: fichasParaNomina,
 	},
 	trabajos: [abrirSemanaAsistencia],
 	semillas: [semillaDeParametrosDePersonal],

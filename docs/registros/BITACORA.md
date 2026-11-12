@@ -109,3 +109,4 @@ La línea de la bitácora se escribe al final, con el resultado ya conocido. Esc
 | 12 nov 2026 | 17 | 1 · Cuentas por pagar y facturas de proveedor | [2026-11-12-fase-17](sesiones/2026-11-12-fase-17.md) |
 | 12 nov 2026 | 17 | 2 · Deudas, compensaciones y depósitos a terceros | [2026-11-12-fase-17](sesiones/2026-11-12-fase-17.md) |
 | 12 nov 2026 | 17 | 3 · Gastos | [2026-11-12-fase-17](sesiones/2026-11-12-fase-17.md) |
+| 12 nov 2026 | 17 | 4 · Nómina | [2026-11-12-fase-17](sesiones/2026-11-12-fase-17.md) |

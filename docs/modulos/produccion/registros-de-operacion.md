@@ -197,3 +197,5 @@ Usa también `general.largo_minimo_motivo` y, de Personal, `personal.pin_intento
 - **Pruebas:** `acciones/registrar-operacion.prueba.ts` (la hora y la tarifa, lo que se aparta, el tope, terminar y reabrir, cancelar lo que sobró sin reabrir, el lote revisado, los registros del corte, la tarifa que llega después), `acciones/tomar-consumible.prueba.ts` (también el PIN) y `tope-bulto.prueba.ts` con fast-check.
 
 **Fase 13, parte 1.** La lectura `produccion.persona_que_la_hizo` (`lecturas/persona-que-la-hizo.ts`): la persona con más buenas vigentes de esa operación en los bultos de esa talla (si empatan, la del primer registro), o la de base. Lo prueba `lecturas/persona-que-la-hizo.prueba.ts`.
+
+**Fase 17, parte 4.** Contaduría lee `produccion.registros_para_nomina` desde `contaduria.pagar_nomina`, que pide «ven sueldos y tarifas»: así la tarifa de la lectura nunca llega sin ese permiso.

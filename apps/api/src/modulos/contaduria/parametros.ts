@@ -3,7 +3,7 @@
  * «Cerca del límite» o «Detenido», los tramos de la antigüedad de saldos y la ventana de los pagos.
  * Fase 15 · docs/modulos/contaduria/credito-de-clientes.md y docs/modulos/contaduria/cuentas-por-cobrar.md
  * («Parámetros»)
- * Fase 17 · docs/modulos/contaduria/cuentas-por-pagar.md («Parámetros»)
+ * Fase 17 · docs/modulos/contaduria/cuentas-por-pagar.md y nomina.md («Parámetros»)
  */
 
 import { semillaDeParametros } from "../../nucleo/parametros.ts";
@@ -85,5 +85,34 @@ export const semillaDeParametrosDeContaduria = semillaDeParametros("contaduria",
 		inicial: 7,
 		minimo: 1,
 		orden: 7,
+	},
+	{
+		clave: "nomina.dia_pago",
+		seccion: "decision_operacion",
+		nombre: "Día de pago de la nómina",
+		explicacion: "El día en que se paga la nómina de la semana que terminó",
+		tipo: "opcion",
+		opciones: ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"],
+		inicial: "martes",
+		orden: 1,
+	},
+	{
+		clave: "nomina.pagar_piezas_danadas",
+		seccion: "decision_operacion",
+		nombre: "Pagar las piezas dañadas",
+		explicacion: "Si las piezas dañadas se pagan como las buenas",
+		tipo: "booleano",
+		inicial: false,
+		orden: 2,
+	},
+	{
+		clave: "nomina.descuento_mayor_que_lo_ganado",
+		seccion: "decision_operacion",
+		nombre: "Descuento mayor que lo ganado",
+		explicacion: "Qué pasa con lo que no alcanzó a descontarse: se perdona o pasa a la siguiente semana",
+		tipo: "opcion",
+		opciones: ["perdonar", "siguiente_semana"],
+		inicial: "perdonar",
+		orden: 3,
 	},
 ]);

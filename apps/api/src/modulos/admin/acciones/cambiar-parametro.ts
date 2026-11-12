@@ -5,7 +5,9 @@
  * Revisa el valor contra su tipo y sus límites, guarda el nuevo con `estado_decision = decidido`, escribe
  * su historial y su bitácora y guarda `parametro.cambiado`. El mismo valor que ya tenía responde bien sin
  * escribir nada. Si el parámetro decide qué baja a un aparato (lo dice la bajada de su módulo), pide la foto
- * a esos aparatos. Mover la fecha de pago de la nómina llega en la fase 17.
+ * a esos aparatos. Si es el día de pago de la nómina, Contaduría mueve las fechas de pago de las nóminas por pagar y
+ * deja un renglón por cada una.
+ * Fase 17 · `contaduria.mover_fecha_pago_nomina` (docs/modulos/contaduria/nomina.md, regla 12)
  */
 
 import { centavosATexto } from "@uniformame/compartido/calculos/dinero";
@@ -13,6 +15,7 @@ import { cambiarParametro } from "@uniformame/compartido/contratos/admin/configu
 import { centavos } from "@uniformame/compartido/tipos/base";
 import { and, eq, isNull } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
+import { z } from "zod";
 import { revisarVersion, tomarVersion, versionActual } from "../../../nucleo/acciones/pisadas.ts";
 import { errorDeCampo, noExiste } from "../../../nucleo/http/errores.ts";
 import { implementarAccion } from "../../../nucleo/modulos.ts";
@@ -29,6 +32,11 @@ import { parametros, parametrosHistorial } from "../tablas.ts";
 
 /** Un parámetro como lo lee esta acción. */
 type Parametro = typeof parametros.$inferSelect;
+
+/** Lo que regresa `contaduria.mover_fecha_pago_nomina`. */
+const nominasMovidas = z.object({
+	nominas: z.array(z.object({ nomina_id: z.uuid(), descripcion: z.string(), antes: z.string(), despues: z.string() })),
+});
 
 /** Una hora «HH:MM» de 00:00 a 23:59. */
 const horaValida = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -131,6 +139,11 @@ export const accionCambiarParametro = implementarAccion(cambiarParametro, async 
 		.filter(([, tablas]) => tablas.some((tabla) => (tabla.parametros ?? []).includes(antes.clave)))
 		.map(([tipo]) => tipo);
 	if (tipos.length > 0) await pedirLaFoto(contexto, tipos, "parametro");
+	// El día de pago de la nómina mueve las nóminas por pagar, cada una con su renglón y la misma clave.
+	const movidas =
+		antes.clave === "nomina.dia_pago"
+			? nominasMovidas.parse(await contexto.interna("contaduria.mover_fecha_pago_nomina", { dia_pago: nuevo })).nominas
+			: [];
 	const texto =
 		antes.seccion === "decision_operacion"
 			? `${antes.nombre}: ${valorParaLeer(antes, nuevo)}`
@@ -142,6 +155,16 @@ export const accionCambiarParametro = implementarAccion(cambiarParametro, async 
 		antes: anterior,
 		despues: nuevo,
 	});
+	for (const movida of movidas) {
+		contexto.bitacora({
+			descripcion: movida.descripcion,
+			entidad: "nominas",
+			entidadId: movida.nomina_id,
+			antes: { fecha_pago: movida.antes },
+			despues: { fecha_pago: movida.despues },
+		});
+	}
+
 	contexto.guardarEvento({
 		tipo: "parametro.cambiado",
 		datos: { clave: antes.clave, baja_a: antes.bajaA.join(",") },

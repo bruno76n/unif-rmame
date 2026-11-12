@@ -5,8 +5,9 @@
  *
  * Capturar un día bloquea a la persona y comparte la semana: nadie la cierra a la vez, y dos capturas de la
  * misma persona esperan una a la otra. La primera captura no deja bitácora; cambiar un día capturado, sí.
- * Cerrar revisa que no falte ningún día exigido. Reabrir pregunta a Contaduría si su nómina ya se pagó
- * (cuando Contaduría lo ofrece: fase 17).
+ * Cerrar revisa que no falte ningún día exigido y hace nacer su nómina en Contaduría. Reabrir pregunta a Contaduría
+ * si su nómina ya se pagó.
+ * Fase 17 · `contaduria.crear_nomina_semana` al cerrar y `contaduria.estado_nomina_semana` al reabrir
  */
 
 import { textoDeDia } from "@uniformame/compartido/calculos/fechas";
@@ -190,6 +191,12 @@ export const accionCerrarSemanaAsistencia = implementarAccion(
 			.update(asistenciaSemanas)
 			.set({ estado: "cerrada", cerradaEn: contexto.ahora.toString(), cerradaPor: quienCambia(contexto) })
 			.where(eq(asistenciaSemanas.id, semana.id));
+		// Nace su nómina, por pagar (o regresa la que ya tenía, si se reabrió y se volvió a cerrar).
+		await contexto.interna("contaduria.crear_nomina_semana", {
+			asistencia_semana_id: semana.id,
+			fecha_inicio: semana.fechaInicio,
+			fecha_fin: semana.fechaFin,
+		});
 		contexto.bitacora({
 			descripcion: `Cerró la asistencia del ${nombre}`,
 			entidad: "asistencia_semanas",
@@ -228,16 +235,15 @@ export const accionReabrirSemanaAsistencia = implementarAccion(
 		const semana = await leerSemana(contexto, datos.asistencia_semana_id);
 		const nombre = textoDeSemana(semana.fechaInicio, semana.fechaFin);
 		if (semana.estado === "abierta") throw errorDeRegla("semana_abierta", `La semana del ${nombre} está abierta`);
-		// La nómina es de Contaduría (fase 17): mientras no lo ofrezca, ninguna está pagada.
-		const lectura = "contaduria.estado_nomina_semana";
-		if (contexto.hayLectura(lectura)) {
-			const nomina = estadoDeNomina.parse(await contexto.lectura(lectura, { asistencia_semana_id: semana.id }));
-			if (nomina.pagada) {
-				throw errorDeRegla(
-					"nomina_pagada",
-					`La nómina del ${nombre} ya se pagó: la semana ya no se reabre. Corrige en la siguiente`,
-				);
-			}
+		// Una semana con su nómina pagada ya no se reabre (regla 5).
+		const nomina = estadoDeNomina.parse(
+			await contexto.lectura("contaduria.estado_nomina_semana", { asistencia_semana_id: semana.id }),
+		);
+		if (nomina.pagada) {
+			throw errorDeRegla(
+				"nomina_pagada",
+				`La nómina del ${nombre} ya se pagó: la semana ya no se reabre. Corrige en la siguiente`,
+			);
 		}
 		await transaccion
 			.update(asistenciaSemanas)

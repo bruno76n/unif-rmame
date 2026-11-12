@@ -6,8 +6,8 @@
  * docs/modulos/contaduria/cuentas-por-cobrar.md («La tabla `cuentas_por_cobrar`») y
  * docs/modulos/contaduria/pagos-y-saldo-a-favor.md (las tres tablas) y docs/modulos/contaduria/anticipos.md
  * Fase 17 · docs/modulos/contaduria/facturas-de-proveedor.md (las dos tablas), cuentas-por-pagar.md («La tabla
- * `cuentas_por_pagar`»), terceros-y-deudas.md (`compensaciones`, `deudas` y `deuda_mensualidades`) y gastos.md («La
- * tabla `gastos`»)
+ * `cuentas_por_pagar`»), terceros-y-deudas.md (`compensaciones`, `deudas` y `deuda_mensualidades`), gastos.md («La
+ * tabla `gastos`») y nomina.md (las cuatro tablas)
  *
  * Las columnas que apuntan a los clientes, los pedidos y las notas son llaves a las tablas de Ventas; las de las
  * facturas, a los proveedores y las órdenes de Compras.
@@ -22,6 +22,7 @@ import {
 	date,
 	index,
 	integer,
+	numeric,
 	pgTable,
 	text,
 	uniqueIndex,
@@ -33,6 +34,8 @@ import { ordenesCompra, proveedores } from "../compras/tablas.ts";
 import { autorizaciones } from "../direccion/tablas.ts";
 import { ubicaciones } from "../inventario/tablas.ts";
 import { maquinas, servicios } from "../mantenimiento/tablas.ts";
+import { asistenciaSemanas, personas } from "../personal/tablas.ts";
+import { flujoOperaciones, registrosOperacion } from "../produccion/tablas.ts";
 import { clientes, notasCredito, notasEntrega, pedidos } from "../ventas/tablas.ts";
 
 /** Qué es un acreedor nuevo. */
@@ -721,5 +724,189 @@ export const gastos = pgTable(
 			"gastos_cancelado",
 			sql`(${tabla.estado} = 'cancelado') = (${tabla.canceladoEn} is not null and ${tabla.motivoCancelacion} is not null)`,
 		),
+	],
+);
+
+/** Qué pasa con lo que no alcanzó a descontarse. */
+export const destinosNoAlcanzo = ["perdonado", "siguiente_semana"] as const;
+
+/** La nómina de una semana de asistencia: nace por pagar al cerrarla y se paga una sola vez, congelada. */
+export const nominas = pgTable(
+	"nominas",
+	{
+		id: uuid("id").primaryKey(),
+		asistenciaSemanaId: uuid("asistencia_semana_id")
+			.notNull()
+			.references((): AnyPgColumn => asistenciaSemanas.id),
+		fechaInicio: date("fecha_inicio", { mode: "string" }).notNull(),
+		fechaFin: date("fecha_fin", { mode: "string" }).notNull(),
+		fechaPago: date("fecha_pago", { mode: "string" }).notNull(),
+		estado: text("estado").notNull().default("por_pagar"),
+		totalTiempoCentavos: bigint("total_tiempo_centavos", { mode: "number" }),
+		totalPiezasCentavos: bigint("total_piezas_centavos", { mode: "number" }),
+		totalCorreccionesCentavos: bigint("total_correcciones_centavos", { mode: "number" }),
+		totalDescontadoCentavos: bigint("total_descontado_centavos", { mode: "number" }),
+		totalCentavos: bigint("total_centavos", { mode: "number" }),
+		personas: integer("personas"),
+		reglaPiezasDanadas: boolean("regla_piezas_danadas"),
+		reglaDescuentoMayor: text("regla_descuento_mayor"),
+		pagadaEn: momento("pagada_en"),
+		pagadaPor: uuid("pagada_por").references(() => usuarios.id),
+		confirmadoConGoogleEn: momento("confirmado_con_google_en"),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		uniqueIndex("nominas_semana").on(tabla.asistenciaSemanaId),
+		index("nominas_estado").on(tabla.estado, tabla.fechaInicio),
+		check("nominas_estado", sql`${tabla.estado} in ('por_pagar', 'pagada')`),
+		check("nominas_fechas", sql`${tabla.fechaInicio} <= ${tabla.fechaFin} and ${tabla.fechaFin} < ${tabla.fechaPago}`),
+		check("nominas_regla_descuento", sql`${tabla.reglaDescuentoMayor} in ('perdonar', 'siguiente_semana')`),
+		check(
+			"nominas_pagada",
+			sql`(${tabla.estado} = 'pagada') = (${tabla.pagadaEn} is not null)
+				and (${tabla.estado} <> 'pagada' or (${tabla.totalTiempoCentavos} is not null
+					and ${tabla.totalPiezasCentavos} is not null and ${tabla.totalCorreccionesCentavos} is not null
+					and ${tabla.totalDescontadoCentavos} is not null and ${tabla.totalCentavos} >= 0
+					and ${tabla.personas} is not null and ${tabla.reglaPiezasDanadas} is not null
+					and ${tabla.reglaDescuentoMayor} is not null and ${tabla.pagadaPor} is not null
+					and ${tabla.confirmadoConGoogleEn} is not null))`,
+		),
+	],
+);
+
+/** El renglón de una persona en una nómina pagada, con todo lo que se usó, congelado. Solo crece. */
+export const nominaLineas = pgTable(
+	"nomina_lineas",
+	{
+		id: uuid("id").primaryKey(),
+		nominaId: uuid("nomina_id")
+			.notNull()
+			.references(() => nominas.id),
+		personaId: uuid("persona_id")
+			.notNull()
+			.references((): AnyPgColumn => personas.id),
+		area: text("area").notNull(),
+		ubicacionId: uuid("ubicacion_id").references((): AnyPgColumn => ubicaciones.id),
+		puesto: text("puesto").notNull(),
+		formaPago: text("forma_pago").notNull(),
+		bajaEn: date("baja_en", { mode: "string" }),
+		dias: numeric("dias", { precision: 3, scale: 1 }).notNull().default("0"),
+		pagoDiaCentavos: bigint("pago_dia_centavos", { mode: "number" }),
+		importeTiempoCentavos: bigint("importe_tiempo_centavos", { mode: "number" }).notNull(),
+		piezas: integer("piezas").notNull(),
+		importePiezasCentavos: bigint("importe_piezas_centavos", { mode: "number" }).notNull(),
+		correccionesCentavos: bigint("correcciones_centavos", { mode: "number" }).notNull(),
+		brutoCentavos: bigint("bruto_centavos", { mode: "number" }).notNull(),
+		descuentoNominaId: uuid("descuento_nomina_id").references((): AnyPgColumn => descuentosNomina.id),
+		descuentoCentavos: bigint("descuento_centavos", { mode: "number" }).notNull(),
+		descuentoMotivo: text("descuento_motivo"),
+		arrastreCentavos: bigint("arrastre_centavos", { mode: "number" }).notNull(),
+		descontadoCentavos: bigint("descontado_centavos", { mode: "number" }).notNull(),
+		noAlcanzoCentavos: bigint("no_alcanzo_centavos", { mode: "number" }).notNull(),
+		destinoNoAlcanzo: text("destino_no_alcanzo"),
+		totalCentavos: bigint("total_centavos", { mode: "number" }).notNull(),
+		medioPago: text("medio_pago"),
+		referenciaPago: text("referencia_pago"),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		uniqueIndex("nomina_lineas_persona").on(tabla.nominaId, tabla.personaId),
+		index("nomina_lineas_persona_id").on(tabla.personaId),
+		check("nomina_lineas_forma_pago", sql`${tabla.formaPago} in ('tiempo', 'pieza', 'mixta')`),
+		check("nomina_lineas_dias", sql`${tabla.dias} >= 0`),
+		check("nomina_lineas_correcciones", sql`${tabla.correccionesCentavos} <= 0`),
+		check(
+			"nomina_lineas_bruto",
+			sql`${tabla.brutoCentavos} = ${tabla.importeTiempoCentavos} + ${tabla.importePiezasCentavos} + ${tabla.correccionesCentavos}`,
+		),
+		check(
+			"nomina_lineas_descuento",
+			sql`${tabla.descuentoCentavos} >= 0 and ${tabla.arrastreCentavos} >= 0 and ${tabla.descontadoCentavos} >= 0
+				and ${tabla.noAlcanzoCentavos} >= 0
+				and ${tabla.descontadoCentavos} + ${tabla.noAlcanzoCentavos}
+					= ${tabla.descuentoCentavos} + ${tabla.arrastreCentavos} + greatest(0, -${tabla.brutoCentavos})`,
+		),
+		check(
+			"nomina_lineas_total",
+			sql`${tabla.totalCentavos} >= 0
+				and ${tabla.totalCentavos} = greatest(0, ${tabla.brutoCentavos}) - ${tabla.descontadoCentavos}`,
+		),
+		check(
+			"nomina_lineas_no_alcanzo",
+			sql`${tabla.destinoNoAlcanzo} in (${valores(destinosNoAlcanzo)})
+				and (${tabla.destinoNoAlcanzo} is not null) = (${tabla.noAlcanzoCentavos} > 0)`,
+		),
+		check(
+			"nomina_lineas_medio",
+			sql`${tabla.medioPago} in ('efectivo', 'transferencia') and char_length(${tabla.referenciaPago}) between 3 and 30`,
+		),
+	],
+);
+
+/** Cada registro de la tablet que entró a una nómina, con su tarifa congelada: se paga y se corrige una sola vez. */
+export const nominaLineaPiezas = pgTable(
+	"nomina_linea_piezas",
+	{
+		id: uuid("id").primaryKey(),
+		nominaLineaId: uuid("nomina_linea_id")
+			.notNull()
+			.references(() => nominaLineas.id),
+		registroOperacionId: uuid("registro_operacion_id")
+			.notNull()
+			.references((): AnyPgColumn => registrosOperacion.id),
+		tipo: text("tipo").notNull(),
+		fecha: date("fecha", { mode: "string" }).notNull(),
+		flujoOperacionId: uuid("flujo_operacion_id")
+			.notNull()
+			.references((): AnyPgColumn => flujoOperaciones.id),
+		piezasBuenas: integer("piezas_buenas").notNull(),
+		piezasDanadas: integer("piezas_danadas").notNull(),
+		piezasPagadas: integer("piezas_pagadas").notNull(),
+		tarifaCentavos: bigint("tarifa_centavos", { mode: "number" }).notNull(),
+		importeCentavos: bigint("importe_centavos", { mode: "number" }).notNull(),
+		sePaga: boolean("se_paga").notNull(),
+		motivoNoPago: text("motivo_no_pago"),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		uniqueIndex("nomina_linea_piezas_registro").on(tabla.registroOperacionId, tabla.tipo),
+		index("nomina_linea_piezas_linea").on(tabla.nominaLineaId),
+		check("nomina_linea_piezas_tipo", sql`${tabla.tipo} in ('pago', 'correccion')`),
+		check(
+			"nomina_linea_piezas_importe",
+			sql`${tabla.piezasPagadas} >= 0 and ${tabla.tarifaCentavos} >= 0
+				and ((${tabla.tipo} = 'pago' and ${tabla.importeCentavos} >= 0)
+					or (${tabla.tipo} = 'correccion' and ${tabla.importeCentavos} <= 0))`,
+		),
+		check(
+			"nomina_linea_piezas_no_pago",
+			sql`${tabla.motivoNoPago} in ('cobra_por_tiempo') and (${tabla.motivoNoPago} is null) = ${tabla.sePaga}`,
+		),
+	],
+);
+
+/** El descuento semanal de una persona: un monto fijo por semana, con su motivo. Uno vigente a lo más. */
+export const descuentosNomina = pgTable(
+	"descuentos_nomina",
+	{
+		id: uuid("id").primaryKey(),
+		personaId: uuid("persona_id")
+			.notNull()
+			.references((): AnyPgColumn => personas.id),
+		montoSemanalCentavos: bigint("monto_semanal_centavos", { mode: "number" }).notNull(),
+		motivo: text("motivo").notNull(),
+		estado: text("estado").notNull().default("vigente"),
+		terminadoEn: momento("terminado_en"),
+		terminadoPor: uuid("terminado_por").references(() => usuarios.id),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		uniqueIndex("descuentos_nomina_vigente").on(tabla.personaId).where(sql`${tabla.estado} = 'vigente'`),
+		check(
+			"descuentos_nomina_monto",
+			sql`${tabla.montoSemanalCentavos} > 0 and ${tabla.montoSemanalCentavos} % 100 = 0`,
+		),
+		check("descuentos_nomina_estado", sql`${tabla.estado} in ('vigente', 'terminado')`),
+		check("descuentos_nomina_terminado", sql`(${tabla.estado} = 'terminado') = (${tabla.terminadoEn} is not null)`),
 	],
 );

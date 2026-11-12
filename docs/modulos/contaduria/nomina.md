@@ -219,4 +219,27 @@ Usa también `general.largo_minimo_motivo`.
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 17.*
+**Fase 17, parte 4.**
+
+- **Las tablas** `nominas`, `nomina_lineas`, `nomina_linea_piezas` y `descuentos_nomina` están en `apps/api/src/modulos/contaduria/tablas.ts` (migración `0061`), con sus CHECK. Los renglones y sus piezas solo crecen. Cada renglón cuadra con su bruto, lo descontado, lo que no alcanzó y su total, que nunca baja de 0. El único (`registro_operacion_id`, `tipo`) hace que un registro se pague y se corrija una sola vez.
+- **La cuenta** es `contarNomina` (`dominio/cuenta-nomina.ts`), una función pura con las reglas 3 a 8. Medio día con un pago impar se redondea una vez, al total de la semana (decisión 711). Quien cobra por tiempo registra sus piezas sin cobrar («cobra por tiempo»).
+- **Lo que junta** `cuentaDeLaNomina` (`dominio/nomina.ts`):
+  - de Personal, `personal.asistencia_para_nomina` y `personal.fichas_para_nomina`; se usa la ficha como está al pagar (decisión 713);
+  - de Producción, `produccion.registros_para_nomina`, desde el inicio de la semana de la última nómina pagada hasta ahora, con un día de holgura (decisión 712);
+  - de sus tablas, lo ya pagado o corregido, lo que pasó de la anterior y los descuentos vigentes;
+  - las dos opciones, de sus parámetros.
+- **Las acciones** (`acciones/nomina.ts`, contratos en `packages/compartido/src/contratos/contaduria/nomina.ts`), las dos con «ven sueldos y tarifas»:
+  - `pagar_nomina` toma un candado para toda la nómina y la fila con su versión, y revisa la semana cerrada, el orden y el total visto. Escribe la cuenta congelada y deja la bitácora como plantilla con los totales en campos de sueldo (`camposDeSueldo` de Contaduría), así queda `sensible_sueldos`.
+  - `guardar_descuento_semanal` toma un candado por persona y la versión del vigente; lo termina y crea el nuevo. Su bitácora tapa los montos.
+- **Las internas** (`internas/nomina.ts`):
+  - `crear_nomina_semana` la llama `personal.cerrar_semana_asistencia`, con su fecha de pago (`fechaDePago`);
+  - `mover_fecha_pago_nomina` la llama `admin.cambiar_parametro` y regresa el renglón de bitácora de cada nómina que movió;
+  - la lectura `estado_nomina_semana` la usa `personal.reabrir_semana_asistencia`.
+- **Los parámetros** `nomina.dia_pago`, `nomina.pagar_piezas_danadas` y `nomina.descuento_mayor_que_lo_ganado` están en `contaduria/parametros.ts`.
+- **Pruebas:**
+  - `dominio/cuenta-nomina.prueba.ts`: el ejemplo del archivo, las reglas y, con fast-check, el total y cada registro una vez;
+  - `acciones/pagar-nomina.prueba.ts`: Google, el total visto, el orden, la semana cerrada, dos a la vez, congelada, los tardíos y las correcciones, sin permiso y la bitácora;
+  - `acciones/guardar-descuento-semanal.prueba.ts`;
+  - `internas/mover-fecha-pago-nomina.prueba.ts`;
+  - `nomina.azar.prueba.ts`: varias semanas al azar con registros tardíos, tarifas después y cancelaciones.
+  - Las ayudas están en `nucleo/pruebas/nomina-de-prueba.ts`. La cuenta de prueba `contaduria_sueldos` tiene «ven sueldos y tarifas». El módulo `contaduria` de prueba se quitó (decisión 714).

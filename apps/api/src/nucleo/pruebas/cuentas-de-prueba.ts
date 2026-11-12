@@ -130,6 +130,17 @@ export const quienesDePrueba: Record<string, QuienLlama> = {
 		permisosFinos: [],
 		confirmadoConGoogleEn: undefined,
 	},
+	// Contaduría con «ven sueldos y tarifas»: la que paga la nómina y pone descuentos.
+	contaduria_sueldos: {
+		tipo: "cuenta",
+		usuarioId: "01936f2e-0000-7000-8000-000000000080",
+		sesionId: "01936f2e-0000-7000-8000-000000000081",
+		esDuena: false,
+		esSoporte: false,
+		departamentos: ["contaduria"],
+		permisosFinos: ["ven_sueldos_y_tarifas"],
+		confirmadoConGoogleEn: undefined,
+	},
 	compras: {
 		tipo: "cuenta",
 		usuarioId: "01936f2e-0000-7000-8000-000000000040",

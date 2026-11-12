@@ -5,9 +5,8 @@
  * permitidas»)
  * Fase 15 · docs/modulos/contaduria/credito-de-clientes.md, cuentas-por-cobrar.md, pagos-y-saldo-a-favor.md y
  * anticipos.md
- * Fase 17 · docs/modulos/contaduria/facturas-de-proveedor.md, cuentas-por-pagar.md, terceros-y-deudas.md y gastos.md
- *
- * La nómina llega en la parte 4 de la fase 17.
+ * Fase 17 · docs/modulos/contaduria/facturas-de-proveedor.md, cuentas-por-pagar.md, terceros-y-deudas.md, gastos.md y
+ * nomina.md
  */
 
 import { definirModulo } from "../../nucleo/modulos.ts";
@@ -25,6 +24,7 @@ import {
 	accionRegistrarNotaCreditoProveedor,
 } from "./acciones/facturas.ts";
 import { accionCancelarGasto, accionRegistrarGasto } from "./acciones/gastos.ts";
+import { accionGuardarDescuentoSemanal, accionPagarNomina } from "./acciones/nomina.ts";
 import { accionCancelarPago, accionRegistrarPagoRecibido } from "./acciones/pagos.ts";
 import { accionPagarCuentaPorPagar, accionPedirPagoLoRecibido } from "./acciones/por-pagar.ts";
 import { accionAplicarSaldoAFavor, accionDevolverSaldoAFavor } from "./acciones/saldo-favor.ts";
@@ -33,6 +33,7 @@ import { abrirCreditoCliente } from "./internas/credito.ts";
 import { aplicarNotaCredito, crearCuentaPorCobrar } from "./internas/cuentas.ts";
 import { aplicarDecisionPagoFueraDeLoNormal, revisarFacturasDeOrden } from "./internas/facturas.ts";
 import { registrarGastoMantenimiento } from "./internas/gastos.ts";
+import { crearNominaSemana, estadoNominaSemana, moverFechaPagoNomina } from "./internas/nomina.ts";
 import { crearTercero, renombrarTercero } from "./internas/terceros.ts";
 import { anticipoDelPedidoLectura } from "./lecturas/anticipos.ts";
 import { creditoDeCliente } from "./lecturas/credito.ts";
@@ -64,6 +65,8 @@ export default definirModulo({
 		accionAplicarDepositoATercero,
 		accionRegistrarGasto,
 		accionCancelarGasto,
+		accionGuardarDescuentoSemanal,
+		accionPagarNomina,
 	],
 	internas: {
 		crear_tercero: crearTercero,
@@ -77,6 +80,8 @@ export default definirModulo({
 		revisar_facturas_de_orden: revisarFacturasDeOrden,
 		aplicar_decision_pago_fuera_de_lo_normal: aplicarDecisionPagoFueraDeLoNormal,
 		registrar_gasto_mantenimiento: registrarGastoMantenimiento,
+		crear_nomina_semana: crearNominaSemana,
+		mover_fecha_pago_nomina: moverFechaPagoNomina,
 	},
 	efectosDeAutorizacion: { pago_fuera_de_lo_normal: "aplicar_decision_pago_fuera_de_lo_normal" },
 	lecturas: {
@@ -86,6 +91,7 @@ export default definirModulo({
 		saldo_por_cobrar_de_cliente: saldoPorCobrarDeCliente,
 		anticipo_del_pedido: anticipoDelPedidoLectura,
 		facturacion_de_orden: facturacionDeOrden,
+		estado_nomina_semana: estadoNominaSemana,
 	},
 	semillas: [semillaDeParametrosDeContaduria, semillaDeCuentasFabrica, semillaDeListasDeGastos],
 	// El crédito, las cuentas, los pagos y el saldo a favor llevan montos: solo Contaduría. Ventas recibe el aviso de que
@@ -107,5 +113,18 @@ export default definirModulo({
 		deudas: ["contaduria"],
 		deuda_mensualidades: ["contaduria"],
 		gastos: ["contaduria"],
+		nominas: ["contaduria"],
+		nomina_lineas: ["contaduria"],
+		nomina_linea_piezas: ["contaduria"],
+		descuentos_nomina: ["contaduria"],
 	},
+	// Los montos de la nómina y de los descuentos: la bitácora que los trae es sensible (`sensible_sueldos`).
+	camposDeSueldo: [
+		"descuento_semanal_centavos",
+		"total_nomina_centavos",
+		"total_tiempo_nomina_centavos",
+		"total_piezas_nomina_centavos",
+		"total_correcciones_nomina_centavos",
+		"total_descontado_nomina_centavos",
+	],
 });

@@ -1,15 +1,14 @@
 /**
  * Prueba de reabrir una semana: solo la dueña, con motivo, y nunca con la nómina pagada.
  * Fase 7 · docs/fases/07-autorizaciones-y-personal.md (parte 5)
- *
- * La nómina pagada la da el módulo `contaduria` de prueba (`nucleo/pruebas/modulos/contaduria`) hasta que
- * llegue el de verdad en la fase 17.
+ * Fase 17 · docs/fases/17-contaduria-por-pagar-facturas-gastos-y-nomina.md (criterio «una semana con la nómina pagada
+ * ya no se reabre»), con la nómina pagada de verdad
  */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
-import { nominasPagadasDePrueba } from "../../../nucleo/pruebas/modulos/contaduria/index.ts";
+import { pagarNominaDePrueba, semanaConNomina } from "../../../nucleo/pruebas/nomina-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 
 describe("solo la dueña reabre una semana cerrada, con motivo, y nunca con la nómina pagada", () => {
@@ -67,9 +66,11 @@ describe("solo la dueña reabre una semana cerrada, con motivo, y nunca con la n
 		expect((await reabrir(id, "Otra vez")).cuerpo).toMatchObject({ codigo: "semana_abierta" });
 	});
 
-	it("con su nómina pagada no se reabre: nomina_pagada, y la semana sigue cerrada", async () => {
-		const id = await semanaCerrada("2026-10-12", "2026-10-17");
-		nominasPagadasDePrueba.add(id);
+	it("Una semana con la nómina pagada ya no se reabre: nomina_pagada, y la semana sigue cerrada", async () => {
+		const semana = await semanaConNomina(servidor, "2026-10-12");
+		const pagada = await pagarNominaDePrueba(servidor, semana.nominaId);
+		expect(pagada.estado).toBe(200);
+		const id = semana.semanaId;
 		const respuesta = await reabrir(id, "Faltó un día");
 		expect(respuesta.cuerpo).toMatchObject({
 			codigo: "nomina_pagada",

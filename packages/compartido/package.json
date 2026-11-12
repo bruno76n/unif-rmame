@@ -39,6 +39,7 @@
 		"./contratos/catalogo/tallas": "./src/contratos/catalogo/tallas.ts",
 		"./contratos/contaduria/credito": "./src/contratos/contaduria/credito.ts",
 		"./contratos/contaduria/gastos": "./src/contratos/contaduria/gastos.ts",
+		"./contratos/contaduria/nomina": "./src/contratos/contaduria/nomina.ts",
 		"./contratos/contaduria/pagos": "./src/contratos/contaduria/pagos.ts",
 		"./contratos/contaduria/por-pagar": "./src/contratos/contaduria/por-pagar.ts",
 		"./contratos/contaduria/saldo-favor": "./src/contratos/contaduria/saldo-favor.ts",
