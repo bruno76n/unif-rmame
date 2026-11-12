@@ -67,6 +67,7 @@ function aJson(esquema: z.ZodType, io: "input" | "output"): EsquemaJson {
 
 /** Los campos cuya forma revisa una transformación o una regla que el esquema de entrada no dice. */
 const ejemplosPorCampo: Record<string, string> = {
+	cantidad: "1",
 	codigo: "100001",
 	correo: "alguien@alameda.invalid",
 	rfc: "UAL010101AB1",

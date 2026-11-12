@@ -14,13 +14,14 @@ import {
 	deMilesimos,
 } from "@uniformame/compartido/calculos/cuenta-material";
 import { recibirDeProveedor } from "@uniformame/compartido/contratos/inventario/recepciones";
-import { and, eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
 import { quienCambia } from "../../../nucleo/acciones/comunes.ts";
 import { ErrorDeApi, errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
-import { type ContextoDeAccion, implementarAccion } from "../../../nucleo/modulos.ts";
+import { implementarAccion } from "../../../nucleo/modulos.ts";
 import { escribirMovimiento } from "../dominio/escribir-movimiento.ts";
+import { partidasDe } from "../dominio/partidas.ts";
 import {
 	candadoDeLoRecibido,
 	type OrdenParaInventario,
@@ -29,7 +30,7 @@ import {
 	ubicacionDeTipo,
 } from "../dominio/recepciones.ts";
 import { crearTraspaso, type RenglonDeTraspaso } from "../dominio/traspasos.ts";
-import { partidasTela, recepciones, recepcionLineas, rollos } from "../tablas.ts";
+import { recepciones, recepcionLineas, rollos } from "../tablas.ts";
 
 /** Una línea de la orden como la usa la recepción. */
 type LineaDeLaOrden = OrdenParaInventario["lineas"][number];
@@ -101,54 +102,6 @@ function loQueLlega(
 		});
 	}
 	return renglones;
-}
-
-/**
- * La partida de cada código de una tela de un proveedor: la que ya existe, o una nueva con su folio P-. Toma un
- * candado por proveedor y material para que dos recepciones a la vez no la creen dos veces.
- * @returns Por código, su partida.
- */
-async function partidasDe(
-	contexto: ContextoDeAccion,
-	proveedorId: string,
-	materialId: string,
-	codigos: readonly string[],
-	recepcionId: string,
-): Promise<Map<string, string>> {
-	const { transaccion } = contexto;
-	await transaccion.execute(
-		sql`SELECT pg_advisory_xact_lock(hashtextextended(${`partida:${proveedorId}:${materialId}`}, 0))`,
-	);
-	const porCodigo = new Map<string, string>();
-	for (const codigo of [...new Set(codigos)]) {
-		const [existente] = await transaccion
-			.select({ id: partidasTela.id })
-			.from(partidasTela)
-			.where(
-				and(
-					eq(partidasTela.proveedorId, proveedorId),
-					eq(partidasTela.materialId, materialId),
-					eq(partidasTela.codigoProveedor, codigo),
-				),
-			);
-		if (existente !== undefined) {
-			porCodigo.set(codigo, existente.id);
-			continue;
-		}
-		const id = uuidv7();
-		const { folio } = folioTomado.parse(await contexto.interna("admin.tomar_folio", { tipo: "partida" }));
-		await transaccion.insert(partidasTela).values({
-			id,
-			folio,
-			codigoProveedor: codigo,
-			materialId,
-			proveedorId,
-			primeraRecepcionId: recepcionId,
-			creadoPor: quienCambia(contexto),
-		});
-		porCodigo.set(codigo, id);
-	}
-	return porCodigo;
 }
 
 /**

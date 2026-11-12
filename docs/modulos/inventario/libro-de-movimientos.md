@@ -221,3 +221,5 @@ Ninguno propio: cada acción guarda los suyos, con `existencias` entre sus tabla
   - `tablas.prueba.ts`: `42501` al cambiar o borrar el libro.
 
 **Fase 14, parte 1.** `aclaracion_recepcion` acepta Fuera del lado del lugar que recibió: lo entregado a una tienda sin caja ya salió del inventario (decisión 636).
+
+**Fase 14, parte 3.** `escribirMovimiento` acepta el id del movimiento cuando su documento es él mismo: la carga inicial de material (decisión 646).

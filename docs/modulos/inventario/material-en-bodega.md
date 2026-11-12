@@ -145,3 +145,5 @@ Los cambia solo la dueña, en Configuración (ver [configuración](../admin/conf
 - **Pruebas:** `internas/actualizar-costo-rollos.prueba.ts`, `internas/tomar-consumible.prueba.ts` y el caso nuevo de `correr-cuadre.prueba.ts`. Las pruebas del libro que mueven tela por rollo crean rollos de carga inicial con `rollosDePrueba` (`nucleo/pruebas/compras-de-prueba.ts`); el cuadre al azar usa un rollo por ubicación (decisión 568).
 
 **Fase 12, parte 3.** La tabla `retazos` (migración `0040`): nace al cerrar el corte con su folio RZ- (`inventario.registrar_corte`) y pasa a `recibido` con la recepción de Bodega (`inventario.recibir_del_corte`). Los rollos pasan por `entregado`, `agotado` y `por_recibir` con el corte (ver [entregas a corte](entregas-a-corte.md#cómo-está-hecho)).
+
+**Fase 14, parte 3.** La partida de un código de un proveedor (`partidasDe`) vive en `dominio/partidas.ts`: la usan la recepción de proveedor y la carga inicial de tela, que crea sus rollos `disponible` y de carga inicial (ver [conteos](conteos.md#cómo-está-hecho)).

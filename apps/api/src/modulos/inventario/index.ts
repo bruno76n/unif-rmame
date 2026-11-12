@@ -14,6 +14,7 @@ import { v7 as uuidv7 } from "uuid";
 import { todosLosDepartamentos } from "../../nucleo/acceso/departamentos.ts";
 import { definirModulo } from "../../nucleo/modulos.ts";
 import { accionAclararDiferencia } from "./acciones/aclarar-diferencia.ts";
+import { accionRegistrarCargaInicial, accionRegistrarCargaInicialMaterial } from "./acciones/carga-inicial.ts";
 import {
 	accionDespachar,
 	accionEntregarATiendaSinCaja,
@@ -125,6 +126,8 @@ export default definirModulo({
 		accionGuardarConteo,
 		accionRecibirDelTaller,
 		accionRecibirReproceso,
+		accionRegistrarCargaInicial,
+		accionRegistrarCargaInicialMaterial,
 	],
 	internas: {
 		recalcular_rollos_sugeridos: recalcularRollosSugeridos,

@@ -15,14 +15,13 @@ import { Temporal } from "temporal-polyfill";
 import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
 import { quienCambia } from "../../../nucleo/acciones/comunes.ts";
-import { ErrorDeApi, errorDeCampo, errorDeRegla } from "../../../nucleo/http/errores.ts";
+import { errorDeCampo, errorDeRegla } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeAccion, implementarAccion } from "../../../nucleo/modulos.ts";
-import { productos, secciones, variantes } from "../../catalogo/tablas.ts";
 import { pedirAjuste, revisarMotivoDeAjuste } from "../dominio/ajustes.ts";
 import { candadoDeVariantes } from "../dominio/candados.ts";
+import { revisarVariantes, ubicacionContable } from "../dominio/conteos.ts";
 import { type Diferencia, diferenciaBloqueada, diferenciasBloqueadas } from "../dominio/diferencias.ts";
-import { nombreDeVariante } from "../dominio/reservas.ts";
-import { conteoLineas, conteos, diferencias, ubicaciones } from "../tablas.ts";
+import { conteoLineas, conteos, diferencias } from "../tablas.ts";
 
 /**
  * Lo que decía el libro de unas variantes en una ubicación a una hora: la suma de sus renglones con `ocurrido_en`
@@ -48,60 +47,6 @@ async function sistemaALaHora(
 		GROUP BY l.variante_id`);
 	const filas = z.array(z.object({ variante_id: z.uuid(), piezas: z.number() })).parse(rows);
 	return new Map(filas.map((fila) => [fila.variante_id, fila.piezas]));
-}
-
-/**
- * La ubicación donde se cuenta: Bodega o Aduana; y quien la cuenta: Bodega en las dos, Aduana solo en Aduana.
- * @throws `422 ubicacion_no_contable`; `403 sin_departamento` si Aduana cuenta en Bodega.
- */
-async function ubicacionContable(contexto: ContextoDeAccion, ubicacionId: string) {
-	const [ubicacion] = await contexto.transaccion
-		.select({ id: ubicaciones.id, nombre: ubicaciones.nombre, tipo: ubicaciones.tipo })
-		.from(ubicaciones)
-		.where(eq(ubicaciones.id, ubicacionId));
-	if (ubicacion === undefined || (ubicacion.tipo !== "bodega" && ubicacion.tipo !== "aduana")) {
-		throw errorDeRegla("ubicacion_no_contable", "Aquí solo se cuenta en Bodega o en Aduana.");
-	}
-	const { quien } = contexto;
-	const deBodega = quien.tipo === "cuenta" && (quien.esDuena || quien.departamentos.includes("bodega"));
-	if (ubicacion.tipo === "bodega" && !deBodega) throw new ErrorDeApi("sin_permiso", "sin_departamento");
-	return { ...ubicacion, departamento: deBodega ? ("bodega" as const) : ("aduana" as const) };
-}
-
-/**
- * Las variantes contadas tienen que ser de lo que se cuenta: de la sección, o la de la diferencia.
- * @throws `422 variante_ajena`: «{prenda} talla {t} no es de {sección}.».
- */
-async function revisarVariantes(
-	contexto: ContextoDeAccion,
-	varianteIds: readonly string[],
-	de: { seccionId: string } | { diferencia: Diferencia },
-): Promise<string> {
-	const { transaccion } = contexto;
-	if ("diferencia" in de) {
-		const ajena = varianteIds.find((id) => id !== de.diferencia.varianteId);
-		if (ajena !== undefined) {
-			const { prenda, talla } = await nombreDeVariante(transaccion, ajena);
-			throw errorDeRegla("variante_ajena", `${prenda} talla ${talla} no es de ${de.diferencia.folio}.`);
-		}
-		return de.diferencia.folio;
-	}
-	const [seccion] = await transaccion
-		.select({ nombre: secciones.nombre })
-		.from(secciones)
-		.where(eq(secciones.id, de.seccionId));
-	if (seccion === undefined) throw errorDeCampo("seccion_id", "Elige la sección que vas a contar.");
-	const deLaSeccion = await transaccion
-		.select({ id: variantes.id })
-		.from(variantes)
-		.innerJoin(productos, eq(productos.id, variantes.productoId))
-		.where(and(inArray(variantes.id, [...varianteIds]), eq(productos.seccionId, de.seccionId)));
-	const ajena = varianteIds.find((id) => !deLaSeccion.some((suya) => suya.id === id));
-	if (ajena !== undefined) {
-		const { prenda, talla } = await nombreDeVariante(transaccion, ajena);
-		throw errorDeRegla("variante_ajena", `${prenda} talla ${talla} no es de ${seccion.nombre}.`);
-	}
-	return seccion.nombre;
 }
 
 export const accionGuardarConteo = implementarAccion(guardarConteo, async (contexto, datos) => {

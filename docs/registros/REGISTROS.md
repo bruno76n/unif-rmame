@@ -407,3 +407,5 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 12 nov 2026 | 14 | Qué revisa el cuadre y cuándo abre otra vez (decisión 638) | Solo lo del día · también lo que tiene DF- | Lo segundo, y un negativo del Taller abre su excepción una sola vez | No |
 | 12 nov 2026 | 14 | Un lote de pedido antes de la fase 16 (decisión 641) | Repartirlo a Bodega · error del programa | Error del programa: antes no nace ninguno | No |
 | 12 nov 2026 | 14 | La DF- del taller y su reparto (decisión 644) | Ligarla al A- de la recepción · sin traspaso, con el reparto de su lote | Lo segundo: el A- puede no existir y el Taller cuenta por lote | No |
+| 12 nov 2026 | 14 | El documento de la carga inicial de material (decisión 646) | Un id nuevo · el id del propio movimiento | El del movimiento, como dice su archivo | No |
+| 12 nov 2026 | 14 | El costo de un rollo de carga inicial sin precio (decisión 648) | Inventar uno · sin costo | Sin costo: el CHECK no deja 0 | No |

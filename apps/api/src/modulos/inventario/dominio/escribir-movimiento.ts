@@ -59,6 +59,8 @@ export interface DocumentoDeMovimiento {
 
 /** Lo que se pide escribir. */
 export interface PedidoDeMovimiento {
+	/** El id del movimiento, si su documento es él mismo (la carga inicial de material): si no, uno nuevo. */
+	id?: string;
 	tipo: Exclude<TipoDeMovimiento, "reversion">;
 	documento: DocumentoDeMovimiento;
 	renglones: readonly RenglonDeMovimiento[];
@@ -190,6 +192,7 @@ function revisarRenglones(
 
 /** La cabecera de lo que se escribe. */
 interface Cabecera {
+	id?: string | undefined;
 	tipo: TipoDeMovimiento;
 	documento: DocumentoDeMovimiento;
 	ocurridoEn: Temporal.Instant;
@@ -238,7 +241,7 @@ async function escribir(
 	const deExistencias = await bloquearExistencias(transaccion, lugaresDePrenda);
 	const deMaterial = await bloquearExistenciasMaterial(transaccion, lugaresDeMaterial);
 	// Paso 3: el movimiento y sus renglones.
-	const movimientoId = uuidv7();
+	const movimientoId = cabecera.id ?? uuidv7();
 	const creadoPor = contexto.quien.tipo === "cuenta" ? contexto.quien.usuarioId : null;
 	await transaccion.insert(movimientos).values({
 		id: movimientoId,
@@ -378,6 +381,7 @@ export async function escribirMovimiento(
 	return escribir(
 		contexto,
 		{
+			id: pedido.id,
 			tipo: pedido.tipo,
 			documento: pedido.documento,
 			ocurridoEn: pedido.ocurridoEn ?? contexto.ahora,
