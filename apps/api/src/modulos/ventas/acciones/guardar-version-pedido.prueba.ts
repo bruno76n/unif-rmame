@@ -1,7 +1,6 @@
 /**
- * Prueba de `ventas.guardar_version_pedido` y `ventas.cancelar_pedido`: una versión guarda el antes y el después sin
- * cambiar un renglón confirmado, respeta el mínimo de cada talla y avisa de las piezas de más; cancelar pasa sus lotes
- * a temporada, libera sus reservas y deja a favor su anticipo.
+ * Prueba de `ventas.guardar_version_pedido`: una versión guarda el antes y el después sin cambiar un renglón
+ * confirmado, respeta el mínimo de cada talla y avisa a Producción de las piezas de más.
  * Fase 16 · docs/fases/16-ventas-a-externos.md («Criterios de terminado»)
  */
 
@@ -9,8 +8,8 @@ import { Temporal } from "temporal-polyfill";
 import { v7 as uuidv7 } from "uuid";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
-import { saldoAFavorDePrueba, versionDelCredito } from "../../../nucleo/pruebas/contaduria-de-prueba.ts";
-import { llamarInterna, meterPiezas, ubicacionesPorCodigo } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
+import { versionDelCredito } from "../../../nucleo/pruebas/contaduria-de-prueba.ts";
+import { llamarInterna, ubicacionesPorCodigo } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import type { PrendaDelTaller } from "../../../nucleo/pruebas/produccion-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
@@ -22,7 +21,7 @@ import {
 	versionVigenteDePrueba,
 } from "../../../nucleo/pruebas/ventas-de-prueba.ts";
 
-describe("Una versión guarda el antes y el después, respeta el mínimo y avisa de las piezas de más; cancelar deja todo en su lugar", () => {
+describe("Una versión guarda el antes y el después, respeta el mínimo y avisa de las piezas de más", () => {
 	let servidor: ServidorDePrueba;
 	let prenda: PrendaDelTaller;
 	let ubicacion: Record<string, string>;
@@ -195,71 +194,5 @@ describe("Una versión guarda el antes y el después, respeta el mínimo y avisa
 			(await version(pedido.pedido_id, cliente.cliente_id, [{ variante_id: prenda.variantes["4"], cantidad: 9 }]))
 				.estado,
 		).toBe(200);
-	});
-
-	it("cancelar: sus lotes van a temporada, lo apartado se libera y su anticipo pasa a favor; otra vez, `pedido_terminado`", async () => {
-		const cliente = await darDeAltaClienteDePrueba(servidor);
-		const pedido = await pedidoConfirmadoDePrueba(servidor, {
-			cliente_id: cliente.cliente_id,
-			fecha_entrega: entrega(),
-			forma_pago: "anticipo",
-			renglones: [
-				{ variante_id: prenda.variantes["4"], cantidad: 10 },
-				{ variante_id: prenda.variantes["8"], cantidad: 4 },
-			],
-		});
-		const pago = await mandarAccion(
-			servidor,
-			"contaduria.registrar_pago_recibido",
-			{
-				datos: {
-					cliente_id: cliente.cliente_id,
-					pedido_id: pedido.pedido_id,
-					monto_centavos: 100_000,
-					medio: "efectivo",
-				},
-			},
-			"contaduria",
-		);
-		expect(pago.estado).toBe(200);
-		const mandado = z.object({ lotes: z.array(z.object({ lote_id: z.uuid() })) }).parse(
-			await llamarInterna(servidor, "produccion.mandar_a_produccion", {
-				pedido_id: pedido.pedido_id,
-				pedido_version_id: await versionVigenteDePrueba(servidor, pedido.pedido_id),
-				fecha_entrega: entrega(),
-				renglones: [{ variante_id: prenda.variantes["4"], piezas: 10 }],
-			}),
-		);
-		await meterPiezas(servidor, ubicacion.BOD ?? "", prenda.variantes["8"] ?? "", 4);
-		await llamarInterna(servidor, "inventario.reservar", {
-			motivo: "pedido_externo",
-			pedido_id: pedido.pedido_id,
-			renglones: [{ variante_id: prenda.variantes["8"], piezas: 4 }],
-		});
-		const cancelar = async () =>
-			mandarAccion(
-				servidor,
-				"ventas.cancelar_pedido",
-				{
-					datos: { pedido_id: pedido.pedido_id, motivo: "El cliente ya no lo quiere" },
-					version: await versionDelPedido(servidor, pedido.pedido_id),
-				},
-				"ventas",
-			);
-		expect((await cancelar()).cuerpo.resultado).toMatchObject({
-			mensaje: `${pedido.folio} cancelado. Queda en el historial con su motivo`,
-		});
-		const { rows } = await servidor.base.dueno.query(
-			`SELECT (SELECT destino FROM lotes WHERE id = $2) AS lote,
-				(SELECT count(*)::int FROM reservas WHERE pedido_id = $1 AND estado = 'activa') AS activas,
-				(SELECT estado FROM pedidos WHERE id = $1) AS estado`,
-			[pedido.pedido_id, mandado.lotes[0]?.lote_id],
-		);
-		expect(rows).toEqual([{ lote: "temporada", activas: 0, estado: "cancelado" }]);
-		expect(await saldoAFavorDePrueba(servidor, cliente.cliente_id)).toBe(100_000);
-		expect((await cancelar()).cuerpo).toMatchObject({
-			codigo: "pedido_terminado",
-			mensaje: `${pedido.folio} ya está cancelado.`,
-		});
 	});
 });

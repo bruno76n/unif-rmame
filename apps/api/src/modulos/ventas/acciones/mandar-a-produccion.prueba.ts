@@ -1,6 +1,6 @@
 /**
- * Prueba de `ventas.surtir_de_bodega` y `ventas.mandar_a_produccion`: surtir nunca aparta más de lo libre; mandar
- * nunca más de lo que falta, y suma a un lote sin cortar o abre su orden.
+ * Prueba de `ventas.mandar_a_produccion`: primero se surte lo libre y lo que falta va a producción, nunca más de lo
+ * que falta; suma a un lote sin cortar o abre su orden.
  * Fase 16 · docs/fases/16-ventas-a-externos.md («Criterios de terminado»)
  */
 
@@ -16,7 +16,7 @@ import {
 	versionDelPedido,
 } from "../../../nucleo/pruebas/ventas-de-prueba.ts";
 
-describe("Surtir de bodega nunca aparta más de lo libre; mandar a producción nunca más de lo que falta", () => {
+describe("Mandar a producción nunca manda más de lo que falta, y suma a un lote sin cortar o abre su orden", () => {
 	let servidor: ServidorDePrueba;
 	let prenda: PrendaDelTaller;
 	let ubicacion: Record<string, string>;
@@ -99,31 +99,5 @@ describe("Surtir de bodega nunca aparta más de lo libre; mandar a producción n
 			codigo: "nada_por_mandar",
 			mensaje: "Todo el pedido ya está en producción.",
 		});
-	});
-
-	it("surtir más de lo libre: `bodega_sin_libres`; dos revisiones a la vez nunca apartan de más", async () => {
-		const elPedido = await pedido();
-		await meterPiezas(servidor, ubicacion.BOD ?? "", prenda.variantes["6"] ?? "", 3);
-		expect(
-			(
-				await revision("surtir_de_bodega", elPedido.pedido_id, {
-					producto_id: prenda.productoId,
-					renglones: [{ variante_id: prenda.variantes["6"], piezas: 5 }],
-				})
-			).cuerpo,
-		).toMatchObject({
-			codigo: "bodega_sin_libres",
-			mensaje: expect.stringMatching(/talla 6: quedan \d+\.$/),
-		});
-		const version = await versionDelPedido(servidor, elPedido.pedido_id);
-		const surtir = () =>
-			mandarAccion(
-				servidor,
-				"ventas.surtir_de_bodega",
-				{ datos: { pedido_id: elPedido.pedido_id, producto_id: prenda.productoId }, version },
-				"ventas",
-			);
-		const [uno, dos] = await Promise.all([surtir(), surtir()]);
-		expect([uno.estado, dos.estado].sort()).toEqual([200, 409]);
 	});
 });

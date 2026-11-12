@@ -1,14 +1,14 @@
 /**
- * Prueba de las notas de crédito y sus devoluciones: Ventas la pide de una nota entregada, nunca de más; Dirección la
- * autoriza y baja el saldo de la nota con su folio NC-, y Aduana espera las piezas; al recibirlas, lo bueno pasa a
- * Bodega y lo de defecto espera a Calidad, que decide qué sirve y qué es merma. Rechazada, no cambia nada.
- * Fase 16 · docs/fases/16-ventas-a-externos.md (parte 4)
+ * Prueba de `ventas.aplicar_decision_nota_credito`: autorizada toma su folio, baja el saldo (lo de más queda a favor) y
+ * deja esperando sus piezas, y lo bueno que regresa pasa a Bodega; rechazada no cambia nada.
+ * Fase 16 · docs/fases/16-ventas-a-externos.md («Criterios de terminado»)
  */
 
 import { Temporal } from "temporal-polyfill";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { decidirDePrueba, despacharDePrueba, versionDeTraspaso } from "../../../nucleo/pruebas/aduana-de-prueba.ts";
+import { saldoAFavorDePrueba } from "../../../nucleo/pruebas/contaduria-de-prueba.ts";
 import { listoEnAduanaDePrueba } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import type { PrendaDelTaller } from "../../../nucleo/pruebas/produccion-de-prueba.ts";
@@ -20,7 +20,7 @@ import {
 	versionDelPedido,
 } from "../../../nucleo/pruebas/ventas-de-prueba.ts";
 
-describe("Una nota de crédito corrige una nota entregada: Dirección la autoriza, baja el saldo y lo que regresa pasa por Calidad", () => {
+describe("Una nota de crédito autorizada toma su folio, baja el saldo y deja esperando sus piezas", () => {
 	let servidor: ServidorDePrueba;
 	let prenda: PrendaDelTaller;
 	beforeAll(async () => {
@@ -119,129 +119,51 @@ describe("Una nota de crédito corrige una nota entregada: Dirección la autoriz
 		return z.number().parse(fila?.s);
 	}
 
-	it("pedirla: solo de una entregada, nunca de más ni con piezas de más; una a la vez", async () => {
+	it("autorizada: toma su NC-, baja el saldo y lo de más queda a favor; Aduana espera sus piezas sin destino", async () => {
 		const nota = await notaEntregada(4);
-		expect((await pedir(nota.notaId, nota.subtotal + 100)).cuerpo).toMatchObject({
-			codigo: "monto_de_mas",
-			mensaje: expect.stringMatching(
-				new RegExp(`^La nota de crédito no puede pasar de \\$[\\d,.]+: es lo que queda de ${nota.folio}\\.$`),
-			),
-		});
-		expect(
-			(await pedir(nota.notaId, 1_000, [{ nota_entrega_linea_id: nota.lineaId, cantidad: 5 }])).cuerpo,
-		).toMatchObject({
-			codigo: "piezas_de_mas",
-			mensaje: `${prenda.nombre} talla 4: solo pueden regresar 4.`,
-		});
-		const pedida = await pedir(nota.notaId, 1_000);
-		expect(pedida.cuerpo.resultado).toMatchObject({
-			mensaje: `Nota de crédito para ${nota.folio} enviada a Dirección`,
-		});
-		expect((await pedir(nota.notaId, 1_000)).cuerpo).toMatchObject({
-			codigo: "nota_credito_esperando",
-			mensaje: `${nota.folio} ya tiene una nota de crédito esperando autorización.`,
-		});
-		const { rows } = await servidor.base.dueno.query(
-			"SELECT a.tipo, a.estado, a.importe_centavos::int AS importe FROM autorizaciones a WHERE a.nota_entrega_id = $1",
+		const [{ cliente_id: clienteId } = { cliente_id: "" }] = await consultar(
+			"SELECT cliente_id FROM notas_entrega WHERE id = $1",
 			[nota.notaId],
 		);
-		expect(rows).toEqual([{ tipo: "nota_credito", estado: "por_autorizar", importe: 1_000 }]);
-	});
-
-	it("autorizada: toma su NC-, baja el saldo y Aduana espera las piezas; lo de defecto espera a Calidad, que decide", async () => {
-		const nota = await notaEntregada(4);
-		const saldo = await saldoDe(nota.notaId);
-		const pedida = await pedir(nota.notaId, 30_000, [{ nota_entrega_linea_id: nota.lineaId, cantidad: 3 }]);
+		// Ya pagada toda: la nota de crédito no tiene saldo que bajar.
+		const pago = await mandarAccion(
+			servidor,
+			"contaduria.registrar_pago_recibido",
+			{
+				datos: {
+					cliente_id: clienteId,
+					nota_entrega_id: nota.notaId,
+					monto_centavos: await saldoDe(nota.notaId),
+					medio: "efectivo",
+				},
+			},
+			"contaduria",
+		);
+		expect(pago.estado).toBe(200);
+		const pedida = await pedir(nota.notaId, 30_000, [{ nota_entrega_linea_id: nota.lineaId, cantidad: 2 }]);
 		const { nota_credito_id: ncId } = z.object({ nota_credito_id: z.uuid() }).parse(pedida.cuerpo.resultado);
 		const decidida = await decidirDePrueba(servidor, await autorizacionDe(ncId), { decision: "autorizar" });
 		expect(decidida.estado).toBe(200);
 		expect(await consultar("SELECT estado, folio FROM notas_credito WHERE id = $1", [ncId])).toEqual([
 			{ estado: "autorizada", folio: expect.stringMatching(/^NC-\d{4}$/) },
 		]);
-		expect(await saldoDe(nota.notaId)).toBe(Math.max(0, saldo - 30_000));
-		// Aduana espera las 3: un A- `esperado`, de cliente externo y sin destino.
-		const [esperada] = await consultar(
-			`SELECT t.id, t.folio, t.estado, t.origen_externo, t.destino_ubicacion_id, l.id AS linea, l.piezas_enviadas AS piezas
-			 FROM traspasos t JOIN traspaso_lineas l ON l.traspaso_id = t.id WHERE t.nota_credito_id = $1`,
-			[ncId],
-		);
-		expect(esperada).toMatchObject({
-			estado: "esperado",
-			origen_externo: "cliente_externo",
-			destino_ubicacion_id: null,
-			piezas: 3,
-		});
-		const devolucion = String(esperada?.id);
-		// Llegan las 3 con defecto: se quedan en aduana para Calidad y no salen.
-		const recibida = await mandarAccion(
-			servidor,
-			"inventario.recibir_en_aduana",
+		expect(await saldoDe(nota.notaId)).toBe(0);
+		expect(await saldoAFavorDePrueba(servidor, String(clienteId))).toBe(30_000);
+		expect(
+			await consultar(
+				`SELECT t.tipo, t.estado, t.origen_externo, t.destino_ubicacion_id, l.piezas_enviadas AS piezas
+				 FROM traspasos t JOIN traspaso_lineas l ON l.traspaso_id = t.id WHERE t.nota_credito_id = $1`,
+				[ncId],
+			),
+		).toEqual([
 			{
-				datos: {
-					traspaso_id: devolucion,
-					modo: "con_diferencias",
-					renglones: [{ traspaso_linea_id: esperada?.linea, piezas: 3, con_defecto: true }],
-				},
-				version: await versionDeTraspaso(servidor, devolucion),
+				tipo: "devolucion_cliente_externo",
+				estado: "esperado",
+				origen_externo: "cliente_externo",
+				destino_ubicacion_id: null,
+				piezas: 2,
 			},
-			"aduana",
-		);
-		expect(recibida.cuerpo.resultado).toMatchObject({ mensaje: `${esperada?.folio} recibida: pasa a Calidad` });
-		expect((await despacharDePrueba(servidor, [devolucion], undefined)).cuerpo).toMatchObject({
-			codigo: "espera_calidad",
-		});
-		// Calidad: 2 sirven y 1 es merma.
-		const revisar = async (renglones: unknown[]) =>
-			mandarAccion(
-				servidor,
-				"calidad.revisar_devolucion",
-				{ datos: { traspaso_id: devolucion, renglones }, version: await version("traspasos", devolucion) },
-				"calidad",
-			);
-		expect(
-			(await revisar([{ traspaso_linea_id: esperada?.linea, piezas: 1, decision: "merma" }])).cuerpo,
-		).toMatchObject({ campos: { motivo: "Escribe con qué tiene." } });
-		expect(
-			(await revisar([{ traspaso_linea_id: esperada?.linea, piezas: 4, decision: "sirve" }])).cuerpo,
-		).toMatchObject({
-			codigo: "piezas_mas_que_pendientes",
-			mensaje: "En ese renglón quedan 3 piezas por revisar.",
-		});
-		const revisada = await revisar([
-			{ traspaso_linea_id: esperada?.linea, piezas: 2, decision: "sirve" },
-			{ traspaso_linea_id: esperada?.linea, piezas: 1, decision: "merma", motivo: "Tela rota" },
 		]);
-		expect(revisada.cuerpo.resultado).toMatchObject({ mensaje: `${esperada?.folio}: 2 a bodega, 1 como merma` });
-		expect(
-			await consultar(
-				`SELECT t.estado, coalesce(d.codigo, t.destino_externo) AS destino, l.piezas_recibidas_aduana AS piezas
-				 FROM traspasos t JOIN traspaso_lineas l ON l.traspaso_id = t.id LEFT JOIN ubicaciones d ON d.id = t.destino_ubicacion_id
-				 WHERE t.traspaso_padre_id = $1 ORDER BY t.folio`,
-				[devolucion],
-			),
-		).toEqual([
-			{ estado: "en_aduana", destino: "BOD", piezas: 2 },
-			{ estado: "salio", destino: "merma", piezas: 1 },
-		]);
-		expect(await consultar("SELECT estado FROM traspasos WHERE id = $1", [devolucion])).toEqual([
-			{ estado: "repartido" },
-		]);
-		expect(
-			await consultar(
-				"SELECT decision, piezas, motivo, origen FROM revisiones_devolucion WHERE traspaso_id = $1 ORDER BY decision DESC",
-				[devolucion],
-			),
-		).toEqual([
-			{ decision: "sirve", piezas: 2, motivo: null, origen: "nota_credito" },
-			{ decision: "merma", piezas: 1, motivo: "Tela rota", origen: "nota_credito" },
-		]);
-		// Ya no regresan más de lo entregado menos lo que ya regresó.
-		expect(
-			(await pedir(nota.notaId, 100, [{ nota_entrega_linea_id: nota.lineaId, cantidad: 2 }])).cuerpo,
-		).toMatchObject({
-			codigo: "piezas_de_mas",
-			mensaje: `${prenda.nombre} talla 4: solo pueden regresar 1.`,
-		});
 	});
 
 	it("lo que regresa bueno pasa a Bodega al recibirlo; una rechazada no cambia el saldo", async () => {

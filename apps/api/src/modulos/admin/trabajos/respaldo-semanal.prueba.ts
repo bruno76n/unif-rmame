@@ -110,7 +110,11 @@ describe("el respaldo semanal sale cifrado, llega con su SHA-256 y, descifrado y
 		expect(new TextDecoder().decode(objeto.contenido.slice(0, 21))).toBe("age-encryption.org/v1");
 		expect(createHash("sha256").update(objeto.contenido).digest("hex")).toBe(rows[0]?.sha256);
 		expect(Number(rows[0]?.tamano_bytes)).toBe(objeto.contenido.byteLength);
-		const descifrado = spawnSync("age", ["-d", "-i", llave.archivo], { input: objeto.contenido });
+		// El volcado ya pasa del MB que `spawnSync` acepta de salida por omisión: se le da espacio de sobra.
+		const descifrado = spawnSync("age", ["-d", "-i", llave.archivo], {
+			input: objeto.contenido,
+			maxBuffer: 1024 * 1024 * 1024,
+		});
 		expect(descifrado.status).toBe(0);
 		const restaurada = `restaurada_${prueba.nombre}`.slice(0, 60);
 		await prueba.dueno.query(`CREATE DATABASE ${restaurada}`);
@@ -132,7 +136,7 @@ describe("el respaldo semanal sale cifrado, llega con su SHA-256 y, descifrado y
 			const restauracion = spawnSync(
 				"docker",
 				["exec", "-i", prueba.contenedor, "pg_restore", "-U", "uniformame_dueno", "--exit-on-error", "-d", restaurada],
-				{ input: descifrado.stdout },
+				{ input: descifrado.stdout, maxBuffer: 1024 * 1024 * 1024 },
 			);
 			expect(restauracion.stderr.toString()).toBe("");
 			expect(restauracion.status).toBe(0);

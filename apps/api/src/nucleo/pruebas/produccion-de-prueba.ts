@@ -229,7 +229,6 @@ export async function loteCortado(
 	piezas: [number, number, number] = [24, 10, 0],
 ): Promise<LoteCortado> {
 	const prenda = await prendaParaCortar(servidor, siembra);
-	const rollo = await rolloEnBodega(servidor, prenda.materiales.gabardina, "200");
 	const { rows: bodega } = await servidor.base.dueno.query("SELECT id FROM ubicaciones WHERE codigo = 'BOD'");
 	const tallas = ["4", "6", "8"].map((talla, i) => ({ variante_id: prenda.variantes[talla], piezas: piezas[i] ?? 0 }));
 	const orden = await mandarAccion(
@@ -248,6 +247,25 @@ export async function loteCortado(
 	const { lote_id: loteId, lote_folio: folio } = z
 		.object({ lote_id: z.uuid(), lote_folio: z.string() })
 		.parse(orden.cuerpo.resultado);
+	return cortarLoteDePrueba(servidor, prenda, { loteId, folio }, tallas);
+}
+
+/**
+ * Corta un lote que ya existe con la receta de su prenda y un rollo nuevo de su tela en Bodega: queda en proceso con sus
+ * bultos. Lo usan el lote de temporada de `loteCortado` y el lote de un pedido.
+ * @param servidor El servidor de prueba.
+ * @param prenda La prenda del lote, con su receta.
+ * @param lote El lote y su folio.
+ * @param tallas Las piezas que se cortan de cada variante.
+ */
+export async function cortarLoteDePrueba(
+	servidor: ServidorDePrueba,
+	prenda: PrendaParaCortar,
+	lote: { loteId: string; folio: string },
+	tallas: readonly { variante_id: string | undefined; piezas: number }[],
+): Promise<LoteCortado> {
+	const { loteId, folio } = lote;
+	const rollo = await rolloEnBodega(servidor, prenda.materiales.gabardina, "200");
 	const { rows: version } = await servidor.base.dueno.query("SELECT version::int AS v FROM lotes WHERE id = $1", [
 		loteId,
 	]);
