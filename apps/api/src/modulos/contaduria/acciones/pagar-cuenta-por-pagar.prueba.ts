@@ -8,7 +8,7 @@
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { ordenParaRecibir } from "../../../nucleo/pruebas/aduana-de-prueba.ts";
-import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
+import { conGoogle, mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import {
 	capturarDePrueba,
 	facturaComoQuedo,
@@ -141,5 +141,30 @@ describe("La cuenta por pagar vence con sus órdenes, una detenida no se paga, y
 		await facturaDePrueba(servidor, { orden, subtotal: 299_000 });
 		expect((await pagarCuentaDePrueba(servidor, pagada.cuentaId, 580_000)).estado).toBe(200);
 		expect(await estadoDeOrden(orden.id)).toEqual({ estado: "recibida", cerrada_por: null });
+	});
+
+	it("cancelar el pago que la pagó regresa el saldo y reabre la orden, con su renglón", async () => {
+		const factura = await facturaDePrueba(servidor);
+		const pago = await pagarCuentaDePrueba(servidor, factura.cuentaId, 926_840);
+		expect(await estadoDeOrden(factura.orden.id)).toEqual({ estado: "cerrada", cerrada_por: null });
+		const { pago_id: pagoId } = pago.cuerpo.resultado as { pago_id: string };
+		const [version] = await consultar("SELECT version::int AS v FROM pagos WHERE id = $1", [pagoId]);
+		const cancelado = await mandarAccion(
+			servidor,
+			"contaduria.cancelar_pago",
+			{ datos: { pago_id: pagoId, motivo: "Se pagó a la cuenta equivocada" }, version: version?.v },
+			"contaduria",
+			conGoogle(),
+		);
+		expect(cancelado.estado).toBe(200);
+		expect(await facturaComoQuedo(servidor, factura.id)).toMatchObject({ cuenta: "por_pagar", saldo: 926_840 });
+		expect(await estadoDeOrden(factura.orden.id)).toEqual({ estado: "recibida", cerrada_por: null });
+		const renglones = await consultar(
+			"SELECT descripcion FROM bitacora WHERE entidad_id = $1 ORDER BY ocurrido_en, id",
+			[pagoId],
+		);
+		expect(renglones.map((renglon) => renglon.descripcion)).toContain(
+			`${factura.orden.folio} vuelve a Recibida: se canceló su pago`,
+		);
 	});
 });

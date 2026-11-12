@@ -14,15 +14,15 @@ import { errorDeCampo, errorDeRegla, noExiste } from "../../../nucleo/http/error
 import { implementarAccion } from "../../../nucleo/modulos.ts";
 import { confirmadoConGoogle } from "../../admin/dominio/cuentas.ts";
 import {
-	bloquearFactura,
-	bloquearOrdenes,
-	montoLoRecibido,
-	nombreDelTercero,
-	ordenesDeFacturas,
-	ordenesPagadas,
-} from "../dominio/facturas.ts";
+	alPagarse,
+	aplicarACuentaPorPagar,
+	bloquearCuentasPorPagar,
+	bloquearDocumentosDeCuentas,
+	documentoDeCuenta,
+} from "../dominio/cuentas-por-pagar.ts";
+import { bloquearFactura, montoLoRecibido, nombreDelTercero } from "../dominio/facturas.ts";
 import { avisoDePagoRepetido, enPesos, revisarMedio, revisarPesosEnteros } from "../dominio/pagos.ts";
-import { aplicacionesPago, cuentasPorPagar, facturasProveedor, pagos } from "../tablas.ts";
+import { cuentasPorPagar, facturasProveedor, pagos } from "../tablas.ts";
 
 /** Lo que regresa `admin.tomar_folio`. */
 const folioTomado = z.object({ folio: z.string() });
@@ -30,49 +30,20 @@ const folioTomado = z.object({ folio: z.string() });
 /** Lo que regresa `direccion.pedir_autorizacion`. */
 const autorizacionPedida = z.object({ autorizacion_id: z.uuid(), folio: z.string() });
 
-/** Lo que regresa `compras.cerrar_orden_pagada`. */
-const ordenCerrada = z.object({ cerrada: z.boolean() });
-
-/**
- * El estado de una cuenta por pagar con su saldo.
- * @param saldo El saldo, de 0 al importe.
- * @param importe Su importe.
- */
-function estadoConSaldo(saldo: number, importe: number): "pagada" | "pagada_en_parte" | "por_pagar" {
-	if (saldo === 0) return "pagada";
-	return saldo === importe ? "por_pagar" : "pagada_en_parte";
-}
-
 export const accionPagarCuentaPorPagar = implementarAccion(pagarCuentaPorPagar, async (contexto, datos, version) => {
 	const { transaccion } = contexto;
-	const [vista] = await transaccion
-		.select()
-		.from(cuentasPorPagar)
-		.where(eq(cuentasPorPagar.id, datos.cuenta_por_pagar_id));
-	if (vista === undefined) throw noExiste();
-	// Las órdenes de su factura primero (el orden de los candados), luego la cuenta: dos pagos a la vez no pasan del
-	// saldo y el segundo ve si con el primero ya quedaron pagadas todas las facturas de la orden.
-	const ordenIds =
-		vista.facturaProveedorId === null ? [] : await ordenesDeFacturas(transaccion, [vista.facturaProveedorId]);
-	await bloquearOrdenes(contexto, ordenIds);
-	const [cuenta] = await transaccion
-		.select()
-		.from(cuentasPorPagar)
-		.where(eq(cuentasPorPagar.id, vista.id))
-		.for("update");
+	// Sus documentos primero (las órdenes de su factura o su deuda), luego la cuenta: dos pagos a la vez no pasan del
+	// saldo, y el segundo ve si con el primero ya quedó pagado todo lo de la orden o de la deuda.
+	const documentos = await bloquearDocumentosDeCuentas(contexto, [datos.cuenta_por_pagar_id]);
+	const cuenta = (await bloquearCuentasPorPagar(transaccion, [datos.cuenta_por_pagar_id])).get(
+		datos.cuenta_por_pagar_id,
+	);
 	if (cuenta === undefined) throw noExiste();
 	await tomarVersion(contexto, cuentasPorPagar, cuenta.id, version, async () => ({
 		cuenta_por_pagar_id: cuenta.id,
 		estado: cuenta.estado,
 	}));
-	const [factura] =
-		cuenta.facturaProveedorId === null
-			? []
-			: await transaccion
-					.select({ folio: facturasProveedor.folio })
-					.from(facturasProveedor)
-					.where(eq(facturasProveedor.id, cuenta.facturaProveedorId));
-	const documento = factura?.folio ?? "La cuenta";
+	const documento = await documentoDeCuenta(transaccion, cuenta);
 	if (cuenta.estado === "cancelada") throw errorDeRegla("cuenta_cancelada", `${documento} está cancelada.`);
 	if (cuenta.estado === "pagada") throw errorDeRegla("cuenta_pagada", `${documento} ya está pagada.`);
 	if (cuenta.estado === "detenida") {
@@ -88,13 +59,12 @@ export const accionPagarCuentaPorPagar = implementarAccion(pagarCuentaPorPagar, 
 	const pagoId = uuidv7();
 	const quien = quienCambia(contexto);
 	const confirmado = confirmadoConGoogle(contexto);
-	const hoy = contexto.diaDeNegocio.toString();
 	await transaccion.insert(pagos).values({
 		id: pagoId,
 		folio,
 		direccion: "emitido",
 		concepto: "cuenta_por_pagar",
-		fecha: hoy,
+		fecha: contexto.diaDeNegocio.toString(),
 		terceroId: cuenta.terceroId,
 		montoCentavos: datos.monto_centavos,
 		medio: datos.medio,
@@ -103,30 +73,9 @@ export const accionPagarCuentaPorPagar = implementarAccion(pagarCuentaPorPagar, 
 		confirmadoConGoogleEn: confirmado,
 		creadoPor: quien,
 	});
-	await transaccion.insert(aplicacionesPago).values({
-		id: uuidv7(),
-		pagoId,
-		cuentaPorPagarId: cuenta.id,
-		montoCentavos: datos.monto_centavos,
-		fecha: hoy,
-		creadoPor: quien,
-	});
-	const saldo = cuenta.saldoCentavos - datos.monto_centavos;
-	const estado = estadoConSaldo(saldo, cuenta.importeCentavos);
-	await transaccion
-		.update(cuentasPorPagar)
-		.set({ saldoCentavos: saldo, estado, pagadaEn: estado === "pagada" ? contexto.ahora.toString() : null })
-		.where(eq(cuentasPorPagar.id, cuenta.id));
-	// Cuando quedan pagadas las cuentas de todas las facturas de una orden, Compras la cierra (regla 5).
-	const cerradas: string[] = [];
-	if (estado === "pagada") {
-		for (const ordenId of await ordenesPagadas(transaccion, ordenIds)) {
-			const { cerrada } = ordenCerrada.parse(
-				await contexto.interna("compras.cerrar_orden_pagada", { orden_compra_id: ordenId }),
-			);
-			if (cerrada) cerradas.push(ordenId);
-		}
-	}
+	const pagada = await aplicarACuentaPorPagar(contexto, cuenta, datos.monto_centavos, { pagoId });
+	// Cuando queda pagada, Compras cierra la orden cuyas facturas quedaron todas pagadas y la deuda queda saldada.
+	const cambiaron = pagada.estado === "pagada" ? await alPagarse(contexto, documentos) : { ordenes: [], deudas: [] };
 	contexto.guardarEvento({
 		tipo: "pago.emitido",
 		datos: { pago_id: pagoId, cuenta_por_pagar_id: cuenta.id },
@@ -135,15 +84,6 @@ export const accionPagarCuentaPorPagar = implementarAccion(pagarCuentaPorPagar, 
 		entidadId: pagoId,
 		entidadFolio: folio,
 	});
-	if (estado === "pagada") {
-		contexto.guardarEvento({
-			tipo: "cuenta_por_pagar.pagada",
-			datos: { cuenta_por_pagar_id: cuenta.id },
-			tablas: ["cuentas_por_pagar"],
-			entidad: "cuentas_por_pagar",
-			entidadId: cuenta.id,
-		});
-	}
 	const beneficiario = await nombreDelTercero(transaccion, cuenta.terceroId);
 	const monto = enPesos(datos.monto_centavos);
 	contexto.bitacora({
@@ -153,14 +93,20 @@ export const accionPagarCuentaPorPagar = implementarAccion(pagarCuentaPorPagar, 
 		entidadFolio: folio,
 		antes: { saldo_centavos: cuenta.saldoCentavos, estado: cuenta.estado },
 		despues: {
-			saldo_centavos: saldo,
-			estado,
-			...(cerradas.length === 0 ? {} : { ordenes_cerradas: cerradas }),
+			saldo_centavos: pagada.saldoCentavos,
+			estado: pagada.estado,
+			...(cambiaron.ordenes.length === 0 ? {} : { ordenes_cerradas: cambiaron.ordenes }),
+			...(cambiaron.deudas.length === 0 ? {} : { deudas_saldadas: cambiaron.deudas }),
 		},
 		confirmadoConGoogleEn: confirmado,
 	});
 	return {
-		resultado: { mensaje: `${monto} pagados a ${beneficiario}`, pago_id: pagoId, folio, saldo_centavos: saldo },
+		resultado: {
+			mensaje: `${monto} pagados a ${beneficiario}`,
+			pago_id: pagoId,
+			folio,
+			saldo_centavos: pagada.saldoCentavos,
+		},
 		avisos,
 		entidad: { nombre: "pagos", id: pagoId },
 	};

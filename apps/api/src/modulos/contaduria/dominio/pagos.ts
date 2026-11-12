@@ -15,14 +15,14 @@ import { pagos } from "../tablas.ts";
 
 /** El medio de un pago, como lo trae la acción. */
 export interface MedioPedido {
-	medio: "efectivo" | "cuenta_fabrica";
+	medio: "efectivo" | "cuenta_fabrica" | "cuenta_tercero";
 	cuenta_fabrica_id?: string | undefined;
 	referencia?: string | undefined;
 }
 
 /**
  * Revisa dónde se recibió o de dónde salió el dinero: fuera de efectivo, la referencia; en una cuenta de la fábrica,
- * una vigente de la lista, o la única que hay si no se escogió.
+ * una vigente de la lista, o la única que hay si no se escogió. En la cuenta de un tercero no hay cuenta de la fábrica.
  * @param transaccion La transacción.
  * @param pedido El medio, la cuenta y la referencia que trajo la acción.
  * @param siempreReferencia Si la referencia va también en efectivo (lo que sale).
@@ -41,7 +41,7 @@ export async function revisarMedio(
 			siempreReferencia ? "Escribe la referencia" : "Escribe la referencia del depósito",
 		);
 	}
-	if (pedido.medio === "efectivo") return { cuentaFabricaId: null, referencia };
+	if (pedido.medio !== "cuenta_fabrica") return { cuentaFabricaId: null, referencia };
 	const vigentes = await transaccion
 		.select({ id: listaValores.id })
 		.from(listaValores)

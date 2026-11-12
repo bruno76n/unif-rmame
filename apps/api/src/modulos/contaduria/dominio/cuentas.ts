@@ -9,7 +9,7 @@
  * pasan del saldo.
  */
 
-import { asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
 import { quienCambia } from "../../../nucleo/acciones/comunes.ts";
@@ -96,7 +96,11 @@ async function ponerSaldo(contexto: ContextoDeAccion, cuenta: CuentaPorCobrar, s
 }
 
 /** De dónde viene una aplicación: exactamente uno. */
-export type OrigenDeAplicacion = { pagoId: string } | { notaCreditoId: string } | { saldoFavorMovimientoId: string };
+export type OrigenDeAplicacion =
+	| { pagoId: string }
+	| { compensacionId: string }
+	| { notaCreditoId: string }
+	| { saldoFavorMovimientoId: string };
 
 /**
  * Aplica un monto a una cuenta ya bloqueada: su aplicación vigente y el saldo nuevo.
@@ -129,15 +133,16 @@ export async function aplicarACuenta(
 }
 
 /**
- * Cancela las aplicaciones vigentes de un pago y regresa su monto a sus cuentas por cobrar.
+ * Cancela las aplicaciones vigentes de un pago o de una compensación a cuentas por cobrar y regresa su monto a esas
+ * cuentas. Las de las cuentas por pagar las regresa `regresarAplicacionesPorPagar`.
  * @param contexto El contexto de la acción.
- * @param pagoId El pago que se cancela.
+ * @param origen El pago o la compensación que se cancela.
  * @param motivo El motivo de la cancelación.
  * @returns Por cuenta, su saldo antes y después.
  */
-export async function regresarAplicacionesDelPago(
+export async function regresarAplicacionesPorCobrar(
 	contexto: ContextoDeAccion,
-	pagoId: string,
+	origen: { pagoId: string } | { compensacionId: string },
 	motivo: string,
 ): Promise<{ cuenta_por_cobrar_id: string; antes: number; despues: number }[]> {
 	const { transaccion } = contexto;
@@ -148,7 +153,15 @@ export async function regresarAplicacionesDelPago(
 			monto: aplicacionesPago.montoCentavos,
 		})
 		.from(aplicacionesPago)
-		.where(sql`${aplicacionesPago.pagoId} = ${pagoId} AND ${aplicacionesPago.estado} = 'vigente'`);
+		.where(
+			and(
+				"pagoId" in origen
+					? eq(aplicacionesPago.pagoId, origen.pagoId)
+					: eq(aplicacionesPago.compensacionId, origen.compensacionId),
+				eq(aplicacionesPago.estado, "vigente"),
+				isNotNull(aplicacionesPago.cuentaPorCobrarId),
+			),
+		);
 	const cuentas = await bloquearCuentas(
 		transaccion,
 		vigentes.flatMap((aplicacion) => (aplicacion.cuentaId === null ? [] : [aplicacion.cuentaId])),
@@ -162,23 +175,35 @@ export async function regresarAplicacionesDelPago(
 		await ponerSaldo(contexto, cuenta, despues);
 		movidas.push({ cuenta_por_cobrar_id: cuenta.id, antes: cuenta.saldoCentavos, despues });
 	}
-	if (vigentes.length > 0) {
-		await transaccion
-			.update(aplicacionesPago)
-			.set({
-				estado: "cancelada",
-				canceladoEn: contexto.ahora.toString(),
-				canceladoPor: quienCambia(contexto),
-				motivoCancelacion: motivo,
-			})
-			.where(
-				inArray(
-					aplicacionesPago.id,
-					vigentes.map((aplicacion) => aplicacion.id),
-				),
-			);
-	}
+	await cancelarAplicaciones(
+		contexto,
+		vigentes.map((aplicacion) => aplicacion.id),
+		motivo,
+	);
 	return movidas;
+}
+
+/**
+ * Cancela unas aplicaciones, con quién, cuándo y por qué.
+ * @param contexto El contexto de la acción.
+ * @param ids Las aplicaciones.
+ * @param motivo El motivo.
+ */
+export async function cancelarAplicaciones(
+	contexto: ContextoDeAccion,
+	ids: readonly string[],
+	motivo: string,
+): Promise<void> {
+	if (ids.length === 0) return;
+	await contexto.transaccion
+		.update(aplicacionesPago)
+		.set({
+			estado: "cancelada",
+			canceladoEn: contexto.ahora.toString(),
+			canceladoPor: quienCambia(contexto),
+			motivoCancelacion: motivo,
+		})
+		.where(inArray(aplicacionesPago.id, [...ids]));
 }
 
 /**

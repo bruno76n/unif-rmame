@@ -8,6 +8,7 @@
  * vale $7,990 (799,000 centavos).
  */
 
+import { Temporal } from "temporal-polyfill";
 import { z } from "zod";
 import { crearBase } from "../base/conexion.ts";
 import { enAccionDePrueba } from "./accion-de-prueba.ts";
@@ -189,4 +190,64 @@ export function leerDePrueba(servidor: ServidorDePrueba, nombre: string, datos: 
 	return enAccionDePrueba(crearBase(servidor.base.app), servidor.modulos, (contexto) =>
 		contexto.lectura(nombre, datos),
 	);
+}
+
+/** Una deuda de prueba: su id, su folio, su acreedor y sus cuentas por pagar en el orden de sus mensualidades. */
+export interface DeudaDePrueba {
+	id: string;
+	folio: string;
+	terceroId: string;
+	cuentas: string[];
+}
+
+/** El número de los acreedores de prueba, para que cada uno tenga un nombre que nadie más tiene. */
+let acreedorDePrueba = 0;
+
+/**
+ * Contaduría registra una deuda: con un acreedor nuevo si no se dice el tercero, en mensualidades iguales desde hoy.
+ * @param servidor El servidor de prueba.
+ * @param deuda El total, cuántas mensualidades y, si ya existe, el tercero.
+ */
+export async function deudaDePrueba(
+	servidor: ServidorDePrueba,
+	deuda: { totalCentavos: number; mensualidades?: number; terceroId?: string; primerVencimiento?: string },
+): Promise<DeudaDePrueba> {
+	acreedorDePrueba += 1;
+	const respuesta = await mandarAccion(
+		servidor,
+		"contaduria.registrar_deuda",
+		{
+			datos: {
+				...(deuda.terceroId === undefined
+					? { tercero_nuevo: { nombre: `Acreedor de prueba ${Date.now()}-${acreedorDePrueba}`, clase: "persona" } }
+					: { tercero_id: deuda.terceroId }),
+				descripcion: "Préstamo de prueba",
+				monto_total_centavos: deuda.totalCentavos,
+				numero_mensualidades: deuda.mensualidades ?? 1,
+				primer_vencimiento: deuda.primerVencimiento ?? Temporal.Now.plainDateISO("America/Mexico_City").toString(),
+			},
+		},
+		"contaduria",
+	);
+	if (respuesta.estado !== 200) throw new Error(`no se registró la deuda: ${JSON.stringify(respuesta.cuerpo)}`);
+	const { deuda_id: id, folio } = z.object({ deuda_id: z.uuid(), folio: z.string() }).parse(respuesta.cuerpo.resultado);
+	const { rows } = await servidor.base.dueno.query(
+		`SELECT c.id, d.tercero_id FROM cuentas_por_pagar c JOIN deuda_mensualidades m ON m.id = c.deuda_mensualidad_id
+		 JOIN deudas d ON d.id = m.deuda_id WHERE d.id = $1 ORDER BY m.numero`,
+		[id],
+	);
+	return { id, folio, terceroId: String(rows[0]?.tercero_id), cuentas: rows.map((fila) => String(fila.id)) };
+}
+
+/**
+ * Cómo quedó una cuenta por pagar: su estado y su saldo.
+ * @param servidor El servidor de prueba.
+ * @param cuentaId La cuenta.
+ */
+export async function cuentaPorPagarComoQuedo(servidor: ServidorDePrueba, cuentaId: string) {
+	const { rows } = await servidor.base.dueno.query(
+		"SELECT estado, saldo_centavos::int AS saldo, importe_centavos::int AS importe FROM cuentas_por_pagar WHERE id = $1",
+		[cuentaId],
+	);
+	return rows[0];
 }

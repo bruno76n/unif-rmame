@@ -168,3 +168,123 @@ export const pedirPagoLoRecibido = definirAccion({
 	],
 	edita: true,
 });
+
+/** Una mensualidad escrita a mano al registrar una deuda. */
+const mensualidad = z.object({
+	numero: z.number().int().positive().describe("Su número: 1, 2, 3…"),
+	vence: z.iso.date("¿Cuándo se paga?").describe("El día en que vence"),
+	importe_centavos: importe("Escribe el monto en pesos.").positive("Escribe el monto en pesos.").describe("Su importe"),
+});
+
+/** Contaduría registra una deuda con un acreedor: una cuenta por pagar por mensualidad. */
+export const registrarDeuda = definirAccion({
+	nombre: "contaduria.registrar_deuda",
+	descripcion: "Registra una deuda con un acreedor, en mensualidades, con una cuenta por pagar por mensualidad",
+	entrada: z.object({
+		tercero_id: z.uuid("¿A quién le debemos?").optional().describe("El acreedor que ya es tercero"),
+		tercero_nuevo: z
+			.object({
+				nombre: z.string("Escribe el nombre.").trim().min(3, "Escribe el nombre.").max(120).describe("Su nombre"),
+				clase: z.enum(["persona", "banco", "empresa"], "¿Qué es?").describe("Persona, banco o empresa"),
+			})
+			.optional()
+			.describe("O un acreedor nuevo"),
+		ligar_a_tercero_id: z.uuid().optional().describe("Si se respondió «Es el mismo»: el tercero que ya existe"),
+		descripcion: z
+			.string("Escribe de qué es la deuda.")
+			.trim()
+			.min(5, "Escribe de qué es la deuda.")
+			.max(200)
+			.describe("De qué es"),
+		monto_total_centavos: importe("Escribe el monto en pesos.")
+			.positive("Escribe el monto en pesos.")
+			.describe("Lo que se va a pagar en total"),
+		numero_mensualidades: z.number().int().min(1).max(600).describe("En cuántas mensualidades; un solo pago es 1"),
+		primer_vencimiento: z.iso.date("¿Cuándo se paga?").describe("Cuándo vence la primera"),
+		mensualidades: z
+			.array(mensualidad)
+			.optional()
+			.describe("Si se cambiaron: cada una con su número, su día y su importe"),
+	}),
+	salida: z.object({ deuda_id: z.uuid(), folio: z.string().describe("El PR-") }),
+	permiso: { departamento: "contaduria" },
+	errores: [
+		{ codigo: "tercero_ya_existe", mensaje: "Ya hay un tercero con ese nombre: {nombre} ({roles}). ¿Es el mismo?" },
+		{ codigo: "mensualidades_no_suman", mensaje: "Las mensualidades suman {suma} y la deuda es {monto}." },
+		{ codigo: "vencimientos_desordenados", mensaje: "Cada mensualidad vence después de la anterior." },
+	],
+});
+
+/** Contaduría cancela una deuda sin pagos, con sus cuentas por pagar. */
+export const cancelarDeuda = definirAccion({
+	nombre: "contaduria.cancelar_deuda",
+	descripcion: "Cancela una deuda sin pagos, con sus cuentas por pagar",
+	entrada: z.object({ deuda_id: z.uuid().describe("La deuda"), motivo }),
+	salida: z.object({ deuda_id: z.uuid() }),
+	permiso: { departamento: "contaduria" },
+	errores: [
+		{ codigo: "deuda_con_pagos", mensaje: "{PR} ya tiene pagos: no se puede cancelar." },
+		{ codigo: "deuda_no_abierta", mensaje: "{PR} ya está saldada o cancelada." },
+	],
+	edita: true,
+});
+
+/** Contaduría descuenta lo que un tercero nos compró de lo que le debemos, sin mover dinero. */
+export const compensar = definirAccion({
+	nombre: "contaduria.compensar",
+	descripcion: "Compensa lo que un tercero nos debe con lo que le debemos, sin mover dinero",
+	entrada: z.object({
+		tercero_id: z.uuid().describe("El tercero que es cliente y a quien le debemos"),
+		monto_centavos: z
+			.number("Escribe el monto en pesos")
+			.int("Escribe el monto en pesos")
+			.positive("Escribe el monto en pesos")
+			.multipleOf(100, "Escribe el monto en pesos")
+			.describe("Lo que se compensa, en pesos enteros"),
+	}),
+	salida: z.object({ compensacion_id: z.uuid() }),
+	permiso: { departamento: "contaduria" },
+	errores: [
+		{
+			codigo: "sin_saldo_para_compensar",
+			mensaje: "{tercero} no nos debe y le debemos a la vez: no hay qué compensar.",
+		},
+		{ codigo: "monto_mayor_que_maximo", mensaje: "Hasta {máximo}." },
+	],
+});
+
+/** Contaduría cancela una compensación: sus aplicaciones se cancelan y los saldos regresan. */
+export const cancelarCompensacion = definirAccion({
+	nombre: "contaduria.cancelar_compensacion",
+	descripcion: "Cancela una compensación: regresa los saldos de lo que bajó de cada lado",
+	entrada: z.object({ compensacion_id: z.uuid().describe("La compensación"), motivo }),
+	salida: z.object({ compensacion_id: z.uuid() }),
+	permiso: { departamento: "contaduria", confirmarConGoogle: "cancelar_compensacion" },
+	errores: [{ codigo: "compensacion_cancelada", mensaje: "Esa compensación ya está cancelada." }],
+	edita: true,
+});
+
+/** Contaduría aplica un depósito que un cliente hizo a la cuenta de un tercero a lo que la fábrica le debe. */
+export const aplicarDepositoATercero = definirAccion({
+	nombre: "contaduria.aplicar_deposito_a_tercero",
+	descripcion: "Aplica a una deuda con un tercero lo que un cliente depositó en la cuenta de ese tercero",
+	entrada: z.object({
+		pago_id: z.uuid().describe("El pago que fue a la cuenta del tercero"),
+		cuenta_por_pagar_id: z.uuid("Escoge la deuda.").describe("La deuda con ese tercero"),
+	}),
+	salida: z.object({
+		pago_id: z.uuid(),
+		queda_centavos: z.number().int().optional().describe("Lo que queda del depósito, a favor con el tercero"),
+	}),
+	permiso: { departamento: "contaduria" },
+	errores: [
+		{ codigo: "pago_no_es_deposito_a_tercero", mensaje: "{PG} no fue a la cuenta de un tercero." },
+		{ codigo: "pago_cancelado", mensaje: "{PG} está cancelado." },
+		{ codigo: "deposito_ya_aplicado", mensaje: "{PG} ya está aplicado completo." },
+		{ codigo: "deuda_de_otro_tercero", mensaje: "{documento} no es de {tercero}." },
+		{ codigo: "deuda_detenida", mensaje: "{documento} está detenida: no se le puede aplicar un depósito." },
+		{ codigo: "deuda_pagada", mensaje: "{documento} ya está pagada." },
+		{ codigo: "deuda_cancelada", mensaje: "{documento} está cancelada." },
+	],
+	edita: true,
+});

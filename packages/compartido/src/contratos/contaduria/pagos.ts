@@ -37,7 +37,22 @@ export const registrarPagoRecibido = definirAccion({
 		monto_centavos: montoDePago("Escribe el monto en pesos").describe(
 			"El monto en centavos: en pesos enteros, o con centavos si liquida exacto el saldo de la nota",
 		),
-		...medioDePago,
+		medio: z
+			.enum(["efectivo", "cuenta_fabrica", "cuenta_tercero"], "Escoge cómo pagó.")
+			.describe("En efectivo, en una cuenta de la fábrica o en la cuenta de un tercero a quien le debemos"),
+		cuenta_fabrica_id: medioDePago.cuenta_fabrica_id,
+		tercero_deposito_id: z
+			.uuid("¿A quién le depositó?")
+			.optional()
+			.describe("Con `cuenta_tercero`: «Cuenta de quién», el tercero a quien le depositó"),
+		aplicar: z
+			.enum(["ahora", "despues"])
+			.optional()
+			.describe("Con `cuenta_tercero`: aplicarlo ya a una deuda con ese tercero, o después"),
+		cuenta_por_pagar_id: z
+			.uuid("Escoge la deuda.")
+			.optional()
+			.describe("Con `aplicar` = `ahora`: la deuda con ese tercero a la que se aplica"),
 		referencia: z
 			.string("Escribe la referencia del depósito")
 			.trim()
@@ -56,6 +71,11 @@ export const registrarPagoRecibido = definirAccion({
 		{ codigo: "nota_sin_entregar", mensaje: "{NV} todavía no se entrega: se cobra al confirmar la entrega." },
 		{ codigo: "documento_de_otro_cliente", mensaje: "{folio} no es de {cliente}." },
 		{ codigo: "monto_mayor_que_saldo", mensaje: "El saldo de {folio} es {saldo}." },
+		{ codigo: "tercero_sin_deuda", mensaje: "A {tercero} no se le debe nada: escoge a quién le depositó." },
+		{ codigo: "deuda_de_otro_tercero", mensaje: "{documento} no es de {tercero}." },
+		{ codigo: "deuda_detenida", mensaje: "{documento} está detenida: no se le puede aplicar un depósito." },
+		{ codigo: "deuda_pagada", mensaje: "{documento} ya está pagada." },
+		{ codigo: "deuda_cancelada", mensaje: "{documento} está cancelada." },
 		{
 			codigo: "pedido_no_abierto",
 			mensaje: "{PE} no está confirmado y abierto: no se le puede registrar anticipo.",

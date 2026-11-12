@@ -212,3 +212,17 @@ Ninguno propio: el largo del motivo es `general.largo_minimo_motivo` (ver [confi
 - **La lectura** `datos_terceros` (`lecturas/terceros.ts`) regresa, por id, el nombre, el RFC y los roles.
 - **Quién lee** `terceros`, para los avisos en vivo: Contaduría, Compras, Ventas y Dirección (`index.ts`).
 - **Pruebas:** `internas/crear-tercero.prueba.ts` (nace, se liga sin importar acentos ni espacios, `rol_ya_existe`, `tercero_ya_existe` con sus datos, «Es el mismo», el RFC, renombrar, y dos altas a la vez en cinco rondas).
+
+**Fase 17, parte 2.**
+
+- **Las tablas** `compensaciones`, `deudas` y `deuda_mensualidades` están en `modulos/contaduria/tablas.ts` (migración `0059`), con sus CHECK. La misma migración pone las llaves de `aplicaciones_pago.compensacion_id` y `cuentas_por_pagar.deuda_mensualidad_id`. Las mensualidades solo crecen.
+- **Las deudas** (`acciones/deudas.ts`):
+  - `registrar_deuda` arma las mensualidades iguales con `mensualidadesIguales`: una por mes con Temporal, y el ajuste de centavos en la última. Si se escribieron a mano, revisa que sean una por número, que sumen el total y que cada una venza después de la anterior.
+  - El acreedor nuevo nace con `contaduria.crear_tercero`, que pregunta «¿Es el mismo?». Un tercero que ya existe y no es acreedor prende su rol (decisión 707).
+  - Escribe una cuenta por pagar `por_pagar` por mensualidad.
+  - `cancelar_deuda` solo cancela sin aplicaciones, con sus cuentas.
+- **Saldar y reabrir** viven en `dominio/cuentas-por-pagar.ts`: `alPagarse` salda la deuda cuyas cuentas quedaron todas pagadas; `regresarAplicacionesPorPagar` la vuelve a abrir con el evento `deuda.abierta` (decisión 708). Las deudas se bloquean con las órdenes, antes que sus cuentas (decisión 705).
+- **Las compensaciones** (`acciones/compensaciones.ts`):
+  - `compensar` bloquea lo que le debemos sin detenidas, lo que nos debe y luego reparte el mismo monto de cada lado, primero lo que vence antes (`repartirEnCuentas`), hasta lo menor de los dos.
+  - `cancelar_compensacion` regresa las dos con `regresarAplicacionesPorCobrar` y `regresarAplicacionesPorPagar`, y deja un renglón por cada orden que se reabre.
+- **Pruebas:** `acciones/registrar-deuda.prueba.ts`, `cancelar-deuda.prueba.ts` y `compensar.prueba.ts` (también la cancelación), y la prueba al azar `saldos-por-pagar.azar.prueba.ts`.

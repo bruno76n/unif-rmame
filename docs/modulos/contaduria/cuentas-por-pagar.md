@@ -139,3 +139,13 @@ Los cambia solo la dueña, en Configuración (ver [configuración](../admin/conf
   - `acciones/pagar-cuenta-por-pagar.prueba.ts`: el vencimiento, la detenida, Google, por partes, dos pagos a la vez y la orden que se cierra aun con dos pagos a la vez;
   - `acciones/pedir-pago-lo-recibido.prueba.ts` e `internas/aplicar-decision-pago-fuera-de-lo-normal.prueba.ts`, que también prueba la nota de crédito del proveedor;
   - `dominio/saldo-por-pagar.prueba.ts`, también con fast-check.
+
+**Fase 17, parte 2.** Lo que mueve el saldo vive en `dominio/cuentas-por-pagar.ts`:
+
+- `bloquearDocumentosDeCuentas` bloquea primero las órdenes de sus facturas y sus deudas;
+- `aplicarACuentaPorPagar` escribe la aplicación, el saldo, el estado y `pagada_en`, y guarda `cuenta_por_pagar.pagada`;
+- `alPagarse` cierra las órdenes y salda las deudas;
+- `regresarAplicacionesPorPagar` regresa lo de un pago o una compensación que se cancela, reabre la orden y la deuda;
+- `documentoDeCuenta` nombra la cuenta: «FP-8841» o «PR-08 · mensualidad 3 de 12».
+
+`pagar_cuenta_por_pagar` paga también las mensualidades. El orden de los candados es documentos, pago o compensación, anticipo, crédito, cuentas por cobrar, cuentas por pagar y folio (decisión 705). La prueba al azar `saldos-por-pagar.azar.prueba.ts` mezcla pagos, depósitos, compensaciones y cancelaciones, tres a la vez. Revisa que el saldo de cada cuenta sea su importe menos sus aplicaciones vigentes, que la orden esté cerrada solo con sus facturas pagadas, que la deuda esté saldada solo con sus mensualidades pagadas y que ningún depósito se aplique de más.

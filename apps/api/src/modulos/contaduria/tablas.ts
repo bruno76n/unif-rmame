@@ -5,12 +5,11 @@
  * Fase 15 · docs/modulos/contaduria/credito-de-clientes.md («La tabla `credito_clientes`») y
  * docs/modulos/contaduria/cuentas-por-cobrar.md («La tabla `cuentas_por_cobrar`») y
  * docs/modulos/contaduria/pagos-y-saldo-a-favor.md (las tres tablas) y docs/modulos/contaduria/anticipos.md
- * Fase 17 · docs/modulos/contaduria/facturas-de-proveedor.md (las dos tablas) y cuentas-por-pagar.md («La tabla
- * `cuentas_por_pagar`»)
+ * Fase 17 · docs/modulos/contaduria/facturas-de-proveedor.md (las dos tablas), cuentas-por-pagar.md («La tabla
+ * `cuentas_por_pagar`») y terceros-y-deudas.md (`compensaciones`, `deudas` y `deuda_mensualidades`)
  *
  * Las columnas que apuntan a los clientes, los pedidos y las notas son llaves a las tablas de Ventas; las de las
- * facturas, a los proveedores y las órdenes de Compras. Las compensaciones y las deudas llegan en la parte 2 de la
- * fase 17.
+ * facturas, a los proveedores y las órdenes de Compras.
  */
 
 import { sql } from "drizzle-orm";
@@ -312,8 +311,7 @@ export const aplicacionesPago = pgTable(
 	{
 		id: uuid("id").primaryKey(),
 		pagoId: uuid("pago_id").references(() => pagos.id),
-		/** @llavePendiente compensaciones.id */
-		compensacionId: uuid("compensacion_id"),
+		compensacionId: uuid("compensacion_id").references((): AnyPgColumn => compensaciones.id),
 		notaCreditoId: uuid("nota_credito_id").references((): AnyPgColumn => notasCredito.id),
 		saldoFavorMovimientoId: uuid("saldo_favor_movimiento_id").references((): AnyPgColumn => saldoFavorMovimientos.id),
 		cuentaPorCobrarId: uuid("cuenta_por_cobrar_id").references(() => cuentasPorCobrar.id),
@@ -534,8 +532,7 @@ export const cuentasPorPagar = pgTable(
 			.references(() => terceros.id),
 		tipo: text("tipo").notNull(),
 		facturaProveedorId: uuid("factura_proveedor_id").references(() => facturasProveedor.id),
-		/** @llavePendiente deuda_mensualidades.id */
-		deudaMensualidadId: uuid("deuda_mensualidad_id"),
+		deudaMensualidadId: uuid("deuda_mensualidad_id").references((): AnyPgColumn => deudaMensualidades.id),
 		/** El día en que nació. */
 		fecha: date("fecha", { mode: "string" }).notNull(),
 		vence: date("vence", { mode: "string" }).notNull(),
@@ -576,5 +573,85 @@ export const cuentasPorPagar = pgTable(
 			"cuentas_por_pagar_cancelada",
 			sql`(${tabla.estado} = 'cancelada') = (${tabla.canceladoEn} is not null and ${tabla.motivoCancelacion} is not null)`,
 		),
+	],
+);
+
+/** Una compensación: lo que un tercero nos compró se descuenta de lo que le debemos, sin mover dinero. */
+export const compensaciones = pgTable(
+	"compensaciones",
+	{
+		id: uuid("id").primaryKey(),
+		terceroId: uuid("tercero_id")
+			.notNull()
+			.references(() => terceros.id),
+		fecha: date("fecha", { mode: "string" }).notNull(),
+		montoCentavos: bigint("monto_centavos", { mode: "number" }).notNull(),
+		descripcion: text("descripcion").notNull().default("Su compra se descontó de lo que le debemos"),
+		estado: text("estado").notNull().default("registrada"),
+		...columnasDeCancelacion(),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		index("compensaciones_tercero").on(tabla.terceroId, tabla.fecha),
+		check("compensaciones_monto", sql`${tabla.montoCentavos} > 0 and ${tabla.montoCentavos} % 100 = 0`),
+		check("compensaciones_estado", sql`${tabla.estado} in ('registrada', 'cancelada')`),
+		check(
+			"compensaciones_cancelada",
+			sql`(${tabla.estado} = 'cancelada') = (${tabla.canceladoEn} is not null and ${tabla.motivoCancelacion} is not null)`,
+		),
+	],
+);
+
+/** Los estados de una deuda. */
+export const estadosDeDeuda = ["abierta", "saldada", "cancelada"] as const;
+
+/** Una deuda PR- con un acreedor: un préstamo o un crédito, en mensualidades. */
+export const deudas = pgTable(
+	"deudas",
+	{
+		id: uuid("id").primaryKey(),
+		folio: text("folio").notNull(),
+		terceroId: uuid("tercero_id")
+			.notNull()
+			.references(() => terceros.id),
+		descripcion: text("descripcion").notNull(),
+		montoTotalCentavos: bigint("monto_total_centavos", { mode: "number" }).notNull(),
+		numeroMensualidades: integer("numero_mensualidades").notNull(),
+		estado: text("estado").notNull().default("abierta"),
+		saldadaEn: momento("saldada_en"),
+		...columnasDeCancelacion(),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		uniqueIndex("deudas_folio").on(tabla.folio),
+		index("deudas_tercero").on(tabla.terceroId, tabla.estado),
+		check("deudas_descripcion", sql`char_length(${tabla.descripcion}) >= 5`),
+		check("deudas_monto", sql`${tabla.montoTotalCentavos} > 0 and ${tabla.numeroMensualidades} >= 1`),
+		check("deudas_estado", sql`${tabla.estado} in (${valores(estadosDeDeuda)})`),
+		check("deudas_saldada", sql`(${tabla.estado} = 'saldada') = (${tabla.saldadaEn} is not null)`),
+		check(
+			"deudas_cancelada",
+			sql`(${tabla.estado} = 'cancelada') = (${tabla.canceladoEn} is not null and ${tabla.motivoCancelacion} is not null)`,
+		),
+	],
+);
+
+/** Cada mensualidad de una deuda: «mensualidad 8 de 20». Su cuenta por pagar la apunta. */
+export const deudaMensualidades = pgTable(
+	"deuda_mensualidades",
+	{
+		id: uuid("id").primaryKey(),
+		deudaId: uuid("deuda_id")
+			.notNull()
+			.references(() => deudas.id),
+		numero: integer("numero").notNull(),
+		vence: date("vence", { mode: "string" }).notNull(),
+		importeCentavos: bigint("importe_centavos", { mode: "number" }).notNull(),
+		...columnasComunes(),
+	},
+	(tabla) => [
+		uniqueIndex("deuda_mensualidades_numero").on(tabla.deudaId, tabla.numero),
+		check("deuda_mensualidades_numero", sql`${tabla.numero} >= 1`),
+		check("deuda_mensualidades_importe", sql`${tabla.importeCentavos} > 0`),
 	],
 );

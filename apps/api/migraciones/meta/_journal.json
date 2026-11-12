@@ -414,6 +414,13 @@
 			"when": 1794471394062,
 			"tag": "0058_facturas_proveedor",
 			"breakpoints": true
+		},
+		{
+			"idx": 59,
+			"version": "7",
+			"when": 1794473635766,
+			"tag": "0059_deudas",
+			"breakpoints": true
 		}
 	]
 }

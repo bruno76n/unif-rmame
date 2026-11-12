@@ -7,15 +7,18 @@
  * anticipos.md
  * Fase 17 · docs/modulos/contaduria/facturas-de-proveedor.md y cuentas-por-pagar.md
  *
- * Las deudas, los gastos y la nómina llegan en las partes 2 a 4 de la fase 17.
+ * Los gastos y la nómina llegan en las partes 3 y 4 de la fase 17.
  */
 
 import { definirModulo } from "../../nucleo/modulos.ts";
+import { accionCancelarCompensacion, accionCompensar } from "./acciones/compensaciones.ts";
 import {
 	accionCambiarDiasCredito,
 	accionCambiarLimiteCredito,
 	accionCambiarSemaforoCredito,
 } from "./acciones/credito.ts";
+import { accionAplicarDepositoATercero } from "./acciones/depositos.ts";
+import { accionCancelarDeuda, accionRegistrarDeuda } from "./acciones/deudas.ts";
 import {
 	accionCancelarFacturaProveedor,
 	accionCapturarFacturaProveedor,
@@ -52,6 +55,11 @@ export default definirModulo({
 		accionRegistrarNotaCreditoProveedor,
 		accionPagarCuentaPorPagar,
 		accionPedirPagoLoRecibido,
+		accionRegistrarDeuda,
+		accionCancelarDeuda,
+		accionCompensar,
+		accionCancelarCompensacion,
+		accionAplicarDepositoATercero,
 	],
 	internas: {
 		crear_tercero: crearTercero,
@@ -90,5 +98,8 @@ export default definirModulo({
 		facturas_proveedor: ["contaduria", "compras"],
 		factura_proveedor_ordenes: ["contaduria"],
 		cuentas_por_pagar: ["contaduria"],
+		compensaciones: ["contaduria"],
+		deudas: ["contaduria"],
+		deuda_mensualidades: ["contaduria"],
 	},
 });
