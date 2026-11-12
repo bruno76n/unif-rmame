@@ -26,7 +26,7 @@ import { escribirMovimiento, type RenglonDeMovimiento } from "../dominio/escribi
 import { partidasDe } from "../dominio/partidas.ts";
 import { ubicacionDeTipo } from "../dominio/recepciones.ts";
 import { nombreDeVariante } from "../dominio/reservas.ts";
-import { conteoLineas, conteos, movimientoLineas, rollos } from "../tablas.ts";
+import { conteoLineas, conteos, movimientoLineas, rollos, ubicaciones } from "../tablas.ts";
 
 /** Lo que regresa `admin.tomar_folio`. */
 const folioTomado = z.object({ folio: z.string() });
@@ -207,8 +207,20 @@ export const accionRegistrarCargaInicialMaterial = implementarAccion(
 		if (conMovimientos !== undefined) {
 			throw errorDeRegla("ya_tiene_carga_inicial", `${material.nombre} ya tiene carga inicial o movimientos.`);
 		}
+		// Dónde queda: la tela y los avíos en Bodega; los consumibles donde los toma el taller.
+		const tipoDeUbicacion =
+			material.tipo === "consumible"
+				? z
+						.enum(["bodega", "taller", "aduana"])
+						.parse(await contexto.lectura("admin.parametro", { clave: "inventario.ubicacion_consumibles" }))
+				: "bodega";
+		const destino = await ubicacionDeTipo(transaccion, tipoDeUbicacion);
+		const [lugar] = await transaccion
+			.select({ nombre: ubicaciones.nombre })
+			.from(ubicaciones)
+			.where(eq(ubicaciones.id, destino));
 		const texto = `${cantidadEnTexto(cantidad)} ${material.unidad}`;
-		const mensaje = `${material.nombre}: carga inicial de ${texto} en bodega`;
+		const mensaje = `${material.nombre}: carga inicial de ${texto} en ${lugar?.nombre ?? ""}`;
 		if (cantidad === 0n) {
 			contexto.bitacora({
 				descripcion: `Carga inicial de ${material.nombre}`,
@@ -218,14 +230,6 @@ export const accionRegistrarCargaInicialMaterial = implementarAccion(
 			});
 			return { resultado: { mensaje, rollos: [] }, entidad: { nombre: "materiales", id: datos.material_id } };
 		}
-		// Dónde queda: la tela y los avíos en Bodega; los consumibles donde los toma el taller.
-		const tipoDeUbicacion =
-			material.tipo === "consumible"
-				? z
-						.enum(["bodega", "taller", "aduana"])
-						.parse(await contexto.lectura("admin.parametro", { clave: "inventario.ubicacion_consumibles" }))
-				: "bodega";
-		const destino = await ubicacionDeTipo(transaccion, tipoDeUbicacion);
 		const movimientoId = uuidv7();
 		const quien = quienCambia(contexto);
 		// En tela, sus rollos: los que se dieron, o uno solo con toda la cantidad.

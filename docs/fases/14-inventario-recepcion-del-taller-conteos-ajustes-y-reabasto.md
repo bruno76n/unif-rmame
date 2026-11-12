@@ -1,7 +1,7 @@
 # Fase 14: Inventario: recepción del taller, conteos, ajustes y reabasto ●
 
 > **Etapa:** Módulos.
-> **Estado:** Pendiente.
+> **Estado:** Terminada.
 > **Antes de empezar:** lee la [forma de trabajo](../trabajo/FORMA-DE-TRABAJO.md) y la [revisión de fase](../trabajo/REVISION-DE-FASE.md).
 > **Se conecta con:** [fases](FASES.md) · [fase 13](13-calidad-y-mantenimiento.md) · [fase 15](15-contaduria-terceros-credito-y-cobranza.md)
 

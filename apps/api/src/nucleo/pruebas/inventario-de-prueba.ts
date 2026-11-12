@@ -1,10 +1,11 @@
 /**
  * Las ayudas de las pruebas del inventario: las ubicaciones por código, variantes que nadie más usa, piezas que
- * entran con un ajuste, un traspaso nuevo y llamar una interna.
+ * entran con un ajuste, un traspaso nuevo, llamar una interna y cuántas trabas deshizo Postgres.
  * Fase 9 · docs/fases/09-inventario-libro-existencias-reservas-y-traspasos.md («Cómo se construye»)
  */
 
 import { v7 as uuidv7 } from "uuid";
+import { z } from "zod";
 import { escribirMovimiento } from "../../modulos/inventario/dominio/escribir-movimiento.ts";
 import { crearTraspaso, type PedidoDeTraspaso } from "../../modulos/inventario/dominio/traspasos.ts";
 import { crearBase } from "../base/conexion.ts";
@@ -131,4 +132,19 @@ export async function reservasActivasDelPedido(servidor: ServidorDePrueba, pedid
 		[pedido],
 	);
 	return rows;
+}
+
+/**
+ * Cuántas veces Postgres ha deshecho una traba (deadlock) en la base de la prueba. Espera a que los procesos de la base
+ * publiquen su cuenta (lo hacen a lo más cada segundo) y la lee sin la foto anterior. Una prueba de candados la lee
+ * antes y después: el núcleo reintenta una acción trabada sin que se vea en la respuesta.
+ * @param servidor El servidor de prueba.
+ */
+export async function trabasDeLaBase(servidor: ServidorDePrueba): Promise<number> {
+	await new Promise((listo) => setTimeout(listo, 1500));
+	await servidor.base.dueno.query("SELECT pg_stat_clear_snapshot()");
+	const { rows } = await servidor.base.dueno.query(
+		"SELECT deadlocks::int AS n FROM pg_stat_database WHERE datname = current_database()",
+	);
+	return z.object({ n: z.number() }).parse(rows[0]).n;
 }

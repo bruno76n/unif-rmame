@@ -118,13 +118,15 @@ describe("Un ajuste autorizado mueve la diferencia guardada; rechazado, nada cam
 			[ubicacion.BOD, otra],
 		);
 		const { ajuste_id: delConteo = "" } = await contarEnBodega(otra, 0);
-		expect(await consultar("SELECT estado FROM diferencias WHERE variante_id = $1", [otra])).toEqual([
-			{ estado: "esperando_autorizacion" },
-		]);
+		const queda = () =>
+			consultar(
+				"SELECT estado, ajuste_id IS NOT NULL AS con_ajuste, conteo_id IS NOT NULL AS con_conteo FROM diferencias WHERE variante_id = $1",
+				[otra],
+			);
+		expect(await queda()).toEqual([{ estado: "esperando_autorizacion", con_ajuste: true, con_conteo: true }]);
 		await decidirAjusteDePrueba(servidor, delConteo, { decision: "rechazar", motivo: "Cuenten otra vez" });
-		expect(await consultar("SELECT estado FROM diferencias WHERE variante_id = $1", [otra])).toEqual([
-			{ estado: "por_contar" },
-		]);
+		// Regresa sin su AJ- ni su conteo: el siguiente conteo la puede cerrar.
+		expect(await queda()).toEqual([{ estado: "por_contar", con_ajuste: false, con_conteo: false }]);
 	});
 
 	it("lo decide Dirección o la dueña desde Bodega; Bodega no", async () => {

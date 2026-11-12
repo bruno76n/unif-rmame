@@ -257,4 +257,4 @@ Ninguno propio: el largo del motivo es `general.largo_minimo_motivo` (ver [confi
 
 **Fase 12, parte 4.** `inventario.registrar_merma_produccion` e `inventario.revertir_merma_produccion` viven en `modulos/inventario/internas/merma-produccion.ts`: el movimiento `merma_produccion` con el lote, la persona y la tablet, y su reversión con `revertirMovimiento`; la clave de cada uno sale del registro. Las prueba `produccion/acciones/registrar-operacion.prueba.ts`.
 
-**Fase 14, cierre.** Con la auditoría: al rechazar un AJ-, sus DF- también pierden su conteo y su motivo; el renglón de material del ajuste lleva su lote; el efecto revisa que la AU- sea la del AJ-; y el paso 5 del cuadre toma el candado de la variante y vuelve a ver antes de abrir una DF-.
+**Fase 14, cierre.** Con la auditoría: al rechazar un AJ-, sus DF- también pierden su conteo y su motivo; el renglón de material del ajuste lleva su lote; el efecto revisa que la AU- sea la del AJ-; y el paso 5 del cuadre toma de una vez, en orden, los candados de las variantes que halló, antes de abrir su primera DF-, y vuelve a ver cada una antes de abrirla (decisión 660).

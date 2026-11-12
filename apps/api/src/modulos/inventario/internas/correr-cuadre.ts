@@ -357,7 +357,14 @@ async function negativosSinExplicar(
 	const dia = new Intl.DateTimeFormat("es-MX", { day: "numeric", month: "short", timeZone: "UTC" })
 		.format(new Date(`${fecha}T12:00:00Z`))
 		.replace(".", "");
-	for (const fila of z.array(negativo).parse(rows)) {
+	const filas = z.array(negativo).parse(rows);
+	// Los candados de todas las variantes de prenda, de una vez y en orden, antes de abrir ninguna DF- (abrirla toma
+	// su folio): así el paso no los toma al revés que las acciones que tienen una variante y abren una DF-.
+	await candadoDeVariantes(
+		contexto.transaccion,
+		filas.flatMap((fila) => (fila.variante_id === null ? [] : [fila.variante_id])),
+	);
+	for (const fila of filas) {
 		const descripcion = `El cuadre del ${dia} halló ${Number(fila.cuanto)} en ${fila.ubicacion}`;
 		if (
 			fila.variante_id !== null &&
@@ -377,10 +384,8 @@ async function negativosSinExplicar(
 			cuenta.excepciones += 1;
 			continue;
 		}
-		// Con el candado de la variante (en orden de variante, como todos) se vuelve a ver: un conteo o un movimiento de
-		// este momento ya pudo explicarlo.
+		// Ya con el candado de la variante se vuelve a ver: un conteo o un movimiento de este momento ya pudo explicarlo.
 		if (fila.variante_id !== null) {
-			await candadoDeVariantes(contexto.transaccion, [fila.variante_id]);
 			const { rows: sigue } = await contexto.transaccion.execute(sql`
 				SELECT 1 FROM existencias e WHERE e.ubicacion_id = ${fila.ubicacion_id} AND e.variante_id = ${fila.variante_id}
 					AND e.piezas < 0 AND NOT EXISTS (

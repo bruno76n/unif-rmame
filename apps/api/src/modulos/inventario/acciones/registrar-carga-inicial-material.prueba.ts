@@ -66,7 +66,7 @@ describe("La carga inicial del material: la tela por rollo con su costo y su par
 				rollos: z.array(z.object({ rollo_id: z.uuid(), folio: z.string() })),
 			})
 			.parse(respuesta.cuerpo.resultado);
-		expect(salida.mensaje).toMatch(/: carga inicial de 80 m en bodega$/);
+		expect(salida.mensaje).toMatch(/: carga inicial de 80 m en Bodega$/);
 		const { rows } = await servidor.base.dueno.query(
 			`SELECT r.folio, r.estado, r.es_carga_inicial, r.costo_metro_centavos, r.metros_iniciales, p.codigo_proveedor,
 				p.proveedor_id = m.proveedor_habitual_id AS del_habitual, p.folio AS partida
@@ -150,17 +150,25 @@ describe("La carga inicial del material: la tela por rollo con su costo y su par
 		const codigo = { bodega: "BOD", taller: "TAL", aduana: "ADU" }[String(parametro[0]?.valor)];
 		expect(await dondeQuedo(consumible)).toEqual([{ codigo, por_rollo: false, cantidad: "7.000" }]);
 		expect((await cargar({ material_id: avio, cantidad: "1" }, "aduana")).estado).toBe(403);
-		// Con los consumibles en el Taller, la carga de un consumible entra al Taller.
+		// Con los consumibles en el Taller, la carga de un consumible entra al Taller y lo dice; el parámetro regresa a
+		// como estaba aunque la prueba falle.
 		await servidor.base.dueno.query(
 			"UPDATE parametros SET valor_texto = 'taller' WHERE clave = 'inventario.ubicacion_consumibles'",
 		);
-		const delTaller = await conCosto("consumible", 80);
-		expect((await cargar({ material_id: delTaller, cantidad: "3" })).estado).toBe(200);
-		expect(await dondeQuedo(delTaller)).toEqual([{ codigo: "TAL", por_rollo: false, cantidad: "3.000" }]);
-		await servidor.base.dueno.query(
-			"UPDATE parametros SET valor_texto = $1 WHERE clave = 'inventario.ubicacion_consumibles'",
-			[parametro[0]?.valor],
-		);
+		try {
+			const delTaller = await conCosto("consumible", 80);
+			const enTaller = await cargar({ material_id: delTaller, cantidad: "3" });
+			expect(enTaller.estado).toBe(200);
+			expect(z.object({ mensaje: z.string() }).parse(enTaller.cuerpo.resultado).mensaje).toMatch(
+				/: carga inicial de 3 .+ en Taller$/,
+			);
+			expect(await dondeQuedo(delTaller)).toEqual([{ codigo: "TAL", por_rollo: false, cantidad: "3.000" }]);
+		} finally {
+			await servidor.base.dueno.query(
+				"UPDATE parametros SET valor_texto = $1 WHERE clave = 'inventario.ubicacion_consumibles'",
+				[parametro[0]?.valor],
+			);
+		}
 	});
 
 	it("la tela que entra recalcula los rollos sugeridos: el lote que la espera aparta su rollo", async () => {

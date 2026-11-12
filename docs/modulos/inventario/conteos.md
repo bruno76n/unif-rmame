@@ -17,7 +17,7 @@ Lo que dice el sistema se compara con lo que hay, sin pisar lo que pasó mientra
 4. **Un conteo cierra las DF- que están por contar** en esa ubicación y esa variante, sean del conteo o no: si cuadró, quedan resueltas; si no, esperan con el AJ-.
 5. **Solo prendas.** El material no se cuenta: su existencia se corrige con sus DF-.
 6. **La carga inicial** es la existencia de arranque: entra como `carga_inicial`, sin AJ-, y solo donde esa variante (o ese material) no tiene movimientos todavía. Después, todo cambio va por conteo y ajuste, o por las DF- del material.
-7. **La carga inicial del material:** la tela por rollo, cada uno con su folio R-, marcado de carga inicial y con el costo de su tela (ver [proveedores y precios](../compras/proveedores-y-precios.md#el-costo-de-un-material)); si no se dan los rollos, nace uno solo con toda la cantidad. La partida, si se da, es del proveedor habitual de la tela. Los avíos van por cantidad a Bodega, y los consumibles a `inventario.ubicacion_consumibles`. Una cantidad en 0 no mueve nada.
+7. **La carga inicial del material:** la tela por rollo, cada uno con su folio R-, marcado de carga inicial y con el costo de su tela (ver [proveedores y precios](../compras/proveedores-y-precios.md#el-costo-de-un-material)); si no se dan los rollos, nace uno solo con toda la cantidad. La partida, si se da, es del proveedor habitual de la tela. Los avíos van por cantidad a Bodega, y los consumibles a `inventario.ubicacion_consumibles`. Una cantidad en 0 no mueve nada ni deja nada: el material sigue sin movimientos y se puede volver a cargar.
 
 ## Estados
 
@@ -118,7 +118,7 @@ Todas son de la web.
 | **Reglas y errores** | `400`: «Escribe lo que contaste, puede ser 0.» · «Número entero» · «Los rollos suman {m} m y escribiste {n} m.» · «Solo la tela lleva rollos.» · «{material} no tiene proveedor habitual: carga sus rollos sin partida.»<br>`422 ya_tiene_carga_inicial`: «{material} ya tiene carga inicial o movimientos.» |
 | **Escribe** | En tela: los rollos con su folio R-, `disponible`, `es_carga_inicial`, su costo y su partida (nace en `partidas_tela` si no existía, con el proveedor habitual). El movimiento `carga_inicial`, de Fuera a Bodega (un consumible, a `inventario.ubicacion_consumibles`): un renglón por rollo o uno por la cantidad; su documento es el propio movimiento. Con 0, nada |
 | **Llama** | `compras.datos_materiales` · `compras.costo_material` (el costo de los rollos) · `admin.tomar_folio` (`rollo`, `partida`) · `inventario.recalcular_rollos_sugeridos`, en tela |
-| **Regresa** | «{material}: carga inicial de {cantidad} en bodega» |
+| **Regresa** | «{material}: carga inicial de {cantidad} en {ubicación}»: Bodega, o donde quedan los consumibles |
 | **Eventos** | `carga_inicial.material` · `rollo.recibido`, uno por rollo: su etiqueta queda por imprimir |
 | **Bitácora** | «Carga inicial de {material}», con la cantidad y los rollos |
 
@@ -159,4 +159,4 @@ Ninguno propio en la primera versión.
 - **`registrar_carga_inicial_material`**, de Bodega: lee el material con `compras.datos_materiales` y su costo con `compras.costo_material`; con un candado por material, revisa que no tenga ningún movimiento (`ya_tiene_carga_inicial`). En tela, un rollo por cada uno que se dio (o uno con toda la cantidad), con su folio R-, `disponible`, de carga inicial, el proveedor habitual y su costo (decisión 648), y su partida si se dio (`dominio/partidas.ts`, la misma de la recepción de proveedor, sin primera recepción); luego `inventario.recalcular_rollos_sugeridos`. El movimiento es su propio documento (decisión 646). Los avíos van por cantidad a Bodega y los consumibles a `inventario.ubicacion_consumibles`. En 0, solo su bitácora (decisión 649).
 - **Pruebas:** `acciones/registrar-carga-inicial.prueba.ts` y `acciones/registrar-carga-inicial-material.prueba.ts` (los rollos con su costo y su partida, uno solo sin rollos, lo que tiene que sumar, los avíos y los consumibles, una sola vez, y los sugeridos que se recalculan).
 
-**Fase 14, cierre.** Con la auditoría: el conteo de una variante con un AJ- esperando en esa ubicación responde `422 ajuste_pendiente` (decisión 656); la carga inicial en 0 también cuenta como carga; un consumible se carga en el Taller si ahí los toma (decisión 657).
+**Fase 14, cierre.** Con la auditoría: el conteo de una variante con un AJ- esperando en esa ubicación responde `422 ajuste_pendiente` (decisión 656); la carga inicial de prendas en 0 también cuenta como carga (la de material en 0 no deja nada); un consumible se carga en el Taller si ahí los toma (decisión 657), y el mensaje dice dónde quedó (decisión 661).

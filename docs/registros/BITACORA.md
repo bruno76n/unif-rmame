@@ -95,3 +95,4 @@ La línea de la bitácora se escribe al final, con el resultado ya conocido. Esc
 | 12 nov 2026 | 14 | 2 · Recepción del taller | [2026-11-12-fase-14](sesiones/2026-11-12-fase-14.md) |
 | 12 nov 2026 | 14 | 3 · Carga inicial | [2026-11-12-fase-14](sesiones/2026-11-12-fase-14.md) |
 | 12 nov 2026 | 14 | 4 · Mínimos y reabasto | [2026-11-12-fase-14](sesiones/2026-11-12-fase-14.md) |
+| 12 nov 2026 | 14 | Cierre · muestra, auditoría delicada, revisión distinta y `main` | [2026-11-12-fase-14](sesiones/2026-11-12-fase-14.md) |

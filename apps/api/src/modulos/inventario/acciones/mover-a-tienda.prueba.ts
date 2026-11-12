@@ -9,7 +9,12 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { despacharDePrueba, versionDeTraspaso } from "../../../nucleo/pruebas/aduana-de-prueba.ts";
 import { libroPorUbicacion } from "../../../nucleo/pruebas/diferencias-de-prueba.ts";
-import { meterPiezas, ubicacionesPorCodigo, variantesLibres } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
+import {
+	meterPiezas,
+	trabasDeLaBase,
+	ubicacionesPorCodigo,
+	variantesLibres,
+} from "../../../nucleo/pruebas/inventario-de-prueba.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 
@@ -36,6 +41,35 @@ describe("«Mover» nunca pasa de lo disponible; los del día a una tienda compa
 			.passthrough()
 			.parse(respuesta.cuerpo.resultado).traspasos;
 	}
+
+	// Va primero: así ninguna tienda tiene todavía su RB- de hoy y los dos «Mover» buscan y crean el suyo a la vez, con
+	// el candado del reabasto de cada tienda.
+	it("dos «Mover» de variantes distintas a la vez: a la misma tienda comparten su RB-; uno a dos tiendas y otro a una de ellas no se traban", async () => {
+		const [v1 = "", v2 = "", v3 = "", v4 = ""] = await variantesLibres(servidor, 4);
+		for (const variante of [v1, v2, v3, v4]) await meterPiezas(servidor, ubicacion.BOD ?? "", variante, 5);
+		const { rows: sinRb } = await servidor.base.dueno.query(
+			"SELECT count(*)::int AS n FROM traspasos WHERE tipo = 'reabasto' AND folio_rb IS NOT NULL",
+		);
+		expect(sinRb).toEqual([{ n: 0 }]);
+		const deadlocks = await trabasDeLaBase(servidor);
+		const [uno, dos] = await Promise.all([
+			mover([{ variante_id: v1, ubicacion_destino_id: ubicacion.T1, piezas: 1 }]),
+			mover([{ variante_id: v2, ubicacion_destino_id: ubicacion.T1, piezas: 1 }]),
+		]);
+		expect(new Set([...hechos(uno), ...hechos(dos)].map((hecho) => hecho.folio_rb)).size).toBe(1);
+		const [varias, una] = await Promise.all([
+			mover([
+				{ variante_id: v3, ubicacion_destino_id: ubicacion.T1, piezas: 1 },
+				{ variante_id: v3, ubicacion_destino_id: ubicacion.T2, piezas: 1 },
+			]),
+			mover([{ variante_id: v4, ubicacion_destino_id: ubicacion.T2, piezas: 1 }]),
+		]);
+		expect([varias.estado, una.estado]).toEqual([200, 200]);
+		const aT2 = [...hechos(varias), ...hechos(una)].filter((hecho) => hecho.folio_rb !== hechos(uno)[0]?.folio_rb);
+		expect(new Set(aT2.map((hecho) => hecho.folio_rb)).size).toBe(1);
+		// Ninguno se trabó con el otro (el núcleo habría reintentado sin que se viera en la respuesta).
+		expect(await trabasDeLaBase(servidor)).toBe(deadlocks);
+	});
 
 	it("cada «Mover» es su A- `reabasto` en camino a aduana; los del día a una tienda comparten su RB-; a otra tienda, otro", async () => {
 		const [variante = "", otra = ""] = await variantesLibres(servidor, 2);
@@ -121,26 +155,6 @@ describe("«Mover» nunca pasa de lo disponible; los del día a una tienda compa
 		const folios = [...hechos(uno), ...hechos(dos)].map((hecho) => hecho.folio_rb);
 		expect(folios).toHaveLength(2);
 		expect(new Set(folios).size).toBe(1);
-	});
-
-	it("dos «Mover» de variantes distintas a la vez: a la misma tienda comparten su RB-; uno a dos tiendas y otro a una de ellas no se traban", async () => {
-		const [v1 = "", v2 = "", v3 = "", v4 = ""] = await variantesLibres(servidor, 4);
-		for (const variante of [v1, v2, v3, v4]) await meterPiezas(servidor, ubicacion.BOD ?? "", variante, 5);
-		const [uno, dos] = await Promise.all([
-			mover([{ variante_id: v1, ubicacion_destino_id: ubicacion.T1, piezas: 1 }]),
-			mover([{ variante_id: v2, ubicacion_destino_id: ubicacion.T1, piezas: 1 }]),
-		]);
-		expect(new Set([...hechos(uno), ...hechos(dos)].map((hecho) => hecho.folio_rb)).size).toBe(1);
-		const [varias, una] = await Promise.all([
-			mover([
-				{ variante_id: v3, ubicacion_destino_id: ubicacion.T1, piezas: 1 },
-				{ variante_id: v3, ubicacion_destino_id: ubicacion.T2, piezas: 1 },
-			]),
-			mover([{ variante_id: v4, ubicacion_destino_id: ubicacion.T2, piezas: 1 }]),
-		]);
-		expect([varias.estado, una.estado]).toEqual([200, 200]);
-		const aT2 = [...hechos(varias), ...hechos(una)].filter((hecho) => hecho.folio_rb !== hechos(uno)[0]?.folio_rb);
-		expect(new Set(aT2.map((hecho) => hecho.folio_rb)).size).toBe(1);
 	});
 
 	it("Bodega sugiere fabricar para Bodega o una tienda, no para donde no hay mínimo", async () => {

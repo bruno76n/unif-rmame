@@ -24,6 +24,7 @@ import { diferenciaEnTransito, sacarPiezas } from "../../../nucleo/pruebas/difer
 import {
 	meterPiezas,
 	nuevoTraspaso,
+	trabasDeLaBase,
 	ubicacionesPorCodigo,
 	variantesLibres,
 } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
@@ -397,6 +398,42 @@ describe("el cuadre de la noche", () => {
 		);
 		expect(otraVez.rows).toEqual([{ n: 0 }]);
 		expect((await excepcionesDe(siguiente)).filter((excepcion) => excepcion.variante_id === enTaller)).toEqual([]);
+	});
+
+	it("el paso 5 toma los candados de sus variantes antes de abrir su primera DF-: no se traba con quien tiene una y toma el folio", async () => {
+		const [una = "", otra = ""] = (await variantesLibres(servidor, 2)).sort();
+		await sacarPiezas(servidor, ubicacion.BOD ?? "", una, 1);
+		await sacarPiezas(servidor, ubicacion.BOD ?? "", otra, 1);
+		const antes = await trabasDeLaBase(servidor);
+		// Otra conexión tiene el candado de la segunda variante, como una acción que va a abrir una DF-.
+		const conexion = await servidor.base.dueno.connect();
+		try {
+			await conexion.query("BEGIN");
+			await conexion.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [`variante:${otra}`]);
+			const cuadre = cuadrar("2027-03-20");
+			// Cuando el cuadre ya espera ese candado, la otra toma el folio de las DF-.
+			let espera = false;
+			for (let intento = 0; intento < 400 && !espera; intento += 1) {
+				const { rows } = await servidor.base.dueno.query(
+					"SELECT count(*)::int AS n FROM pg_locks WHERE locktype = 'advisory' AND NOT granted",
+				);
+				espera = rows[0]?.n === 1;
+				if (!espera) await new Promise((listo) => setTimeout(listo, 50));
+			}
+			expect(espera).toBe(true);
+			await conexion.query("UPDATE contadores_folio SET siguiente = siguiente WHERE tipo = 'diferencia'");
+			await conexion.query("ROLLBACK");
+			const corrido = await cuadre;
+			if ("yaCorrio" in corrido) throw new Error("ya había corrido");
+			const { rows: nacidas } = await servidor.base.dueno.query(
+				"SELECT variante_id FROM diferencias WHERE cuadre_id = $1 AND variante_id = ANY($2::uuid[]) ORDER BY variante_id",
+				[corrido.cuadreId, [una, otra]],
+			);
+			expect(nacidas).toEqual([{ variante_id: una }, { variante_id: otra }]);
+		} finally {
+			conexion.release();
+		}
+		expect(await trabasDeLaBase(servidor)).toBe(antes);
 	});
 
 	it("de un lote recibido en aduana, en el Taller solo quedan sus reprocesos sin recibir y lo de sus DF- abiertas (paso 4)", async () => {
