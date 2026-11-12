@@ -27,12 +27,13 @@ export interface Pendiente {
 	grupo: string;
 	tipo: { texto: string; icono: LucideIcon; color: ColorDeTipo };
 	referencia: { titulo: string; detalle?: string };
-	/** La fecha que importa, ya escrita, y la que ordena (ISO). */
-	fecha?: { texto: string; orden: string };
+	/** La fecha que importa, ya escrita, y la que ordena (ISO); en rojo si ya se pasó o está en riesgo. */
+	fecha?: { texto: string; orden: string; roja?: boolean };
 	/** El importe o la cantidad, ya escritos. */
 	cifra?: string;
 	estado: { texto: string; color?: ColorDeEstado; abajo?: string };
-	accion?: { texto: string; alTocar: () => void };
+	/** El botón que lo resuelve; negro si es lo urgente (un lote atorado, por ejemplo). */
+	accion?: { texto: string; alTocar: () => void; principal?: boolean };
 }
 
 /** El lugar de cada color en el orden de Pendientes. */
@@ -118,7 +119,18 @@ export function PanelPendientes({
 									</span>
 								),
 							},
-							{ clave: "fecha", encabezado: "Fecha", celda: ({ fecha }) => fecha?.texto ?? "—" },
+							{
+								clave: "fecha",
+								encabezado: "Fecha",
+								celda: ({ fecha }) =>
+									fecha === undefined ? (
+										"—"
+									) : (
+										<span className={unirClases(fecha.roja === true && "font-bold text-estado-rojo")}>
+											{fecha.texto}
+										</span>
+									),
+							},
 							{ clave: "cifra", encabezado: columnaCifra, alinear: "derecha", celda: ({ cifra }) => cifra ?? "—" },
 							{ clave: "estado", encabezado: "Estado", celda: ({ estado }) => <Estado {...estado} /> },
 							{
@@ -127,7 +139,11 @@ export function PanelPendientes({
 								alinear: "derecha",
 								celda: ({ accion }) =>
 									accion === undefined ? null : (
-										<Boton chico onClick={accion.alTocar}>
+										<Boton
+											chico
+											variante={accion.principal === true ? "principal" : "secundario"}
+											onClick={accion.alTocar}
+										>
 											{accion.texto}
 										</Boton>
 									),

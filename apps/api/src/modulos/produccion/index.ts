@@ -1,6 +1,7 @@
 /**
  * El módulo `produccion`: las operaciones del taller, el flujo de cada prenda, las órdenes de producción y sus lotes.
  * Fase 12 · docs/modulos/produccion/operaciones-y-flujos.md, ordenes-de-produccion.md y lotes.md
+ * Fase 19 · las consultas de sus pantallas y la pastilla de Producción (docs/interfaz/fabrica/produccion.md)
  */
 
 import { definirModulo } from "../../nucleo/modulos.ts";
@@ -15,7 +16,16 @@ import {
 	accionTomarConsumibleTaller,
 } from "./acciones/registros.ts";
 import { bajadaDeProduccion } from "./bajada.ts";
+import { consultaCorte } from "./consultas/corte.ts";
+import { consultaCostoLote } from "./consultas/costo-lote.ts";
 import { consultaHiloPedido } from "./consultas/hilo-pedido.ts";
+import { consultaLote } from "./consultas/lote.ts";
+import { consultaLotes } from "./consultas/lotes.ts";
+import { consultaOpcionesOrdenNueva } from "./consultas/opciones-orden-nueva.ts";
+import { consultaOperaciones } from "./consultas/operaciones.ts";
+import { consultaOrdenes } from "./consultas/ordenes.ts";
+import { consultaPendientes, pastillaProduccion } from "./consultas/pendientes.ts";
+import { consultaProduccionPorPersona } from "./consultas/produccion-por-persona.ts";
 import {
 	cambiarFechaEntregaPedido,
 	mandarAProduccion,
@@ -66,7 +76,19 @@ export default definirModulo({
 		poner_tarifa_a_registros: ponerTarifaARegistros,
 		recalcular_proyecciones: recalcularProyecciones,
 	},
-	consultas: [consultaHiloPedido],
+	consultas: [
+		consultaHiloPedido,
+		consultaPendientes,
+		consultaLotes,
+		consultaLote,
+		consultaCostoLote,
+		consultaOrdenes,
+		consultaOpcionesOrdenNueva,
+		consultaCorte,
+		consultaOperaciones,
+		consultaProduccionPorPersona,
+	],
+	pastillas: { produccion: pastillaProduccion },
 	lecturas: {
 		lotes_atorados: lotesAtorados,
 		salud_de_lotes: saludDeLotes,

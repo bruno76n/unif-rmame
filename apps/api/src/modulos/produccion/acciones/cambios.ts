@@ -16,6 +16,7 @@ import { subirVersion, tomarVersion, versionActual } from "../../../nucleo/accio
 import { errorDeRegla } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeAccion, implementarAccion } from "../../../nucleo/modulos.ts";
 import { pedidos, pedidoVersiones } from "../../ventas/tablas.ts";
+import { type LineaDelReparto, repartirPiezasDeMas } from "../dominio/reparto-de-cambio.ts";
 import { cambioPedidoLineas, cambiosPedido, lotes, loteTallas, ordenesProduccion } from "../tablas.ts";
 
 /** Lo que recibe `produccion.crear_cambio_pedido`. */
@@ -50,15 +51,6 @@ export async function crearCambioPedido(contexto: ContextoDeAccion, datos: unkno
 const avance = z.object({
 	tallas: z.array(z.object({ variante_id: z.uuid(), de_mas: z.number().int() })),
 });
-
-/** Un renglón de lo que hizo la aplicación. */
-interface Linea {
-	loteId: string;
-	loteFolio: string;
-	varianteId: string;
-	restadas: number;
-	aBodega: number;
-}
 
 export const accionAplicarCambioPedido = implementarAccion(aplicarCambioPedido, async (contexto, datos, version) => {
 	const { transaccion } = contexto;
@@ -109,36 +101,31 @@ export const accionAplicarCambioPedido = implementarAccion(aplicarCambioPedido, 
 							suyos.map((lote) => lote.id),
 						),
 					);
-	const lineas: Linea[] = [];
-	for (const talla of deMas.tallas.filter((una) => una.de_mas > 0)) {
-		let falta = talla.de_mas;
-		// Primero de las planeadas de sus lotes por cortar, el de corte más lejano primero (regla 4).
-		const porCortar = suyos
-			.filter((lote) => lote.estado === "por_cortar")
-			.sort((uno, otro) => (uno.fechaCorte < otro.fechaCorte ? 1 : uno.fechaCorte > otro.fechaCorte ? -1 : 0));
-		for (const lote of porCortar) {
-			const suya = tallas.find((una) => una.loteId === lote.id && una.varianteId === talla.variante_id);
-			if (suya === undefined || falta === 0) continue;
-			const restadas = Math.min(falta, suya.piezasPlaneadas);
-			if (restadas === 0) continue;
-			suya.piezasPlaneadas -= restadas;
-			falta -= restadas;
-			lineas.push({ loteId: lote.id, loteFolio: lote.folio, varianteId: talla.variante_id, restadas, aBodega: 0 });
-		}
-		// Lo que falte, a lo que va a Bodega de sus lotes ya cortados, el más reciente primero.
-		const cortados = suyos
-			.filter((lote) => lote.estado !== "por_cortar")
-			.sort((uno, otro) => ((uno.cortadoEn ?? "") < (otro.cortadoEn ?? "") ? 1 : -1));
-		for (const lote of cortados) {
-			const suya = tallas.find((una) => una.loteId === lote.id && una.varianteId === talla.variante_id);
-			if (suya === undefined || falta === 0) continue;
-			const cabe = (suya.piezasCortadas ?? 0) - suya.piezasMerma - suya.piezasABodega;
-			const aBodega = Math.min(falta, Math.max(0, cabe));
-			if (aBodega === 0) continue;
-			suya.piezasABodega += aBodega;
-			falta -= aBodega;
-			lineas.push({ loteId: lote.id, loteFolio: lote.folio, varianteId: talla.variante_id, restadas: 0, aBodega });
-		}
+	// El reparto (reglas 4 y 5); aquí solo se guarda lo que dice.
+	const { lineas } = repartirPiezasDeMas(
+		deMas.tallas.map((talla) => ({ varianteId: talla.variante_id, piezas: talla.de_mas })),
+		suyos.map((lote) => ({
+			id: lote.id,
+			folio: lote.folio,
+			estado: lote.estado,
+			fechaCorte: lote.fechaCorte,
+			cortadoEn: lote.cortadoEn,
+			tallas: tallas
+				.filter((talla) => talla.loteId === lote.id)
+				.map((talla) => ({
+					varianteId: talla.varianteId,
+					planeadas: talla.piezasPlaneadas,
+					cortadas: talla.piezasCortadas ?? 0,
+					merma: talla.piezasMerma,
+					aBodega: talla.piezasABodega,
+				})),
+		})),
+	);
+	for (const linea of lineas) {
+		const suya = tallas.find((una) => una.loteId === linea.loteId && una.varianteId === linea.varianteId);
+		if (suya === undefined) continue;
+		suya.piezasPlaneadas -= linea.restadas;
+		suya.piezasABodega += linea.aBodega;
 	}
 	const quien = quienCambia(contexto);
 	const ahora = contexto.ahora.toString();
@@ -242,7 +229,7 @@ export const accionAplicarCambioPedido = implementarAccion(aplicarCambioPedido, 
 		entidad: "cambios_pedido",
 		entidadId: elMasNuevo.id,
 	});
-	const comoQuedo = (linea: Linea) =>
+	const comoQuedo = (linea: LineaDelReparto) =>
 		tallas.find((una) => una.loteId === linea.loteId && una.varianteId === linea.varianteId);
 	const detalle =
 		lineas.length === 0

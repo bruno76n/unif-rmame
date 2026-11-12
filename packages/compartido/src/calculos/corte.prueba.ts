@@ -7,7 +7,14 @@
 
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { laTelaAlcanza, type RolloDelCorte, rollosAutomaticos, usoDeLaTela } from "./corte.ts";
+import {
+	destinoDeLoQueQuedo,
+	laTelaAlcanza,
+	porcentajeSobreElPatron,
+	type RolloDelCorte,
+	rollosAutomaticos,
+	usoDeLaTela,
+} from "./corte.ts";
 
 /** Unos metros en milésimos. */
 const m = (metros: number) => BigInt(Math.round(metros * 1000));
@@ -84,5 +91,20 @@ describe("De cada tela, lo usado más lo que quedó da los metros de sus rollos;
 			}),
 			{ numRuns: 5000 },
 		);
+	});
+});
+
+describe("Lo que quedó va a rollo, retazo o merma con la frontera, y el % contra el patrón es el mismo en la pantalla y al cerrar", () => {
+	it("con la frontera de 10 m: 0 no va a ningún lado, de 10 para arriba es rollo, abajo retazo o merma", () => {
+		expect(destinoDeLoQueQuedo(0n, m(10), false)).toBe("ninguno");
+		expect(destinoDeLoQueQuedo(m(10), m(10), true)).toBe("rollo");
+		expect(destinoDeLoQueQuedo(m(9.999), m(10), false)).toBe("retazo");
+		expect(destinoDeLoQueQuedo(m(9.999), m(10), true)).toBe("merma");
+	});
+
+	it("214 m usados contra un patrón de 200 m es 7 % de más; sin patrón, 0", () => {
+		expect(porcentajeSobreElPatron(m(214), m(200))).toBe(7);
+		expect(porcentajeSobreElPatron(m(190), m(200))).toBe(-5);
+		expect(porcentajeSobreElPatron(m(214), 0n)).toBe(0);
 	});
 });

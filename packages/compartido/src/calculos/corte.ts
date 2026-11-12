@@ -84,3 +84,31 @@ export function usoDeLaTela(rollos: readonly RolloDelCorte[], pide: bigint, qued
 	const total = deLosCompletos + delUltimo;
 	return { usados, quedan: ultimo.milesimos - delUltimo, faltan: pide > total ? pide - total : 0n };
 }
+
+/** A dónde va lo que quedó del último rollo de una tela al cerrar el corte. */
+export type DestinoDeLoQueQuedo = "ninguno" | "rollo" | "retazo" | "merma";
+
+/**
+ * A dónde va lo que quedó del último rollo (regla 6): nada si se usó completo; de la frontera para arriba regresa como
+ * rollo; abajo, retazo, o merma si quien corta dijo que ya no sirve.
+ * @param quedan Lo que quedó, en milésimos.
+ * @param frontera `inventario.metros_frontera_rollo`, en milésimos.
+ * @param yaNoSirve Si quien corta dijo que ya no sirve.
+ * Existe para que la captura diga lo mismo que hará `produccion.cerrar_corte`.
+ */
+export function destinoDeLoQueQuedo(quedan: bigint, frontera: bigint, yaNoSirve: boolean): DestinoDeLoQueQuedo {
+	if (quedan === 0n) return "ninguno";
+	if (quedan >= frontera) return "rollo";
+	return yaNoSirve ? "merma" : "retazo";
+}
+
+/**
+ * Cuánto se pasa la tela usada del piso del patrón, en porcentaje sin redondear (regla 12); 0 si no hay piso.
+ * @param usado Lo usado de la tela principal, en milésimos.
+ * @param piso El piso del patrón, en milésimos.
+ * Existe para que la captura muestre el mismo «% contra el patrón» con el que la acción avisa.
+ */
+export function porcentajeSobreElPatron(usado: bigint, piso: bigint): number {
+	if (piso === 0n) return 0;
+	return Number(((usado - piso) * 100_000n) / piso) / 1000;
+}

@@ -25786,6 +25786,3494 @@
         }
       }
     },
+    "/v1/consultas/produccion.pendientes": {
+      "get": {
+        "tags": [
+          "produccion"
+        ],
+        "description": "Pendientes de Producción: las cifras de lotes, corte, órdenes y producción, y la cola de trabajo con su botón. Sin dinero\n\nPermiso: departamento produccion.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "todos",
+                "cambios",
+                "lotes",
+                "corte",
+                "sugerencias",
+                "excepciones"
+              ]
+            },
+            "in": "query",
+            "name": "grupo",
+            "required": false,
+            "description": "El filtro; sin él, todos"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "indicadores": {
+                          "type": "object",
+                          "properties": {
+                            "lotes": {
+                              "type": "object",
+                              "properties": {
+                                "en_proceso": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991,
+                                  "description": "Los lotes en proceso"
+                                },
+                                "por_cortar": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991,
+                                  "description": "Los lotes por cortar"
+                                },
+                                "atorados": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991,
+                                  "description": "Los atorados y los atrasados"
+                                },
+                                "en_riesgo": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991,
+                                  "description": "Los en riesgo de atraso"
+                                },
+                                "en_tiempo": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991,
+                                  "description": "Los demás en proceso"
+                                }
+                              },
+                              "required": [
+                                "en_proceso",
+                                "por_cortar",
+                                "atorados",
+                                "en_riesgo",
+                                "en_tiempo"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "corte": {
+                              "type": "object",
+                              "properties": {
+                                "proximos": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991,
+                                  "description": "Los lotes que se cortan en los próximos días"
+                                },
+                                "dias": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991,
+                                  "description": "`produccion.cortes_proximos_dias`"
+                                },
+                                "sin_receta": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991,
+                                  "description": "Los lotes por cortar sin receta, de cualquier fecha"
+                                }
+                              },
+                              "required": [
+                                "proximos",
+                                "dias",
+                                "sin_receta"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "ordenes": {
+                              "type": "object",
+                              "properties": {
+                                "en_taller": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991,
+                                  "description": "Las órdenes con lotes que no han llegado a aduana"
+                                },
+                                "de_clientes": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991,
+                                  "description": "De esas, las de clientes"
+                                },
+                                "de_reabasto": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991,
+                                  "description": "De esas, las de reabasto"
+                                }
+                              },
+                              "required": [
+                                "en_taller",
+                                "de_clientes",
+                                "de_reabasto"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "produccion": {
+                              "type": "object",
+                              "properties": {
+                                "terminadas_hoy": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991,
+                                  "description": "Las buenas de hoy en la última operación de cada flujo"
+                                },
+                                "por_dia": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "description": "Las terminadas de los últimos 12 días de trabajo"
+                                }
+                              },
+                              "required": [
+                                "terminadas_hoy",
+                                "por_dia"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "required": [
+                            "lotes",
+                            "corte",
+                            "ordenes",
+                            "produccion"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "conteos": {
+                          "type": "object",
+                          "properties": {
+                            "todos": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "cambios": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "lotes": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "corte": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "sugerencias": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "excepciones": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "todos",
+                            "cambios",
+                            "lotes",
+                            "corte",
+                            "sugerencias",
+                            "excepciones"
+                          ],
+                          "additionalProperties": false,
+                          "description": "Cuántos renglones tiene cada filtro"
+                        },
+                        "hay_rojo": {
+                          "type": "boolean",
+                          "description": "Si algún renglón va en rojo: la pestaña y la pastilla van en rojo"
+                        },
+                        "renglones": {
+                          "type": "array",
+                          "items": {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "tipo": {
+                                    "type": "string",
+                                    "enum": [
+                                      "cambio"
+                                    ]
+                                  },
+                                  "clave": {
+                                    "type": "string",
+                                    "description": "La clave del renglón"
+                                  },
+                                  "titulo": {
+                                    "type": "string",
+                                    "description": "La referencia: qué es"
+                                  },
+                                  "detalle": {
+                                    "type": "string",
+                                    "description": "Abajo de la referencia: su detalle"
+                                  },
+                                  "fecha": {
+                                    "nullable": true,
+                                    "description": "La fecha que importa, ya escrita («Entrega 3 nov»)",
+                                    "type": "string"
+                                  },
+                                  "fecha_orden": {
+                                    "nullable": true,
+                                    "description": "La fecha que ordena (ISO)",
+                                    "type": "string"
+                                  },
+                                  "fecha_roja": {
+                                    "type": "boolean",
+                                    "description": "Si la fecha va en rojo"
+                                  },
+                                  "cifra": {
+                                    "nullable": true,
+                                    "description": "La cantidad, ya escrita («190 pz»)",
+                                    "type": "string"
+                                  },
+                                  "estado": {
+                                    "type": "string",
+                                    "description": "El estado, en su forma fija"
+                                  },
+                                  "color": {
+                                    "type": "string",
+                                    "enum": [
+                                      "rojo",
+                                      "ambar",
+                                      "azul",
+                                      "verde",
+                                      "gris",
+                                      "morado",
+                                      "verde-azulado",
+                                      "naranja"
+                                    ],
+                                    "description": "El color del estado"
+                                  },
+                                  "cambio_pedido_id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                    "description": "El cambio por aplicar"
+                                  },
+                                  "version": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991,
+                                    "description": "La versión del cambio, para «Aplicar a lotes»"
+                                  },
+                                  "efectos": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "Lo que va a pasar al aplicarlo, calculado como lo hará la acción"
+                                  }
+                                },
+                                "required": [
+                                  "tipo",
+                                  "clave",
+                                  "titulo",
+                                  "detalle",
+                                  "fecha",
+                                  "fecha_orden",
+                                  "fecha_roja",
+                                  "cifra",
+                                  "estado",
+                                  "color",
+                                  "cambio_pedido_id",
+                                  "version",
+                                  "efectos"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "tipo": {
+                                    "type": "string",
+                                    "enum": [
+                                      "lote"
+                                    ]
+                                  },
+                                  "clave": {
+                                    "type": "string",
+                                    "description": "La clave del renglón"
+                                  },
+                                  "titulo": {
+                                    "type": "string",
+                                    "description": "La referencia: qué es"
+                                  },
+                                  "detalle": {
+                                    "type": "string",
+                                    "description": "Abajo de la referencia: su detalle"
+                                  },
+                                  "fecha": {
+                                    "nullable": true,
+                                    "description": "La fecha que importa, ya escrita («Entrega 3 nov»)",
+                                    "type": "string"
+                                  },
+                                  "fecha_orden": {
+                                    "nullable": true,
+                                    "description": "La fecha que ordena (ISO)",
+                                    "type": "string"
+                                  },
+                                  "fecha_roja": {
+                                    "type": "boolean",
+                                    "description": "Si la fecha va en rojo"
+                                  },
+                                  "cifra": {
+                                    "nullable": true,
+                                    "description": "La cantidad, ya escrita («190 pz»)",
+                                    "type": "string"
+                                  },
+                                  "estado": {
+                                    "type": "string",
+                                    "description": "El estado, en su forma fija"
+                                  },
+                                  "color": {
+                                    "type": "string",
+                                    "enum": [
+                                      "rojo",
+                                      "ambar",
+                                      "azul",
+                                      "verde",
+                                      "gris",
+                                      "morado",
+                                      "verde-azulado",
+                                      "naranja"
+                                    ],
+                                    "description": "El color del estado"
+                                  },
+                                  "lote_id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                    "description": "El lote, para abrir su cajón"
+                                  },
+                                  "atorado": {
+                                    "type": "boolean",
+                                    "description": "Si está atorado: su botón va en negro"
+                                  }
+                                },
+                                "required": [
+                                  "tipo",
+                                  "clave",
+                                  "titulo",
+                                  "detalle",
+                                  "fecha",
+                                  "fecha_orden",
+                                  "fecha_roja",
+                                  "cifra",
+                                  "estado",
+                                  "color",
+                                  "lote_id",
+                                  "atorado"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "tipo": {
+                                    "type": "string",
+                                    "enum": [
+                                      "corte"
+                                    ]
+                                  },
+                                  "clave": {
+                                    "type": "string",
+                                    "description": "La clave del renglón"
+                                  },
+                                  "titulo": {
+                                    "type": "string",
+                                    "description": "La referencia: qué es"
+                                  },
+                                  "detalle": {
+                                    "type": "string",
+                                    "description": "Abajo de la referencia: su detalle"
+                                  },
+                                  "fecha": {
+                                    "nullable": true,
+                                    "description": "La fecha que importa, ya escrita («Entrega 3 nov»)",
+                                    "type": "string"
+                                  },
+                                  "fecha_orden": {
+                                    "nullable": true,
+                                    "description": "La fecha que ordena (ISO)",
+                                    "type": "string"
+                                  },
+                                  "fecha_roja": {
+                                    "type": "boolean",
+                                    "description": "Si la fecha va en rojo"
+                                  },
+                                  "cifra": {
+                                    "nullable": true,
+                                    "description": "La cantidad, ya escrita («190 pz»)",
+                                    "type": "string"
+                                  },
+                                  "estado": {
+                                    "type": "string",
+                                    "description": "El estado, en su forma fija"
+                                  },
+                                  "color": {
+                                    "type": "string",
+                                    "enum": [
+                                      "rojo",
+                                      "ambar",
+                                      "azul",
+                                      "verde",
+                                      "gris",
+                                      "morado",
+                                      "verde-azulado",
+                                      "naranja"
+                                    ],
+                                    "description": "El color del estado"
+                                  },
+                                  "lote_id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                    "description": "El lote por cortar"
+                                  },
+                                  "producto_id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                    "description": "Su prenda, para «Capturar receta»"
+                                  },
+                                  "con_receta": {
+                                    "type": "boolean",
+                                    "description": "Si su prenda tiene receta"
+                                  }
+                                },
+                                "required": [
+                                  "tipo",
+                                  "clave",
+                                  "titulo",
+                                  "detalle",
+                                  "fecha",
+                                  "fecha_orden",
+                                  "fecha_roja",
+                                  "cifra",
+                                  "estado",
+                                  "color",
+                                  "lote_id",
+                                  "producto_id",
+                                  "con_receta"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "tipo": {
+                                    "type": "string",
+                                    "enum": [
+                                      "sugerencia"
+                                    ]
+                                  },
+                                  "clave": {
+                                    "type": "string",
+                                    "description": "La clave del renglón"
+                                  },
+                                  "titulo": {
+                                    "type": "string",
+                                    "description": "La referencia: qué es"
+                                  },
+                                  "detalle": {
+                                    "type": "string",
+                                    "description": "Abajo de la referencia: su detalle"
+                                  },
+                                  "fecha": {
+                                    "nullable": true,
+                                    "description": "La fecha que importa, ya escrita («Entrega 3 nov»)",
+                                    "type": "string"
+                                  },
+                                  "fecha_orden": {
+                                    "nullable": true,
+                                    "description": "La fecha que ordena (ISO)",
+                                    "type": "string"
+                                  },
+                                  "fecha_roja": {
+                                    "type": "boolean",
+                                    "description": "Si la fecha va en rojo"
+                                  },
+                                  "cifra": {
+                                    "nullable": true,
+                                    "description": "La cantidad, ya escrita («190 pz»)",
+                                    "type": "string"
+                                  },
+                                  "estado": {
+                                    "type": "string",
+                                    "description": "El estado, en su forma fija"
+                                  },
+                                  "color": {
+                                    "type": "string",
+                                    "enum": [
+                                      "rojo",
+                                      "ambar",
+                                      "azul",
+                                      "verde",
+                                      "gris",
+                                      "morado",
+                                      "verde-azulado",
+                                      "naranja"
+                                    ],
+                                    "description": "El color del estado"
+                                  },
+                                  "sugerencia_ids": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string",
+                                      "format": "uuid",
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                    },
+                                    "description": "Las sugerencias por decidir de esa prenda y esa ubicación"
+                                  }
+                                },
+                                "required": [
+                                  "tipo",
+                                  "clave",
+                                  "titulo",
+                                  "detalle",
+                                  "fecha",
+                                  "fecha_orden",
+                                  "fecha_roja",
+                                  "cifra",
+                                  "estado",
+                                  "color",
+                                  "sugerencia_ids"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "tipo": {
+                                    "type": "string",
+                                    "enum": [
+                                      "excepcion"
+                                    ]
+                                  },
+                                  "clave": {
+                                    "type": "string",
+                                    "description": "La clave del renglón"
+                                  },
+                                  "titulo": {
+                                    "type": "string",
+                                    "description": "La referencia: qué es"
+                                  },
+                                  "detalle": {
+                                    "type": "string",
+                                    "description": "Abajo de la referencia: su detalle"
+                                  },
+                                  "fecha": {
+                                    "nullable": true,
+                                    "description": "La fecha que importa, ya escrita («Entrega 3 nov»)",
+                                    "type": "string"
+                                  },
+                                  "fecha_orden": {
+                                    "nullable": true,
+                                    "description": "La fecha que ordena (ISO)",
+                                    "type": "string"
+                                  },
+                                  "fecha_roja": {
+                                    "type": "boolean",
+                                    "description": "Si la fecha va en rojo"
+                                  },
+                                  "cifra": {
+                                    "nullable": true,
+                                    "description": "La cantidad, ya escrita («190 pz»)",
+                                    "type": "string"
+                                  },
+                                  "estado": {
+                                    "type": "string",
+                                    "description": "El estado, en su forma fija"
+                                  },
+                                  "color": {
+                                    "type": "string",
+                                    "enum": [
+                                      "rojo",
+                                      "ambar",
+                                      "azul",
+                                      "verde",
+                                      "gris",
+                                      "morado",
+                                      "verde-azulado",
+                                      "naranja"
+                                    ],
+                                    "description": "El color del estado"
+                                  },
+                                  "excepcion_id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                    "description": "La excepción por resolver"
+                                  },
+                                  "version": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991,
+                                    "description": "Su versión, para «Resolver»"
+                                  }
+                                },
+                                "required": [
+                                  "tipo",
+                                  "clave",
+                                  "titulo",
+                                  "detalle",
+                                  "fecha",
+                                  "fecha_orden",
+                                  "fecha_roja",
+                                  "cifra",
+                                  "estado",
+                                  "color",
+                                  "excepcion_id",
+                                  "version"
+                                ],
+                                "additionalProperties": false
+                              }
+                            ]
+                          },
+                          "description": "Los renglones del filtro"
+                        }
+                      },
+                      "required": [
+                        "indicadores",
+                        "conteos",
+                        "hay_rojo",
+                        "renglones"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/produccion.lotes": {
+      "get": {
+        "tags": [
+          "produccion"
+        ],
+        "description": "Los lotes del taller en cuatro grupos: atorados, en proceso, por cortar y terminados. Sin dinero\n\nPermiso: departamento produccion.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "atorados": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "lote_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "folio": {
+                                "type": "string"
+                              },
+                              "prenda": {
+                                "type": "string"
+                              },
+                              "piezas": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991,
+                                "description": "Las cortadas"
+                              },
+                              "para": {
+                                "type": "object",
+                                "properties": {
+                                  "tipo": {
+                                    "type": "string",
+                                    "enum": [
+                                      "pedido",
+                                      "tienda",
+                                      "temporada"
+                                    ],
+                                    "description": "El destino"
+                                  },
+                                  "nombre": {
+                                    "type": "string",
+                                    "description": "El cliente, la tienda o «Temporada · bodega»"
+                                  },
+                                  "color": {
+                                    "nullable": true,
+                                    "description": "El color de la escuela del cliente; vacío si no tiene",
+                                    "type": "string"
+                                  },
+                                  "linea": {
+                                    "type": "string",
+                                    "description": "«PE-0149 · para el 3 nov», «Reabasto · para el 31 oct» o «Para el 20 nov»"
+                                  },
+                                  "pedido_id": {
+                                    "nullable": true,
+                                    "description": "El pedido, si es de un pedido",
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  }
+                                },
+                                "required": [
+                                  "tipo",
+                                  "nombre",
+                                  "color",
+                                  "linea",
+                                  "pedido_id"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "estado": {
+                                "type": "object",
+                                "properties": {
+                                  "texto": {
+                                    "type": "string",
+                                    "description": "El estado, como sale en el cuadro («Atorado en Costados», «En tiempo»)"
+                                  },
+                                  "color": {
+                                    "type": "string",
+                                    "enum": [
+                                      "rojo",
+                                      "ambar",
+                                      "azul",
+                                      "verde",
+                                      "gris",
+                                      "morado",
+                                      "verde-azulado",
+                                      "naranja"
+                                    ],
+                                    "description": "El color del cuadro del estado"
+                                  },
+                                  "linea": {
+                                    "type": "string",
+                                    "description": "La línea de abajo («Faltan 40», «Desde el 13 oct»); vacía si no lleva"
+                                  }
+                                },
+                                "required": [
+                                  "texto",
+                                  "color",
+                                  "linea"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "tira": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "operacion": {
+                                      "type": "string",
+                                      "description": "El nombre de la operación"
+                                    },
+                                    "hechas": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991,
+                                      "description": "Las buenas de sus registros vigentes"
+                                    },
+                                    "cortadas": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991,
+                                      "description": "Las cortadas del lote"
+                                    },
+                                    "puede_hasta": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991,
+                                      "description": "Lo que puede reportar: lo que hizo la anterior (la primera, las cortadas)"
+                                    },
+                                    "marca": {
+                                      "nullable": true,
+                                      "description": "El cuello de botella o la operación atorada",
+                                      "type": "string",
+                                      "enum": [
+                                        "se_junta",
+                                        "atorado"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "operacion",
+                                    "hechas",
+                                    "cortadas",
+                                    "puede_hasta",
+                                    "marca"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "description": "Una casilla por operación del flujo, sin el corte"
+                              }
+                            },
+                            "required": [
+                              "lote_id",
+                              "folio",
+                              "prenda",
+                              "piezas",
+                              "para",
+                              "estado",
+                              "tira"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Los atorados y los atrasados"
+                        },
+                        "en_proceso": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "lote_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "folio": {
+                                "type": "string"
+                              },
+                              "prenda": {
+                                "type": "string"
+                              },
+                              "piezas": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991,
+                                "description": "Las cortadas"
+                              },
+                              "para": {
+                                "type": "object",
+                                "properties": {
+                                  "tipo": {
+                                    "type": "string",
+                                    "enum": [
+                                      "pedido",
+                                      "tienda",
+                                      "temporada"
+                                    ],
+                                    "description": "El destino"
+                                  },
+                                  "nombre": {
+                                    "type": "string",
+                                    "description": "El cliente, la tienda o «Temporada · bodega»"
+                                  },
+                                  "color": {
+                                    "nullable": true,
+                                    "description": "El color de la escuela del cliente; vacío si no tiene",
+                                    "type": "string"
+                                  },
+                                  "linea": {
+                                    "type": "string",
+                                    "description": "«PE-0149 · para el 3 nov», «Reabasto · para el 31 oct» o «Para el 20 nov»"
+                                  },
+                                  "pedido_id": {
+                                    "nullable": true,
+                                    "description": "El pedido, si es de un pedido",
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  }
+                                },
+                                "required": [
+                                  "tipo",
+                                  "nombre",
+                                  "color",
+                                  "linea",
+                                  "pedido_id"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "estado": {
+                                "type": "object",
+                                "properties": {
+                                  "texto": {
+                                    "type": "string",
+                                    "description": "El estado, como sale en el cuadro («Atorado en Costados», «En tiempo»)"
+                                  },
+                                  "color": {
+                                    "type": "string",
+                                    "enum": [
+                                      "rojo",
+                                      "ambar",
+                                      "azul",
+                                      "verde",
+                                      "gris",
+                                      "morado",
+                                      "verde-azulado",
+                                      "naranja"
+                                    ],
+                                    "description": "El color del cuadro del estado"
+                                  },
+                                  "linea": {
+                                    "type": "string",
+                                    "description": "La línea de abajo («Faltan 40», «Desde el 13 oct»); vacía si no lleva"
+                                  }
+                                },
+                                "required": [
+                                  "texto",
+                                  "color",
+                                  "linea"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "tira": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "operacion": {
+                                      "type": "string",
+                                      "description": "El nombre de la operación"
+                                    },
+                                    "hechas": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991,
+                                      "description": "Las buenas de sus registros vigentes"
+                                    },
+                                    "cortadas": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991,
+                                      "description": "Las cortadas del lote"
+                                    },
+                                    "puede_hasta": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991,
+                                      "description": "Lo que puede reportar: lo que hizo la anterior (la primera, las cortadas)"
+                                    },
+                                    "marca": {
+                                      "nullable": true,
+                                      "description": "El cuello de botella o la operación atorada",
+                                      "type": "string",
+                                      "enum": [
+                                        "se_junta",
+                                        "atorado"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "operacion",
+                                    "hechas",
+                                    "cortadas",
+                                    "puede_hasta",
+                                    "marca"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "description": "Una casilla por operación del flujo, sin el corte"
+                              }
+                            },
+                            "required": [
+                              "lote_id",
+                              "folio",
+                              "prenda",
+                              "piezas",
+                              "para",
+                              "estado",
+                              "tira"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Los demás en proceso: primero los en riesgo, luego por entrega"
+                        },
+                        "por_cortar": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "lote_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "folio": {
+                                "type": "string"
+                              },
+                              "prenda": {
+                                "type": "string"
+                              },
+                              "modelo": {
+                                "type": "string",
+                                "description": "La escuela de la prenda, o «Básico»"
+                              },
+                              "piezas": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991,
+                                "description": "Las planeadas"
+                              },
+                              "fecha_corte": {
+                                "type": "string",
+                                "description": "La fecha de corte, ya escrita"
+                              },
+                              "en_dias": {
+                                "type": "string",
+                                "description": "«en 2 días», «hoy», «hace 3 días»"
+                              },
+                              "corte_pronto": {
+                                "type": "boolean",
+                                "description": "A `inventario.dias_entrega_corte` días o menos: va en ámbar"
+                              },
+                              "para": {
+                                "type": "object",
+                                "properties": {
+                                  "tipo": {
+                                    "type": "string",
+                                    "enum": [
+                                      "pedido",
+                                      "tienda",
+                                      "temporada"
+                                    ],
+                                    "description": "El destino"
+                                  },
+                                  "nombre": {
+                                    "type": "string",
+                                    "description": "El cliente, la tienda o «Temporada · bodega»"
+                                  },
+                                  "color": {
+                                    "nullable": true,
+                                    "description": "El color de la escuela del cliente; vacío si no tiene",
+                                    "type": "string"
+                                  },
+                                  "linea": {
+                                    "type": "string",
+                                    "description": "«PE-0149 · para el 3 nov», «Reabasto · para el 31 oct» o «Para el 20 nov»"
+                                  },
+                                  "pedido_id": {
+                                    "nullable": true,
+                                    "description": "El pedido, si es de un pedido",
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  }
+                                },
+                                "required": [
+                                  "tipo",
+                                  "nombre",
+                                  "color",
+                                  "linea",
+                                  "pedido_id"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "receta": {
+                                "type": "string",
+                                "enum": [
+                                  "verificada",
+                                  "sin_verificar",
+                                  "sin_receta"
+                                ],
+                                "description": "Si la prenda tiene receta y si está verificada contra un corte"
+                              }
+                            },
+                            "required": [
+                              "lote_id",
+                              "folio",
+                              "prenda",
+                              "modelo",
+                              "piezas",
+                              "fecha_corte",
+                              "en_dias",
+                              "corte_pronto",
+                              "para",
+                              "receta"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Por fecha de corte"
+                        },
+                        "terminados": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "lote_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "folio": {
+                                "type": "string"
+                              },
+                              "prenda": {
+                                "type": "string"
+                              },
+                              "modelo": {
+                                "type": "string"
+                              },
+                              "listas": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "cortadas": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "merma": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "para": {
+                                "type": "object",
+                                "properties": {
+                                  "tipo": {
+                                    "type": "string",
+                                    "enum": [
+                                      "pedido",
+                                      "tienda",
+                                      "temporada"
+                                    ],
+                                    "description": "El destino"
+                                  },
+                                  "nombre": {
+                                    "type": "string",
+                                    "description": "El cliente, la tienda o «Temporada · bodega»"
+                                  },
+                                  "color": {
+                                    "nullable": true,
+                                    "description": "El color de la escuela del cliente; vacío si no tiene",
+                                    "type": "string"
+                                  },
+                                  "linea": {
+                                    "type": "string",
+                                    "description": "«PE-0149 · para el 3 nov», «Reabasto · para el 31 oct» o «Para el 20 nov»"
+                                  },
+                                  "pedido_id": {
+                                    "nullable": true,
+                                    "description": "El pedido, si es de un pedido",
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  }
+                                },
+                                "required": [
+                                  "tipo",
+                                  "nombre",
+                                  "color",
+                                  "linea",
+                                  "pedido_id"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "required": [
+                              "lote_id",
+                              "folio",
+                              "prenda",
+                              "modelo",
+                              "listas",
+                              "cortadas",
+                              "merma",
+                              "para"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Los que esperan a Calidad"
+                        }
+                      },
+                      "required": [
+                        "atorados",
+                        "en_proceso",
+                        "por_cortar",
+                        "terminados"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/produccion.lote": {
+      "get": {
+        "tags": [
+          "produccion"
+        ],
+        "description": "El cajón del lote: su estado, su hilo, sus cifras, cada operación, los registros de la tablet, sus bultos y los rollos que usó\n\nPermiso: departamento produccion. Se puede recortar: costo_metro_centavos.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "lote_id",
+            "required": true,
+            "description": "El lote"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "description": "Para «Ver más» registros"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "lote_id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "folio": {
+                          "type": "string"
+                        },
+                        "orden": {
+                          "type": "string",
+                          "description": "El folio de su orden"
+                        },
+                        "prenda": {
+                          "type": "string"
+                        },
+                        "producto_id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "etapa": {
+                          "type": "string",
+                          "enum": [
+                            "por_cortar",
+                            "en_proceso",
+                            "terminado",
+                            "revisado",
+                            "en_aduana",
+                            "cancelado"
+                          ]
+                        },
+                        "estado": {
+                          "type": "object",
+                          "properties": {
+                            "texto": {
+                              "type": "string",
+                              "description": "El estado, como sale en el cuadro («Atorado en Costados», «En tiempo»)"
+                            },
+                            "color": {
+                              "type": "string",
+                              "enum": [
+                                "rojo",
+                                "ambar",
+                                "azul",
+                                "verde",
+                                "gris",
+                                "morado",
+                                "verde-azulado",
+                                "naranja"
+                              ],
+                              "description": "El color del cuadro del estado"
+                            },
+                            "linea": {
+                              "type": "string",
+                              "description": "La línea de abajo («Faltan 40», «Desde el 13 oct»); vacía si no lleva"
+                            }
+                          },
+                          "required": [
+                            "texto",
+                            "color",
+                            "linea"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "avisos": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "El porqué de un atorado por máquina, o que falta la receta"
+                        },
+                        "pedido_id": {
+                          "nullable": true,
+                          "description": "Con pedido, el hilo es el de su prenda en el pedido",
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "hilo": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "parada": {
+                                "type": "string",
+                                "enum": [
+                                  "pedido",
+                                  "corte",
+                                  "costura",
+                                  "calidad",
+                                  "aduana",
+                                  "entrega"
+                                ]
+                              },
+                              "nombre": {
+                                "description": "El nombre de la parada, en reabasto y temporada («Orden», «Corte»…, «Tienda 2» o «Bodega»)",
+                                "type": "string"
+                              },
+                              "piezas": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "linea": {
+                                "type": "string"
+                              },
+                              "tono": {
+                                "type": "string",
+                                "enum": [
+                                  "normal",
+                                  "ambar",
+                                  "rojo"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "parada",
+                              "piezas",
+                              "linea",
+                              "tono"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "El hilo del lote, si no es de un pedido"
+                        },
+                        "cifras": {
+                          "type": "object",
+                          "properties": {
+                            "planeadas": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "cortadas": {
+                              "nullable": true,
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "listas": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "merma": {
+                              "nullable": true,
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "planeadas",
+                            "cortadas",
+                            "listas",
+                            "merma"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "para": {
+                          "type": "object",
+                          "properties": {
+                            "tipo": {
+                              "type": "string",
+                              "enum": [
+                                "pedido",
+                                "tienda",
+                                "temporada"
+                              ],
+                              "description": "El destino"
+                            },
+                            "nombre": {
+                              "type": "string",
+                              "description": "El cliente, la tienda o «Temporada · bodega»"
+                            },
+                            "color": {
+                              "nullable": true,
+                              "description": "El color de la escuela del cliente; vacío si no tiene",
+                              "type": "string"
+                            },
+                            "linea": {
+                              "type": "string",
+                              "description": "«PE-0149 · para el 3 nov», «Reabasto · para el 31 oct» o «Para el 20 nov»"
+                            },
+                            "pedido_id": {
+                              "nullable": true,
+                              "description": "El pedido, si es de un pedido",
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            }
+                          },
+                          "required": [
+                            "tipo",
+                            "nombre",
+                            "color",
+                            "linea",
+                            "pedido_id"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "entrega": {
+                          "type": "string",
+                          "description": "«3 nov · en 4 días»"
+                        },
+                        "corte": {
+                          "type": "string",
+                          "description": "La fecha de corte, y «· programado» sin cortar"
+                        },
+                        "receta": {
+                          "type": "string",
+                          "description": "«Versión 2 · verificada contra corte», «… sin verificar» o «Sin receta»"
+                        },
+                        "con_receta": {
+                          "type": "boolean"
+                        },
+                        "operaciones": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "operacion": {
+                                "type": "string"
+                              },
+                              "hechas": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "puede_hasta": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "merma": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "quien": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "persona": {
+                                      "type": "string"
+                                    },
+                                    "piezas": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    }
+                                  },
+                                  "required": [
+                                    "persona",
+                                    "piezas"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "linea": {
+                                "type": "string",
+                                "description": "«Atorado desde el 13 oct» o «Se junta trabajo: 40 esperando»"
+                              },
+                              "marca": {
+                                "nullable": true,
+                                "type": "string",
+                                "enum": [
+                                  "se_junta",
+                                  "atorado"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "operacion",
+                              "hechas",
+                              "puede_hasta",
+                              "merma",
+                              "quien",
+                              "linea",
+                              "marca"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Operación por operación, ya cortado"
+                        },
+                        "sin_cortar": {
+                          "nullable": true,
+                          "description": "«Se corta el 13 oct. 190 piezas en 6 tallas.»",
+                          "type": "string"
+                        },
+                        "registros": {
+                          "type": "object",
+                          "properties": {
+                            "renglones": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "registro_id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "version": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "cuando": {
+                                    "type": "string",
+                                    "description": "La fecha y la hora, ya escritas"
+                                  },
+                                  "bulto": {
+                                    "type": "string",
+                                    "description": "El folio del bulto"
+                                  },
+                                  "persona": {
+                                    "type": "string"
+                                  },
+                                  "operacion": {
+                                    "type": "string"
+                                  },
+                                  "buenas": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "danadas": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "del_corte": {
+                                    "type": "boolean",
+                                    "description": "Los del corte dicen «Corte» y no se cancelan"
+                                  },
+                                  "cancelado": {
+                                    "type": "boolean"
+                                  },
+                                  "motivo": {
+                                    "nullable": true,
+                                    "description": "El motivo, si se canceló",
+                                    "type": "string"
+                                  },
+                                  "cancelable": {
+                                    "type": "boolean",
+                                    "description": "Si se puede cancelar: vigente, de la tablet y sin pasar por Calidad"
+                                  },
+                                  "tarifa_centavos": {
+                                    "description": "Su tarifa; solo con «ven sueldos y tarifas»",
+                                    "nullable": true,
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  }
+                                },
+                                "required": [
+                                  "registro_id",
+                                  "version",
+                                  "cuando",
+                                  "bulto",
+                                  "persona",
+                                  "operacion",
+                                  "buenas",
+                                  "danadas",
+                                  "del_corte",
+                                  "cancelado",
+                                  "motivo",
+                                  "cancelable"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "total": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "cursor": {
+                              "nullable": true,
+                              "type": "string"
+                            },
+                            "hay_mas": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "renglones",
+                            "total",
+                            "cursor",
+                            "hay_mas"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "bultos": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "bulto_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "folio": {
+                                "type": "string"
+                              },
+                              "talla": {
+                                "type": "string"
+                              },
+                              "piezas": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "bulto_id",
+                              "folio",
+                              "talla",
+                              "piezas"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "rollos": {
+                          "nullable": true,
+                          "description": "Los rollos usados, ya cortado",
+                          "type": "object",
+                          "properties": {
+                            "partidas": {
+                              "type": "string",
+                              "description": "«Partida P-0001» o «2 partidas»"
+                            },
+                            "mezcladas": {
+                              "type": "boolean"
+                            },
+                            "renglones": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "rollo": {
+                                    "type": "string"
+                                  },
+                                  "partida": {
+                                    "type": "string"
+                                  },
+                                  "tela": {
+                                    "type": "string"
+                                  },
+                                  "metros": {
+                                    "type": "string"
+                                  },
+                                  "costo_metro_centavos": {
+                                    "description": "El precio por metro; solo con Compras o Contaduría",
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  }
+                                },
+                                "required": [
+                                  "rollo",
+                                  "partida",
+                                  "tela",
+                                  "metros"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "por_pieza": {
+                              "type": "string",
+                              "description": "Metros de la tela principal por pieza"
+                            },
+                            "patron": {
+                              "type": "string",
+                              "description": "Metros por pieza según el patrón"
+                            },
+                            "rendimiento": {
+                              "type": "string",
+                              "description": "«+6% sobre el patrón»"
+                            },
+                            "rendimiento_rojo": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "partidas",
+                            "mezcladas",
+                            "renglones",
+                            "por_pieza",
+                            "patron",
+                            "rendimiento",
+                            "rendimiento_rojo"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "ver_costo": {
+                          "type": "boolean",
+                          "description": "Si la cuenta ve el costo del lote: Compras o Contaduría, ya cortado"
+                        }
+                      },
+                      "required": [
+                        "lote_id",
+                        "folio",
+                        "orden",
+                        "prenda",
+                        "producto_id",
+                        "etapa",
+                        "estado",
+                        "avisos",
+                        "pedido_id",
+                        "hilo",
+                        "cifras",
+                        "para",
+                        "entrega",
+                        "corte",
+                        "receta",
+                        "con_receta",
+                        "operaciones",
+                        "sin_cortar",
+                        "registros",
+                        "bultos",
+                        "rollos",
+                        "ver_costo"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/produccion.costo_lote": {
+      "get": {
+        "tags": [
+          "produccion"
+        ],
+        "description": "El costo de un lote cortado: la tela a su precio de compra, los avíos a su última compra y, con «ven sueldos y tarifas», la mano de obra\n\nPermiso: departamento compras o contaduria. Se puede recortar: mano_de_obra, total_centavos, costo_por_pieza_centavos.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "lote_id",
+            "required": true,
+            "description": "El lote"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "cortadas": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "tela": {
+                          "type": "object",
+                          "properties": {
+                            "metros": {
+                              "type": "string"
+                            },
+                            "importe_centavos": {
+                              "description": "Sin montos para soporte",
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "metros"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "avios": {
+                          "type": "object",
+                          "properties": {
+                            "importe_centavos": {
+                              "description": "Sin montos para soporte",
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        "mano_de_obra": {
+                          "description": "Solo con «ven sueldos y tarifas»",
+                          "type": "object",
+                          "properties": {
+                            "operaciones": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "por_pieza_centavos": {
+                              "description": "La suma de las tarifas por pieza",
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "importe_centavos": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "estimada": {
+                              "type": "boolean",
+                              "description": "En proceso es estimada; terminado, la real de sus registros"
+                            }
+                          },
+                          "required": [
+                            "operaciones",
+                            "estimada"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "total_centavos": {
+                          "description": "Solo con «ven sueldos y tarifas»",
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "costo_por_pieza_centavos": {
+                          "description": "El total entre las cortadas; solo con «ven sueldos y tarifas»",
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "cortadas",
+                        "tela",
+                        "avios"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/produccion.ordenes": {
+      "get": {
+        "tags": [
+          "produccion"
+        ],
+        "description": "Las órdenes de producción por pedido o por orden, con sus prendas y su hilo; las que ya salieron del taller, por páginas\n\nPermiso: departamento produccion.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "todas",
+                "clientes",
+                "reabasto",
+                "temporada"
+              ]
+            },
+            "in": "query",
+            "name": "filtro",
+            "required": false,
+            "description": "Sin él, todas"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "description": "Para «Ver más» de las que ya salieron del taller"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "sugerencias": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "sugerencia_ids": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                }
+                              },
+                              "prenda": {
+                                "type": "string"
+                              },
+                              "detalle": {
+                                "type": "string",
+                                "description": "«Para Tienda 2 · 8: 5 · 10: 3»"
+                              },
+                              "piezas": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "sugerencia_ids",
+                              "prenda",
+                              "detalle",
+                              "piezas"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "«Bodega sugiere fabricar»"
+                        },
+                        "conteos": {
+                          "type": "object",
+                          "properties": {
+                            "todas": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "clientes": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "reabasto": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "temporada": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "todas",
+                            "clientes",
+                            "reabasto",
+                            "temporada"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "en_taller": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "clave": {
+                                "type": "string"
+                              },
+                              "tipo": {
+                                "type": "string",
+                                "enum": [
+                                  "pedido",
+                                  "reabasto",
+                                  "temporada"
+                                ]
+                              },
+                              "pedido_id": {
+                                "nullable": true,
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string",
+                                "description": "El cliente, la tienda o «Temporada · bodega»"
+                              },
+                              "color": {
+                                "nullable": true,
+                                "description": "El color de la escuela del cliente",
+                                "type": "string"
+                              },
+                              "referencia": {
+                                "type": "string",
+                                "description": "«PE-0149 · entrega 3 nov» o la referencia de la orden"
+                              },
+                              "plazo": {
+                                "nullable": true,
+                                "description": "«hace 3 días» o «en 2 días», mientras sigue en el taller",
+                                "type": "object",
+                                "properties": {
+                                  "texto": {
+                                    "type": "string"
+                                  },
+                                  "tono": {
+                                    "type": "string",
+                                    "enum": [
+                                      "rojo",
+                                      "ambar",
+                                      "normal"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "texto",
+                                  "tono"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "folios": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                },
+                                "description": "Los folios de sus órdenes"
+                              },
+                              "levanto": {
+                                "type": "string",
+                                "description": "«{motivo} · {quién la levantó}»"
+                              },
+                              "estado": {
+                                "type": "object",
+                                "properties": {
+                                  "texto": {
+                                    "type": "string"
+                                  },
+                                  "color": {
+                                    "type": "string",
+                                    "enum": [
+                                      "rojo",
+                                      "ambar",
+                                      "azul",
+                                      "verde",
+                                      "gris",
+                                      "morado",
+                                      "verde-azulado",
+                                      "naranja"
+                                    ],
+                                    "description": "El color del cuadro del estado"
+                                  },
+                                  "abajo": {
+                                    "nullable": true,
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "texto",
+                                  "color",
+                                  "abajo"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "renglones": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "prenda": {
+                                      "type": "string"
+                                    },
+                                    "piezas": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "lotes": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "lote_id": {
+                                      "nullable": true,
+                                      "description": "Su primer lote que no ha llegado a aduana: lo abre el renglón",
+                                      "type": "string",
+                                      "format": "uuid",
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                    },
+                                    "hilo": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "parada": {
+                                            "type": "string",
+                                            "enum": [
+                                              "pedido",
+                                              "corte",
+                                              "costura",
+                                              "calidad",
+                                              "aduana",
+                                              "entrega"
+                                            ]
+                                          },
+                                          "nombre": {
+                                            "description": "El nombre de la parada, en reabasto y temporada («Orden», «Corte»…, «Tienda 2» o «Bodega»)",
+                                            "type": "string"
+                                          },
+                                          "piezas": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                          },
+                                          "linea": {
+                                            "type": "string"
+                                          },
+                                          "tono": {
+                                            "type": "string",
+                                            "enum": [
+                                              "normal",
+                                              "ambar",
+                                              "rojo"
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "parada",
+                                          "piezas",
+                                          "linea",
+                                          "tono"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "prenda",
+                                    "piezas",
+                                    "lotes",
+                                    "lote_id",
+                                    "hilo"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "required": [
+                              "clave",
+                              "tipo",
+                              "pedido_id",
+                              "nombre",
+                              "color",
+                              "referencia",
+                              "plazo",
+                              "folios",
+                              "levanto",
+                              "estado",
+                              "renglones"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Las que siguen en el taller, por entrega"
+                        },
+                        "salieron": {
+                          "type": "object",
+                          "properties": {
+                            "renglones": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "clave": {
+                                    "type": "string"
+                                  },
+                                  "tipo": {
+                                    "type": "string",
+                                    "enum": [
+                                      "pedido",
+                                      "reabasto",
+                                      "temporada"
+                                    ]
+                                  },
+                                  "pedido_id": {
+                                    "nullable": true,
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "nombre": {
+                                    "type": "string",
+                                    "description": "El cliente, la tienda o «Temporada · bodega»"
+                                  },
+                                  "color": {
+                                    "nullable": true,
+                                    "description": "El color de la escuela del cliente",
+                                    "type": "string"
+                                  },
+                                  "referencia": {
+                                    "type": "string",
+                                    "description": "«PE-0149 · entrega 3 nov» o la referencia de la orden"
+                                  },
+                                  "plazo": {
+                                    "nullable": true,
+                                    "description": "«hace 3 días» o «en 2 días», mientras sigue en el taller",
+                                    "type": "object",
+                                    "properties": {
+                                      "texto": {
+                                        "type": "string"
+                                      },
+                                      "tono": {
+                                        "type": "string",
+                                        "enum": [
+                                          "rojo",
+                                          "ambar",
+                                          "normal"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "texto",
+                                      "tono"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "folios": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "Los folios de sus órdenes"
+                                  },
+                                  "levanto": {
+                                    "type": "string",
+                                    "description": "«{motivo} · {quién la levantó}»"
+                                  },
+                                  "estado": {
+                                    "type": "object",
+                                    "properties": {
+                                      "texto": {
+                                        "type": "string"
+                                      },
+                                      "color": {
+                                        "type": "string",
+                                        "enum": [
+                                          "rojo",
+                                          "ambar",
+                                          "azul",
+                                          "verde",
+                                          "gris",
+                                          "morado",
+                                          "verde-azulado",
+                                          "naranja"
+                                        ],
+                                        "description": "El color del cuadro del estado"
+                                      },
+                                      "abajo": {
+                                        "nullable": true,
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "texto",
+                                      "color",
+                                      "abajo"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "renglones": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "prenda": {
+                                          "type": "string"
+                                        },
+                                        "piezas": {
+                                          "type": "integer",
+                                          "minimum": -9007199254740991,
+                                          "maximum": 9007199254740991
+                                        },
+                                        "lotes": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "lote_id": {
+                                          "nullable": true,
+                                          "description": "Su primer lote que no ha llegado a aduana: lo abre el renglón",
+                                          "type": "string",
+                                          "format": "uuid",
+                                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                        },
+                                        "hilo": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "object",
+                                            "properties": {
+                                              "parada": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "pedido",
+                                                  "corte",
+                                                  "costura",
+                                                  "calidad",
+                                                  "aduana",
+                                                  "entrega"
+                                                ]
+                                              },
+                                              "nombre": {
+                                                "description": "El nombre de la parada, en reabasto y temporada («Orden», «Corte»…, «Tienda 2» o «Bodega»)",
+                                                "type": "string"
+                                              },
+                                              "piezas": {
+                                                "type": "integer",
+                                                "minimum": -9007199254740991,
+                                                "maximum": 9007199254740991
+                                              },
+                                              "linea": {
+                                                "type": "string"
+                                              },
+                                              "tono": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "normal",
+                                                  "ambar",
+                                                  "rojo"
+                                                ]
+                                              }
+                                            },
+                                            "required": [
+                                              "parada",
+                                              "piezas",
+                                              "linea",
+                                              "tono"
+                                            ],
+                                            "additionalProperties": false
+                                          }
+                                        }
+                                      },
+                                      "required": [
+                                        "prenda",
+                                        "piezas",
+                                        "lotes",
+                                        "lote_id",
+                                        "hilo"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "clave",
+                                  "tipo",
+                                  "pedido_id",
+                                  "nombre",
+                                  "color",
+                                  "referencia",
+                                  "plazo",
+                                  "folios",
+                                  "levanto",
+                                  "estado",
+                                  "renglones"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "description": "Los renglones de esta página"
+                            },
+                            "cursor": {
+                              "nullable": true,
+                              "description": "El cursor para pedir la página siguiente; nulo si no hay más",
+                              "type": "string"
+                            },
+                            "hay_mas": {
+                              "type": "boolean",
+                              "description": "Si hay más renglones después de esta página"
+                            }
+                          },
+                          "required": [
+                            "renglones",
+                            "cursor",
+                            "hay_mas"
+                          ],
+                          "additionalProperties": false,
+                          "description": "Las que ya salieron del taller"
+                        }
+                      },
+                      "required": [
+                        "sugerencias",
+                        "conteos",
+                        "en_taller",
+                        "salieron"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/produccion.opciones_orden_nueva": {
+      "get": {
+        "tags": [
+          "produccion"
+        ],
+        "description": "Lo que ofrece la ventana «Orden de producción nueva»: para quién, las prendas que pasan por el taller con sus tallas y la entrega que propone\n\nPermiso: departamento produccion.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 80
+            },
+            "in": "query",
+            "name": "texto",
+            "required": false,
+            "description": "Lo que se escribe para buscar la prenda"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "destinos": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "ubicacion_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "ubicacion_id",
+                              "nombre"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "prendas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "producto_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "con_receta": {
+                                "type": "boolean"
+                              },
+                              "tallas": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "variante_id": {
+                                      "type": "string",
+                                      "format": "uuid",
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                    },
+                                    "talla": {
+                                      "type": "string"
+                                    },
+                                    "especial": {
+                                      "type": "boolean"
+                                    },
+                                    "descontinuada": {
+                                      "type": "boolean"
+                                    }
+                                  },
+                                  "required": [
+                                    "variante_id",
+                                    "talla",
+                                    "especial",
+                                    "descontinuada"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "required": [
+                              "producto_id",
+                              "nombre",
+                              "con_receta",
+                              "tallas"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "entrega_propuesta": {
+                          "type": "string",
+                          "description": "Hoy + `produccion.orden_entrega_temporada_dias`, en ISO"
+                        }
+                      },
+                      "required": [
+                        "destinos",
+                        "prendas",
+                        "entrega_propuesta"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/produccion.corte": {
+      "get": {
+        "tags": [
+          "produccion"
+        ],
+        "description": "Los lotes por cortar y la captura del escogido: su receta por tela, el desperdicio, los rollos en el orden en que se usan, las tallas y quién corta. Sin dinero\n\nPermiso: departamento produccion.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "lote_id",
+            "required": false,
+            "description": "El lote escogido; sin él, el primero por fecha de corte"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "lotes": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "lote_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "folio": {
+                                "type": "string"
+                              },
+                              "fecha_corte": {
+                                "type": "string",
+                                "description": "Ya escrita"
+                              },
+                              "corte_pronto": {
+                                "type": "boolean",
+                                "description": "A `inventario.dias_entrega_corte` días o menos: ámbar"
+                              },
+                              "prenda": {
+                                "type": "string"
+                              },
+                              "detalle": {
+                                "type": "string",
+                                "description": "«190 piezas · Distribuidora Escolar Zamora»"
+                              },
+                              "tela": {
+                                "nullable": true,
+                                "description": "«Tela entregada» o «Tela por entregar»; más lejos, nada",
+                                "type": "object",
+                                "properties": {
+                                  "texto": {
+                                    "type": "string"
+                                  },
+                                  "color": {
+                                    "type": "string",
+                                    "enum": [
+                                      "rojo",
+                                      "ambar",
+                                      "azul",
+                                      "verde",
+                                      "gris",
+                                      "morado",
+                                      "verde-azulado",
+                                      "naranja"
+                                    ],
+                                    "description": "El color del cuadro del estado"
+                                  }
+                                },
+                                "required": [
+                                  "texto",
+                                  "color"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "receta": {
+                                "type": "string",
+                                "enum": [
+                                  "verificada",
+                                  "sin_verificar",
+                                  "sin_receta"
+                                ],
+                                "description": "Si la prenda tiene receta y si está verificada contra un corte"
+                              }
+                            },
+                            "required": [
+                              "lote_id",
+                              "folio",
+                              "fecha_corte",
+                              "corte_pronto",
+                              "prenda",
+                              "detalle",
+                              "tela",
+                              "receta"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Los lotes por cortar, por fecha de corte"
+                        },
+                        "captura": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "lote_id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "version": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "La versión del lote, para «Cerrar corte»"
+                            },
+                            "folio": {
+                              "type": "string"
+                            },
+                            "orden": {
+                              "type": "string"
+                            },
+                            "prenda": {
+                              "type": "string"
+                            },
+                            "producto_id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "para": {
+                              "type": "object",
+                              "properties": {
+                                "tipo": {
+                                  "type": "string",
+                                  "enum": [
+                                    "pedido",
+                                    "tienda",
+                                    "temporada"
+                                  ],
+                                  "description": "El destino"
+                                },
+                                "nombre": {
+                                  "type": "string",
+                                  "description": "El cliente, la tienda o «Temporada · bodega»"
+                                },
+                                "color": {
+                                  "nullable": true,
+                                  "description": "El color de la escuela del cliente; vacío si no tiene",
+                                  "type": "string"
+                                },
+                                "linea": {
+                                  "type": "string",
+                                  "description": "«PE-0149 · para el 3 nov», «Reabasto · para el 31 oct» o «Para el 20 nov»"
+                                },
+                                "pedido_id": {
+                                  "nullable": true,
+                                  "description": "El pedido, si es de un pedido",
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                }
+                              },
+                              "required": [
+                                "tipo",
+                                "nombre",
+                                "color",
+                                "linea",
+                                "pedido_id"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "fecha_corte": {
+                              "type": "string",
+                              "description": "Ya escrita: «15 oct»"
+                            },
+                            "tela": {
+                              "type": "object",
+                              "properties": {
+                                "texto": {
+                                  "type": "string"
+                                },
+                                "color": {
+                                  "type": "string",
+                                  "enum": [
+                                    "rojo",
+                                    "ambar",
+                                    "azul",
+                                    "verde",
+                                    "gris",
+                                    "morado",
+                                    "verde-azulado",
+                                    "naranja"
+                                  ],
+                                  "description": "El color del cuadro del estado"
+                                }
+                              },
+                              "required": [
+                                "texto",
+                                "color"
+                              ],
+                              "additionalProperties": false,
+                              "description": "La etiqueta de la tela: aquí siempre sale"
+                            },
+                            "receta": {
+                              "type": "string",
+                              "enum": [
+                                "verificada",
+                                "sin_verificar",
+                                "sin_receta"
+                              ],
+                              "description": "Si la prenda tiene receta y si está verificada contra un corte"
+                            },
+                            "receta_version_id": {
+                              "nullable": true,
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "aviso_version": {
+                              "nullable": true,
+                              "description": "Si Bodega entregó tela para otra versión de la receta",
+                              "type": "string"
+                            },
+                            "desperdicio_pct": {
+                              "type": "string",
+                              "pattern": "^\\d+(\\.\\d{1,3})?$",
+                              "description": "El desperdicio de la prenda, para lo que pide la receta"
+                            },
+                            "frontera": {
+                              "type": "string",
+                              "pattern": "^\\d+(\\.\\d{1,3})?$",
+                              "description": "`inventario.metros_frontera_rollo`"
+                            },
+                            "rendimiento_rojo": {
+                              "type": "number",
+                              "description": "`produccion.rendimiento_rojo_porcentaje`"
+                            },
+                            "tallas": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "variante_id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "talla_id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "talla": {
+                                    "type": "string"
+                                  },
+                                  "planeadas": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  }
+                                },
+                                "required": [
+                                  "variante_id",
+                                  "talla_id",
+                                  "talla",
+                                  "planeadas"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "telas": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "material_id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "nombre": {
+                                    "type": "string"
+                                  },
+                                  "papel": {
+                                    "type": "string",
+                                    "enum": [
+                                      "tela_principal",
+                                      "combinacion",
+                                      "forro"
+                                    ]
+                                  },
+                                  "receta": {
+                                    "type": "object",
+                                    "properties": {
+                                      "cantidad": {
+                                        "nullable": true,
+                                        "description": "Por prenda, si va igual en todas las tallas",
+                                        "type": "string",
+                                        "pattern": "^\\d+(\\.\\d{1,3})?$"
+                                      },
+                                      "por_talla": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "object",
+                                          "properties": {
+                                            "talla_id": {
+                                              "type": "string",
+                                              "format": "uuid",
+                                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                            },
+                                            "cantidad": {
+                                              "type": "string",
+                                              "pattern": "^\\d+(\\.\\d{1,3})?$"
+                                            }
+                                          },
+                                          "required": [
+                                            "talla_id",
+                                            "cantidad"
+                                          ],
+                                          "additionalProperties": false
+                                        }
+                                      },
+                                      "receta_por_unidad_inventario": {
+                                        "type": "string",
+                                        "pattern": "^\\d+(\\.\\d{1,3})?$"
+                                      }
+                                    },
+                                    "required": [
+                                      "cantidad",
+                                      "por_talla",
+                                      "receta_por_unidad_inventario"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "rollos": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "rollo_id": {
+                                          "type": "string",
+                                          "format": "uuid",
+                                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                        },
+                                        "folio": {
+                                          "type": "string"
+                                        },
+                                        "partida": {
+                                          "nullable": true,
+                                          "type": "string"
+                                        },
+                                        "metros": {
+                                          "type": "string",
+                                          "pattern": "^\\d+(\\.\\d{1,3})?$"
+                                        },
+                                        "entregado": {
+                                          "type": "boolean",
+                                          "description": "Entregado a este corte"
+                                        },
+                                        "sugerido": {
+                                          "type": "boolean",
+                                          "description": "Sugerido para este lote"
+                                        }
+                                      },
+                                      "required": [
+                                        "rollo_id",
+                                        "folio",
+                                        "partida",
+                                        "metros",
+                                        "entregado",
+                                        "sugerido"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    "description": "Los que se pueden usar, en el orden en que conviene usarlos"
+                                  }
+                                },
+                                "required": [
+                                  "material_id",
+                                  "nombre",
+                                  "papel",
+                                  "receta",
+                                  "rollos"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "description": "Una por tela de la receta: la principal primero"
+                            },
+                            "personas": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "persona_id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "nombre": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "persona_id",
+                                  "nombre"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "description": "Las activas del Taller; primero quien hace de base el corte en el flujo de la prenda"
+                            }
+                          },
+                          "required": [
+                            "lote_id",
+                            "version",
+                            "folio",
+                            "orden",
+                            "prenda",
+                            "producto_id",
+                            "para",
+                            "fecha_corte",
+                            "tela",
+                            "receta",
+                            "receta_version_id",
+                            "aviso_version",
+                            "desperdicio_pct",
+                            "frontera",
+                            "rendimiento_rojo",
+                            "tallas",
+                            "telas",
+                            "personas"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "lotes",
+                        "captura"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/produccion.operaciones": {
+      "get": {
+        "tags": [
+          "produccion"
+        ],
+        "description": "Los flujos vigentes con sus operaciones, quién hace cada una y su candado; la tarifa solo con «ven sueldos y tarifas»\n\nPermiso: departamento produccion.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "flujos": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "flujo_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "version": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991,
+                                "description": "Para agregar o quitar una operación"
+                              },
+                              "prendas": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                },
+                                "description": "Las prendas vigentes que lo usan"
+                              },
+                              "lotes_en_proceso": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991,
+                                "description": "Los lotes en proceso o terminados sin revisar: el candado"
+                              },
+                              "operaciones": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "flujo_operacion_id": {
+                                      "type": "string",
+                                      "format": "uuid",
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                    },
+                                    "operacion": {
+                                      "type": "string"
+                                    },
+                                    "es_corte": {
+                                      "type": "boolean"
+                                    },
+                                    "persona_id": {
+                                      "type": "string",
+                                      "format": "uuid",
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                    },
+                                    "persona": {
+                                      "type": "string"
+                                    },
+                                    "sin_tarifa": {
+                                      "type": "boolean",
+                                      "description": "Sin tarifa vigente: la pone Personal"
+                                    },
+                                    "tarifa_centavos": {
+                                      "description": "La tarifa vigente; solo con «ven sueldos y tarifas»",
+                                      "nullable": true,
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    }
+                                  },
+                                  "required": [
+                                    "flujo_operacion_id",
+                                    "operacion",
+                                    "es_corte",
+                                    "persona_id",
+                                    "persona",
+                                    "sin_tarifa"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "required": [
+                              "flujo_id",
+                              "nombre",
+                              "version",
+                              "prendas",
+                              "lotes_en_proceso",
+                              "operaciones"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "personas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "persona_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "persona_id",
+                              "nombre"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Las activas del Taller, para «La hace»"
+                        },
+                        "catalogo": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "Los nombres de las operaciones vigentes, para proponer"
+                        },
+                        "antes_por_omision": {
+                          "type": "string",
+                          "description": "`produccion.operacion_antes_por_omision`"
+                        }
+                      },
+                      "required": [
+                        "flujos",
+                        "personas",
+                        "catalogo",
+                        "antes_por_omision"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/produccion.produccion_por_persona": {
+      "get": {
+        "tags": [
+          "produccion"
+        ],
+        "description": "Las piezas buenas de cada persona del Taller hoy y esta semana, sus operaciones y los lotes donde trabaja. Sin tarifas ni importes\n\nPermiso: departamento produccion.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "personas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "persona_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "puesto": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "operaciones": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "hoy": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "semana": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "lotes": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "required": [
+                              "persona_id",
+                              "nombre",
+                              "puesto",
+                              "operaciones",
+                              "hoy",
+                              "semana",
+                              "lotes"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "personas"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/archivos/subida": {
       "post": {
         "tags": [

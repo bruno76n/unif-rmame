@@ -25,6 +25,11 @@ import { Route as MantenimientoIndexRouteImport } from "./rutas/mantenimiento/in
 import { Route as PatronajeIndexRouteImport } from "./rutas/patronaje/index.tsx"
 import { Route as PersonalIndexRouteImport } from "./rutas/personal/index.tsx"
 import { Route as ProduccionIndexRouteImport } from "./rutas/produccion/index.tsx"
+import { Route as ProduccionCorteRouteImport } from "./rutas/produccion/corte.tsx"
+import { Route as ProduccionLotesRouteImport } from "./rutas/produccion/lotes.tsx"
+import { Route as ProduccionOperacionesRouteImport } from "./rutas/produccion/operaciones.tsx"
+import { Route as ProduccionOrdenesRouteImport } from "./rutas/produccion/ordenes.tsx"
+import { Route as ProduccionPorPersonaRouteImport } from "./rutas/produccion/por-persona.tsx"
 import { Route as VentasIndexRouteImport } from "./rutas/ventas/index.tsx"
 
 const IndexRoute = IndexRouteImport.update({
@@ -107,6 +112,31 @@ const ProduccionIndexRoute = ProduccionIndexRouteImport.update({
   path: "/produccion/",
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProduccionCorteRoute = ProduccionCorteRouteImport.update({
+  id: "/produccion/corte",
+  path: "/produccion/corte",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProduccionLotesRoute = ProduccionLotesRouteImport.update({
+  id: "/produccion/lotes",
+  path: "/produccion/lotes",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProduccionOperacionesRoute = ProduccionOperacionesRouteImport.update({
+  id: "/produccion/operaciones",
+  path: "/produccion/operaciones",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProduccionOrdenesRoute = ProduccionOrdenesRouteImport.update({
+  id: "/produccion/ordenes",
+  path: "/produccion/ordenes",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProduccionPorPersonaRoute = ProduccionPorPersonaRouteImport.update({
+  id: "/produccion/por-persona",
+  path: "/produccion/por-persona",
+  getParentRoute: () => rootRouteImport,
+} as any)
 const VentasIndexRoute = VentasIndexRouteImport.update({
   id: "/ventas/",
   path: "/ventas/",
@@ -116,6 +146,11 @@ const VentasIndexRoute = VentasIndexRouteImport.update({
 export interface FileRoutesByFullPath {
   "/": typeof IndexRoute
   "/acceso/confirmado": typeof AccesoConfirmadoRoute
+  "/produccion/corte": typeof ProduccionCorteRoute
+  "/produccion/lotes": typeof ProduccionLotesRoute
+  "/produccion/operaciones": typeof ProduccionOperacionesRoute
+  "/produccion/ordenes": typeof ProduccionOrdenesRoute
+  "/produccion/por-persona": typeof ProduccionPorPersonaRoute
   "/acceso/": typeof AccesoIndexRoute
   "/admin/": typeof AdminIndexRoute
   "/aduana/": typeof AduanaIndexRoute
@@ -135,6 +170,11 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   "/": typeof IndexRoute
   "/acceso/confirmado": typeof AccesoConfirmadoRoute
+  "/produccion/corte": typeof ProduccionCorteRoute
+  "/produccion/lotes": typeof ProduccionLotesRoute
+  "/produccion/operaciones": typeof ProduccionOperacionesRoute
+  "/produccion/ordenes": typeof ProduccionOrdenesRoute
+  "/produccion/por-persona": typeof ProduccionPorPersonaRoute
   "/acceso": typeof AccesoIndexRoute
   "/admin": typeof AdminIndexRoute
   "/aduana": typeof AduanaIndexRoute
@@ -155,6 +195,11 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   "/": typeof IndexRoute
   "/acceso/confirmado": typeof AccesoConfirmadoRoute
+  "/produccion/corte": typeof ProduccionCorteRoute
+  "/produccion/lotes": typeof ProduccionLotesRoute
+  "/produccion/operaciones": typeof ProduccionOperacionesRoute
+  "/produccion/ordenes": typeof ProduccionOrdenesRoute
+  "/produccion/por-persona": typeof ProduccionPorPersonaRoute
   "/acceso/": typeof AccesoIndexRoute
   "/admin/": typeof AdminIndexRoute
   "/aduana/": typeof AduanaIndexRoute
@@ -176,6 +221,11 @@ export interface FileRouteTypes {
   fullPaths:
     | "/"
     | "/acceso/confirmado"
+    | "/produccion/corte"
+    | "/produccion/lotes"
+    | "/produccion/operaciones"
+    | "/produccion/ordenes"
+    | "/produccion/por-persona"
     | "/acceso/"
     | "/admin/"
     | "/aduana/"
@@ -195,6 +245,11 @@ export interface FileRouteTypes {
   to:
     | "/"
     | "/acceso/confirmado"
+    | "/produccion/corte"
+    | "/produccion/lotes"
+    | "/produccion/operaciones"
+    | "/produccion/ordenes"
+    | "/produccion/por-persona"
     | "/acceso"
     | "/admin"
     | "/aduana"
@@ -214,6 +269,11 @@ export interface FileRouteTypes {
     | "__root__"
     | "/"
     | "/acceso/confirmado"
+    | "/produccion/corte"
+    | "/produccion/lotes"
+    | "/produccion/operaciones"
+    | "/produccion/ordenes"
+    | "/produccion/por-persona"
     | "/acceso/"
     | "/admin/"
     | "/aduana/"
@@ -234,6 +294,11 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AccesoConfirmadoRoute: typeof AccesoConfirmadoRoute
+  ProduccionCorteRoute: typeof ProduccionCorteRoute
+  ProduccionLotesRoute: typeof ProduccionLotesRoute
+  ProduccionOperacionesRoute: typeof ProduccionOperacionesRoute
+  ProduccionOrdenesRoute: typeof ProduccionOrdenesRoute
+  ProduccionPorPersonaRoute: typeof ProduccionPorPersonaRoute
   AccesoIndexRoute: typeof AccesoIndexRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AduanaIndexRoute: typeof AduanaIndexRoute
@@ -365,6 +430,41 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof ProduccionIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    "/produccion/corte": {
+      id: "/produccion/corte"
+      path: "/produccion/corte"
+      fullPath: "/produccion/corte"
+      preLoaderRoute: typeof ProduccionCorteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/produccion/lotes": {
+      id: "/produccion/lotes"
+      path: "/produccion/lotes"
+      fullPath: "/produccion/lotes"
+      preLoaderRoute: typeof ProduccionLotesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/produccion/operaciones": {
+      id: "/produccion/operaciones"
+      path: "/produccion/operaciones"
+      fullPath: "/produccion/operaciones"
+      preLoaderRoute: typeof ProduccionOperacionesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/produccion/ordenes": {
+      id: "/produccion/ordenes"
+      path: "/produccion/ordenes"
+      fullPath: "/produccion/ordenes"
+      preLoaderRoute: typeof ProduccionOrdenesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/produccion/por-persona": {
+      id: "/produccion/por-persona"
+      path: "/produccion/por-persona"
+      fullPath: "/produccion/por-persona"
+      preLoaderRoute: typeof ProduccionPorPersonaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     "/ventas/": {
       id: "/ventas/"
       path: "/ventas"
@@ -378,6 +478,11 @@ declare module "@tanstack/react-router" {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccesoConfirmadoRoute: AccesoConfirmadoRoute,
+  ProduccionCorteRoute: ProduccionCorteRoute,
+  ProduccionLotesRoute: ProduccionLotesRoute,
+  ProduccionOperacionesRoute: ProduccionOperacionesRoute,
+  ProduccionOrdenesRoute: ProduccionOrdenesRoute,
+  ProduccionPorPersonaRoute: ProduccionPorPersonaRoute,
   AccesoIndexRoute: AccesoIndexRoute,
   AdminIndexRoute: AdminIndexRoute,
   AduanaIndexRoute: AduanaIndexRoute,

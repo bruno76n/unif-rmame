@@ -9,7 +9,7 @@
  * Al cerrar nace un registro por bulto en la operación de corte, a nombre de quien cortó.
  */
 
-import { usoDeLaTela } from "@uniformame/compartido/calculos/corte";
+import { destinoDeLoQueQuedo, porcentajeSobreElPatron, usoDeLaTela } from "@uniformame/compartido/calculos/corte";
 import { aMilesimos, cantidadEnTexto, deMilesimos } from "@uniformame/compartido/calculos/cuenta-material";
 import { cerrarCorte, imprimirEtiquetasBulto } from "@uniformame/compartido/contratos/produccion/corte";
 import { and, asc, eq, inArray } from "drizzle-orm";
@@ -230,15 +230,14 @@ export const accionCerrarCorte = implementarAccion(cerrarCorte, async (contexto,
 				`Se mezclan las partidas ${partidas.slice(0, -1).join(", ")} y ${partidas.at(-1)}: el tono puede variar entre piezas.`,
 			);
 		}
-		const destino =
-			uso.quedan === 0n ? "ninguno" : uso.quedan >= frontera ? "rollo" : tela.ya_no_sirve === true ? "merma" : "retazo";
+		const destino = destinoDeLoQueQuedo(uso.quedan, frontera, tela.ya_no_sirve === true);
 		return { tela, papel: deReceta?.papel ?? "tela_principal", pide, piso, uso, usado, suyos, destino } as const;
 	});
 	// El rendimiento de la tela principal contra el patrón.
 	const principal = telas.find((tela) => tela.papel === "tela_principal");
 	const rojo = Number(await contexto.lectura("admin.parametro", { clave: "produccion.rendimiento_rojo_porcentaje" }));
 	if (principal !== undefined && principal.piso > 0n) {
-		const sobre = Number(((principal.usado - principal.piso) * 100_000n) / principal.piso) / 1000;
+		const sobre = porcentajeSobreElPatron(principal.usado, principal.piso);
 		if (sobre > rojo) avisos.push(`+${Math.round(sobre)}% sobre el patrón`);
 	}
 	// El corte, lo que mueve en el inventario, sus telas y sus rollos.

@@ -43,3 +43,18 @@ export const hiloPedido = definirConsulta({
 	}),
 	permiso: { departamento: ["produccion", "ventas"] },
 });
+
+/**
+ * Una parada del hilo en las pantallas de Producción. La de un lote de reabasto o de temporada lleva su nombre, porque
+ * la primera es «Orden» y la última, la tienda o «Bodega» (docs/interfaz/TEXTOS.md, «El hilo»); la de un pedido, no.
+ */
+export const paradaDeLote = z.object({
+	parada: z.enum(paradasDelHilo),
+	nombre: z
+		.string()
+		.optional()
+		.describe("El nombre de la parada, en reabasto y temporada («Orden», «Corte»…, «Tienda 2» o «Bodega»)"),
+	piezas: z.number().int(),
+	linea: z.string(),
+	tono: z.enum(tonosDelHilo),
+});

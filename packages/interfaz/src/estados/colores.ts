@@ -6,17 +6,9 @@
  * a la guía y a esta tabla antes de usarse; uno que no está aquí sale en gris, y su prueba lo encuentra.
  */
 
-/** Los colores de estado: cuadro sólido con texto blanco. */
-export const coloresDeEstado = [
-	"rojo",
-	"ambar",
-	"azul",
-	"verde",
-	"gris",
-	"morado",
-	"verde-azulado",
-	"naranja",
-] as const;
+import { coloresDeEstado } from "@uniformame/compartido/contratos/estados";
+
+export { coloresDeEstado };
 
 /** Un color de estado. */
 export type ColorDeEstado = (typeof coloresDeEstado)[number];
