@@ -19,7 +19,8 @@ Que cada pantalla se vea como la muestra que aprobó Bruno sin copiar su código
 6. **Íconos de lucide-react,** de 18 px (17 en botones y 13 dentro de la barra de indicadores), con trazo de 1.9. El ícono de un tipo de pendiente va sobre un cuadro claro de su color.
 7. **Las cifras van con números tabulares,** y el dinero y las cantidades, alineados a la derecha.
 8. **Accesible:** foco visible con el anillo de la marca, cada campo con su etiqueta, contraste suficiente, todo se usa con teclado, y respeta «reducir movimiento».
-9. **El teléfono también:** hasta 980 px el menú se esconde y se abre con su botón; hasta 700 px la barra de indicadores pone dos cifras por renglón, las tablas se desplazan de lado y el cajón ocupa toda la pantalla.
+9. **Es una aplicación, no una página** (decisión 747): el armazón ocupa justo la pantalla y la página nunca se desplaza entera. El menú y la barra superior se quedan quietos, y cada zona se desplaza por su cuenta: el menú, el panel de contenido, una tabla larga y el cuerpo de un cajón. Desplazar una no mueve a las otras.
+10. **El teléfono también:** hasta 980 px el menú se esconde y se abre con su botón; hasta 700 px la barra de indicadores pone dos cifras por renglón, las tablas se desplazan de lado y el cajón ocupa toda la pantalla.
 
 ## Los colores
 
@@ -93,7 +94,7 @@ Es la muestra de color de la escuela en Catálogo, en los filtros y en los grupo
 
 ## Los componentes
 
-Todos viven en `packages/interfaz`, con su historia de uso escrita en su TSDoc:
+Todos viven en `packages/interfaz`, cada familia en su carpeta (`botones/`, `captura/`, `estados/`, `contenedores/`, `tablas/`, `pagina/`, `avance/` y `graficas/`; el árbol está en [estructura](../cimientos/ESTRUCTURA.md#el-sistema-de-diseño-por-dentro)), con su historia de uso escrita en su TSDoc:
 
 | Componente | Qué es |
 |---|---|
@@ -123,4 +124,11 @@ Todos viven en `packages/interfaz`, con su historia de uso escrita en su TSDoc:
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 19.*
+**Fase 19, parte 1 (el sistema de diseño).**
+
+- **Los tokens** están en `packages/interfaz/src/tokens.css`, como tema de Tailwind 4 (`@theme`): los colores de esta página, la letra, los radios, las medidas (`h-boton`, `h-renglon`, `w-menu`, `max-w-cajon`…), las sombras y los dos cortes (`max-menu:` hasta 980 px y `max-telefono:` hasta 700). La hoja de la web los importa después de `tailwindcss`.
+- **Los componentes** van por familias, cada una en su carpeta (decisión 743; el árbol en [estructura](../cimientos/ESTRUCTURA.md#el-sistema-de-diseño-por-dentro)). No reciben clases sueltas: cada uno pinta con los tokens, y quien lo usa solo pasa datos.
+- **El color de cada estado** sale de `estados/colores.ts`, la tabla de [textos](TEXTOS.md#el-color-de-cada-estado) más las formas con datos (decisión 745).
+- **Lo interactivo:** el interruptor, la casilla, el cajón y la ventana son de Base UI; el selector es el `select` del navegador (decisión 746). La tabla usa TanStack Table 9 (orden, selección) y, desde 100 renglones, TanStack Virtual. Las gráficas, Recharts.
+- **El armazón** mide el alto de la pantalla (`h-dvh`) y solo su panel de contenido (`data-panel="contenido"`) se desplaza; el menú lleva su propia área (decisión 747).
+- **La prueba** es `muestra/componentes.prueba.ts`: abre el catálogo (`muestra/catalogo.tsx`, todos los componentes en todos sus estados) en Chromium, en escritorio y en teléfono, mide cada componente contra esta página y guarda las capturas en `.revision/capturas/componentes/` para el [revisor de diseño](../../.claude/agents/revisor-diseno.md).

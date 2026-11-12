@@ -124,6 +124,29 @@ apps/web/src/
 - El puente (`apps/puente/src/`) lleva `registro/`, `trabajos/`, `zebra/` y `diario/` (ver [puente de impresión](../apps/puente-de-impresion.md)).
 - Los dibujos de `apps/api/src/impresos/` van en `etiquetas/` y `hojas/`, uno por archivo, con lo común del ZPL y del PDF: reciben datos ya listos y no consultan nada, como una pantalla (ver [etiquetas](../impresos/etiquetas.md#cómo-se-arman)).
 
+## El sistema de diseño por dentro
+
+Cada familia de componentes en su carpeta, un componente por archivo (decisión 743):
+
+```text
+packages/interfaz/src/
+├── tokens.css                 los colores y las medidas, una sola vez (ver diseño)
+├── clases.ts                  une las clases de un componente
+├── botones/                   boton.tsx · boton-con-cifra.tsx
+├── captura/                   campo.tsx · selector.tsx · interruptor.tsx · casilla.tsx · filtros.tsx
+├── estados/                   estado.tsx · estado-de-pantalla.tsx · aviso.tsx · colores.ts (el color de cada estado)
+├── contenedores/              cajon.tsx · ventana.tsx
+├── tablas/                    tabla.tsx · panel-pendientes.tsx
+├── pagina/                    armazon.tsx · pagina-departamento.tsx · barra-indicadores.tsx · colores-de-tipo.ts
+├── avance/                    hilo.tsx · barra-avance.tsx · pasos.tsx
+├── graficas/                  grafica-chica.tsx · grafica.tsx
+└── muestra/                   catalogo.tsx (todos los componentes en todos sus estados), su página y componentes.prueba.ts
+```
+
+- **Se importa por su carpeta:** `@uniformame/interfaz/botones/boton`. No hay un archivo que junte todos: no hay archivos que solo reexportan.
+- **Lo que comparte una familia** va dentro de su carpeta, nunca en una carpeta de cajón de sastre.
+- **Un componente nuevo** lo pide el departamento al capataz y entra a la carpeta de su familia.
+
 ## El paquete compartido por dentro
 
 ```text

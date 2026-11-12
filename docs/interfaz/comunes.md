@@ -13,7 +13,7 @@ Que cualquier persona, en cualquier departamento, encuentre las cosas en el mism
 
 ### El menú lateral
 
-Blanco, a la izquierda, de alto completo. Arriba la marca «Uniformes Alameda · Sistema de fábrica»; los departamentos van en grupos:
+Blanco, a la izquierda, de alto completo. El menú y la barra superior se quedan quietos: se desplazan solo el menú, si no cabe, y el panel de contenido, cada uno por su cuenta (ver [diseño](DISENO.md#reglas), regla 9). Arriba la marca «Uniformes Alameda · Sistema de fábrica»; los departamentos van en grupos:
 
 | Grupo | Departamentos |
 |---|---|

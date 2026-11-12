@@ -10,7 +10,7 @@
 	"scripts": {
 		"prepare": "git config core.hooksPath .githooks || true",
 		"estilo": "biome check .",
-		"tipos": "tsc -p tsconfig.json",
+		"tipos": "tsc -p tsconfig.json && tsc -p tsconfig.web.json",
 		"pruebas": "vitest run",
 		"revision:rapida": "node scripts/revision-rapida.ts",
 		"revision": "node scripts/revision.ts",

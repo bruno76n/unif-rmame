@@ -1,0 +1,6 @@
+/*
+ * La hoja del catálogo del sistema de diseño: Tailwind con los tokens, como la de la web.
+ * Fase 19 · docs/interfaz/DISENO.md
+ */
+@import "tailwindcss";
+@import "../tokens.css";

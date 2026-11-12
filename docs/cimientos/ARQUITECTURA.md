@@ -92,7 +92,7 @@ TypeScript 7 es el compilador nativo. Se usa solo para revisar tipos (`tsc --noE
 | Tablas densas | @tanstack/react-table | 9.3.1 | https://tanstack.com/table/latest |
 | Listas largas | @tanstack/react-virtual | 3.14.26 | https://tanstack.com/virtual/latest |
 | Estilos | Tailwind CSS · @tailwindcss/vite | 4.3.5 | https://tailwindcss.com/docs |
-| Componentes | shadcn/ui sobre Base UI (@base-ui/react) | 4.23.0 · 1.9.0 | https://ui.shadcn.com/docs · https://base-ui.com/ |
+| Componentes | shadcn/ui · Base UI (@base-ui/react), sobre la que van los componentes de shadcn/ui | 4.23.0 · 1.9.0 | https://ui.shadcn.com/docs · https://base-ui.com/ |
 | Íconos | lucide-react | 1.70.0 | https://lucide.dev/ |
 | Formularios | react-hook-form · @hookform/resolvers | 7.91.0 · 7.0.5 | https://react-hook-form.com/ |
 | Gráficas | Recharts | 3.10.1 | https://recharts.org/ |

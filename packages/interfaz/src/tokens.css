@@ -1,0 +1,121 @@
+/*
+ * Los tokens del sistema de diseño: cada color, radio, sombra y medida vive aquí una sola vez, como tema de
+ * Tailwind 4. Las pantallas solo usan estos nombres (bg-fondo, text-tinta, rounded-mediano, h-boton…).
+ * Fase 19 · docs/interfaz/DISENO.md («Los colores», «Tipografía», «Medidas»)
+ *
+ * Se importa después de «tailwindcss» en la hoja de la web; @source le dice a Tailwind que lea los componentes.
+ */
+
+@source "./";
+
+@theme {
+	/* Base */
+	--color-fondo: #f3f4f7;
+	--color-panel: #ffffff;
+	--color-suave: #f5f6f9;
+	--color-riel: #e8eaf1;
+	--color-tinta: #17181c;
+	--color-tinta2: #41444d;
+	--color-tinta3: #6f737e;
+	--color-linea: #e6e8ee;
+	--color-linea2: #d6d9e1;
+	--color-marca: #c2367a;
+	--color-marca-fondo: #fbeaf2;
+	--color-marca-texto: #8e2160;
+
+	/* Los de cada tipo: el ícono de un pendiente, de una cifra o de un departamento */
+	--color-azul: #3b6fe0;
+	--color-verde: #23955a;
+	--color-ambar: #d48a12;
+	--color-rojo: #d23f35;
+	--color-violeta: #7457db;
+	--color-verde-azulado: #14928f;
+	--color-pizarra: #5b6271;
+	--color-rosa: #c2367a;
+
+	/* Los estados, saturados: cuadro sólido con texto blanco */
+	--color-estado-rojo: #d5443b;
+	--color-estado-ambar: #e9a03f;
+	--color-estado-azul: #4b7be5;
+	--color-estado-verde: #3faf6e;
+	--color-estado-gris: #a3a9b4;
+	--color-estado-morado: #8b6ad6;
+	--color-estado-verde-azulado: #35a7a1;
+	--color-estado-naranja: #ee8648;
+
+	/* Los textos de un campo y del aviso de abajo */
+	--color-texto-error: #c23a31;
+	--color-texto-advertencia: #b3690c;
+	--color-texto-bien: #1f8a52;
+	--color-aviso-bien: #3fcb7e;
+
+	/* La letra del sistema: sin letras descargadas */
+	--font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+	--text-base: 14px;
+	--text-base--line-height: 1.45;
+	--text-titulo-departamento: 36px;
+	--text-titulo-departamento-telefono: 28px;
+	--text-titulo-seccion: 22px;
+	--text-titulo-cajon: 32px;
+	--text-titulo-cajon-telefono: 26px;
+	--text-subtitulo: 18px;
+	--text-etiqueta: 12.5px;
+	--text-aviso: 13.5px;
+
+	/* Radios */
+	--radius-chico: 6px;
+	--radius-mediano: 10px;
+	--radius-grande: 12px;
+
+	/* Medidas */
+	--spacing-menu: 244px;
+	--spacing-barra: 64px;
+	--spacing-pagina: 1440px;
+	--spacing-renglon: 54px;
+	--spacing-encabezado-tabla: 48px;
+	--spacing-boton: 44px;
+	--spacing-boton-chico: 34px;
+	--spacing-campo: 48px;
+	--spacing-campo-ventana: 44px;
+	--spacing-cajon: 620px;
+	--spacing-cajon-ancho: 860px;
+	--spacing-ventana: 470px;
+	--spacing-ventana-ancha: 580px;
+	--spacing-estado: 136px;
+	--spacing-estado-alto: 30px;
+
+	/* Sombras */
+	--shadow-panel: 0 1px 2px rgb(23 24 28 / 0.04), 0 8px 24px rgb(23 24 28 / 0.05);
+	--shadow-flotante: 0 2px 4px rgb(23 24 28 / 0.05), 0 18px 44px rgb(23 24 28 / 0.12);
+
+	/* Hasta 980 px el menú se esconde; hasta 700 px es teléfono */
+	--breakpoint-menu: 980px;
+	--breakpoint-telefono: 700px;
+}
+
+@layer base {
+	html {
+		color-scheme: light;
+	}
+	body {
+		margin: 0;
+		background: var(--color-fondo);
+		color: var(--color-tinta);
+		font-family: var(--font-sans);
+		font-size: var(--text-base);
+		line-height: var(--text-base--line-height);
+		-webkit-font-smoothing: antialiased;
+	}
+	:focus-visible {
+		outline: 2px solid var(--color-marca);
+		outline-offset: 2px;
+	}
+	@media (prefers-reduced-motion: reduce) {
+		*,
+		*::before,
+		*::after {
+			animation-duration: 0.01ms !important;
+			transition-duration: 0.01ms !important;
+		}
+	}
+}

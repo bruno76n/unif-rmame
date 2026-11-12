@@ -7,6 +7,8 @@
  * ganchos de Claude Code después de cada edición y al terminar cada turno.
  */
 
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { archivosCambiados } from "./archivos.ts";
 import { correr } from "./comandos.ts";
 
@@ -36,7 +38,14 @@ export function correrRevisionRapida(raiz: string): boolean {
 			"Estilo (Biome)",
 			() => paraBiome.length === 0 || correr(raiz, "biome", ["check", "--no-errors-on-unmatched", ...paraBiome]),
 		],
-		["Tipos (tsc)", () => paraTipos.length === 0 || correr(raiz, "tsc", ["-p", "tsconfig.json"])],
+		[
+			"Tipos (tsc)",
+			() =>
+				paraTipos.length === 0 ||
+				(correr(raiz, "tsc", ["-p", "tsconfig.json"]) &&
+					// Las pantallas y el sistema de diseño, si el repositorio ya los tiene.
+					(!existsSync(join(raiz, "tsconfig.web.json")) || correr(raiz, "tsc", ["-p", "tsconfig.web.json"]))),
+		],
 		[
 			"Pruebas relacionadas (Vitest)",
 			() =>

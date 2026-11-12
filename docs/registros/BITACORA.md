@@ -118,3 +118,4 @@ La línea de la bitácora se escribe al final, con el resultado ya conocido. Esc
 | 12 nov 2026 | 18 | Cierre · Auditoría | [2026-11-12-fase-18](sesiones/2026-11-12-fase-18.md) |
 | 12 nov 2026 | 18 | Cierre · Revisión distinta | [2026-11-12-fase-18](sesiones/2026-11-12-fase-18.md) |
 | 12 nov 2026 | 19 | 1 · Consultas del armazón | [2026-11-12-fase-19](sesiones/2026-11-12-fase-19.md) |
+| 12 nov 2026 | 19 | 1 · Sistema de diseño | [2026-11-12-fase-19](sesiones/2026-11-12-fase-19.md) |

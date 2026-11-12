@@ -49,7 +49,11 @@ export function correrRevision(raiz: string, pasos: Paso[]): boolean {
 export function pasosDeLaRevision(raiz: string): Paso[] {
 	return [
 		{ nombre: "Estilo (Biome)", correr: () => correr(raiz, "biome", ["check", "."]) },
-		{ nombre: "Tipos (tsc)", correr: () => correr(raiz, "tsc", ["-p", "tsconfig.json"]) },
+		{
+			nombre: "Tipos (tsc)",
+			// La API y los scripts; las pantallas y el sistema de diseño, con lo del navegador.
+			correr: () => correr(raiz, "tsc", ["-p", "tsconfig.json"]) && correr(raiz, "tsc", ["-p", "tsconfig.web.json"]),
+		},
 		{ nombre: "Todas las pruebas (Vitest)", correr: () => correr(raiz, "vitest", ["run"]) },
 		{ nombre: "Migraciones y llaves pendientes", correr: () => correr(raiz, "node", ["scripts/migraciones.ts"]) },
 		{ nombre: "Secretos", correr: () => correr(raiz, "node", ["scripts/secretos.ts"]) },

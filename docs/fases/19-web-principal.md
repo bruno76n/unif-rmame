@@ -163,7 +163,7 @@ La hace el capataz, solo, antes de repartir.
 
 | Criterio | Prueba que lo demuestra |
 |---|---|
-| Cada componente del sistema de diseño tiene las medidas, los colores y los estados de la muestra, también en tema y en teléfono | `packages/interfaz/src/componentes.prueba.ts`, con capturas |
+| Cada componente del sistema de diseño tiene las medidas, los colores y los estados de la muestra, también en tema y en teléfono | `packages/interfaz/src/muestra/componentes.prueba.ts`, con capturas |
 | El menú solo muestra los departamentos de la cuenta, cada pastilla cuenta lo que dice su archivo, y una dirección de un departamento ajeno lleva a «No tienes acceso a esta pantalla» | `apps/web/src/comun/armazon.prueba.ts` |
 | «¿Dónde está?» encuentra por código o por prenda y talla, con las piezas de cada ubicación | `apps/web/src/comun/donde-esta.prueba.ts` |
 | Cada pantalla tiene sus estados: cargando, vacío, error, sin permiso, sin conexión y choque de versión | `apps/web/src/comun/estados.prueba.ts` y las pruebas de cada departamento |
