@@ -144,4 +144,11 @@ Los cambia solo la dueña, en Configuración (ver [configuración](../admin/conf
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 15.*
+**Fase 15, parte 1.** En `modulos/contaduria/`:
+
+- **La tabla** `credito_clientes` (migración `0048`, junto con `cuentas_por_cobrar`, decisión 662), con sus CHECK: el límite ≥ 0 en pesos enteros, los días > 0 y los tres semáforos. `cliente_id` lleva su `@llavePendiente`. Los cuatro parámetros están en `parametros.ts`.
+- **El semáforo sugerido** es `semaforoSugerido` (`dominio/semaforo-sugerido.ts`), una función pura: suma los saldos, toma el vencido más viejo con saldo y compara contra el límite con `aplicarPorcentaje`; sin crédito, el límite no cuenta. «Cerca del límite» incluye pasarlo (decisión 663). `dominio/credito.ts` lee el crédito con el nombre de su tercero y le pasa las cuentas con saldo del cliente y los parámetros.
+- **`abrir_credito_cliente`** (`internas/credito.ts`) inserta con `ON CONFLICT DO NOTHING` sobre `cliente_id`: dos a la vez dejan uno, y la segunda regresa el que hay.
+- **Las tres acciones** (`acciones/credito.ts`, contratos en `packages/compartido/src/contratos/contaduria/credito.ts`) revisan la versión del crédito (su renglón queda bloqueado) y, con el mismo valor, responden con `sinBitacora` sin subir la versión. El límite regresa el semáforo sugerido con el límite nuevo y nunca toca el semáforo.
+- **`credito_de_cliente`** (`lecturas/credito.ts`) regresa solo el semáforo, `tiene_credito`, los días y `cerca_del_limite`. `credito_clientes` avisa en vivo a Contaduría y a Ventas (decisión 664).
+- **Pruebas:** `internas/abrir-credito-cliente.prueba.ts`, `dominio/semaforo-sugerido.prueba.ts` (el ejemplo y fast-check), `acciones/cambiar-limite-credito.prueba.ts`, `acciones/cambiar-dias-credito.prueba.ts`, `acciones/cambiar-semaforo-credito.prueba.ts` y `lecturas/credito-de-cliente.prueba.ts`. Las ayudas, en `nucleo/pruebas/contaduria-de-prueba.ts`.

@@ -337,6 +337,13 @@
 			"when": 1794448408215,
 			"tag": "0047_minimos_y_reabasto",
 			"breakpoints": true
+		},
+		{
+			"idx": 48,
+			"version": "7",
+			"when": 1794453204100,
+			"tag": "0048_credito_y_cuentas_por_cobrar",
+			"breakpoints": true
 		}
 	]
 }

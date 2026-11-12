@@ -9194,6 +9194,396 @@
         }
       }
     },
+    "/v1/acciones/contaduria.cambiar_limite_credito": {
+      "post": {
+        "tags": [
+          "contaduria"
+        ],
+        "description": "Cambia el límite de crédito de un cliente; el semáforo no cambia solo\n\nPermiso: departamento contaduria.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "clave_idempotencia": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "description": "La hace el cliente al apretar el botón y la reusa en cada reintento"
+                  },
+                  "datos": {
+                    "type": "object",
+                    "properties": {
+                      "cliente_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "description": "El cliente"
+                      },
+                      "limite_centavos": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991,
+                        "multipleOf": 100,
+                        "description": "El límite en centavos, en pesos enteros; 0 es sin crédito"
+                      }
+                    },
+                    "required": [
+                      "cliente_id",
+                      "limite_centavos"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "version": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991,
+                    "description": "La versión que se leyó"
+                  }
+                },
+                "required": [
+                  "clave_idempotencia",
+                  "datos",
+                  "version"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "credito_cliente_id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "semaforo_sugerido": {
+                          "type": "string",
+                          "enum": [
+                            "al_corriente",
+                            "cerca_del_limite",
+                            "detenido"
+                          ],
+                          "description": "El semáforo que sugiere el sistema con el límite nuevo"
+                        },
+                        "mensaje": {
+                          "type": "string",
+                          "description": "El aviso verde que muestra la pantalla"
+                        },
+                        "version": {
+                          "description": "La versión nueva de lo que cambió, si la acción editó algo",
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "credito_cliente_id",
+                        "semaforo_sugerido",
+                        "mensaje"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "avisos": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Mensajes que no bloquean"
+                    },
+                    "secreto_entregado": {
+                      "description": "La respuesta repetida de una acción que entregó un secreto: el secreto ya no viene",
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "avisos"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/acciones/contaduria.cambiar_dias_credito": {
+      "post": {
+        "tags": [
+          "contaduria"
+        ],
+        "description": "Cambia los días de crédito de un cliente; los pedidos ya guardados no cambian\n\nPermiso: departamento contaduria.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "clave_idempotencia": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "description": "La hace el cliente al apretar el botón y la reusa en cada reintento"
+                  },
+                  "datos": {
+                    "type": "object",
+                    "properties": {
+                      "cliente_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "description": "El cliente"
+                      },
+                      "dias_credito": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "exclusiveMinimum": true,
+                        "maximum": 9007199254740991,
+                        "description": "Los días que se suman a la fecha de entrega"
+                      }
+                    },
+                    "required": [
+                      "cliente_id",
+                      "dias_credito"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "version": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991,
+                    "description": "La versión que se leyó"
+                  }
+                },
+                "required": [
+                  "clave_idempotencia",
+                  "datos",
+                  "version"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "credito_cliente_id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "mensaje": {
+                          "type": "string",
+                          "description": "El aviso verde que muestra la pantalla"
+                        },
+                        "version": {
+                          "description": "La versión nueva de lo que cambió, si la acción editó algo",
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "credito_cliente_id",
+                        "mensaje"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "avisos": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Mensajes que no bloquean"
+                    },
+                    "secreto_entregado": {
+                      "description": "La respuesta repetida de una acción que entregó un secreto: el secreto ya no viene",
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "avisos"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/acciones/contaduria.cambiar_semaforo_credito": {
+      "post": {
+        "tags": [
+          "contaduria"
+        ],
+        "description": "Pone el semáforo de crédito de un cliente\n\nPermiso: departamento contaduria.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "clave_idempotencia": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "description": "La hace el cliente al apretar el botón y la reusa en cada reintento"
+                  },
+                  "datos": {
+                    "type": "object",
+                    "properties": {
+                      "cliente_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "description": "El cliente"
+                      },
+                      "semaforo": {
+                        "type": "string",
+                        "enum": [
+                          "al_corriente",
+                          "cerca_del_limite",
+                          "detenido"
+                        ],
+                        "description": "Al corriente, cerca del límite o detenido"
+                      }
+                    },
+                    "required": [
+                      "cliente_id",
+                      "semaforo"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "version": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991,
+                    "description": "La versión que se leyó"
+                  }
+                },
+                "required": [
+                  "clave_idempotencia",
+                  "datos",
+                  "version"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "credito_cliente_id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "mensaje": {
+                          "type": "string",
+                          "description": "El aviso verde que muestra la pantalla"
+                        },
+                        "version": {
+                          "description": "La versión nueva de lo que cambió, si la acción editó algo",
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "credito_cliente_id",
+                        "mensaje"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "avisos": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Mensajes que no bloquean"
+                    },
+                    "secreto_entregado": {
+                      "description": "La respuesta repetida de una acción que entregó un secreto: el secreto ya no viene",
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "avisos"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/acciones/direccion.decidir_autorizacion": {
       "post": {
         "tags": [
