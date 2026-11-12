@@ -10925,6 +10925,956 @@
         }
       }
     },
+    "/v1/acciones/mantenimiento.alta_maquina": {
+      "post": {
+        "tags": [
+          "mantenimiento"
+        ],
+        "description": "Da de alta una máquina con el folio de su tipo\n\nPermiso: departamento mantenimiento.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "clave_idempotencia": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "description": "La hace el cliente al apretar el botón y la reusa en cada reintento"
+                  },
+                  "datos": {
+                    "type": "object",
+                    "properties": {
+                      "nombre": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 40,
+                        "description": "Cómo le dicen en el taller"
+                      },
+                      "tipo_maquina_id": {
+                        "description": "Su tipo",
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      "tipo_nuevo": {
+                        "description": "«Otro tipo»: el nombre del tipo nuevo",
+                        "type": "string",
+                        "minLength": 2,
+                        "maxLength": 40
+                      },
+                      "area_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "description": "Su área, de la lista «Áreas del taller»"
+                      },
+                      "marca": {
+                        "description": "Marca, opcional",
+                        "type": "string",
+                        "maxLength": 40
+                      },
+                      "modelo": {
+                        "description": "Modelo, opcional",
+                        "type": "string",
+                        "maxLength": 40
+                      },
+                      "serie": {
+                        "description": "Serie, opcional; única si viene",
+                        "type": "string",
+                        "maxLength": 40
+                      },
+                      "persona_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "description": "«La trae»: una persona activa del Taller"
+                      }
+                    },
+                    "required": [
+                      "nombre",
+                      "area_id",
+                      "persona_id"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "clave_idempotencia",
+                  "datos"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "maquina_id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "folio": {
+                          "type": "string",
+                          "description": "Su folio, con el prefijo de su tipo"
+                        },
+                        "mensaje": {
+                          "type": "string",
+                          "description": "El aviso verde que muestra la pantalla"
+                        },
+                        "version": {
+                          "description": "La versión nueva de lo que cambió, si la acción editó algo",
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "maquina_id",
+                        "folio",
+                        "mensaje"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "avisos": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Mensajes que no bloquean"
+                    },
+                    "secreto_entregado": {
+                      "description": "La respuesta repetida de una acción que entregó un secreto: el secreto ya no viene",
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "avisos"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/acciones/mantenimiento.baja_maquina": {
+      "post": {
+        "tags": [
+          "mantenimiento"
+        ],
+        "description": "Da de baja una máquina sin falla abierta; sus fallas y servicios se quedan\n\nPermiso: departamento mantenimiento.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "clave_idempotencia": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "description": "La hace el cliente al apretar el botón y la reusa en cada reintento"
+                  },
+                  "datos": {
+                    "type": "object",
+                    "properties": {
+                      "maquina_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "description": "La máquina"
+                      },
+                      "motivo": {
+                        "type": "string",
+                        "maxLength": 120,
+                        "description": "Por qué; al menos `general.largo_minimo_motivo` letras"
+                      }
+                    },
+                    "required": [
+                      "maquina_id",
+                      "motivo"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "version": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991,
+                    "description": "La versión que se leyó"
+                  }
+                },
+                "required": [
+                  "clave_idempotencia",
+                  "datos",
+                  "version"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "mensaje": {
+                          "type": "string",
+                          "description": "El aviso verde que muestra la pantalla"
+                        },
+                        "version": {
+                          "description": "La versión nueva de lo que cambió, si la acción editó algo",
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "mensaje"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "avisos": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Mensajes que no bloquean"
+                    },
+                    "secreto_entregado": {
+                      "description": "La respuesta repetida de una acción que entregó un secreto: el secreto ya no viene",
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "avisos"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/acciones/mantenimiento.cambiar_asignacion_maquina": {
+      "post": {
+        "tags": [
+          "mantenimiento"
+        ],
+        "description": "Cambia quién trae una máquina; una falla abierta conserva a quien la traía al fallar\n\nPermiso: departamento mantenimiento.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "clave_idempotencia": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "description": "La hace el cliente al apretar el botón y la reusa en cada reintento"
+                  },
+                  "datos": {
+                    "type": "object",
+                    "properties": {
+                      "maquina_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "description": "La máquina"
+                      },
+                      "persona_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "description": "Quién la trae ahora: una persona activa del Taller"
+                      }
+                    },
+                    "required": [
+                      "maquina_id",
+                      "persona_id"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "version": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991,
+                    "description": "La versión que se leyó"
+                  }
+                },
+                "required": [
+                  "clave_idempotencia",
+                  "datos",
+                  "version"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "mensaje": {
+                          "type": "string",
+                          "description": "El aviso verde que muestra la pantalla"
+                        },
+                        "version": {
+                          "description": "La versión nueva de lo que cambió, si la acción editó algo",
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "mensaje"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "avisos": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Mensajes que no bloquean"
+                    },
+                    "secreto_entregado": {
+                      "description": "La respuesta repetida de una acción que entregó un secreto: el secreto ya no viene",
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "avisos"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/acciones/mantenimiento.reportar_falla": {
+      "post": {
+        "tags": [
+          "mantenimiento"
+        ],
+        "description": "Reporta una falla de una máquina; si el motivo la detiene, la máquina queda parada\n\nPermiso: departamento mantenimiento; aparatos: tablet (también por su cola, sin internet).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "clave_idempotencia": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "description": "La hace el cliente al apretar el botón y la reusa en cada reintento"
+                  },
+                  "datos": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "description": "La falla, hecha por la tablet",
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      "maquina_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "description": "La máquina"
+                      },
+                      "motivo_falla_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "description": "Qué le pasa"
+                      },
+                      "nota": {
+                        "description": "«Nota (opcional)», solo en la web",
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      "sin_internet": {
+                        "description": "Si se capturó sin conexión, en la tablet",
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "maquina_id",
+                      "motivo_falla_id"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "clave_idempotencia",
+                  "datos"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "falla_id": {
+                          "nullable": true,
+                          "description": "La falla; vacío si la máquina ya tenía una abierta o está de baja",
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "folio": {
+                          "nullable": true,
+                          "description": "Su folio FM-",
+                          "type": "string"
+                        },
+                        "detuvo_maquina": {
+                          "type": "boolean",
+                          "description": "Si la máquina quedó parada"
+                        },
+                        "mensaje": {
+                          "type": "string",
+                          "description": "El aviso verde que muestra la pantalla"
+                        },
+                        "version": {
+                          "description": "La versión nueva de lo que cambió, si la acción editó algo",
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "falla_id",
+                        "folio",
+                        "detuvo_maquina",
+                        "mensaje"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "avisos": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Mensajes que no bloquean"
+                    },
+                    "secreto_entregado": {
+                      "description": "La respuesta repetida de una acción que entregó un secreto: el secreto ya no viene",
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "avisos"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/acciones/mantenimiento.mandar_a_reparacion": {
+      "post": {
+        "tags": [
+          "mantenimiento"
+        ],
+        "description": "Manda una falla reportada a reparación con su técnico, y dice si la máquina se queda parada\n\nPermiso: departamento mantenimiento.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "clave_idempotencia": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "description": "La hace el cliente al apretar el botón y la reusa en cada reintento"
+                  },
+                  "datos": {
+                    "type": "object",
+                    "properties": {
+                      "falla_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "description": "La falla"
+                      },
+                      "tecnico_id": {
+                        "description": "El técnico de la lista",
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      "tecnico_nombre": {
+                        "description": "«Otro técnico»: se queda en la lista",
+                        "type": "string",
+                        "minLength": 2,
+                        "maxLength": 60
+                      },
+                      "se_queda_parada": {
+                        "type": "boolean",
+                        "description": "Si la máquina se queda parada mientras la reparan"
+                      }
+                    },
+                    "required": [
+                      "falla_id",
+                      "se_queda_parada"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "version": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991,
+                    "description": "La versión que se leyó"
+                  }
+                },
+                "required": [
+                  "clave_idempotencia",
+                  "datos",
+                  "version"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "tecnico_id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                          "description": "El técnico"
+                        },
+                        "mensaje": {
+                          "type": "string",
+                          "description": "El aviso verde que muestra la pantalla"
+                        },
+                        "version": {
+                          "description": "La versión nueva de lo que cambió, si la acción editó algo",
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "tecnico_id",
+                        "mensaje"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "avisos": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Mensajes que no bloquean"
+                    },
+                    "secreto_entregado": {
+                      "description": "La respuesta repetida de una acción que entregó un secreto: el secreto ya no viene",
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "avisos"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/acciones/mantenimiento.guardar_nota_seguimiento": {
+      "post": {
+        "tags": [
+          "mantenimiento"
+        ],
+        "description": "Guarda la nota de seguimiento de una falla abierta; vacía la borra\n\nPermiso: departamento mantenimiento.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "clave_idempotencia": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "description": "La hace el cliente al apretar el botón y la reusa en cada reintento"
+                  },
+                  "datos": {
+                    "type": "object",
+                    "properties": {
+                      "falla_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "description": "La falla"
+                      },
+                      "nota": {
+                        "type": "string",
+                        "maxLength": 200,
+                        "description": "La nota; vacía la borra"
+                      }
+                    },
+                    "required": [
+                      "falla_id",
+                      "nota"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "version": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991,
+                    "description": "La versión que se leyó"
+                  }
+                },
+                "required": [
+                  "clave_idempotencia",
+                  "datos",
+                  "version"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "mensaje": {
+                          "type": "string",
+                          "description": "El aviso verde que muestra la pantalla"
+                        },
+                        "version": {
+                          "description": "La versión nueva de lo que cambió, si la acción editó algo",
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "mensaje"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "avisos": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Mensajes que no bloquean"
+                    },
+                    "secreto_entregado": {
+                      "description": "La respuesta repetida de una acción que entregó un secreto: el secreto ya no viene",
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "avisos"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/acciones/mantenimiento.registrar_servicio": {
+      "post": {
+        "tags": [
+          "mantenimiento"
+        ],
+        "description": "Registra un servicio: resuelve una falla o es suelto, con su costo y sus horas de paro\n\nPermiso: departamento mantenimiento.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "clave_idempotencia": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "description": "La hace el cliente al apretar el botón y la reusa en cada reintento"
+                  },
+                  "datos": {
+                    "type": "object",
+                    "properties": {
+                      "falla_id": {
+                        "description": "La falla que resuelve, si es una reparación; la `version` es la de la falla",
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      "maquina_id": {
+                        "description": "La máquina, si es un servicio suelto; la `version` es la de la máquina",
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      "tecnico_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "description": "El técnico"
+                      },
+                      "que_se_hizo": {
+                        "type": "string",
+                        "minLength": 4,
+                        "maxLength": 80,
+                        "description": "Qué se hizo, de 4 a 80 letras"
+                      },
+                      "costo_centavos": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9999999999,
+                        "description": "El costo, en centavos"
+                      },
+                      "horas_paro": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9999,
+                        "description": "Las horas de paro"
+                      }
+                    },
+                    "required": [
+                      "tecnico_id",
+                      "que_se_hizo",
+                      "costo_centavos",
+                      "horas_paro"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "version": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991,
+                    "description": "La versión que se leyó"
+                  }
+                },
+                "required": [
+                  "clave_idempotencia",
+                  "datos",
+                  "version"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "servicio_id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "folio": {
+                          "type": "string",
+                          "description": "Su folio SM-"
+                        },
+                        "mensaje": {
+                          "type": "string",
+                          "description": "El aviso verde que muestra la pantalla"
+                        },
+                        "version": {
+                          "description": "La versión nueva de lo que cambió, si la acción editó algo",
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "servicio_id",
+                        "folio",
+                        "mensaje"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "avisos": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Mensajes que no bloquean"
+                    },
+                    "secreto_entregado": {
+                      "description": "La respuesta repetida de una acción que entregó un secreto: el secreto ya no viene",
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "avisos"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/acciones/patronaje.guardar_receta": {
       "post": {
         "tags": [

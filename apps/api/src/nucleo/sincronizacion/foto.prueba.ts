@@ -38,14 +38,15 @@ describe("la foto entrega todo lo vigente del aparato y la bajada sigue desde su
 		const { cambios } = await fotoCompleta(servidor, 2);
 		expect(cambios.every((cambio) => cambio.op === "cambio")).toBe(true);
 		const tablas = [...new Set(cambios.map((cambio) => cambio.tabla))];
-		// Los consumibles de la muestra, sus flujos, sus lotes en el taller con sus bultos y registros, y la operación
-		// «Corte» de la siembra bajan a la tablet.
+		// Los consumibles de la muestra, sus flujos, sus lotes en el taller con sus bultos y registros, la operación
+		// «Corte» y los motivos de falla de la siembra bajan a la tablet.
 		expect(tablas).toEqual([
 			"dispositivos",
 			"materiales",
 			"parametros",
 			"tallas",
 			"flujos",
+			"motivos_falla",
 			"operaciones",
 			"productos",
 			"flujo_operaciones",

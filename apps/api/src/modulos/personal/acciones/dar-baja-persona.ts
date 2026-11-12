@@ -3,7 +3,8 @@
  * Fase 7 · docs/modulos/personal/personas.md («`personal.dar_baja_persona`», reglas 2, 6 y 8)
  *
  * La persona de la dueña no se da de baja. En la misma transacción se le quita lo que la deja entrar: se anula
- * su PIN del taller y se cierra su cuenta de Google (o se rechaza su solicitud).
+ * su PIN del taller y se cierra su cuenta de Google (o se rechaza su solicitud); desde la fase 13, las máquinas que
+ * traía quedan sin quién las trae.
  */
 
 import { darBajaPersona } from "@uniformame/compartido/contratos/personal/personas";
@@ -35,6 +36,8 @@ export const accionDarBajaPersona = implementarAccion(darBajaPersona, async (con
 	const { cerrada } = z
 		.object({ cerrada: z.enum(["activa", "solicitada"]).nullable() })
 		.parse(await contexto.interna("admin.cerrar_cuenta_de_persona", { persona_id: persona.id }));
+	// Las máquinas que traía quedan sin quién las trae (fase 13).
+	await contexto.interna("mantenimiento.soltar_maquinas_de_persona", { persona_id: persona.id });
 	const quitado = [
 		...(pin.anulado ? ["PIN del taller"] : []),
 		...(cerrada === "activa" ? ["Cuenta de Google"] : []),

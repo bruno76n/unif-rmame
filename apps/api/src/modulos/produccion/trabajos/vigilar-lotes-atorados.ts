@@ -4,9 +4,9 @@
  * Fase 12 · docs/modulos/produccion/lotes.md (regla 7, «Vigilar lotes atorados», «El aviso `lote_atorado`»)
  *
  * La salud es `saludDeLote` del paquete compartido, con lo que dicen los registros: el último avance, los días en que
- * la tablet no subió nada de ningún lote y el cuello de botella. Un lote atorado avisa una vez: guarda `lote.atorado`
- * solo si no hay otro de ese lote después de su último registro. «Sin datos de la tablet» no cuenta como atorado. El
- * atorado por máquina llega con Mantenimiento (fase 13).
+ * la tablet no subió nada de ningún lote, el cuello de botella y las máquinas paradas (`mantenimiento.fallas_que_detienen`).
+ * Un lote atorado avisa una vez: guarda `lote.atorado` solo si no hay otro de ese lote después de su último registro o
+ * de la falla que lo detiene. «Sin datos de la tablet» no cuenta como atorado.
  */
 
 import { diaDeNegocio } from "@uniformame/compartido/calculos/fechas";
@@ -42,28 +42,72 @@ const deLasOperaciones = z.array(
 		nombre: z.string(),
 		orden: z.number(),
 		es_corte: z.boolean(),
+		persona_base_id: z.uuid(),
 		hechas: z.coerce.number(),
 		cortadas: z.coerce.number(),
 	}),
 );
 
 /**
- * El cuello de botella de un lote («Se junta»): la operación con más piezas esperando, la mayor diferencia contra la
- * anterior; a la primera después del corte le llegan las cortadas (regla 6).
+ * Las piezas esperando en cada operación después del corte: lo que hizo la anterior (a la primera, las cortadas)
+ * menos lo que hizo ella (regla 6).
  * @param operaciones Las del flujo del lote, con lo hecho en cada una.
- * @returns Su nombre, o `null` sin operaciones después del corte.
  */
-function cuelloDeBotella(operaciones: z.infer<typeof deLasOperaciones>) {
-	let mayor: { nombre: string; esperando: number } | null = null;
+function esperandoPorOperacion(operaciones: z.infer<typeof deLasOperaciones>) {
 	const enOrden = [...operaciones].sort((una, otra) => una.orden - otra.orden);
-	for (const [i, operacion] of enOrden.entries()) {
-		if (operacion.es_corte) continue;
+	return enOrden.flatMap((operacion, i) => {
+		if (operacion.es_corte) return [];
 		const anterior = enOrden[i - 1];
 		const llego = anterior === undefined || anterior.es_corte ? operacion.cortadas : anterior.hechas;
-		const esperando = llego - operacion.hechas;
-		if (mayor === null || esperando > mayor.esperando) mayor = { nombre: operacion.nombre, esperando };
-	}
+		return [
+			{ nombre: operacion.nombre, personaBaseId: operacion.persona_base_id, esperando: llego - operacion.hechas },
+		];
+	});
+}
+
+/**
+ * El cuello de botella de un lote («Se junta»): la operación con más piezas esperando.
+ * @returns Su nombre, o `null` sin operaciones después del corte.
+ */
+function cuelloDeBotella(esperando: ReturnType<typeof esperandoPorOperacion>) {
+	let mayor: (typeof esperando)[number] | null = null;
+	for (const operacion of esperando) if (mayor === null || operacion.esperando > mayor.esperando) mayor = operacion;
 	return mayor?.nombre ?? null;
+}
+
+/** Lo que regresa `mantenimiento.fallas_que_detienen`. */
+const deLasFallas = z.object({
+	fallas: z.array(
+		z.object({
+			folio: z.string(),
+			maquina: z.string(),
+			persona_id: z.uuid().nullable(),
+			parada_desde: z.string(),
+		}),
+	),
+});
+
+/**
+ * El atorado por máquina de un lote: la primera operación con piezas esperando que hace de base quien traía, al
+ * fallar, una máquina parada (regla 7).
+ * @returns La operación y la falla, con desde cuándo está parada; o vacío.
+ */
+function atoradoPorMaquina(
+	esperando: ReturnType<typeof esperandoPorOperacion>,
+	paradas: z.infer<typeof deLasFallas>["fallas"],
+) {
+	for (const operacion of esperando) {
+		if (operacion.esperando <= 0) continue;
+		const falla = paradas.find((parada) => parada.persona_id === operacion.personaBaseId);
+		if (falla !== undefined) {
+			return {
+				operacion: operacion.nombre,
+				falla: `${falla.maquina} parada (${falla.folio})`,
+				desde: falla.parada_desde,
+			};
+		}
+	}
+	return null;
 }
 
 /**
@@ -90,7 +134,7 @@ export async function vigilar(contexto: ContextoDeAccion): Promise<number> {
 	const lotes = deLosLotes.parse(lotesEnProceso);
 	if (lotes.length === 0) return 0;
 	const { rows: operaciones } = await transaccion.execute(sql`
-		SELECT l.id AS lote_id, o.nombre, f.orden, o.es_corte,
+		SELECT l.id AS lote_id, o.nombre, f.orden, o.es_corte, f.persona_base_id,
 			coalesce((SELECT sum(r.piezas_buenas + r.piezas_danadas) FROM registros_operacion r
 				WHERE r.lote_id = l.id AND r.flujo_operacion_id = f.id AND r.estado = 'vigente'), 0) AS hechas,
 			(SELECT coalesce(sum(t.piezas_cortadas), 0) FROM lote_tallas t WHERE t.lote_id = l.id) AS cortadas
@@ -98,6 +142,7 @@ export async function vigilar(contexto: ContextoDeAccion): Promise<number> {
 		JOIN operaciones o ON o.id = f.operacion_id
 		WHERE l.estado = 'en_proceso'`);
 	const porLote = deLasOperaciones.parse(operaciones);
+	const paradas = deLasFallas.parse(await contexto.lectura("mantenimiento.fallas_que_detienen", {})).fallas;
 	// La última sincronización de las tablets del taller, y los días en que no subió nada de ningún lote.
 	const { rows: sincronizacion } = await transaccion.execute(sql`
 		SELECT to_char(max(s.ultima_subida_en) AT TIME ZONE 'America/Mexico_City', 'YYYY-MM-DD') AS dia
@@ -122,6 +167,8 @@ export async function vigilar(contexto: ContextoDeAccion): Promise<number> {
 	}
 	let avisos = 0;
 	for (const lote of lotes) {
+		const esperando = esperandoPorOperacion(porLote.filter((operacion) => operacion.lote_id === lote.id));
+		const porMaquina = atoradoPorMaquina(esperando, paradas);
 		const salud = saludDeLote({
 			hoy,
 			fechaEntrega: Temporal.PlainDate.from(lote.fecha_entrega),
@@ -129,14 +176,19 @@ export async function vigilar(contexto: ContextoDeAccion): Promise<number> {
 			ultimoAvance: Temporal.PlainDate.from(lote.avance),
 			ultimaSincronizacion: ultimaSincronizacion === null ? null : Temporal.PlainDate.from(ultimaSincronizacion),
 			diasSinSubir,
-			cuelloDeBotella: cuelloDeBotella(porLote.filter((operacion) => operacion.lote_id === lote.id)),
-			atoradoPorMaquina: null,
+			cuelloDeBotella: cuelloDeBotella(esperando),
+			atoradoPorMaquina: porMaquina === null ? null : { operacion: porMaquina.operacion, falla: porMaquina.falla },
 			diasDeTrabajo,
 			loteAtoradoDias,
 			riesgoAtrasoDias,
 		});
-		if (salud.tipo !== "atorado") continue;
-		// Avisa una vez hasta que algo cambia: ningún `lote.atorado` de este lote después de su último registro.
+		if (salud.tipo !== "atorado" && salud.tipo !== "atorado_maquina") continue;
+		// Avisa una vez hasta que algo cambia: ningún `lote.atorado` de este lote después de su último registro o de la
+		// falla que lo detiene.
+		const desde = [lote.ultimo_recibido, porMaquina?.desde ?? null]
+			.filter((momento): momento is string => momento !== null)
+			.sort()
+			.at(-1);
 		const [yaAviso] = await transaccion
 			.select({ id: eventos.id })
 			.from(eventos)
@@ -144,15 +196,16 @@ export async function vigilar(contexto: ContextoDeAccion): Promise<number> {
 				and(
 					eq(eventos.tipo, "lote.atorado"),
 					eq(eventos.entidadId, lote.id),
-					...(lote.ultimo_recibido === null ? [] : [gt(eventos.ocurridoEn, lote.ultimo_recibido)]),
+					...(desde === undefined ? [] : [gt(eventos.ocurridoEn, desde)]),
 				),
 			)
 			.limit(1);
 		if (yaAviso !== undefined) continue;
 		const operacion = salud.operacion ?? "su primera operación";
+		const dias = salud.tipo === "atorado" ? salud.dias : 0;
 		contexto.guardarEvento({
 			tipo: "lote.atorado",
-			datos: { lote_id: lote.id, operacion, dias: salud.dias },
+			datos: { lote_id: lote.id, operacion, dias, ...(salud.tipo === "atorado_maquina" ? { falla: salud.falla } : {}) },
 			tablas: ["lotes"],
 			entidad: "lotes",
 			entidadId: lote.id,
@@ -161,7 +214,11 @@ export async function vigilar(contexto: ContextoDeAccion): Promise<number> {
 		await contexto.interna("admin.crear_aviso", {
 			tipo: loteAtorado,
 			destinatarios: { regla: "duena" },
-			texto: `${lote.folio} atorado en ${operacion} desde hace ${salud.dias} días de trabajo`,
+			// Por máquina, el aviso dice la máquina parada en vez de los días (decisión 627).
+			texto:
+				salud.tipo === "atorado"
+					? `${lote.folio} atorado en ${operacion} desde hace ${dias} días de trabajo`
+					: `${lote.folio} atorado en ${operacion}: ${salud.falla}`,
 			entidad: "lotes",
 			entidadId: lote.id,
 		});

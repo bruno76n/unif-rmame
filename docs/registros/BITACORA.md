@@ -89,3 +89,4 @@ La línea de la bitácora se escribe al final, con el resultado ya conocido. Esc
 | 11 nov 2026 | 12 | Cierre · muestra, auditoría y correcciones | [2026-11-11-fase-12](sesiones/2026-11-11-fase-12.md) |
 | 11 nov 2026 | 13 | 1 · Revisión de lotes | [2026-11-11-fase-13](sesiones/2026-11-11-fase-13.md) |
 | 11 nov 2026 | 13 | 2 · Reclamos | [2026-11-11-fase-13](sesiones/2026-11-11-fase-13.md) |
+| 11 nov 2026 | 13 | 3 · Máquinas, fallas y servicios | [2026-11-11-fase-13](sesiones/2026-11-11-fase-13.md) |

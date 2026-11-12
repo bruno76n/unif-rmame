@@ -11,6 +11,7 @@ Estos registros nunca cuentan como error del código: si les falta algo, se escr
 
 Lo que falta decidir o investigar, y en qué fase se resuelve. Lo del negocio ya tiene su valor inicial configurable, así que ninguno detiene una fase antes de la suya.
 
+- **Una prueba intermitente con la suite completa** (fase 22): `transacciones.prueba.ts` (el choque 40P01) sola pasa; con la máquina cargada, a veces no. Revisar sus tiempos sin bajar lo que prueba. (La del respaldo ya espera hasta 3 s a que el volcado pare.)
 - **El permiso de las tarifas en la nómina** (fase 17): `produccion.registros_para_nomina` regresa `tarifa_centavos` y, como lectura interna, no revisa permisos. La acción o consulta de Contaduría que la llame tiene que pedir «ven sueldos y tarifas».
 - **Lecturas de Producción e Inventario que crecen con los lotes** (fase 22, rendimiento): `loteConReceta` lee todos los lotes por cortar para encontrar uno, el comprometido de Compras llama `patronaje.calcular_material` por cada lote por cortar, y el paso 4 del cuadre recorre todo `movimiento_lineas` con lote. Medir con datos de volumen y, si hace falta, filtrar por los lotes pedidos.
 - **Pasar de pieza a tiempo entre el cierre de la semana y su pago** (fase 17): la nómina usa la ficha como esté al pagar (`nomina.md`), así que los registros de esa semana entrarían como de quien cobra por tiempo, sin pagarse y sin poder volver a entrar. Decidir si la nómina congela la forma de pago al cerrar la semana.
@@ -390,3 +391,8 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 11 nov 2026 | 13 | El pedido en el mensaje del reproceso (decisión 623) | Esperar a la fase 16 · leerlo por id | Esperar: no hay tabla de pedidos | No |
 | 11 nov 2026 | 13 | El cliente de un reclamo antes de la fase 16 (decisión 624) | Esperar · registrarlo sin revisar su tabla | Registrarlo: el reclamo ya sirve para rastrear | No |
 | 11 nov 2026 | 13 | Dónde se revisa el cliente o la tienda según el origen (decisión 625) | En el contrato · en la acción | En la acción: el contrato no corre los refinamientos | No |
+| 11 nov 2026 | 13 | El prefijo de un tipo de máquina que choca (decisión 626) | Varias reglas · las letras del nombre una a la vez | Una regla fija y fácil de explicar | No |
+| 11 nov 2026 | 13 | El texto del aviso de atorado por máquina (decisión 627) | Con días · con la máquina parada | Con la máquina: el atorado por máquina no cuenta días | No |
+| 11 nov 2026 | 13 | La versión de un servicio suelto (decisión 628) | Sin versión · la de su máquina | La de su máquina: el protocolo pide la versión de lo que edita | No |
+| 11 nov 2026 | 13 | Las máquinas de una persona que se da de baja (decisión 629) | Dejarlas · soltarlas | Soltarlas, como dice la tabla `maquinas` | No |
+| 11 nov 2026 | 13 | La bitácora de un reporte de la tablet que no crea falla (decisión 630) | Sin bitácora · en la máquina | En la máquina: toda acción deja su renglón | No |

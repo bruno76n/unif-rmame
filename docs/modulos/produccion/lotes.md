@@ -240,3 +240,5 @@ Usa también `general.dias_de_trabajo`, que también baja a la tablet.
 - **Pruebas:** `trabajos/vigilar-lotes-atorados.prueba.ts` (una vez hasta que algo cambia, «Sin datos de la tablet» y los días de trabajo) e `internas/recalcular-proyecciones.prueba.ts` (descuadres al azar con fast-check, y el lote que se termina).
 
 **Fase 13, parte 1.** `piezas_en_produccion` suma los reprocesos de `calidad.en_reproceso_de_pedido` de los lotes que ya llegaron a aduana (regla 9, decisión 621). El lote ya era un agregado con sus tallas: todo lo que cambia una talla sube su versión (regla 12), y la revisión de Calidad recibe `409` (lo prueba `calidad/acciones/revisar-lote.prueba.ts`).
+
+**Fase 13, parte 3.** «Vigilar lotes atorados» arma el atorado por máquina con `mantenimiento.fallas_que_detienen`: la primera operación con piezas esperando que hace de base quien traía, al fallar, una máquina parada. Vuelve a avisar solo con un registro o una falla posterior a su último `lote.atorado`, y su aviso dice la máquina en vez de los días: «{lote} atorado en {operación}: {máquina} parada ({FM})» (decisión 627). Lo prueba `trabajos/vigilar-lotes-atorados.prueba.ts`.

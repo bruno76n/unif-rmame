@@ -44,6 +44,7 @@
 		"./contratos/compras/proveedores": "./src/contratos/compras/proveedores.ts",
 		"./contratos/calidad/reclamos": "./src/contratos/calidad/reclamos.ts",
 		"./contratos/calidad/revision": "./src/contratos/calidad/revision.ts",
+		"./contratos/mantenimiento/maquinas": "./src/contratos/mantenimiento/maquinas.ts",
 		"./contratos/produccion/flujos": "./src/contratos/produccion/flujos.ts",
 		"./contratos/produccion/ordenes": "./src/contratos/produccion/ordenes.ts",
 		"./contratos/produccion/corte": "./src/contratos/produccion/corte.ts",

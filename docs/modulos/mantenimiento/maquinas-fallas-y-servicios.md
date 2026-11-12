@@ -216,7 +216,7 @@ Todas son de la web, con el departamento Mantenimiento, menos el reporte de fall
 | | |
 |---|---|
 | **Pantalla** | Mantenimiento · cajón Falla · «Registrar reparación» → ventana Reparación · «Marcar resuelta»; y «Registrar servicio» → ventana Registrar servicio |
-| **Recibe** | `falla_id` y su `version`, si es una reparación · `maquina_id`, si es suelto · `tecnico_id` · `que_se_hizo` · `costo_centavos` (≥ 0) · `horas_paro` (entero ≥ 0) |
+| **Recibe** | `falla_id` y su `version`, si es una reparación · `maquina_id` y su `version`, si es suelto · `tecnico_id` · `que_se_hizo` · `costo_centavos` (≥ 0) · `horas_paro` (entero ≥ 0) |
 | **Reglas y errores** | `400`: «Escribe qué se hizo» (menos de 4 o más de 80) · «Escribe el costo, puede ser 0» · «Horas enteras, puede ser 0»<br>`422 falla_resuelta`: «Esa falla ya está resuelta.»<br>`422 maquina_ya_de_baja` (suelto) · `422 tecnico_de_baja` |
 | **Escribe** | El servicio con su folio, la fecha de hoy, la máquina, el técnico, qué se hizo, el costo y las horas de paro. Con falla: la falla resuelta, con quién y cuándo, y sin nota de seguimiento |
 | **Llama** | `admin.tomar_folio`, tipo `servicio` |
@@ -275,4 +275,16 @@ Usa también `general.dias_de_trabajo` y `general.largo_minimo_motivo`. El campo
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 13.*
+**Fase 13, parte 3.**
+
+- **Las tablas** `tipos_maquina`, `tecnicos`, `maquinas`, `motivos_falla`, `fallas` y `servicios` son de `mantenimiento` (`apps/api/src/modulos/mantenimiento/tablas.ts`, migración `0044`), con sus CHECK y sus únicos; una falla abierta por máquina es un único parcial. Las máquinas, los motivos y las fallas llevan `xid_escritura`; el servicio solo crece. `servicios.gasto_id` lleva su `@llavePendiente`.
+- **La siembra** (`siembra.ts`): los seis motivos de falla y la lista «Áreas del taller»; **los parámetros**, en `parametros.ts` (el costo de la hora, su responsable y las horas de paro; los del gasto llegan con la fase 17).
+- **Las acciones** están en `acciones/maquinas.ts` y `acciones/fallas.ts`, con sus contratos en `packages/compartido/src/contratos/mantenimiento/maquinas.ts`; lo común, en `dominio/maquinas.ts`:
+  - `alta_maquina` revisa el área, la persona, el nombre y la serie; el tipo nuevo toma el primer prefijo que no choca: sus iniciales y, si chocan, las iniciales con la siguiente letra del nombre (`prefijosDe`, decisión 626), con un candado por nombre. El folio sale de `admin.tomar_folio`, tipo `maquina`, con el prefijo como alcance.
+  - `baja_maquina` y `cambiar_asignacion_maquina` toman la versión de la máquina.
+  - `reportar_falla` llega de Mantenimiento o de la tablet por su cola (`permiso` con departamento y aparato). Bloquea la máquina; desde la tablet, una máquina con falla abierta o de baja se aplica sin crear la falla, con su renglón de bitácora en la máquina y el resultado que lo dice (decisión 630). La falla guarda quién traía la máquina al fallar.
+  - `mandar_a_reparacion` usa el técnico de la lista o crea el nuevo (sin importar mayúsculas); `registrar_servicio` resuelve la falla (con su versión) o es suelto (con la versión de su máquina, decisión 628).
+- **Las horas de paro** son `horasDeParo` (`dominio/paro.ts`); la lectura `fallas_que_detienen` (`lecturas/fallas.ts`) las da por falla, con quién traía la máquina. Con ella, «Vigilar lotes atorados» arma el atorado por máquina (ver [lotes](../produccion/lotes.md#cómo-está-hecho)).
+- **Lo que baja a la tablet** (`bajada.ts`): las máquinas activas, sus fallas abiertas y los motivos vigentes.
+- **Una persona que se da de baja** suelta sus máquinas: `personal.dar_baja_persona` llama `mantenimiento.soltar_maquinas_de_persona` (`internas/maquinas.ts`, decisión 629).
+- **Pruebas:** `acciones/alta-maquina.prueba.ts`, `acciones/reportar-falla.prueba.ts` (tablet y web, reparación, nota, servicio, técnico, servicio suelto), `acciones/baja-maquina.prueba.ts`, `acciones/cambiar-asignacion-maquina.prueba.ts` (también la persona que se da de baja), `lecturas/fallas-que-detienen.prueba.ts` (horas con fechas fijas) y `bajada.prueba.ts`. Las ayudas están en `nucleo/pruebas/mantenimiento-de-prueba.ts`, con la cuenta de prueba `mantenimiento`.

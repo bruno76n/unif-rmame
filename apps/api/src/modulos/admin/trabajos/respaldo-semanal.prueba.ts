@@ -183,6 +183,18 @@ describe("el respaldo semanal sale cifrado, llega con su SHA-256 y, descifrado y
 		expect(simulador.objetos.has("uniformame-respaldos/2026/2026-11-29.dump.age")).toBe(false);
 	});
 
+	/**
+	 * Si el volcado de prueba ya no corre. Espera hasta 3 s: con la máquina cargada, el proceso tarda en terminar
+	 * después de que el trabajo lo para.
+	 */
+	async function volcadoParado(): Promise<boolean> {
+		for (let intento = 0; intento < 30; intento++) {
+			if (spawnSync("pgrep", ["-f", "^yes respaldo$"]).status === 1) return true;
+			await new Promise((listo) => setTimeout(listo, 100));
+		}
+		return false;
+	}
+
 	it("si R2 falla desde el principio, el trabajo termina y para el volcado y el cifrado", async () => {
 		ahora = Temporal.Instant.from("2026-12-06T08:00:00Z");
 		const { respaldo } = dependencias;
@@ -200,8 +212,7 @@ describe("el respaldo semanal sale cifrado, llega con su SHA-256 y, descifrado y
 		}
 		const { rows } = await prueba.dueno.query("SELECT estado FROM respaldos ORDER BY hecho_en DESC LIMIT 1");
 		expect(rows[0]?.estado).toBe("fallido");
-		await new Promise((listo) => setTimeout(listo, 200));
-		expect(spawnSync("pgrep", ["-f", "^yes respaldo$"]).status).toBe(1);
+		expect(await volcadoParado()).toBe(true);
 	});
 
 	it("si una parte falla a medio flujo, la subida se cancela, el trabajo termina y para el volcado", async () => {
@@ -223,7 +234,6 @@ describe("el respaldo semanal sale cifrado, llega con su SHA-256 y, descifrado y
 		const { rows } = await prueba.dueno.query("SELECT estado FROM respaldos ORDER BY hecho_en DESC LIMIT 1");
 		expect(rows[0]?.estado).toBe("fallido");
 		expect(simulador.objetos.has("uniformame-respaldos/2026/2026-12-13.dump.age")).toBe(false);
-		await new Promise((listo) => setTimeout(listo, 200));
-		expect(spawnSync("pgrep", ["-f", "^yes respaldo$"]).status).toBe(1);
+		expect(await volcadoParado()).toBe(true);
 	});
 });

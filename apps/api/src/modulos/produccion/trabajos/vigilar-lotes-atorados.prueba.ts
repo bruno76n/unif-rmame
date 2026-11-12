@@ -1,6 +1,7 @@
 /**
  * Prueba del trabajo «Vigilar lotes atorados»: el lote sin avance en los días de trabajo avisa a la dueña una vez
- * hasta que algo cambia; «Sin datos de la tablet» no es atorado; fuera de los días de trabajo no corre.
+ * hasta que algo cambia; «Sin datos de la tablet» no es atorado; fuera de los días de trabajo no corre; una máquina
+ * parada atora los lotes de la operación de quien la trae.
  * Fase 12 · docs/fases/12-produccion.md («Criterios de terminado»)
  */
 
@@ -8,9 +9,12 @@ import { diaDeNegocio } from "@uniformame/compartido/calculos/fechas";
 import { Temporal } from "temporal-polyfill";
 import { v7 as uuidv7 } from "uuid";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { z } from "zod";
 import { escribirBitacoraConAdmin, guardarEventosConAdmin } from "../../../nucleo/acciones/corredor.ts";
 import { crearBase } from "../../../nucleo/base/conexion.ts";
 import { type SiembraDelCatalogo, siembraDelCatalogo } from "../../../nucleo/pruebas/catalogo-de-prueba.ts";
+import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
+import { maquinaDePrueba, motivoDePrueba } from "../../../nucleo/pruebas/mantenimiento-de-prueba.ts";
 import { type LoteCortado, loteCortado, subirDeLaTablet } from "../../../nucleo/pruebas/produccion-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 import { correrTrabajo, type DependenciasDelTrabajador } from "../../../nucleo/trabajos/trabajador.ts";
@@ -143,6 +147,51 @@ describe("Un lote atorado avisa una vez hasta que algo cambia", () => {
 		await correr();
 		expect(await avisosDe(lote.loteId)).toEqual({ textos: [], eventos: 0 });
 		await diasDeTrabajo("1,2,3,4,5,6,7");
+		await correr();
+		expect((await avisosDe(lote.loteId)).eventos).toBe(1);
+	});
+
+	it("una falla que detuvo la máquina atora los lotes de la operación de quien la trae, y resolverla quita el atorado", async () => {
+		// Un lote recién cortado: no está atorado por falta de avance.
+		const lote = await loteCortado(servidor, siembra);
+		const maquina = await maquinaDePrueba(servidor, lote.personaId);
+		const reportada = await mandarAccion(
+			servidor,
+			"mantenimiento.reportar_falla",
+			{ datos: { maquina_id: maquina.id, motivo_falla_id: await motivoDePrueba(servidor, "No prende") } },
+			"mantenimiento",
+		);
+		const { falla_id, folio } = z.object({ falla_id: z.uuid(), folio: z.string() }).parse(reportada.cuerpo.resultado);
+		await correr();
+		const operacion = lote.prenda.flujo.operaciones[1]?.nombre;
+		expect(await avisosDe(lote.loteId)).toEqual({
+			textos: [`${lote.folio} atorado en ${operacion}: ${maquina.nombre} parada (${folio})`],
+			eventos: 1,
+		});
+		// Resuelta la falla, ya no está atorado: otra vuelta no avisa.
+		const { rows: tecnico } = await servidor.base.dueno.query(
+			"INSERT INTO tecnicos (id, nombre) VALUES (gen_random_uuid(), $1) RETURNING id",
+			[`Técnico ${falla_id.slice(-6)}`],
+		);
+		const { rows: version } = await servidor.base.dueno.query("SELECT version::int AS v FROM fallas WHERE id = $1", [
+			falla_id,
+		]);
+		const resuelta = await mandarAccion(
+			servidor,
+			"mantenimiento.registrar_servicio",
+			{
+				datos: {
+					falla_id,
+					tecnico_id: tecnico[0]?.id,
+					que_se_hizo: "Cambio de motor",
+					costo_centavos: 0,
+					horas_paro: 4,
+				},
+				version: version[0]?.v,
+			},
+			"mantenimiento",
+		);
+		expect(resuelta.estado).toBe(200);
 		await correr();
 		expect((await avisosDe(lote.loteId)).eventos).toBe(1);
 	});
