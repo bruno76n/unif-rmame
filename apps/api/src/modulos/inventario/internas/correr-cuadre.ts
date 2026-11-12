@@ -3,7 +3,8 @@
  * confirma y el total.
  * Fase 9 · docs/modulos/inventario/existencias-y-cuadre.md («El cuadre de la noche», pasos 1, 3, 6, 7 y 8)
  * Fase 11 · el paso 2, con los rollos
- * Fase 14 · docs/modulos/inventario/diferencias-ajustes-y-mermas.md («El cuadre»): el paso 3 con las DF- abiertas y el 5
+ * Fase 14 · docs/modulos/inventario/diferencias-ajustes-y-mermas.md («El cuadre»): el paso 3 con las DF- abiertas, el 4
+ * con los lotes recibidos y el 5
  *
  * Corre en tandas, cada una en su propia transacción corta, para no frenar las ventas: el paso 1 una por
  * ubicación, y cada paso que sigue en la suya. Nunca toca el libro: si una existencia no es la del libro, la corrige
@@ -174,9 +175,12 @@ async function rollosEnUnLugar(contexto: ContextoDeAccion, cuadreId: string): Pr
 const lotesPorTramo = 50;
 
 /**
- * Paso 4: las piezas de cada lote cortado en el Taller (las que entraron con su lote menos las que salieron) contra lo
- * que lleva Producción en `lote_tallas` (cortadas − merma). Lo recibido en aduana llega con la fase 14. Abre
- * `cuadre_proyeccion` por talla que no cuadra, con los dos valores.
+ * Paso 4: las piezas de cada lote en el Taller (las que entraron con su lote menos las que salieron) contra lo que
+ * debe quedar ahí. De un lote cortado que no ha llegado a aduana, lo que lleva Producción en `lote_tallas` (cortadas −
+ * merma). De uno ya recibido en aduana, solo las piezas de sus reprocesos que Aduana no ha recibido y lo que dicen sus
+ * DF- de la recepción del taller abiertas (una de −2 deja 2 en el Taller). Abre `cuadre_proyeccion` por talla que no
+ * cuadra, con los dos valores.
+ * Fase 14 · docs/modulos/inventario/recepcion-del-taller.md (regla 8)
  * @returns Las excepciones que abrió.
  */
 async function tallerPorLote(contexto: ContextoDeAccion, cuadreId: string): Promise<number> {
@@ -189,14 +193,28 @@ async function tallerPorLote(contexto: ContextoDeAccion, cuadreId: string): Prom
 			WHERE u.tipo = 'taller' AND l.lote_id IS NOT NULL AND l.variante_id IS NOT NULL
 				AND (l.destino_ubicacion_id = u.id OR l.origen_ubicacion_id = u.id)
 			GROUP BY l.lote_id, l.variante_id
+		), sin_recibir AS (
+			SELECT rp.lote_id, rc.variante_id, sum(rc.piezas) AS piezas
+			FROM reprocesos rp JOIN rechazos rc ON rc.id = rp.rechazo_id
+			WHERE NOT EXISTS (
+				SELECT 1 FROM recepciones r WHERE r.tipo = 'aduana_del_taller' AND r.reproceso_id = rp.id)
+			GROUP BY rp.lote_id, rc.variante_id
+		), abiertas AS (
+			SELECT lote_id, variante_id, sum(piezas) AS piezas FROM diferencias
+			WHERE origen = 'recepcion_taller' AND estado <> 'resuelta'
+			GROUP BY lote_id, variante_id
+		), esperado AS (
+			SELECT lt.lote_id, lt.variante_id, lo.folio,
+				CASE WHEN lo.estado = 'en_aduana' THEN coalesce(s.piezas, 0) - coalesce(a.piezas, 0)
+					ELSE coalesce(lt.piezas_cortadas, 0) - lt.piezas_merma END AS piezas
+			FROM lote_tallas lt
+			JOIN lotes lo ON lo.id = lt.lote_id AND lo.estado IN ('en_proceso', 'terminado', 'revisado', 'en_aduana')
+			LEFT JOIN sin_recibir s ON s.lote_id = lt.lote_id AND s.variante_id = lt.variante_id
+			LEFT JOIN abiertas a ON a.lote_id = lt.lote_id AND a.variante_id = lt.variante_id
 		)
-		SELECT lt.lote_id, lt.variante_id, lo.folio,
-			(coalesce(lt.piezas_cortadas, 0) - lt.piezas_merma)::int AS produccion,
-			coalesce(t.piezas, 0)::int AS taller
-		FROM lote_tallas lt
-		JOIN lotes lo ON lo.id = lt.lote_id AND lo.estado IN ('en_proceso', 'terminado', 'revisado')
-		LEFT JOIN en_taller t ON t.lote_id = lt.lote_id AND t.variante_id = lt.variante_id
-		WHERE coalesce(lt.piezas_cortadas, 0) - lt.piezas_merma <> coalesce(t.piezas, 0)`);
+		SELECT e.lote_id, e.variante_id, e.folio, e.piezas::int AS produccion, coalesce(t.piezas, 0)::int AS taller
+		FROM esperado e LEFT JOIN en_taller t ON t.lote_id = e.lote_id AND t.variante_id = e.variante_id
+		WHERE e.piezas <> coalesce(t.piezas, 0)`);
 	const diferencias = z
 		.array(
 			z.object({
@@ -211,7 +229,7 @@ async function tallerPorLote(contexto: ContextoDeAccion, cuadreId: string): Prom
 	for (const diferencia of diferencias) {
 		await abrir(contexto, cuadreId, {
 			tipo: "cuadre_proyeccion",
-			descripcion: `${diferencia.folio}: Producción lleva ${diferencia.produccion} piezas de la talla en el Taller y el inventario dice ${diferencia.taller}`,
+			descripcion: `${diferencia.folio}: en el Taller deberían quedar ${diferencia.produccion} piezas de la talla y el inventario dice ${diferencia.taller}`,
 			variante_id: diferencia.variante_id,
 			datos: diferencia,
 		});

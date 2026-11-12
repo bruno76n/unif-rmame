@@ -209,3 +209,5 @@ Los cambia solo la dueña, en Configuración (ver [configuración](../admin/conf
 - **Las lecturas** (`lecturas/revision.ts`): `aprobadas_del_lote` y `en_reproceso_de_pedido`, que regresa las piezas por lote y talla; `produccion.piezas_en_produccion` suma solo las de los lotes que ya llegaron a aduana, porque antes lo rechazado sigue contado en su lote (decisión 621).
 - **Los parámetros** (`parametros.ts`): `calidad.por_revisar_hoy_dias`, `calidad.defectos_periodo_dias` y `calidad.defectos_tasa_roja_porcentaje`; los usan las pantallas y la tasa de defectos (fase 19).
 - **Pruebas:** `acciones/revisar-lote.prueba.ts` (las aprobadas y el reproceso, lo que no deja revisar, el `409`, quien cosió, aprobar el reproceso con el pedido en producción, el catálogo de defectos) y `produccion/lecturas/persona-que-la-hizo.prueba.ts`. Las pruebas usan la cuenta de prueba `calidad`.
+
+**Fase 14, parte 2.** `calidad.reproceso_para_aduana` (`lecturas/revision.ts`) regresa el folio, el lote, la talla, el estado y las piezas aprobadas de un reproceso; Aduana lo cuenta a ciegas contra ellas. Lo prueba `modulos/inventario/acciones/recibir-del-taller.prueba.ts`.

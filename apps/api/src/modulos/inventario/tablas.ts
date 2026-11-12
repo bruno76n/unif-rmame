@@ -798,6 +798,13 @@ export const recepciones = pgTable(
 		index("recepciones_traspaso").on(tabla.traspasoId),
 		index("recepciones_despacho").on(tabla.despachoId),
 		index("recepciones_lote").on(tabla.loteId),
+		// Un lote y un reproceso se reciben del taller una sola vez.
+		uniqueIndex("recepciones_lote_del_taller")
+			.on(tabla.loteId)
+			.where(sql`${tabla.tipo} = 'aduana_del_taller' and ${tabla.reprocesoId} is null`),
+		uniqueIndex("recepciones_reproceso_del_taller")
+			.on(tabla.reprocesoId)
+			.where(sql`${tabla.tipo} = 'aduana_del_taller'`),
 		index("recepciones_tipo").on(tabla.tipo, tabla.recibidoEn.desc()),
 		check("recepciones_tipo", sql`${tabla.tipo} in (${valores(tiposDeRecepcion)})`),
 		check("recepciones_modo", sql`${tabla.modo} in ('completo', 'con_diferencias', 'ciego')`),

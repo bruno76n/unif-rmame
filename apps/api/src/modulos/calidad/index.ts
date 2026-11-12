@@ -8,7 +8,7 @@
 import { definirModulo } from "../../nucleo/modulos.ts";
 import { accionRegistrarReclamo, accionResolverReclamo } from "./acciones/reclamos.ts";
 import { accionAgregarDefecto, accionAprobarReproceso, accionRevisarLote } from "./acciones/revision.ts";
-import { aprobadasDelLote, enReprocesoDePedido } from "./lecturas/revision.ts";
+import { aprobadasDelLote, enReprocesoDePedido, reprocesoParaAduana } from "./lecturas/revision.ts";
 import { semillaDeParametrosDeCalidad } from "./parametros.ts";
 
 export default definirModulo({
@@ -20,7 +20,11 @@ export default definirModulo({
 		accionRegistrarReclamo,
 		accionResolverReclamo,
 	],
-	lecturas: { aprobadas_del_lote: aprobadasDelLote, en_reproceso_de_pedido: enReprocesoDePedido },
+	lecturas: {
+		aprobadas_del_lote: aprobadasDelLote,
+		en_reproceso_de_pedido: enReprocesoDePedido,
+		reproceso_para_aduana: reprocesoParaAduana,
+	},
 	semillas: [semillaDeParametrosDeCalidad],
 	// Calidad ve sus revisiones; Producción, Aduana y Ventas ven lo revisado y los reprocesos de sus lotes.
 	lectores: {

@@ -31,6 +31,7 @@
 		"./contratos/inventario/corte": "./src/contratos/inventario/corte.ts",
 		"./contratos/inventario/excepciones": "./src/contratos/inventario/excepciones.ts",
 		"./contratos/inventario/recepciones": "./src/contratos/inventario/recepciones.ts",
+		"./contratos/inventario/taller": "./src/contratos/inventario/taller.ts",
 		"./contratos/catalogo/listas": "./src/contratos/catalogo/listas.ts",
 		"./contratos/catalogo/precios": "./src/contratos/catalogo/precios.ts",
 		"./contratos/catalogo/productos": "./src/contratos/catalogo/productos.ts",

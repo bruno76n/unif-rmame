@@ -3,7 +3,7 @@
  * Fase 4 · docs/modulos/inventario/libro-de-movimientos.md («La tabla `ubicaciones`»)
  * Fase 9 · docs/modulos/inventario/libro-de-movimientos.md y existencias-y-cuadre.md
  * Fase 11 · docs/modulos/inventario/material-en-bodega.md y recepciones-en-aduana.md
- * Fase 14 · docs/modulos/inventario/diferencias-ajustes-y-mermas.md y conteos.md
+ * Fase 14 · docs/modulos/inventario/diferencias-ajustes-y-mermas.md, conteos.md y recepcion-del-taller.md
  *
  * Las ubicaciones nacen en la fase 4 porque las usan antes los parámetros, las impresoras, las cuentas,
  * los aparatos y las personas; sus responsables nacen vacíos. El libro no tiene acciones propias: lo escribe
@@ -25,10 +25,12 @@ import { accionDevolverAProveedor } from "./acciones/devolver-a-proveedor.ts";
 import { accionEntregarAlCorte, accionRecibirDelCorte } from "./acciones/entregas-corte.ts";
 import { accionGuardarConteo } from "./acciones/guardar-conteo.ts";
 import { accionRecibirDeProveedor } from "./acciones/recibir-de-proveedor.ts";
+import { accionRecibirDelTaller, accionRecibirReproceso } from "./acciones/recibir-del-taller.ts";
 import { accionRecibirEnAduana } from "./acciones/recibir-en-aduana.ts";
 import { accionResolverExcepcion } from "./acciones/resolver-excepcion.ts";
 import { accionSurtirAAduana } from "./acciones/surtir-a-aduana.ts";
 import { aplicarDecisionAjuste } from "./internas/aplicar-decision-ajuste.ts";
+import { registrarEntradaDelTaller } from "./internas/entrada-del-taller.ts";
 import { devolverEntregaCorte, lotesConTelaEntregada } from "./internas/entregas-corte.ts";
 import { marcarExcepcionResuelta, registrarExcepcion, tomarVersionExcepcion } from "./internas/excepciones.ts";
 import { actualizarCostoRollos, aplicarDecisionRecepcionDeMas, tomarConsumible } from "./internas/material.ts";
@@ -121,6 +123,8 @@ export default definirModulo({
 		accionDevolverAProveedor,
 		accionAclararDiferencia,
 		accionGuardarConteo,
+		accionRecibirDelTaller,
+		accionRecibirReproceso,
 	],
 	internas: {
 		recalcular_rollos_sugeridos: recalcularRollosSugeridos,
@@ -140,6 +144,7 @@ export default definirModulo({
 		actualizar_costo_rollos: actualizarCostoRollos,
 		tomar_consumible: tomarConsumible,
 		aplicar_decision_ajuste: aplicarDecisionAjuste,
+		registrar_entrada_del_taller: registrarEntradaDelTaller,
 	},
 	efectosDeAutorizacion: {
 		recepcion_de_mas: "aplicar_decision_recepcion_de_mas",

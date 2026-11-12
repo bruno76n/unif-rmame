@@ -4,7 +4,8 @@
  * por fecha; y no frena las ventas.
  * Fase 9 · docs/fases/09-inventario-libro-existencias-reservas-y-traspasos.md (parte 5)
  * Fase 14 · «En el cuadre, un traspaso `con_diferencia` tiene en sus tramos justo sus DF- abiertas, y un negativo sin DF-
- * abre una `cuadre` (por contar en prenda, por aclarar en material) o `cuadre_proyeccion` en el Taller y en los tramos»
+ * abre una `cuadre` (por contar en prenda, por aclarar en material) o `cuadre_proyeccion` en el Taller y en los tramos»;
+ * «De un lote recibido solo quedan en el Taller sus reprocesos sin recibir y lo de sus DF- abiertas, y el paso 4 lo revisa»
  */
 
 import { join } from "node:path";
@@ -16,6 +17,7 @@ import { guardarEventosConAdmin } from "../../../nucleo/acciones/corredor.ts";
 import { crearBase } from "../../../nucleo/base/conexion.ts";
 import { cargarModulos } from "../../../nucleo/modulos.ts";
 import { enAccionDePrueba } from "../../../nucleo/pruebas/accion-de-prueba.ts";
+import { loteRevisado } from "../../../nucleo/pruebas/calidad-de-prueba.ts";
 import { siembraDelCatalogo } from "../../../nucleo/pruebas/catalogo-de-prueba.ts";
 import { materialesDePrueba, rollosDePrueba } from "../../../nucleo/pruebas/compras-de-prueba.ts";
 import { diferenciaEnTransito, sacarPiezas } from "../../../nucleo/pruebas/diferencias-de-prueba.ts";
@@ -25,6 +27,7 @@ import {
 	ubicacionesPorCodigo,
 	variantesLibres,
 } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
+import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import { documentosAbiertosDePrueba } from "../../../nucleo/pruebas/modulos/ventas/index.ts";
 import { loteCortado } from "../../../nucleo/pruebas/produccion-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
@@ -394,5 +397,48 @@ describe("el cuadre de la noche", () => {
 		);
 		expect(otraVez.rows).toEqual([{ n: 0 }]);
 		expect((await excepcionesDe(siguiente)).filter((excepcion) => excepcion.variante_id === enTaller)).toEqual([]);
+	});
+
+	it("de un lote recibido en aduana, en el Taller solo quedan sus reprocesos sin recibir y lo de sus DF- abiertas (paso 4)", async () => {
+		const siembra = await siembraDelCatalogo(servidor);
+		const lote = await loteRevisado(servidor, siembra, [5, 3, 0], 2);
+		const talla4 = lote.prenda.variantes["4"] ?? "";
+		const recibida = await mandarAccion(
+			servidor,
+			"inventario.recibir_del_taller",
+			{
+				datos: {
+					lote_id: lote.loteId,
+					tallas: [
+						{ variante_id: talla4, piezas: 2 },
+						{ variante_id: lote.prenda.variantes["6"], piezas: 3 },
+					],
+				},
+			},
+			"aduana",
+		);
+		expect(recibida.estado).toBe(200);
+		const delLote = async (fecha: string) => {
+			const cuadre = await cuadrar(fecha);
+			return (await excepcionesDe(cuadre)).filter((excepcion) => excepcion.datos?.lote_id === lote.loteId);
+		};
+		// En el Taller quedan 3 de la talla 4: las 2 del reproceso y la que faltó contra lo aprobado.
+		expect(await delLote("2027-04-01")).toEqual([]);
+		// Si una pieza sale del Taller sin explicarse, ya no cuadra.
+		await enAccionDePrueba(crearBase(servidor.base.app), servidor.modulos, (contexto) =>
+			escribirMovimiento(contexto, {
+				tipo: "ajuste",
+				documento: { tipo: "ajuste", id: uuidv7() },
+				renglones: [{ origen: ubicacion.TAL ?? "", destino: null, varianteId: talla4, piezas: 1, loteId: lote.loteId }],
+				clave: uuidv7(),
+			}),
+		);
+		expect(
+			(await delLote("2027-04-02")).map((excepcion) => [
+				excepcion.tipo,
+				excepcion.datos.produccion,
+				excepcion.datos.taller,
+			]),
+		).toEqual([["cuadre_proyeccion", 3, 2]]);
 	});
 });

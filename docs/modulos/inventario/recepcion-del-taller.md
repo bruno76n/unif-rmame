@@ -93,4 +93,10 @@ Ninguno propio.
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 14.*
+**Fase 14, parte 2.** En `modulos/inventario/`:
+
+- **Las acciones** `recibir_del_taller` y `recibir_reproceso` (`acciones/recibir-del-taller.ts`, contratos en `packages/compartido/src/contratos/inventario/taller.ts`). Cada una toma primero un candado por lote o por reproceso y la base cuida que se reciban una sola vez (decisión 643). El lote se lee con `produccion.lote_para_aduana` y lo aprobado con `calidad.aprobadas_del_lote`; cada talla de la revisión va una vez, aunque sea 0, y ninguna otra (`400` en `tallas`). El reproceso se lee con `calidad.reproceso_para_aduana`. Después del lote, `produccion.marcar_lote_en_aduana`. Lo que regresan dice cuántas piezas para quién y cuántas faltaron o sobraron, nunca lo aprobado.
+- **La interna** `registrar_entrada_del_taller` (`internas/entrada-del-taller.ts`): la recepción `aduana_del_taller`, modo `ciego`, con lo aprobado como esperado; el A- de su destino con lo que llegó (ninguno si no llegó nada, decisión 642), `en_aduana`, con su lote, su recepción y la fecha de entrega del lote como salida esperada; el movimiento `recepcion_taller` o `recepcion_reproceso` por talla, con el A- y el lote; en un lote, `consumo_avios` por lo que sus entregas a corte pasaron sin rollo; y una DF- `recepcion_taller` por talla que no cuadró. El reparto (`dominio/taller.ts`) manda lo de una tienda a su tienda (`lote_reabasto`) y lo de temporada a Bodega (`lote_temporada`), y un reproceso en un A- `reproceso` al mismo destino; el de un lote de pedido llega con la fase 16 (decisión 641).
+- **«Imprimir etiquetas»** de un lote o un reproceso recibido es `inventario.marcar_etiquetas_impresas` (fase 11), con el tipo de prueba hasta la fase 20.
+- **Lo que llega después** de una DF- del taller entra con el mismo reparto (decisión 644).
+- **Pruebas:** `acciones/recibir-del-taller.prueba.ts` (a ciegas con sus A-, su DF- y sus avíos; lo que no deja recibir; dos a la vez; el reproceso y sus etiquetas; lo que llega después) y, en `internas/correr-cuadre.prueba.ts`, el paso 4 con un lote recibido.

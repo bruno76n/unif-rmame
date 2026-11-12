@@ -71,3 +71,61 @@ export async function defectoDePrueba(
 	);
 	return z.object({ defecto_id: z.uuid() }).parse(respuesta.cuerpo.resultado).defecto_id;
 }
+
+/**
+ * Un lote revisado por Calidad: terminado y revisado, con un rechazo de la talla 4 si se pide (su reproceso).
+ * @param servidor El servidor de prueba.
+ * @param siembra Los ids de la siembra del catálogo.
+ * @param piezas Las piezas de las tallas 4, 6 y 8.
+ * @param rechazadas Las piezas de la talla 4 que rechaza Calidad.
+ * @returns El lote y su reproceso, si hubo.
+ */
+export async function loteRevisado(
+	servidor: ServidorDePrueba,
+	siembra: SiembraDelCatalogo,
+	piezas: [number, number, number] = [5, 3, 0],
+	rechazadas = 0,
+): Promise<LoteCortado & { reprocesoId: string | undefined }> {
+	const lote = await loteTerminado(servidor, siembra, piezas);
+	const rechazos =
+		rechazadas === 0
+			? []
+			: [
+					{
+						defecto_id: await defectoDePrueba(servidor, lote),
+						flujo_operacion_id: lote.prenda.flujo.operaciones[1]?.flujoOperacionId,
+						persona_id: lote.personaId,
+						variante_id: lote.prenda.variantes["4"],
+						piezas: rechazadas,
+					},
+				];
+	const { rows } = await servidor.base.dueno.query("SELECT version::int AS v FROM lotes WHERE id = $1", [lote.loteId]);
+	const revision = await mandarAccion(
+		servidor,
+		"calidad.revisar_lote",
+		{ datos: { lote_id: lote.loteId, rechazos }, version: rows[0]?.v },
+		"calidad",
+	);
+	if (revision.estado !== 200) throw new Error(`no se revisó: ${JSON.stringify(revision.cuerpo)}`);
+	const { rows: suyos } = await servidor.base.dueno.query("SELECT id FROM reprocesos WHERE lote_id = $1", [
+		lote.loteId,
+	]);
+	return { ...lote, reprocesoId: suyos[0]?.id };
+}
+
+/**
+ * Calidad aprueba un reproceso con su versión de ahora.
+ * @param servidor El servidor de prueba.
+ * @param reprocesoId El reproceso.
+ */
+export async function aprobarReprocesoDePrueba(servidor: ServidorDePrueba, reprocesoId: string) {
+	const { rows } = await servidor.base.dueno.query("SELECT version::int AS v FROM reprocesos WHERE id = $1", [
+		reprocesoId,
+	]);
+	return mandarAccion(
+		servidor,
+		"calidad.aprobar_reproceso",
+		{ datos: { reproceso_id: reprocesoId }, version: rows[0]?.v },
+		"calidad",
+	);
+}

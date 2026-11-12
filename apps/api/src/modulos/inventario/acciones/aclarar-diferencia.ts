@@ -7,7 +7,8 @@
  * `llego`, `no_salio` y `venia_en_otro` escriben un movimiento `aclaracion_recepcion` que deja el tramo en cero en el
  * libro: cada renglón lleva su traspaso (y su lote). Lo que entra a Aduana entra en un A- nuevo, `en_aduana`, del
  * mismo tipo, origen y destino, con sus reservas. `perdida` y `ajuste` piden un AJ- a Dirección. Los candados van en
- * el orden fijo: las variantes y los traspasos, luego las DF- (dos aclaraciones del mismo par se ponen en fila).
+ * el orden fijo: las variantes y los traspasos, luego las DF- (dos aclaraciones del mismo par se ponen en fila). Lo que
+ * el Taller trajo después de su recepción entra con el reparto de su lote (`dominio/taller.ts`).
  */
 
 import { aMilesimosConSigno, deMilesimos } from "@uniformame/compartido/calculos/cuenta-material";
@@ -25,12 +26,14 @@ import { type Diferencia, diferenciaBloqueada, diferenciasBloqueadas } from "../
 import { escribirMovimiento, type RenglonDeMovimiento } from "../dominio/escribir-movimiento.ts";
 import { ubicacionDeTipo } from "../dominio/recepciones.ts";
 import { reservasActivas, tomarDeReservas } from "../dominio/reservas.ts";
+import { leerLoteParaAduana, repartoDelTaller } from "../dominio/taller.ts";
 import { crearTraspaso, type LadoDeTraspaso, type ReferenciasDeTraspaso } from "../dominio/traspasos.ts";
 import {
 	aclaracionesDeMaterial,
 	aclaracionesDeRecepcion,
 	diferencias,
 	existenciasMaterial,
+	recepciones,
 	reservas,
 	tiposDeTraspaso,
 	traspasos,
@@ -55,7 +58,8 @@ interface LadosDeRecepcion {
 	/** El origen: el del traspaso en camino a aduana; Aduana en tránsito; ninguno en la del taller. */
 	origen: string | null;
 	aduana: string;
-	traspaso: typeof traspasos.$inferSelect;
+	/** El traspaso del tramo; ninguno en la del taller, cuyo hueco es el Taller. */
+	traspaso: typeof traspasos.$inferSelect | null;
 }
 
 /**
@@ -65,6 +69,7 @@ interface LadosDeRecepcion {
 async function ladosDeRecepcion(contexto: ContextoDeAccion, diferencia: Diferencia): Promise<LadosDeRecepcion> {
 	const { transaccion } = contexto;
 	const aduana = await ubicacionDeTipo(transaccion, "aduana");
+	if (diferencia.origen === "recepcion_taller") return { receptor: aduana, origen: null, aduana, traspaso: null };
 	if (diferencia.traspasoId === null) throw new Error(`${diferencia.folio} de recepción sin traspaso`);
 	const [traspaso] = await transaccion.select().from(traspasos).where(eq(traspasos.id, diferencia.traspasoId));
 	const [hueco] = await transaccion
@@ -119,6 +124,7 @@ async function entrarAAduana(
 	lados: LadosDeRecepcion,
 ): Promise<{ traspasoId: string; folio: string }> {
 	const viejo = lados.traspaso;
+	if (viejo === null) return entrarDelTaller(contexto, diferencia);
 	const lado = (ubicacionId: string | null, externo: string | null): LadoDeTraspaso | null =>
 		ubicacionId !== null ? { ubicacionId } : externo === null ? null : { externo: ladoExterno.parse(externo) };
 	const referencias: ReferenciasDeTraspaso = {
@@ -179,6 +185,48 @@ async function entrarAAduana(
 	return nuevo;
 }
 
+/**
+ * Crea el A- en que entra a Aduana lo que el Taller trajo después: con el reparto de la recepción del taller (el de su
+ * lote, o un `reproceso` si la recepción fue de uno), `en_aduana`, con sus etiquetas por imprimir.
+ */
+async function entrarDelTaller(
+	contexto: ContextoDeAccion,
+	diferencia: Diferencia,
+): Promise<{ traspasoId: string; folio: string }> {
+	const { transaccion } = contexto;
+	const [recepcion] =
+		diferencia.recepcionId === null
+			? []
+			: await transaccion
+					.select({ reprocesoId: recepciones.reprocesoId })
+					.from(recepciones)
+					.where(eq(recepciones.id, diferencia.recepcionId));
+	if (recepcion === undefined || diferencia.loteId === null) throw new Error(`${diferencia.folio} sin su recepción`);
+	const lote = await leerLoteParaAduana(contexto, diferencia.loteId);
+	const reparto = await repartoDelTaller(contexto, lote, recepcion.reprocesoId !== null);
+	const nuevo = await crearTraspaso(contexto, {
+		tipo: reparto.tipo,
+		estado: "en_aduana",
+		origen: { ubicacionId: diferencia.ubicacionId },
+		destino: { ubicacionId: reparto.destinoId },
+		renglones: [pendienteDe(diferencia)],
+		referencias: {
+			loteId: lote.lote_id,
+			...(recepcion.reprocesoId === null ? {} : { reprocesoId: recepcion.reprocesoId }),
+		},
+		fechaSalidaEsperada: lote.fecha_entrega,
+	});
+	contexto.guardarEvento({
+		tipo: "traspaso.en_aduana",
+		datos: { traspaso_id: nuevo.traspasoId },
+		tablas: ["traspasos", "traspaso_lineas"],
+		entidad: "traspasos",
+		entidadId: nuevo.traspasoId,
+		entidadFolio: nuevo.folio,
+	});
+	return nuevo;
+}
+
 /** Un renglón del movimiento de la aclaración: lo pendiente de un lado a otro, con el traspaso y el lote del hueco. */
 function renglonDe(diferencia: Diferencia, origen: string | null, destino: string | null): RenglonDeMovimiento {
 	return { origen, destino, traspasoId: diferencia.traspasoId, ...pendienteDe(diferencia) };
@@ -206,14 +254,19 @@ async function moverLoPendiente(
 	// El otro lado tiene que existir (sin origen en la del taller); lo que sobró no sale de Aduana.
 	if (aclaracion === "no_salio" && otro === null) throw noAplica(diferencia);
 	if (!falto(diferencia) && otro === lados.aduana) throw noAplica(diferencia);
-	const renglon = falto(diferencia) ? renglonDe(diferencia, hueco, otro) : renglonDe(diferencia, otro, hueco);
+	// Lo que el Taller trajo después entra con su A- nuevo desde el Taller; lo de un tramo sale con su traspaso, que
+	// deja el tramo en cero, y luego pasa al A- nuevo con sus reservas.
+	const delTaller = otro === lados.aduana && lados.traspaso === null;
+	const antes = delTaller ? await entrarAAduana(contexto, diferencia, lados) : undefined;
+	const base = falto(diferencia) ? renglonDe(diferencia, hueco, otro) : renglonDe(diferencia, otro, hueco);
+	const renglon = antes === undefined ? base : { ...base, traspasoId: antes.traspasoId };
 	await escribirMovimiento(contexto, {
 		tipo: "aclaracion_recepcion",
 		documento: { tipo: "diferencia", id: diferencia.id, folio: diferencia.folio },
 		renglones: [renglon],
 	});
 	if (otro !== lados.aduana) return { movimiento: [renglon] };
-	return { movimiento: [renglon], nuevo: await entrarAAduana(contexto, diferencia, lados) };
+	return { movimiento: [renglon], nuevo: antes ?? (await entrarAAduana(contexto, diferencia, lados)) };
 }
 
 /**

@@ -24,7 +24,13 @@ import {
 import { recalcularProyecciones } from "./internas/proyecciones.ts";
 import { ponerTarifaARegistros, registrosParaNomina } from "./internas/registros.ts";
 import { flujoVigente } from "./lecturas/flujos.ts";
-import { cortesDePrenda, lotesPorCortar, lotesSinTerminarDeVariante, piezasEnProduccion } from "./lecturas/lotes.ts";
+import {
+	cortesDePrenda,
+	loteParaAduana,
+	lotesPorCortar,
+	lotesSinTerminarDeVariante,
+	piezasEnProduccion,
+} from "./lecturas/lotes.ts";
 import { personaQueLaHizo } from "./lecturas/persona-que-la-hizo.ts";
 import { semillaDeParametrosDeProduccion } from "./parametros.ts";
 import { lectoresDeProduccion } from "./permisos.ts";
@@ -60,6 +66,7 @@ export default definirModulo({
 		lotes_por_cortar: lotesPorCortar,
 		lotes_sin_terminar_de_variante: lotesSinTerminarDeVariante,
 		cortes_de_prenda: cortesDePrenda,
+		lote_para_aduana: loteParaAduana,
 		registros_para_nomina: registrosParaNomina,
 		persona_que_la_hizo: personaQueLaHizo,
 	},

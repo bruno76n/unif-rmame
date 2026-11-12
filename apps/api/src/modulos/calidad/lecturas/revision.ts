@@ -1,6 +1,7 @@
 /**
  * Las lecturas de la revisión de lotes: lo aprobado de un lote para Aduana y lo que un pedido tiene en reproceso.
  * Fase 13 · docs/modulos/calidad/revision-de-lotes.md («Lecturas»)
+ * Fase 14 · lo que Aduana lee de un reproceso al recibirlo
  */
 
 import { and, asc, eq, sql } from "drizzle-orm";
@@ -65,4 +66,28 @@ export async function enReprocesoDePedido(contexto: ContextoDeAccion, datos: unk
 		.groupBy(reprocesos.loteId, rechazos.varianteId)
 		.orderBy(asc(reprocesos.loteId), asc(rechazos.varianteId));
 	return { reprocesos: filas };
+}
+
+/**
+ * `calidad.reproceso_para_aduana`: lo que Aduana necesita de un reproceso para recibirlo a ciegas: su folio, su lote,
+ * su talla, su estado y sus piezas aprobadas (que no regresan a la pantalla de Aduana).
+ * Fase 14 · docs/modulos/calidad/revision-de-lotes.md («`calidad.reproceso_para_aduana(reproceso)`»)
+ * @param datos `reproceso_id`.
+ * @returns El reproceso, o `null` si no existe.
+ */
+export async function reprocesoParaAduana(contexto: ContextoDeAccion, datos: unknown) {
+	const { reproceso_id } = z.object({ reproceso_id: z.uuid() }).parse(datos);
+	const [reproceso] = await contexto.transaccion
+		.select({
+			reproceso_id: reprocesos.id,
+			folio: reprocesos.folio,
+			lote_id: reprocesos.loteId,
+			variante_id: rechazos.varianteId,
+			estado: reprocesos.estado,
+			piezas_aprobadas: reprocesos.piezasAprobadas,
+		})
+		.from(reprocesos)
+		.innerJoin(rechazos, eq(rechazos.id, reprocesos.rechazoId))
+		.where(eq(reprocesos.id, reproceso_id));
+	return reproceso ?? null;
 }

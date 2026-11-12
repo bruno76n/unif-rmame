@@ -2,6 +2,7 @@
  * Las lecturas de los lotes: lo que un pedido tiene en producción, los lotes por cortar y los lotes sin terminar de
  * una talla.
  * Fase 12 · docs/modulos/produccion/lotes.md («Lecturas», regla 9)
+ * Fase 14 · lo que Aduana lee de un lote al recibirlo
  *
  * Ninguna lleva tarifas ni costos. Lo que un pedido tiene en reproceso se suma con Calidad (fase 13).
  */
@@ -9,7 +10,7 @@
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
-import { variantes } from "../../catalogo/tablas.ts";
+import { productos, variantes } from "../../catalogo/tablas.ts";
 import { cortes, corteTelas, lotes, loteTallas } from "../tablas.ts";
 
 /** Las etapas en que un lote ya se cortó y sigue en el taller. */
@@ -187,4 +188,38 @@ export async function cortesDePrenda(contexto: ContextoDeAccion, datos: unknown)
 				.map((talla) => ({ talla_id: talla.talla_id, piezas: talla.piezas ?? 0 })),
 		})),
 	};
+}
+
+/**
+ * `produccion.lote_para_aduana`: lo que Aduana necesita de un lote para recibirlo, o uno de sus reprocesos: su folio,
+ * su prenda, su estado, su destino (con el pedido o la ubicación), su fecha de entrega y, por talla, lo que va a Bodega.
+ * Sin tarifas ni costos.
+ * Fase 14 · docs/modulos/produccion/lotes.md («`produccion.lote_para_aduana(lote)`»)
+ * @param datos `lote_id`.
+ * @returns El lote, o `null` si no existe.
+ */
+export async function loteParaAduana(contexto: ContextoDeAccion, datos: unknown) {
+	const { lote_id } = z.object({ lote_id: z.uuid() }).parse(datos);
+	const { transaccion } = contexto;
+	const [lote] = await transaccion
+		.select({
+			lote_id: lotes.id,
+			folio: lotes.folio,
+			prenda: productos.nombre,
+			estado: lotes.estado,
+			destino: lotes.destino,
+			pedido_id: lotes.pedidoId,
+			ubicacion_destino_id: lotes.ubicacionDestinoId,
+			fecha_entrega: lotes.fechaEntrega,
+		})
+		.from(lotes)
+		.innerJoin(productos, eq(productos.id, lotes.productoId))
+		.where(eq(lotes.id, lote_id));
+	if (lote === undefined) return null;
+	const tallas = await transaccion
+		.select({ variante_id: loteTallas.varianteId, piezas_a_bodega: loteTallas.piezasABodega })
+		.from(loteTallas)
+		.where(eq(loteTallas.loteId, lote_id))
+		.orderBy(asc(loteTallas.varianteId));
+	return { ...lote, tallas };
 }

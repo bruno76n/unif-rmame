@@ -405,3 +405,5 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 12 nov 2026 | 14 | El final de un traspaso que tuvo DF- (decisión 635) | Transiciones nuevas a `con_diferencia` · solo al recibir el despacho | Solo al recibir; el cuadre revisa los demás contra sus DF- | No |
 | 12 nov 2026 | 14 | `llego` en una tienda sin caja (decisión 636) | No aplica · a Fuera | A Fuera: esa entrega ya salió del inventario | No |
 | 12 nov 2026 | 14 | Qué revisa el cuadre y cuándo abre otra vez (decisión 638) | Solo lo del día · también lo que tiene DF- | Lo segundo, y un negativo del Taller abre su excepción una sola vez | No |
+| 12 nov 2026 | 14 | Un lote de pedido antes de la fase 16 (decisión 641) | Repartirlo a Bodega · error del programa | Error del programa: antes no nace ninguno | No |
+| 12 nov 2026 | 14 | La DF- del taller y su reparto (decisión 644) | Ligarla al A- de la recepción · sin traspaso, con el reparto de su lote | Lo segundo: el A- puede no existir y el Taller cuenta por lote | No |

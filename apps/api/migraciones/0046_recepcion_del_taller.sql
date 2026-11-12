@@ -1,0 +1,2 @@
+CREATE UNIQUE INDEX "recepciones_lote_del_taller" ON "recepciones" USING btree ("lote_id") WHERE "recepciones"."tipo" = 'aduana_del_taller' and "recepciones"."reproceso_id" is null;--> statement-breakpoint
+CREATE UNIQUE INDEX "recepciones_reproceso_del_taller" ON "recepciones" USING btree ("reproceso_id") WHERE "recepciones"."tipo" = 'aduana_del_taller';
