@@ -33,6 +33,7 @@ const operacion = fc.oneof(
 	fc.record({ tipo: fc.constant("devolver" as const), pesos: fc.integer({ min: 1, max: 2_000 }) }),
 	fc.record({ tipo: fc.constant("anticipo" as const), pesos: fc.integer({ min: 1, max: 3_000 }) }),
 	fc.record({ tipo: fc.constant("pasar" as const) }),
+	fc.record({ tipo: fc.constant("liquidar" as const), nota: fc.nat(2) }),
 	fc.record({ tipo: fc.constant("cancelar" as const), pago: fc.nat(20) }),
 );
 
@@ -120,6 +121,19 @@ describe("Con pagos, notas de crédito, saldo a favor y cancelaciones al azar, n
 			if (hecho.success) pagos.push(hecho.data.pago_id);
 			return revisar(respuesta);
 		}
+		if (op.tipo === "liquidar" && nota !== undefined) {
+			// El saldo exacto, aunque traiga centavos de una NC (decisión 674).
+			const { rows } = await servidor.base.dueno.query(
+				"SELECT saldo_centavos::int AS saldo FROM cuentas_por_cobrar WHERE id = $1",
+				[nota.cuentaId],
+			);
+			const saldo = z.number().parse(rows[0]?.saldo);
+			if (saldo === 0) return false;
+			const respuesta = await pagarDePrueba(servidor, cliente, nota, saldo);
+			const hecho = z.object({ pago_id: z.uuid() }).safeParse(respuesta.cuerpo.resultado);
+			if (hecho.success) pagos.push(hecho.data.pago_id);
+			return revisar(respuesta);
+		}
 		if (op.tipo === "anticipo") {
 			return revisarInterna(
 				await internaDeContaduria(servidor, "aplicar_anticipo_a_nota", {
@@ -154,7 +168,7 @@ describe("Con pagos, notas de crédito, saldo a favor y cancelaciones al azar, n
 
 	it("con tandas de tres operaciones a la vez, ningún saldo sale de su lugar, nada falla y nada se traba", async () => {
 		const trabasAntes = await trabasDeLaBase(servidor);
-		let entraron = 0;
+		const entraron = new Map<string, number>();
 		await fc.assert(
 			fc.asyncProperty(
 				fc.array(fc.array(operacion, { minLength: 1, maxLength: 3 }), { minLength: 2, maxLength: 5 }),
@@ -167,10 +181,21 @@ describe("Con pagos, notas de crédito, saldo a favor y cancelaciones al azar, n
 					];
 					const anticipo = await anticipoRecibidoDePrueba(servidor, cliente, 400_000);
 					const otro = await anticipoRecibidoDePrueba(servidor, cliente, 150_000, anticipo.pedidoId);
+					// $2,000.50 a favor de entrada: una NC con centavos sobre una nota ya pagada.
+					const pagada = await notaEntregadaDePrueba(servidor, cliente, { totalCentavos: 10_000 });
+					await pagarDePrueba(servidor, cliente, pagada, 10_000);
+					await internaDeContaduria(servidor, "aplicar_nota_credito", {
+						nota_credito_id: uuidv7(),
+						nota_entrega_id: pagada.notaId,
+						monto_centavos: 200_050,
+					});
 					const escenario = { cliente, notas, anticipo, pagos: [anticipo.pagoId, otro.pagoId] };
 					for (const tanda of tandas) {
 						const hechas = await Promise.all(tanda.map((op) => hacer(escenario, op)));
-						entraron += hechas.filter(Boolean).length;
+						for (const [i, hecha] of hechas.entries()) {
+							const tipo = tanda[i]?.tipo ?? "";
+							if (hecha) entraron.set(tipo, (entraron.get(tipo) ?? 0) + 1);
+						}
 					}
 					const { rows } = await servidor.base.dueno.query(
 						`SELECT c.id, c.importe_centavos::int AS importe, c.saldo_centavos::int AS saldo, c.estado,
@@ -197,10 +222,12 @@ describe("Con pagos, notas de crédito, saldo a favor y cancelaciones al azar, n
 					expect(disponible[0]?.d).toBeGreaterThanOrEqual(0);
 				},
 			),
-			{ numRuns: 25 },
+			{ numRuns: 40 },
 		);
-		// No pasó en vacío: entraron operaciones de verdad.
-		expect(entraron).toBeGreaterThan(25);
+		// No pasó en vacío: de cada operación que puede fallar, alguna entró.
+		for (const tipo of ["pago", "favor", "devolver", "anticipo", "liquidar", "cancelar"]) {
+			expect(entraron.get(tipo) ?? 0, tipo).toBeGreaterThan(0);
+		}
 		expect(await trabasDeLaBase(servidor)).toBe(trabasAntes);
 	});
 });

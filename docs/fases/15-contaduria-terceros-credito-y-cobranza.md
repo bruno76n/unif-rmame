@@ -1,7 +1,7 @@
 # Fase 15: Contaduría: terceros, crédito y cobranza ●
 
 > **Etapa:** Módulos.
-> **Estado:** Pendiente.
+> **Estado:** Terminada.
 > **Antes de empezar:** lee la [forma de trabajo](../trabajo/FORMA-DE-TRABAJO.md) y la [revisión de fase](../trabajo/REVISION-DE-FASE.md).
 > **Se conecta con:** [fases](FASES.md) · [fase 14](14-inventario-recepcion-del-taller-conteos-ajustes-y-reabasto.md) · [fase 16](16-ventas-a-externos.md)
 
@@ -63,7 +63,7 @@ Contaduría sabe cuánto le debe cada cliente y desde cuándo, cobra sin pasarse
 | Cambiar el límite, los días o el semáforo guarda quién y cuándo, no escribe si no cambió, y el semáforo nunca cambia solo | `cambiar-limite-credito.prueba.ts`, `cambiar-dias-credito.prueba.ts` y `cambiar-semaforo-credito.prueba.ts` |
 | Ventas nunca recibe un monto: ni del crédito ni de las cuentas | `modulos/contaduria/lecturas/credito-de-cliente.prueba.ts` y `estado-pago-notas.prueba.ts` |
 | La cuenta por cobrar nace con su vencimiento y su importe sin el anticipo; con importe 0 nace pagada; una sola por nota | `modulos/contaduria/internas/crear-cuenta-por-cobrar.prueba.ts` y, con el anticipo, `aplicar-anticipo-a-nota.prueba.ts` |
-| Un pago a una nota baja su saldo y cambia su estado; nunca pasa del saldo, aun con dos pagos al mismo tiempo; un monto con centavos no entra | `modulos/contaduria/acciones/registrar-pago-recibido.prueba.ts`, con dos conexiones |
+| Un pago a una nota baja su saldo y cambia su estado; nunca pasa del saldo, aun con dos pagos al mismo tiempo; un monto con centavos no entra, salvo el que liquida exacto el saldo (decisión 674) | `modulos/contaduria/acciones/registrar-pago-recibido.prueba.ts`, con dos conexiones |
 | Con pagos, notas de crédito, saldo a favor y cancelaciones al azar, el saldo guardado de cada cuenta es su importe menos sus aplicaciones vigentes y nunca sale de 0 al importe | `modulos/contaduria/saldos.azar.prueba.ts`, con fast-check |
 | Una nota de crédito baja la cuenta hasta su saldo, lo demás entra a favor del cliente, y no se aplica dos veces | `modulos/contaduria/internas/aplicar-nota-credito.prueba.ts` |
 | Cancelar un pago pide «Confirmar con Google», regresa saldos y estados y cancela su anticipo y lo que dejó a favor; no se cancela si su anticipo ya se aplicó o lo que dejó a favor ya se usó | `modulos/contaduria/acciones/cancelar-pago.prueba.ts` |

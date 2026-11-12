@@ -34,7 +34,7 @@ Una fase es una parte del sistema y se construye de abajo hacia arriba: primero 
 | 12 | [Producción](12-produccion.md) | Órdenes de producción, lotes, entregas a corte, corte y bultos, operaciones y flujos, y los registros de la tablet | Terminada |
 | 13 | [Calidad y Mantenimiento](13-calidad-y-mantenimiento.md) | La revisión de lotes, reclamos y devoluciones; máquinas, fallas y servicios | Terminada |
 | 14 ● | [Inventario: recepción del taller, conteos, ajustes y reabasto](14-inventario-recepcion-del-taller-conteos-ajustes-y-reabasto.md) | Lo que Aduana recibe del taller, los conteos, las diferencias, los ajustes, las mermas, los mínimos y el reabasto | Terminada |
-| 15 ● | [Contaduría: terceros, crédito y cobranza](15-contaduria-terceros-credito-y-cobranza.md) | El crédito de clientes, cuentas por cobrar, pagos recibidos, saldo a favor y anticipos | Pendiente |
+| 15 ● | [Contaduría: terceros, crédito y cobranza](15-contaduria-terceros-credito-y-cobranza.md) | El crédito de clientes, cuentas por cobrar, pagos recibidos, saldo a favor y anticipos | Terminada |
 | 16 | [Ventas a externos](16-ventas-a-externos.md) | Clientes, pedidos con versiones, mandar a producción, cambios de pedido, notas de entrega, notas de crédito, entregas y devoluciones | Pendiente |
 | 17 ● | [Contaduría: por pagar, facturas, gastos y nómina](17-contaduria-por-pagar-facturas-gastos-y-nomina.md) | Cuentas por pagar, facturas de proveedor con tres puntas, deudas y compensaciones con terceros, gastos y la nómina semanal | Pendiente |
 | 18 | [Tienda en línea, Dirección y contador](18-tienda-en-linea-direccion-y-contador.md) | Los pedidos W- y sus reservas, las alertas e indicadores de Dirección y el paquete del contador | Pendiente |

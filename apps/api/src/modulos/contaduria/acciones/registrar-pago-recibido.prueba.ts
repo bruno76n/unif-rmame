@@ -79,7 +79,7 @@ describe("Un pago a una nota baja su saldo y cambia su estado; nunca pasa del sa
 			mensaje: `El saldo de ${nota.folio} es $3,000.`,
 		});
 		expect((await pagarDePrueba(servidor, cliente, nota, 100_050)).cuerpo).toMatchObject({
-			campos: { monto_centavos: "Escribe el monto en pesos" },
+			campos: { monto_centavos: "Escribe el monto en pesos, o el saldo exacto: $3,000" },
 		});
 		expect((await pagarDePrueba(servidor, cliente, nota, 100_000, { medio: "cuenta_fabrica" })).cuerpo).toMatchObject({
 			campos: { referencia: "Escribe la referencia del depósito" },
@@ -135,7 +135,7 @@ describe("Un pago a una nota baja su saldo y cambia su estado; nunca pasa del sa
 			mensaje: `El saldo de ${nota.folio} es $5.50.`,
 		});
 		expect((await pagarDePrueba(servidor, cliente, nota, 250)).cuerpo).toMatchObject({
-			campos: { monto_centavos: "Escribe el monto en pesos" },
+			campos: { monto_centavos: "Escribe el monto en pesos, o el saldo exacto: $5.50" },
 		});
 		expect((await pagarDePrueba(servidor, cliente, nota, 550)).cuerpo.resultado).toMatchObject({ saldo_centavos: 0 });
 		expect(await cuentaComoQuedo(servidor, nota.cuentaId)).toEqual({ saldo: 0, estado: "pagada", con_pagada_en: true });

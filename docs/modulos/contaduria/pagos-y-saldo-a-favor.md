@@ -110,7 +110,7 @@ Todas son de la web, con el departamento Contaduría.
 |---|---|
 | **Pantalla** | Cajón «Registrar pago» · «Registrar pago». Se abre con la acción principal, desde Pagos recibidos y desde los cajones del cliente y del tercero |
 | **Recibe** | `cliente_id` · `nota_entrega_id` · `monto_centavos` (en pesos enteros, o el saldo exacto de la nota) · `medio` (`efectivo` o `cuenta_fabrica`) · `cuenta_fabrica_id`, si hay más de una · `referencia`, si no es efectivo |
-| **Reglas y errores** | `400`: «Escribe el monto en pesos» · «Escribe la referencia del depósito»<br>`422 nota_sin_entregar`: «{NV} todavía no se entrega: se cobra al confirmar la entrega.» (no tiene cuenta por cobrar)<br>`422 documento_de_otro_cliente`: «{folio} no es de {cliente}.»<br>`422 monto_mayor_que_saldo`: «El saldo de {folio} es {saldo}.»<br>Aviso que no detiene: el pago repetido (regla 10) |
+| **Reglas y errores** | `400`: «Escribe el monto en pesos» (con centavos solo el saldo exacto: «Escribe el monto en pesos, o el saldo exacto: {saldo}») · «Escribe la referencia del depósito»<br>`422 nota_sin_entregar`: «{NV} todavía no se entrega: se cobra al confirmar la entrega.» (no tiene cuenta por cobrar)<br>`422 documento_de_otro_cliente`: «{folio} no es de {cliente}.»<br>`422 monto_mayor_que_saldo`: «El saldo de {folio} es {saldo}.»<br>Aviso que no detiene: el pago repetido (regla 10) |
 | **Escribe** | El pago, `recibido`, concepto `nota`, con la fecha de hoy, el tercero del cliente, dónde se recibió y la referencia. Su aplicación a la cuenta de la nota por el monto completo; el saldo, el estado y `pagada_en` de la cuenta |
 | **Llama** | `admin.tomar_folio` (`pago`) |
 | **Regresa** | El pago y el saldo nuevo. «{PG}: {monto} de {cliente}» |
@@ -148,8 +148,8 @@ Todas son de la web, con el departamento Contaduría.
 |---|---|
 | **Pantalla** | Cajón del cliente · «Saldo a favor» · «Devolver» → ventana «Pagar a {cliente}» · «Confirmar con Google y pagar» (pantalla nueva) |
 | **Quién** | Contaduría · «Confirmar con Google» |
-| **Recibe** | `cliente_id` · `monto_centavos` (en pesos enteros) · `medio` (`efectivo` o `cuenta_fabrica`) · `cuenta_fabrica_id`, si hay más de una · `referencia` |
-| **Reglas y errores** | `400`: «Hasta {saldo a favor}» · «Escribe la referencia»<br>`422 sin_saldo_a_favor`: «{cliente} no tiene saldo a favor.» |
+| **Recibe** | `cliente_id` · `monto_centavos` (en pesos enteros, o todo el saldo a favor) · `medio` (`efectivo` o `cuenta_fabrica`) · `cuenta_fabrica_id`, si hay más de una · `referencia` |
+| **Reglas y errores** | `400`: «Hasta {saldo a favor}» · «Escribe el monto en pesos, o el saldo exacto: {saldo a favor}» · «Escribe la referencia»<br>`422 sin_saldo_a_favor`: «{cliente} no tiene saldo a favor.» |
 | **Escribe** | El pago, `emitido`, concepto `devolucion_saldo_favor`, con el tercero y el cliente, de dónde salió, la referencia y la confirmación. El movimiento `devuelto` del saldo a favor, con su pago |
 | **Llama** | `admin.tomar_folio` (`pago`) |
 | **Regresa** | «{monto} devueltos a {cliente}» |
@@ -205,7 +205,7 @@ Ninguno propio: el largo del motivo es `general.largo_minimo_motivo` (ver [confi
 
 **Fase 15, parte 2.** En `modulos/contaduria/`:
 
-- **Las tablas** `pagos`, `aplicaciones_pago` y `saldo_favor_movimientos` (migración `0049`), con los CHECK de cada regla: el concepto según la dirección, el cliente y el documento de cada concepto, el monto en pesos enteros, la cuenta de la fábrica y el tercero del depósito según el medio, la referencia, la confirmación en lo que sale, exactamente un origen y un destino por aplicación, y lo que pide cada tipo del saldo a favor. Una NC entra a favor una sola vez (decisión 669). La lista «Cuentas de la fábrica» la siembra `siembra.ts`.
+- **Las tablas** `pagos`, `aplicaciones_pago` y `saldo_favor_movimientos` (migración `0049`), con los CHECK de cada regla: el concepto según la dirección, el cliente y el documento de cada concepto, el monto mayor que 0 (en pesos enteros fuera de lo que permite la decisión 674, migraciones `0051` y `0052`), la cuenta de la fábrica y el tercero del depósito según el medio, la referencia, la confirmación en lo que sale, exactamente un origen y un destino por aplicación, y lo que pide cada tipo del saldo a favor. Una NC entra a favor una sola vez (decisión 669). La lista «Cuentas de la fábrica» la siembra `siembra.ts`.
 - **`registrar_pago_recibido`** (`acciones/pagos.ts`, contratos en `packages/compartido/src/contratos/contaduria/pagos.ts`): revisa el medio (`dominio/pagos.ts`, decisión 668), bloquea la cuenta de la nota, revisa que sea del cliente y que no pase del saldo, y solo después toma el folio PG- (decisión 667). El pago repetido avisa sin detener.
 - **`cancelar_pago`** toma la versión del pago, cancela sus aplicaciones vigentes y regresa el saldo, el estado y `pagada_en` de sus cuentas, con la confirmación con Google en su bitácora.
 - **Pruebas:** `acciones/registrar-pago-recibido.prueba.ts` (también dos pagos a la vez) y `acciones/cancelar-pago.prueba.ts`.
@@ -213,8 +213,8 @@ Ninguno propio: el largo del motivo es `general.largo_minimo_motivo` (ver [confi
 **Fase 15, parte 3.**
 
 - **El saldo a favor** vive en `dominio/saldo-favor.ts`: `bloquearSaldoAFavor` (el renglón del crédito del cliente), `saldoAFavor` y `entrarAFavor`, que usan la NC, el anticipo que pasa a favor y nada más.
-- **`aplicar_saldo_a_favor`** y **`devolver_saldo_a_favor`** (`acciones/saldo-favor.ts`, contratos en `packages/compartido/src/contratos/contaduria/saldo-favor.ts`) toman el saldo a favor con su candado; aplicar toma después la cuenta de la nota y acepta centavos; devolver es un pago `emitido` en pesos enteros, con su confirmación con Google, y su `devuelto` (decisión 672).
+- **`aplicar_saldo_a_favor`** y **`devolver_saldo_a_favor`** (`acciones/saldo-favor.ts`, contratos en `packages/compartido/src/contratos/contaduria/saldo-favor.ts`) toman el saldo a favor con su candado; aplicar toma después la cuenta de la nota y acepta centavos; devolver es un pago `emitido` en pesos enteros (o todo el saldo a favor, decisión 674), con su confirmación con Google, y su `devuelto` (decisión 672).
 - **`cancelar_pago`** cancela además su anticipo recibido y, si el pedido ya lo pasó a favor, ese saldo a favor (decisión 671); en una devolución, su `devuelto`.
 - **Pruebas:** `acciones/aplicar-saldo-a-favor.prueba.ts` y `acciones/devolver-saldo-a-favor.prueba.ts` (las dos con dos a la vez), `acciones/cancelar-pago.prueba.ts` y `saldos.azar.prueba.ts`, que mezcla también el saldo a favor.
 
-**Fase 15, cierre.** Con la auditoría: un pago o una devolución con centavos entran solo si liquidan exacto lo que queda, y los mensajes dicen los centavos (`revisarPesosEnteros` y `enPesos` en `dominio/pagos.ts`; migración `0051`; decisión 674). Cancelar un pago cuyo pedido pasó a favor revisa el saldo a favor total del cliente contra todo lo que el pedido pasó a favor (decisión 671). Las pruebas cruzan a la vez cancelar contra aplicar saldo a favor y contra aplicar el anticipo, y la prueba al azar revisa cada respuesta, mezcla anticipos y centavos y mide las trabas.
+**Fase 15, cierre.** Con la auditoría: un pago o una devolución con centavos entran solo si liquidan exacto lo que queda, y los mensajes dicen los centavos (`revisarPesosEnteros` y `enPesos` en `dominio/pagos.ts`; migración `0051`; decisión 674). Cancelar un pago cuyo pedido pasó a favor revisa el saldo a favor total del cliente contra todo lo que el pedido pasó a favor (decisión 671). Las pruebas cruzan a la vez cancelar contra aplicar saldo a favor, prueban que cancelar espera el candado del anticipo, y la prueba al azar revisa cada respuesta, mezcla anticipos, centavos y el pago que liquida exacto, cuenta lo que entra de cada operación y mide las trabas. El índice de `anticipos_aplicado` es solo de los vigentes (migración `0052`).

@@ -210,8 +210,13 @@ export const pagos = pgTable(
 			sql`(${tabla.notaEntregaId} is not null) = (${tabla.concepto} = 'nota')
 				and (${tabla.pedidoId} is not null) = (${tabla.concepto} = 'pedido')`,
 		),
-		// En pesos enteros, salvo el que liquida exacto un saldo con centavos: lo revisa la acción (decisión 674).
-		check("pagos_monto", sql`${tabla.montoCentavos} > 0`),
+		// En pesos enteros; con centavos solo un pago a una nota o una devolución, cuando liquidan exacto lo que queda (la
+		// acción revisa que sea exacto, decisión 674).
+		check(
+			"pagos_monto",
+			sql`${tabla.montoCentavos} > 0
+				and (${tabla.montoCentavos} % 100 = 0 or ${tabla.concepto} in ('nota', 'devolucion_saldo_favor'))`,
+		),
 		check(
 			"pagos_medio",
 			sql`${tabla.medio} in (${valores(mediosDePago)})
@@ -362,7 +367,7 @@ export const anticipos = pgTable(
 		index("anticipos_pedido").on(tabla.pedidoId, tabla.estado),
 		index("anticipos_nota").on(tabla.notaEntregaId),
 		index("anticipos_pago").on(tabla.pagoId),
-		uniqueIndex("anticipos_aplicado").on(tabla.anticipoAplicadoId),
+		uniqueIndex("anticipos_aplicado").on(tabla.anticipoAplicadoId).where(sql`${tabla.estado} = 'vigente'`),
 		check("anticipos_tipo", sql`${tabla.tipo} in (${valores(tiposDeAnticipo)})`),
 		check("anticipos_monto", sql`${tabla.montoCentavos} > 0`),
 		check(

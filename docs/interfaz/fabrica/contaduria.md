@@ -130,7 +130,7 @@ Cobrar lo que ya se entregó, pagar lo que se debe con las facturas revisadas co
 
 - **Cliente:** los que tienen algo por pagar. Al cambiarlo se escoge su primer documento y el monto se llena con su saldo.
 - **«Nota o pedido»:** «{NV} · {saldo} · vence {fecha}» por nota entregada con saldo, y «{PE} · {lo que le falta} · anticipo del pedido» por pedido confirmado y abierto.
-- **Monto:** pesos enteros, hasta lo que dice el documento.
+- **Monto:** pesos enteros, hasta lo que dice el documento; con centavos solo el saldo exacto (decisión 674).
 - **«Dónde se recibió»:** «Efectivo» · «Cuenta de la fábrica» (al abrir; con más de una, cuál) · «Cuenta de un tercero», con «Cuenta de quién» (los proveedores y acreedores a quienes se les debe, sin el mismo cliente).
 - **«Referencia del depósito»** (no en efectivo): de 3 a 30, «SPEI, folio o ficha».
 - **«Aplicarlo a lo que le debemos»,** con un tercero: «Ahora» (al abrir), con su «Deuda» y el aviso azul «Un solo movimiento: baja lo que nos debe {cliente} y lo que le debemos a {tercero}.»; o «Después»: «Queda en «sin aplicar» hasta que se ligue a una deuda.»

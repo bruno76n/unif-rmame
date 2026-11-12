@@ -195,26 +195,40 @@ describe("Cancelar un pago pide «Confirmar con Google» y regresa saldos y esta
 				"contaduria",
 			),
 		]);
-		expect([cancelado.estado, aplicado.estado]).toContain(200);
-		expect([cancelado.estado, aplicado.estado].every((estado) => estado === 200 || estado === 422)).toBe(true);
-		expect(await saldoAFavorDePrueba(servidor, cliente.clienteId)).toBeGreaterThanOrEqual(0);
+		// Gana exactamente una: si cancela, el pedido vuelve a pasar a favor el otro pago ($1,000); si aplica, quedan $500.
+		expect([cancelado.estado, aplicado.estado].sort()).toEqual([200, 422]);
+		expect(await saldoAFavorDePrueba(servidor, cliente.clienteId)).toBe(cancelado.estado === 200 ? 100_000 : 50_000);
 	});
 
-	it("cancelar un anticipo y aplicarlo a una nota a la vez: una de las dos y el disponible nunca negativo", async () => {
+	it("cancelar un anticipo espera el candado del anticipo del pedido: lo que se aplica a la vez lo ve", async () => {
 		const cliente = await clienteDePrueba(servidor);
 		const anticipo = await anticipoRecibidoDePrueba(servidor, cliente, 300_000);
-		const [cancelado, aplicado] = await Promise.all([
-			cancelar(await conVersion(anticipo.pagoId, anticipo.folio)),
-			internaDeContaduria(servidor, "aplicar_anticipo_a_nota", {
-				pedido_id: anticipo.pedidoId,
-				cliente_id: cliente.clienteId,
-				nota_entrega_id: uuidv7(),
-				monto_centavos: 200_000,
-			}),
-		]);
-		const aplicoNota = typeof aplicado === "object" && aplicado !== null && "anticipo_id" in aplicado;
-		// O se canceló y el anticipo ya no alcanzó, o se aplicó y la cancelación ya no entró.
-		expect([cancelado.estado === 200, aplicoNota].filter(Boolean)).toHaveLength(1);
-		expect(await disponible(anticipo.pedidoId)).toBeGreaterThanOrEqual(0);
+		// Otra conexión tiene el candado del anticipo del pedido, como una nota que se arma a la vez.
+		const conexion = await servidor.base.dueno.connect();
+		try {
+			await conexion.query("BEGIN");
+			await conexion.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [`anticipo:${anticipo.pedidoId}`]);
+			const cancelado = cancelar(await conVersion(anticipo.pagoId, anticipo.folio));
+			let espera = false;
+			for (let intento = 0; intento < 400 && !espera; intento += 1) {
+				const { rows } = await servidor.base.dueno.query(
+					"SELECT count(*)::int AS n FROM pg_locks WHERE locktype = 'advisory' AND NOT granted",
+				);
+				espera = rows[0]?.n === 1;
+				if (!espera) await new Promise((listo) => setTimeout(listo, 50));
+			}
+			expect(espera).toBe(true);
+			// Mientras espera, la otra conexión descuenta $2,000 del anticipo y suelta el candado.
+			await conexion.query(
+				`INSERT INTO anticipos (id, pedido_id, cliente_id, tipo, monto_centavos, fecha, nota_entrega_id)
+				 VALUES ($1, $2, $3, 'aplicado', 200000, current_date, $4)`,
+				[uuidv7(), anticipo.pedidoId, cliente.clienteId, uuidv7()],
+			);
+			await conexion.query("COMMIT");
+			expect((await cancelado).cuerpo).toMatchObject({ codigo: "anticipo_ya_aplicado" });
+		} finally {
+			conexion.release();
+		}
+		expect(await disponible(anticipo.pedidoId)).toBe(100_000);
 	});
 });

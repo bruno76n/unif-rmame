@@ -90,8 +90,10 @@ export function enPesos(monto: number): string {
  * Revisa que un monto vaya en pesos enteros; con centavos solo entra si liquida exacto lo que queda (decisión 674).
  * @param monto El monto del pago o de la devolución.
  * @param loQueQueda El saldo de la nota o el saldo a favor.
- * @throws `400` en `monto_centavos`: «Escribe el monto en pesos».
+ * @throws `400` en `monto_centavos`: «Escribe el monto en pesos, o el saldo exacto: {saldo}».
  */
 export function revisarPesosEnteros(monto: number, loQueQueda: number): void {
-	if (monto % 100 !== 0 && monto !== loQueQueda) throw errorDeCampo("monto_centavos", "Escribe el monto en pesos");
+	if (monto % 100 !== 0 && monto !== loQueQueda) {
+		throw errorDeCampo("monto_centavos", `Escribe el monto en pesos, o el saldo exacto: ${enPesos(loQueQueda)}`);
+	}
 }
