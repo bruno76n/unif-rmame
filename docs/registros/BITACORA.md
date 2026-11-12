@@ -105,3 +105,4 @@ La línea de la bitácora se escribe al final, con el resultado ya conocido. Esc
 | 12 nov 2026 | 16 | 3 · Mandar a producción y cambios | [2026-11-12-fase-16](sesiones/2026-11-12-fase-16.md) |
 | 12 nov 2026 | 16 | 4 · Notas de entrega, notas de crédito y devoluciones | [2026-11-12-fase-16](sesiones/2026-11-12-fase-16.md) |
 | 12 nov 2026 | 16 | Cierre · flujo completo, muestra, auditoría y correcciones | [2026-11-12-fase-16](sesiones/2026-11-12-fase-16.md) |
+| 12 nov 2026 | 16 | Cierre · revisión distinta, fase terminada y `main` | [2026-11-12-fase-16](sesiones/2026-11-12-fase-16.md) |

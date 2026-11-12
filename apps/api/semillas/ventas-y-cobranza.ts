@@ -169,8 +169,8 @@ interface PedidoDeLaMuestra {
 	version?: { dia: string; antes: [string, string, number][] };
 	/** El anticipo, como la parte del total que pagó, el día y la referencia. */
 	anticipo?: { parte: number; dia: string; medio: "efectivo" | "cuenta_fabrica"; referencia: string };
-	/** Si sigue abierto: lo que le falta se manda a producción. */
-	abierto?: true;
+	/** Si sigue abierto: el día y la hora en que se manda a producción lo que le falta, una o más veces. */
+	mandar?: [string, number][];
 }
 
 /** Los pedidos de la muestra, en el orden en que se confirmaron. */
@@ -185,13 +185,13 @@ const pedidosDeLaMuestra: readonly PedidoDeLaMuestra[] = [
 	{ folio: "PE-0131", cliente: "dz", renglones: [["P17", { 8: 40, 10: 55, 12: 60, 14: 55, 16: 40 }]], entrega: "2026-09-26", pago: "credito", creada: "2026-09-01", confirmado: "2026-09-01" },
 	{ folio: "PE-0138", cliente: "cm", renglones: [["P11", { 8: 10, 10: 15, 12: 15, 14: 10, 16: 10 }]], entrega: "2026-09-27", pago: "credito", creada: "2026-09-09", confirmado: "2026-09-09" },
 	{ folio: "PE-0141", cliente: "dz", renglones: [["P01", { 6: 50, 8: 70, 10: 80, 12: 80, 14: 70, 16: 50 }]], entrega: "2026-09-29", pago: "credito", creada: "2026-09-12", confirmado: "2026-09-12" },
-	{ folio: "PE-0142", cliente: "cm", renglones: [["P23", { 4: 10, 6: 30, 8: 40, 10: 40, 12: 35, 14: 25 }], ["P12", { 6: 20, 8: 30, 10: 30, 12: 30, 14: 20 }]], entrega: "2026-10-24", pago: "anticipo", creada: "2026-09-22", confirmado: "2026-09-22", version: { dia: "2026-10-02", antes: [["P23", "12", 30], ["P23", "14", 20]] }, anticipo: { parte: 0.5, dia: "2026-10-09", medio: "cuenta_fabrica", referencia: "SPEI 7781" }, abierto: true },
-	{ folio: "PE-0143", cliente: "dz", renglones: [["P17", { 8: 40, 10: 55, 12: 60, 14: 55, 16: 40 }]], entrega: "2026-10-09", pago: "credito", creada: "2026-09-24", confirmado: "2026-09-24", abierto: true },
-	{ folio: "PE-0144", cliente: "cm", renglones: [["P02", { 6: 15, 8: 20, 10: 20, 12: 20, 14: 15 }]], entrega: "2026-10-14", pago: "anticipo", creada: "2026-09-26", confirmado: "2026-09-26", anticipo: { parte: 0.5, dia: "2026-10-08", medio: "efectivo", referencia: "Recibo 2210" }, abierto: true },
-	{ folio: "PE-0145", cliente: "jp", renglones: [["P03", { 8: 20, 10: 25, 12: 25, 14: 25, 16: 25 }], ["P19", { 8: 10, 10: 15, 12: 20, 14: 20, 16: 15 }]], entrega: "2026-10-12", pago: "credito", creada: "2026-09-28", confirmado: "2026-09-28", abierto: true },
-	{ folio: "PE-0146", cliente: "st", renglones: [["P08", { 12: 40, 14: 50, 16: 40, 18: 30 }], ["P27", { 28: 20, 30: 25, 32: 40, 34: 35, 36: 25 }]], entrega: "2026-10-30", pago: "anticipo", creada: "2026-10-06", confirmado: "2026-10-07", version: { dia: "2026-10-10", antes: [["P08", "14", 40], ["P27", "30", 30]] }, abierto: true },
+	{ folio: "PE-0142", cliente: "cm", renglones: [["P23", { 4: 10, 6: 30, 8: 40, 10: 40, 12: 35, 14: 25 }], ["P12", { 6: 20, 8: 30, 10: 30, 12: 30, 14: 20 }]], entrega: "2026-10-24", pago: "anticipo", creada: "2026-09-22", confirmado: "2026-09-22", version: { dia: "2026-10-02", antes: [["P23", "12", 30], ["P23", "14", 20]] }, anticipo: { parte: 0.5, dia: "2026-10-09", medio: "cuenta_fabrica", referencia: "SPEI 7781" }, mandar: [["2026-10-02", 9], ["2026-10-02", 11]] },
+	{ folio: "PE-0143", cliente: "dz", renglones: [["P17", { 8: 40, 10: 55, 12: 60, 14: 55, 16: 40 }]], entrega: "2026-10-09", pago: "credito", creada: "2026-09-24", confirmado: "2026-09-24", mandar: [["2026-09-26", 9]] },
+	{ folio: "PE-0144", cliente: "cm", renglones: [["P02", { 6: 15, 8: 20, 10: 20, 12: 20, 14: 15 }]], entrega: "2026-10-14", pago: "anticipo", creada: "2026-09-26", confirmado: "2026-09-26", anticipo: { parte: 0.5, dia: "2026-10-08", medio: "efectivo", referencia: "Recibo 2210" }, mandar: [["2026-10-04", 9]] },
+	{ folio: "PE-0145", cliente: "jp", renglones: [["P03", { 8: 20, 10: 25, 12: 25, 14: 25, 16: 25 }], ["P19", { 8: 10, 10: 15, 12: 20, 14: 20, 16: 15 }]], entrega: "2026-10-12", pago: "credito", creada: "2026-09-28", confirmado: "2026-09-28", mandar: [["2026-10-10", 17]] },
+	{ folio: "PE-0146", cliente: "st", renglones: [["P08", { 12: 40, 14: 50, 16: 40, 18: 30 }], ["P27", { 28: 20, 30: 25, 32: 40, 34: 35, 36: 25 }]], entrega: "2026-10-30", pago: "anticipo", creada: "2026-10-06", confirmado: "2026-10-07", version: { dia: "2026-10-10", antes: [["P08", "14", 40], ["P27", "30", 30]] }, mandar: [["2026-10-08", 9]] },
 	{ folio: "PE-0147", cliente: "jp", renglones: [["P24", { 6: 6, 8: 8, 10: 10, 12: 8, 14: 8 }]], entrega: "2026-11-06", pago: "anticipo", creada: "2026-10-07" },
-	{ folio: "PE-0149", cliente: "dz", renglones: [["P28", { 28: 30, 30: 40, 32: 50, 34: 40, 36: 30 }]], entrega: "2026-11-03", pago: "credito", creada: "2026-10-08", confirmado: "2026-10-08", abierto: true },
+	{ folio: "PE-0149", cliente: "dz", renglones: [["P28", { 28: 30, 30: 40, 32: 50, 34: 40, 36: 30 }]], entrega: "2026-11-03", pago: "credito", creada: "2026-10-08", confirmado: "2026-10-08", mandar: [["2026-10-08", 13]] },
 	{ folio: "PE-0148", cliente: "gm", renglones: [["P25", { 3: 20, 4: 30, 6: 40 }]], entrega: "2026-11-13", pago: "contado", creada: "2026-10-08" },
 ];
 
@@ -222,6 +222,8 @@ const notasDeLaMuestra: readonly NotaDeLaMuestra[] = [
 
 /** Los pagos de la muestra a la cuenta de la fábrica: la nota, el día, los pesos y la referencia. */
 const pagosDeLaMuestra: readonly [string, string, number, string][] = [
+	// La muestra dice lo que pagó la NV-0117, sin su día ni su referencia: a 30 días de su entrega (decisión 695).
+	["NV-0117", "2026-08-29", 34_000, "Pago de la NV-0117"],
 	["NV-0133", "2026-09-28", 59_750, "SPEI 4402"],
 	["NV-0138", "2026-09-30", 11_850, "SPEI 5108"],
 	["NV-0141", "2026-10-05", 56_000, "SPEI 6619"],
@@ -271,10 +273,16 @@ export async function cargarVentasYCobranzaDeLaMuestra(base: Base): Promise<void
 	await enSesionDeCarga(base, registro, rosa, async (hacer) => {
 		await enSesionDeCarga(base, registro, javier, async (despacha) => {
 			await cargarClientes(base, hacer, ids);
-			await cargarPedidos(base, hacer, ids);
-			for (const nota of notasDeLaMuestra) await entregarNota(base, registro, ids, nota, { hacer, despacha });
-			await cargarPagos(base, hacer);
-			await mandarLosAbiertos(base, hacer, ids);
+			// Lo demás, en el orden de los días de la muestra.
+			const agenda = [...pasosDePedidos(base, hacer, ids), ...pasosDeNotas(base, registro, ids, { hacer, despacha })];
+			agenda.sort((uno, otro) => Temporal.Instant.compare(uno.cuando, otro.cuando));
+			for (const paso of agenda) {
+				try {
+					await paso.hacer();
+				} catch (error) {
+					throw new Error(`la carga se detuvo en ${paso.que} (${paso.cuando.toString()})`, { cause: error });
+				}
+			}
 			// El semáforo lo pone Contaduría al final, con lo que debe cada cliente.
 			for (const cliente of clientesDeLaMuestra) {
 				if (cliente.semaforo === "al_corriente") continue;
@@ -288,31 +296,6 @@ export async function cargarVentasYCobranzaDeLaMuestra(base: Base): Promise<void
 			}
 		});
 	});
-}
-
-/** Los pagos de la muestra a sus notas, en su día, a la cuenta de la fábrica. */
-async function cargarPagos(base: Base, hacer: Hacer): Promise<void> {
-	for (const [folio, dia, pesos, referencia] of pagosDeLaMuestra) {
-		const [nota] = await base
-			.select({ id: notasEntrega.id, clienteId: notasEntrega.clienteId })
-			.from(notasEntrega)
-			.innerJoin(traspasos, eq(traspasos.notaEntregaId, notasEntrega.id))
-			.where(eq(traspasos.nota, folio))
-			.limit(1);
-		if (nota === undefined) throw new Error(`no está la nota ${folio}`);
-		await hacer(
-			"contaduria.registrar_pago_recibido",
-			{
-				cliente_id: nota.clienteId,
-				nota_entrega_id: nota.id,
-				monto_centavos: pesos * 100,
-				medio: "cuenta_fabrica",
-				referencia,
-			},
-			undefined,
-			aLas(dia, 12),
-		);
-	}
 }
 
 /** La versión del crédito de un cliente. */
@@ -419,66 +402,140 @@ async function renglonesDe(ids: Ids, pedido: PedidoDeLaMuestra, antes: readonly 
 	return renglones;
 }
 
-/** Los pedidos: confirmados (o borradores) en su día, sus versiones, sus anticipos y, si siguen abiertos, a producción. */
-async function cargarPedidos(base: Base, hacer: Hacer, ids: Ids): Promise<void> {
-	for (const pedido of pedidosDeLaMuestra) {
-		const clienteId = ids.clientes.get(pedido.cliente) ?? "";
-		const datos = {
-			cliente_id: clienteId,
-			fecha_entrega: pedido.entrega,
-			forma_pago: pedido.pago,
-			renglones: await renglonesDe(ids, pedido, pedido.version?.antes),
-		};
-		if (pedido.confirmado === undefined) {
-			const guardado = await hacer("ventas.guardar_borrador_pedido", datos, undefined, aLas(pedido.creada, 10));
-			ids.pedidos.set(pedido.folio, idDe(guardado, "pedido_id"));
-			continue;
-		}
-		const confirmado = await hacer("ventas.confirmar_pedido", datos, undefined, aLas(pedido.confirmado, 10));
-		const pedidoId = idDe(confirmado, "pedido_id");
-		ids.pedidos.set(pedido.folio, pedidoId);
-		if (pedido.version !== undefined) {
-			await hacer(
-				"ventas.guardar_version_pedido",
-				{ ...datos, pedido_id: pedidoId, renglones: await renglonesDe(ids, pedido) },
-				await versionDe(base, "pedidos", pedidoId),
-				aLas(pedido.version.dia, 10),
-			);
-		}
-		if (pedido.anticipo !== undefined) {
-			const total = await totalDelPedido(base, pedidoId);
-			await hacer(
-				"contaduria.registrar_pago_recibido",
-				{
-					cliente_id: clienteId,
-					pedido_id: pedidoId,
-					monto_centavos: Math.round((total * pedido.anticipo.parte) / 100) * 100,
-					medio: pedido.anticipo.medio,
-					...(pedido.anticipo.medio === "efectivo" ? {} : { referencia: pedido.anticipo.referencia }),
-				},
-				undefined,
-				aLas(pedido.anticipo.dia, 12),
-			);
-		}
-	}
+/** Un paso de la carga: cuándo pasó en la muestra y qué se hace. */
+interface Paso {
+	cuando: Temporal.Instant;
+	/** Qué es, para decirlo si falla. */
+	que: string;
+	hacer: () => Promise<void>;
 }
 
 /**
- * Lo que les falta a los pedidos abiertos va a producción, con su orden y sus lotes por cortar; PE-0145 va después de
- * su nota.
+ * Los pasos de los pedidos: confirmarlos (o guardar el borrador), sus versiones, sus anticipos y mandar a producción
+ * lo que les falta, cada uno en su día. Así PE-0146 se manda antes de su versión 2 y queda su cambio por aplicar, y
+ * PE-0142 se manda otra vez con las piezas que subió su versión.
  */
-async function mandarLosAbiertos(base: Base, hacer: Hacer, ids: Ids): Promise<void> {
+function pasosDePedidos(base: Base, hacer: Hacer, ids: Ids): Paso[] {
+	const pasos: Paso[] = [];
 	for (const pedido of pedidosDeLaMuestra) {
-		if (pedido.abierto === undefined) continue;
-		const pedidoId = ids.pedidos.get(pedido.folio) ?? "";
-		await hacer(
-			"ventas.mandar_a_produccion",
-			{ pedido_id: pedidoId },
-			await versionDe(base, "pedidos", pedidoId),
-			// PE-0145 después de su nota; los demás, el día que se confirmaron (o su versión 2).
-			aLas(pedido.folio === "PE-0145" ? "2026-10-10" : (pedido.version?.dia ?? pedido.confirmado ?? pedido.creada), 13),
-		);
+		const clienteId = () => ids.clientes.get(pedido.cliente) ?? "";
+		const pedidoId = () => ids.pedidos.get(pedido.folio) ?? "";
+		const datos = async (antes?: readonly [string, string, number][]) => ({
+			cliente_id: clienteId(),
+			fecha_entrega: pedido.entrega,
+			forma_pago: pedido.pago,
+			renglones: await renglonesDe(ids, pedido, antes),
+		});
+		pasos.push({
+			que: `confirmar ${pedido.folio}`,
+			cuando: aLas(pedido.confirmado ?? pedido.creada, 10),
+			hacer: async () => {
+				const guardado =
+					pedido.confirmado === undefined
+						? await hacer("ventas.guardar_borrador_pedido", await datos(), undefined, aLas(pedido.creada, 10))
+						: await hacer(
+								"ventas.confirmar_pedido",
+								await datos(pedido.version?.antes),
+								undefined,
+								aLas(pedido.confirmado, 10),
+							);
+				ids.pedidos.set(pedido.folio, idDe(guardado, "pedido_id"));
+			},
+		});
+		const { version, anticipo } = pedido;
+		if (version !== undefined) {
+			pasos.push({
+				que: `la versión 2 de ${pedido.folio}`,
+				cuando: aLas(version.dia, 10),
+				hacer: async () => {
+					await hacer(
+						"ventas.guardar_version_pedido",
+						{ ...(await datos()), pedido_id: pedidoId() },
+						await versionDe(base, "pedidos", pedidoId()),
+						aLas(version.dia, 10),
+					);
+				},
+			});
+		}
+		if (anticipo !== undefined) {
+			pasos.push({
+				que: `el anticipo de ${pedido.folio}`,
+				cuando: aLas(anticipo.dia, 12),
+				hacer: async () => {
+					const total = await totalDelPedido(base, pedidoId());
+					await hacer(
+						"contaduria.registrar_pago_recibido",
+						{
+							cliente_id: clienteId(),
+							pedido_id: pedidoId(),
+							monto_centavos: Math.round((total * anticipo.parte) / 100) * 100,
+							medio: anticipo.medio,
+							...(anticipo.medio === "efectivo" ? {} : { referencia: anticipo.referencia }),
+						},
+						undefined,
+						aLas(anticipo.dia, 12),
+					);
+				},
+			});
+		}
+		for (const [dia, hora] of pedido.mandar ?? []) {
+			pasos.push({
+				que: `mandar ${pedido.folio} a producción`,
+				cuando: aLas(dia, hora),
+				hacer: async () => {
+					await hacer(
+						"ventas.mandar_a_produccion",
+						{ pedido_id: pedidoId() },
+						await versionDe(base, "pedidos", pedidoId()),
+						aLas(dia, hora),
+					);
+				},
+			});
+		}
 	}
+	return pasos;
+}
+
+/** Los pasos de las notas (armarla, despacharla y entregarla) y de los pagos a ellas, cada uno en su día. */
+function pasosDeNotas(
+	base: Base,
+	registro: RegistroDeModulos,
+	ids: Ids,
+	quien: { hacer: Hacer; despacha: Hacer },
+): Paso[] {
+	const notaIds = new Map<string, string>();
+	return [
+		...notasDeLaMuestra.map((nota) => ({
+			que: `la ${nota.folio}`,
+			cuando: aLas(nota.creada, 8),
+			hacer: async () => {
+				notaIds.set(nota.folio, await entregarNota(base, registro, ids, nota, quien));
+			},
+		})),
+		...pagosDeLaMuestra.map(([folio, dia, pesos, referencia]) => ({
+			que: `el pago de la ${folio}`,
+			cuando: aLas(dia, 12),
+			hacer: async () => {
+				const notaId = notaIds.get(folio) ?? "";
+				const [nota] = await base
+					.select({ clienteId: notasEntrega.clienteId })
+					.from(notasEntrega)
+					.where(eq(notasEntrega.id, notaId));
+				await quien.hacer(
+					"contaduria.registrar_pago_recibido",
+					{
+						cliente_id: nota?.clienteId,
+						nota_entrega_id: notaId,
+						monto_centavos: pesos * 100,
+						medio: "cuenta_fabrica",
+						referencia,
+					},
+					undefined,
+					aLas(dia, 12),
+				);
+			},
+		})),
+	];
 }
 
 /** El total de un pedido con sus renglones vigentes, en centavos. */
@@ -493,7 +550,7 @@ async function totalDelPedido(base: Base, pedidoId: string): Promise<number> {
 /**
  * Una nota de la muestra, ya entregada: lo que llevó entra listo en aduana para su pedido como carga inicial (el lote
  * viejo de donde salió no está), Rosa la arma en su día, Javier la despacha y Rosa confirma la entrega con quién firmó.
- * El folio de la muestra queda en la nota del A-, para encontrarla.
+ * @returns La nota.
  */
 async function entregarNota(
 	base: Base,
@@ -501,13 +558,13 @@ async function entregarNota(
 	ids: Ids,
 	nota: NotaDeLaMuestra,
 	quien: { hacer: Hacer; despacha: Hacer },
-): Promise<void> {
+): Promise<string> {
 	const pedido = pedidosDeLaMuestra.find((suyo) => suyo.folio === nota.pedido);
 	if (pedido === undefined) throw new Error(`no está el pedido ${nota.pedido}`);
 	const pedidoId = ids.pedidos.get(pedido.folio) ?? "";
 	const lleva = await renglonesDe(ids, { ...pedido, renglones: nota.renglones ?? pedido.renglones });
 	const armadaEn = aLas(nota.creada, 9);
-	await ponerListoEnAduana(base, registro, pedidoId, lleva, armadaEn, nota.folio);
+	await ponerListoEnAduana(base, registro, pedidoId, lleva, armadaEn);
 	const { hacer, despacha } = quien;
 	const armada = await hacer(
 		"ventas.armar_nota_entrega",
@@ -532,8 +589,7 @@ async function entregarNota(
 		await versionDe(base, "notas_entrega", notaId),
 		aLas(nota.entregada, 16),
 	);
-	// La nota del A- original guarda el folio de la muestra.
-	await base.update(traspasos).set({ nota: nota.folio }).where(eq(traspasos.notaEntregaId, notaId));
+	return notaId;
 }
 
 /**
@@ -546,7 +602,6 @@ async function ponerListoEnAduana(
 	pedidoId: string,
 	renglones: readonly { variante_id: string; cantidad: number }[],
 	ahora: Temporal.Instant,
-	folioDeLaMuestra: string,
 ): Promise<void> {
 	await enTransaccion(base, async (transaccion) => {
 		const { contexto } = crearContexto(
@@ -568,7 +623,6 @@ async function ponerListoEnAduana(
 			destino: { externo: "cliente_externo" },
 			renglones: renglones.map((renglon) => ({ varianteId: renglon.variante_id, piezas: renglon.cantidad })),
 			referencias: { pedidoId },
-			nota: folioDeLaMuestra,
 		});
 		await escribirMovimiento(contexto, {
 			tipo: "carga_inicial",

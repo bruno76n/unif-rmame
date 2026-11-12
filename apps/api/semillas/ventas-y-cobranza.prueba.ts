@@ -73,7 +73,7 @@ describe("Ventas y cobranza de la muestra", () => {
 				"SELECT concepto, count(*)::int AS n FROM pagos WHERE direccion = 'recibido' GROUP BY concepto ORDER BY concepto",
 			),
 		).toEqual([
-			{ concepto: "nota", n: 3 },
+			{ concepto: "nota", n: 4 },
 			{ concepto: "pedido", n: 2 },
 		]);
 		// Los abiertos van a producción con lo que les falta.
@@ -82,6 +82,26 @@ describe("Ventas y cobranza de la muestra", () => {
 				"SELECT count(DISTINCT pedido_id)::int AS n FROM ordenes_produccion WHERE motivo = 'cliente_externo'",
 			),
 		).toEqual([{ n: 6 }]);
+		// PE-0146 se mandó antes de su versión 2: su cambio queda por aplicar para Producción.
+		expect(
+			await consultar(
+				`SELECT c.estado, v.numero FROM cambios_pedido c JOIN pedido_versiones v ON v.id = c.pedido_version_id`,
+			),
+		).toEqual([{ estado: "por_aplicar", numero: 2 }]);
+		// Lo que debe cada cliente, como en la muestra: El Bajío, $142,350; Zamora y la Técnica, nada.
+		expect(
+			await consultar(
+				`SELECT t.nombre, coalesce(sum(c.saldo_centavos), 0)::int AS saldo FROM clientes cl
+				 JOIN terceros t ON t.id = cl.tercero_id LEFT JOIN cuentas_por_cobrar c ON c.cliente_id = cl.id
+				 WHERE t.nombre IN ('Uniformes El Bajío', 'Distribuidora Escolar Zamora') GROUP BY t.nombre ORDER BY t.nombre`,
+			),
+		).toEqual([
+			{ nombre: "Distribuidora Escolar Zamora", saldo: 7_375_000 },
+			{ nombre: "Uniformes El Bajío", saldo: 14_235_000 },
+		]);
+		// Los pagos, en el orden de sus días.
+		const pagos = await consultar("SELECT fecha::text AS dia FROM pagos ORDER BY folio");
+		expect(pagos.map((pago) => pago.dia)).toEqual([...pagos.map((pago) => pago.dia)].sort());
 		await cargarVentasYCobranzaDeLaMuestra(crearBase(servidor.base.dueno));
 		expect(await consultar("SELECT count(*)::int AS n FROM clientes")).toEqual([{ n: 6 }]);
 	});
