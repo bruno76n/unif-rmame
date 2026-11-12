@@ -163,6 +163,54 @@ describe("Las tres puntas y los precios de la nota al capturar la factura de un 
 		expect(await facturaComoQuedo(servidor, id)).toMatchObject({ estado: "conciliada", vence: "2026-11-11" });
 	});
 
+	it("los precios de una nota nueva vuelven a revisar las facturas de antes de la orden: la que ya no cuadra se detiene (decisión 716)", async () => {
+		const orden = await ordenParaRecibir(servidor);
+		await recibirOrden(servidor, orden);
+		const antes = await facturaDePrueba(servidor, { orden });
+		expect(antes.estado).toBe("conciliada");
+		// La nota nueva baja la tela a $70: lo recibido ya vale $7,190 y la primera cobra $7,990.
+		const nota = await capturarDePrueba(servidor, {
+			ordenes: [{ orden_compra_id: orden.id }],
+			subtotal_centavos: 10_000,
+			precios_nota: [{ orden_compra_linea_id: orden.lineaTela, precio_centavos: 7_000 }],
+		});
+		expect(nota.estado).toBe(200);
+		expect(await facturaComoQuedo(servidor, antes.id)).toMatchObject({
+			estado: "detenida",
+			responsable: "contaduria",
+			cuenta: "detenida",
+			motivo: "La factura dice $7,990 sin IVA y lo recibido suma $7,190",
+		});
+		const [renglon] = await consultar(
+			`SELECT descripcion FROM bitacora WHERE entidad_id = $1 AND comando_id =
+				(SELECT comando_id FROM bitacora WHERE entidad_id = $2 LIMIT 1)`,
+			[antes.id, (nota.cuerpo.resultado as { factura_proveedor_id: string }).factura_proveedor_id],
+		);
+		expect(renglon?.descripcion).toBe(
+			`${antes.folio} quedó detenida: La factura dice $7,990 sin IVA y lo recibido suma $7,190`,
+		);
+	});
+
+	it("dos capturas del mismo folio de proveedor sobre órdenes distintas al mismo tiempo: una entra y la otra responde folio_repetido (decisión 716)", async () => {
+		const una = await ordenParaRecibir(servidor);
+		const otra = await ordenParaRecibir(servidor, 100, una.proveedor);
+		await recibirOrden(servidor, una);
+		await recibirOrden(servidor, otra);
+		const respuestas = await Promise.all(
+			[una, otra].map((orden) =>
+				capturarDePrueba(servidor, {
+					ordenes: [{ orden_compra_id: orden.id }],
+					subtotal_centavos: 799_000,
+					folio_proveedor: "MISMO-77",
+				}),
+			),
+		);
+		expect(respuestas.map((respuesta) => respuesta.estado).sort()).toEqual([200, 422]);
+		expect(respuestas.find((respuesta) => respuesta.estado === 422)?.cuerpo).toMatchObject({
+			codigo: "folio_repetido",
+		});
+	});
+
 	it("lo que se rechaza: total que no suma, folio repetido, UUID repetido, orden en borrador, línea de otra orden y fecha futura", async () => {
 		const factura = await facturaDePrueba(servidor);
 		const orden = factura.orden;

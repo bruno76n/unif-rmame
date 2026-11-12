@@ -1,16 +1,19 @@
 /**
  * Prueba de `contaduria.revisar_facturas_de_orden`: recibir una orden o rechazar lo recibido de más vuelve a revisar
- * sus facturas sin pagos; una pagada o autorizada no cambia y avisa a Contaduría.
+ * sus facturas sin pagos; una pagada o autorizada no cambia y avisa a Contaduría; la orden pagada se cierra cuando
+ * llega lo que faltaba; un pago cancelado deja la factura otra vez a revisión.
  * Fase 17 · docs/fases/17-contaduria-por-pagar-facturas-gastos-y-nomina.md (criterio «Recibir una orden o rechazar
  * lo recibido de más vuelve a revisar sus facturas sin pagos»)
  */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { decidirDePrueba, ordenParaRecibir } from "../../../nucleo/pruebas/aduana-de-prueba.ts";
+import { conGoogle, mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import {
 	capturarDePrueba,
 	facturaComoQuedo,
 	facturaDePrueba,
+	ivaDe,
 	pagarCuentaDePrueba,
 	recibirOrden,
 } from "../../../nucleo/pruebas/por-pagar-de-prueba.ts";
@@ -132,5 +135,71 @@ describe("Recibir una orden o rechazar lo recibido de más vuelve a revisar sus 
 		});
 		const eventos = await consultar("SELECT tipo FROM eventos WHERE entidad_id = $1", [id]);
 		expect(eventos.map((evento) => evento.tipo)).toContain("factura_proveedor.dejo_de_cuadrar");
+	});
+
+	it("una recepción parcial que cambia quién tiene la factura detenida deja su evento, su renglón y el aviso a Aduana (decisión 716)", async () => {
+		const factura = await facturaDePrueba(servidor, { metros: 0, piezas: 0 });
+		expect(await facturaComoQuedo(servidor, factura.id)).toMatchObject({ estado: "detenida", responsable: "aduana" });
+		const recibida = await recibirOrden(servidor, factura.orden, 80, 500);
+		expect(recibida.mensaje).toMatch(new RegExp(`\\. ${factura.folio} no cuadra con lo recibido$`));
+		expect(await facturaComoQuedo(servidor, factura.id)).toMatchObject({
+			estado: "detenida",
+			responsable: "contaduria",
+		});
+		const eventos = await consultar("SELECT tipo FROM eventos WHERE entidad_id = $1 ORDER BY id", [factura.id]);
+		expect(eventos.map((evento) => evento.tipo)).toEqual([
+			"factura_proveedor.capturada",
+			"factura_proveedor.detenida",
+			"factura_proveedor.detenida",
+		]);
+		const renglones = await consultar("SELECT descripcion FROM bitacora WHERE entidad_id = $1 ORDER BY ocurrido_en", [
+			factura.id,
+		]);
+		expect(renglones.at(-1)?.descripcion).toMatch(new RegExp(`^${factura.folio} quedó detenida: `));
+	});
+
+	it("la orden que se paga recibida en parte se cierra cuando llega lo que faltaba (decisión 716)", async () => {
+		const orden = await ordenParaRecibir(servidor);
+		await recibirOrden(servidor, orden, 80, 500);
+		const factura = await facturaDePrueba(servidor, { orden, subtotal: 643_000 });
+		expect(factura.estado).toBe("conciliada");
+		expect((await pagarCuentaDePrueba(servidor, factura.cuentaId, 643_000 + ivaDe(643_000))).estado).toBe(200);
+		const estadoDeLaOrden = () => consultar("SELECT estado FROM ordenes_compra WHERE id = $1", [orden.id]);
+		expect(await estadoDeLaOrden()).toEqual([{ estado: "recibida_en_parte" }]);
+		await recibirOrden(servidor, orden, 20, 0);
+		expect(await estadoDeLaOrden()).toEqual([{ estado: "cerrada" }]);
+	});
+
+	it("al cancelar el único pago de una factura que dejó de cuadrar, vuelve a revisarse y queda detenida (decisión 716)", async () => {
+		const orden = await ordenParaRecibir(servidor);
+		await recibirOrden(servidor, orden, 110, 500);
+		const captura = await capturarDePrueba(servidor, {
+			ordenes: [{ orden_compra_id: orden.id }],
+			subtotal_centavos: 877_000,
+		});
+		const { factura_proveedor_id: id } = captura.cuerpo.resultado as { factura_proveedor_id: string };
+		const [cuenta] = await consultar("SELECT id FROM cuentas_por_pagar WHERE factura_proveedor_id = $1", [id]);
+		const pago = await pagarCuentaDePrueba(servidor, String(cuenta?.id), 100_000);
+		const { pago_id: pagoId } = pago.cuerpo.resultado as { pago_id: string };
+		await decidirDePrueba(servidor, await laDeMas(orden.lineaTela), {
+			decision: "rechazar",
+			motivo: "No pedimos tanta",
+		});
+		expect(await facturaComoQuedo(servidor, id)).toMatchObject({ estado: "conciliada", cuenta: "pagada_en_parte" });
+		const [{ v } = { v: 0 }] = await consultar("SELECT version::int AS v FROM pagos WHERE id = $1", [pagoId]);
+		const cancelado = await mandarAccion(
+			servidor,
+			"contaduria.cancelar_pago",
+			{ datos: { pago_id: pagoId, motivo: "Se pagó de más" }, version: v },
+			"contaduria",
+			conGoogle(),
+		);
+		expect(cancelado.estado, JSON.stringify(cancelado.cuerpo)).toBe(200);
+		expect(await facturaComoQuedo(servidor, id)).toMatchObject({
+			estado: "detenida",
+			responsable: "contaduria",
+			cuenta: "detenida",
+			saldo: 877_000 + ivaDe(877_000),
+		});
 	});
 });

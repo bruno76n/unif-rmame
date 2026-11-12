@@ -170,3 +170,14 @@ Ninguno propio: la marca del cambio de precio es `compras.umbral_cambio_precio_p
 - **La interna** `revisar_facturas_de_orden` (`internas/facturas.ts`) no escribe bitácora: regresa las facturas que cambiaron con su renglón. `inventario.recibir_de_proveedor` los escribe con su clave y suma a su mensaje «. {FP} ya se puede pagar» o «. {FP} no cuadra con lo recibido», sin montos. `inventario.aplicar_decision_recepcion_de_mas` los pone en el `despues` del renglón de Dirección (decisión 701).
 - **La lectura** `facturacion_de_orden` (`lecturas/facturas.ts`) da, por orden, sus facturas no canceladas, sin montos.
 - **Pruebas:** `acciones/capturar-factura-proveedor.prueba.ts` (las tres puntas, los precios de la nota con su bitácora y su aviso, varias órdenes, lo que se rechaza y la lectura), `internas/revisar-facturas-de-orden.prueba.ts` (recibir, recibir en parte, rechazar lo de más, una con pagos que avisa) y `acciones/cancelar-factura-proveedor.prueba.ts`. Las ayudas están en `nucleo/pruebas/por-pagar-de-prueba.ts`, con órdenes y recepciones reales.
+
+**Cierre de la fase 17** (correcciones de la auditoría, decisión 716):
+
+- `tresPuntas` toma de cada orden su valor recibido solo hasta lo que se le facturó: lo que llegó de más en una orden no cubre lo que falta en otra, y «Pagar lo recibido» nunca pasa del total.
+- La cadena de facturas de una orden sigue el orden de sus folios FP- (`enOrdenDeCaptura`), no `creado_en`, que es la hora en que empezó la transacción y no la del candado.
+- `revisarFacturas` guarda el evento y regresa el renglón también cuando cambia quién tiene la factura detenida o su motivo, no solo su estado.
+- Antes de revisar, quien ya va a tocar una orden bloquea juntas, en orden de id, todas las órdenes ligadas por sus facturas (`ordenesLigadas`): la recepción y el rechazo de lo recibido de más con la interna `bloquear_ordenes_ligadas`, la cancelación y la captura con precios de la nota directo.
+- Capturar con precios de la nota vuelve a revisar las demás facturas de esas órdenes, con un renglón por cada una que cambia.
+- Cancelar una factura y `revisar_facturas_de_orden` llaman `alPagarse`: la orden recibida cuyas facturas no canceladas quedaron pagadas se cierra.
+- El folio del proveedor y el UUID se revisan con un candado por proveedor y folio y otro por UUID: dos capturas iguales a la vez dan `folio_repetido`, no un error del servidor.
+- **Pruebas:** `dominio/facturas.prueba.ts` (varias órdenes), y casos nuevos en `capturar-factura-proveedor.prueba.ts` (precios que detienen una anterior, folio repetido a la vez), `cancelar-factura-proveedor.prueba.ts` (la orden que se cierra) y `revisar-facturas-de-orden.prueba.ts` (cambia quién la tiene, la orden pagada en parte que se cierra al completarse, el pago cancelado que la vuelve a detener).

@@ -12,12 +12,14 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { noExiste } from "../../../nucleo/http/errores.ts";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
+import { alPagarse } from "../dominio/cuentas-por-pagar.ts";
 import {
 	bloquearCuentaDeFactura,
 	bloquearFactura,
 	bloquearOrdenes,
 	type FacturaRevisada,
 	montoLoRecibido,
+	ordenesLigadas,
 	revisarFacturas,
 } from "../dominio/facturas.ts";
 import { cuentasPorPagar, facturasProveedor } from "../tablas.ts";
@@ -27,7 +29,8 @@ const deUnaOrden = z.object({ orden_compra_id: z.uuid() }).strict();
 
 /**
  * `contaduria.revisar_facturas_de_orden`: lo recibido de una orden cambió (Aduana la recibió, o Dirección rechazó lo
- * recibido de más); sus facturas detenidas y conciliadas sin pagos se vuelven a comparar (regla 6).
+ * recibido de más); sus facturas detenidas y conciliadas sin pagos se vuelven a comparar (regla 6), y si queda
+ * recibida con todas sus facturas pagadas, se cierra.
  * @param contexto El contexto de quien llama, que ya tiene la orden bloqueada.
  * @param datos `orden_compra_id`.
  * @returns Las facturas que cambiaron de estado, con su folio y el renglón de bitácora para quien llama.
@@ -39,7 +42,24 @@ export async function revisarFacturasDeOrden(
 	const { orden_compra_id } = deUnaOrden.parse(datos);
 	const [orden] = await bloquearOrdenes(contexto, [orden_compra_id]);
 	if (orden === undefined) throw noExiste();
-	return { facturas: await revisarFacturas(contexto, [orden.orden_compra_id], `al recibir ${orden.folio}`) };
+	const facturas = await revisarFacturas(contexto, [orden.orden_compra_id], `al recibir ${orden.folio}`);
+	// La orden que queda recibida con todas sus facturas ya pagadas, Compras la cierra (decisión 716).
+	await alPagarse(contexto, { ordenIds: [orden.orden_compra_id], deudaIds: [] });
+	return { facturas };
+}
+
+/**
+ * `contaduria.bloquear_ordenes_ligadas`: bloquea, en orden de id, una orden y las demás órdenes de sus facturas. La
+ * recepción y el rechazo de lo recibido de más la llaman antes de tocar la orden, porque después
+ * `contaduria.revisar_facturas_de_orden` compara esas facturas completas: así sus candados van en el mismo orden que
+ * los de un pago o una captura (decisiones 698 y 716).
+ * @param contexto El contexto de quien llama, antes de bloquear la orden.
+ * @param datos `orden_compra_id`.
+ */
+export async function bloquearOrdenesLigadas(contexto: ContextoDeAccion, datos: unknown): Promise<{ ordenes: number }> {
+	const { orden_compra_id } = deUnaOrden.parse(datos);
+	const ordenes = await bloquearOrdenes(contexto, await ordenesLigadas(contexto.transaccion, [orden_compra_id]));
+	return { ordenes: ordenes.length };
 }
 
 /** Lo que manda `direccion.decidir_autorizacion` al efecto. */

@@ -149,3 +149,8 @@ Los cambia solo la dueña, en Configuración (ver [configuración](../admin/conf
 - `documentoDeCuenta` nombra la cuenta: «FP-8841» o «PR-08 · mensualidad 3 de 12».
 
 `pagar_cuenta_por_pagar` paga también las mensualidades. El orden de los candados es documentos, pago o compensación, anticipo, crédito, cuentas por cobrar, cuentas por pagar y folio (decisión 705). La prueba al azar `saldos-por-pagar.azar.prueba.ts` mezcla pagos, depósitos, compensaciones y cancelaciones, tres a la vez. Revisa que el saldo de cada cuenta sea su importe menos sus aplicaciones vigentes, que la orden esté cerrada solo con sus facturas pagadas, que la deuda esté saldada solo con sus mensualidades pagadas y que ningún depósito se aplique de más.
+
+**Cierre de la fase 17** (decisión 716):
+
+- `regresarAplicacionesPorPagar` vuelve a revisar las facturas cuya cuenta regresa sin pagos y regresa sus renglones; cancelar un pago o una compensación los escribe.
+- `cuenta_por_pagar.pagada` de una factura y los eventos de cancelar un pago o una compensación llevan también `facturas_proveedor`, para que Compras se entere de que su orden ya está, o ya no está, pagada.

@@ -133,6 +133,8 @@ export const accionRecibirDeProveedor = implementarAccion(recibirDeProveedor, as
 		);
 	if (!orden.se_puede_recibir) throw noRecibible();
 	await candadoDeLoRecibido(contexto, orden.orden_compra_id);
+	// La orden y las ligadas por sus facturas, antes que nada: Contaduría las revisa juntas al final (decisión 716).
+	await contexto.interna("contaduria.bloquear_ordenes_ligadas", { orden_compra_id: orden.orden_compra_id });
 	const renglones = loQueLlega(orden.folio, orden.lineas, datos.materiales);
 	const lineaIds = [...new Set(renglones.map((renglon) => renglon.linea.orden_compra_linea_id))];
 	const recibidoAntes = await recibidoDeLineas(transaccion, lineaIds);

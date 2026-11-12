@@ -190,7 +190,8 @@ export const accionCancelarCompensacion = implementarAccion(cancelarCompensacion
 	contexto.guardarEvento({
 		tipo: "compensacion.cancelada",
 		datos: { compensacion_id: compensacion.id, tercero_id: compensacion.terceroId },
-		tablas: ["compensaciones", "aplicaciones_pago", "cuentas_por_cobrar", "cuentas_por_pagar"],
+		// Con «facturas_proveedor», Compras se entera si una factura dejó de estar pagada (decisión 716).
+		tablas: ["compensaciones", "aplicaciones_pago", "cuentas_por_cobrar", "cuentas_por_pagar", "facturas_proveedor"],
 		entidad: "compensaciones",
 		entidadId: compensacion.id,
 	});
@@ -214,6 +215,15 @@ export const accionCancelarCompensacion = implementarAccion(cancelarCompensacion
 		},
 		confirmadoConGoogleEn: confirmado,
 	});
+	for (const revisada of porPagar.facturasRevisadas) {
+		contexto.bitacora({
+			descripcion: revisada.descripcion,
+			entidad: "facturas_proveedor",
+			entidadId: revisada.factura_proveedor_id,
+			entidadFolio: revisada.folio,
+			despues: { estado: revisada.estado },
+		});
+	}
 	for (const orden of porPagar.ordenesReabiertas) {
 		contexto.bitacora({
 			descripcion: `${orden} vuelve a Recibida: se canceló su pago`,

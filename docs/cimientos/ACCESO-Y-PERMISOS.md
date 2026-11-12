@@ -42,7 +42,7 @@ Dar y quitar accesos, cambiar departamentos y permisos finos, registrar y revoca
 
 ## Lo que pide «Confirmar con Google»
 
-Dar de alta una cuenta, cambiar departamentos o permisos finos, quitar un acceso, registrar o revocar un aparato, decidir una autorización, cancelar un pago, devolver saldo a favor, pagar la nómina y cambiar precios en bloque. Cada acción lo dice en su archivo.
+Dar de alta una cuenta, cambiar departamentos o permisos finos, quitar un acceso, registrar o revocar un aparato, decidir una autorización, cancelar un pago, devolver saldo a favor, pagar una cuenta por pagar, cancelar una compensación, pagar la nómina y cambiar precios en bloque. Cada acción lo dice en su archivo.
 
 ## El recorte común
 

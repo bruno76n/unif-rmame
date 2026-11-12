@@ -9,7 +9,7 @@
  */
 
 import { aMilesimosConSigno } from "@uniformame/compartido/calculos/cuenta-material";
-import { and, asc, eq, inArray, ne } from "drizzle-orm";
+import { and, asc, eq, inArray, ne, sql } from "drizzle-orm";
 import { z } from "zod";
 import type { Transaccion } from "../../../nucleo/base/transacciones.ts";
 import { noExiste } from "../../../nucleo/http/errores.ts";
@@ -71,6 +71,12 @@ export async function bloquearOrdenes(
 		await contexto.lectura("compras.ordenes_para_factura", { orden_compra_ids: [...new Set(ordenIds)] }),
 	).ordenes;
 }
+
+/**
+ * El orden en que se capturaron las facturas: el de su folio FP-, que se toma con las órdenes ya bloqueadas (por largo
+ * y luego por texto, para que FP-10000 vaya después de FP-9999; decisión 716).
+ */
+export const enOrdenDeCaptura = [sql`char_length(${facturasProveedor.folio})`, asc(facturasProveedor.folio)] as const;
 
 /** Lo recibido de una orden: su valor al precio vigente y si no ha llegado nada. */
 export interface RecibidoDeOrden {
@@ -148,9 +154,12 @@ export interface TresPuntas {
  * recibido no detiene: puede ser parcial.
  * @param subtotal El subtotal de la factura.
  * @param ordenes Lo de cada orden.
+ * @returns Su estado, a cargo de quién, su motivo y lo recibido que le toca: de cada orden, hasta lo facturado.
  */
 export function tresPuntas(subtotal: number, ordenes: readonly PuntaDeOrden[]): TresPuntas {
-	const valorRecibido = ordenes.reduce((suma, orden) => suma + orden.valor, 0);
+	// Lo recibido que toca a esta factura: de cada orden, hasta lo que se le facturó; lo que llegó de más en una orden
+	// no cubre lo que falta en otra (decisión 716).
+	const valorRecibido = ordenes.reduce((suma, orden) => suma + Math.min(orden.importe, orden.valor), 0);
 	if (ordenes.some((orden) => orden.sinRecepcion)) {
 		return {
 			estado: "detenida",
@@ -199,7 +208,7 @@ export async function puntasDeOrdenes(
 				ne(facturasProveedor.estado, "cancelada"),
 			),
 		)
-		.orderBy(asc(facturasProveedor.creadoEn), asc(facturasProveedor.id));
+		.orderBy(...enOrdenDeCaptura);
 	const cubierto = new Map<string, number>();
 	const puntas = new Map<string, PuntaDeOrden[]>();
 	for (const parte of partes) {
@@ -295,6 +304,30 @@ export async function guardarPuntas(
 	}
 }
 
+/**
+ * Las órdenes ligadas a unas órdenes por sus facturas: ellas mismas y las demás órdenes de sus facturas no
+ * canceladas. Son las que `revisarFacturas` compara juntas.
+ * @param transaccion La transacción.
+ * @param ordenIds Las órdenes.
+ * Existe para que quien va a revisar las facturas bloquee todas esas órdenes de una vez, en orden de id, antes de
+ * cualquier otra (decisiones 698 y 716): así no se cruza con un pago o una captura de las mismas órdenes.
+ */
+export async function ordenesLigadas(transaccion: Transaccion, ordenIds: readonly string[]): Promise<string[]> {
+	if (ordenIds.length === 0) return [];
+	const facturas = await transaccion
+		.selectDistinct({ id: facturaProveedorOrdenes.facturaProveedorId })
+		.from(facturaProveedorOrdenes)
+		.innerJoin(facturasProveedor, eq(facturasProveedor.id, facturaProveedorOrdenes.facturaProveedorId))
+		.where(
+			and(inArray(facturaProveedorOrdenes.ordenCompraId, [...ordenIds]), ne(facturasProveedor.estado, "cancelada")),
+		);
+	const otras = await ordenesDeFacturas(
+		transaccion,
+		facturas.map((factura) => factura.id),
+	);
+	return [...new Set([...ordenIds, ...otras])];
+}
+
 /** Una factura que cambió al revisarla, para el mensaje y la bitácora de quien revisó. */
 export interface FacturaRevisada {
 	factura_proveedor_id: string;
@@ -358,7 +391,13 @@ export async function revisarFacturas(
 					.set({ estado: estadoCuenta })
 					.where(eq(cuentasPorPagar.id, cuenta.id));
 			}
-			if (resultado.estado === factura.estado) continue;
+			// Sin cambio de estado, de quién la tiene ni de motivo, no hay nada que avisar (decisión 716).
+			if (
+				resultado.estado === factura.estado &&
+				resultado.responsable === factura.responsableDetencion &&
+				resultado.motivo === factura.motivoDetencion
+			)
+				continue;
 			contexto.guardarEvento({
 				tipo: resultado.estado === "conciliada" ? "factura_proveedor.liberada" : "factura_proveedor.detenida",
 				datos: { factura_proveedor_id: factura.id },

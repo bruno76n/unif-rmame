@@ -70,7 +70,8 @@ describe("Ventas y cobranza de la muestra", () => {
 		).toEqual([{ estado: "entregada", n: 10, con_cuenta: 10 }]);
 		expect(
 			await consultar(
-				"SELECT concepto, count(*)::int AS n FROM pagos WHERE direccion = 'recibido' GROUP BY concepto ORDER BY concepto",
+				// Sin los depósitos a la cuenta de un tercero, que carga la muestra de lo que se debe (fase 17).
+				"SELECT concepto, count(*)::int AS n FROM pagos WHERE direccion = 'recibido' AND medio <> 'cuenta_tercero' GROUP BY concepto ORDER BY concepto",
 			),
 		).toEqual([
 			{ concepto: "nota", n: 4 },
@@ -99,8 +100,10 @@ describe("Ventas y cobranza de la muestra", () => {
 			{ nombre: "Distribuidora Escolar Zamora", saldo: 7_375_000 },
 			{ nombre: "Uniformes El Bajío", saldo: 14_235_000 },
 		]);
-		// Los pagos, en el orden de sus días.
-		const pagos = await consultar("SELECT fecha::text AS dia FROM pagos ORDER BY folio");
+		// Los pagos de esta carga, en el orden de sus días (los de la fase 17 los carga la muestra de lo que se debe).
+		const pagos = await consultar(
+			"SELECT fecha::text AS dia FROM pagos WHERE direccion = 'recibido' AND medio <> 'cuenta_tercero' ORDER BY folio",
+		);
 		expect(pagos.map((pago) => pago.dia)).toEqual([...pagos.map((pago) => pago.dia)].sort());
 		await cargarVentasYCobranzaDeLaMuestra(crearBase(servidor.base.dueno));
 		expect(await consultar("SELECT count(*)::int AS n FROM clientes")).toEqual([{ n: 6 }]);

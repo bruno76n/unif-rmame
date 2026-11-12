@@ -4,9 +4,10 @@
  * Fase 17 · docs/modulos/contaduria/facturas-de-proveedor.md («Lecturas»)
  */
 
-import { and, asc, eq, inArray, ne } from "drizzle-orm";
+import { and, eq, inArray, ne } from "drizzle-orm";
 import { z } from "zod";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
+import { enOrdenDeCaptura } from "../dominio/facturas.ts";
 import { cuentasPorPagar, facturaProveedorOrdenes, facturasProveedor } from "../tablas.ts";
 
 /** Lo que recibe: las órdenes. */
@@ -47,7 +48,7 @@ export async function facturacionDeOrden(
 		.where(
 			and(inArray(facturaProveedorOrdenes.ordenCompraId, orden_compra_ids), ne(facturasProveedor.estado, "cancelada")),
 		)
-		.orderBy(asc(facturasProveedor.creadoEn), asc(facturasProveedor.id));
+		.orderBy(...enOrdenDeCaptura);
 	for (const fila of filas) {
 		ordenes[fila.ordenCompraId]?.push({
 			factura_proveedor_id: fila.id,

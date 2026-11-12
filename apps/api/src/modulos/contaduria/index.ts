@@ -31,9 +31,18 @@ import { accionAplicarSaldoAFavor, accionDevolverSaldoAFavor } from "./acciones/
 import { aplicarAnticipoANota, pasarAnticipoAFavor, regresarAnticipoAPedido } from "./internas/anticipos.ts";
 import { abrirCreditoCliente } from "./internas/credito.ts";
 import { aplicarNotaCredito, crearCuentaPorCobrar } from "./internas/cuentas.ts";
-import { aplicarDecisionPagoFueraDeLoNormal, revisarFacturasDeOrden } from "./internas/facturas.ts";
+import {
+	aplicarDecisionPagoFueraDeLoNormal,
+	bloquearOrdenesLigadas,
+	revisarFacturasDeOrden,
+} from "./internas/facturas.ts";
 import { registrarGastoMantenimiento } from "./internas/gastos.ts";
-import { crearNominaSemana, estadoNominaSemana, moverFechaPagoNomina } from "./internas/nomina.ts";
+import {
+	crearNominaSemana,
+	estadoNominaSemana,
+	finUltimaNominaPagada,
+	moverFechaPagoNomina,
+} from "./internas/nomina.ts";
 import { crearTercero, renombrarTercero } from "./internas/terceros.ts";
 import { anticipoDelPedidoLectura } from "./lecturas/anticipos.ts";
 import { creditoDeCliente } from "./lecturas/credito.ts";
@@ -41,6 +50,7 @@ import { estadoPagoNotas, saldoPorCobrarDeCliente } from "./lecturas/cuentas.ts"
 import { facturacionDeOrden } from "./lecturas/facturas.ts";
 import { datosTerceros } from "./lecturas/terceros.ts";
 import { semillaDeParametrosDeContaduria } from "./parametros.ts";
+import { camposDeSueldoDeContaduria } from "./permisos.ts";
 import { semillaDeCuentasFabrica, semillaDeListasDeGastos } from "./siembra.ts";
 
 export default definirModulo({
@@ -78,6 +88,7 @@ export default definirModulo({
 		regresar_anticipo_a_pedido: regresarAnticipoAPedido,
 		pasar_anticipo_a_favor: pasarAnticipoAFavor,
 		revisar_facturas_de_orden: revisarFacturasDeOrden,
+		bloquear_ordenes_ligadas: bloquearOrdenesLigadas,
 		aplicar_decision_pago_fuera_de_lo_normal: aplicarDecisionPagoFueraDeLoNormal,
 		registrar_gasto_mantenimiento: registrarGastoMantenimiento,
 		crear_nomina_semana: crearNominaSemana,
@@ -92,6 +103,7 @@ export default definirModulo({
 		anticipo_del_pedido: anticipoDelPedidoLectura,
 		facturacion_de_orden: facturacionDeOrden,
 		estado_nomina_semana: estadoNominaSemana,
+		fin_ultima_nomina_pagada: finUltimaNominaPagada,
 	},
 	semillas: [semillaDeParametrosDeContaduria, semillaDeCuentasFabrica, semillaDeListasDeGastos],
 	// El crédito, las cuentas, los pagos y el saldo a favor llevan montos: solo Contaduría. Ventas recibe el aviso de que
@@ -118,13 +130,5 @@ export default definirModulo({
 		nomina_linea_piezas: ["contaduria"],
 		descuentos_nomina: ["contaduria"],
 	},
-	// Los montos de la nómina y de los descuentos: la bitácora que los trae es sensible (`sensible_sueldos`).
-	camposDeSueldo: [
-		"descuento_semanal_centavos",
-		"total_nomina_centavos",
-		"total_tiempo_nomina_centavos",
-		"total_piezas_nomina_centavos",
-		"total_correcciones_nomina_centavos",
-		"total_descontado_nomina_centavos",
-	],
+	camposDeSueldo: camposDeSueldoDeContaduria,
 });

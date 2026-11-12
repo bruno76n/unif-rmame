@@ -2,8 +2,8 @@
  * Prueba de `produccion.registrar_operacion` y `produccion.cancelar_registro`: un registro de la tablet se aplica con
  * su hora y la tarifa que valía; uno mal formado se aparta; uno que pasa del tope se aplica con su excepción; el que
  * completa la última operación termina el lote y cancelarlo lo reabre; no se cancela si la siguiente ya reportó o si
- * es del corte; la tarifa que pone Personal llega a los registros que no la tenían.
- * Fase 12 · docs/fases/12-produccion.md (parte 4)
+ * es del corte; la tarifa que pone Personal llega a los registros que no la tenían, y avisa si son de semanas pagadas.
+ * Fase 12 · docs/fases/12-produccion.md (parte 4); fase 17 · docs/fases/17-contaduria-por-pagar-facturas-gastos-y-nomina.md
  */
 
 import { v7 as uuidv7 } from "uuid";
@@ -12,6 +12,7 @@ import { crearBase } from "../../../nucleo/base/conexion.ts";
 import { enAccionDePrueba } from "../../../nucleo/pruebas/accion-de-prueba.ts";
 import { type SiembraDelCatalogo, siembraDelCatalogo } from "../../../nucleo/pruebas/catalogo-de-prueba.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
+import { pagarNominaDePrueba, semanaConNomina } from "../../../nucleo/pruebas/nomina-de-prueba.ts";
 import { type LoteCortado, loteCortado, subirDeLaTablet } from "../../../nucleo/pruebas/produccion-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 
@@ -222,5 +223,22 @@ describe("Un registro de la tablet se aplica con su hora y la tarifa que valía;
 			codigo: "lote_ya_revisado",
 			mensaje: `${lote.folio} ya pasó por Calidad: este registro ya no se cancela.`,
 		});
+	});
+
+	it("los registros de una semana con su nómina pagada toman la tarifa y entran en la siguiente nómina (fase 17)", async () => {
+		const lote = await loteCortado(servidor, siembra);
+		await registrar(lote, 0, 1, 4);
+		// Una nómina pagada de una semana que llega hasta después del registro.
+		const semana = await semanaConNomina(servidor, "2030-01-07");
+		expect((await pagarNominaDePrueba(servidor, semana.nominaId)).estado).toBe(200);
+		const puesta = await mandarAccion(
+			servidor,
+			"personal.poner_tarifa_operacion",
+			{ datos: { flujo_operacion_id: lote.prenda.flujo.operaciones[1]?.flujoOperacionId, tarifa_centavos: 150 } },
+			"personal_sueldos",
+		);
+		expect(puesta.cuerpo.avisos).toEqual([
+			"1 registro sin tarifa ya la tomó. Los de semanas pagadas entran en la siguiente nómina",
+		]);
 	});
 });

@@ -108,7 +108,7 @@ export const accionPonerTarifaOperacion = implementarAccion(ponerTarifaOperacion
 	// La primera tarifa de la operación llega a los registros que la esperaban.
 	const avisos: string[] = [];
 	if (vigente === undefined && contexto.hayLectura("produccion.registros_para_nomina")) {
-		const { tomaron } = z.object({ tomaron: z.number() }).parse(
+		const { tomaron, de_semanas_pagadas } = z.object({ tomaron: z.number(), de_semanas_pagadas: z.number() }).parse(
 			await contexto.interna("produccion.poner_tarifa_a_registros", {
 				flujo_operacion_id: datos.flujo_operacion_id,
 				tarifa_operacion_id: id,
@@ -116,7 +116,10 @@ export const accionPonerTarifaOperacion = implementarAccion(ponerTarifaOperacion
 			}),
 		);
 		if (tomaron > 0) {
-			avisos.push(tomaron === 1 ? "1 registro sin tarifa ya la tomó" : `${tomaron} registros sin tarifa ya la tomaron`);
+			const pagadas = de_semanas_pagadas > 0 ? ". Los de semanas pagadas entran en la siguiente nómina" : "";
+			avisos.push(
+				`${tomaron === 1 ? "1 registro sin tarifa ya la tomó" : `${tomaron} registros sin tarifa ya la tomaron`}${pagadas}`,
+			);
 		}
 	}
 	contexto.guardarEvento({

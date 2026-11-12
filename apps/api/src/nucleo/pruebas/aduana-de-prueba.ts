@@ -22,12 +22,18 @@ export interface OrdenParaRecibir {
 }
 
 /**
- * Una orden enviada con 100 m de una tela (a $78) y 500 piezas de un avío (a $0.38), de un proveedor nuevo.
+ * Una orden enviada con 100 m de una tela (a $78) y 500 piezas de un avío (a $0.38), de un proveedor nuevo o del que
+ * se diga.
  * @param servidor El servidor de prueba.
  * @param metros Los metros de la tela.
+ * @param proveedorId El proveedor; por omisión, uno nuevo.
  */
-export async function ordenParaRecibir(servidor: ServidorDePrueba, metros = 100): Promise<OrdenParaRecibir> {
-	const proveedor = await altaDeProveedor(servidor);
+export async function ordenParaRecibir(
+	servidor: ServidorDePrueba,
+	metros = 100,
+	proveedorId?: string,
+): Promise<OrdenParaRecibir> {
+	const proveedor = proveedorId ?? (await altaDeProveedor(servidor));
 	const sufijo = uuidv7().slice(-6);
 	const tela = await altaDeMaterial(servidor, proveedor, {
 		nombre: `Gabardina de prueba ${sufijo}`,

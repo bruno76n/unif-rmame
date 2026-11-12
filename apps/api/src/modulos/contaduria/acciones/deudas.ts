@@ -110,6 +110,10 @@ async function acreedorDeLaDeuda(
 
 export const accionRegistrarDeuda = implementarAccion(registrarDeuda, async (contexto, datos) => {
 	const { transaccion } = contexto;
+	// Cada mensualidad lleva al menos un peso (decisión 716).
+	if (datos.mensualidades === undefined && datos.monto_total_centavos < datos.numero_mensualidades * 100) {
+		throw errorDeCampo("numero_mensualidades", "Cada mensualidad lleva al menos $1.");
+	}
 	const mensualidades =
 		datos.mensualidades === undefined
 			? mensualidadesIguales(datos.monto_total_centavos, datos.numero_mensualidades, datos.primer_vencimiento)

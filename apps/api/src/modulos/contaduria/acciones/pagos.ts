@@ -415,6 +415,7 @@ export const accionCancelarPago = implementarAccion(cancelarPago, async (context
 			"aplicaciones_pago",
 			"cuentas_por_cobrar",
 			"cuentas_por_pagar",
+			"facturas_proveedor",
 			"anticipos",
 			"saldo_favor_movimientos",
 		],
@@ -447,6 +448,15 @@ export const accionCancelarPago = implementarAccion(cancelarPago, async (context
 		},
 		confirmadoConGoogleEn: confirmadoConGoogle(contexto),
 	});
+	for (const revisada of porPagar.facturasRevisadas) {
+		contexto.bitacora({
+			descripcion: revisada.descripcion,
+			entidad: "facturas_proveedor",
+			entidadId: revisada.factura_proveedor_id,
+			entidadFolio: revisada.folio,
+			despues: { estado: revisada.estado },
+		});
+	}
 	for (const orden of porPagar.ordenesReabiertas) {
 		contexto.bitacora({
 			descripcion: `${orden} vuelve a Recibida: se canceló su pago`,

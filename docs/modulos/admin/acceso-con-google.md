@@ -108,7 +108,7 @@ La usan también los códigos de registro de [dispositivos](dispositivos.md).
 
 | | |
 |---|---|
-| **Pantalla** | Toda ventana con «Confirmar con Google»: dar de alta, cambiar departamentos, quitar acceso, revocar, decidir una autorización, pagar la nómina, cambiar precios en bloque |
+| **Pantalla** | Toda ventana con «Confirmar con Google»: dar de alta, cambiar departamentos, quitar acceso, revocar, decidir una autorización, cancelar un pago, devolver saldo a favor, pagar una cuenta por pagar, cancelar una compensación, pagar la nómina, cambiar precios en bloque |
 | **Quién** | Una sesión abierta |
 | **Recibe** | `proposito = confirmar` · `regresar` (opcional) |
 | **Reglas y errores** | Google se abre con `login_hint` (el correo de la cuenta) y `max_age` de `admin.reautenticacion_minutos` × 60.<br>`otra_cuenta`: el `sub` que regresa no es el de la sesión, «Confirma con tu propia cuenta de Google: {correo}.»<br>`google_fallo`: `auth_time` es de hace más de `admin.reautenticacion_minutos` |

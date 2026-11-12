@@ -18,7 +18,14 @@ import type { Transaccion } from "../../../nucleo/base/transacciones.ts";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
 import { aplicacionesPago, cuentasPorPagar, deudaMensualidades, deudas, facturasProveedor } from "../tablas.ts";
 import { cancelarAplicaciones } from "./cuentas.ts";
-import { bloquearOrdenes, type CuentaPorPagar, ordenesDeFacturas, ordenesPagadas } from "./facturas.ts";
+import {
+	bloquearOrdenes,
+	type CuentaPorPagar,
+	type FacturaRevisada,
+	ordenesDeFacturas,
+	ordenesPagadas,
+	revisarFacturas,
+} from "./facturas.ts";
 
 /** Lo que regresa `compras.cerrar_orden_pagada`. */
 const ordenCerrada = z.object({ cerrada: z.boolean() });
@@ -147,7 +154,8 @@ export async function aplicarACuentaPorPagar(
 		contexto.guardarEvento({
 			tipo: "cuenta_por_pagar.pagada",
 			datos: { cuenta_por_pagar_id: cuenta.id },
-			tablas: ["cuentas_por_pagar"],
+			// La de una factura también avisa a Compras, que lee si su orden ya está pagada (decisión 716).
+			tablas: cuenta.facturaProveedorId === null ? ["cuentas_por_pagar"] : ["cuentas_por_pagar", "facturas_proveedor"],
 			entidad: "cuentas_por_pagar",
 			entidadId: cuenta.id,
 		});
@@ -241,18 +249,20 @@ export interface CuentaQueRegreso {
 
 /**
  * Cancela las aplicaciones vigentes de un pago o de una compensación a cuentas por pagar y regresa su monto. Una
- * orden con una factura que deja de estar pagada se reabre (`compras.reabrir_orden_pagada`) y una deuda saldada
- * vuelve a abierta. Quien llama ya tiene bloqueados los documentos de esas cuentas.
+ * orden con una factura que deja de estar pagada se reabre (`compras.reabrir_orden_pagada`), una deuda saldada
+ * vuelve a abierta, y una factura que se queda sin pagos se vuelve a comparar con lo recibido (regla 6 de las
+ * facturas). Quien llama ya tiene bloqueados los documentos de esas cuentas.
  * @param contexto El contexto de la acción.
  * @param origen El pago o la compensación que se cancela.
  * @param motivo El motivo de la cancelación.
- * @returns Las cuentas con su saldo antes y después, y los folios de las órdenes que se reabrieron.
+ * @returns Las cuentas con su saldo antes y después, los folios de las órdenes que se reabrieron y las facturas que
+ * cambiaron de estado, con su renglón de bitácora.
  */
 export async function regresarAplicacionesPorPagar(
 	contexto: ContextoDeAccion,
 	origen: OrigenPorPagar,
 	motivo: string,
-): Promise<{ cuentas: CuentaQueRegreso[]; ordenesReabiertas: string[] }> {
+): Promise<{ cuentas: CuentaQueRegreso[]; ordenesReabiertas: string[]; facturasRevisadas: FacturaRevisada[] }> {
 	const { transaccion } = contexto;
 	const vigentes = await aplicacionesPorPagarDe(transaccion, origen);
 	const cuentas = await bloquearCuentasPorPagar(
@@ -278,6 +288,15 @@ export async function regresarAplicacionesPorPagar(
 		vigentes.map((aplicacion) => aplicacion.id),
 		motivo,
 	);
+	// Una factura que vuelve a no tener pagos se compara otra vez con lo recibido de hoy (decisión 716).
+	const sinPagos = regresaron
+		.filter((regreso) => regreso.despues === cuentas.get(regreso.cuenta_por_pagar_id)?.importeCentavos)
+		.map((regreso) => regreso.cuenta_por_pagar_id);
+	const deLasSinPagos = await documentosDeCuentas(transaccion, sinPagos);
+	const facturasRevisadas =
+		deLasSinPagos.ordenIds.length === 0
+			? []
+			: await revisarFacturas(contexto, deLasSinPagos.ordenIds, "al regresar su pago");
 	const documentos = await documentosDeCuentas(transaccion, dejaronDeEstarPagadas);
 	const ordenes = await bloquearOrdenes(contexto, documentos.ordenIds);
 	const ordenesReabiertas: string[] = [];
@@ -292,7 +311,7 @@ export async function regresarAplicacionesPorPagar(
 		await transaccion.update(deudas).set({ estado: "abierta", saldadaEn: null }).where(eq(deudas.id, deuda.id));
 		eventoDeDeuda(contexto, "deuda.abierta", deuda);
 	}
-	return { cuentas: regresaron, ordenesReabiertas };
+	return { cuentas: regresaron, ordenesReabiertas, facturasRevisadas };
 }
 
 /**

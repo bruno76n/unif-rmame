@@ -3,7 +3,7 @@
  * llega a los registros que no la tenían, y Contaduría lee los registros para la nómina por pieza.
  * Fase 12 · docs/modulos/produccion/registros-de-operacion.md (regla 4, «Acciones internas», «Lecturas»)
  *
- * Saber cuáles registros son de semanas ya pagadas llega con la nómina (fase 17): hasta entonces son cero.
+ * Cuántos de los que toman la tarifa son de semanas ya pagadas lo dice la última nómina pagada de Contaduría (fase 17).
  */
 
 import { and, eq, gte, isNull, lt, or } from "drizzle-orm";
@@ -11,6 +11,9 @@ import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import { z } from "zod";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
 import { registrosOperacion } from "../tablas.ts";
+
+/** Lo que regresa `contaduria.fin_ultima_nomina_pagada`. */
+const ultimaPagada = z.object({ fin: z.iso.date().nullable() });
 
 /** Lo que recibe `produccion.poner_tarifa_a_registros`. */
 const tarifaNueva = z.object({
@@ -39,7 +42,7 @@ export async function ponerTarifaARegistros(contexto: ContextoDeAccion, datos: u
 				isNull(registrosOperacion.tarifaCentavos),
 			),
 		)
-		.returning({ id: registrosOperacion.id });
+		.returning({ id: registrosOperacion.id, fecha: registrosOperacion.fecha });
 	if (tomaron.length > 0) {
 		contexto.guardarEvento({
 			tipo: "registros_operacion.tarifa_puesta",
@@ -47,7 +50,14 @@ export async function ponerTarifaARegistros(contexto: ContextoDeAccion, datos: u
 			tablas: ["registros_operacion"],
 		});
 	}
-	return { tomaron: tomaron.length, de_semanas_pagadas: 0 };
+	// Los de una semana con su nómina ya pagada entran en la siguiente.
+	const { fin } = contexto.hayLectura("contaduria.fin_ultima_nomina_pagada")
+		? ultimaPagada.parse(await contexto.lectura("contaduria.fin_ultima_nomina_pagada", {}))
+		: { fin: null };
+	return {
+		tomaron: tomaron.length,
+		de_semanas_pagadas: fin === null ? 0 : tomaron.filter((registro) => registro.fecha <= fin).length,
+	};
 }
 
 /** Lo que recibe `produccion.registros_para_nomina`. */

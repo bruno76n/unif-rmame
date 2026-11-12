@@ -9,7 +9,7 @@ import {
 	capturarFacturaProveedor,
 	registrarNotaCreditoProveedor,
 } from "@uniformame/compartido/contratos/contaduria/por-pagar";
-import { and, eq, ne } from "drizzle-orm";
+import { and, eq, ne, sql } from "drizzle-orm";
 import { Temporal } from "temporal-polyfill";
 import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
@@ -17,6 +17,7 @@ import { nombreDeCuenta, quienCambia, revisarMotivo } from "../../../nucleo/acci
 import { tomarVersion } from "../../../nucleo/acciones/pisadas.ts";
 import { errorDeCampo, errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeAccion, implementarAccion } from "../../../nucleo/modulos.ts";
+import { alPagarse } from "../dominio/cuentas-por-pagar.ts";
 import {
 	bloquearCuentaDeFactura,
 	bloquearFactura,
@@ -25,6 +26,7 @@ import {
 	nombreDelTercero,
 	type OrdenParaFactura,
 	ordenesDeFacturas,
+	ordenesLigadas,
 	puntasDeOrdenes,
 	revisarFacturas,
 	tresPuntas,
@@ -108,6 +110,16 @@ async function revisarRepetidos(
 	folioProveedor: string,
 	uuidCfdi: string | undefined,
 ): Promise<void> {
+	// Dos capturas del mismo folio (o del mismo UUID) sobre órdenes distintas se ponen en fila: la segunda ve la
+	// primera y responde «repetido», no choca con el índice único (decisión 716).
+	await contexto.transaccion.execute(
+		sql`SELECT pg_advisory_xact_lock(hashtextextended(${`factura_proveedor:${orden.proveedor_id}:${folioProveedor}`}, 0))`,
+	);
+	if (uuidCfdi !== undefined) {
+		await contexto.transaccion.execute(
+			sql`SELECT pg_advisory_xact_lock(hashtextextended(${`factura_uuid:${uuidCfdi}`}, 0))`,
+		);
+	}
 	const [repetida] = await contexto.transaccion
 		.select({ folio: facturasProveedor.folio })
 		.from(facturasProveedor)
@@ -186,7 +198,11 @@ export const accionCapturarFacturaProveedor = implementarAccion(capturarFacturaP
 	const pedidas = datos.ordenes.map((orden) => orden.orden_compra_id);
 	if (new Set(pedidas).size !== pedidas.length) throw errorDeCampo("ordenes", "Cada orden va una sola vez");
 	const importes = importesPorOrden(datos.ordenes, datos.subtotal_centavos);
-	// Las órdenes, bloqueadas en orden de id: sus facturas se capturan y se revisan una a la vez.
+	// Las órdenes, bloqueadas en orden de id: sus facturas se capturan y se revisan una a la vez. Con precios de la
+	// nota se revisan también las otras facturas, así que van primero todas las órdenes ligadas (decisión 716).
+	if ((datos.precios_nota ?? []).length > 0) {
+		await bloquearOrdenes(contexto, await ordenesLigadas(transaccion, pedidas));
+	}
 	const ordenes = await bloquearOrdenes(contexto, pedidas);
 	const proveedor = revisarOrdenes(ordenes, pedidas);
 	await revisarRepetidos(contexto, proveedor, datos.folio_proveedor, datos.uuid_cfdi);
@@ -239,6 +255,8 @@ export const accionCapturarFacturaProveedor = implementarAccion(capturarFacturaP
 		estado: resultado.estado === "detenida" ? "detenida" : "por_pagar",
 		creadoPor: quien,
 	});
+	// Los precios de la nota cambian lo recibido de las facturas de antes de esas órdenes: se vuelven a comparar.
+	const revisadas = precios.length === 0 ? [] : await revisarFacturas(contexto, pedidas, "con los precios de la nota");
 	for (const archivo of [datos.archivo_xml_id, datos.archivo_pdf_id]) {
 		if (archivo === undefined) continue;
 		await contexto.interna("admin.ligar_archivo", {
@@ -291,6 +309,15 @@ export const accionCapturarFacturaProveedor = implementarAccion(capturarFacturaP
 			despues: { precio_centavos: precio.nuevo },
 		});
 	}
+	for (const revisada of revisadas.filter((una) => una.factura_proveedor_id !== id)) {
+		contexto.bitacora({
+			descripcion: revisada.descripcion,
+			entidad: "facturas_proveedor",
+			entidadId: revisada.factura_proveedor_id,
+			entidadFolio: revisada.folio,
+			despues: { estado: revisada.estado },
+		});
+	}
 	const nuevos =
 		precios.length === 0
 			? ""
@@ -316,8 +343,10 @@ export const accionCancelarFacturaProveedor = implementarAccion(
 		const { transaccion } = contexto;
 		await revisarMotivo(contexto, datos.motivo);
 		const { motivo } = datos;
-		// Sus órdenes primero, luego la factura y su cuenta: el orden de los candados.
+		// Sus órdenes y las ligadas por otras facturas primero, todas juntas en orden de id; luego la factura y su
+		// cuenta: el orden de los candados (decisión 716).
 		const ordenIds = await ordenesDeFacturas(transaccion, [datos.factura_proveedor_id]);
+		await bloquearOrdenes(contexto, await ordenesLigadas(transaccion, ordenIds));
 		const ordenes = await bloquearOrdenes(contexto, ordenIds);
 		const factura = await bloquearFactura(transaccion, datos.factura_proveedor_id);
 		await tomarVersion(contexto, facturasProveedor, factura.id, version, async () => ({
@@ -343,6 +372,8 @@ export const accionCancelarFacturaProveedor = implementarAccion(
 			.where(eq(cuentasPorPagar.id, cuenta.id));
 		// Las facturas de esas órdenes que se capturaron después ya no las cubre esta (regla 7).
 		const revisadas = await revisarFacturas(contexto, ordenIds, `al cancelar ${factura.folio}`);
+		// Si con ella cancelada las demás facturas de una orden ya están pagadas, Compras la cierra (decisión 716).
+		await alPagarse(contexto, { ordenIds, deudaIds: [] });
 		contexto.guardarEvento({
 			tipo: "factura_proveedor.cancelada",
 			datos: { factura_proveedor_id: factura.id },

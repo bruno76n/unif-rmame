@@ -126,4 +126,18 @@ describe("Una deuda nace con una cuenta por pagar por mensualidad", () => {
 		expect(renglon?.descripcion).toMatch(new RegExp(`\\(${deuda.folio} · mensualidad 2 de 2\\)$`));
 		expect(renglon?.despues).toMatchObject({ deudas_saldadas: [deuda.folio] });
 	});
+
+	it("con menos de $1 por mensualidad, 400 en el número de mensualidades y nada se escribe (decisión 716)", async () => {
+		const antes = await consultar("SELECT count(*)::int AS n FROM deudas", []);
+		const respuesta = await registrar({
+			tercero_nuevo: { nombre: "Centavos de prueba", clase: "persona" },
+			monto_total_centavos: 500,
+			numero_mensualidades: 6,
+		});
+		expect(respuesta.estado).toBe(400);
+		expect(respuesta.cuerpo).toMatchObject({
+			campos: { numero_mensualidades: "Cada mensualidad lleva al menos $1." },
+		});
+		expect(await consultar("SELECT count(*)::int AS n FROM deudas", [])).toEqual(antes);
+	});
 });

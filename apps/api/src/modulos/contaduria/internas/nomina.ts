@@ -1,13 +1,14 @@
 /**
  * Las internas y la lectura de la nómina que llaman Personal y Configuración: crear la nómina de una semana al
- * cerrarla, mover las fechas de pago cuando cambia el día de pago, y decir si la nómina de una semana está pagada.
+ * cerrarla, mover las fechas de pago cuando cambia el día de pago, decir si la nómina de una semana está pagada y hasta
+ * qué día se pagó la última.
  * Fase 17 · docs/modulos/contaduria/nomina.md (reglas 1 y 12, «Acciones internas», «Lecturas»)
  *
  * Ninguna escribe bitácora: la escribe la acción que las llama.
  */
 
 import { textoDeDia } from "@uniformame/compartido/calculos/fechas";
-import { asc, eq } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
@@ -49,6 +50,8 @@ export async function crearNominaSemana(contexto: ContextoDeAccion, datos: unkno
 		eventoListaParaPagar(contexto, existente.id);
 		return { nomina_id: existente.id, fecha_pago: existente.fechaPago };
 	}
+	// Con el candado de la nómina: si a la vez cambia el día de pago, nace con el nuevo o la mueve el cambio (decisión 716).
+	await candadoDeLaNomina(transaccion);
 	const dia = String(await contexto.lectura("admin.parametro", { clave: "nomina.dia_pago" }));
 	const id = uuidv7();
 	const pago = fechaDePago(semana.fecha_fin, dia);
@@ -108,7 +111,8 @@ export async function moverFechaPagoNomina(contexto: ContextoDeAccion, datos: un
 const deUnaSemana = z.object({ asistencia_semana_id: z.uuid() }).strict();
 
 /**
- * `contaduria.estado_nomina_semana`: si la semana tiene nómina, su estado y su fecha de pago.
+ * `contaduria.estado_nomina_semana`: si la semana tiene nómina, su estado y su fecha de pago. Toma la nómina con candado
+ * compartido, para que reabrir la semana espere a un pago que va a la mitad.
  * @param contexto El contexto de quien lee (Personal, al reabrir la semana).
  * @param datos `asistencia_semana_id`.
  */
@@ -117,10 +121,28 @@ export async function estadoNominaSemana(contexto: ContextoDeAccion, datos: unkn
 	const [nomina] = await contexto.transaccion
 		.select({ estado: nominas.estado, fechaPago: nominas.fechaPago })
 		.from(nominas)
-		.where(eq(nominas.asistenciaSemanaId, asistencia_semana_id));
+		.where(eq(nominas.asistenciaSemanaId, asistencia_semana_id))
+		// Con candado compartido: si Contaduría la está pagando, Personal espera y ve «pagada» (decisión 716).
+		.for("share");
 	return {
 		pagada: nomina?.estado === "pagada",
 		estado: nomina?.estado ?? null,
 		fecha_pago: nomina?.fechaPago ?? null,
 	};
+}
+
+/**
+ * `contaduria.fin_ultima_nomina_pagada`: el último día de la semana de la última nómina pagada, o nada si no hay.
+ * Producción la usa para decir cuántos registros que toman su tarifa son de semanas ya pagadas: entran en la
+ * siguiente nómina (regla 4 de las tarifas).
+ * @param contexto El contexto de quien lee.
+ */
+export async function finUltimaNominaPagada(contexto: ContextoDeAccion): Promise<{ fin: string | null }> {
+	const [ultima] = await contexto.transaccion
+		.select({ fin: nominas.fechaFin })
+		.from(nominas)
+		.where(eq(nominas.estado, "pagada"))
+		.orderBy(desc(nominas.fechaFin))
+		.limit(1);
+	return { fin: ultima?.fin ?? null };
 }

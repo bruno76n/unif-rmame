@@ -8,7 +8,12 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
-import { pagarNominaDePrueba, semanaConNomina } from "../../../nucleo/pruebas/nomina-de-prueba.ts";
+import {
+	pagarNominaDePrueba,
+	personaDeNomina,
+	registroDeNomina,
+	semanaConNomina,
+} from "../../../nucleo/pruebas/nomina-de-prueba.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 
 describe("solo la dueña reabre una semana cerrada, con motivo, y nunca con la nómina pagada", () => {
@@ -79,4 +84,46 @@ describe("solo la dueña reabre una semana cerrada, con motivo, y nunca con la n
 		const { rows } = await servidor.base.dueno.query("SELECT estado FROM asistencia_semanas WHERE id = $1", [id]);
 		expect(rows[0]).toEqual({ estado: "cerrada" });
 	});
+
+	it("reabrir mientras se paga la nómina espera al pago y responde nomina_pagada: la semana sigue cerrada", async () => {
+		const semana = await semanaConNomina(servidor, "2024-01-08");
+		const persona = await personaDeNomina(servidor, { nombre: "Pieza de la carrera", formaPago: "pieza" });
+		await registroDeNomina(servidor, { personaId: persona, fecha: "2024-01-09", buenas: 10, tarifaCentavos: 100 });
+		// Se detiene el pago a la mitad: la persona está tomada por otra conexión.
+		const conexion = await servidor.base.dueno.connect();
+		await conexion.query("BEGIN");
+		await conexion.query("SELECT id FROM personas WHERE id = $1 FOR UPDATE", [persona]);
+		const pago = pagarNominaDePrueba(servidor, semana.nominaId);
+		const reapertura = (async () => {
+			await esperarQueEsperen(1);
+			return reabrir(semana.semanaId, "Faltó un día de prueba");
+		})();
+		// Reabrir espera al pago; si no lo espera, termina antes y el pago sigue detenido.
+		try {
+			await Promise.race([esperarQueEsperen(2), reapertura]);
+		} finally {
+			await conexion.query("ROLLBACK");
+			conexion.release();
+		}
+		expect((await pago).estado).toBe(200);
+		expect((await reapertura).cuerpo).toMatchObject({ codigo: "nomina_pagada" });
+		expect(
+			(await servidor.base.dueno.query("SELECT estado FROM asistencia_semanas WHERE id = $1", [semana.semanaId])).rows,
+		).toEqual([{ estado: "cerrada" }]);
+	});
+
+	/**
+	 * Espera, hasta diez segundos, a que haya `cuantas` transacciones esperando un candado.
+	 * @returns Si llegaron.
+	 */
+	async function esperarQueEsperen(cuantas: number): Promise<boolean> {
+		for (let vuelta = 0; vuelta < 200; vuelta++) {
+			const { rows } = await servidor.base.dueno.query(
+				"SELECT count(*)::int AS n FROM pg_stat_activity WHERE wait_event_type = 'Lock' AND datname = current_database()",
+			);
+			if (z.object({ n: z.number() }).parse(rows[0]).n >= cuantas) return true;
+			await new Promise((listo) => setTimeout(listo, 50));
+		}
+		return false;
+	}
 });

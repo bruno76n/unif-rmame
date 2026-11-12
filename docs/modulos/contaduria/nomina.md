@@ -243,3 +243,10 @@ Usa también `general.largo_minimo_motivo`.
   - `internas/mover-fecha-pago-nomina.prueba.ts`;
   - `nomina.azar.prueba.ts`: varias semanas al azar con registros tardíos, tarifas después y cancelaciones.
   - Las ayudas están en `nucleo/pruebas/nomina-de-prueba.ts`. La cuenta de prueba `contaduria_sueldos` tiene «ven sueldos y tarifas». El módulo `contaduria` de prueba se quitó (decisión 714).
+
+**Cierre de la fase 17** (decisión 716):
+
+- `estado_nomina_semana` lee la nómina con candado compartido: reabrir la semana mientras se paga espera al pago y responde `nomina_pagada`. Lo prueba `personal/acciones/reabrir-semana-asistencia.prueba.ts` con dos conexiones.
+- `crear_nomina_semana` toma el candado de la nómina antes de leer el día de pago, como `mover_fecha_pago_nomina`.
+- La lectura `fin_ultima_nomina_pagada` da el último día de la última nómina pagada; `produccion.poner_tarifa_a_registros` la usa para contar los registros de semanas pagadas.
+- `camposDeSueldo` está en `contaduria/permisos.ts` (decisión 370).

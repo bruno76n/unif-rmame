@@ -79,6 +79,8 @@ export async function aplicarDecisionRecepcionDeMas(contexto: ContextoDeAccion, 
 	if (renglon?.ordenCompraId == null || renglon.materialId === null) {
 		throw new Error(`la recepción ${pedido.recepcion_id} no recibió la línea ${pedido.orden_compra_linea_id}`);
 	}
+	// La orden y las ligadas por sus facturas, antes que nada: Contaduría las revisa juntas al final (decisión 716).
+	await contexto.interna("contaduria.bloquear_ordenes_ligadas", { orden_compra_id: renglon.ordenCompraId });
 	const { ordenCompraId, materialId } = renglon;
 	await candadoDeLoRecibido(contexto, ordenCompraId);
 	const [aduana, bodega] = [await ubicacionDeTipo(transaccion, "aduana"), await ubicacionDeTipo(transaccion, "bodega")];
