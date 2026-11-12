@@ -198,6 +198,13 @@ Todas son de la web, con el departamento Ventas. Las tres primeras reciben el pe
 | **La usa** | Inventario, en el paso 6 del cuadre: una reserva de un documento cerrado es `reserva_sin_documento` (ver [existencias y cuadre](../inventario/existencias-y-cuadre.md)) |
 | **Regresa** | Cuáles siguen abiertos: un pedido confirmado (ni entregado ni cancelado) y una nota por despachar o en camino |
 
+### `ventas.folios_de_documentos(pedidos, notas, notas de crédito)`
+
+| | |
+|---|---|
+| **La usa** | Contaduría, para nombrar en sus mensajes la nota, el pedido o la NC de un pago, una cuenta por cobrar o un anticipo (ver [pagos y saldo a favor](../contaduria/pagos-y-saldo-a-favor.md)) |
+| **Regresa** | Por id, su folio: PE-, NV- o NC- |
+
 ## Parámetros
 
 Los cambia solo la dueña, en Configuración (ver [configuración](../admin/configuracion.md)). Todos van en «Parámetros».

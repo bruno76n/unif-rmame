@@ -1,7 +1,8 @@
 /**
- * Los parámetros que declara `contaduria`: con cuántos días de crédito nace un cliente y cuándo sugiere el sistema
- * «Cerca del límite» o «Detenido».
- * Fase 15 · docs/modulos/contaduria/credito-de-clientes.md («Parámetros»)
+ * Los parámetros que declara `contaduria`: con cuántos días de crédito nace un cliente, cuándo sugiere el sistema
+ * «Cerca del límite» o «Detenido» y los tramos de la antigüedad de saldos.
+ * Fase 15 · docs/modulos/contaduria/credito-de-clientes.md y docs/modulos/contaduria/cuentas-por-cobrar.md
+ * («Parámetros»)
  */
 
 import { semillaDeParametros } from "../../nucleo/parametros.ts";
@@ -51,5 +52,15 @@ export const semillaDeParametrosDeContaduria = semillaDeParametros("contaduria",
 		inicial: 30,
 		minimo: 1,
 		orden: 4,
+	},
+	{
+		clave: "contaduria.antiguedad_tramos_dias",
+		seccion: "parametro",
+		nombre: "Tramos de la antigüedad de saldos",
+		explicacion:
+			"Los días vencidos donde corta cada tramo, separados por comas: por vencer, 1 a 15, 16 a 30 y más de 30",
+		tipo: "texto",
+		inicial: "15,30",
+		orden: 5,
 	},
 ]);

@@ -1,15 +1,18 @@
 /**
- * Las ayudas de las pruebas de Contaduría: un cliente de prueba con su tercero y su crédito, la versión de su crédito y
- * una cuenta por cobrar escrita directo en la base.
+ * Las ayudas de las pruebas de Contaduría: un cliente de prueba con su tercero y su crédito, la versión de su crédito,
+ * una cuenta por cobrar escrita directo en la base o nacida de una nota entregada de prueba, y registrar un pago.
  * Fase 15 · docs/fases/15-contaduria-terceros-credito-y-cobranza.md («Cómo se construye»)
  *
  * Ventas todavía no existe: el cliente es solo un id, con su tercero real y su crédito abierto con la interna que Ventas
  * llamará en la fase 16.
  */
 
+import { Temporal } from "temporal-polyfill";
 import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
 import { llamarInterna } from "./inventario-de-prueba.ts";
+import { mandarAccion } from "./llamadas.ts";
+import { foliosDePrueba } from "./modulos/ventas/index.ts";
 import type { ServidorDePrueba } from "./servidor-de-prueba.ts";
 
 /** Un cliente de prueba: su id, su tercero, su crédito y su nombre. */
@@ -99,4 +102,84 @@ export async function cuentaEscritaDePrueba(
 		],
 	);
 	return id;
+}
+
+/** Una nota entregada de prueba con su cuenta por cobrar. */
+export interface NotaDePrueba {
+	notaId: string;
+	pedidoId: string;
+	cuentaId: string;
+	folio: string;
+}
+
+/** El último número de NV- de prueba. */
+let ultimaNota = 0;
+
+/**
+ * Entrega una nota de prueba del cliente: le da su folio NV- y crea su cuenta por cobrar con la interna que Ventas
+ * llamará al confirmar la entrega.
+ * @param servidor El servidor de prueba.
+ * @param cliente El cliente.
+ * @param nota El total de la nota en centavos y, si no se dice, 0 días de crédito y entregada hoy.
+ */
+export async function notaEntregadaDePrueba(
+	servidor: ServidorDePrueba,
+	cliente: ClienteDePrueba,
+	nota: { totalCentavos: number; diasCredito?: number; fechaEntrega?: string },
+): Promise<NotaDePrueba> {
+	ultimaNota += 1;
+	const notaId = uuidv7();
+	const pedidoId = uuidv7();
+	const folio = `NV-${String(ultimaNota).padStart(4, "0")}`;
+	foliosDePrueba.set(notaId, folio);
+	const { cuenta_por_cobrar_id: cuentaId } = z.object({ cuenta_por_cobrar_id: z.uuid() }).parse(
+		await llamarInterna(servidor, "contaduria.crear_cuenta_por_cobrar", {
+			nota_entrega_id: notaId,
+			pedido_id: pedidoId,
+			cliente_id: cliente.clienteId,
+			fecha_entrega: nota.fechaEntrega ?? Temporal.Now.plainDateISO("America/Mexico_City").toString(),
+			dias_credito: nota.diasCredito ?? 0,
+			total_nota_centavos: nota.totalCentavos,
+		}),
+	);
+	return { notaId, pedidoId, cuentaId, folio };
+}
+
+/**
+ * Contaduría registra un pago en efectivo a una nota.
+ * @param servidor El servidor de prueba.
+ * @param cliente El cliente que paga.
+ * @param nota La nota.
+ * @param montoCentavos El monto.
+ * @param datos Lo demás del pago (el medio, la referencia), si no es en efectivo.
+ * @param quien La cuenta que lo registra: Contaduría si no se dice.
+ */
+export function pagarDePrueba(
+	servidor: ServidorDePrueba,
+	cliente: ClienteDePrueba,
+	nota: NotaDePrueba,
+	montoCentavos: number,
+	datos: Record<string, unknown> = { medio: "efectivo" },
+	quien = "contaduria",
+) {
+	return mandarAccion(
+		servidor,
+		"contaduria.registrar_pago_recibido",
+		{ datos: { cliente_id: cliente.clienteId, nota_entrega_id: nota.notaId, monto_centavos: montoCentavos, ...datos } },
+		quien,
+	);
+}
+
+/**
+ * Una cuenta por cobrar como quedó: su saldo y su estado, y si tiene `pagada_en`.
+ * @param servidor El servidor de prueba.
+ * @param cuentaId La cuenta.
+ */
+export async function cuentaComoQuedo(servidor: ServidorDePrueba, cuentaId: string) {
+	const { rows } = await servidor.base.dueno.query(
+		`SELECT saldo_centavos::int AS saldo, estado, pagada_en IS NOT NULL AS con_pagada_en
+		 FROM cuentas_por_cobrar WHERE id = $1`,
+		[cuentaId],
+	);
+	return rows[0];
 }

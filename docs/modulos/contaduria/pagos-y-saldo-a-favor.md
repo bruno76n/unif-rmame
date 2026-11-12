@@ -203,4 +203,9 @@ Ninguno propio: el largo del motivo es `general.largo_minimo_motivo` (ver [confi
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 15.*
+**Fase 15, parte 2.** En `modulos/contaduria/`:
+
+- **Las tablas** `pagos`, `aplicaciones_pago` y `saldo_favor_movimientos` (migración `0049`), con los CHECK de cada regla: el concepto según la dirección, el cliente y el documento de cada concepto, el monto en pesos enteros, la cuenta de la fábrica y el tercero del depósito según el medio, la referencia, la confirmación en lo que sale, exactamente un origen y un destino por aplicación, y lo que pide cada tipo del saldo a favor. Una NC entra a favor una sola vez (decisión 669). La lista «Cuentas de la fábrica» la siembra `siembra.ts`.
+- **`registrar_pago_recibido`** (`acciones/pagos.ts`, contratos en `packages/compartido/src/contratos/contaduria/pagos.ts`): revisa el medio (`dominio/pagos.ts`, decisión 668), bloquea la cuenta de la nota, revisa que sea del cliente y que no pase del saldo, y solo después toma el folio PG- (decisión 667). El pago repetido avisa sin detener.
+- **`cancelar_pago`** toma la versión del pago, cancela sus aplicaciones vigentes y regresa el saldo, el estado y `pagada_en` de sus cuentas, con la confirmación con Google en su bitácora.
+- **Pruebas:** `acciones/registrar-pago-recibido.prueba.ts` (también dos pagos a la vez) y `acciones/cancelar-pago.prueba.ts`.

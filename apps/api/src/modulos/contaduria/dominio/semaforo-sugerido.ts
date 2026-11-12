@@ -9,8 +9,9 @@
 
 import { aplicarPorcentaje } from "@uniformame/compartido/calculos/dinero";
 import { centavos } from "@uniformame/compartido/tipos/base";
-import { Temporal } from "temporal-polyfill";
+import type { Temporal } from "temporal-polyfill";
 import type { semaforosDeCredito } from "../tablas.ts";
+import { diasVencida } from "./antiguedad.ts";
 
 /** Un semáforo de crédito. */
 export type SemaforoDeCredito = (typeof semaforosDeCredito)[number];
@@ -60,10 +61,7 @@ export function semaforoSugerido(datos: DatosDelSemaforo): SemaforoCalculado {
 	const conSaldo = datos.cuentas.filter((cuenta) => cuenta.saldoCentavos > 0);
 	const saldoCentavos = conSaldo.reduce((suma, cuenta) => suma + cuenta.saldoCentavos, 0);
 	// El vencido más viejo: los días desde que venció la cuenta con saldo que venció primero.
-	const diasVencido = Math.max(
-		0,
-		...conSaldo.map((cuenta) => Temporal.PlainDate.from(cuenta.vence).until(datos.hoy, { largestUnit: "days" }).days),
-	);
+	const diasVencido = Math.max(0, ...conSaldo.map((cuenta) => diasVencida(cuenta.vence, datos.hoy)));
 	const conCredito = datos.limiteCentavos > 0;
 	const pasaElLimite = conCredito && saldoCentavos > datos.limiteCentavos;
 	const cercaDelLimite =

@@ -32,6 +32,7 @@ interface EsquemaJson {
 	minLength?: number | undefined;
 	minimum?: number | undefined;
 	exclusiveMinimum?: number | undefined;
+	multipleOf?: number | undefined;
 	minItems?: number | undefined;
 	anyOf?: EsquemaJson[] | undefined;
 	oneOf?: EsquemaJson[] | undefined;
@@ -94,6 +95,8 @@ function ejemploDe(esquema: EsquemaJson, nombre = ""): unknown {
 	}
 	if (esquema.type === "boolean") return true;
 	if (esquema.type === "integer" || esquema.type === "number") {
+		// Un monto en pesos enteros (`multipleOf: 100`) va con su múltiplo.
+		if (esquema.multipleOf !== undefined) return esquema.multipleOf;
 		return esquema.exclusiveMinimum !== undefined ? esquema.exclusiveMinimum + 1 : (esquema.minimum ?? 1);
 	}
 	if (esquema.format === "uuid") return uuidv7();

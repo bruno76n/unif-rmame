@@ -121,4 +121,11 @@ Los cambia solo la dueña, en Configuración (ver [configuración](../admin/conf
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 15.*
+**Fase 15, partes 1 y 2.** En `modulos/contaduria/`:
+
+- **La tabla** `cuentas_por_cobrar` (migración `0048`, con el crédito: decisión 662), con sus CHECK: `vence` = entrega + días, importe = total − anticipo, saldo de 0 al importe, y el estado y `pagada_en` que le tocan a su saldo. Sus llaves a Ventas llevan su `@llavePendiente`.
+- **El saldo** lo mueve `dominio/cuentas.ts`: `bloquearCuentaDeNota` y `bloquearCuentas` (en orden de id, decisión 667), `aplicarACuenta` (la aplicación y el saldo nuevo en la misma transacción, con `cuenta_por_cobrar.pagada` al llegar a 0) y `regresarAplicacionesDelPago`. `estadoDeCuenta` da el estado de un saldo.
+- **La antigüedad** es `dominio/antiguedad.ts`: `diasVencida`, `tramoDe`, `saldoPorTramo` y `leerTramos` (el parámetro `contaduria.antiguedad_tramos_dias`, «15,30»). El semáforo sugerido usa `diasVencida`.
+- **`crear_cuenta_por_cobrar`** (`internas/cuentas.ts`) inserta con `ON CONFLICT DO NOTHING` sobre la nota: la segunda da `cuenta_ya_existe`. **`aplicar_nota_credito`** bloquea la cuenta y, con ella, ve si la NC ya se aplicó (decisión 669); aplica lo menor entre su monto y el saldo y deja lo demás a favor.
+- **Las lecturas** (`lecturas/cuentas.ts`) recortan el saldo según quien lee (decisión 666). Los folios de las notas los da `ventas.folios_de_documentos` (decisión 665).
+- **Pruebas:** `internas/crear-cuenta-por-cobrar.prueba.ts`, `internas/aplicar-nota-credito.prueba.ts` (también dos a la vez), `lecturas/estado-pago-notas.prueba.ts`, `dominio/antiguedad.prueba.ts` y `saldos.azar.prueba.ts` (fast-check, con tandas a la vez).

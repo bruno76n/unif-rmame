@@ -344,6 +344,13 @@
 			"when": 1794453204100,
 			"tag": "0048_credito_y_cuentas_por_cobrar",
 			"breakpoints": true
+		},
+		{
+			"idx": 49,
+			"version": "7",
+			"when": 1794453921491,
+			"tag": "0049_pagos_y_saldo_a_favor",
+			"breakpoints": true
 		}
 	]
 }
