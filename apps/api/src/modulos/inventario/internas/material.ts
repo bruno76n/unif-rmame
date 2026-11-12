@@ -79,10 +79,11 @@ export async function aplicarDecisionRecepcionDeMas(contexto: ContextoDeAccion, 
 	if (renglon?.ordenCompraId == null || renglon.materialId === null) {
 		throw new Error(`la recepción ${pedido.recepcion_id} no recibió la línea ${pedido.orden_compra_linea_id}`);
 	}
-	// La orden y las ligadas por sus facturas, antes que nada: Contaduría las revisa juntas al final (decisión 716).
-	await contexto.interna("contaduria.bloquear_ordenes_ligadas", { orden_compra_id: renglon.ordenCompraId });
 	const { ordenCompraId, materialId } = renglon;
+	// El candado de lo recibido y luego la orden y las ligadas por sus facturas, como la recepción: Contaduría las
+	// revisa juntas al final (decisión 716).
 	await candadoDeLoRecibido(contexto, ordenCompraId);
+	await contexto.interna("contaduria.bloquear_ordenes_ligadas", { orden_compra_id: ordenCompraId });
 	const [aduana, bodega] = [await ubicacionDeTipo(transaccion, "aduana"), await ubicacionDeTipo(transaccion, "bodega")];
 	const rechazado = aMilesimosConSigno(pedido.cantidad);
 	const libreEnAduana = await enAduanaSinApartar(contexto, ordenCompraId, materialId, aduana);
@@ -114,13 +115,14 @@ export async function aplicarDecisionRecepcionDeMas(contexto: ContextoDeAccion, 
 	// La línea bajó su recibido: la orden se recalcula y Contaduría vuelve a revisar sus facturas; lo que cambió va en
 	// el renglón de Dirección (un efecto no escribe bitácora).
 	await contexto.interna("compras.recalcular_estado_orden", { orden_compra_id: ordenCompraId });
-	const { facturas } = facturasRevisadas.parse(
+	const { facturas, orden_cerrada } = facturasRevisadas.parse(
 		await contexto.interna("contaduria.revisar_facturas_de_orden", { orden_compra_id: ordenCompraId }),
 	);
 	return {
 		despues: {
 			devoluciones,
 			...(facturas.length === 0 ? {} : { facturas: facturas.map((factura) => factura.descripcion) }),
+			...(orden_cerrada ? { orden_cerrada } : {}),
 		},
 		datos: { devoluciones },
 	};

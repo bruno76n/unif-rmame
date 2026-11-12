@@ -415,9 +415,10 @@ export const accionCancelarPago = implementarAccion(cancelarPago, async (context
 			"aplicaciones_pago",
 			"cuentas_por_cobrar",
 			"cuentas_por_pagar",
-			"facturas_proveedor",
 			"anticipos",
 			"saldo_favor_movimientos",
+			// Compras se entera si una factura dejó de estar pagada (decisión 716).
+			...(porPagar.conFacturas ? ["facturas_proveedor"] : []),
 		],
 		entidad: "pagos",
 		entidadId: pago.id,

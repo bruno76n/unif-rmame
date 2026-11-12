@@ -258,7 +258,7 @@ export const accionRecibirDeProveedor = implementarAccion(recibirDeProveedor, as
 	);
 	if (estado !== "recibida" && estado !== "recibida_en_parte") throw noRecibible();
 	// Lo recibido cambió: Contaduría vuelve a revisar las facturas de la orden (sin montos para Aduana).
-	const { facturas } = facturasRevisadas.parse(
+	const { facturas, orden_cerrada } = facturasRevisadas.parse(
 		await contexto.interna("contaduria.revisar_facturas_de_orden", { orden_compra_id: orden.orden_compra_id }),
 	);
 	// Lo de más, por línea, pide autorización a Dirección.
@@ -292,6 +292,8 @@ export const accionRecibirDeProveedor = implementarAccion(recibirDeProveedor, as
 			materiales: porLinea.map(({ linea, llega }) => ({ material: linea.material, cantidad: deMilesimos(llega) })),
 			rollos: rollosNuevos.map((nuevo) => nuevo.folio),
 			de_mas: deMas,
+			// Completa y con sus facturas ya pagadas, la orden se cerró (decisión 716).
+			...(orden_cerrada ? { orden_cerrada } : {}),
 		},
 	});
 	for (const factura of facturas) {

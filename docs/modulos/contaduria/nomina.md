@@ -188,7 +188,14 @@ La bitácora es el renglón de Configuración y, con la misma clave, uno por nó
 | | |
 |---|---|
 | **La usa** | Personal, al reabrir una semana (`nomina_pagada`, ver [asistencia](../personal/asistencia.md)) |
-| **Regresa** | Si la semana tiene nómina, su estado y su fecha de pago |
+| **Regresa** | Si la semana tiene nómina, su estado y su fecha de pago. Lee la nómina con candado compartido: si se está pagando, espera al pago (decisión 716) |
+
+### `contaduria.fin_ultima_nomina_pagada`
+
+| | |
+|---|---|
+| **La usa** | Producción, al poner la primera tarifa a los registros que no la tenían (`produccion.poner_tarifa_a_registros`, ver [registros de operación](../produccion/registros-de-operacion.md)) |
+| **Regresa** | El último día de la semana de la última nómina pagada, o nada: los registros de fecha hasta ese día son de semanas pagadas |
 
 ## Parámetros
 

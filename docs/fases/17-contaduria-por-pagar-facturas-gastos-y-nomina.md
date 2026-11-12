@@ -1,7 +1,7 @@
 # Fase 17: Contaduría: por pagar, facturas, gastos y nómina ●
 
 > **Etapa:** Módulos.
-> **Estado:** Pendiente.
+> **Estado:** Terminada.
 > **Antes de empezar:** lee la [forma de trabajo](../trabajo/FORMA-DE-TRABAJO.md) y la [revisión de fase](../trabajo/REVISION-DE-FASE.md).
 > **Se conecta con:** [fases](FASES.md) · [fase 16](16-ventas-a-externos.md) · [fase 18](18-tienda-en-linea-direccion-y-contador.md)
 

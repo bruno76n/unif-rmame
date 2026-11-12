@@ -373,7 +373,7 @@ export const accionCancelarFacturaProveedor = implementarAccion(
 		// Las facturas de esas órdenes que se capturaron después ya no las cubre esta (regla 7).
 		const revisadas = await revisarFacturas(contexto, ordenIds, `al cancelar ${factura.folio}`);
 		// Si con ella cancelada las demás facturas de una orden ya están pagadas, Compras la cierra (decisión 716).
-		await alPagarse(contexto, { ordenIds, deudaIds: [] });
+		const cerradas = (await alPagarse(contexto, { ordenIds, deudaIds: [] })).ordenes;
 		contexto.guardarEvento({
 			tipo: "factura_proveedor.cancelada",
 			datos: { factura_proveedor_id: factura.id },
@@ -389,7 +389,7 @@ export const accionCancelarFacturaProveedor = implementarAccion(
 			entidadId: factura.id,
 			entidadFolio: factura.folio,
 			antes: { estado: factura.estado },
-			despues: { estado: "cancelada" },
+			despues: { estado: "cancelada", ...(cerradas.length === 0 ? {} : { ordenes_cerradas: cerradas }) },
 		});
 		for (const revisada of revisadas) {
 			contexto.bitacora({

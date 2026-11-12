@@ -33,19 +33,20 @@ const deUnaOrden = z.object({ orden_compra_id: z.uuid() }).strict();
  * recibida con todas sus facturas pagadas, se cierra.
  * @param contexto El contexto de quien llama, que ya tiene la orden bloqueada.
  * @param datos `orden_compra_id`.
- * @returns Las facturas que cambiaron de estado, con su folio y el renglón de bitácora para quien llama.
+ * @returns Las facturas que cambiaron de estado, con su folio y el renglón de bitácora para quien llama, y si la orden
+ * se cerró, para su bitácora.
  */
 export async function revisarFacturasDeOrden(
 	contexto: ContextoDeAccion,
 	datos: unknown,
-): Promise<{ facturas: FacturaRevisada[] }> {
+): Promise<{ facturas: FacturaRevisada[]; orden_cerrada: boolean }> {
 	const { orden_compra_id } = deUnaOrden.parse(datos);
 	const [orden] = await bloquearOrdenes(contexto, [orden_compra_id]);
 	if (orden === undefined) throw noExiste();
 	const facturas = await revisarFacturas(contexto, [orden.orden_compra_id], `al recibir ${orden.folio}`);
 	// La orden que queda recibida con todas sus facturas ya pagadas, Compras la cierra (decisión 716).
-	await alPagarse(contexto, { ordenIds: [orden.orden_compra_id], deudaIds: [] });
-	return { facturas };
+	const { ordenes } = await alPagarse(contexto, { ordenIds: [orden.orden_compra_id], deudaIds: [] });
+	return { facturas, orden_cerrada: ordenes.length > 0 };
 }
 
 /**

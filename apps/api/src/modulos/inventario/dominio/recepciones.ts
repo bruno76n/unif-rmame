@@ -165,8 +165,12 @@ export async function ordenesDeCompras(
 	).ordenes;
 }
 
-/** Lo que regresa `contaduria.revisar_facturas_de_orden`: las facturas que cambiaron y su renglón de bitácora. */
+/**
+ * Lo que regresa `contaduria.revisar_facturas_de_orden`: las facturas que cambiaron con su renglón de bitácora, y si
+ * la orden se cerró porque sus facturas ya estaban pagadas.
+ */
 export const facturasRevisadas = z.object({
+	orden_cerrada: z.boolean(),
 	facturas: z.array(
 		z.object({
 			factura_proveedor_id: z.uuid(),

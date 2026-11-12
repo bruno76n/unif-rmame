@@ -124,7 +124,8 @@ Lleva las columnas comunes y, como baja a la tablet, `xid_escritura` (ver [base 
 | **La llama** | `personal.poner_tarifa_operacion`, cuando una operación de un flujo recibe su primera tarifa (ver [tarifas](../personal/tarifas.md)) |
 | **Recibe** | `flujo_operacion_id` · `tarifa_operacion_id` · `tarifa_centavos` |
 | **Escribe** | Los registros vigentes de esa operación sin tarifa toman esa, con `tarifa_puesta_en` |
-| **Regresa** | Cuántos la tomaron y cuántos son de semanas ya pagadas, sin montos |
+| **Llama** | `contaduria.fin_ultima_nomina_pagada` (ver [nómina](../contaduria/nomina.md)) |
+| **Regresa** | Cuántos la tomaron y cuántos son de semanas ya pagadas (su fecha cae hasta el fin de la última nómina pagada), sin montos |
 | **Eventos** | `registros_operacion.tarifa_puesta` |
 
 ## Lecturas

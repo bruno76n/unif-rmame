@@ -7,7 +7,8 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { decidirDePrueba, ordenParaRecibir } from "../../../nucleo/pruebas/aduana-de-prueba.ts";
+import { decidirDePrueba, ordenParaRecibir, recibirDePrueba } from "../../../nucleo/pruebas/aduana-de-prueba.ts";
+import { trabasDeLaBase } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
 import { conGoogle, mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import {
 	capturarDePrueba,
@@ -202,4 +203,53 @@ describe("Recibir una orden o rechazar lo recibido de más vuelve a revisar sus 
 			saldo: 877_000 + ivaDe(877_000),
 		});
 	});
+
+	it("rechazar lo de más mientras Aduana recibe la misma orden, ligada a otra por una factura: las dos entran sin trabarse (decisión 716)", async () => {
+		const una = await ordenParaRecibir(servidor);
+		const otra = await ordenParaRecibir(servidor, 100, una.proveedor);
+		await recibirOrden(servidor, una, 110, 400);
+		const ligadas = await capturarDePrueba(servidor, {
+			ordenes: [
+				{ orden_compra_id: una.id, importe_sin_iva_centavos: 799_000 },
+				{ orden_compra_id: otra.id, importe_sin_iva_centavos: 799_000 },
+			],
+			subtotal_centavos: 1_598_000,
+		});
+		expect(ligadas.estado).toBe(200);
+		const au = await laDeMas(una.lineaTela);
+		const trabasAntes = await trabasDeLaBase(servidor);
+		// La otra orden, tomada por otra conexión: el rechazo se detiene a la mitad.
+		const conexion = await servidor.base.dueno.connect();
+		await conexion.query("BEGIN");
+		await conexion.query("SELECT id FROM ordenes_compra WHERE id = $1 FOR UPDATE", [otra.id]);
+		const rechazo = decidirDePrueba(servidor, au, { decision: "rechazar", motivo: "No pedimos tanta" });
+		let recepcion: ReturnType<typeof recibirDePrueba> | undefined;
+		try {
+			await esperarQueEsperen(1);
+			recepcion = recibirDePrueba(servidor, una, [], 100);
+			await esperarQueEsperen(2);
+		} finally {
+			await conexion.query("ROLLBACK");
+			conexion.release();
+		}
+		expect((await rechazo).estado).toBe(200);
+		expect((await recepcion)?.estado).toBe(200);
+		expect(await trabasDeLaBase(servidor)).toBe(trabasAntes);
+	});
+
+	/**
+	 * Espera, hasta diez segundos, a que haya `cuantas` transacciones esperando un candado.
+	 * @returns Si llegaron.
+	 */
+	async function esperarQueEsperen(cuantas: number): Promise<boolean> {
+		for (let vuelta = 0; vuelta < 200; vuelta++) {
+			const [fila] = await consultar(
+				"SELECT count(*)::int AS n FROM pg_stat_activity WHERE wait_event_type = 'Lock' AND datname = current_database()",
+				[],
+			);
+			if (Number(fila?.n) >= cuantas) return true;
+			await new Promise((listo) => setTimeout(listo, 50));
+		}
+		return false;
+	}
 });

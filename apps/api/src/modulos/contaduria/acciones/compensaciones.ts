@@ -190,8 +190,14 @@ export const accionCancelarCompensacion = implementarAccion(cancelarCompensacion
 	contexto.guardarEvento({
 		tipo: "compensacion.cancelada",
 		datos: { compensacion_id: compensacion.id, tercero_id: compensacion.terceroId },
-		// Con «facturas_proveedor», Compras se entera si una factura dejó de estar pagada (decisión 716).
-		tablas: ["compensaciones", "aplicaciones_pago", "cuentas_por_cobrar", "cuentas_por_pagar", "facturas_proveedor"],
+		tablas: [
+			"compensaciones",
+			"aplicaciones_pago",
+			"cuentas_por_cobrar",
+			"cuentas_por_pagar",
+			// Compras se entera si una factura dejó de estar pagada (decisión 716).
+			...(porPagar.conFacturas ? ["facturas_proveedor"] : []),
+		],
 		entidad: "compensaciones",
 		entidadId: compensacion.id,
 	});

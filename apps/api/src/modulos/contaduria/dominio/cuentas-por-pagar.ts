@@ -262,7 +262,12 @@ export async function regresarAplicacionesPorPagar(
 	contexto: ContextoDeAccion,
 	origen: OrigenPorPagar,
 	motivo: string,
-): Promise<{ cuentas: CuentaQueRegreso[]; ordenesReabiertas: string[]; facturasRevisadas: FacturaRevisada[] }> {
+): Promise<{
+	cuentas: CuentaQueRegreso[];
+	ordenesReabiertas: string[];
+	facturasRevisadas: FacturaRevisada[];
+	conFacturas: boolean;
+}> {
 	const { transaccion } = contexto;
 	const vigentes = await aplicacionesPorPagarDe(transaccion, origen);
 	const cuentas = await bloquearCuentasPorPagar(
@@ -311,7 +316,9 @@ export async function regresarAplicacionesPorPagar(
 		await transaccion.update(deudas).set({ estado: "abierta", saldadaEn: null }).where(eq(deudas.id, deuda.id));
 		eventoDeDeuda(contexto, "deuda.abierta", deuda);
 	}
-	return { cuentas: regresaron, ordenesReabiertas, facturasRevisadas };
+	// Si regresó alguna cuenta de factura, el evento de quien llama avisa también a Compras.
+	const conFacturas = [...cuentas.values()].some((cuenta) => cuenta.facturaProveedorId !== null);
+	return { cuentas: regresaron, ordenesReabiertas, facturasRevisadas, conFacturas };
 }
 
 /**

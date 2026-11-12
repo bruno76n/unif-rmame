@@ -120,10 +120,20 @@ Todas son de la web, con el departamento Contaduría.
 | **Reglas** | Regla 6 |
 | **Escribe** | Las facturas que cambian: estado, motivo, responsable y valor recibido; sus órdenes; y sus cuentas, `detenida` o `por_pagar` |
 | **Llama** | `compras.precio_vigente_lineas` · `inventario.recibido_de_ordenes` |
-| **Regresa** | Las facturas que cambiaron: Aduana sigue su mensaje con «. {FP} ya se puede pagar» o «. {FP} no cuadra con lo recibido» |
+| **Regresa** | Las facturas que cambiaron: Aduana sigue su mensaje con «. {FP} ya se puede pagar» o «. {FP} no cuadra con lo recibido». Y si la orden se cerró porque quedó recibida con sus facturas pagadas (`orden_cerrada`), que va en el `despues` del renglón de quien llama |
 | **Eventos** | `factura_proveedor.liberada` · `factura_proveedor.detenida` · el aviso a Contaduría de una ya pagada o autorizada que dejó de cuadrar |
 
 Su bitácora va en el renglón de la acción que la llama (la recepción o la decisión de Dirección), con la misma clave: «{FP} quedó conciliada al recibir {OC}» o «{FP} quedó detenida: {motivo}».
+
+### `contaduria.bloquear_ordenes_ligadas`
+
+| | |
+|---|---|
+| **La llama** | Inventario, al recibir una orden y cuando Dirección rechaza lo recibido de más, después del candado de lo recibido y antes de tocar la orden |
+| **Recibe** | `orden_compra_id` |
+| **Reglas** | Bloquea, en orden de id, la orden y las demás órdenes de sus facturas no canceladas: las que `revisar_facturas_de_orden` compara juntas al final. Así sus candados van en el mismo orden que los de un pago o una captura (decisión 716) |
+| **Llama** | `compras.ordenes_para_factura` |
+| **Regresa** | Cuántas órdenes bloqueó |
 
 ## Lecturas
 
