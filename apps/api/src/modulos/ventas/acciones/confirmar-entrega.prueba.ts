@@ -178,4 +178,12 @@ describe("Confirmar la entrega saca las piezas, crea la cuenta por cobrar y pued
 		]);
 		expect((await confirmar(nota.nota_id, "Laura Méndez")).cuerpo).toMatchObject({ codigo: "nota_ya_entregada" });
 	});
+
+	it("Ventas sí recibe lo que queda por cobrar al confirmar la entrega", async () => {
+		const { pedido, precio } = await pedidoConListo(2, 2);
+		const nota = armada(await armar(pedido.pedido_id, 2));
+		await despacharDePrueba(servidor, await traspasosDeLaNota(nota.nota_id));
+		const entregada = await confirmar(nota.nota_id, "Laura Méndez", "ventas");
+		expect(entregada.cuerpo.resultado).toMatchObject({ por_cobrar_centavos: 2 * precio, pedido_entregado: true });
+	});
 });

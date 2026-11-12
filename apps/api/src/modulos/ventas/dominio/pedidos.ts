@@ -98,7 +98,9 @@ export async function revisarCliente(
 		.select({ nombre: terceros.nombre, bajaEn: clientes.bajaEn })
 		.from(clientes)
 		.innerJoin(terceros, eq(terceros.id, clientes.terceroId))
-		.where(eq(clientes.id, clienteId));
+		.where(eq(clientes.id, clienteId))
+		// Compartido hasta el final: una baja del mismo cliente a la vez espera, y luego ve el pedido abierto.
+		.for("share", { of: clientes });
 	if (cliente === undefined) throw errorDeCampo("cliente_id", "Escoge el cliente.");
 	if (cliente.bajaEn !== null) throw errorDeRegla("cliente_dado_de_baja", `${cliente.nombre} está dado de baja.`);
 	const credito = creditoDeCliente.parse(

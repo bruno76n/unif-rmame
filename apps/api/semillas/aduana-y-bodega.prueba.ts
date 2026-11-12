@@ -50,8 +50,11 @@ describe("los datos de la muestra de Aduana y Bodega se cargan con estas mismas 
 				 JOIN materiales m ON m.id = e.material_id WHERE m.nombre = 'Cuadros vino, Colegio Morelos' AND e.cantidad <> 0 GROUP BY u.codigo`,
 			),
 		).toEqual([{ codigo: "ADU", metros: "300.000" }]);
-		expect(await consultar("SELECT estado, count(*)::int AS n FROM despachos GROUP BY estado")).toEqual([
-			{ estado: "recibido", n: 5 },
-		]);
+		expect(
+			await consultar(
+				// Los de Aduana a Bodega; los de los clientes los carga Ventas (fase 16).
+				"SELECT estado, count(*)::int AS n FROM despachos WHERE destino_externo IS NULL GROUP BY estado",
+			),
+		).toEqual([{ estado: "recibido", n: 5 }]);
 	});
 });

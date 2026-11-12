@@ -501,9 +501,12 @@ export const accionGuardarVersionPedido = implementarAccion(guardarVersionPedido
 		const antes = actuales.find((actual) => actual.varianteId === renglon.variante_id);
 		const variante = variantes.get(renglon.variante_id);
 		if (variante === undefined) throw errorDeCampo("renglones", "Pon las piezas por talla");
-		// Solo cambian las piezas: conserva su precio; con precio dado nuevo o talla nueva, el de hoy (decisión 681).
+		// Solo cambian las piezas (sin precio dado, o el mismo que tenía): conserva lo congelado; con precio dado nuevo o
+		// talla nueva, el de hoy (decisión 681).
+		const mismoPrecio =
+			renglon.precio_dado_centavos === undefined || renglon.precio_dado_centavos === antes?.precioDadoCentavos;
 		const precio =
-			antes !== undefined && renglon.precio_dado_centavos === undefined
+			antes !== undefined && mismoPrecio
 				? {
 						precioSugeridoCentavos: antes.precioSugeridoCentavos,
 						origenSugerido: antes.origenSugerido,

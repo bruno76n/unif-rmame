@@ -113,7 +113,7 @@ export interface NotaDePrueba {
 	folio: string;
 }
 
-/** El último número de NV- de prueba. */
+/** El último número de las NV- de prueba (`NV-T0001`): las de la muestra llevan los del contador. */
 let ultimaNota = 0;
 
 /**
@@ -131,7 +131,7 @@ export async function notaEntregadaDePrueba(
 	ultimaNota += 1;
 	const { notaId, pedidoId, folio } = await notaDePrueba(servidor, {
 		clienteId: cliente.clienteId,
-		folio: `NV-${String(ultimaNota).padStart(4, "0")}`,
+		folio: `NV-T${String(ultimaNota).padStart(4, "0")}`,
 		// Una nota siempre vale algo; la cuenta en 0 es la que su anticipo cubrió toda.
 		subtotalCentavos: Math.max(nota.totalCentavos, 100),
 	});

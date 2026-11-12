@@ -40,13 +40,13 @@ describe("dos documentos que piden folio a la vez reciben números seguidos, sin
 	}
 
 	it("el primero sale con sus ceros; con n salen seguidos en un solo paso", async () => {
-		expect(await tomar({ tipo: "pedido" })).toEqual({ folio: "PE-0001", numero: 1 });
-		expect(await tomar({ tipo: "pedido", n: 3 })).toEqual([
-			{ folio: "PE-0002", numero: 2 },
-			{ folio: "PE-0003", numero: 3 },
-			{ folio: "PE-0004", numero: 4 },
+		expect(await tomar({ tipo: "pedido_linea" })).toEqual({ folio: "W-0001", numero: 1 });
+		expect(await tomar({ tipo: "pedido_linea", n: 3 })).toEqual([
+			{ folio: "W-0002", numero: 2 },
+			{ folio: "W-0003", numero: 3 },
+			{ folio: "W-0004", numero: 4 },
 		]);
-		expect(await siguiente({ tipo: "pedido" })).toEqual({ folio: "PE-0005", quedan: undefined });
+		expect(await siguiente({ tipo: "pedido_linea" })).toEqual({ folio: "W-0005", quedan: undefined });
 	});
 
 	it("dos a la vez: la segunda espera a la primera; si la primera falla, la segunda recibe su número y no queda hueco", async () => {
@@ -56,19 +56,19 @@ describe("dos documentos que piden folio a la vez reciben números seguidos, sin
 		});
 		let tomadoPorLaPrimera: unknown;
 		const primera = enAccionDePrueba(base, registro, async (contexto) => {
-			tomadoPorLaPrimera = await contexto.interna("admin.tomar_folio", { tipo: "nota_entrega" });
+			tomadoPorLaPrimera = await contexto.interna("admin.tomar_folio", { tipo: "nota_credito" });
 			await espera;
 			throw new Error("la primera falla");
 		}).catch((error: unknown) => error);
 		// Que la primera tome el renglón antes que la segunda.
 		await new Promise((listo) => setTimeout(listo, 100));
-		const segunda = tomar({ tipo: "nota_entrega" });
+		const segunda = tomar({ tipo: "nota_credito" });
 		await new Promise((listo) => setTimeout(listo, 100));
 		soltar?.();
 		expect(await primera).toBeInstanceOf(Error);
-		expect(tomadoPorLaPrimera).toEqual({ folio: "NV-0001", numero: 1 });
-		expect(await segunda).toEqual({ folio: "NV-0001", numero: 1 });
-		const [a, b] = await Promise.all([tomar({ tipo: "nota_entrega" }), tomar({ tipo: "nota_entrega" })]);
+		expect(tomadoPorLaPrimera).toEqual({ folio: "NC-0001", numero: 1 });
+		expect(await segunda).toEqual({ folio: "NC-0001", numero: 1 });
+		const [a, b] = await Promise.all([tomar({ tipo: "nota_credito" }), tomar({ tipo: "nota_credito" })]);
 		expect([a, b].map((folio) => (folio as { numero: number }).numero).sort()).toEqual([2, 3]);
 	});
 

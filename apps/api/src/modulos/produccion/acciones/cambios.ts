@@ -180,6 +180,7 @@ export const accionAplicarCambioPedido = implementarAccion(aplicarCambioPedido, 
 		cancelados.push(lote.folio);
 	}
 	// Una orden con todos sus lotes cancelados se cancela.
+	const ordenesCanceladas: string[] = [];
 	const ordenes = [
 		...new Set(suyos.filter((lote) => cancelados.includes(lote.folio)).map((lote) => lote.ordenProduccionId)),
 	];
@@ -206,6 +207,7 @@ export const accionAplicarCambioPedido = implementarAccion(aplicarCambioPedido, 
 			entidad: "ordenes_produccion",
 			entidadId: ordenId,
 		});
+		ordenesCanceladas.push(ordenId);
 	}
 	if (lineas.length > 0) {
 		await transaccion.insert(cambioPedidoLineas).values(
@@ -240,6 +242,8 @@ export const accionAplicarCambioPedido = implementarAccion(aplicarCambioPedido, 
 		entidad: "cambios_pedido",
 		entidadId: elMasNuevo.id,
 	});
+	const comoQuedo = (linea: Linea) =>
+		tallas.find((una) => una.loteId === linea.loteId && una.varianteId === linea.varianteId);
 	const detalle =
 		lineas.length === 0
 			? "sin ajustes"
@@ -254,14 +258,27 @@ export const accionAplicarCambioPedido = implementarAccion(aplicarCambioPedido, 
 		descripcion: `${await nombreDeCuenta(contexto, quien)} aplicó la versión ${elMasNuevo.numero} del pedido ${folio}: ${detalle}`,
 		entidad: "cambios_pedido",
 		entidadId: elMasNuevo.id,
+		// Las planeadas y lo que va a Bodega de cada lote y talla tocados, y los estados de lotes y órdenes.
+		antes: {
+			lineas: lineas.map((linea) => ({
+				lote_id: linea.loteId,
+				variante_id: linea.varianteId,
+				piezas_planeadas: (comoQuedo(linea)?.piezasPlaneadas ?? 0) + linea.restadas,
+				piezas_a_bodega: (comoQuedo(linea)?.piezasABodega ?? 0) - linea.aBodega,
+			})),
+			lotes: suyos
+				.filter((lote) => tocados.includes(lote.id))
+				.map((lote) => ({ lote_id: lote.id, estado: lote.estado })),
+		},
 		despues: {
 			lineas: lineas.map((linea) => ({
 				lote_id: linea.loteId,
 				variante_id: linea.varianteId,
-				piezas_restadas: linea.restadas,
-				piezas_a_bodega: linea.aBodega,
+				piezas_planeadas: comoQuedo(linea)?.piezasPlaneadas ?? 0,
+				piezas_a_bodega: comoQuedo(linea)?.piezasABodega ?? 0,
 			})),
 			lotes_cancelados: cancelados,
+			ordenes_canceladas: ordenesCanceladas,
 		},
 	});
 	return {

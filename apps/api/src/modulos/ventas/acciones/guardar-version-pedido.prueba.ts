@@ -113,6 +113,22 @@ describe("Una versión guarda el antes y el después, respeta el mínimo y avisa
 				])
 			).cuerpo,
 		).toMatchObject({ codigo: "sin_cambios" });
+		// El mismo precio dado con otras piezas conserva lo congelado, aunque el sugerido de hoy ya sea otro.
+		await servidor.base.dueno.query(
+			`UPDATE pedido_renglones SET precio_sugerido_centavos = 19900 WHERE pedido_id = $1 AND hasta_version IS NULL
+				AND variante_id = $2`,
+			[pedido.pedido_id, prenda.variantes["4"]],
+		);
+		await version(pedido.pedido_id, cliente.cliente_id, [
+			{ variante_id: prenda.variantes["4"], cantidad: 13, precio_dado_centavos: 20_000 },
+			{ variante_id: prenda.variantes["8"], cantidad: 3 },
+		]);
+		const { rows: vigente } = await servidor.base.dueno.query(
+			`SELECT cantidad, precio_sugerido_centavos::int AS sugerido, precio_unitario_centavos::int AS precio
+			 FROM pedido_renglones WHERE pedido_id = $1 AND hasta_version IS NULL AND variante_id = $2`,
+			[pedido.pedido_id, prenda.variantes["4"]],
+		);
+		expect(vigente).toEqual([{ cantidad: 13, sugerido: 19_900, precio: 20_000 }]);
 	});
 
 	it("con 5 listas en aduana, la talla no baja de 5 ni se quita; con piezas en producción, bajarla avisa las de más", async () => {

@@ -18,6 +18,7 @@ import { cargarConteosYAjustesDeLaMuestra } from "./conteos-y-ajustes.ts";
 import { cargarCuentasDeLaMuestra } from "./cuentas.ts";
 import { cargarPersonasDeLaMuestra } from "./personas.ts";
 import { cargarProduccionDeLaMuestra } from "./produccion.ts";
+import { cargarVentasYCobranzaDeLaMuestra } from "./ventas-y-cobranza.ts";
 
 /** Una carga de la muestra: lo que un módulo mete en la base para que se vea como la muestra. */
 export type CargaDeLaMuestra = (base: Base) => Promise<void>;
@@ -32,6 +33,7 @@ export const cargasDeLaMuestra: readonly CargaDeLaMuestra[] = [
 	cargarProduccionDeLaMuestra,
 	cargarCalidadYMantenimientoDeLaMuestra,
 	cargarConteosYAjustesDeLaMuestra,
+	cargarVentasYCobranzaDeLaMuestra,
 ];
 
 if (import.meta.main) {

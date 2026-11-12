@@ -64,7 +64,8 @@ export default definirModulo({
 		folios_de_documentos: foliosDeDocumentos,
 	},
 	semillas: [semillaDeParametrosDeVentas],
-	// Los clientes los leen Ventas y Contaduría (su crédito y su cobranza), Calidad (sus reclamos) y Dirección.
+	// Los clientes los leen Ventas y Contaduría (su crédito y su cobranza), Calidad (sus reclamos), Aduana (a quién
+	// despacha) y Dirección. Las notas llevan precios: Ventas, Contaduría y Dirección; Aduana las ve sin precios.
 	// Los pedidos llevan precios: Ventas, Contaduría y Dirección; Producción ve el pedido sin precios en sus consultas.
 	lectores: {
 		clientes: ["ventas", "contaduria", "calidad", "direccion", "aduana"],

@@ -62,12 +62,12 @@ describe("la lista de un cliente nace vacía y sin porcentajes; Catálogo pone s
 		const creada = z
 			.object({ lista_id: z.uuid() })
 			.parse(
-				await interna("catalogo.crear_lista_cliente", { cliente_id: cliente, nombre: "Distribuidora Escolar Zamora" }),
+				await interna("catalogo.crear_lista_cliente", { cliente_id: cliente, nombre: "Distribuidora Escolar Jacona" }),
 			);
 		expect(await lista(creada.lista_id)).toMatchObject({
 			tipo: "cliente",
-			nombre: "Distribuidora Escolar Zamora",
-			nombre_corto: "Distribuidora Escolar Zamora",
+			nombre: "Distribuidora Escolar Jacona",
+			nombre_corto: "Distribuidora Escolar Jacona",
 			pct_basicos: null,
 			pct_especiales: null,
 			de_baja: false,

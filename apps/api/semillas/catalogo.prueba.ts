@@ -84,6 +84,8 @@ describe("los datos de la muestra del catálogo se cargan con estas mismas accio
 			{ accion: "catalogo.agregar_talla" },
 			// El flujo de cada prenda, que le pone la carga de Producción (fase 12).
 			{ accion: "catalogo.aplicar_cambios_producto" },
+			// El % de las listas de los mayoristas, que le pone la carga de Ventas (fase 16).
+			{ accion: "catalogo.cambiar_porcentajes_cliente" },
 			{ accion: "catalogo.crear_producto" },
 			{ accion: "catalogo.dar_baja_talla" },
 			{ accion: "catalogo.descontinuar_productos" },

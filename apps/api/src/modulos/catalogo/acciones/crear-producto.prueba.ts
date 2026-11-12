@@ -237,7 +237,7 @@ describe("un alta toma sus códigos seguidos, resuelve lo que no viene y, desde 
 			await enAccionDePrueba(crearBase(servidor.base.app), servidor.modulos, (contexto) =>
 				contexto.interna("catalogo.crear_lista_cliente", {
 					cliente_id: cliente,
-					nombre: "Distribuidora Escolar Zamora",
+					nombre: "Distribuidora Escolar Jacona",
 				}),
 			),
 		).lista_id;
@@ -254,7 +254,7 @@ describe("un alta toma sus códigos seguidos, resuelve lo que no viene y, desde 
 		});
 		expect((await alta(delPedido({ precios: [] }), "ventas")).cuerpo).toMatchObject({
 			codigo: "falta_precio_cliente",
-			mensaje: "Falta el precio de Distribuidora Escolar Zamora.",
+			mensaje: "Falta el precio de Distribuidora Escolar Jacona.",
 		});
 		const creado = await alta(delPedido({}), "ventas");
 		expect(creado.estado).toBe(200);

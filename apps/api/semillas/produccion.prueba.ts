@@ -50,7 +50,12 @@ describe("los datos de la muestra de Producción (flujos, órdenes, lotes, corte
 	});
 
 	it("las órdenes de temporada y reabasto con sus lotes; el de pants terminado y el de polos en proceso, con lo que dicen sus registros", async () => {
-		expect(await consultar("SELECT estado, count(*)::int AS n FROM lotes GROUP BY estado ORDER BY estado")).toEqual([
+		expect(
+			await consultar(
+				// Los de temporada y reabasto; los de los pedidos los manda Ventas (fase 16).
+				"SELECT estado, count(*)::int AS n FROM lotes WHERE destino <> 'pedido' GROUP BY estado ORDER BY estado",
+			),
+		).toEqual([
 			{ estado: "en_proceso", n: 1 },
 			{ estado: "por_cortar", n: 10 },
 			{ estado: "terminado", n: 1 },

@@ -30,12 +30,12 @@ import { repartirLoBueno } from "../internas/devoluciones.ts";
 import { regresarAlOrigen } from "../internas/reservas.ts";
 import { recepciones, recepcionLineas, tiposDeTraspaso, traspasoLineas, traspasos } from "../tablas.ts";
 
-/** Lo que regresa `ventas.avance_pedido` que importa aquí: el estado del pedido. */
-const estadoDelPedido = z.object({ estado: z.string() });
+/** Lo que regresa `ventas.documentos_abiertos` que importa aquí: los pedidos que siguen abiertos. */
+const pedidosAbiertos = z.object({ pedido_ids: z.array(z.uuid()) });
 
 /**
- * Si lo que llegó es lo surtido para un pedido externo que ya se canceló, lo reparte en un `regresa` a Bodega: sus
- * reservas se liberaron al cancelarlo y nada lo espera en Aduana.
+ * Si lo que llegó es lo surtido para un pedido externo que ya no está abierto (se canceló), lo reparte en un `regresa`
+ * a Bodega: sus reservas se liberaron al cancelarlo y nada lo espera en Aduana.
  * @returns El hijo `regresa`, o `null` si no aplica.
  */
 async function regresaSiSeCancelo(
@@ -44,10 +44,10 @@ async function regresaSiSeCancelo(
 	contados: readonly { linea: typeof traspasoLineas.$inferSelect; llego: bigint }[],
 ): Promise<TraspasoCreado | null> {
 	if (traspaso.tipo !== "surtido_pedido_externo" || traspaso.pedidoId === null) return null;
-	const pedido = estadoDelPedido.parse(
-		await contexto.lectura("ventas.avance_pedido", { pedido_id: traspaso.pedidoId }),
+	const abiertos = pedidosAbiertos.parse(
+		await contexto.lectura("ventas.documentos_abiertos", { pedido_ids: [traspaso.pedidoId] }),
 	);
-	if (pedido.estado !== "cancelado") return null;
+	if (abiertos.pedido_ids.includes(traspaso.pedidoId)) return null;
 	const porVariante = new Map<string, number>();
 	for (const { linea, llego } of contados) {
 		if (linea.varianteId === null || llego === 0n) continue;

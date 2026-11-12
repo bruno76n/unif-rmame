@@ -193,6 +193,16 @@ describe("Calidad decide qué sirve y qué es merma de lo que regresa con defect
 			{ estado: "en_aduana", destino: "BOD", piezas: 2 },
 			{ estado: "salio", destino: "merma", piezas: 1 },
 		]);
+		// La merma sale de Aduana en el libro, con su hijo.
+		expect(
+			await consultar(
+				`SELECT o.codigo AS origen, l.destino_ubicacion_id IS NULL AS a_fuera, l.piezas FROM movimientos m
+				 JOIN movimiento_lineas l ON l.movimiento_id = m.id JOIN ubicaciones o ON o.id = l.origen_ubicacion_id
+				 JOIN traspasos t ON t.id = l.traspaso_id
+				 WHERE m.tipo = 'merma_calidad' AND t.traspaso_padre_id = $1`,
+				[devolucion],
+			),
+		).toEqual([{ origen: "ADU", a_fuera: true, piezas: 1 }]);
 		expect(await consultar("SELECT estado FROM traspasos WHERE id = $1", [devolucion])).toEqual([
 			{ estado: "repartido" },
 		]);

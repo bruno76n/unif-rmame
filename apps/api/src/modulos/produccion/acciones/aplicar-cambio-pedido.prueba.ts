@@ -113,6 +113,24 @@ describe("Aplicar un cambio resta de los lotes sin cortar, manda a Bodega lo cor
 			lineas: 1,
 		});
 		expect(await lote(loteId)).toEqual({ estado: "por_cortar", planeadas: 3, a_bodega: 0, orden: "abierta" });
+		// La bitácora lleva las planeadas de antes y de después, y el estado de los lotes tocados.
+		const { rows: bitacora } = await servidor.base.dueno.query(
+			"SELECT antes, despues FROM bitacora WHERE entidad = 'cambios_pedido' AND entidad_id = $1",
+			[nueva?.id],
+		);
+		expect(bitacora).toEqual([
+			{
+				antes: {
+					lineas: [expect.objectContaining({ lote_id: loteId, piezas_planeadas: 20, piezas_a_bodega: 0 })],
+					lotes: [{ lote_id: loteId, estado: "por_cortar" }],
+				},
+				despues: {
+					lineas: [expect.objectContaining({ lote_id: loteId, piezas_planeadas: 3, piezas_a_bodega: 0 })],
+					lotes_cancelados: [],
+					ordenes_canceladas: [],
+				},
+			},
+		]);
 		expect((await cambios(pedido.pedido_id)).map((cambio) => cambio.estado)).toEqual(["reemplazado", "aplicado"]);
 		const [otraVez] = await cambios(pedido.pedido_id);
 		expect((await aplicar({ id: otraVez?.id, v: otraVez?.v })).cuerpo).toMatchObject({ codigo: "cambio_ya_aplicado" });
