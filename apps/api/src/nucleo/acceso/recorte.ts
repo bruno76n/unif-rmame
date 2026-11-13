@@ -11,7 +11,7 @@
  * aparatos lo dice su alcance (fase 6).
  */
 
-import type { QuienLlama } from "./quien.ts";
+import { type QuienLlama, veSueldosYTarifas } from "./quien.ts";
 
 /** El sufijo de los campos de dinero, que siempre van en centavos. */
 const sufijoDeMonto = "_centavos";
@@ -25,7 +25,7 @@ const sufijoDeMonto = "_centavos";
 export function camposQueNoVe(quien: QuienLlama, camposDeSueldo: ReadonlySet<string>): (campo: string) => boolean {
 	if (quien.tipo !== "cuenta") return () => false;
 	if (quien.esSoporte) return (campo) => campo.endsWith(sufijoDeMonto) || camposDeSueldo.has(campo);
-	if (quien.esDuena || quien.permisosFinos.includes("ven_sueldos_y_tarifas")) return () => false;
+	if (veSueldosYTarifas(quien)) return () => false;
 	return (campo) => camposDeSueldo.has(campo);
 }
 

@@ -8,7 +8,7 @@
  */
 
 import { useRouter } from "@tanstack/react-router";
-import { pesosACentavos } from "@uniformame/compartido/calculos/dinero";
+import { centavosACampo, pesosACentavos } from "@uniformame/compartido/calculos/dinero";
 import { altaDeProducto } from "@uniformame/compartido/contratos/catalogo/pantallas";
 import { crearProducto } from "@uniformame/compartido/contratos/catalogo/productos";
 import { Boton } from "@uniformame/interfaz/botones/boton";
@@ -94,7 +94,7 @@ function capturaInicial(alta: Alta, origen: string, seccion: string | undefined)
 				? { mostrador: false, en_linea: false, externos: true }
 				: (base?.canales ?? { mostrador: true, en_linea: false, externos: false }),
 		precios: Object.fromEntries(
-			(base?.precios ?? []).map((precio) => [precio.lista_id, String(precio.precio_centavos / 100)]),
+			(base?.precios ?? []).map((precio) => [precio.lista_id, centavosACampo(precio.precio_centavos)]),
 		),
 	};
 }

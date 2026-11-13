@@ -65,6 +65,7 @@ import { parametro } from "./lecturas/parametro.ts";
 import { permisosDe } from "./lecturas/permisos-de.ts";
 import { siguienteFolio } from "./lecturas/siguiente-folio.ts";
 import { ultimaSincronizacion } from "./lecturas/ultima-sincronizacion.ts";
+import { valoresDeLista } from "./lecturas/valores-de-lista.ts";
 import { veDocumento } from "./lecturas/ve-documento.ts";
 import { semillaDeParametrosDeAdmin } from "./parametros.ts";
 import { lectoresDeAdmin } from "./permisos.ts";
@@ -131,6 +132,7 @@ export default definirModulo({
 		correo_de_cuenta: correoDeCuenta,
 		datos_de_aparato: datosDeAparato,
 		datos_de_archivo: datosDeArchivo,
+		valores_de_lista: valoresDeLista,
 	},
 	semillas: [semillaDeDepartamentos, semillaDeContadores, semillaDeParametrosDeAdmin],
 	trabajos: [depurarEventos, enviarCorreos, respaldoSemanal, recordatorioRestauracion, aparatosSinSincronizar],

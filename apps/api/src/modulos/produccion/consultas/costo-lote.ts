@@ -11,6 +11,7 @@ import { aMilesimos, cantidadEnTexto } from "@uniformame/compartido/calculos/cue
 import { costoDeLote } from "@uniformame/compartido/contratos/produccion/lotes";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
+import { veSueldosYTarifas } from "../../../nucleo/acceso/quien.ts";
 import { errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeConsulta, implementarConsulta } from "../../../nucleo/modulos.ts";
 import { deCalcularMaterial, piezasPorTallaDelLote } from "./comun.ts";
@@ -125,7 +126,7 @@ export const consultaCostoLote = implementarConsulta(costoDeLote, async (context
 		recetaVersionId: lote.receta_version_id,
 	});
 	const { quien } = contexto;
-	const veSueldos = quien.tipo === "cuenta" && (quien.esDuena || quien.permisosFinos.includes("ven_sueldos_y_tarifas"));
+	const veSueldos = veSueldosYTarifas(quien);
 	if (!veSueldos) {
 		return {
 			resultado: { cortadas: lote.cortadas, tela, avios: { importe_centavos: avios } },

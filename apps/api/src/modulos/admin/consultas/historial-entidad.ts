@@ -9,6 +9,7 @@
 
 import { historialEntidad } from "@uniformame/compartido/contratos/admin/armazon";
 import { and, desc, eq, lt, or, type SQL, sql } from "drizzle-orm";
+import { veSueldosYTarifas } from "../../../nucleo/acceso/quien.ts";
 import { cursorDe, leerCursor } from "../../../nucleo/http/consultas.ts";
 import { ErrorDeApi, noExiste } from "../../../nucleo/http/errores.ts";
 import { implementarConsulta } from "../../../nucleo/modulos.ts";
@@ -52,7 +53,7 @@ export const consultaHistorialEntidad = implementarConsulta(
 			throw new ErrorDeApi("sin_permiso", "sin_departamento");
 		}
 		const veMontos = quien.esDuena || quien.departamentos.some((departamento) => !sinMontos.includes(departamento));
-		const veSueldos = quien.esDuena || quien.permisosFinos.includes("ven_sueldos_y_tarifas");
+		const veSueldos = veSueldosYTarifas(quien);
 		const posicion = leerCursor(parametros.cursor);
 		const despues: SQL | undefined =
 			posicion === undefined

@@ -17,7 +17,8 @@ import { nombreDeCuenta } from "../../../nucleo/acciones/comunes.ts";
 import { noExiste } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeAccion, implementarConsulta } from "../../../nucleo/modulos.ts";
 import { parametroNumero } from "../../../nucleo/parametros.ts";
-import { condicionDeOrden, estadoDeOrden, type OrdenResumida, ordenesResumidas } from "./comun.ts";
+import { condicionDeOrden, type OrdenResumida, ordenesResumidas } from "../dominio/ordenes-resumidas.ts";
+import { estadoDeOrden } from "./comun.ts";
 
 /** Los estados que ya terminaron: muestran cuándo llegó. */
 const terminadas = ["recibida", "cerrada", "cerrada_con_faltante"];

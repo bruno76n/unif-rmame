@@ -6,7 +6,7 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { centavos as c, esCentavos } from "../tipos/base.ts";
-import { aPesoEntero, aplicarPorcentaje, centavosATexto, pesosACentavos, repartir } from "./dinero.ts";
+import { aPesoEntero, aplicarPorcentaje, centavosACampo, centavosATexto, pesosACentavos, repartir } from "./dinero.ts";
 
 /** Montos en centavos de cualquier tamaño que alcance un número entero seguro. */
 const centavos = fc.maxSafeInteger().filter(esCentavos);
@@ -220,6 +220,24 @@ describe("aplicarPorcentaje saca un porcentaje y lo redondea al centavo; centavo
 				expect(pesosACentavos(centavosATexto(monto, { conCentavos: true }))).toBe(monto);
 			}),
 			{ numRuns: 3000 },
+		);
+	});
+});
+
+describe("un monto se escribe en su campo como se vuelve a leer", () => {
+	it("sin centavos va entero; con centavos, con dos cifras", () => {
+		expect(centavosACampo(800_000)).toBe("8000");
+		expect(centavosACampo(800_050)).toBe("8000.50");
+		expect(centavosACampo(5)).toBe("0.05");
+		expect(centavosACampo(undefined)).toBe("");
+		expect(centavosACampo(null)).toBe("");
+	});
+
+	it("lo escrito se vuelve a leer igual con pesosACentavos", () => {
+		fc.assert(
+			fc.property(fc.integer({ min: -1_000_000_000, max: 1_000_000_000 }), (monto) => {
+				expect(pesosACentavos(centavosACampo(monto))).toBe(monto);
+			}),
 		);
 	});
 });

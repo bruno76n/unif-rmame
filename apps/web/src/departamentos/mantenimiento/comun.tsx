@@ -4,14 +4,10 @@
  * Fase 19 · docs/interfaz/fabrica/mantenimiento.md («Fallas», «Servicios», «Cajones»)
  */
 
-import { useInfiniteQuery } from "@tanstack/react-query";
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
-import type { ContratoDeConsulta } from "@uniformame/compartido/contratos/definir";
 import { TextoConTono } from "@uniformame/interfaz/estados/textos-con-tono";
 import type { ReactNode } from "react";
 import type { FieldValues, Path, UseFormReturn } from "react-hook-form";
-import type { z } from "zod";
-import { consultar } from "../../comun/api.tsx";
 
 /**
  * Una cifra de un cajón: el número grande y, abajo, qué es.
@@ -67,30 +63,4 @@ export function erroresEnSusCampos<Valores extends FieldValues>(
 	for (const [campo, mensaje] of Object.entries(campos)) {
 		if (esCampo(campo)) formulario.setError(campo, { message: mensaje });
 	}
-}
-
-/**
- * Lee una consulta que pagina, página por página: la siguiente lleva el `cursor` de la anterior. Se guarda con el
- * nombre de la consulta al frente, así una acción que la invalida la vuelve a leer.
- * @param contrato Su contrato, con `cursor` en la entrada y `cursor` en la salida.
- * @param parametros Sus parámetros, sin el cursor.
- * @param activa Si se lee ya (un grupo plegado no lee).
- */
-export function usePaginas<Contrato extends ContratoDeConsulta>(
-	contrato: Contrato,
-	parametros: z.input<Contrato["entrada"]>,
-	activa = true,
-) {
-	return useInfiniteQuery({
-		queryKey: [contrato.nombre, parametros, "paginas"],
-		queryFn: ({ pageParam }) =>
-			consultar(contrato, { ...parametros, ...(pageParam === null ? {} : { cursor: pageParam }) }),
-		initialPageParam: null as string | null,
-		getNextPageParam: (pagina: z.output<Contrato["resultado"]>) => {
-			const { cursor } = pagina as { cursor?: unknown };
-			return typeof cursor === "string" ? cursor : undefined;
-		},
-		enabled: activa,
-		retry: false,
-	});
 }

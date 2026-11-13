@@ -8,7 +8,7 @@
  */
 
 import { useRouter } from "@tanstack/react-router";
-import { pesosACentavos } from "@uniformame/compartido/calculos/dinero";
+import { centavosACampo, pesosACentavos } from "@uniformame/compartido/calculos/dinero";
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
 import { plural } from "@uniformame/compartido/calculos/textos";
 import { ordenDeCompra } from "@uniformame/compartido/contratos/compras/consultas-cajones";
@@ -46,14 +46,6 @@ interface LineaCapturada {
 	precio: string;
 }
 
-/**
- * Un precio como se escribe en su campo: «78», «0.38»; vacío si no llegó.
- * @param centavos El precio en centavos.
- */
-function precioEscrito(centavos: number | undefined): string {
-	return centavos === undefined ? "" : String(centavos / 100);
-}
-
 /** Las consultas que cambian con la orden. */
 const cambianConLaOrden = [
 	"compras.orden",
@@ -81,7 +73,7 @@ function leerBorrador(datos: Orden, lineas: Record<string, LineaCapturada>, fech
 	const renglones = datos.lineas.map((linea) => {
 		const capturada = lineas[linea.orden_compra_linea_id];
 		const cantidad = capturada?.cantidad ?? String(Number(linea.pedido));
-		const precio = pesosACentavos(capturada?.precio ?? precioEscrito(linea.precio_centavos));
+		const precio = pesosACentavos(capturada?.precio ?? centavosACampo(linea.precio_centavos));
 		const error = errorDeCantidad(cantidad, {
 			multiplo: linea.multiplo,
 			maxima: datos.cantidad_maxima,
@@ -235,7 +227,7 @@ function ContenidoDeOrden({
 								<Campo
 									etiqueta={`Precio de ${linea.material}`}
 									inputMode="decimal"
-									value={lineas[linea.orden_compra_linea_id]?.precio ?? precioEscrito(linea.precio_centavos)}
+									value={lineas[linea.orden_compra_linea_id]?.precio ?? centavosACampo(linea.precio_centavos)}
 									onChange={(evento) => alCapturar(linea.orden_compra_linea_id, { precio: evento.target.value })}
 									error={errores[`${linea.orden_compra_linea_id}:precio`]}
 								/>
@@ -396,7 +388,7 @@ export function CajonOrden({ ordenId, alCerrar }: { ordenId: string; alCerrar: (
 										precio:
 											cambio.precio ??
 											antes[id]?.precio ??
-											precioEscrito(leidos.lineas.find((uno) => uno.orden_compra_linea_id === id)?.precio_centavos),
+											centavosACampo(leidos.lineas.find((uno) => uno.orden_compra_linea_id === id)?.precio_centavos),
 									},
 								}))
 							}

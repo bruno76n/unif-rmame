@@ -1,21 +1,20 @@
 /**
- * Pendientes de Contaduría: la primera pestaña. Hasta que su parte de la fase 19 la construya, muestra la página del
- * departamento sin pendientes.
- * Fase 19 · docs/interfaz/fabrica/ (el archivo de Contaduría)
+ * Pendientes de Contaduría: la primera pestaña.
+ * Fase 19 · docs/interfaz/fabrica/contaduria.md («Pendientes»)
+ *
+ * La ruta solo arma la pantalla: sus filtros, el cajón abierto y la ventana vienen de la dirección.
  */
 
 import { createFileRoute } from "@tanstack/react-router";
-import { EstadoDePantalla } from "@uniformame/interfaz/estados/estado-de-pantalla";
-import { PaginaDeDepartamento } from "../../comun/pagina-de-departamento.tsx";
+import { busquedaDeContaduria } from "../../departamentos/contaduria/direccion.ts";
+import { PaginaDeContaduria } from "../../departamentos/contaduria/pagina.tsx";
+import { PestanaPendientes } from "../../departamentos/contaduria/pestanas/pendientes.tsx";
 
 export const Route = createFileRoute("/contaduria/")({
+	validateSearch: busquedaDeContaduria,
 	component: () => (
-		<PaginaDeDepartamento
-			departamento="contaduria"
-			pestanas={[{ clave: "pendientes", texto: "Pendientes" }]}
-			activa="pendientes"
-		>
-			<EstadoDePantalla tipo="vacio" texto="Sin pendientes" bien />
-		</PaginaDeDepartamento>
+		<PaginaDeContaduria activa="pendientes">
+			<PestanaPendientes />
+		</PaginaDeContaduria>
 	),
 });

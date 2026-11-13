@@ -8,7 +8,6 @@
 
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
 import { plural } from "@uniformame/compartido/calculos/textos";
-
 import { fallasDeMantenimiento } from "@uniformame/compartido/contratos/mantenimiento/consultas-pestanas";
 import { Boton } from "@uniformame/interfaz/botones/boton";
 import { GrupoPlegable } from "@uniformame/interfaz/contenedores/grupo-plegable";
@@ -18,8 +17,8 @@ import { DosRenglones } from "@uniformame/interfaz/tablas/dos-renglones";
 import { Tabla } from "@uniformame/interfaz/tablas/tabla";
 import { useState } from "react";
 import type { z } from "zod";
+import { usePaginas } from "../../../comun/api.tsx";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
-import { usePaginas } from "../comun.tsx";
 import { useDireccionDeMantenimiento } from "../direccion.ts";
 
 /** Lo que regresa la consulta. */

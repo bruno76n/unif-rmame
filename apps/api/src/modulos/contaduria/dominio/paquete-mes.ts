@@ -121,11 +121,12 @@ export function cuentaDelPaquete(
 /**
  * Lee lo que lleva un mes: los pagos, los anticipos aplicados, lo abonado a cuentas por pagar y las nóminas pagadas de
  * ese mes; los gastos sin paquete hasta su fin, con candado; y los meses ya mandados, leídos después del candado.
- * La usa solo `marcar_paquete_enviado`.
+ * La usan `marcar_paquete_enviado` (con candado) y la pestaña Contador externo, que solo lee y la pide sin candado.
  * @param transaccion La transacción.
  * @param mes El primer día del mes.
+ * @param opciones `conCandado: false` en una transacción de solo lectura: lee lo mismo sin bloquear los gastos.
  */
-export async function lecturaDelPaquete(transaccion: Transaccion, mes: string) {
+export async function lecturaDelPaquete(transaccion: Transaccion, mes: string, { conCandado = true } = {}) {
 	const siguiente = Temporal.PlainDate.from(mes).add({ months: 1 }).toString();
 	const enElMes = (columna: typeof pagos.fecha | typeof anticipos.fecha | typeof aplicacionesPago.fecha) =>
 		and(gte(columna, mes), lt(columna, siguiente));
@@ -177,7 +178,7 @@ export async function lecturaDelPaquete(transaccion: Transaccion, mes: string) {
 	for (const nomina of pagadas) {
 		movimientos.push({ concepto: "nomina", fecha: nomina.fecha, montoCentavos: nomina.monto ?? 0 });
 	}
-	const gastosDelPaquete = await transaccion
+	const deLosGastos = transaccion
 		.select({
 			id: gastos.id,
 			fecha: gastos.fecha,
@@ -190,8 +191,8 @@ export async function lecturaDelPaquete(transaccion: Transaccion, mes: string) {
 		.where(and(isNull(gastos.paqueteContadorId), eq(gastos.estado, "registrado"), lt(gastos.fecha, siguiente)))
 		// Con candado y en orden de id: una cancelación o el envío de otro mes a la vez se ponen en fila, y al soltarse
 		// Postgres vuelve a revisar la condición, así que el gasto que ya se canceló o ya salió en otro paquete no entra.
-		.orderBy(asc(gastos.id))
-		.for("update");
+		.orderBy(asc(gastos.id));
+	const gastosDelPaquete = conCandado ? await deLosGastos.for("update") : await deLosGastos;
 	const enviados = await transaccion
 		.select({ mes: paquetesContador.mes })
 		.from(paquetesContador)

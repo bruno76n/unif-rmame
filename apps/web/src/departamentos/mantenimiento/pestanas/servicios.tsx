@@ -7,7 +7,6 @@
 
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
 import { plural } from "@uniformame/compartido/calculos/textos";
-
 import { serviciosDeMantenimiento } from "@uniformame/compartido/contratos/mantenimiento/consultas-pestanas";
 import { Boton } from "@uniformame/interfaz/botones/boton";
 import { Selector } from "@uniformame/interfaz/captura/selector";
@@ -18,10 +17,10 @@ import { Tabla } from "@uniformame/interfaz/tablas/tabla";
 import { Plus } from "lucide-react";
 import { useState } from "react";
 import type { z } from "zod";
+import { usePaginas } from "../../../comun/api.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
 import { montoEnPantalla } from "../../../comun/montos.ts";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
-import { usePaginas } from "../comun.tsx";
 import { useDireccionDeMantenimiento } from "../direccion.ts";
 import { VentanaServicio } from "../ventanas/servicio.tsx";
 

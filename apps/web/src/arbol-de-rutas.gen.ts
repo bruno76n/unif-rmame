@@ -33,6 +33,12 @@ import { Route as ComprasOrdenesRouteImport } from "./rutas/compras/ordenes.tsx"
 import { Route as ComprasPorPedirRouteImport } from "./rutas/compras/por-pedir.tsx"
 import { Route as ComprasProveedoresRouteImport } from "./rutas/compras/proveedores.tsx"
 import { Route as ContaduriaIndexRouteImport } from "./rutas/contaduria/index.tsx"
+import { Route as ContaduriaContadorExternoRouteImport } from "./rutas/contaduria/contador-externo.tsx"
+import { Route as ContaduriaCuentasPorCobrarRouteImport } from "./rutas/contaduria/cuentas-por-cobrar.tsx"
+import { Route as ContaduriaCuentasPorPagarRouteImport } from "./rutas/contaduria/cuentas-por-pagar.tsx"
+import { Route as ContaduriaGastosRouteImport } from "./rutas/contaduria/gastos.tsx"
+import { Route as ContaduriaNominaRouteImport } from "./rutas/contaduria/nomina.tsx"
+import { Route as ContaduriaTercerosRouteImport } from "./rutas/contaduria/terceros.tsx"
 import { Route as DireccionIndexRouteImport } from "./rutas/direccion/index.tsx"
 import { Route as DireccionAlertasRouteImport } from "./rutas/direccion/alertas.tsx"
 import { Route as DireccionAutorizacionesRouteImport } from "./rutas/direccion/autorizaciones.tsx"
@@ -179,6 +185,39 @@ const ComprasProveedoresRoute = ComprasProveedoresRouteImport.update({
 const ContaduriaIndexRoute = ContaduriaIndexRouteImport.update({
   id: "/contaduria/",
   path: "/contaduria/",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContaduriaContadorExternoRoute =
+  ContaduriaContadorExternoRouteImport.update({
+    id: "/contaduria/contador-externo",
+    path: "/contaduria/contador-externo",
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ContaduriaCuentasPorCobrarRoute =
+  ContaduriaCuentasPorCobrarRouteImport.update({
+    id: "/contaduria/cuentas-por-cobrar",
+    path: "/contaduria/cuentas-por-cobrar",
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ContaduriaCuentasPorPagarRoute =
+  ContaduriaCuentasPorPagarRouteImport.update({
+    id: "/contaduria/cuentas-por-pagar",
+    path: "/contaduria/cuentas-por-pagar",
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ContaduriaGastosRoute = ContaduriaGastosRouteImport.update({
+  id: "/contaduria/gastos",
+  path: "/contaduria/gastos",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContaduriaNominaRoute = ContaduriaNominaRouteImport.update({
+  id: "/contaduria/nomina",
+  path: "/contaduria/nomina",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContaduriaTercerosRoute = ContaduriaTercerosRouteImport.update({
+  id: "/contaduria/terceros",
+  path: "/contaduria/terceros",
   getParentRoute: () => rootRouteImport,
 } as any)
 const DireccionIndexRoute = DireccionIndexRouteImport.update({
@@ -334,6 +373,12 @@ export interface FileRoutesByFullPath {
   "/compras/ordenes": typeof ComprasOrdenesRoute
   "/compras/por-pedir": typeof ComprasPorPedirRoute
   "/compras/proveedores": typeof ComprasProveedoresRoute
+  "/contaduria/contador-externo": typeof ContaduriaContadorExternoRoute
+  "/contaduria/cuentas-por-cobrar": typeof ContaduriaCuentasPorCobrarRoute
+  "/contaduria/cuentas-por-pagar": typeof ContaduriaCuentasPorPagarRoute
+  "/contaduria/gastos": typeof ContaduriaGastosRoute
+  "/contaduria/nomina": typeof ContaduriaNominaRoute
+  "/contaduria/terceros": typeof ContaduriaTercerosRoute
   "/direccion/alertas": typeof DireccionAlertasRoute
   "/direccion/autorizaciones": typeof DireccionAutorizacionesRoute
   "/direccion/indicadores": typeof DireccionIndicadoresRoute
@@ -386,6 +431,12 @@ export interface FileRoutesByTo {
   "/compras/ordenes": typeof ComprasOrdenesRoute
   "/compras/por-pedir": typeof ComprasPorPedirRoute
   "/compras/proveedores": typeof ComprasProveedoresRoute
+  "/contaduria/contador-externo": typeof ContaduriaContadorExternoRoute
+  "/contaduria/cuentas-por-cobrar": typeof ContaduriaCuentasPorCobrarRoute
+  "/contaduria/cuentas-por-pagar": typeof ContaduriaCuentasPorPagarRoute
+  "/contaduria/gastos": typeof ContaduriaGastosRoute
+  "/contaduria/nomina": typeof ContaduriaNominaRoute
+  "/contaduria/terceros": typeof ContaduriaTercerosRoute
   "/direccion/alertas": typeof DireccionAlertasRoute
   "/direccion/autorizaciones": typeof DireccionAutorizacionesRoute
   "/direccion/indicadores": typeof DireccionIndicadoresRoute
@@ -440,6 +491,12 @@ export interface FileRoutesById {
   "/compras/ordenes": typeof ComprasOrdenesRoute
   "/compras/por-pedir": typeof ComprasPorPedirRoute
   "/compras/proveedores": typeof ComprasProveedoresRoute
+  "/contaduria/contador-externo": typeof ContaduriaContadorExternoRoute
+  "/contaduria/cuentas-por-cobrar": typeof ContaduriaCuentasPorCobrarRoute
+  "/contaduria/cuentas-por-pagar": typeof ContaduriaCuentasPorPagarRoute
+  "/contaduria/gastos": typeof ContaduriaGastosRoute
+  "/contaduria/nomina": typeof ContaduriaNominaRoute
+  "/contaduria/terceros": typeof ContaduriaTercerosRoute
   "/direccion/alertas": typeof DireccionAlertasRoute
   "/direccion/autorizaciones": typeof DireccionAutorizacionesRoute
   "/direccion/indicadores": typeof DireccionIndicadoresRoute
@@ -495,6 +552,12 @@ export interface FileRouteTypes {
     | "/compras/ordenes"
     | "/compras/por-pedir"
     | "/compras/proveedores"
+    | "/contaduria/contador-externo"
+    | "/contaduria/cuentas-por-cobrar"
+    | "/contaduria/cuentas-por-pagar"
+    | "/contaduria/gastos"
+    | "/contaduria/nomina"
+    | "/contaduria/terceros"
     | "/direccion/alertas"
     | "/direccion/autorizaciones"
     | "/direccion/indicadores"
@@ -547,6 +610,12 @@ export interface FileRouteTypes {
     | "/compras/ordenes"
     | "/compras/por-pedir"
     | "/compras/proveedores"
+    | "/contaduria/contador-externo"
+    | "/contaduria/cuentas-por-cobrar"
+    | "/contaduria/cuentas-por-pagar"
+    | "/contaduria/gastos"
+    | "/contaduria/nomina"
+    | "/contaduria/terceros"
     | "/direccion/alertas"
     | "/direccion/autorizaciones"
     | "/direccion/indicadores"
@@ -600,6 +669,12 @@ export interface FileRouteTypes {
     | "/compras/ordenes"
     | "/compras/por-pedir"
     | "/compras/proveedores"
+    | "/contaduria/contador-externo"
+    | "/contaduria/cuentas-por-cobrar"
+    | "/contaduria/cuentas-por-pagar"
+    | "/contaduria/gastos"
+    | "/contaduria/nomina"
+    | "/contaduria/terceros"
     | "/direccion/alertas"
     | "/direccion/autorizaciones"
     | "/direccion/indicadores"
@@ -649,6 +724,12 @@ export interface RootRouteChildren {
   ComprasOrdenesRoute: typeof ComprasOrdenesRoute
   ComprasPorPedirRoute: typeof ComprasPorPedirRoute
   ComprasProveedoresRoute: typeof ComprasProveedoresRoute
+  ContaduriaContadorExternoRoute: typeof ContaduriaContadorExternoRoute
+  ContaduriaCuentasPorCobrarRoute: typeof ContaduriaCuentasPorCobrarRoute
+  ContaduriaCuentasPorPagarRoute: typeof ContaduriaCuentasPorPagarRoute
+  ContaduriaGastosRoute: typeof ContaduriaGastosRoute
+  ContaduriaNominaRoute: typeof ContaduriaNominaRoute
+  ContaduriaTercerosRoute: typeof ContaduriaTercerosRoute
   DireccionAlertasRoute: typeof DireccionAlertasRoute
   DireccionAutorizacionesRoute: typeof DireccionAutorizacionesRoute
   DireccionIndicadoresRoute: typeof DireccionIndicadoresRoute
@@ -853,6 +934,48 @@ declare module "@tanstack/react-router" {
       path: "/contaduria"
       fullPath: "/contaduria/"
       preLoaderRoute: typeof ContaduriaIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/contaduria/contador-externo": {
+      id: "/contaduria/contador-externo"
+      path: "/contaduria/contador-externo"
+      fullPath: "/contaduria/contador-externo"
+      preLoaderRoute: typeof ContaduriaContadorExternoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/contaduria/cuentas-por-cobrar": {
+      id: "/contaduria/cuentas-por-cobrar"
+      path: "/contaduria/cuentas-por-cobrar"
+      fullPath: "/contaduria/cuentas-por-cobrar"
+      preLoaderRoute: typeof ContaduriaCuentasPorCobrarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/contaduria/cuentas-por-pagar": {
+      id: "/contaduria/cuentas-por-pagar"
+      path: "/contaduria/cuentas-por-pagar"
+      fullPath: "/contaduria/cuentas-por-pagar"
+      preLoaderRoute: typeof ContaduriaCuentasPorPagarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/contaduria/gastos": {
+      id: "/contaduria/gastos"
+      path: "/contaduria/gastos"
+      fullPath: "/contaduria/gastos"
+      preLoaderRoute: typeof ContaduriaGastosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/contaduria/nomina": {
+      id: "/contaduria/nomina"
+      path: "/contaduria/nomina"
+      fullPath: "/contaduria/nomina"
+      preLoaderRoute: typeof ContaduriaNominaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/contaduria/terceros": {
+      id: "/contaduria/terceros"
+      path: "/contaduria/terceros"
+      fullPath: "/contaduria/terceros"
+      preLoaderRoute: typeof ContaduriaTercerosRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/direccion/": {
@@ -1081,6 +1204,12 @@ const rootRouteChildren: RootRouteChildren = {
   ComprasOrdenesRoute: ComprasOrdenesRoute,
   ComprasPorPedirRoute: ComprasPorPedirRoute,
   ComprasProveedoresRoute: ComprasProveedoresRoute,
+  ContaduriaContadorExternoRoute: ContaduriaContadorExternoRoute,
+  ContaduriaCuentasPorCobrarRoute: ContaduriaCuentasPorCobrarRoute,
+  ContaduriaCuentasPorPagarRoute: ContaduriaCuentasPorPagarRoute,
+  ContaduriaGastosRoute: ContaduriaGastosRoute,
+  ContaduriaNominaRoute: ContaduriaNominaRoute,
+  ContaduriaTercerosRoute: ContaduriaTercerosRoute,
   DireccionAlertasRoute: DireccionAlertasRoute,
   DireccionAutorizacionesRoute: DireccionAutorizacionesRoute,
   DireccionIndicadoresRoute: DireccionIndicadoresRoute,

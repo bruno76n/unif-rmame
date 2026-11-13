@@ -20,11 +20,12 @@ import {
 	type ContextoDeConsulta,
 	implementarConsulta,
 } from "../../../nucleo/modulos.ts";
+import { type RenglonDeConciliacion, renglonesDeConciliacion } from "../dominio/conciliacion.ts";
 import { plazosReales } from "../dominio/ordenes.ts";
+import { type OrdenResumida, ordenesResumidas } from "../dominio/ordenes-resumidas.ts";
 import type { CuentaDeMaterial } from "../lecturas/cuenta-material.ts";
 import { proveedores } from "../tablas.ts";
-import { cuentas, datosDeMateriales, estadoEnSuLinea, type OrdenResumida, ordenesResumidas } from "./comun.ts";
-import { type RenglonDeConciliacion, renglonesDeConciliacion } from "./conciliacion-facturas.ts";
+import { cuentas, datosDeMateriales, estadoEnSuLinea } from "./comun.ts";
 
 /** Lo que regresa la consulta. */
 type Resultado = z.infer<typeof pendientesDeCompras.resultado>;

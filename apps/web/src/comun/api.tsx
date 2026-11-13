@@ -8,7 +8,14 @@
  * acción con su misma clave, y avisa cuando la web es vieja.
  */
 
-import { keepPreviousData, type QueryClient, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+	keepPreviousData,
+	type QueryClient,
+	useInfiniteQuery,
+	useMutation,
+	useQuery,
+	useQueryClient,
+} from "@tanstack/react-query";
 import { crearCliente, ErrorDeConflicto, ErrorDeLaApi, ErrorSinRed } from "@uniformame/compartido/cliente/cliente";
 import type { ContratoDeAccion, ContratoDeConsulta } from "@uniformame/compartido/contratos/definir";
 import { useRef } from "react";
@@ -60,6 +67,42 @@ export function useConsulta<Contrato extends ContratoDeConsulta>(
 		enabled: activa,
 		retry: false,
 		...(conservarAnteriores ? { placeholderData: keepPreviousData } : {}),
+	});
+}
+
+/**
+ * El cursor de la página siguiente, si la consulta lo regresa en `cursor`.
+ * @param pagina Lo que regresó una página.
+ */
+function cursorDeLaPagina(pagina: unknown): string | undefined {
+	return typeof pagina === "object" && pagina !== null && "cursor" in pagina && typeof pagina.cursor === "string"
+		? pagina.cursor
+		: undefined;
+}
+
+/**
+ * Lee una consulta que pagina, página por página, para «Ver más»: la siguiente lleva el cursor de la anterior. Se
+ * guarda con el nombre de la consulta al frente, así una acción que la invalida la vuelve a leer.
+ * @param contrato Su contrato, con `cursor` en la entrada.
+ * @param parametros Sus parámetros, sin el cursor.
+ * @param opciones `activa` (un grupo plegado no lee) y `siguiente`, si el cursor no viene en `cursor` de la página.
+ * @returns Las páginas leídas, si hay más y cómo pedir la siguiente.
+ */
+export function usePaginas<Contrato extends ContratoDeConsulta>(
+	contrato: Contrato,
+	parametros: z.input<Contrato["entrada"]>,
+	opciones: { activa?: boolean; siguiente?: (pagina: z.output<Contrato["resultado"]>) => string | null } = {},
+) {
+	const sinCursor: string | null = null;
+	return useInfiniteQuery({
+		queryKey: [contrato.nombre, parametros, "paginas"],
+		queryFn: ({ pageParam }) =>
+			consultar(contrato, pageParam === null ? parametros : { ...parametros, cursor: pageParam }),
+		initialPageParam: sinCursor,
+		getNextPageParam: (pagina: z.output<Contrato["resultado"]>) =>
+			(opciones.siguiente === undefined ? cursorDeLaPagina(pagina) : opciones.siguiente(pagina)) ?? undefined,
+		enabled: opciones.activa ?? true,
+		retry: false,
 	});
 }
 

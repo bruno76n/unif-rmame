@@ -16,6 +16,9 @@ import { leerMaquinas } from "./comun.ts";
 /** Algo de una lista, como sale de la base. */
 const deLaLista = z.array(z.object({ id: z.uuid(), nombre: z.string() }));
 
+/** Lo que regresa `admin.valores_de_lista`. */
+const deLasAreas = z.object({ valores: deLaLista });
+
 export const consultaOpcionesDeMantenimiento = implementarConsulta(opcionesDeMantenimiento, async (contexto) => ({
 	resultado: await contexto.comoAccion(async (accion) => {
 		/** Lee una lista de ids y nombres. */
@@ -26,9 +29,7 @@ export const consultaOpcionesDeMantenimiento = implementarConsulta(opcionesDeMan
 		const maquinas = (await leerMaquinas(accion)).filter((maquina) => maquina.baja_el_dia === null);
 		return {
 			tipos: await lista(sql`SELECT id, nombre FROM tipos_maquina WHERE baja_en IS NULL ORDER BY nombre`),
-			areas: await lista(sql`
-				SELECT v.id, v.nombre FROM lista_valores v JOIN listas l ON l.id = v.lista_id
-				WHERE l.clave = ${listaDeAreas} AND v.baja_en IS NULL ORDER BY v.orden, v.nombre`),
+			areas: deLasAreas.parse(await accion.lectura("admin.valores_de_lista", { lista: listaDeAreas })).valores,
 			personas: await lista(sql`
 				SELECT id, nombre FROM personas WHERE area = 'taller' AND baja_en IS NULL ORDER BY nombre`),
 			tecnicos: await lista(sql`SELECT id, nombre FROM tecnicos WHERE baja_en IS NULL ORDER BY nombre`),

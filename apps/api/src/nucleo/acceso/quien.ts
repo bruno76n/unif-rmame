@@ -60,3 +60,12 @@ export function tieneDepartamento(
 ): boolean {
 	return quien.tipo === "cuenta" && (quien.esDuena || departamentos.some((uno) => quien.departamentos.includes(uno)));
 }
+
+/**
+ * Si quien llama ve sueldos y tarifas: la dueña o una cuenta con el permiso fino «ven sueldos y tarifas».
+ * @param quien Quién llama o escribe.
+ * Es la única revisión de este permiso: la usan el recorte de cada respuesta y las consultas que deciden qué mandar.
+ */
+export function veSueldosYTarifas(quien: QuienLlama | { readonly tipo: "sistema" }): boolean {
+	return quien.tipo === "cuenta" && (quien.esDuena || quien.permisosFinos.includes("ven_sueldos_y_tarifas"));
+}

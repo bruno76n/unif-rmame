@@ -13,8 +13,9 @@ import { implementarConsulta } from "../../../nucleo/modulos.ts";
 import { parametroNumero } from "../../../nucleo/parametros.ts";
 import { terceros } from "../../contaduria/tablas.ts";
 import { plazosReales } from "../dominio/ordenes.ts";
+import { ordenesResumidas } from "../dominio/ordenes-resumidas.ts";
 import { proveedores } from "../tablas.ts";
-import { cuentas, datosDeMateriales, estadoDeMaterial, estadoDeOrden, ordenesResumidas, surtidores } from "./comun.ts";
+import { cuentas, datosDeMateriales, estadoDeMaterial, estadoDeOrden, surtidores } from "./comun.ts";
 import { tonoDelPlazo } from "./proveedores.ts";
 
 /** Cuántas órdenes muestra «Órdenes · Las últimas {n}». */

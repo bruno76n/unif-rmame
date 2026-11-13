@@ -56,6 +56,19 @@ export function pesosACentavos(texto: string): Centavos | null {
 	}
 }
 
+/**
+ * Un monto como se escribe en un campo de captura: «8000» o «8000.50», sin signo de pesos ni comas; vacío si no hay.
+ * @param monto Los centavos, o nada.
+ * @returns El texto que `pesosACentavos` vuelve a leer igual.
+ * Es el valor inicial de los campos de dinero de todas las pantallas.
+ */
+export function centavosACampo(monto: number | null | undefined): string {
+	if (monto === null || monto === undefined) return "";
+	const absoluto = Math.abs(monto);
+	const resto = absoluto % 100;
+	return `${monto < 0 ? "-" : ""}${Math.trunc(absoluto / 100)}${resto === 0 ? "" : `.${String(resto).padStart(2, "0")}`}`;
+}
+
 const formatoSinCentavos = new Intl.NumberFormat("es-MX", {
 	style: "currency",
 	currency: "MXN",

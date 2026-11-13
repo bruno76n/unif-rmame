@@ -5,7 +5,8 @@
  * capturado.
  * Fase 19 · docs/interfaz/comunes.md («Los estados de una pantalla»: choque de versión) y docs/cimientos/API.md
  *
- * Uso: `const { enviar, enviando, choco } = useEnvio(contrato, consultasDeMiDepartamento);`.
+ * Uso: `const { enviar, enviando, choco } = useEnvio(contrato, consultasDeMiDepartamento);`, o `useEnvioConCampos` si el
+ * formulario solo necesita el error de cada campo.
  */
 
 import { useQueryClient } from "@tanstack/react-query";
@@ -50,4 +51,27 @@ export function useEnvio<Contrato extends ContratoDeAccion>(contrato: Contrato, 
 		}
 	};
 	return { enviar, enviando: accion.isPending, choco };
+}
+
+/**
+ * Lo mismo que `useEnvio`, para los formularios que solo ponen en sus campos lo que dijo la API de una regla.
+ * @param contrato Su contrato.
+ * @param consultas Las consultas que cambian con ella.
+ * @returns Lo de `useEnvio`; `enviar(peticion, alCampos, alFallar)` entrega el error de cada campo, si la regla dijo
+ * alguno, y la falla completa a quien necesite su código.
+ */
+export function useEnvioConCampos<Contrato extends ContratoDeAccion>(contrato: Contrato, consultas: readonly string[]) {
+	const envio = useEnvio(contrato, consultas);
+	return {
+		...envio,
+		enviar: (
+			peticion: Parameters<typeof envio.enviar>[0],
+			alCampos?: (campos: Record<string, string>) => void,
+			alFallar?: (falla: FallaDeRegla) => void,
+		) =>
+			envio.enviar(peticion, (falla) => {
+				if (alCampos !== undefined && Object.keys(falla.campos).length > 0) alCampos(falla.campos);
+				alFallar?.(falla);
+			}),
+	};
 }

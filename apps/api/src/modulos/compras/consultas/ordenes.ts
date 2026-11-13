@@ -13,7 +13,8 @@ import { cantidadConUnidad, cifraEnTexto, cuandoLlega } from "@uniformame/compar
 import { Temporal } from "temporal-polyfill";
 import type { z } from "zod";
 import { implementarConsulta } from "../../../nucleo/modulos.ts";
-import { condicionDeOrden, cumpleBusqueda, estadoDeOrden, type OrdenResumida, ordenesResumidas } from "./comun.ts";
+import { condicionDeOrden, type OrdenResumida, ordenesResumidas } from "../dominio/ordenes-resumidas.ts";
+import { cumpleBusqueda, estadoDeOrden } from "./comun.ts";
 
 /** Una orden de la lista. */
 type OrdenDeLaLista = z.infer<typeof ordenesDeCompra.resultado>["ordenes"][number];

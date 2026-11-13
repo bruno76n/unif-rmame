@@ -29,7 +29,20 @@ import { accionGuardarDescuentoSemanal, accionPagarNomina } from "./acciones/nom
 import { accionCancelarPago, accionRegistrarPagoRecibido } from "./acciones/pagos.ts";
 import { accionPagarCuentaPorPagar, accionPedirPagoLoRecibido } from "./acciones/por-pagar.ts";
 import { accionAplicarSaldoAFavor, accionDevolverSaldoAFavor } from "./acciones/saldo-favor.ts";
+import { consultaAntiguedadSaldos } from "./consultas/antiguedad-saldos.ts";
+import { consultaCapturarFacturaOpciones } from "./consultas/capturar-factura-opciones.ts";
+import { consultaCliente } from "./consultas/cliente.ts";
+import { consultaConciliacionFacturas } from "./consultas/conciliacion-facturas.ts";
+import { consultaContadorExterno, consultaPaqueteMes } from "./consultas/contador-externo.ts";
+import { consultaCuentasPorPagar } from "./consultas/cuentas-por-pagar.ts";
 import { consultaEstadoPagoNotas } from "./consultas/estado-pago-notas.ts";
+import { consultaFlujoProximosDias } from "./consultas/flujo-proximos-dias.ts";
+import { consultaGastos } from "./consultas/gastos.ts";
+import { consultaNominaSemana } from "./consultas/nomina-semana.ts";
+import { consultaPagosRecibidos } from "./consultas/pagos-recibidos.ts";
+import { consultaPendientesContaduria, pastillaContaduria } from "./consultas/pendientes.ts";
+import { consultaRegistrarPagoOpciones } from "./consultas/registrar-pago-opciones.ts";
+import { consultaTercero, consultaTerceros } from "./consultas/terceros.ts";
 import { aplicarAnticipoANota, pasarAnticipoAFavor, regresarAnticipoAPedido } from "./internas/anticipos.ts";
 import { abrirCreditoCliente } from "./internas/credito.ts";
 import { aplicarNotaCredito, crearCuentaPorCobrar } from "./internas/cuentas.ts";
@@ -60,7 +73,25 @@ import { armarArchivoPaquete, crearPaqueteMes } from "./trabajos/paquete-contado
 
 export default definirModulo({
 	nombre: "contaduria",
-	consultas: [consultaEstadoPagoNotas],
+	consultas: [
+		consultaEstadoPagoNotas,
+		consultaPendientesContaduria,
+		consultaFlujoProximosDias,
+		consultaAntiguedadSaldos,
+		consultaPagosRecibidos,
+		consultaCliente,
+		consultaRegistrarPagoOpciones,
+		consultaCuentasPorPagar,
+		consultaConciliacionFacturas,
+		consultaCapturarFacturaOpciones,
+		consultaTerceros,
+		consultaTercero,
+		consultaGastos,
+		consultaNominaSemana,
+		consultaContadorExterno,
+		consultaPaqueteMes,
+	],
+	pastillas: { contaduria: pastillaContaduria },
 	acciones: [
 		accionCambiarLimiteCredito,
 		accionCambiarDiasCredito,

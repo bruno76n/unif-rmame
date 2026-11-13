@@ -208,6 +208,16 @@ Se construye en la [fase 14](../../fases/14-inventario-recepcion-del-taller-cont
 
 Dentro de una acción, cada clave se lee una sola vez y se recuerda hasta que la acción termina.
 
+### `admin.valores_de_lista`
+
+| | |
+|---|---|
+| **La usan** | Las consultas que ofrecen los valores de una lista: Contaduría (cuentas de la fábrica, categorías de gasto, tipos de comprobante) y Mantenimiento (áreas del taller) |
+| **Recibe** | `lista` (su clave) · `solo_seleccionables` (opcional: sin los que pone el sistema) |
+| **Regresa** | `valores`: los vigentes, con `id` y `nombre`, por su orden y luego por nombre |
+
+Existe para que ningún módulo lea `lista_valores` por su cuenta (decisión 783). Vive en `modulos/admin/lecturas/valores-de-lista.ts`.
+
 ## Parámetros
 
 | Parámetro | Valor inicial | Para qué |

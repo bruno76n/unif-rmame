@@ -5,7 +5,7 @@
  */
 
 import type { ContratoDeAccion } from "@uniformame/compartido/contratos/definir";
-import { useEnvio as useEnvioComun } from "../../comun/envio.ts";
+import { useEnvioConCampos } from "../../comun/envio.ts";
 
 /** Todas las consultas de Ventas: una acción de Ventas puede cambiar cualquiera. */
 export const consultasDeVentas = [
@@ -28,20 +28,8 @@ export const consultasDeVentas = [
 /**
  * Una acción de Ventas lista para un cajón o una ventana.
  * @param contrato Su contrato.
- * @returns Lo de `useEnvio` de lo común; `enviar(peticion, alCampos)` entrega los errores de la regla por campo.
+ * @returns Lo de `useEnvioConCampos` de lo común: `enviar(peticion, alCampos)` entrega los errores de la regla por campo.
  */
 export function useEnvio<Contrato extends ContratoDeAccion>(contrato: Contrato) {
-	const envio = useEnvioComun(contrato, consultasDeVentas);
-	return {
-		...envio,
-		enviar: (peticion: Parameters<typeof envio.enviar>[0], alCampos?: (campos: Record<string, string>) => void) =>
-			envio.enviar(
-				peticion,
-				alCampos === undefined
-					? undefined
-					: (falla) => {
-							if (Object.keys(falla.campos).length > 0) alCampos(falla.campos);
-						},
-			),
-	};
+	return useEnvioConCampos(contrato, consultasDeVentas);
 }

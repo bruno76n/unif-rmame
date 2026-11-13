@@ -9,7 +9,7 @@
  */
 
 import { useRouter } from "@tanstack/react-router";
-import { enPesos, pesosACentavos } from "@uniformame/compartido/calculos/dinero";
+import { centavosACampo, enPesos, pesosACentavos } from "@uniformame/compartido/calculos/dinero";
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
 import { precioUnitario, totalDe } from "@uniformame/compartido/calculos/ventas";
 import {
@@ -68,22 +68,13 @@ interface Captura {
 }
 
 /**
- * Un precio en centavos como se escribe en su campo: «215» o «215.50».
- * @param centavos El precio.
- */
-function precioEnTexto(centavos: number | null): string {
-	if (centavos === null) return "";
-	return centavos % 100 === 0 ? String(centavos / 100) : (centavos / 100).toFixed(2);
-}
-
-/**
  * Una prenda lista para capturar: sus piezas de hoy y su precio dado (o el sugerido).
  * @param prenda La prenda del editor.
  */
 function paraCapturar(prenda: Prenda): PrendaCapturada {
 	return {
 		prenda,
-		precio: precioEnTexto(prenda.precio_dado_centavos ?? prenda.sugerido_centavos ?? null),
+		precio: centavosACampo(prenda.precio_dado_centavos ?? prenda.sugerido_centavos ?? null),
 		piezas: Object.fromEntries(
 			prenda.tallas.map((talla) => [talla.variante_id, talla.cantidad === 0 ? "" : String(talla.cantidad)]),
 		),
