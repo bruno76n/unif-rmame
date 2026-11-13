@@ -31,6 +31,9 @@ import { Route as ProduccionOperacionesRouteImport } from "./rutas/produccion/op
 import { Route as ProduccionOrdenesRouteImport } from "./rutas/produccion/ordenes.tsx"
 import { Route as ProduccionPorPersonaRouteImport } from "./rutas/produccion/por-persona.tsx"
 import { Route as VentasIndexRouteImport } from "./rutas/ventas/index.tsx"
+import { Route as VentasClientesRouteImport } from "./rutas/ventas/clientes.tsx"
+import { Route as VentasNotasRouteImport } from "./rutas/ventas/notas.tsx"
+import { Route as VentasPedidosRouteImport } from "./rutas/ventas/pedidos.tsx"
 
 const IndexRoute = IndexRouteImport.update({
   id: "/",
@@ -142,6 +145,21 @@ const VentasIndexRoute = VentasIndexRouteImport.update({
   path: "/ventas/",
   getParentRoute: () => rootRouteImport,
 } as any)
+const VentasClientesRoute = VentasClientesRouteImport.update({
+  id: "/ventas/clientes",
+  path: "/ventas/clientes",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VentasNotasRoute = VentasNotasRouteImport.update({
+  id: "/ventas/notas",
+  path: "/ventas/notas",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VentasPedidosRoute = VentasPedidosRouteImport.update({
+  id: "/ventas/pedidos",
+  path: "/ventas/pedidos",
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   "/": typeof IndexRoute
@@ -151,6 +169,9 @@ export interface FileRoutesByFullPath {
   "/produccion/operaciones": typeof ProduccionOperacionesRoute
   "/produccion/ordenes": typeof ProduccionOrdenesRoute
   "/produccion/por-persona": typeof ProduccionPorPersonaRoute
+  "/ventas/clientes": typeof VentasClientesRoute
+  "/ventas/notas": typeof VentasNotasRoute
+  "/ventas/pedidos": typeof VentasPedidosRoute
   "/acceso/": typeof AccesoIndexRoute
   "/admin/": typeof AdminIndexRoute
   "/aduana/": typeof AduanaIndexRoute
@@ -175,6 +196,9 @@ export interface FileRoutesByTo {
   "/produccion/operaciones": typeof ProduccionOperacionesRoute
   "/produccion/ordenes": typeof ProduccionOrdenesRoute
   "/produccion/por-persona": typeof ProduccionPorPersonaRoute
+  "/ventas/clientes": typeof VentasClientesRoute
+  "/ventas/notas": typeof VentasNotasRoute
+  "/ventas/pedidos": typeof VentasPedidosRoute
   "/acceso": typeof AccesoIndexRoute
   "/admin": typeof AdminIndexRoute
   "/aduana": typeof AduanaIndexRoute
@@ -200,6 +224,9 @@ export interface FileRoutesById {
   "/produccion/operaciones": typeof ProduccionOperacionesRoute
   "/produccion/ordenes": typeof ProduccionOrdenesRoute
   "/produccion/por-persona": typeof ProduccionPorPersonaRoute
+  "/ventas/clientes": typeof VentasClientesRoute
+  "/ventas/notas": typeof VentasNotasRoute
+  "/ventas/pedidos": typeof VentasPedidosRoute
   "/acceso/": typeof AccesoIndexRoute
   "/admin/": typeof AdminIndexRoute
   "/aduana/": typeof AduanaIndexRoute
@@ -226,6 +253,9 @@ export interface FileRouteTypes {
     | "/produccion/operaciones"
     | "/produccion/ordenes"
     | "/produccion/por-persona"
+    | "/ventas/clientes"
+    | "/ventas/notas"
+    | "/ventas/pedidos"
     | "/acceso/"
     | "/admin/"
     | "/aduana/"
@@ -250,6 +280,9 @@ export interface FileRouteTypes {
     | "/produccion/operaciones"
     | "/produccion/ordenes"
     | "/produccion/por-persona"
+    | "/ventas/clientes"
+    | "/ventas/notas"
+    | "/ventas/pedidos"
     | "/acceso"
     | "/admin"
     | "/aduana"
@@ -274,6 +307,9 @@ export interface FileRouteTypes {
     | "/produccion/operaciones"
     | "/produccion/ordenes"
     | "/produccion/por-persona"
+    | "/ventas/clientes"
+    | "/ventas/notas"
+    | "/ventas/pedidos"
     | "/acceso/"
     | "/admin/"
     | "/aduana/"
@@ -299,6 +335,9 @@ export interface RootRouteChildren {
   ProduccionOperacionesRoute: typeof ProduccionOperacionesRoute
   ProduccionOrdenesRoute: typeof ProduccionOrdenesRoute
   ProduccionPorPersonaRoute: typeof ProduccionPorPersonaRoute
+  VentasClientesRoute: typeof VentasClientesRoute
+  VentasNotasRoute: typeof VentasNotasRoute
+  VentasPedidosRoute: typeof VentasPedidosRoute
   AccesoIndexRoute: typeof AccesoIndexRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AduanaIndexRoute: typeof AduanaIndexRoute
@@ -472,6 +511,27 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof VentasIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    "/ventas/clientes": {
+      id: "/ventas/clientes"
+      path: "/ventas/clientes"
+      fullPath: "/ventas/clientes"
+      preLoaderRoute: typeof VentasClientesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/ventas/notas": {
+      id: "/ventas/notas"
+      path: "/ventas/notas"
+      fullPath: "/ventas/notas"
+      preLoaderRoute: typeof VentasNotasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/ventas/pedidos": {
+      id: "/ventas/pedidos"
+      path: "/ventas/pedidos"
+      fullPath: "/ventas/pedidos"
+      preLoaderRoute: typeof VentasPedidosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -483,6 +543,9 @@ const rootRouteChildren: RootRouteChildren = {
   ProduccionOperacionesRoute: ProduccionOperacionesRoute,
   ProduccionOrdenesRoute: ProduccionOrdenesRoute,
   ProduccionPorPersonaRoute: ProduccionPorPersonaRoute,
+  VentasClientesRoute: VentasClientesRoute,
+  VentasNotasRoute: VentasNotasRoute,
+  VentasPedidosRoute: VentasPedidosRoute,
   AccesoIndexRoute: AccesoIndexRoute,
   AdminIndexRoute: AdminIndexRoute,
   AduanaIndexRoute: AduanaIndexRoute,

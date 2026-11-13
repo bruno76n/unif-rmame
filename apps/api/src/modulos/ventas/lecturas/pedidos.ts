@@ -4,12 +4,13 @@
  * Fase 16 · docs/modulos/ventas/pedidos.md («Lecturas»)
  */
 
+import { totalDe } from "@uniformame/compartido/calculos/ventas";
 import { and, eq, gt, inArray, isNull } from "drizzle-orm";
 import { z } from "zod";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
 import { avanceDelPedido } from "../dominio/avance-de-pedido.ts";
 import { notasDelPedido } from "../dominio/notas.ts";
-import { leerPedido, renglonesVigentes, totalDe } from "../dominio/pedidos.ts";
+import { leerPedido, renglonesVigentes } from "../dominio/pedidos.ts";
 import { pedidoRenglones, pedidos } from "../tablas.ts";
 
 /** Lo que piden las lecturas de un pedido. */

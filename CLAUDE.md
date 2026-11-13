@@ -23,7 +23,7 @@ Viven en `.claude/agents/`. Cuándo se usa cada uno está en la [forma de trabaj
 Están en `.claude/settings.json` y en `.githooks/`; se construyen en la fase 1. Qué revisa cada revisión está en la [forma de trabajo](docs/trabajo/FORMA-DE-TRABAJO.md#los-verdes).
 
 - **Al empezar cada sesión en la nube (gancho de inicio):** `pnpm install`, que deja activo el gancho de git; fuera de la nube no hace nada. El entorno de la nube está en la [forma de trabajo](docs/trabajo/FORMA-DE-TRABAJO.md#el-entorno-de-la-nube).
-- **Después de editar un archivo:** la revisión rápida de lo cambiado.
+- **Después de editar un archivo:** la revisión rápida de lo cambiado, en el repositorio del archivo: el del proyecto o el worktree del trabajador que lo editó.
 - **Al terminar cada turno (gancho de fin):** la revisión rápida y el conteo de intentos por problema. Al tercer intento fallido sobre el mismo problema, el gancho lee el modo en `.claude/modo` y pide aplicar el protocolo: en supervisado, detenerse y preguntar; en autónomo, decidir y anotar.
 - **Antes de cada commit (git):** el commit sin sello vigente no entra. La huella del sello no incluye los registros, así que escribirlos después de la revisión no la invalida.
 

@@ -90,7 +90,7 @@ describe("Las pantallas de Producción", () => {
 		await enPantalla(pagina.getByText("Ninguna operación reporta más piezas que la anterior")).toBeVisible();
 		await pantalla.capturar(pagina, "produccion/lotes-escritorio");
 		await pagina.locator(`[data-lote="${lotes["L-2026-002"]}"]`).click();
-		await enPantalla(pagina).toHaveURL(new RegExp(`lote=${lotes["L-2026-002"]}`));
+		await enPantalla(pagina).toHaveURL(new RegExp(`cajon=lote&id=${lotes["L-2026-002"]}`));
 		const cajon = pagina.getByRole("dialog");
 		await enPantalla(cajon.getByText("L-2026-002 · ")).toBeVisible();
 		await enPantalla(cajon.getByRole("heading", { name: "Operación por operación" })).toBeVisible();
@@ -108,7 +108,7 @@ describe("Las pantallas de Producción", () => {
 	});
 
 	it("la dueña ve el costo del lote y el precio por metro en el cajón", tiempo, async () => {
-		const pagina = await pantalla.abrir(`/produccion/lotes?lote=${lotes["L-2026-002"]}`, { quien: "duena" });
+		const pagina = await pantalla.abrir(`/produccion/lotes?cajon=lote&id=${lotes["L-2026-002"]}`, { quien: "duena" });
 		const cajon = pagina.getByRole("dialog");
 		await enPantalla(cajon.getByText(/^Costo del lote · \d+ piezas cortadas$/)).toBeVisible();
 		await enPantalla(cajon.getByText("Precio por metro")).toBeVisible();
@@ -117,7 +117,9 @@ describe("Las pantallas de Producción", () => {
 	});
 
 	it("«Cancelar registro» pide el motivo, llama a su acción y el aviso dice lo que regresa", tiempo, async () => {
-		const pagina = await pantalla.abrir(`/produccion/lotes?lote=${lotes["L-2026-002"]}`, { quien: "produccion" });
+		const pagina = await pantalla.abrir(`/produccion/lotes?cajon=lote&id=${lotes["L-2026-002"]}`, {
+			quien: "produccion",
+		});
 		const cajon = pagina.getByRole("dialog");
 		await cajon.getByRole("button", { name: "Cancelar registro" }).first().click();
 		const ventana = pagina.getByRole("dialog", { name: /^Cancelar el registro de / });
@@ -131,7 +133,9 @@ describe("Las pantallas de Producción", () => {
 	});
 
 	it("si el registro cambió mientras se veía, lo dice y no lo cancela (choque de versión)", tiempo, async () => {
-		const pagina = await pantalla.abrir(`/produccion/lotes?lote=${lotes["L-2026-002"]}`, { quien: "produccion" });
+		const pagina = await pantalla.abrir(`/produccion/lotes?cajon=lote&id=${lotes["L-2026-002"]}`, {
+			quien: "produccion",
+		});
 		const cajon = pagina.getByRole("dialog");
 		await cajon.getByRole("button", { name: "Cancelar registro" }).first().click();
 		await pantalla.servidor.base.dueno.query(
@@ -149,7 +153,9 @@ describe("Las pantallas de Producción", () => {
 	});
 
 	it("«Imprimir etiquetas de bulto» llama a su acción y avisa lo que regresa", tiempo, async () => {
-		const pagina = await pantalla.abrir(`/produccion/lotes?lote=${lotes["L-2026-002"]}`, { quien: "produccion" });
+		const pagina = await pantalla.abrir(`/produccion/lotes?cajon=lote&id=${lotes["L-2026-002"]}`, {
+			quien: "produccion",
+		});
 		const llamada = esperarAccion(pagina, "produccion.imprimir_etiquetas_bulto");
 		await pagina.getByRole("dialog").getByRole("button", { name: "Imprimir etiquetas de bulto" }).click();
 		const datos = (await llamada).postDataJSON() as { datos: { lote_id: string } };

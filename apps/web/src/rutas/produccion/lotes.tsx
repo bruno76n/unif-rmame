@@ -1,5 +1,5 @@
 /**
- * La pestaña Lotes: el cajón del lote (`?lote=`) y el lote recién cortado (`?marcado=`) van en la dirección.
+ * La pestaña Lotes: el cajón del lote (`?cajon=lote&id=`) y el lote recién cortado (`?marcado=`) van en la dirección.
  * Fase 19 · docs/interfaz/fabrica/produccion.md («Lotes»)
  */
 

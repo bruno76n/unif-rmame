@@ -10,7 +10,8 @@ import { BarraAvance } from "@uniformame/interfaz/avance/barra-avance";
 import { EstadoDePantalla } from "@uniformame/interfaz/estados/estado-de-pantalla";
 import { Tabla } from "@uniformame/interfaz/tablas/tabla";
 import { useConsulta } from "../../../comun/api.tsx";
-import { PaginaDeProduccion, SegunConsulta } from "../pagina.tsx";
+import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
+import { PaginaDeProduccion } from "../pagina.tsx";
 
 /**
  * Las iniciales de un nombre, para su avatar.

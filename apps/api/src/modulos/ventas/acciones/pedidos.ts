@@ -8,6 +8,7 @@
  * que ya existe (decisión 680). El folio PE- se toma al final, después de revisar todo.
  */
 
+import { totalDe } from "@uniformame/compartido/calculos/ventas";
 import {
 	cancelarPedido,
 	confirmarPedido,
@@ -37,7 +38,6 @@ import {
 	renglonesVigentes,
 	revisarCliente,
 	revisarRenglones,
-	totalDe,
 } from "../dominio/pedidos.ts";
 import { type origenesDeVersion, pedidoRenglones, pedidos, pedidoVersiones } from "../tablas.ts";
 

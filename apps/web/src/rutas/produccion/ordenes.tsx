@@ -1,6 +1,6 @@
 /**
  * La pestaña Órdenes de producción: el filtro (`?filtro=`), la tarjeta del pedido marcada (`?pedido=`) y el cajón del
- * lote (`?lote=`) van en la dirección.
+ * lote (`?cajon=lote&id=`) van en la dirección.
  * Fase 19 · docs/interfaz/fabrica/produccion.md («Órdenes de producción»)
  */
 

@@ -1,5 +1,5 @@
 /**
- * El cajón del lote (ancho): se abre en cualquier pestaña de Producción con `?lote={id}` en la dirección. Su estado y
+ * El cajón del lote (ancho): se abre en cualquier pestaña de Producción con `?cajon=lote&id={id}` en la dirección. Su estado y
  * sus avisos, el hilo grande, sus cifras y sus datos, operación por operación, los registros de la tablet (con
  * «Cancelar registro» y «Ver más»), sus bultos con «Imprimir etiquetas de bulto» y su PDF, los rollos usados, el costo
  * del lote (con Compras o Contaduría) y sus botones: «Capturar corte», «Capturar receta», «Hoja del lote» y «Ver
@@ -18,17 +18,20 @@ import { Boton } from "@uniformame/interfaz/botones/boton";
 import { Cajon } from "@uniformame/interfaz/contenedores/cajon";
 import { Estado } from "@uniformame/interfaz/estados/estado";
 import { EstadoDePantalla } from "@uniformame/interfaz/estados/estado-de-pantalla";
+import { LineaDeAviso } from "@uniformame/interfaz/estados/textos-con-tono";
+import { Dato } from "@uniformame/interfaz/pagina/dato";
+import { Seccion } from "@uniformame/interfaz/pagina/seccion";
 import { Tabla } from "@uniformame/interfaz/tablas/tabla";
 import { FileDown, Printer, Scissors } from "lucide-react";
 import { useState } from "react";
 import type { z } from "zod";
 import { consultar, leerFalla, useAccion, useConsulta } from "../../../comun/api.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
+import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { enOtroDepartamento, useCuenta } from "../cuenta.ts";
 import { rutasDeProduccion, useDireccion } from "../direccion.ts";
 import { loQueCambiaEnProduccion } from "../invalidar.ts";
-import { SegunConsulta } from "../pagina.tsx";
-import { Dato, LineaDeAviso, ParaQuien, Seccion } from "../piezas.tsx";
+import { ParaQuien } from "../piezas.tsx";
 import { VentanaCancelarRegistro } from "../ventanas/cancelar-registro.tsx";
 
 /** El lote, como lo regresa `produccion.lote`. */
@@ -39,13 +42,13 @@ type Registro = Lote["registros"]["renglones"][number];
 /** El cajón del lote, si la dirección lo pide. */
 export function CajonLote() {
 	const { leer, ir } = useDireccion();
-	const loteId = leer("lote");
+	const loteId = leer("cajon") === "lote" ? leer("id") : undefined;
 	const consulta = useConsulta(loteDeProduccion, { lote_id: loteId ?? "" }, loteId !== undefined);
 	const lote = consulta.data;
 	return (
 		<Cajon
 			abierto={loteId !== undefined}
-			alCerrar={() => ir({ lote: undefined })}
+			alCerrar={() => ir({ cajon: undefined, id: undefined })}
 			ancho
 			titulo={lote?.prenda ?? "Lote"}
 			{...(lote === undefined
@@ -73,7 +76,7 @@ function BotonesDelLote({ lote }: { lote: Lote }) {
 				<Boton
 					variante="principal"
 					icono={Scissors}
-					onClick={() => ir({ cortar: lote.lote_id, lote: undefined }, rutasDeProduccion.corte)}
+					onClick={() => ir({ cortar: lote.lote_id, cajon: undefined, id: undefined }, rutasDeProduccion.corte)}
 				>
 					Capturar corte
 				</Boton>
@@ -122,20 +125,20 @@ function CuerpoDelLote({ lote }: { lote: Lote }) {
 				))}
 			</div>
 			<HiloDelLote lote={lote} />
-			<dl className="m-0 grid grid-cols-4 gap-4 rounded-mediano bg-suave p-4 max-telefono:grid-cols-2">
+			<div className="m-0 grid grid-cols-4 gap-4 rounded-mediano bg-suave p-4 max-telefono:grid-cols-2">
 				<Dato etiqueta="Planeadas">{lote.cifras.planeadas}</Dato>
 				<Dato etiqueta="Cortadas">{lote.cifras.cortadas ?? "—"}</Dato>
 				<Dato etiqueta="Listas">{lote.cifras.listas}</Dato>
 				<Dato etiqueta="Merma">{lote.cifras.merma ?? "—"}</Dato>
-			</dl>
-			<dl className="m-0 grid grid-cols-2 gap-4 max-telefono:grid-cols-1">
+			</div>
+			<div className="m-0 grid grid-cols-2 gap-4 max-telefono:grid-cols-1">
 				<Dato etiqueta="Para">
 					<ParaQuien para={lote.para} />
 				</Dato>
 				<Dato etiqueta="Entrega">{lote.entrega}</Dato>
 				<Dato etiqueta="Corte">{lote.corte}</Dato>
 				<Dato etiqueta="Receta">{lote.receta}</Dato>
-			</dl>
+			</div>
 			<OperacionPorOperacion lote={lote} />
 			<RegistrosDeLaTablet lote={lote} />
 			{lote.bultos.length > 0 ? <BultosDelLote lote={lote} /> : null}
@@ -420,13 +423,13 @@ function RollosUsados({ rollos }: { rollos: NonNullable<Lote["rollos"]> }) {
 						: []),
 				]}
 			/>
-			<dl className="m-0 grid grid-cols-3 gap-4">
+			<div className="m-0 grid grid-cols-3 gap-4">
 				<Dato etiqueta="Por pieza">{rollos.por_pieza} m</Dato>
 				<Dato etiqueta="Patrón">{rollos.patron} m</Dato>
 				<Dato etiqueta="Rendimiento">
 					<span className={rollos.rendimiento_rojo ? "text-texto-error" : undefined}>{rollos.rendimiento}</span>
 				</Dato>
-			</dl>
+			</div>
 		</Seccion>
 	);
 }

@@ -7,6 +7,7 @@
  * después (las variantes, el anticipo del pedido, la cuenta por cobrar).
  */
 
+import { anticipoAplicado } from "@uniformame/compartido/calculos/ventas";
 import {
 	armarNotaEntrega,
 	cancelarNotaEntrega,
@@ -172,7 +173,7 @@ export const accionArmarNotaEntrega = implementarAccion(armarNotaEntrega, async 
 	const { disponible_centavos } = anticipoDelPedido.parse(
 		await contexto.lectura("contaduria.anticipo_del_pedido", { pedido_id: pedido.id }),
 	);
-	const anticipo = Math.max(0, Math.min(disponible_centavos, subtotal));
+	const anticipo = anticipoAplicado(disponible_centavos, subtotal);
 	if (anticipo > 0) {
 		await contexto.interna("contaduria.aplicar_anticipo_a_nota", {
 			pedido_id: pedido.id,

@@ -20,12 +20,16 @@ import { Filtros } from "@uniformame/interfaz/captura/filtros";
 import { Selector } from "@uniformame/interfaz/captura/selector";
 import { Estado } from "@uniformame/interfaz/estados/estado";
 import { EstadoDePantalla } from "@uniformame/interfaz/estados/estado-de-pantalla";
+import { LineaDeAviso } from "@uniformame/interfaz/estados/textos-con-tono";
+import { Dato } from "@uniformame/interfaz/pagina/dato";
+import { Seccion } from "@uniformame/interfaz/pagina/seccion";
 import { Plus, Scissors, X } from "lucide-react";
 import { type ReactNode, useEffect, useState } from "react";
 import { leerFalla, useAccion, useConsulta, volverALeer } from "../../../comun/api.tsx";
 import { useAvisar } from "../../../comun/avisos-de-abajo.tsx";
 import { usePreguntarAntesDeSalir } from "../../../comun/cambios-sin-guardar.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
+import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import {
 	type CapturaDelCorte,
 	type CorteCapturado,
@@ -42,8 +46,7 @@ import {
 import { enOtroDepartamento, useCuenta } from "../cuenta.ts";
 import { rutasDeProduccion, useDireccion } from "../direccion.ts";
 import { loQueCambiaEnProduccion } from "../invalidar.ts";
-import { PaginaDeProduccion, SegunConsulta } from "../pagina.tsx";
-import { Dato, LineaDeAviso, Seccion } from "../piezas.tsx";
+import { PaginaDeProduccion } from "../pagina.tsx";
 
 /** La etiqueta de la receta en el encabezado de la captura. */
 const etiquetaDeReceta = {
@@ -424,7 +427,7 @@ function CapturaConReceta({ captura, encabezado }: { captura: CapturaDelCorte; e
 					/>
 				</div>
 			</Seccion>
-			<dl className="m-0 grid grid-cols-5 gap-4 rounded-mediano bg-suave p-4 max-telefono:grid-cols-2">
+			<div className="m-0 grid grid-cols-5 gap-4 rounded-mediano bg-suave p-4 max-telefono:grid-cols-2">
 				<Dato etiqueta="Piezas">{cifras.piezas}</Dato>
 				<Dato etiqueta="Metros usados">{cifras.usados}</Dato>
 				<Dato etiqueta="Por pieza">{cifras.porPieza}</Dato>
@@ -432,7 +435,7 @@ function CapturaConReceta({ captura, encabezado }: { captura: CapturaDelCorte; e
 				<Dato etiqueta="Contra el patrón">
 					<span className={cifras.rojo ? "text-texto-error" : undefined}>{cifras.contraPatron}</span>
 				</Dato>
-			</dl>
+			</div>
 			<footer className="flex flex-wrap items-center gap-4 border-linea border-t pt-4">
 				<ul className="m-0 flex min-w-0 flex-1 list-none flex-col gap-1 p-0 text-tinta2">
 					{telas.map((tela) => (

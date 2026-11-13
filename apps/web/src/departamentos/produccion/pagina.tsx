@@ -1,14 +1,12 @@
 /**
  * La página de Producción: su título con sus seis pestañas, la acción principal «Capturar corte» y el cajón del lote,
- * que se abre en cualquier pestaña con `?lote={id}` en la dirección. Cada ruta de Producción pone su pestaña adentro.
+ * que se abre en cualquier pestaña con `?cajon=lote&id={id}` en la dirección. Cada ruta de Producción pone su pestaña adentro.
  * Fase 19 · docs/interfaz/fabrica/produccion.md («Quién entra»: la acción principal y las pestañas)
  *
  * Uso, en la ruta de cada pestaña: `<PaginaDeProduccion activa="lotes"><PestanaLotes /></PaginaDeProduccion>`.
  */
 
-import type { UseQueryResult } from "@tanstack/react-query";
 import { Boton } from "@uniformame/interfaz/botones/boton";
-import { EstadoDePantalla } from "@uniformame/interfaz/estados/estado-de-pantalla";
 import { Scissors } from "lucide-react";
 import type { ReactNode } from "react";
 import { AccionPrincipal } from "../../comun/accion-principal.tsx";
@@ -57,24 +55,4 @@ export function PaginaDeProduccion({
 			<CajonLote />
 		</PaginaDeDepartamento>
 	);
-}
-
-/**
- * Lo que se ve mientras una consulta carga o si falló; con sus datos, su contenido.
- * @param props La consulta, cuántos renglones tiene su esqueleto y cómo se pinta con sus datos.
- */
-export function SegunConsulta<Datos>({
-	consulta,
-	renglones = 5,
-	children,
-}: {
-	consulta: UseQueryResult<Datos>;
-	renglones?: number;
-	children: (datos: Datos) => ReactNode;
-}) {
-	if (consulta.isPending) return <EstadoDePantalla tipo="cargando" renglones={renglones} />;
-	if (consulta.data === undefined) {
-		return <EstadoDePantalla tipo="error" alReintentar={() => void consulta.refetch()} />;
-	}
-	return children(consulta.data);
 }

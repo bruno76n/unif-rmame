@@ -25,6 +25,16 @@ import {
 	accionGuardarBorradorPedido,
 	accionGuardarVersionPedido,
 } from "./acciones/pedidos.ts";
+import { consultaArmarNota } from "./consultas/armar-nota.ts";
+import { consultaBuscarPrendas } from "./consultas/buscar-prendas.ts";
+import { consultaClientesVentas, consultaClienteVentas } from "./consultas/clientes.ts";
+import { consultaEditorPedido, consultaPrecioSugerido } from "./consultas/editor-pedido.ts";
+import { consultaNotaEntrega } from "./consultas/nota-entrega.ts";
+import { consultaNotasEntrega } from "./consultas/notas-entrega.ts";
+import { consultaPedidoVentas } from "./consultas/pedido.ts";
+import { consultaPedidosVentas } from "./consultas/pedidos.ts";
+import { consultaPendientesVentas, pastillaVentas } from "./consultas/pendientes.ts";
+import { consultaRevisionMandar } from "./consultas/revision-mandar.ts";
 import { clienteActivoDeEscuela, estadoCliente } from "./lecturas/clientes.ts";
 import { documentosAbiertos, foliosDeDocumentos } from "./lecturas/documentos.ts";
 import { avancePedido, pedidoParaCobro, pedidosAbiertosDeVariante } from "./lecturas/pedidos.ts";
@@ -49,6 +59,21 @@ export default definirModulo({
 		accionPasarABodega,
 		accionPedirNotaCredito,
 	],
+	consultas: [
+		consultaPendientesVentas,
+		consultaPedidosVentas,
+		consultaPedidoVentas,
+		consultaEditorPedido,
+		consultaPrecioSugerido,
+		consultaBuscarPrendas,
+		consultaRevisionMandar,
+		consultaNotasEntrega,
+		consultaNotaEntrega,
+		consultaArmarNota,
+		consultaClientesVentas,
+		consultaClienteVentas,
+	],
+	pastillas: { ventas: pastillaVentas },
 	internas: {
 		marcar_nota_en_camino: marcarNotaEnCamino,
 		aplicar_decision_nota_credito: aplicarDecisionNotaCredito,

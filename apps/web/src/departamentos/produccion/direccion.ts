@@ -1,7 +1,7 @@
 /**
  * La dirección de las pantallas de Producción: lo que se lee de ella (la pestaña es la ruta; los filtros, el lote
  * escogido del corte y el cajón abierto van en sus parámetros) y cómo se cambia sin perder lo demás. Así un enlace
- * abre la pantalla tal como estaba, y otro departamento abre el cajón del lote con `/produccion/lotes?lote={id}`.
+ * abre la pantalla tal como estaba, y otro departamento abre el cajón del lote con `/produccion/lotes?cajon=lote&id={id}`.
  * Fase 19 · .claude/rules/react.md (regla 5) y docs/interfaz/comunes.md («La página de un departamento», regla 2)
  */
 
@@ -9,7 +9,7 @@ import { useRouter, useRouterState } from "@tanstack/react-router";
 import { useCallback } from "react";
 
 /** Los parámetros que usan las pantallas de Producción. */
-export type ParametroDeProduccion = "grupo" | "filtro" | "lote" | "cortar" | "marcado" | "pedido";
+export type ParametroDeProduccion = "grupo" | "filtro" | "cajon" | "id" | "cortar" | "marcado" | "pedido";
 
 /** Las rutas de las pestañas de Producción. */
 export const rutasDeProduccion = {

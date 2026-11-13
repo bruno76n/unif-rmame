@@ -11,15 +11,16 @@ import { operacionesDeProduccion } from "@uniformame/compartido/contratos/produc
 import { Boton } from "@uniformame/interfaz/botones/boton";
 import { Estado } from "@uniformame/interfaz/estados/estado";
 import { EstadoDePantalla } from "@uniformame/interfaz/estados/estado-de-pantalla";
+import { LineaDeAviso } from "@uniformame/interfaz/estados/textos-con-tono";
 import { Tabla } from "@uniformame/interfaz/tablas/tabla";
 import { Plus, X } from "lucide-react";
 import { useState } from "react";
 import type { z } from "zod";
 import { useAccion, useConsulta } from "../../../comun/api.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
+import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { loQueCambiaEnProduccion } from "../invalidar.ts";
-import { PaginaDeProduccion, SegunConsulta } from "../pagina.tsx";
-import { LineaDeAviso } from "../piezas.tsx";
+import { PaginaDeProduccion } from "../pagina.tsx";
 import { VentanaFlujoNuevo } from "../ventanas/flujo-nuevo.tsx";
 import { VentanaOperacionNueva } from "../ventanas/operacion-nueva.tsx";
 

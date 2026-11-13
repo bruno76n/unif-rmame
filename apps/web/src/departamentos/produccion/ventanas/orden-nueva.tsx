@@ -13,13 +13,13 @@ import { Boton } from "@uniformame/interfaz/botones/boton";
 import { Campo } from "@uniformame/interfaz/captura/campo";
 import { Selector } from "@uniformame/interfaz/captura/selector";
 import { Ventana } from "@uniformame/interfaz/contenedores/ventana";
+import { LineaDeAviso } from "@uniformame/interfaz/estados/textos-con-tono";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
 import { leerFalla, useAccion, useConsulta } from "../../../comun/api.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
 import { loQueCambiaEnProduccion } from "../invalidar.ts";
-import { LineaDeAviso } from "../piezas.tsx";
 
 /** Lo que se captura: la entrada de `produccion.crear_orden`. */
 type Captura = z.input<typeof crearOrden.entrada>;

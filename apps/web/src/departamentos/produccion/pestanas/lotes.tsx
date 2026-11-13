@@ -16,8 +16,9 @@ import { ChevronDown, ChevronRight, Scissors } from "lucide-react";
 import { type ReactNode, useEffect, useState } from "react";
 import type { z } from "zod";
 import { useConsulta } from "../../../comun/api.tsx";
+import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { rutasDeProduccion, useDireccion } from "../direccion.ts";
-import { PaginaDeProduccion, SegunConsulta } from "../pagina.tsx";
+import { PaginaDeProduccion } from "../pagina.tsx";
 import { ParaQuien } from "../piezas.tsx";
 
 /** Lo que regresa `produccion.lotes`. */
@@ -62,7 +63,7 @@ function TableroDeLotes({ lotes }: { lotes: Lotes }) {
 	const vacio =
 		lotes.atorados.length + lotes.en_proceso.length + lotes.por_cortar.length + lotes.terminados.length === 0;
 	if (vacio) return <EstadoDePantalla tipo="vacio" texto="Sin lotes en el taller" />;
-	const abrir = (loteId: string) => ir({ lote: loteId });
+	const abrir = (loteId: string) => ir({ cajon: "lote", id: loteId });
 	return (
 		<>
 			<ul className="m-0 flex list-none flex-wrap gap-x-5 gap-y-1 p-0 text-etiqueta text-tinta2">

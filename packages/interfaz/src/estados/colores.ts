@@ -141,3 +141,15 @@ export function esEstadoConocido(estado: string): boolean {
 		coloresDeEstado.some((color) => fijos[color].includes(estado)) || conDatos.some(([forma]) => forma.test(estado))
 	);
 }
+
+/** El punto de un filtro para cada color de estado: el color de tipo más cercano (ver `captura/filtros.tsx`). */
+export const puntoDelEstado = {
+	rojo: "bg-rojo",
+	ambar: "bg-ambar",
+	azul: "bg-azul",
+	verde: "bg-verde",
+	gris: "bg-pizarra",
+	morado: "bg-violeta",
+	"verde-azulado": "bg-verde-azulado",
+	naranja: "bg-ambar",
+} as const satisfies Readonly<Record<ColorDeEstado, string>>;

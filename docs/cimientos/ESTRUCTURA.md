@@ -117,6 +117,7 @@ apps/web/src/
 └── comun/                     lo que comparten todos: armazón, cliente de la API, búsqueda, campana, cuenta, avisos y el arnés de pruebas
 ```
 
+- **Un cajón se abre por su dirección:** `/<departamento>/<pestaña>?cajon=<nombre>&id=<id>` (decisión 759), así otro departamento lo enlaza sin importar su componente.
 - **El encargo de un trabajador** va en `.trabajador.json`, en la raíz de su worktree (no entra a git): su departamento, el commit del que salió y lo que el capataz le dio de más. `scripts/carpetas.ts` revisa con él que solo tocó sus carpetas, y la revisión rápida lo corre (decisión 750).
 - **Una ruta solo arma la pantalla:** lee los filtros de la dirección, llama a la consulta del contrato con TanStack Query y entrega los datos a su pestaña. Ninguna regla del negocio vive aquí.
 - **El menú se arma solo** con los `menu.ts` de cada carpeta (`import.meta.glob` de Vite). La cuenta solo ve los departamentos que tiene.

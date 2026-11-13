@@ -5,6 +5,7 @@
  */
 
 import { centavosATexto } from "@uniformame/compartido/calculos/dinero";
+import { precioUnitario } from "@uniformame/compartido/calculos/ventas";
 import { centavos } from "@uniformame/compartido/tipos/base";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { z } from "zod";
@@ -272,16 +273,8 @@ export async function precioDeHoy(
 		porcentajeAplicado: deCatalogo.porcentaje_aplicado === null ? null : String(deCatalogo.porcentaje_aplicado),
 		precioDadoCentavos: dado ?? null,
 		recargoEspecialCentavos: deCatalogo.recargo_especial_centavos,
-		precioUnitarioCentavos: base + deCatalogo.recargo_especial_centavos,
+		precioUnitarioCentavos: precioUnitario(base, deCatalogo.recargo_especial_centavos),
 	};
-}
-
-/**
- * El total de unos renglones: piezas por su precio unitario.
- * @param renglones Los renglones.
- */
-export function totalDe(renglones: readonly { cantidad: number; precioUnitarioCentavos: number }[]): number {
-	return renglones.reduce((total, renglon) => total + renglon.cantidad * renglon.precioUnitarioCentavos, 0);
 }
 
 /**

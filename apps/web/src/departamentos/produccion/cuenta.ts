@@ -11,9 +11,9 @@ import { useConsulta } from "../../comun/api.tsx";
 /** Las direcciones de lo que Producción abre en otro departamento. */
 export const enOtroDepartamento = {
 	/** El cajón del pedido en Ventas a externos. */
-	pedido: (pedidoId: string) => `/ventas/pedidos?pedido=${pedidoId}`,
+	pedido: (pedidoId: string) => `/ventas/pedidos?cajon=pedido&id=${pedidoId}`,
 	/** La receta de una prenda en Patronaje. */
-	receta: (productoId: string) => `/patronaje/recetas?producto=${productoId}`,
+	receta: (productoId: string) => `/patronaje/recetas?cajon=receta&id=${productoId}`,
 };
 
 /**

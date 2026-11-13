@@ -17,16 +17,18 @@ import { Boton } from "@uniformame/interfaz/botones/boton";
 import { Filtros } from "@uniformame/interfaz/captura/filtros";
 import { Estado } from "@uniformame/interfaz/estados/estado";
 import { EstadoDePantalla } from "@uniformame/interfaz/estados/estado-de-pantalla";
+import { MuestraDeColor } from "@uniformame/interfaz/estados/muestra-de-color";
+import { Seccion } from "@uniformame/interfaz/pagina/seccion";
 import { Plus, Store, Warehouse } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { z } from "zod";
 import { consultar, useAccion, useConsulta } from "../../../comun/api.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
+import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { enOtroDepartamento, useCuenta } from "../cuenta.ts";
 import { useDireccion } from "../direccion.ts";
 import { loQueCambiaEnProduccion } from "../invalidar.ts";
-import { PaginaDeProduccion, SegunConsulta } from "../pagina.tsx";
-import { ColorDeEscuela, Seccion } from "../piezas.tsx";
+import { PaginaDeProduccion } from "../pagina.tsx";
 import { VentanaOrdenNueva } from "../ventanas/orden-nueva.tsx";
 
 /** Lo que regresa `produccion.ordenes`. */
@@ -166,7 +168,7 @@ function TarjetaDeOrden({ tarjeta, marcada }: { tarjeta: Tarjeta; marcada: boole
 				<div className="flex min-w-0 flex-1 flex-col gap-1">
 					<span className="flex items-center gap-2">
 						{tarjeta.tipo === "pedido" ? (
-							<ColorDeEscuela color={tarjeta.color} />
+							<MuestraDeColor color={tarjeta.color} tamano="chico" sinColor="nada" />
 						) : (
 							<Icono aria-hidden="true" size={18} strokeWidth={1.9} className="text-tinta3" />
 						)}
@@ -215,7 +217,7 @@ function TarjetaDeOrden({ tarjeta, marcada }: { tarjeta: Tarjeta; marcada: boole
 						<button
 							type="button"
 							disabled={renglon.lote_id === null}
-							onClick={() => (renglon.lote_id === null ? undefined : ir({ lote: renglon.lote_id }))}
+							onClick={() => (renglon.lote_id === null ? undefined : ir({ cajon: "lote", id: renglon.lote_id }))}
 							className="grid w-full grid-cols-[minmax(200px,1fr)_minmax(0,3fr)] items-center gap-4 py-3 text-left enabled:hover:bg-suave max-menu:grid-cols-1"
 						>
 							<span className="flex flex-col">

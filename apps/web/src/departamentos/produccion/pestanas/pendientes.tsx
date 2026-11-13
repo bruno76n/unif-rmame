@@ -32,10 +32,11 @@ import {
 import { useState } from "react";
 import type { z } from "zod";
 import { useAccion, useConsulta } from "../../../comun/api.tsx";
+import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { enOtroDepartamento, useCuenta } from "../cuenta.ts";
 import { rutasDeProduccion, useDireccion } from "../direccion.ts";
 import { loQueCambiaEnProduccion } from "../invalidar.ts";
-import { PaginaDeProduccion, SegunConsulta } from "../pagina.tsx";
+import { PaginaDeProduccion } from "../pagina.tsx";
 import { VentanaResolverExcepcion } from "../ventanas/resolver-excepcion.tsx";
 
 /** Un renglón de Pendientes, como llega. */
@@ -197,7 +198,11 @@ function ColaDeTrabajo({
 						aplicar.mutate({ datos: { cambio_pedido_id: renglon.cambio_pedido_id }, version: renglon.version }),
 				};
 			case "lote":
-				return { texto: "Ver lote", alTocar: () => ir({ lote: renglon.lote_id }), principal: renglon.atorado };
+				return {
+					texto: "Ver lote",
+					alTocar: () => ir({ cajon: "lote", id: renglon.lote_id }),
+					principal: renglon.atorado,
+				};
 			case "corte":
 				if (renglon.con_receta) {
 					return { texto: "Capturar corte", alTocar: () => ir({ cortar: renglon.lote_id }, rutasDeProduccion.corte) };

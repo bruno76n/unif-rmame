@@ -24677,6 +24677,105 @@
         }
       }
     },
+    "/v1/consultas/contaduria.estado_pago_notas": {
+      "get": {
+        "tags": [
+          "contaduria"
+        ],
+        "description": "El estado del pago de unas notas de entrega entregadas; el saldo, solo a quien tiene Contaduría\n\nPermiso: departamento ventas o contaduria o direccion. Se puede recortar: saldo_centavos.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f-]{36}(,[0-9a-f-]{36}){0,99}$"
+            },
+            "in": "query",
+            "name": "nota_ids",
+            "required": true,
+            "description": "Las notas de entrega, por sus ids separadas por coma; hasta 100"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "notas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "nota_entrega_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "estado": {
+                                "type": "string",
+                                "enum": [
+                                  "sin_pagar",
+                                  "pagada_en_parte",
+                                  "pagada"
+                                ]
+                              },
+                              "texto": {
+                                "type": "string",
+                                "description": "«Sin pagar», «Pagada en parte» o «Pagada»"
+                              },
+                              "saldo_centavos": {
+                                "description": "Solo a quien tiene Contaduría",
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "nota_entrega_id",
+                              "estado",
+                              "texto"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "notas"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/consultas/direccion.autorizaciones": {
       "get": {
         "tags": [
@@ -29250,6 +29349,3687 @@
                       },
                       "required": [
                         "personas"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/ventas.pendientes": {
+      "get": {
+        "tags": [
+          "ventas"
+        ],
+        "description": "Pendientes de Ventas a externos: los indicadores y los renglones por resolver, por grupo\n\nPermiso: departamento ventas.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "todos",
+                "pedidos",
+                "entregas",
+                "clientes"
+              ]
+            },
+            "in": "query",
+            "name": "grupo",
+            "required": false,
+            "description": "El grupo que se ve; sin él, todos"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "cifras": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "clave": {
+                                "type": "string",
+                                "enum": [
+                                  "pedidos_abiertos",
+                                  "piezas_por_entregar",
+                                  "entregas_proximas",
+                                  "notas_entrega",
+                                  "clientes"
+                                ]
+                              },
+                              "nombre": {
+                                "type": "string",
+                                "description": "«Pedidos abiertos», «Entregas en 7 días»"
+                              },
+                              "numero": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "contexto": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "texto": {
+                                      "type": "string"
+                                    },
+                                    "tono": {
+                                      "type": "string",
+                                      "enum": [
+                                        "normal",
+                                        "ambar",
+                                        "rojo"
+                                      ],
+                                      "description": "Normal, ámbar o rojo"
+                                    }
+                                  },
+                                  "required": [
+                                    "texto",
+                                    "tono"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "description": "La línea de abajo, lo rojo y lo ámbar primero"
+                              },
+                              "reparto": {
+                                "nullable": true,
+                                "description": "La barra repartida por estado, si la lleva",
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "etiqueta": {
+                                      "type": "string",
+                                      "description": "Qué cuenta: «Entregado»"
+                                    },
+                                    "valor": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991,
+                                      "description": "Cuántas"
+                                    },
+                                    "color": {
+                                      "type": "string",
+                                      "enum": [
+                                        "rojo",
+                                        "ambar",
+                                        "azul",
+                                        "verde",
+                                        "gris",
+                                        "morado",
+                                        "verde-azulado",
+                                        "naranja"
+                                      ],
+                                      "description": "El color del cuadro del estado"
+                                    }
+                                  },
+                                  "required": [
+                                    "etiqueta",
+                                    "valor",
+                                    "color"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "pestana": {
+                                "type": "string",
+                                "enum": [
+                                  "pedidos",
+                                  "notas",
+                                  "clientes"
+                                ],
+                                "description": "La pestaña a la que lleva"
+                              }
+                            },
+                            "required": [
+                              "clave",
+                              "nombre",
+                              "numero",
+                              "contexto",
+                              "reparto",
+                              "pestana"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "conteos": {
+                          "type": "object",
+                          "properties": {
+                            "todos": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "pedidos": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "entregas": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "clientes": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "todos",
+                            "pedidos",
+                            "entregas",
+                            "clientes"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "renglones": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "clave": {
+                                "type": "string",
+                                "description": "Única en la lista"
+                              },
+                              "grupo": {
+                                "type": "string",
+                                "enum": [
+                                  "pedidos",
+                                  "entregas",
+                                  "clientes"
+                                ]
+                              },
+                              "tipo": {
+                                "type": "string",
+                                "enum": [
+                                  "borrador",
+                                  "entrega",
+                                  "pedido",
+                                  "nota",
+                                  "credito"
+                                ]
+                              },
+                              "titulo": {
+                                "type": "string",
+                                "description": "«PE-0150 · Colegio Morelos»"
+                              },
+                              "detalle": {
+                                "type": "string",
+                                "description": "La línea de abajo de la referencia"
+                              },
+                              "fecha": {
+                                "nullable": true,
+                                "type": "object",
+                                "properties": {
+                                  "fecha": {
+                                    "type": "string",
+                                    "format": "date",
+                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                                    "description": "La fecha de negocio, en hora de México"
+                                  },
+                                  "texto": {
+                                    "type": "string",
+                                    "description": "Cómo se lee: «14 oct»"
+                                  },
+                                  "cuando": {
+                                    "type": "string",
+                                    "description": "Lo que falta o lo que pasó: «en 3 días», «hace 2 días», «hoy», «Entregado»"
+                                  },
+                                  "tono": {
+                                    "type": "string",
+                                    "enum": [
+                                      "normal",
+                                      "ambar",
+                                      "rojo"
+                                    ],
+                                    "description": "Normal, ámbar o rojo"
+                                  }
+                                },
+                                "required": [
+                                  "fecha",
+                                  "texto",
+                                  "cuando",
+                                  "tono"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "importe_centavos": {
+                                "description": "El total o lo que valen las listas",
+                                "nullable": true,
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "piezas": {
+                                "nullable": true,
+                                "description": "En lugar del importe: «{n} pz» de una nota",
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "estado": {
+                                "type": "object",
+                                "properties": {
+                                  "texto": {
+                                    "type": "string",
+                                    "description": "El estado, en una de las formas de la guía"
+                                  },
+                                  "color": {
+                                    "type": "string",
+                                    "enum": [
+                                      "rojo",
+                                      "ambar",
+                                      "azul",
+                                      "verde",
+                                      "gris",
+                                      "morado",
+                                      "verde-azulado",
+                                      "naranja"
+                                    ],
+                                    "description": "El color del cuadro del estado"
+                                  },
+                                  "abajo": {
+                                    "nullable": true,
+                                    "description": "La alerta que va abajo, en el mismo cuadro",
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "texto",
+                                  "color",
+                                  "abajo"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "accion": {
+                                "type": "object",
+                                "properties": {
+                                  "tipo": {
+                                    "type": "string",
+                                    "enum": [
+                                      "revisar",
+                                      "armar_nota",
+                                      "mandar",
+                                      "ver_pedido",
+                                      "confirmar_entrega",
+                                      "ver_cliente"
+                                    ]
+                                  },
+                                  "texto": {
+                                    "type": "string",
+                                    "description": "El texto del botón"
+                                  },
+                                  "pedido_id": {
+                                    "nullable": true,
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "nota_id": {
+                                    "nullable": true,
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "cliente_id": {
+                                    "nullable": true,
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  }
+                                },
+                                "required": [
+                                  "tipo",
+                                  "texto",
+                                  "pedido_id",
+                                  "nota_id",
+                                  "cliente_id"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "required": [
+                              "clave",
+                              "grupo",
+                              "tipo",
+                              "titulo",
+                              "detalle",
+                              "fecha",
+                              "piezas",
+                              "estado",
+                              "accion"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Los del grupo, sin ordenar: la tabla los ordena por color"
+                        },
+                        "rojo": {
+                          "type": "boolean",
+                          "description": "Si algún renglón es rojo"
+                        }
+                      },
+                      "required": [
+                        "cifras",
+                        "conteos",
+                        "renglones",
+                        "rojo"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/ventas.pedidos": {
+      "get": {
+        "tags": [
+          "ventas"
+        ],
+        "description": "Los pedidos abiertos (y los entregados, si se piden), por cliente o por etapa, con su avance y su alerta\n\nPermiso: departamento ventas.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "cliente",
+                "estado"
+              ]
+            },
+            "in": "query",
+            "name": "vista",
+            "required": false,
+            "description": "Por cliente (con los grupos) o por estado"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 80
+            },
+            "in": "query",
+            "name": "buscar",
+            "required": false,
+            "description": "Folio, prenda, nota o cliente: todas las palabras"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "borrador",
+                "confirmado",
+                "en_produccion",
+                "listo_en_aduana",
+                "entrega_parcial",
+                "entregado"
+              ]
+            },
+            "in": "query",
+            "name": "etapa",
+            "required": false,
+            "description": "Solo los de esa etapa"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "si",
+                "no"
+              ]
+            },
+            "in": "query",
+            "name": "mostrar_entregados",
+            "required": false,
+            "description": "Si salen los entregados"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "etapas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "clave": {
+                                "type": "string",
+                                "enum": [
+                                  "borrador",
+                                  "confirmado",
+                                  "en_produccion",
+                                  "listo_en_aduana",
+                                  "entrega_parcial",
+                                  "entregado"
+                                ]
+                              },
+                              "texto": {
+                                "type": "string"
+                              },
+                              "color": {
+                                "type": "string",
+                                "enum": [
+                                  "rojo",
+                                  "ambar",
+                                  "azul",
+                                  "verde",
+                                  "gris",
+                                  "morado",
+                                  "verde-azulado",
+                                  "naranja"
+                                ],
+                                "description": "El color del cuadro del estado"
+                              },
+                              "conteo": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "clave",
+                              "texto",
+                              "color",
+                              "conteo"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Los filtros por etapa, con su conteo sin el filtro de etapa"
+                        },
+                        "clientes": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "cliente_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string",
+                                "description": "El nombre de su tercero"
+                              },
+                              "color": {
+                                "nullable": true,
+                                "description": "El color de su escuela; nulo si no es escuela",
+                                "type": "string"
+                              },
+                              "descripcion": {
+                                "type": "string",
+                                "description": "«Escuela en Yurécuaro · 2 pedidos»"
+                              },
+                              "credito": {
+                                "type": "object",
+                                "properties": {
+                                  "texto": {
+                                    "type": "string"
+                                  },
+                                  "color": {
+                                    "type": "string",
+                                    "enum": [
+                                      "rojo",
+                                      "ambar",
+                                      "azul",
+                                      "verde",
+                                      "gris",
+                                      "morado",
+                                      "verde-azulado",
+                                      "naranja"
+                                    ],
+                                    "description": "El color del cuadro del estado"
+                                  }
+                                },
+                                "required": [
+                                  "texto",
+                                  "color"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "detenido": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "cliente_id",
+                              "nombre",
+                              "color",
+                              "descripcion",
+                              "credito",
+                              "detenido"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Por cliente: los grupos, en su orden; vacía por estado"
+                        },
+                        "pedidos": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "pedido_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "folio": {
+                                "type": "string"
+                              },
+                              "version_vigente": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991,
+                                "description": "Su número de versión; «versión {v}» desde la 2"
+                              },
+                              "cliente_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "cliente": {
+                                "type": "string"
+                              },
+                              "prendas": {
+                                "type": "string",
+                                "description": "Los nombres de sus prendas"
+                              },
+                              "prendas_detalle": {
+                                "type": "string",
+                                "description": "«2 productos · tallas 6 a 14»"
+                              },
+                              "piezas": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "entrega": {
+                                "type": "object",
+                                "properties": {
+                                  "fecha": {
+                                    "type": "string",
+                                    "format": "date",
+                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                                    "description": "La fecha de negocio, en hora de México"
+                                  },
+                                  "texto": {
+                                    "type": "string",
+                                    "description": "Cómo se lee: «14 oct»"
+                                  },
+                                  "cuando": {
+                                    "type": "string",
+                                    "description": "Lo que falta o lo que pasó: «en 3 días», «hace 2 días», «hoy», «Entregado»"
+                                  },
+                                  "tono": {
+                                    "type": "string",
+                                    "enum": [
+                                      "normal",
+                                      "ambar",
+                                      "rojo"
+                                    ],
+                                    "description": "Normal, ámbar o rojo"
+                                  }
+                                },
+                                "required": [
+                                  "fecha",
+                                  "texto",
+                                  "cuando",
+                                  "tono"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "avance": {
+                                "nullable": true,
+                                "description": "Nulo en borrador: «Sin confirmar»",
+                                "type": "object",
+                                "properties": {
+                                  "texto": {
+                                    "type": "string",
+                                    "description": "«{n} de {m} entregadas»"
+                                  },
+                                  "tramos": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "etiqueta": {
+                                          "type": "string",
+                                          "description": "Qué cuenta: «Entregado»"
+                                        },
+                                        "valor": {
+                                          "type": "integer",
+                                          "minimum": -9007199254740991,
+                                          "maximum": 9007199254740991,
+                                          "description": "Cuántas"
+                                        },
+                                        "color": {
+                                          "type": "string",
+                                          "enum": [
+                                            "rojo",
+                                            "ambar",
+                                            "azul",
+                                            "verde",
+                                            "gris",
+                                            "morado",
+                                            "verde-azulado",
+                                            "naranja"
+                                          ],
+                                          "description": "El color del cuadro del estado"
+                                        }
+                                      },
+                                      "required": [
+                                        "etiqueta",
+                                        "valor",
+                                        "color"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "texto",
+                                  "tramos"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "etapa": {
+                                "type": "object",
+                                "properties": {
+                                  "clave": {
+                                    "type": "string",
+                                    "enum": [
+                                      "borrador",
+                                      "confirmado",
+                                      "en_produccion",
+                                      "listo_en_aduana",
+                                      "entrega_parcial",
+                                      "entregado"
+                                    ]
+                                  },
+                                  "texto": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "clave",
+                                  "texto"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "estado": {
+                                "type": "object",
+                                "properties": {
+                                  "texto": {
+                                    "type": "string",
+                                    "description": "El estado, en una de las formas de la guía"
+                                  },
+                                  "color": {
+                                    "type": "string",
+                                    "enum": [
+                                      "rojo",
+                                      "ambar",
+                                      "azul",
+                                      "verde",
+                                      "gris",
+                                      "morado",
+                                      "verde-azulado",
+                                      "naranja"
+                                    ],
+                                    "description": "El color del cuadro del estado"
+                                  },
+                                  "abajo": {
+                                    "nullable": true,
+                                    "description": "La alerta que va abajo, en el mismo cuadro",
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "texto",
+                                  "color",
+                                  "abajo"
+                                ],
+                                "additionalProperties": false,
+                                "description": "La etapa con su alerta abajo"
+                              },
+                              "notas": {
+                                "type": "object",
+                                "properties": {
+                                  "cuantas": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "ultimas": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "description": "Los dos últimos folios"
+                                  }
+                                },
+                                "required": [
+                                  "cuantas",
+                                  "ultimas"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "total_centavos": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "pedido_id",
+                              "folio",
+                              "version_vigente",
+                              "cliente_id",
+                              "cliente",
+                              "prendas",
+                              "prendas_detalle",
+                              "piezas",
+                              "entrega",
+                              "avance",
+                              "etapa",
+                              "estado",
+                              "notas"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Los entregados al final; los demás por entrega"
+                        }
+                      },
+                      "required": [
+                        "etapas",
+                        "clientes",
+                        "pedidos"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/ventas.pedido": {
+      "get": {
+        "tags": [
+          "ventas"
+        ],
+        "description": "El pedido con su avance, sus avisos, sus prendas por talla, sus notas y lo que se puede hacer con él\n\nPermiso: departamento ventas o contaduria o direccion.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "pedido_id",
+            "required": true,
+            "description": "El pedido"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "pedido_id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "folio": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "La versión del registro, para las acciones"
+                        },
+                        "version_vigente": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "estado": {
+                          "type": "string",
+                          "enum": [
+                            "borrador",
+                            "confirmado",
+                            "entregado",
+                            "cancelado"
+                          ]
+                        },
+                        "cliente": {
+                          "type": "object",
+                          "properties": {
+                            "cliente_id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "nombre": {
+                              "type": "string",
+                              "description": "El nombre de su tercero"
+                            },
+                            "color": {
+                              "nullable": true,
+                              "description": "El color de su escuela; nulo si no es escuela",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "cliente_id",
+                            "nombre",
+                            "color"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "etapa": {
+                          "type": "object",
+                          "properties": {
+                            "clave": {
+                              "type": "string",
+                              "enum": [
+                                "borrador",
+                                "confirmado",
+                                "en_produccion",
+                                "listo_en_aduana",
+                                "entrega_parcial",
+                                "entregado"
+                              ]
+                            },
+                            "texto": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "clave",
+                            "texto"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "estado_armado": {
+                          "type": "object",
+                          "properties": {
+                            "texto": {
+                              "type": "string",
+                              "description": "El estado, en una de las formas de la guía"
+                            },
+                            "color": {
+                              "type": "string",
+                              "enum": [
+                                "rojo",
+                                "ambar",
+                                "azul",
+                                "verde",
+                                "gris",
+                                "morado",
+                                "verde-azulado",
+                                "naranja"
+                              ],
+                              "description": "El color del cuadro del estado"
+                            },
+                            "abajo": {
+                              "nullable": true,
+                              "description": "La alerta que va abajo, en el mismo cuadro",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "texto",
+                            "color",
+                            "abajo"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "relacionados": {
+                          "type": "object",
+                          "properties": {
+                            "lotes": {
+                              "type": "object",
+                              "properties": {
+                                "cuantos": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "texto": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "cuantos",
+                                "texto"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "listas_en_aduana": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "notas": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "anticipo_recibido_centavos": {
+                              "description": "Nulo: «sin anticipo»",
+                              "nullable": true,
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "credito": {
+                              "type": "string",
+                              "description": "El semáforo del cliente"
+                            }
+                          },
+                          "required": [
+                            "lotes",
+                            "listas_en_aduana",
+                            "notas",
+                            "credito"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "avance": {
+                          "type": "object",
+                          "properties": {
+                            "texto": {
+                              "type": "string"
+                            },
+                            "tramos": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "etiqueta": {
+                                    "type": "string",
+                                    "description": "Qué cuenta: «Entregado»"
+                                  },
+                                  "valor": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991,
+                                    "description": "Cuántas"
+                                  },
+                                  "color": {
+                                    "type": "string",
+                                    "enum": [
+                                      "rojo",
+                                      "ambar",
+                                      "azul",
+                                      "verde",
+                                      "gris",
+                                      "morado",
+                                      "verde-azulado",
+                                      "naranja"
+                                    ],
+                                    "description": "El color del cuadro del estado"
+                                  }
+                                },
+                                "required": [
+                                  "etiqueta",
+                                  "valor",
+                                  "color"
+                                ],
+                                "additionalProperties": false
+                              }
+                            }
+                          },
+                          "required": [
+                            "texto",
+                            "tramos"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "entrega": {
+                          "type": "object",
+                          "properties": {
+                            "fecha": {
+                              "type": "string",
+                              "format": "date",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                              "description": "La fecha de negocio, en hora de México"
+                            },
+                            "texto": {
+                              "type": "string",
+                              "description": "Cómo se lee: «14 oct»"
+                            },
+                            "cuando": {
+                              "type": "string",
+                              "description": "Lo que falta o lo que pasó: «en 3 días», «hace 2 días», «hoy», «Entregado»"
+                            },
+                            "tono": {
+                              "type": "string",
+                              "enum": [
+                                "normal",
+                                "ambar",
+                                "rojo"
+                              ],
+                              "description": "Normal, ámbar o rojo"
+                            }
+                          },
+                          "required": [
+                            "fecha",
+                            "texto",
+                            "cuando",
+                            "tono"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "forma_pago": {
+                          "type": "string",
+                          "description": "«Crédito 30 días», «Anticipo», «Contado»"
+                        },
+                        "levanto": {
+                          "type": "string"
+                        },
+                        "total_centavos": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "avisos": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "color": {
+                                "type": "string",
+                                "enum": [
+                                  "azul",
+                                  "ambar",
+                                  "verde",
+                                  "rojo"
+                                ]
+                              },
+                              "texto": {
+                                "type": "string"
+                              },
+                              "boton": {
+                                "nullable": true,
+                                "type": "string",
+                                "enum": [
+                                  "mandar",
+                                  "armar_nota"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "color",
+                              "texto",
+                              "boton"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "prendas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "producto_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "precio": {
+                                "type": "string",
+                                "description": "«Colegio Morelos · Lista Morelos $215» o «Precio dado $200 · sugerido $215»"
+                              },
+                              "importe_centavos": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "piezas": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "tallas": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "filas": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "concepto": {
+                                      "type": "string",
+                                      "description": "Pedido, Entregado, En nota, Listo en aduana, De bodega, En producción…"
+                                    },
+                                    "piezas": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "description": "Una por talla, en el orden de las tallas"
+                                    },
+                                    "total": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    }
+                                  },
+                                  "required": [
+                                    "concepto",
+                                    "piezas",
+                                    "total"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "description": "Solo las que tienen piezas"
+                              }
+                            },
+                            "required": [
+                              "producto_id",
+                              "nombre",
+                              "precio",
+                              "piezas",
+                              "tallas",
+                              "filas"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "notas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "nota_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "folio": {
+                                "type": "string"
+                              },
+                              "fecha": {
+                                "type": "string"
+                              },
+                              "prendas": {
+                                "type": "string"
+                              },
+                              "piezas": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "estado": {
+                                "type": "object",
+                                "properties": {
+                                  "texto": {
+                                    "type": "string",
+                                    "description": "El estado, en una de las formas de la guía"
+                                  },
+                                  "color": {
+                                    "type": "string",
+                                    "enum": [
+                                      "rojo",
+                                      "ambar",
+                                      "azul",
+                                      "verde",
+                                      "gris",
+                                      "morado",
+                                      "verde-azulado",
+                                      "naranja"
+                                    ],
+                                    "description": "El color del cuadro del estado"
+                                  },
+                                  "abajo": {
+                                    "nullable": true,
+                                    "description": "La alerta que va abajo, en el mismo cuadro",
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "texto",
+                                  "color",
+                                  "abajo"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "total_centavos": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "nota_id",
+                              "folio",
+                              "fecha",
+                              "prendas",
+                              "piezas",
+                              "estado"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "listo_por_talla": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "variante_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "prenda": {
+                                "type": "string"
+                              },
+                              "talla": {
+                                "type": "string"
+                              },
+                              "listas": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "variante_id",
+                              "prenda",
+                              "talla",
+                              "listas"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Lo listo en aduana sin nota, para «Pasar a bodega»"
+                        },
+                        "lotes_a_temporada": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "Los lotes que pasan a temporada si se cancela"
+                        },
+                        "puede": {
+                          "type": "object",
+                          "properties": {
+                            "confirmar": {
+                              "type": "boolean"
+                            },
+                            "editar": {
+                              "type": "boolean"
+                            },
+                            "modificar": {
+                              "type": "boolean"
+                            },
+                            "cancelar": {
+                              "type": "boolean"
+                            },
+                            "pasar_a_bodega": {
+                              "type": "boolean"
+                            },
+                            "armar_nota": {
+                              "type": "boolean"
+                            },
+                            "mandar": {
+                              "type": "boolean"
+                            },
+                            "pdf": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "confirmar",
+                            "editar",
+                            "modificar",
+                            "cancelar",
+                            "pasar_a_bodega",
+                            "armar_nota",
+                            "mandar",
+                            "pdf"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "pedido_id",
+                        "folio",
+                        "version",
+                        "version_vigente",
+                        "estado",
+                        "cliente",
+                        "etapa",
+                        "estado_armado",
+                        "relacionados",
+                        "avance",
+                        "entrega",
+                        "forma_pago",
+                        "levanto",
+                        "avisos",
+                        "prendas",
+                        "notas",
+                        "listo_por_talla",
+                        "lotes_a_temporada",
+                        "puede"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/ventas.editor_pedido": {
+      "get": {
+        "tags": [
+          "ventas"
+        ],
+        "description": "Lo que necesita el pedido nuevo o su modificación: los clientes, el pedido como está y sus prendas\n\nPermiso: departamento ventas.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "pedido_id",
+            "required": false,
+            "description": "El pedido que se modifica; sin él, uno nuevo"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "cliente_id",
+            "required": false,
+            "description": "El cliente con que abre un pedido nuevo"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "folio": {
+                          "type": "string",
+                          "description": "El suyo, o el que sigue para uno nuevo"
+                        },
+                        "modo": {
+                          "type": "string",
+                          "enum": [
+                            "nuevo",
+                            "borrador",
+                            "confirmado"
+                          ]
+                        },
+                        "version": {
+                          "nullable": true,
+                          "description": "La versión del registro, para guardar",
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "version_siguiente": {
+                          "nullable": true,
+                          "description": "La versión que nace al guardar un confirmado",
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "hoy": {
+                          "type": "string",
+                          "format": "date",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                        },
+                        "forma_pago_inicial": {
+                          "type": "string",
+                          "enum": [
+                            "contado",
+                            "anticipo",
+                            "credito"
+                          ]
+                        },
+                        "piezas_max_talla": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "clientes": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "cliente_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string",
+                                "description": "El nombre de su tercero"
+                              },
+                              "color": {
+                                "nullable": true,
+                                "description": "El color de su escuela; nulo si no es escuela",
+                                "type": "string"
+                              },
+                              "detenido": {
+                                "type": "boolean"
+                              },
+                              "tiene_credito": {
+                                "type": "boolean"
+                              },
+                              "cerca_del_limite": {
+                                "type": "boolean"
+                              },
+                              "dias_credito": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "cliente_id",
+                              "nombre",
+                              "color",
+                              "detenido",
+                              "tiene_credito",
+                              "cerca_del_limite",
+                              "dias_credito"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Los activos"
+                        },
+                        "pedido": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "cliente_id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "fecha_entrega": {
+                              "type": "string",
+                              "format": "date",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                            },
+                            "forma_pago": {
+                              "type": "string",
+                              "enum": [
+                                "contado",
+                                "anticipo",
+                                "credito"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "cliente_id",
+                            "fecha_entrega",
+                            "forma_pago"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "prendas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "producto_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "escuela": {
+                                "type": "string",
+                                "description": "La escuela o «Básico»"
+                              },
+                              "sugerido_centavos": {
+                                "description": "Nulo: «Sin precio para este cliente»",
+                                "nullable": true,
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "origen": {
+                                "nullable": true,
+                                "description": "«su lista», «12% sobre mostrador», «mayoreo» o «mostrador»",
+                                "type": "string"
+                              },
+                              "precio_dado_centavos": {
+                                "nullable": true,
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "se_quita": {
+                                "type": "boolean",
+                                "description": "Falso si ya tiene piezas entregadas o en aduana"
+                              },
+                              "tallas": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "variante_id": {
+                                      "type": "string",
+                                      "format": "uuid",
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                    },
+                                    "talla": {
+                                      "type": "string"
+                                    },
+                                    "especial": {
+                                      "type": "boolean",
+                                      "description": "Pedido especial: lleva recargo"
+                                    },
+                                    "recargo_centavos": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "minimo": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991,
+                                      "description": "Entregado + en nota + listo en aduana: no se baja de ahí"
+                                    },
+                                    "cantidad": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991,
+                                      "description": "Lo que lleva hoy el pedido; 0 si es nueva"
+                                    }
+                                  },
+                                  "required": [
+                                    "variante_id",
+                                    "talla",
+                                    "especial",
+                                    "minimo",
+                                    "cantidad"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "required": [
+                              "producto_id",
+                              "nombre",
+                              "escuela",
+                              "origen",
+                              "se_quita",
+                              "tallas"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "folio",
+                        "modo",
+                        "version",
+                        "version_siguiente",
+                        "hoy",
+                        "forma_pago_inicial",
+                        "piezas_max_talla",
+                        "clientes",
+                        "pedido",
+                        "prendas"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/ventas.precio_sugerido": {
+      "get": {
+        "tags": [
+          "ventas"
+        ],
+        "description": "Una prenda para el pedido: su precio sugerido para el cliente y sus tallas vigentes\n\nPermiso: departamento ventas.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "cliente_id",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "producto_id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "prenda": {
+                          "type": "object",
+                          "properties": {
+                            "producto_id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "nombre": {
+                              "type": "string"
+                            },
+                            "escuela": {
+                              "type": "string",
+                              "description": "La escuela o «Básico»"
+                            },
+                            "sugerido_centavos": {
+                              "description": "Nulo: «Sin precio para este cliente»",
+                              "nullable": true,
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "origen": {
+                              "nullable": true,
+                              "description": "«su lista», «12% sobre mostrador», «mayoreo» o «mostrador»",
+                              "type": "string"
+                            },
+                            "precio_dado_centavos": {
+                              "nullable": true,
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "se_quita": {
+                              "type": "boolean",
+                              "description": "Falso si ya tiene piezas entregadas o en aduana"
+                            },
+                            "tallas": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "variante_id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "talla": {
+                                    "type": "string"
+                                  },
+                                  "especial": {
+                                    "type": "boolean",
+                                    "description": "Pedido especial: lleva recargo"
+                                  },
+                                  "recargo_centavos": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "minimo": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991,
+                                    "description": "Entregado + en nota + listo en aduana: no se baja de ahí"
+                                  },
+                                  "cantidad": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991,
+                                    "description": "Lo que lleva hoy el pedido; 0 si es nueva"
+                                  }
+                                },
+                                "required": [
+                                  "variante_id",
+                                  "talla",
+                                  "especial",
+                                  "minimo",
+                                  "cantidad"
+                                ],
+                                "additionalProperties": false
+                              }
+                            }
+                          },
+                          "required": [
+                            "producto_id",
+                            "nombre",
+                            "escuela",
+                            "origen",
+                            "se_quita",
+                            "tallas"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "prenda"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/ventas.buscar_prendas": {
+      "get": {
+        "tags": [
+          "ventas"
+        ],
+        "description": "Las prendas que se venden a externos, por grupo, con su precio sugerido para el cliente\n\nPermiso: departamento ventas.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "cliente_id",
+            "required": true,
+            "description": "El cliente del pedido"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 80
+            },
+            "in": "query",
+            "name": "buscar",
+            "required": false,
+            "description": "Prenda, escuela o sección"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "grupos": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "clave": {
+                                "type": "string",
+                                "enum": [
+                                  "cliente",
+                                  "lista",
+                                  "basicos",
+                                  "otras"
+                                ]
+                              },
+                              "titulo": {
+                                "type": "string",
+                                "description": "«Modelos de {cliente}», «En la lista de {lista}»…"
+                              },
+                              "productos": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "producto_id": {
+                                      "type": "string",
+                                      "format": "uuid",
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                    },
+                                    "nombre": {
+                                      "type": "string"
+                                    },
+                                    "detalle": {
+                                      "type": "string",
+                                      "description": "«{escuela} · tallas {rango}»"
+                                    },
+                                    "precio_centavos": {
+                                      "description": "Nulo: «Sin precio»",
+                                      "nullable": true,
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "origen": {
+                                      "nullable": true,
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "producto_id",
+                                    "nombre",
+                                    "detalle",
+                                    "origen"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "required": [
+                              "clave",
+                              "titulo",
+                              "productos"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "cliente": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "grupos",
+                        "cliente"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/ventas.revision_mandar": {
+      "get": {
+        "tags": [
+          "ventas"
+        ],
+        "description": "Lo que se va a producción de un pedido: lo libre en bodega, el lote, la receta y el material\n\nPermiso: departamento ventas.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "pedido_id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "pedido_id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "folio": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "cliente": {
+                          "type": "object",
+                          "properties": {
+                            "cliente_id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "nombre": {
+                              "type": "string",
+                              "description": "El nombre de su tercero"
+                            },
+                            "color": {
+                              "nullable": true,
+                              "description": "El color de su escuela; nulo si no es escuela",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "cliente_id",
+                            "nombre",
+                            "color"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "piezas": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "prendas_cuantas": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "entrega": {
+                          "type": "object",
+                          "properties": {
+                            "fecha": {
+                              "type": "string",
+                              "format": "date",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                              "description": "La fecha de negocio, en hora de México"
+                            },
+                            "texto": {
+                              "type": "string",
+                              "description": "Cómo se lee: «14 oct»"
+                            },
+                            "cuando": {
+                              "type": "string",
+                              "description": "Lo que falta o lo que pasó: «en 3 días», «hace 2 días», «hoy», «Entregado»"
+                            },
+                            "tono": {
+                              "type": "string",
+                              "enum": [
+                                "normal",
+                                "ambar",
+                                "rojo"
+                              ],
+                              "description": "Normal, ámbar o rojo"
+                            }
+                          },
+                          "required": [
+                            "fecha",
+                            "texto",
+                            "cuando",
+                            "tono"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "hilo": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "parada": {
+                                "type": "string",
+                                "enum": [
+                                  "pedido",
+                                  "corte",
+                                  "costura",
+                                  "calidad",
+                                  "aduana",
+                                  "entrega"
+                                ]
+                              },
+                              "piezas": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "linea": {
+                                "type": "string"
+                              },
+                              "tono": {
+                                "type": "string",
+                                "enum": [
+                                  "normal",
+                                  "ambar",
+                                  "rojo"
+                                ],
+                                "description": "Normal, ámbar o rojo"
+                              }
+                            },
+                            "required": [
+                              "parada",
+                              "piezas",
+                              "linea",
+                              "tono"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "avisos": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "texto": {
+                                "type": "string"
+                              },
+                              "color": {
+                                "type": "string",
+                                "enum": [
+                                  "verde",
+                                  "ambar",
+                                  "rojo"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "texto",
+                              "color"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Arriba: sin receta, falta material o llega después"
+                        },
+                        "prendas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "producto_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "tallas": {
+                                "type": "string",
+                                "description": "«14: 10 · 16: 5»"
+                              },
+                              "piezas": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "bodega": {
+                                "nullable": true,
+                                "description": "«Bodega tiene libres: 14: 10», con lo que se puede surtir",
+                                "type": "object",
+                                "properties": {
+                                  "texto": {
+                                    "type": "string"
+                                  },
+                                  "piezas": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  }
+                                },
+                                "required": [
+                                  "texto",
+                                  "piezas"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "lote": {
+                                "type": "string"
+                              },
+                              "material": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "texto": {
+                                      "type": "string"
+                                    },
+                                    "color": {
+                                      "type": "string",
+                                      "enum": [
+                                        "verde",
+                                        "ambar",
+                                        "rojo"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "texto",
+                                    "color"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "required": [
+                              "producto_id",
+                              "nombre",
+                              "tallas",
+                              "piezas",
+                              "bodega",
+                              "lote",
+                              "material"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "pedido_id",
+                        "folio",
+                        "version",
+                        "cliente",
+                        "piezas",
+                        "prendas_cuantas",
+                        "entrega",
+                        "hilo",
+                        "avisos",
+                        "prendas"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/ventas.notas_entrega": {
+      "get": {
+        "tags": [
+          "ventas"
+        ],
+        "description": "Las notas de entrega que no se cancelaron: por despachar, en camino y entregadas, la más nueva primero\n\nPermiso: departamento ventas.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 80
+            },
+            "in": "query",
+            "name": "buscar",
+            "required": false,
+            "description": "Nota, pedido, prenda o cliente: todas las palabras"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "por_despachar",
+                "en_camino",
+                "entregada"
+              ]
+            },
+            "in": "query",
+            "name": "estado",
+            "required": false,
+            "description": "Solo las de ese estado"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "pedido_id",
+            "required": false,
+            "description": "Solo las de ese pedido"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "conteos": {
+                          "type": "object",
+                          "properties": {
+                            "todas": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "por_despachar": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "en_camino": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "entregada": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "todas",
+                            "por_despachar",
+                            "en_camino",
+                            "entregada"
+                          ],
+                          "additionalProperties": false,
+                          "description": "No cambian con el buscador ni con el pedido"
+                        },
+                        "pedido": {
+                          "nullable": true,
+                          "description": "El filtro del pedido, si hay",
+                          "type": "object",
+                          "properties": {
+                            "pedido_id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "folio": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "pedido_id",
+                            "folio"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "notas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "nota_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "folio": {
+                                "type": "string"
+                              },
+                              "fecha": {
+                                "type": "string",
+                                "description": "Cuándo se armó: «10 oct»"
+                              },
+                              "pedido_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "pedido_folio": {
+                                "type": "string"
+                              },
+                              "nota_de": {
+                                "type": "string",
+                                "description": "«nota {i} de {n}»"
+                              },
+                              "cliente": {
+                                "type": "string"
+                              },
+                              "prendas": {
+                                "type": "string"
+                              },
+                              "tallas": {
+                                "type": "string",
+                                "description": "El rango de tallas de cada prenda: «8 a 12 · 6 a 16»"
+                              },
+                              "piezas": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "estado": {
+                                "type": "string",
+                                "enum": [
+                                  "por_despachar",
+                                  "en_camino",
+                                  "entregada"
+                                ]
+                              },
+                              "estado_armado": {
+                                "type": "object",
+                                "properties": {
+                                  "texto": {
+                                    "type": "string",
+                                    "description": "El estado, en una de las formas de la guía"
+                                  },
+                                  "color": {
+                                    "type": "string",
+                                    "enum": [
+                                      "rojo",
+                                      "ambar",
+                                      "azul",
+                                      "verde",
+                                      "gris",
+                                      "morado",
+                                      "verde-azulado",
+                                      "naranja"
+                                    ],
+                                    "description": "El color del cuadro del estado"
+                                  },
+                                  "abajo": {
+                                    "nullable": true,
+                                    "description": "La alerta que va abajo, en el mismo cuadro",
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "texto",
+                                  "color",
+                                  "abajo"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "forma_pago": {
+                                "type": "string",
+                                "description": "«Crédito 30 días»"
+                              },
+                              "total_centavos": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "nota_id",
+                              "folio",
+                              "fecha",
+                              "pedido_id",
+                              "pedido_folio",
+                              "nota_de",
+                              "cliente",
+                              "prendas",
+                              "tallas",
+                              "piezas",
+                              "estado",
+                              "estado_armado",
+                              "forma_pago"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "conteos",
+                        "pedido",
+                        "notas"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/ventas.nota_entrega": {
+      "get": {
+        "tags": [
+          "ventas"
+        ],
+        "description": "Una nota de entrega con sus prendas, su pago y lo que se puede hacer con ella; sin precios para Aduana\n\nPermiso: departamento ventas o aduana o contaduria o direccion. Se puede recortar: subtotal_centavos, anticipo_aplicado_centavos, por_cobrar_centavos, saldo_centavos, precio_unitario_centavos, importe_centavos, monto_centavos, total_centavos.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "nota_id",
+            "required": true,
+            "description": "La nota"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "nota_id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "folio": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "La versión del registro, para las acciones"
+                        },
+                        "numero": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "La «i» de «nota i de n»"
+                        },
+                        "de": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "La «n»: las notas del pedido"
+                        },
+                        "estado": {
+                          "type": "string",
+                          "enum": [
+                            "por_despachar",
+                            "en_camino",
+                            "entregada",
+                            "cancelada"
+                          ]
+                        },
+                        "estado_armado": {
+                          "type": "object",
+                          "properties": {
+                            "texto": {
+                              "type": "string",
+                              "description": "El estado, en una de las formas de la guía"
+                            },
+                            "color": {
+                              "type": "string",
+                              "enum": [
+                                "rojo",
+                                "ambar",
+                                "azul",
+                                "verde",
+                                "gris",
+                                "morado",
+                                "verde-azulado",
+                                "naranja"
+                              ],
+                              "description": "El color del cuadro del estado"
+                            },
+                            "abajo": {
+                              "nullable": true,
+                              "description": "La alerta que va abajo, en el mismo cuadro",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "texto",
+                            "color",
+                            "abajo"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "cliente": {
+                          "type": "object",
+                          "properties": {
+                            "cliente_id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "nombre": {
+                              "type": "string",
+                              "description": "El nombre de su tercero"
+                            },
+                            "color": {
+                              "nullable": true,
+                              "description": "El color de su escuela; nulo si no es escuela",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "cliente_id",
+                            "nombre",
+                            "color"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "pedido": {
+                          "type": "object",
+                          "properties": {
+                            "pedido_id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "folio": {
+                              "type": "string"
+                            },
+                            "etapa": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "pedido_id",
+                            "folio",
+                            "etapa"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "despacho": {
+                          "type": "string",
+                          "description": "«En aduana · por despachar», «D-0411 · en camino» o «D-0411 · despacho»"
+                        },
+                        "pago": {
+                          "type": "string",
+                          "description": "«Sin pagar», «Pagada en parte», «Pagada» o «— · se cobra al entregar»"
+                        },
+                        "cabecera": {
+                          "type": "string",
+                          "description": "«Armada el 9 oct», «Salió el 10 oct» o «Entregada el 10 oct»"
+                        },
+                        "piezas": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "forma_pago": {
+                          "type": "string"
+                        },
+                        "armo": {
+                          "type": "string"
+                        },
+                        "salio": {
+                          "nullable": true,
+                          "description": "«10 oct · D-0411»",
+                          "type": "string"
+                        },
+                        "recibio": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "vence": {
+                          "nullable": true,
+                          "description": "Entregada: cuándo vence; en rojo si venció sin pagarse",
+                          "type": "object",
+                          "properties": {
+                            "fecha": {
+                              "type": "string",
+                              "format": "date",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                              "description": "La fecha de negocio, en hora de México"
+                            },
+                            "texto": {
+                              "type": "string",
+                              "description": "Cómo se lee: «14 oct»"
+                            },
+                            "cuando": {
+                              "type": "string",
+                              "description": "Lo que falta o lo que pasó: «en 3 días», «hace 2 días», «hoy», «Entregado»"
+                            },
+                            "tono": {
+                              "type": "string",
+                              "enum": [
+                                "normal",
+                                "ambar",
+                                "rojo"
+                              ],
+                              "description": "Normal, ámbar o rojo"
+                            }
+                          },
+                          "required": [
+                            "fecha",
+                            "texto",
+                            "cuando",
+                            "tono"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "prendas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "escuela": {
+                                "type": "string"
+                              },
+                              "tallas": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "talla": {
+                                      "type": "string"
+                                    },
+                                    "piezas": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    }
+                                  },
+                                  "required": [
+                                    "talla",
+                                    "piezas"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "piezas": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "precio_unitario_centavos": {
+                                "description": "Solo a quien ve precios",
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "importe_centavos": {
+                                "description": "Solo a quien ve precios",
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "nombre",
+                              "escuela",
+                              "tallas",
+                              "piezas"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "subtotal_centavos": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "anticipo_aplicado_centavos": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "notas_credito": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "folio": {
+                                "type": "string"
+                              },
+                              "monto_centavos": {
+                                "description": "Solo a quien ve precios",
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "folio"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "por_cobrar_centavos": {
+                          "description": "Por entregar: lo que se va a cobrar",
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "saldo_centavos": {
+                          "description": "Entregada: solo a quien tiene Contaduría",
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "total_centavos": {
+                          "description": "Para la ventana «Confirmar entrega»",
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "esperando": {
+                          "nullable": true,
+                          "description": "«{AU} · esperando autorización de Dirección»",
+                          "type": "string"
+                        },
+                        "lineas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "nota_entrega_linea_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "prenda": {
+                                "type": "string"
+                              },
+                              "talla": {
+                                "type": "string"
+                              },
+                              "pueden_regresar": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "nota_entrega_linea_id",
+                              "prenda",
+                              "talla",
+                              "pueden_regresar"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Para «Nota de crédito»: lo que puede regresar de cada renglón"
+                        },
+                        "puede": {
+                          "type": "object",
+                          "properties": {
+                            "cancelar": {
+                              "type": "boolean"
+                            },
+                            "confirmar_entrega": {
+                              "type": "boolean"
+                            },
+                            "nota_credito": {
+                              "type": "boolean"
+                            },
+                            "pdf": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "cancelar",
+                            "confirmar_entrega",
+                            "nota_credito",
+                            "pdf"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "nota_id",
+                        "folio",
+                        "version",
+                        "numero",
+                        "de",
+                        "estado",
+                        "estado_armado",
+                        "cliente",
+                        "pedido",
+                        "despacho",
+                        "pago",
+                        "cabecera",
+                        "piezas",
+                        "forma_pago",
+                        "armo",
+                        "salio",
+                        "recibio",
+                        "vence",
+                        "prendas",
+                        "notas_credito",
+                        "esperando",
+                        "lineas",
+                        "puede"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/ventas.armar_nota": {
+      "get": {
+        "tags": [
+          "ventas"
+        ],
+        "description": "Lo listo en aduana de un pedido, por prenda y talla, con su precio y el anticipo disponible\n\nPermiso: departamento ventas.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "pedido_id",
+            "required": true,
+            "description": "El pedido"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "pedido_id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "folio_pedido": {
+                          "type": "string"
+                        },
+                        "folio": {
+                          "type": "string",
+                          "description": "El NV- que sigue"
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "La versión del pedido, para armarla"
+                        },
+                        "cliente": {
+                          "type": "object",
+                          "properties": {
+                            "cliente_id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "nombre": {
+                              "type": "string",
+                              "description": "El nombre de su tercero"
+                            },
+                            "color": {
+                              "nullable": true,
+                              "description": "El color de su escuela; nulo si no es escuela",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "cliente_id",
+                            "nombre",
+                            "color"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "entrega": {
+                          "type": "object",
+                          "properties": {
+                            "fecha": {
+                              "type": "string",
+                              "format": "date",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                              "description": "La fecha de negocio, en hora de México"
+                            },
+                            "texto": {
+                              "type": "string",
+                              "description": "Cómo se lee: «14 oct»"
+                            },
+                            "cuando": {
+                              "type": "string",
+                              "description": "Lo que falta o lo que pasó: «en 3 días», «hace 2 días», «hoy», «Entregado»"
+                            },
+                            "tono": {
+                              "type": "string",
+                              "enum": [
+                                "normal",
+                                "ambar",
+                                "rojo"
+                              ],
+                              "description": "Normal, ámbar o rojo"
+                            }
+                          },
+                          "required": [
+                            "fecha",
+                            "texto",
+                            "cuando",
+                            "tono"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "forma_pago": {
+                          "type": "string"
+                        },
+                        "notas_anteriores": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "anticipo_disponible_centavos": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "prendas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "producto_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "linea": {
+                                "type": "string",
+                                "description": "«{n} listas en aduana · faltan {m} del pedido»"
+                              },
+                              "tallas": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "variante_id": {
+                                      "type": "string",
+                                      "format": "uuid",
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                    },
+                                    "talla": {
+                                      "type": "string"
+                                    },
+                                    "listas": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "precio_unitario_centavos": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    }
+                                  },
+                                  "required": [
+                                    "variante_id",
+                                    "talla",
+                                    "listas"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "required": [
+                              "producto_id",
+                              "nombre",
+                              "linea",
+                              "tallas"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "pedido_id",
+                        "folio_pedido",
+                        "folio",
+                        "version",
+                        "cliente",
+                        "entrega",
+                        "forma_pago",
+                        "notas_anteriores",
+                        "prendas"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/ventas.clientes": {
+      "get": {
+        "tags": [
+          "ventas"
+        ],
+        "description": "Los clientes activos con su ficha, su crédito y sus pedidos; y los dados de baja\n\nPermiso: departamento ventas.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "fichas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "cliente_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string",
+                                "description": "El nombre de su tercero"
+                              },
+                              "color": {
+                                "nullable": true,
+                                "description": "El color de su escuela; nulo si no es escuela",
+                                "type": "string"
+                              },
+                              "version": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "descripcion": {
+                                "type": "string",
+                                "description": "«Escuela en Yurécuaro, cliente desde 2019»"
+                              },
+                              "contacto": {
+                                "type": "string",
+                                "description": "«{contacto} · {teléfono}»"
+                              },
+                              "credito": {
+                                "type": "object",
+                                "properties": {
+                                  "texto": {
+                                    "type": "string",
+                                    "description": "«Crédito al corriente», «Cerca del límite de crédito», «Detenido por crédito», «Sin crédito»"
+                                  },
+                                  "color": {
+                                    "type": "string",
+                                    "enum": [
+                                      "rojo",
+                                      "ambar",
+                                      "azul",
+                                      "verde",
+                                      "gris",
+                                      "morado",
+                                      "verde-azulado",
+                                      "naranja"
+                                    ],
+                                    "description": "El color del cuadro del estado"
+                                  }
+                                },
+                                "required": [
+                                  "texto",
+                                  "color"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "detenido": {
+                                "type": "boolean"
+                              },
+                              "pedidos_abiertos": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "borradores": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "piezas_por_entregar": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "proxima_entrega": {
+                                "type": "string",
+                                "description": "«14 oct» o «Ninguna»"
+                              },
+                              "modelos_propios": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "productos_lista": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "lista": {
+                                "type": "string",
+                                "description": "«Precios de la lista Colegio Morelos»"
+                              }
+                            },
+                            "required": [
+                              "cliente_id",
+                              "nombre",
+                              "color",
+                              "version",
+                              "descripcion",
+                              "contacto",
+                              "credito",
+                              "detenido",
+                              "pedidos_abiertos",
+                              "borradores",
+                              "piezas_por_entregar",
+                              "proxima_entrega",
+                              "modelos_propios",
+                              "productos_lista",
+                              "lista"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "de_baja": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "cliente_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "version": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "desde": {
+                                "type": "string",
+                                "description": "El año en que se dio de alta"
+                              },
+                              "motivo": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "cliente_id",
+                              "nombre",
+                              "version",
+                              "desde",
+                              "motivo"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "fichas",
+                        "de_baja"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/ventas.cliente": {
+      "get": {
+        "tags": [
+          "ventas"
+        ],
+        "description": "Los datos de un cliente para editarlos, o lo que pide el alta: las escuelas que todavía no son cliente\n\nPermiso: departamento ventas.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "cliente_id",
+            "required": false,
+            "description": "El cliente; sin él, el alta"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "escuelas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "escuela_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "escuela_id",
+                              "nombre"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Las escuelas que todavía no son cliente, para el alta"
+                        },
+                        "cliente": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "cliente_id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "version": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "nombre": {
+                              "type": "string"
+                            },
+                            "tipo": {
+                              "type": "string",
+                              "enum": [
+                                "escuela",
+                                "mayorista",
+                                "empresa_otro"
+                              ]
+                            },
+                            "escuela": {
+                              "nullable": true,
+                              "type": "string"
+                            },
+                            "municipio": {
+                              "type": "string"
+                            },
+                            "direccion_entrega": {
+                              "type": "string"
+                            },
+                            "contacto": {
+                              "nullable": true,
+                              "type": "string"
+                            },
+                            "telefono": {
+                              "type": "string"
+                            },
+                            "correo": {
+                              "nullable": true,
+                              "type": "string"
+                            },
+                            "rfc": {
+                              "nullable": true,
+                              "type": "string"
+                            },
+                            "lista": {
+                              "type": "string",
+                              "description": "El nombre de su lista de precios"
+                            },
+                            "credito": {
+                              "type": "object",
+                              "properties": {
+                                "texto": {
+                                  "type": "string",
+                                  "description": "«Crédito al corriente», «Cerca del límite de crédito», «Detenido por crédito», «Sin crédito»"
+                                },
+                                "color": {
+                                  "type": "string",
+                                  "enum": [
+                                    "rojo",
+                                    "ambar",
+                                    "azul",
+                                    "verde",
+                                    "gris",
+                                    "morado",
+                                    "verde-azulado",
+                                    "naranja"
+                                  ],
+                                  "description": "El color del cuadro del estado"
+                                }
+                              },
+                              "required": [
+                                "texto",
+                                "color"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "de_baja": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "cliente_id",
+                            "version",
+                            "nombre",
+                            "tipo",
+                            "escuela",
+                            "municipio",
+                            "direccion_entrega",
+                            "contacto",
+                            "telefono",
+                            "correo",
+                            "rfc",
+                            "lista",
+                            "credito",
+                            "de_baja"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "escuelas",
+                        "cliente"
                       ],
                       "additionalProperties": false
                     },

@@ -29,6 +29,7 @@ import { accionGuardarDescuentoSemanal, accionPagarNomina } from "./acciones/nom
 import { accionCancelarPago, accionRegistrarPagoRecibido } from "./acciones/pagos.ts";
 import { accionPagarCuentaPorPagar, accionPedirPagoLoRecibido } from "./acciones/por-pagar.ts";
 import { accionAplicarSaldoAFavor, accionDevolverSaldoAFavor } from "./acciones/saldo-favor.ts";
+import { consultaEstadoPagoNotas } from "./consultas/estado-pago-notas.ts";
 import { aplicarAnticipoANota, pasarAnticipoAFavor, regresarAnticipoAPedido } from "./internas/anticipos.ts";
 import { abrirCreditoCliente } from "./internas/credito.ts";
 import { aplicarNotaCredito, crearCuentaPorCobrar } from "./internas/cuentas.ts";
@@ -59,6 +60,7 @@ import { armarArchivoPaquete, crearPaqueteMes } from "./trabajos/paquete-contado
 
 export default definirModulo({
 	nombre: "contaduria",
+	consultas: [consultaEstadoPagoNotas],
 	acciones: [
 		accionCambiarLimiteCredito,
 		accionCambiarDiasCredito,

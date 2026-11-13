@@ -1,5 +1,5 @@
 /**
- * Pendientes de Producción, la primera pestaña: el filtro (`?grupo=`) y el cajón del lote (`?lote=`) van en la
+ * Pendientes de Producción, la primera pestaña: el filtro (`?grupo=`) y el cajón del lote (`?cajon=lote&id=`) van en la
  * dirección.
  * Fase 19 · docs/interfaz/fabrica/produccion.md («Pendientes»)
  */

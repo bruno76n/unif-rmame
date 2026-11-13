@@ -72,6 +72,7 @@ const ejemplosPorCampo: Record<string, string> = {
 	codigo: "100001",
 	codigo_postal: "59600",
 	correo: "alguien@alameda.invalid",
+	nota_ids: "0190a000-0000-7000-8000-000000000000",
 	rfc: "UAL010101AB1",
 	telefono: "4775550100",
 };
