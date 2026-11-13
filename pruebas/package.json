@@ -9,7 +9,8 @@
 		"./simuladores/google": "./simuladores/google.ts",
 		"./simuladores/resend": "./simuladores/resend.ts",
 		"./simuladores/r2": "./simuladores/r2.ts",
-		"./simuladores/fallas": "./simuladores/fallas.ts"
+		"./simuladores/fallas": "./simuladores/fallas.ts",
+		"./navegador/chromium": "./navegador/chromium.ts"
 	},
 	"dependencies": {
 		"drizzle-orm": "0.45.4",

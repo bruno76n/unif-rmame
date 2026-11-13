@@ -17,6 +17,9 @@ import { Route as AdminIndexRouteImport } from "./rutas/admin/index.tsx"
 import { Route as AduanaIndexRouteImport } from "./rutas/aduana/index.tsx"
 import { Route as BodegaIndexRouteImport } from "./rutas/bodega/index.tsx"
 import { Route as CalidadIndexRouteImport } from "./rutas/calidad/index.tsx"
+import { Route as CalidadDefectosRouteImport } from "./rutas/calidad/defectos.tsx"
+import { Route as CalidadPorRevisarRouteImport } from "./rutas/calidad/por-revisar.tsx"
+import { Route as CalidadReclamosRouteImport } from "./rutas/calidad/reclamos.tsx"
 import { Route as CatalogoIndexRouteImport } from "./rutas/catalogo/index.tsx"
 import { Route as CatalogoBitacoraRouteImport } from "./rutas/catalogo/bitacora.tsx"
 import { Route as CatalogoEscuelasYTallasRouteImport } from "./rutas/catalogo/escuelas-y-tallas.tsx"
@@ -90,6 +93,21 @@ const BodegaIndexRoute = BodegaIndexRouteImport.update({
 const CalidadIndexRoute = CalidadIndexRouteImport.update({
   id: "/calidad/",
   path: "/calidad/",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CalidadDefectosRoute = CalidadDefectosRouteImport.update({
+  id: "/calidad/defectos",
+  path: "/calidad/defectos",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CalidadPorRevisarRoute = CalidadPorRevisarRouteImport.update({
+  id: "/calidad/por-revisar",
+  path: "/calidad/por-revisar",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CalidadReclamosRoute = CalidadReclamosRouteImport.update({
+  id: "/calidad/reclamos",
+  path: "/calidad/reclamos",
   getParentRoute: () => rootRouteImport,
 } as any)
 const CatalogoIndexRoute = CatalogoIndexRouteImport.update({
@@ -267,6 +285,9 @@ export interface FileRoutesByFullPath {
   "/": typeof IndexRoute
   "/catalogo": typeof CatalogoRouteRouteWithChildren
   "/acceso/confirmado": typeof AccesoConfirmadoRoute
+  "/calidad/defectos": typeof CalidadDefectosRoute
+  "/calidad/por-revisar": typeof CalidadPorRevisarRoute
+  "/calidad/reclamos": typeof CalidadReclamosRoute
   "/catalogo/bitacora": typeof CatalogoBitacoraRoute
   "/catalogo/escuelas-y-tallas": typeof CatalogoEscuelasYTallasRoute
   "/catalogo/etiquetas": typeof CatalogoEtiquetasRoute
@@ -310,6 +331,9 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   "/": typeof IndexRoute
   "/acceso/confirmado": typeof AccesoConfirmadoRoute
+  "/calidad/defectos": typeof CalidadDefectosRoute
+  "/calidad/por-revisar": typeof CalidadPorRevisarRoute
+  "/calidad/reclamos": typeof CalidadReclamosRoute
   "/catalogo/bitacora": typeof CatalogoBitacoraRoute
   "/catalogo/escuelas-y-tallas": typeof CatalogoEscuelasYTallasRoute
   "/catalogo/etiquetas": typeof CatalogoEtiquetasRoute
@@ -355,6 +379,9 @@ export interface FileRoutesById {
   "/": typeof IndexRoute
   "/catalogo": typeof CatalogoRouteRouteWithChildren
   "/acceso/confirmado": typeof AccesoConfirmadoRoute
+  "/calidad/defectos": typeof CalidadDefectosRoute
+  "/calidad/por-revisar": typeof CalidadPorRevisarRoute
+  "/calidad/reclamos": typeof CalidadReclamosRoute
   "/catalogo/bitacora": typeof CatalogoBitacoraRoute
   "/catalogo/escuelas-y-tallas": typeof CatalogoEscuelasYTallasRoute
   "/catalogo/etiquetas": typeof CatalogoEtiquetasRoute
@@ -401,6 +428,9 @@ export interface FileRouteTypes {
     | "/"
     | "/catalogo"
     | "/acceso/confirmado"
+    | "/calidad/defectos"
+    | "/calidad/por-revisar"
+    | "/calidad/reclamos"
     | "/catalogo/bitacora"
     | "/catalogo/escuelas-y-tallas"
     | "/catalogo/etiquetas"
@@ -444,6 +474,9 @@ export interface FileRouteTypes {
   to:
     | "/"
     | "/acceso/confirmado"
+    | "/calidad/defectos"
+    | "/calidad/por-revisar"
+    | "/calidad/reclamos"
     | "/catalogo/bitacora"
     | "/catalogo/escuelas-y-tallas"
     | "/catalogo/etiquetas"
@@ -488,6 +521,9 @@ export interface FileRouteTypes {
     | "/"
     | "/catalogo"
     | "/acceso/confirmado"
+    | "/calidad/defectos"
+    | "/calidad/por-revisar"
+    | "/calidad/reclamos"
     | "/catalogo/bitacora"
     | "/catalogo/escuelas-y-tallas"
     | "/catalogo/etiquetas"
@@ -533,6 +569,9 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CatalogoRouteRoute: typeof CatalogoRouteRouteWithChildren
   AccesoConfirmadoRoute: typeof AccesoConfirmadoRoute
+  CalidadDefectosRoute: typeof CalidadDefectosRoute
+  CalidadPorRevisarRoute: typeof CalidadPorRevisarRoute
+  CalidadReclamosRoute: typeof CalidadReclamosRoute
   ComprasConciliacionRoute: typeof ComprasConciliacionRoute
   ComprasMaterialesRoute: typeof ComprasMaterialesRoute
   ComprasOrdenesRoute: typeof ComprasOrdenesRoute
@@ -624,6 +663,27 @@ declare module "@tanstack/react-router" {
       path: "/calidad"
       fullPath: "/calidad/"
       preLoaderRoute: typeof CalidadIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/calidad/defectos": {
+      id: "/calidad/defectos"
+      path: "/calidad/defectos"
+      fullPath: "/calidad/defectos"
+      preLoaderRoute: typeof CalidadDefectosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/calidad/por-revisar": {
+      id: "/calidad/por-revisar"
+      path: "/calidad/por-revisar"
+      fullPath: "/calidad/por-revisar"
+      preLoaderRoute: typeof CalidadPorRevisarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/calidad/reclamos": {
+      id: "/calidad/reclamos"
+      path: "/calidad/reclamos"
+      fullPath: "/calidad/reclamos"
+      preLoaderRoute: typeof CalidadReclamosRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/catalogo/": {
@@ -893,6 +953,9 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CatalogoRouteRoute: CatalogoRouteRouteWithChildren,
   AccesoConfirmadoRoute: AccesoConfirmadoRoute,
+  CalidadDefectosRoute: CalidadDefectosRoute,
+  CalidadPorRevisarRoute: CalidadPorRevisarRoute,
+  CalidadReclamosRoute: CalidadReclamosRoute,
   ComprasConciliacionRoute: ComprasConciliacionRoute,
   ComprasMaterialesRoute: ComprasMaterialesRoute,
   ComprasOrdenesRoute: ComprasOrdenesRoute,

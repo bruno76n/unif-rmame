@@ -15,6 +15,7 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { createServer, type ViteDevServer } from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { opcionesDeChromium } from "../../../../pruebas/navegador/chromium.ts";
 import { colorDelEstado, esEstadoConocido } from "../estados/colores.ts";
 import { estadosDeMuestra } from "./catalogo.tsx";
 
@@ -57,8 +58,7 @@ describe("Cada componente del sistema de diseño tiene las medidas, los colores 
 		});
 		await servidor.listen();
 		direccion = servidor.resolvedUrls?.local[0] ?? "";
-		const ejecutable = process.env.CHROMIUM_EJECUTABLE;
-		navegador = await chromium.launch(ejecutable === undefined ? {} : { executablePath: ejecutable });
+		navegador = await chromium.launch(opcionesDeChromium());
 	}, 120_000);
 	afterAll(async () => {
 		await navegador?.close();

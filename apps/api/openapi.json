@@ -24684,6 +24684,2284 @@
         }
       }
     },
+    "/v1/consultas/calidad.pendientes": {
+      "get": {
+        "tags": [
+          "calidad"
+        ],
+        "description": "Pendientes de Calidad: las cifras de lotes por revisar, defectos y reclamos, y la cola de trabajo con su botón. Sin dinero\n\nPermiso: departamento calidad.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "todos",
+                "lotes",
+                "devoluciones",
+                "reclamos"
+              ]
+            },
+            "in": "query",
+            "name": "grupo",
+            "required": false,
+            "description": "El filtro; sin él, todos"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "indicadores": {
+                          "type": "object",
+                          "properties": {
+                            "por_revisar": {
+                              "type": "object",
+                              "properties": {
+                                "lotes": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991,
+                                  "description": "Los lotes terminados esperando revisión"
+                                },
+                                "piezas": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991,
+                                  "description": "Sus piezas listas"
+                                },
+                                "en_reproceso": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991,
+                                  "description": "Las piezas en reproceso"
+                                }
+                              },
+                              "required": [
+                                "lotes",
+                                "piezas",
+                                "en_reproceso"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "defectos": {
+                              "type": "object",
+                              "properties": {
+                                "dias": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991,
+                                  "description": "`calidad.defectos_periodo_dias`"
+                                },
+                                "porcentaje": {
+                                  "type": "number",
+                                  "description": "Las rechazadas entre las revisadas del periodo, en %, con un decimal"
+                                },
+                                "comunes": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "nombre": {
+                                        "type": "string",
+                                        "description": "El defecto"
+                                      },
+                                      "piezas": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991,
+                                        "description": "Las piezas rechazadas con ese defecto en el periodo"
+                                      }
+                                    },
+                                    "required": [
+                                      "nombre",
+                                      "piezas"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "description": "Los tres defectos más comunes del periodo"
+                                }
+                              },
+                              "required": [
+                                "dias",
+                                "porcentaje",
+                                "comunes"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "reclamos": {
+                              "type": "object",
+                              "properties": {
+                                "por_resolver": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991,
+                                  "description": "Los reclamos por resolver"
+                                },
+                                "en_el_anio": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991,
+                                  "description": "Los reclamos del año"
+                                }
+                              },
+                              "required": [
+                                "por_resolver",
+                                "en_el_anio"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "required": [
+                            "por_revisar",
+                            "defectos",
+                            "reclamos"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "conteos": {
+                          "type": "object",
+                          "properties": {
+                            "todos": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "lotes": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "devoluciones": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "reclamos": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "todos",
+                            "lotes",
+                            "devoluciones",
+                            "reclamos"
+                          ],
+                          "additionalProperties": false,
+                          "description": "Cuántos renglones tiene cada filtro"
+                        },
+                        "hay_rojo": {
+                          "type": "boolean",
+                          "description": "Si algún renglón va en rojo: la pestaña va en rojo"
+                        },
+                        "renglones": {
+                          "type": "array",
+                          "items": {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "tipo": {
+                                    "type": "string",
+                                    "enum": [
+                                      "lote"
+                                    ]
+                                  },
+                                  "clave": {
+                                    "type": "string",
+                                    "description": "La clave del renglón"
+                                  },
+                                  "titulo": {
+                                    "type": "string",
+                                    "description": "La referencia: qué es («L-2026-121 · Pantalón gris oxford»)"
+                                  },
+                                  "detalle": {
+                                    "type": "string",
+                                    "description": "Abajo de la referencia: su detalle"
+                                  },
+                                  "fecha": {
+                                    "nullable": true,
+                                    "description": "La fecha que importa, ya escrita («Entrega 3 nov»); vacía si no lleva",
+                                    "type": "string"
+                                  },
+                                  "fecha_orden": {
+                                    "nullable": true,
+                                    "description": "La fecha que ordena (ISO)",
+                                    "type": "string"
+                                  },
+                                  "fecha_roja": {
+                                    "type": "boolean",
+                                    "description": "Si la fecha va en rojo"
+                                  },
+                                  "cifra": {
+                                    "type": "string",
+                                    "description": "Las piezas, ya escritas («90 pz»)"
+                                  },
+                                  "estado": {
+                                    "type": "string",
+                                    "description": "El estado, en su forma fija"
+                                  },
+                                  "color": {
+                                    "type": "string",
+                                    "enum": [
+                                      "rojo",
+                                      "ambar",
+                                      "azul",
+                                      "verde",
+                                      "gris",
+                                      "morado",
+                                      "verde-azulado",
+                                      "naranja"
+                                    ],
+                                    "description": "El color del cuadro del estado"
+                                  },
+                                  "lote_id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                    "description": "El lote, para abrir su revisión"
+                                  },
+                                  "urgente": {
+                                    "type": "boolean",
+                                    "description": "Si es «Por revisar hoy»: su botón va en negro"
+                                  }
+                                },
+                                "required": [
+                                  "tipo",
+                                  "clave",
+                                  "titulo",
+                                  "detalle",
+                                  "fecha",
+                                  "fecha_orden",
+                                  "fecha_roja",
+                                  "cifra",
+                                  "estado",
+                                  "color",
+                                  "lote_id",
+                                  "urgente"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "tipo": {
+                                    "type": "string",
+                                    "enum": [
+                                      "reproceso"
+                                    ]
+                                  },
+                                  "clave": {
+                                    "type": "string",
+                                    "description": "La clave del renglón"
+                                  },
+                                  "titulo": {
+                                    "type": "string",
+                                    "description": "La referencia: qué es («L-2026-121 · Pantalón gris oxford»)"
+                                  },
+                                  "detalle": {
+                                    "type": "string",
+                                    "description": "Abajo de la referencia: su detalle"
+                                  },
+                                  "fecha": {
+                                    "nullable": true,
+                                    "description": "La fecha que importa, ya escrita («Entrega 3 nov»); vacía si no lleva",
+                                    "type": "string"
+                                  },
+                                  "fecha_orden": {
+                                    "nullable": true,
+                                    "description": "La fecha que ordena (ISO)",
+                                    "type": "string"
+                                  },
+                                  "fecha_roja": {
+                                    "type": "boolean",
+                                    "description": "Si la fecha va en rojo"
+                                  },
+                                  "cifra": {
+                                    "type": "string",
+                                    "description": "Las piezas, ya escritas («90 pz»)"
+                                  },
+                                  "estado": {
+                                    "type": "string",
+                                    "description": "El estado, en su forma fija"
+                                  },
+                                  "color": {
+                                    "type": "string",
+                                    "enum": [
+                                      "rojo",
+                                      "ambar",
+                                      "azul",
+                                      "verde",
+                                      "gris",
+                                      "morado",
+                                      "verde-azulado",
+                                      "naranja"
+                                    ],
+                                    "description": "El color del cuadro del estado"
+                                  },
+                                  "reproceso_id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                    "description": "El reproceso, para «Aprobar»"
+                                  },
+                                  "version": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991,
+                                    "description": "Su versión"
+                                  },
+                                  "puede_aprobar": {
+                                    "type": "boolean",
+                                    "description": "Si Aduana ya recibió su lote: solo entonces sale «Aprobar»"
+                                  }
+                                },
+                                "required": [
+                                  "tipo",
+                                  "clave",
+                                  "titulo",
+                                  "detalle",
+                                  "fecha",
+                                  "fecha_orden",
+                                  "fecha_roja",
+                                  "cifra",
+                                  "estado",
+                                  "color",
+                                  "reproceso_id",
+                                  "version",
+                                  "puede_aprobar"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "tipo": {
+                                    "type": "string",
+                                    "enum": [
+                                      "devolucion"
+                                    ]
+                                  },
+                                  "clave": {
+                                    "type": "string",
+                                    "description": "La clave del renglón"
+                                  },
+                                  "titulo": {
+                                    "type": "string",
+                                    "description": "La referencia: qué es («L-2026-121 · Pantalón gris oxford»)"
+                                  },
+                                  "detalle": {
+                                    "type": "string",
+                                    "description": "Abajo de la referencia: su detalle"
+                                  },
+                                  "fecha": {
+                                    "nullable": true,
+                                    "description": "La fecha que importa, ya escrita («Entrega 3 nov»); vacía si no lleva",
+                                    "type": "string"
+                                  },
+                                  "fecha_orden": {
+                                    "nullable": true,
+                                    "description": "La fecha que ordena (ISO)",
+                                    "type": "string"
+                                  },
+                                  "fecha_roja": {
+                                    "type": "boolean",
+                                    "description": "Si la fecha va en rojo"
+                                  },
+                                  "cifra": {
+                                    "type": "string",
+                                    "description": "Las piezas, ya escritas («90 pz»)"
+                                  },
+                                  "estado": {
+                                    "type": "string",
+                                    "description": "El estado, en su forma fija"
+                                  },
+                                  "color": {
+                                    "type": "string",
+                                    "enum": [
+                                      "rojo",
+                                      "ambar",
+                                      "azul",
+                                      "verde",
+                                      "gris",
+                                      "morado",
+                                      "verde-azulado",
+                                      "naranja"
+                                    ],
+                                    "description": "El color del cuadro del estado"
+                                  },
+                                  "traspaso_id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                    "description": "La devolución en aduana, para la ventana Revisar devolución"
+                                  }
+                                },
+                                "required": [
+                                  "tipo",
+                                  "clave",
+                                  "titulo",
+                                  "detalle",
+                                  "fecha",
+                                  "fecha_orden",
+                                  "fecha_roja",
+                                  "cifra",
+                                  "estado",
+                                  "color",
+                                  "traspaso_id"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "tipo": {
+                                    "type": "string",
+                                    "enum": [
+                                      "reclamo"
+                                    ]
+                                  },
+                                  "clave": {
+                                    "type": "string",
+                                    "description": "La clave del renglón"
+                                  },
+                                  "titulo": {
+                                    "type": "string",
+                                    "description": "La referencia: qué es («L-2026-121 · Pantalón gris oxford»)"
+                                  },
+                                  "detalle": {
+                                    "type": "string",
+                                    "description": "Abajo de la referencia: su detalle"
+                                  },
+                                  "fecha": {
+                                    "nullable": true,
+                                    "description": "La fecha que importa, ya escrita («Entrega 3 nov»); vacía si no lleva",
+                                    "type": "string"
+                                  },
+                                  "fecha_orden": {
+                                    "nullable": true,
+                                    "description": "La fecha que ordena (ISO)",
+                                    "type": "string"
+                                  },
+                                  "fecha_roja": {
+                                    "type": "boolean",
+                                    "description": "Si la fecha va en rojo"
+                                  },
+                                  "cifra": {
+                                    "type": "string",
+                                    "description": "Las piezas, ya escritas («90 pz»)"
+                                  },
+                                  "estado": {
+                                    "type": "string",
+                                    "description": "El estado, en su forma fija"
+                                  },
+                                  "color": {
+                                    "type": "string",
+                                    "enum": [
+                                      "rojo",
+                                      "ambar",
+                                      "azul",
+                                      "verde",
+                                      "gris",
+                                      "morado",
+                                      "verde-azulado",
+                                      "naranja"
+                                    ],
+                                    "description": "El color del cuadro del estado"
+                                  },
+                                  "reclamo_id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                    "description": "El reclamo, para abrirlo en Reclamos"
+                                  }
+                                },
+                                "required": [
+                                  "tipo",
+                                  "clave",
+                                  "titulo",
+                                  "detalle",
+                                  "fecha",
+                                  "fecha_orden",
+                                  "fecha_roja",
+                                  "cifra",
+                                  "estado",
+                                  "color",
+                                  "reclamo_id"
+                                ],
+                                "additionalProperties": false
+                              }
+                            ]
+                          },
+                          "description": "Los renglones del filtro"
+                        }
+                      },
+                      "required": [
+                        "indicadores",
+                        "conteos",
+                        "hay_rojo",
+                        "renglones"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/calidad.por_revisar": {
+      "get": {
+        "tags": [
+          "calidad"
+        ],
+        "description": "Por revisar: los lotes terminados que esperan revisión, los revisados hoy y los reprocesos en el taller. Sin dinero\n\nPermiso: departamento calidad.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "lotes": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "lote_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                "description": "El lote"
+                              },
+                              "folio": {
+                                "type": "string",
+                                "description": "Su folio («L-2026-121»)"
+                              },
+                              "prenda": {
+                                "type": "string",
+                                "description": "La prenda"
+                              },
+                              "linea": {
+                                "type": "string",
+                                "description": "«{L} · terminado el {fecha}»"
+                              },
+                              "listas": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991,
+                                "description": "Las piezas listas: las que se revisan"
+                              },
+                              "para": {
+                                "type": "object",
+                                "properties": {
+                                  "tipo": {
+                                    "type": "string",
+                                    "enum": [
+                                      "pedido",
+                                      "tienda",
+                                      "temporada"
+                                    ],
+                                    "description": "El destino"
+                                  },
+                                  "nombre": {
+                                    "type": "string",
+                                    "description": "El cliente, la tienda o «Temporada · bodega»"
+                                  },
+                                  "color": {
+                                    "nullable": true,
+                                    "description": "El color de la escuela del cliente; vacío si no tiene",
+                                    "type": "string"
+                                  },
+                                  "linea": {
+                                    "type": "string",
+                                    "description": "«PE-0149 · para el 3 nov», «Reabasto · para el 31 oct» o «Para el 20 nov»"
+                                  },
+                                  "pedido_id": {
+                                    "nullable": true,
+                                    "description": "El pedido, si es de un pedido",
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  }
+                                },
+                                "required": [
+                                  "tipo",
+                                  "nombre",
+                                  "color",
+                                  "linea",
+                                  "pedido_id"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "urgente": {
+                                "type": "boolean",
+                                "description": "Si es «Por revisar hoy» (`calidad.por_revisar_hoy_dias`)"
+                              }
+                            },
+                            "required": [
+                              "lote_id",
+                              "folio",
+                              "prenda",
+                              "linea",
+                              "listas",
+                              "para",
+                              "urgente"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Primero los «Por revisar hoy»; luego por entrega"
+                        },
+                        "revisados_hoy": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "lote_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                "description": "El lote"
+                              },
+                              "folio": {
+                                "type": "string",
+                                "description": "Su folio"
+                              },
+                              "prenda": {
+                                "type": "string",
+                                "description": "La prenda"
+                              },
+                              "aprobadas": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991,
+                                "description": "Las aprobadas, que pasan a aduana"
+                              },
+                              "a_reproceso": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991,
+                                "description": "Las que regresaron al taller"
+                              },
+                              "reviso": {
+                                "type": "string",
+                                "description": "Quién revisó"
+                              },
+                              "reviso_quien_coso": {
+                                "type": "boolean",
+                                "description": "Si la revisión quedó marcada: revisó quien cosió en el lote"
+                              }
+                            },
+                            "required": [
+                              "lote_id",
+                              "folio",
+                              "prenda",
+                              "aprobadas",
+                              "a_reproceso",
+                              "reviso",
+                              "reviso_quien_coso"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Los revisados hoy, del más nuevo al más viejo"
+                        },
+                        "reprocesos": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "reproceso_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                "description": "El reproceso"
+                              },
+                              "version": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991,
+                                "description": "Su versión, para «Aprobar»"
+                              },
+                              "prenda": {
+                                "type": "string",
+                                "description": "La prenda"
+                              },
+                              "linea": {
+                                "type": "string",
+                                "description": "«{L}-R{n} · {PE} · {fecha}»"
+                              },
+                              "defecto": {
+                                "type": "string",
+                                "description": "El defecto"
+                              },
+                              "talla": {
+                                "type": "string",
+                                "description": "La talla"
+                              },
+                              "persona": {
+                                "type": "string",
+                                "description": "A quién regresó"
+                              },
+                              "operacion": {
+                                "type": "string",
+                                "description": "La operación que lo causó"
+                              },
+                              "piezas": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991,
+                                "description": "Sus piezas"
+                              },
+                              "estado": {
+                                "type": "string",
+                                "description": "«En reproceso» o «Aprobado»"
+                              },
+                              "color": {
+                                "type": "string",
+                                "enum": [
+                                  "rojo",
+                                  "ambar",
+                                  "azul",
+                                  "verde",
+                                  "gris",
+                                  "morado",
+                                  "verde-azulado",
+                                  "naranja"
+                                ],
+                                "description": "El color del cuadro del estado"
+                              },
+                              "puede_aprobar": {
+                                "type": "boolean",
+                                "description": "Si sale «Aprobar» prendido: está en reproceso y Aduana ya recibió su lote"
+                              },
+                              "motivo_apagado": {
+                                "nullable": true,
+                                "description": "Por qué «Aprobar» sale apagado («Aduana todavía no recibe {L}: el reproceso se aprueba después.»)",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "reproceso_id",
+                              "version",
+                              "prenda",
+                              "linea",
+                              "defecto",
+                              "talla",
+                              "persona",
+                              "operacion",
+                              "piezas",
+                              "estado",
+                              "color",
+                              "puede_aprobar",
+                              "motivo_apagado"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Los reprocesos en el taller y los aprobados hoy, por folio"
+                        }
+                      },
+                      "required": [
+                        "lotes",
+                        "revisados_hoy",
+                        "reprocesos"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/calidad.revision_lote": {
+      "get": {
+        "tags": [
+          "calidad"
+        ],
+        "description": "La revisión de un lote: sus tallas con sus listas, los defectos, las operaciones de su flujo, la gente del Taller y lo que se propone para cada rechazo\n\nPermiso: departamento calidad.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "lote_id",
+            "required": true,
+            "description": "El lote"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "lote_id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                          "description": "El lote"
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "Su versión, para «Aprobar»"
+                        },
+                        "folio": {
+                          "type": "string",
+                          "description": "Su folio"
+                        },
+                        "prenda": {
+                          "type": "string",
+                          "description": "La prenda"
+                        },
+                        "para": {
+                          "type": "object",
+                          "properties": {
+                            "tipo": {
+                              "type": "string",
+                              "enum": [
+                                "pedido",
+                                "tienda",
+                                "temporada"
+                              ],
+                              "description": "El destino"
+                            },
+                            "nombre": {
+                              "type": "string",
+                              "description": "El cliente, la tienda o «Temporada · bodega»"
+                            },
+                            "color": {
+                              "nullable": true,
+                              "description": "El color de la escuela del cliente; vacío si no tiene",
+                              "type": "string"
+                            },
+                            "linea": {
+                              "type": "string",
+                              "description": "«PE-0149 · para el 3 nov», «Reabasto · para el 31 oct» o «Para el 20 nov»"
+                            },
+                            "pedido_id": {
+                              "nullable": true,
+                              "description": "El pedido, si es de un pedido",
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            }
+                          },
+                          "required": [
+                            "tipo",
+                            "nombre",
+                            "color",
+                            "linea",
+                            "pedido_id"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "por_revisar": {
+                          "type": "boolean",
+                          "description": "Si está terminado y se puede revisar"
+                        },
+                        "tallas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "variante_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                "description": "La talla del lote"
+                              },
+                              "talla": {
+                                "type": "string",
+                                "description": "Su nombre"
+                              },
+                              "listas": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991,
+                                "description": "Sus piezas listas"
+                              }
+                            },
+                            "required": [
+                              "variante_id",
+                              "talla",
+                              "listas"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Las tallas cortadas, en su orden"
+                        },
+                        "defectos": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                "description": "Su id"
+                              },
+                              "nombre": {
+                                "type": "string",
+                                "description": "Su nombre"
+                              },
+                              "flujo_operacion_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                "description": "La operación que se propone"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "nombre",
+                              "flujo_operacion_id"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "El catálogo de defectos, con la operación del flujo que se propone para cada uno"
+                        },
+                        "operaciones": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                "description": "Su id"
+                              },
+                              "nombre": {
+                                "type": "string",
+                                "description": "Su nombre"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "nombre"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Las operaciones del flujo de la prenda, en su orden"
+                        },
+                        "personas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                "description": "Su id"
+                              },
+                              "nombre": {
+                                "type": "string",
+                                "description": "Su nombre"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "nombre"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "La gente del Taller"
+                        },
+                        "propuestas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "flujo_operacion_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                "description": "La operación"
+                              },
+                              "variante_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                "description": "La talla"
+                              },
+                              "persona_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                "description": "Quien hizo más piezas de esa operación en esa talla, o la de base"
+                              }
+                            },
+                            "required": [
+                              "flujo_operacion_id",
+                              "variante_id",
+                              "persona_id"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "La persona que se propone por operación y talla"
+                        },
+                        "revisa": {
+                          "type": "string",
+                          "description": "El nombre de la cuenta que revisa"
+                        },
+                        "coso_en_el_lote": {
+                          "type": "boolean",
+                          "description": "Si la persona de la cuenta tiene registros vigentes en el lote"
+                        }
+                      },
+                      "required": [
+                        "lote_id",
+                        "version",
+                        "folio",
+                        "prenda",
+                        "para",
+                        "por_revisar",
+                        "tallas",
+                        "defectos",
+                        "operaciones",
+                        "personas",
+                        "propuestas",
+                        "revisa",
+                        "coso_en_el_lote"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/calidad.defectos": {
+      "get": {
+        "tags": [
+          "calidad"
+        ],
+        "description": "Defectos: las piezas revisadas y rechazadas del periodo, cada defecto con su conteo, la tasa por operación y por persona, y el catálogo\n\nPermiso: departamento calidad.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "dias": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "`calidad.defectos_periodo_dias`"
+                        },
+                        "revisadas": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "Las piezas revisadas en el periodo"
+                        },
+                        "lotes": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "Los lotes revisados en el periodo"
+                        },
+                        "rechazadas": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "Las piezas rechazadas en el periodo"
+                        },
+                        "porcentaje": {
+                          "type": "number",
+                          "description": "Las rechazadas entre las revisadas, en %, con un decimal"
+                        },
+                        "del_periodo": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "nombre": {
+                                "type": "string",
+                                "description": "El defecto"
+                              },
+                              "piezas": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991,
+                                "description": "Las piezas rechazadas con ese defecto en el periodo"
+                              }
+                            },
+                            "required": [
+                              "nombre",
+                              "piezas"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Los defectos del periodo, del más común al menos común"
+                        },
+                        "por_operacion": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "nombre": {
+                                "type": "string",
+                                "description": "La operación o la persona"
+                              },
+                              "rechazadas": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991,
+                                "description": "Sus piezas rechazadas en el periodo"
+                              },
+                              "tasa": {
+                                "type": "number",
+                                "description": "Sus rechazadas entre las revisadas que le tocan, en %, con un decimal"
+                              },
+                              "contra_la_mas_alta": {
+                                "type": "number",
+                                "description": "Su tasa entre la más alta de su tabla, de 0 a 1: el largo de su barra"
+                              },
+                              "roja": {
+                                "type": "boolean",
+                                "description": "Si pasa de `calidad.defectos_tasa_roja_porcentaje`: roja; si no, ámbar"
+                              },
+                              "mas_comun": {
+                                "type": "string",
+                                "description": "Su defecto más común"
+                              }
+                            },
+                            "required": [
+                              "nombre",
+                              "rechazadas",
+                              "tasa",
+                              "contra_la_mas_alta",
+                              "roja",
+                              "mas_comun"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Solo las que tienen rechazos, de la tasa más alta a la más baja"
+                        },
+                        "por_persona": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "nombre": {
+                                "type": "string",
+                                "description": "La operación o la persona"
+                              },
+                              "rechazadas": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991,
+                                "description": "Sus piezas rechazadas en el periodo"
+                              },
+                              "tasa": {
+                                "type": "number",
+                                "description": "Sus rechazadas entre las revisadas que le tocan, en %, con un decimal"
+                              },
+                              "contra_la_mas_alta": {
+                                "type": "number",
+                                "description": "Su tasa entre la más alta de su tabla, de 0 a 1: el largo de su barra"
+                              },
+                              "roja": {
+                                "type": "boolean",
+                                "description": "Si pasa de `calidad.defectos_tasa_roja_porcentaje`: roja; si no, ámbar"
+                              },
+                              "mas_comun": {
+                                "type": "string",
+                                "description": "Su defecto más común"
+                              }
+                            },
+                            "required": [
+                              "nombre",
+                              "rechazadas",
+                              "tasa",
+                              "contra_la_mas_alta",
+                              "roja",
+                              "mas_comun"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Solo las que tienen rechazos, de la tasa más alta a la más baja"
+                        },
+                        "catalogo": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "defecto_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                "description": "El defecto"
+                              },
+                              "nombre": {
+                                "type": "string",
+                                "description": "Su nombre"
+                              },
+                              "operaciones": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                },
+                                "description": "Las operaciones donde pasa"
+                              }
+                            },
+                            "required": [
+                              "defecto_id",
+                              "nombre",
+                              "operaciones"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "El catálogo de defectos vigentes"
+                        },
+                        "operaciones": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "operacion_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "operacion_id",
+                              "nombre"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Las operaciones vigentes del catálogo, para «Defecto nuevo»"
+                        }
+                      },
+                      "required": [
+                        "dias",
+                        "revisadas",
+                        "lotes",
+                        "rechazadas",
+                        "porcentaje",
+                        "del_periodo",
+                        "por_operacion",
+                        "por_persona",
+                        "catalogo",
+                        "operaciones"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/calidad.reclamos": {
+      "get": {
+        "tags": [
+          "calidad"
+        ],
+        "description": "Reclamos: la lista (primero los por resolver, luego los más nuevos) y el rastreo del escogido, sin costos ni tarifas\n\nPermiso: departamento calidad.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "reclamo_id",
+            "required": false,
+            "description": "El reclamo escogido; sin él, el primero de la lista"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "description": "El cursor que regresó la página anterior; opaco"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "in": "query",
+            "name": "limite",
+            "required": false,
+            "description": "Cuántos renglones, hasta 100"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "renglones": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "reclamo_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                "description": "El reclamo"
+                              },
+                              "folio": {
+                                "type": "string",
+                                "description": "Su folio RC-"
+                              },
+                              "estado": {
+                                "type": "string",
+                                "description": "«Por resolver» o «Resuelto»"
+                              },
+                              "color": {
+                                "type": "string",
+                                "enum": [
+                                  "rojo",
+                                  "ambar",
+                                  "azul",
+                                  "verde",
+                                  "gris",
+                                  "morado",
+                                  "verde-azulado",
+                                  "naranja"
+                                ],
+                                "description": "El color del cuadro del estado"
+                              },
+                              "cliente": {
+                                "type": "string",
+                                "description": "El cliente o la tienda"
+                              },
+                              "linea": {
+                                "type": "string",
+                                "description": "«{defecto} · {n} piezas · {fecha}»"
+                              }
+                            },
+                            "required": [
+                              "reclamo_id",
+                              "folio",
+                              "estado",
+                              "color",
+                              "cliente",
+                              "linea"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Los renglones de esta página"
+                        },
+                        "cursor": {
+                          "nullable": true,
+                          "description": "El cursor para pedir la página siguiente; nulo si no hay más",
+                          "type": "string"
+                        },
+                        "hay_mas": {
+                          "type": "boolean",
+                          "description": "Si hay más renglones después de esta página"
+                        },
+                        "escogido": {
+                          "nullable": true,
+                          "description": "El rastreo del escogido; vacío si no hay reclamos",
+                          "type": "object",
+                          "properties": {
+                            "reclamo_id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                              "description": "El reclamo"
+                            },
+                            "version": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "Su versión, para «Marcar resuelto»"
+                            },
+                            "folio": {
+                              "type": "string",
+                              "description": "Su folio"
+                            },
+                            "cliente": {
+                              "type": "string",
+                              "description": "El cliente o la tienda"
+                            },
+                            "que_dice": {
+                              "type": "string",
+                              "description": "Lo que reclamó"
+                            },
+                            "por_resolver": {
+                              "type": "boolean",
+                              "description": "Si sigue por resolver: sale «Marcar resuelto»"
+                            },
+                            "resolucion": {
+                              "nullable": true,
+                              "description": "«Resuelto el {fecha}: {resolución}»; vacío si sigue por resolver",
+                              "type": "string"
+                            },
+                            "prenda": {
+                              "type": "object",
+                              "properties": {
+                                "titulo": {
+                                  "type": "string",
+                                  "description": "«{prenda} · talla {t}»"
+                                },
+                                "linea": {
+                                  "type": "string",
+                                  "description": "«Código {código}»"
+                                }
+                              },
+                              "required": [
+                                "titulo",
+                                "linea"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "lote": {
+                              "type": "object",
+                              "properties": {
+                                "titulo": {
+                                  "type": "string",
+                                  "description": "El folio del lote"
+                                },
+                                "linea": {
+                                  "type": "string",
+                                  "description": "«Cortado el {fecha} · revisado el {fecha} por {persona}» y la nota de entrega"
+                                }
+                              },
+                              "required": [
+                                "titulo",
+                                "linea"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "operacion": {
+                              "type": "object",
+                              "properties": {
+                                "titulo": {
+                                  "type": "string",
+                                  "description": "La operación"
+                                },
+                                "linea": {
+                                  "type": "string",
+                                  "description": "El defecto"
+                                }
+                              },
+                              "required": [
+                                "titulo",
+                                "linea"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "persona": {
+                              "type": "object",
+                              "properties": {
+                                "titulo": {
+                                  "type": "string",
+                                  "description": "Quién la hizo"
+                                },
+                                "linea": {
+                                  "type": "string",
+                                  "description": "«Hizo {operación} en ese lote»"
+                                }
+                              },
+                              "required": [
+                                "titulo",
+                                "linea"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "partidas": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "titulo": {
+                                    "type": "string",
+                                    "description": "La partida"
+                                  },
+                                  "linea": {
+                                    "type": "string",
+                                    "description": "«{tela} · {proveedor}»"
+                                  }
+                                },
+                                "required": [
+                                  "titulo",
+                                  "linea"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "description": "Las partidas de tela del corte; si el lote mezcló partidas, todas"
+                            }
+                          },
+                          "required": [
+                            "reclamo_id",
+                            "version",
+                            "folio",
+                            "cliente",
+                            "que_dice",
+                            "por_resolver",
+                            "resolucion",
+                            "prenda",
+                            "lote",
+                            "operacion",
+                            "persona",
+                            "partidas"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "renglones",
+                        "cursor",
+                        "hay_mas",
+                        "escogido"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/calidad.buscar": {
+      "get": {
+        "tags": [
+          "calidad"
+        ],
+        "description": "Busca por código de la prenda, folio de lote o folio de reclamo\n\nPermiso: departamento calidad.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40
+            },
+            "in": "query",
+            "name": "texto",
+            "required": true,
+            "description": "Lo que se escribió en el buscador"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "encontrado": {
+                          "oneOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "tipo": {
+                                  "type": "string",
+                                  "enum": [
+                                    "reclamo"
+                                  ]
+                                },
+                                "reclamo_id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                  "description": "El reclamo que se encontró"
+                                }
+                              },
+                              "required": [
+                                "tipo",
+                                "reclamo_id"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "tipo": {
+                                  "type": "string",
+                                  "enum": [
+                                    "prenda"
+                                  ]
+                                },
+                                "titulo": {
+                                  "type": "string",
+                                  "description": "«{prenda} · talla {t}»"
+                                },
+                                "linea": {
+                                  "type": "string",
+                                  "description": "«Código {código}. Se hizo en {n} lotes: {lotes}.» o «… Todavía no hay lotes de esta prenda.»"
+                                }
+                              },
+                              "required": [
+                                "tipo",
+                                "titulo",
+                                "linea"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "tipo": {
+                                  "type": "string",
+                                  "enum": [
+                                    "nada"
+                                  ]
+                                },
+                                "texto": {
+                                  "type": "string",
+                                  "description": "«No hay ninguna prenda, lote ni reclamo con …»"
+                                }
+                              },
+                              "required": [
+                                "tipo",
+                                "texto"
+                              ],
+                              "additionalProperties": false
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "encontrado"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/calidad.opciones_reclamo": {
+      "get": {
+        "tags": [
+          "calidad"
+        ],
+        "description": "Las opciones de «Reclamo nuevo»: clientes, la prenda del código, sus lotes revisados, las notas entregadas, los defectos, las operaciones que los causan y quién las hizo\n\nPermiso: departamento calidad.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 80
+            },
+            "in": "query",
+            "name": "cliente_texto",
+            "required": false,
+            "description": "Lo que se escribió del cliente"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "cliente_id",
+            "required": false,
+            "description": "El cliente escogido, para sus notas de entrega"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 6
+            },
+            "in": "query",
+            "name": "codigo",
+            "required": false,
+            "description": "El código de la prenda"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "defecto_id",
+            "required": false,
+            "description": "El defecto escogido"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "lote_id",
+            "required": false,
+            "description": "El lote escogido"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "clientes": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                "description": "Su id"
+                              },
+                              "nombre": {
+                                "type": "string",
+                                "description": "Su texto"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "nombre"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Los clientes externos que coinciden, hasta 20"
+                        },
+                        "prenda": {
+                          "nullable": true,
+                          "description": "La prenda y la talla del código; vacío si no es de ninguna",
+                          "type": "object",
+                          "properties": {
+                            "variante_id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "titulo": {
+                              "type": "string",
+                              "description": "«{prenda} · talla {t}»"
+                            }
+                          },
+                          "required": [
+                            "variante_id",
+                            "titulo"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "lotes": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                "description": "Su id"
+                              },
+                              "nombre": {
+                                "type": "string",
+                                "description": "Su texto"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "nombre"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Los lotes revisados de esa prenda, con su fecha de corte («L-2026-104 · cortado el 16 sep»)"
+                        },
+                        "notas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                "description": "Su id"
+                              },
+                              "nombre": {
+                                "type": "string",
+                                "description": "Su texto"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "nombre"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Las notas de entrega entregadas a ese cliente con esa prenda"
+                        },
+                        "defectos": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                "description": "Su id"
+                              },
+                              "nombre": {
+                                "type": "string",
+                                "description": "Su texto"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "nombre"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "El catálogo de defectos"
+                        },
+                        "operaciones": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                "description": "Su id"
+                              },
+                              "nombre": {
+                                "type": "string",
+                                "description": "Su texto"
+                              },
+                              "persona_id": {
+                                "nullable": true,
+                                "description": "Quién se propone",
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "nombre",
+                              "persona_id"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Las operaciones del flujo del lote que suelen causar el defecto, cada una con la persona que se propone"
+                        },
+                        "personas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                "description": "Su id"
+                              },
+                              "nombre": {
+                                "type": "string",
+                                "description": "Su texto"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "nombre"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "La gente del Taller"
+                        },
+                        "min_letras": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "`calidad.reclamo_min_letras`"
+                        }
+                      },
+                      "required": [
+                        "clientes",
+                        "prenda",
+                        "lotes",
+                        "notas",
+                        "defectos",
+                        "operaciones",
+                        "personas",
+                        "min_letras"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/calidad.devolucion": {
+      "get": {
+        "tags": [
+          "calidad"
+        ],
+        "description": "Una devolución en aduana que espera a Calidad: por renglón, lo que queda por decidir. Sin precios\n\nPermiso: departamento calidad.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "traspaso_id",
+            "required": true,
+            "description": "La devolución"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "traspaso_id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                          "description": "La devolución"
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "Su versión, para «Guardar decisión»"
+                        },
+                        "folio": {
+                          "type": "string",
+                          "description": "Su folio"
+                        },
+                        "cliente": {
+                          "type": "string",
+                          "description": "De quién regresó"
+                        },
+                        "renglones": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "traspaso_linea_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                "description": "El renglón"
+                              },
+                              "prenda": {
+                                "type": "string",
+                                "description": "«{prenda} · talla {t}»"
+                              },
+                              "lote": {
+                                "nullable": true,
+                                "description": "El folio del lote, si se sabe",
+                                "type": "string"
+                              },
+                              "por_decidir": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991,
+                                "description": "Las piezas que quedan por decidir"
+                              },
+                              "defecto_id": {
+                                "nullable": true,
+                                "description": "El defecto con que llegó",
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "defecto": {
+                                "nullable": true,
+                                "description": "Su nombre",
+                                "type": "string"
+                              },
+                              "nota": {
+                                "nullable": true,
+                                "description": "La nota con que llegó",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "traspaso_linea_id",
+                              "prenda",
+                              "lote",
+                              "por_decidir",
+                              "defecto_id",
+                              "defecto",
+                              "nota"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Los renglones de prendas, en su orden"
+                        },
+                        "defectos": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "nombre"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "El catálogo de defectos"
+                        }
+                      },
+                      "required": [
+                        "traspaso_id",
+                        "version",
+                        "folio",
+                        "cliente",
+                        "renglones",
+                        "defectos"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/consultas/catalogo.pendientes": {
       "get": {
         "tags": [

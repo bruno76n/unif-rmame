@@ -19,7 +19,7 @@ describe("Cada pantalla tiene sus estados: cargando, vacío, error, sin permiso,
 		await pantalla?.cerrar();
 	});
 
-	it("cargando muestra la forma en gris y luego el vacío de la pantalla", { timeout: 90_000 }, async () => {
+	it("cargando muestra la forma en gris y luego la pantalla", { timeout: 90_000 }, async () => {
 		const pagina = await pantalla.abrir("/", { quien: "calidad" });
 		// Detiene el armazón un momento para ver el esqueleto.
 		let soltar: () => void = () => undefined;
@@ -34,7 +34,9 @@ describe("Cada pantalla tiene sus estados: cargando, vacío, error, sin permiso,
 		await enPantalla(pagina.locator("[aria-busy='true']")).toBeVisible();
 		soltar();
 		await enPantalla(pagina.locator("h1")).toHaveText("Calidad");
-		await enPantalla(pagina.getByText("Sin pendientes")).toBeVisible();
+		// Ya cargó: el panel de Pendientes de su departamento en lugar de la forma en gris.
+		await enPantalla(pagina.getByRole("heading", { name: "Pendientes" })).toBeVisible();
+		await enPantalla(pagina.locator("[aria-busy='true']")).toHaveCount(0);
 		await pagina.close();
 	});
 

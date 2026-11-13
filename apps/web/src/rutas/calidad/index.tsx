@@ -1,21 +1,10 @@
 /**
- * Pendientes de Calidad: la primera pestaña. Hasta que su parte de la fase 19 la construya, muestra la página del
- * departamento sin pendientes.
- * Fase 19 · docs/interfaz/fabrica/ (el archivo de Calidad)
+ * Pendientes de Calidad, la primera pestaña: el filtro (`?grupo=`) y la ventana de una devolución
+ * (`?cajon=devolucion&id=`) van en la dirección.
+ * Fase 19 · docs/interfaz/fabrica/calidad.md («Pendientes»)
  */
 
 import { createFileRoute } from "@tanstack/react-router";
-import { EstadoDePantalla } from "@uniformame/interfaz/estados/estado-de-pantalla";
-import { PaginaDeDepartamento } from "../../comun/pagina-de-departamento.tsx";
+import { PestanaPendientes } from "../../departamentos/calidad/pestanas/pendientes.tsx";
 
-export const Route = createFileRoute("/calidad/")({
-	component: () => (
-		<PaginaDeDepartamento
-			departamento="calidad"
-			pestanas={[{ clave: "pendientes", texto: "Pendientes" }]}
-			activa="pendientes"
-		>
-			<EstadoDePantalla tipo="vacio" texto="Sin pendientes" bien />
-		</PaginaDeDepartamento>
-	),
-});
+export const Route = createFileRoute("/calidad/")({ component: PestanaPendientes });

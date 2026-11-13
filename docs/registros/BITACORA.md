@@ -126,3 +126,4 @@ La línea de la bitácora se escribe al final, con el resultado ya conocido. Esc
 | 13 nov 2026 | 19 | 3 · Compras | [2026-11-12-fase-19](sesiones/2026-11-12-fase-19.md) |
 | 13 nov 2026 | 19 | 4 · Catálogo | [2026-11-12-fase-19](sesiones/2026-11-12-fase-19.md) |
 | 13 nov 2026 | 19 | 5 · Patronaje | [2026-11-12-fase-19](sesiones/2026-11-12-fase-19.md) |
+| 13 nov 2026 | 19 | 9 · Calidad | [2026-11-12-fase-19](sesiones/2026-11-12-fase-19.md) |

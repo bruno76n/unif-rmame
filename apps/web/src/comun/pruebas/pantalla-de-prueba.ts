@@ -14,6 +14,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { type Browser, chromium, type Page } from "@playwright/test";
 import { createServer, type ViteDevServer } from "vite";
+import { opcionesDeChromium } from "../../../../../pruebas/navegador/chromium.ts";
 import {
 	crearServidorDePrueba,
 	dominios,
@@ -64,8 +65,7 @@ export async function levantarPantalla(): Promise<PantallaDePrueba> {
 	});
 	await vite.listen();
 	const direccionWeb = vite.resolvedUrls?.local[0]?.replace(/\/$/, "") ?? "";
-	const ejecutable = process.env.CHROMIUM_EJECUTABLE;
-	const navegador: Browser = await chromium.launch(ejecutable === undefined ? {} : { executablePath: ejecutable });
+	const navegador: Browser = await chromium.launch(opcionesDeChromium());
 	return {
 		servidor,
 		abrir: async (ruta, { quien, tamano = "escritorio" }) => {

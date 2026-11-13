@@ -32,8 +32,8 @@ export interface Pendiente {
 	/** El importe o la cantidad, ya escritos. */
 	cifra?: string;
 	estado: { texto: string; color?: ColorDeEstado; abajo?: string };
-	/** El botón que lo resuelve; negro si es lo urgente (un lote atorado, por ejemplo). */
-	accion?: { texto: string; alTocar: () => void; principal?: boolean };
+	/** El botón que lo resuelve; negro si es lo urgente (un lote atorado, por ejemplo); apagado sin conexión. */
+	accion?: { texto: string; alTocar: () => void; principal?: boolean; deshabilitada?: boolean };
 }
 
 /** El lugar de cada color en el orden de Pendientes. */

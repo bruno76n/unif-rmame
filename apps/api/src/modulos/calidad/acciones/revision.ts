@@ -19,6 +19,7 @@ import { type ContextoDeAccion, implementarAccion } from "../../../nucleo/modulo
 import { usuarios } from "../../admin/tablas.ts";
 import { personas } from "../../personal/tablas.ts";
 import { lotes, operaciones } from "../../produccion/tablas.ts";
+import { cosioEnElLote } from "../dominio/quien-revisa.ts";
 import { defectoOperaciones, defectos, rechazos, reprocesos, revisiones, revisionTallas } from "../tablas.ts";
 
 /** Lo que se lee del lote para revisarlo. */
@@ -50,10 +51,7 @@ async function quienRevisa(contexto: ContextoDeAccion, loteId: string) {
 		.from(usuarios)
 		.where(eq(usuarios.id, usuarioId));
 	const personaId = cuenta?.personaId ?? null;
-	if (personaId === null) return { usuarioId, personaId, coso: false };
-	const { rows } = await contexto.transaccion.execute(sql`
-		SELECT 1 FROM registros_operacion WHERE lote_id = ${loteId} AND persona_id = ${personaId} AND estado = 'vigente' LIMIT 1`);
-	return { usuarioId, personaId, coso: rows.length > 0 };
+	return { usuarioId, personaId, coso: await cosioEnElLote(contexto.transaccion, personaId, loteId) };
 }
 
 /**
