@@ -20,6 +20,7 @@ import { and, asc, count, desc, eq, ne, or, type SQL, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { Temporal } from "temporal-polyfill";
 import { z } from "zod";
+import { esLaDuena } from "../../../nucleo/acceso/quien.ts";
 import { cursorDe, leerCursor } from "../../../nucleo/http/consultas.ts";
 import { implementarConsulta } from "../../../nucleo/modulos.ts";
 import { leerParametro } from "../../../nucleo/parametros.ts";
@@ -53,7 +54,7 @@ export const consultaAutorizaciones = implementarConsulta(consultaDeAutorizacion
 	const { base, quien, ahora } = contexto;
 	const diasParaAvisar = Number(await leerParametro(base, { clave: "direccion.autorizacion_dias_rojo" }));
 	const usuarioId = quien.tipo === "cuenta" ? quien.usuarioId : undefined;
-	const esDuena = quien.tipo === "cuenta" && quien.esDuena;
+	const esDuena = esLaDuena(quien);
 	const esperando = eq(autorizaciones.estado, "por_autorizar");
 	// Los filtros: «Todas» y cada tipo con algo pendiente.
 	const conteos = await base

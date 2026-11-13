@@ -10,6 +10,7 @@
 import { agregarALista } from "@uniformame/compartido/contratos/admin/configuracion";
 import { eq, sql } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
+import { esLaDuena } from "../../../nucleo/acceso/quien.ts";
 import { ErrorDeApi, errorDeCampo, errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
 import { implementarAccion } from "../../../nucleo/modulos.ts";
 import { listas, listaValores } from "../tablas.ts";
@@ -21,7 +22,7 @@ export const accionAgregarALista = implementarAccion(agregarALista, async (conte
 	const [lista] = await contexto.transaccion.select().from(listas).where(eq(listas.clave, datos.lista));
 	if (lista === undefined) throw noExiste();
 	const { quien } = contexto;
-	if (lista.soloDuenaAgrega && !(quien.tipo === "cuenta" && quien.esDuena)) {
+	if (lista.soloDuenaAgrega && !esLaDuena(quien)) {
 		throw new ErrorDeApi("sin_permiso", "solo_duena", "Solo la dueña puede agregar");
 	}
 	const esUnidad = lista.clave === unidadesDeMaterial;

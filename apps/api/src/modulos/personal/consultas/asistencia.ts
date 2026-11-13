@@ -24,7 +24,7 @@ import { formasDePago, nombresDeFormaDePago } from "@uniformame/compartido/contr
 import { and, asc, desc, eq, gte, inArray, lt, lte, or, sql } from "drizzle-orm";
 import { Temporal } from "temporal-polyfill";
 import { z } from "zod";
-import { veSueldosYTarifas } from "../../../nucleo/acceso/quien.ts";
+import { esLaDuena, veSueldosYTarifas } from "../../../nucleo/acceso/quien.ts";
 import { noExiste } from "../../../nucleo/http/errores.ts";
 import type { ConteoDePastilla, ContextoDeAccion, ContextoDeConsulta } from "../../../nucleo/modulos.ts";
 import { implementarConsulta } from "../../../nucleo/modulos.ts";
@@ -445,7 +445,7 @@ export const consultaAsistencia = implementarConsulta(asistenciaDePersonal, asyn
 	});
 	const { pendientes, semana, cerradas } = leido;
 	// Reabrir es solo de la dueña, y solo si Contaduría dice que su nómina no está pagada.
-	const esDuena = contexto.quien.tipo === "cuenta" && contexto.quien.esDuena;
+	const esDuena = esLaDuena(contexto.quien);
 	const semanasCerradasConReabrir = await Promise.all(
 		cerradas.map(async (cerrada) => ({
 			asistencia_semana_id: cerrada.id,

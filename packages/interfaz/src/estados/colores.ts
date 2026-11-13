@@ -32,6 +32,7 @@ const fijos: Readonly<Record<ColorDeEstado, readonly string[]>> = {
 		"Cancelado",
 		"Cancelada",
 		"Atrasado",
+		"Bloqueado",
 	],
 	ambar: [
 		"Vence hoy",
@@ -63,6 +64,10 @@ const fijos: Readonly<Record<ColorDeEstado, readonly string[]>> = {
 		"Esperando prendas",
 		"En camino a aduana",
 		"Recibida con diferencias",
+		"Por confirmar",
+		"Por capturar",
+		"Por cerrar",
+		"Sin tarifa",
 	],
 	azul: [
 		"Llega esta semana",

@@ -24684,6 +24684,2815 @@
         }
       }
     },
+    "/v1/consultas/admin.pendientes": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "description": "Pendientes de Administración del sistema: las cifras de usuarios, dispositivos, bitácora y respaldos, y las altas por confirmar, los aparatos sin sincronizar, las alertas sin revisar y la prueba de restauración\n\nPermiso: departamento admin.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "todos",
+                "usuarios",
+                "dispositivos",
+                "seguridad"
+              ]
+            },
+            "in": "query",
+            "name": "grupo",
+            "required": false,
+            "description": "El filtro; sin él, todos"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "cifras": {
+                          "type": "object",
+                          "properties": {
+                            "usuarios": {
+                              "type": "object",
+                              "properties": {
+                                "numero": {
+                                  "nullable": true,
+                                  "description": "La cifra; nula si todavía no hay dato («—»)",
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "unidad": {
+                                  "type": "string",
+                                  "description": "La palabra que acompaña al número, ya en singular o plural: «usuarios»"
+                                },
+                                "tono": {
+                                  "nullable": true,
+                                  "description": "El color del número, si algo pide atención",
+                                  "type": "string",
+                                  "enum": [
+                                    "ambar",
+                                    "rojo"
+                                  ]
+                                },
+                                "contexto": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "texto": {
+                                        "type": "string"
+                                      },
+                                      "tono": {
+                                        "type": "string",
+                                        "enum": [
+                                          "normal",
+                                          "ambar",
+                                          "rojo"
+                                        ],
+                                        "description": "El color de la línea"
+                                      }
+                                    },
+                                    "required": [
+                                      "texto",
+                                      "tono"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "description": "La línea de contexto, lo rojo y lo ámbar primero"
+                                }
+                              },
+                              "required": [
+                                "numero",
+                                "unidad",
+                                "tono",
+                                "contexto"
+                              ],
+                              "additionalProperties": false,
+                              "description": "Las cuentas con acceso, sin soporte; ámbar si hay altas por confirmar"
+                            },
+                            "dispositivos": {
+                              "type": "object",
+                              "properties": {
+                                "numero": {
+                                  "nullable": true,
+                                  "description": "La cifra; nula si todavía no hay dato («—»)",
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "unidad": {
+                                  "type": "string",
+                                  "description": "La palabra que acompaña al número, ya en singular o plural: «usuarios»"
+                                },
+                                "tono": {
+                                  "nullable": true,
+                                  "description": "El color del número, si algo pide atención",
+                                  "type": "string",
+                                  "enum": [
+                                    "ambar",
+                                    "rojo"
+                                  ]
+                                },
+                                "contexto": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "texto": {
+                                        "type": "string"
+                                      },
+                                      "tono": {
+                                        "type": "string",
+                                        "enum": [
+                                          "normal",
+                                          "ambar",
+                                          "rojo"
+                                        ],
+                                        "description": "El color de la línea"
+                                      }
+                                    },
+                                    "required": [
+                                      "texto",
+                                      "tono"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "description": "La línea de contexto, lo rojo y lo ámbar primero"
+                                }
+                              },
+                              "required": [
+                                "numero",
+                                "unidad",
+                                "tono",
+                                "contexto"
+                              ],
+                              "additionalProperties": false,
+                              "description": "Los aparatos vigentes; rojo si alguno no sincroniza"
+                            },
+                            "bitacora": {
+                              "type": "object",
+                              "properties": {
+                                "numero": {
+                                  "nullable": true,
+                                  "description": "La cifra; nula si todavía no hay dato («—»)",
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "unidad": {
+                                  "type": "string",
+                                  "description": "La palabra que acompaña al número, ya en singular o plural: «usuarios»"
+                                },
+                                "tono": {
+                                  "nullable": true,
+                                  "description": "El color del número, si algo pide atención",
+                                  "type": "string",
+                                  "enum": [
+                                    "ambar",
+                                    "rojo"
+                                  ]
+                                },
+                                "contexto": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "texto": {
+                                        "type": "string"
+                                      },
+                                      "tono": {
+                                        "type": "string",
+                                        "enum": [
+                                          "normal",
+                                          "ambar",
+                                          "rojo"
+                                        ],
+                                        "description": "El color de la línea"
+                                      }
+                                    },
+                                    "required": [
+                                      "texto",
+                                      "tono"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "description": "La línea de contexto, lo rojo y lo ámbar primero"
+                                }
+                              },
+                              "required": [
+                                "numero",
+                                "unidad",
+                                "tono",
+                                "contexto"
+                              ],
+                              "additionalProperties": false,
+                              "description": "Los movimientos de hoy, con las alertas y las consultas sensibles"
+                            },
+                            "respaldos": {
+                              "type": "object",
+                              "properties": {
+                                "numero": {
+                                  "nullable": true,
+                                  "description": "La cifra; nula si todavía no hay dato («—»)",
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "unidad": {
+                                  "type": "string",
+                                  "description": "La palabra que acompaña al número, ya en singular o plural: «usuarios»"
+                                },
+                                "tono": {
+                                  "nullable": true,
+                                  "description": "El color del número, si algo pide atención",
+                                  "type": "string",
+                                  "enum": [
+                                    "ambar",
+                                    "rojo"
+                                  ]
+                                },
+                                "contexto": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "texto": {
+                                        "type": "string"
+                                      },
+                                      "tono": {
+                                        "type": "string",
+                                        "enum": [
+                                          "normal",
+                                          "ambar",
+                                          "rojo"
+                                        ],
+                                        "description": "El color de la línea"
+                                      }
+                                    },
+                                    "required": [
+                                      "texto",
+                                      "tono"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "description": "La línea de contexto, lo rojo y lo ámbar primero"
+                                }
+                              },
+                              "required": [
+                                "numero",
+                                "unidad",
+                                "tono",
+                                "contexto"
+                              ],
+                              "additionalProperties": false,
+                              "description": "Los días sin probar una restauración; ámbar desde `admin.restauracion_aviso_dias`"
+                            }
+                          },
+                          "required": [
+                            "usuarios",
+                            "dispositivos",
+                            "bitacora",
+                            "respaldos"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "renglones": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "clave": {
+                                "type": "string"
+                              },
+                              "grupo": {
+                                "type": "string",
+                                "enum": [
+                                  "usuarios",
+                                  "dispositivos",
+                                  "seguridad"
+                                ]
+                              },
+                              "tipo": {
+                                "type": "string",
+                                "enum": [
+                                  "alta_usuario",
+                                  "dispositivo",
+                                  "alerta",
+                                  "respaldo"
+                                ]
+                              },
+                              "titulo": {
+                                "type": "string",
+                                "description": "Quién pidió el alta, el aparato, lo que pasó o «Prueba de restauración»"
+                              },
+                              "detalle": {
+                                "type": "string",
+                                "description": "La línea de abajo de la referencia"
+                              },
+                              "fecha": {
+                                "nullable": true,
+                                "type": "object",
+                                "properties": {
+                                  "momento": {
+                                    "type": "string",
+                                    "description": "Para ordenar"
+                                  },
+                                  "texto": {
+                                    "type": "string",
+                                    "description": "«9 oct» o «9 oct · 10:42»"
+                                  }
+                                },
+                                "required": [
+                                  "momento",
+                                  "texto"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "tiempo": {
+                                "nullable": true,
+                                "description": "«hace 5 h», en los aparatos sin sincronizar",
+                                "type": "string"
+                              },
+                              "estado": {
+                                "type": "object",
+                                "properties": {
+                                  "texto": {
+                                    "type": "string",
+                                    "description": "El estado: «Por confirmar», «Sin sincronizar»"
+                                  },
+                                  "color": {
+                                    "type": "string",
+                                    "enum": [
+                                      "rojo",
+                                      "ambar",
+                                      "azul",
+                                      "verde",
+                                      "gris",
+                                      "morado",
+                                      "verde-azulado",
+                                      "naranja"
+                                    ],
+                                    "description": "El color del cuadro del estado"
+                                  }
+                                },
+                                "required": [
+                                  "texto",
+                                  "color"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "accion": {
+                                "type": "object",
+                                "properties": {
+                                  "tipo": {
+                                    "type": "string",
+                                    "enum": [
+                                      "revisar",
+                                      "ver_dispositivo",
+                                      "marcar_revisada",
+                                      "ver_bitacora",
+                                      "ver_respaldos"
+                                    ]
+                                  },
+                                  "texto": {
+                                    "type": "string",
+                                    "description": "El texto del botón"
+                                  },
+                                  "id": {
+                                    "nullable": true,
+                                    "description": "La autorización, el aparato o la alerta",
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  }
+                                },
+                                "required": [
+                                  "tipo",
+                                  "texto",
+                                  "id"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "required": [
+                              "clave",
+                              "grupo",
+                              "tipo",
+                              "titulo",
+                              "detalle",
+                              "fecha",
+                              "tiempo",
+                              "estado",
+                              "accion"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "conteos": {
+                          "type": "object",
+                          "properties": {
+                            "todos": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "usuarios": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "dispositivos": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "seguridad": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "todos",
+                            "usuarios",
+                            "dispositivos",
+                            "seguridad"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "cifras",
+                        "renglones",
+                        "conteos"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/admin.usuarios": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "description": "Usuarios y accesos: las cuentas activas con su ubicación, su última entrada, sus sesiones y sus departamentos, la cuenta de soporte y las altas pendientes\n\nPermiso: departamento admin.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "es_duena": {
+                          "type": "boolean",
+                          "description": "Si quien ve es la dueña: solo ella cambia accesos"
+                        },
+                        "cuentas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "usuario_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "iniciales": {
+                                "type": "string"
+                              },
+                              "nombre": {
+                                "type": "string",
+                                "description": "El de su persona; en soporte, el de la cuenta"
+                              },
+                              "correo": {
+                                "type": "string"
+                              },
+                              "version": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991,
+                                "description": "La versión de la cuenta, para cambiarla"
+                              },
+                              "es_duena": {
+                                "type": "boolean"
+                              },
+                              "ubicacion": {
+                                "type": "string",
+                                "description": "«Todas» la dueña; si no, el área de su persona"
+                              },
+                              "ultima_entrada": {
+                                "type": "string",
+                                "description": "«hoy 7:58», «ayer 18:20», «2 oct 11:15» o «Nunca»"
+                              },
+                              "sesiones_abiertas": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "puede_cerrar_sesiones": {
+                                "type": "boolean",
+                                "description": "Las de la dueña solo las cierra ella"
+                              },
+                              "departamentos": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "enum": [
+                                    "direccion",
+                                    "compras",
+                                    "catalogo",
+                                    "patronaje",
+                                    "ventas",
+                                    "linea",
+                                    "produccion",
+                                    "puerta_taller",
+                                    "calidad",
+                                    "mantenimiento",
+                                    "aduana",
+                                    "bodega",
+                                    "contaduria",
+                                    "personal",
+                                    "admin"
+                                  ]
+                                },
+                                "description": "Sus departamentos vigentes"
+                              }
+                            },
+                            "required": [
+                              "usuario_id",
+                              "iniciales",
+                              "nombre",
+                              "correo",
+                              "version",
+                              "es_duena",
+                              "ubicacion",
+                              "ultima_entrada",
+                              "sesiones_abiertas",
+                              "puede_cerrar_sesiones",
+                              "departamentos"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "soporte": {
+                          "nullable": true,
+                          "description": "La cuenta de soporte técnico, el último renglón",
+                          "type": "object",
+                          "properties": {
+                            "nombre": {
+                              "type": "string"
+                            },
+                            "correo": {
+                              "type": "string"
+                            },
+                            "ultima_entrada": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "nombre",
+                            "correo",
+                            "ultima_entrada"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "altas_pendientes": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "autorizacion_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "texto": {
+                                "type": "string",
+                                "description": "«{persona} pidió: {lo que pidió}.»"
+                              }
+                            },
+                            "required": [
+                              "autorizacion_id",
+                              "texto"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "departamentos": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "clave": {
+                                "type": "string",
+                                "enum": [
+                                  "direccion",
+                                  "compras",
+                                  "catalogo",
+                                  "patronaje",
+                                  "ventas",
+                                  "linea",
+                                  "produccion",
+                                  "puerta_taller",
+                                  "calidad",
+                                  "mantenimiento",
+                                  "aduana",
+                                  "bodega",
+                                  "contaduria",
+                                  "personal",
+                                  "admin"
+                                ]
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "grupo": {
+                                "nullable": true,
+                                "description": "El grupo del menú; nulo en Dirección",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "clave",
+                              "nombre",
+                              "grupo"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Los de la matriz, en el orden del menú"
+                        }
+                      },
+                      "required": [
+                        "es_duena",
+                        "cuentas",
+                        "soporte",
+                        "altas_pendientes",
+                        "departamentos"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/admin.cuenta_nueva": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "description": "Las opciones de «Cuenta nueva»: las personas activas de Personal sin cuenta que no son de tienda, y los departamentos que se dan en un alta\n\nPermiso: departamento admin.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "es_duena": {
+                          "type": "boolean",
+                          "description": "La dueña da la cuenta; las demás la piden"
+                        },
+                        "personas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "persona_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "texto": {
+                                "type": "string",
+                                "description": "«{E-} · {nombre} · {puesto}»"
+                              }
+                            },
+                            "required": [
+                              "persona_id",
+                              "texto"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "departamentos": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "clave": {
+                                "type": "string",
+                                "enum": [
+                                  "direccion",
+                                  "compras",
+                                  "catalogo",
+                                  "patronaje",
+                                  "ventas",
+                                  "linea",
+                                  "produccion",
+                                  "puerta_taller",
+                                  "calidad",
+                                  "mantenimiento",
+                                  "aduana",
+                                  "bodega",
+                                  "contaduria",
+                                  "personal",
+                                  "admin"
+                                ]
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "grupo": {
+                                "nullable": true,
+                                "description": "El grupo del menú; nulo en Dirección",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "clave",
+                              "nombre",
+                              "grupo"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Todos menos la Puerta del taller, que entra con PIN"
+                        }
+                      },
+                      "required": [
+                        "es_duena",
+                        "personas",
+                        "departamentos"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/admin.alta_usuario": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "description": "El cajón Alta de usuario: lo que se pidió, a quién se liga y con qué correo entra\n\nPermiso: departamento admin; solo la dueña.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "autorizacion_id",
+            "required": true,
+            "description": "La autorización AU- de alta de usuario"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "autorizacion_id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "folio": {
+                          "type": "string",
+                          "description": "Su folio AU-"
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "La versión de la autorización, para decidirla"
+                        },
+                        "por_autorizar": {
+                          "type": "boolean",
+                          "description": "Si todavía se puede decidir"
+                        },
+                        "pidio": {
+                          "type": "string",
+                          "description": "Quién la pidió"
+                        },
+                        "persona": {
+                          "type": "string"
+                        },
+                        "correo": {
+                          "type": "string"
+                        },
+                        "departamentos": {
+                          "type": "string",
+                          "description": "Sus nombres, separados por coma"
+                        },
+                        "ubicacion": {
+                          "type": "string",
+                          "description": "El área de su persona"
+                        },
+                        "para_que": {
+                          "type": "string",
+                          "description": "Lo que se pidió"
+                        },
+                        "liga": {
+                          "type": "string",
+                          "description": "«Se liga a {E-} · {persona}, {puesto}.»"
+                        }
+                      },
+                      "required": [
+                        "autorizacion_id",
+                        "folio",
+                        "version",
+                        "por_autorizar",
+                        "pidio",
+                        "persona",
+                        "correo",
+                        "departamentos",
+                        "ubicacion",
+                        "para_que",
+                        "liga"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/admin.pantalla_acceso": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "description": "La pantalla de entrada como la ve la gente: la marca, los minutos sin actividad del saludo al volver de Google y las cuentas con acceso\n\nPermiso: departamento admin.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "marca": {
+                          "type": "string",
+                          "description": "El nombre comercial de la empresa"
+                        },
+                        "inactividad_min": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "`admin.sesion_inactividad_min`: la sesión se cierra sola tras esos minutos sin actividad"
+                        },
+                        "cuentas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "usuario_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "iniciales": {
+                                "type": "string"
+                              },
+                              "nombre": {
+                                "type": "string",
+                                "description": "El de su persona; en soporte, el de la cuenta"
+                              },
+                              "correo": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "usuario_id",
+                              "iniciales",
+                              "nombre",
+                              "correo"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Las cuentas con acceso"
+                        }
+                      },
+                      "required": [
+                        "marca",
+                        "inactividad_min",
+                        "cuentas"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/admin.dispositivos": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "description": "Dispositivos: los aparatos registrados con su última sincronización, su llave, su versión y sus apartados, y los revocados\n\nPermiso: departamento admin.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "es_duena": {
+                          "type": "boolean",
+                          "description": "Solo la dueña registra y revoca"
+                        },
+                        "registrados": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "dispositivo_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "version": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "registrado": {
+                                "type": "string",
+                                "description": "«Registrado el 2 ago 2026»"
+                              },
+                              "tipo": {
+                                "type": "string",
+                                "description": "El tipo, para la ventana de revocar"
+                              },
+                              "tipo_texto": {
+                                "type": "string",
+                                "description": "«Tablet del taller», «Teléfono para escanear», «Programa de impresión»"
+                              },
+                              "ubicacion": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "sincronizacion": {
+                                "type": "object",
+                                "properties": {
+                                  "texto": {
+                                    "type": "string",
+                                    "description": "«hace 5 min», «Último contacto hace 2 h», «No sincroniza» o «Nunca»"
+                                  },
+                                  "tono": {
+                                    "type": "string",
+                                    "enum": [
+                                      "verde",
+                                      "rojo",
+                                      "ninguno"
+                                    ],
+                                    "description": "El punto: rojo pasadas `admin.horas_sin_sincronizar_aviso`"
+                                  }
+                                },
+                                "required": [
+                                  "texto",
+                                  "tono"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "llave_id": {
+                                "type": "string",
+                                "description": "Su parte pública, «k1·a8f2»"
+                              },
+                              "version_app": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "reloj_desfasado": {
+                                "type": "boolean",
+                                "description": "Más de `sync.minutos_reloj_desfasado` de diferencia"
+                              },
+                              "apartados": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991,
+                                "description": "Los comandos apartados sin descartar"
+                              },
+                              "pendientes_por_subir": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991,
+                                "description": "Lo que dice tener en su cola"
+                              }
+                            },
+                            "required": [
+                              "dispositivo_id",
+                              "version",
+                              "nombre",
+                              "registrado",
+                              "tipo",
+                              "tipo_texto",
+                              "ubicacion",
+                              "sincronizacion",
+                              "llave_id",
+                              "version_app",
+                              "reloj_desfasado",
+                              "apartados",
+                              "pendientes_por_subir"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "revocados": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "dispositivo_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "llave_id": {
+                                "type": "string",
+                                "description": "Su parte pública"
+                              },
+                              "revocado": {
+                                "type": "string",
+                                "description": "«9 oct»"
+                              },
+                              "motivo": {
+                                "type": "string"
+                              },
+                              "despues_de_revocar": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991,
+                                "description": "Lo que llegó después de revocarlo"
+                              }
+                            },
+                            "required": [
+                              "dispositivo_id",
+                              "nombre",
+                              "llave_id",
+                              "revocado",
+                              "motivo",
+                              "despues_de_revocar"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "donde_se_usa": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "ubicacion_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string",
+                                "description": "«Taller», «Aduana»"
+                              },
+                              "tipo": {
+                                "type": "string",
+                                "enum": [
+                                  "tablet_taller",
+                                  "telefono_escanear",
+                                  "puente_impresion"
+                                ],
+                                "description": "El aparato que va ahí: la tablet en el Taller, el teléfono en Aduana o Bodega"
+                              },
+                              "con_impresora": {
+                                "type": "boolean",
+                                "description": "Si ahí hay una impresora sin baja: puede llevar un programa de impresión"
+                              }
+                            },
+                            "required": [
+                              "ubicacion_id",
+                              "nombre",
+                              "tipo",
+                              "con_impresora"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Las opciones de «Dónde se usa» al registrar"
+                        },
+                        "vigencia_codigo_min": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "`admin.codigo_registro_vigencia_min`"
+                        }
+                      },
+                      "required": [
+                        "es_duena",
+                        "registrados",
+                        "revocados",
+                        "donde_se_usa",
+                        "vigencia_codigo_min"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/admin.codigo_registro": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "description": "Cómo va un código de registro: si sigue vigente, venció, se canceló o ya nació su aparato\n\nPermiso: departamento admin; solo la dueña.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "codigo_registro_id",
+            "required": true,
+            "description": "El código"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "estado": {
+                          "type": "string",
+                          "enum": [
+                            "vigente",
+                            "vencido",
+                            "canjeado",
+                            "cancelado"
+                          ]
+                        },
+                        "nombre": {
+                          "type": "string",
+                          "description": "El nombre que se le dio al aparato"
+                        },
+                        "dispositivo_id": {
+                          "nullable": true,
+                          "description": "El aparato que nació, si ya se canjeó",
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        }
+                      },
+                      "required": [
+                        "estado",
+                        "nombre",
+                        "dispositivo_id"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/admin.comandos_apartados": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "description": "Lo que subió un aparato y no se pudo aplicar, el más nuevo arriba, con sus reintentos\n\nPermiso: departamento admin.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "dispositivo_id",
+            "required": true,
+            "description": "El aparato"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "si",
+                "no"
+              ]
+            },
+            "in": "query",
+            "name": "incluir_descartados",
+            "required": false,
+            "description": "«si» para ver también los descartados"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "description": "El cursor que regresó la página anterior; opaco"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            },
+            "in": "query",
+            "name": "limite",
+            "required": false,
+            "description": "Cuántos renglones, hasta 50"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "nombre": {
+                          "type": "string",
+                          "description": "El nombre del aparato"
+                        },
+                        "es_duena": {
+                          "type": "boolean",
+                          "description": "Solo la dueña descarta"
+                        },
+                        "renglones": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "comando_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "cuando": {
+                                "type": "string",
+                                "description": "Cuándo pasó en el aparato: «9 oct · 14:20»"
+                              },
+                              "accion": {
+                                "type": "string",
+                                "description": "La acción que mandó"
+                              },
+                              "motivo": {
+                                "type": "string",
+                                "description": "Por qué se apartó"
+                              },
+                              "persona": {
+                                "nullable": true,
+                                "description": "Quién lo hizo en el aparato",
+                                "type": "string"
+                              },
+                              "reintentos": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "descartado": {
+                                "nullable": true,
+                                "description": "«Descartado: {motivo}», si ya se descartó",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "comando_id",
+                              "cuando",
+                              "accion",
+                              "motivo",
+                              "persona",
+                              "reintentos",
+                              "descartado"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Los renglones de esta página"
+                        },
+                        "cursor": {
+                          "nullable": true,
+                          "description": "El cursor para pedir la página siguiente; nulo si no hay más",
+                          "type": "string"
+                        },
+                        "hay_mas": {
+                          "type": "boolean",
+                          "description": "Si hay más renglones después de esta página"
+                        }
+                      },
+                      "required": [
+                        "nombre",
+                        "es_duena",
+                        "renglones",
+                        "cursor",
+                        "hay_mas"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/admin.configuracion": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "description": "Configuración: las decisiones de operación, los permisos finos de cada cuenta, las ubicaciones, las listas, los parámetros, la empresa, las impresoras de etiquetas y los siguientes folios\n\nPermiso: departamento admin.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "es_duena": {
+                          "type": "boolean",
+                          "description": "Solo la dueña cambia"
+                        },
+                        "decisiones": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "clave": {
+                                "type": "string"
+                              },
+                              "ubicacion_id": {
+                                "nullable": true,
+                                "description": "Para un valor por ubicación",
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "version": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991,
+                                "description": "La versión, para cambiarlo"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "explicacion": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "tipo": {
+                                "type": "string",
+                                "enum": [
+                                  "entero",
+                                  "centavos",
+                                  "porcentaje",
+                                  "opcion",
+                                  "booleano",
+                                  "texto",
+                                  "hora"
+                                ]
+                              },
+                              "unidad": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "valor": {
+                                "anyOf": [
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "boolean"
+                                  }
+                                ],
+                                "description": "El valor con su tipo; nulo si está vacío o si es en pesos",
+                                "nullable": true
+                              },
+                              "valor_centavos": {
+                                "description": "El valor de un parámetro en pesos",
+                                "nullable": true,
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "opciones": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "valor": {
+                                      "type": "string"
+                                    },
+                                    "texto": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "valor",
+                                    "texto"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "description": "Las de una opción"
+                              },
+                              "minimo": {
+                                "nullable": true,
+                                "type": "number"
+                              },
+                              "maximo": {
+                                "nullable": true,
+                                "type": "number"
+                              },
+                              "permite_vacio": {
+                                "type": "boolean"
+                              },
+                              "por_decidir": {
+                                "type": "boolean",
+                                "description": "Sale con «Por decidir» hasta que la dueña lo cambia"
+                              }
+                            },
+                            "required": [
+                              "clave",
+                              "ubicacion_id",
+                              "version",
+                              "nombre",
+                              "explicacion",
+                              "tipo",
+                              "unidad",
+                              "valor",
+                              "opciones",
+                              "minimo",
+                              "maximo",
+                              "permite_vacio",
+                              "por_decidir"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "La sección `decision_operacion`, en el orden de cada módulo"
+                        },
+                        "permisos_finos": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "usuario_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "version": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "es_duena": {
+                                "type": "boolean",
+                                "description": "Su casilla va marcada y fija"
+                              },
+                              "permisos": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "enum": [
+                                    "ven_sueldos_y_tarifas",
+                                    "imprime_guias"
+                                  ]
+                                }
+                              }
+                            },
+                            "required": [
+                              "usuario_id",
+                              "version",
+                              "nombre",
+                              "es_duena",
+                              "permisos"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "parametros": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "clave": {
+                                "type": "string"
+                              },
+                              "ubicacion_id": {
+                                "nullable": true,
+                                "description": "Para un valor por ubicación",
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "version": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991,
+                                "description": "La versión, para cambiarlo"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "explicacion": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "tipo": {
+                                "type": "string",
+                                "enum": [
+                                  "entero",
+                                  "centavos",
+                                  "porcentaje",
+                                  "opcion",
+                                  "booleano",
+                                  "texto",
+                                  "hora"
+                                ]
+                              },
+                              "unidad": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "valor": {
+                                "anyOf": [
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "boolean"
+                                  }
+                                ],
+                                "description": "El valor con su tipo; nulo si está vacío o si es en pesos",
+                                "nullable": true
+                              },
+                              "valor_centavos": {
+                                "description": "El valor de un parámetro en pesos",
+                                "nullable": true,
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "opciones": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "valor": {
+                                      "type": "string"
+                                    },
+                                    "texto": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "valor",
+                                    "texto"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "description": "Las de una opción"
+                              },
+                              "minimo": {
+                                "nullable": true,
+                                "type": "number"
+                              },
+                              "maximo": {
+                                "nullable": true,
+                                "type": "number"
+                              },
+                              "permite_vacio": {
+                                "type": "boolean"
+                              },
+                              "por_decidir": {
+                                "type": "boolean",
+                                "description": "Sale con «Por decidir» hasta que la dueña lo cambia"
+                              }
+                            },
+                            "required": [
+                              "clave",
+                              "ubicacion_id",
+                              "version",
+                              "nombre",
+                              "explicacion",
+                              "tipo",
+                              "unidad",
+                              "valor",
+                              "opciones",
+                              "minimo",
+                              "maximo",
+                              "permite_vacio",
+                              "por_decidir"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "La sección `parametro`"
+                        },
+                        "tecnicos": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "clave": {
+                                "type": "string"
+                              },
+                              "ubicacion_id": {
+                                "nullable": true,
+                                "description": "Para un valor por ubicación",
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "version": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991,
+                                "description": "La versión, para cambiarlo"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "explicacion": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "tipo": {
+                                "type": "string",
+                                "enum": [
+                                  "entero",
+                                  "centavos",
+                                  "porcentaje",
+                                  "opcion",
+                                  "booleano",
+                                  "texto",
+                                  "hora"
+                                ]
+                              },
+                              "unidad": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "valor": {
+                                "anyOf": [
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "boolean"
+                                  }
+                                ],
+                                "description": "El valor con su tipo; nulo si está vacío o si es en pesos",
+                                "nullable": true
+                              },
+                              "valor_centavos": {
+                                "description": "El valor de un parámetro en pesos",
+                                "nullable": true,
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "opciones": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "valor": {
+                                      "type": "string"
+                                    },
+                                    "texto": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "valor",
+                                    "texto"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "description": "Las de una opción"
+                              },
+                              "minimo": {
+                                "nullable": true,
+                                "type": "number"
+                              },
+                              "maximo": {
+                                "nullable": true,
+                                "type": "number"
+                              },
+                              "permite_vacio": {
+                                "type": "boolean"
+                              },
+                              "por_decidir": {
+                                "type": "boolean",
+                                "description": "Sale con «Por decidir» hasta que la dueña lo cambia"
+                              }
+                            },
+                            "required": [
+                              "clave",
+                              "ubicacion_id",
+                              "version",
+                              "nombre",
+                              "explicacion",
+                              "tipo",
+                              "unidad",
+                              "valor",
+                              "opciones",
+                              "minimo",
+                              "maximo",
+                              "permite_vacio",
+                              "por_decidir"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "La sección `tecnico`"
+                        },
+                        "ubicaciones": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "responsable": {
+                                "type": "string",
+                                "description": "Su responsable, o quien lo es según su tipo"
+                              },
+                              "que_es": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "nombre",
+                              "responsable",
+                              "que_es"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "listas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "clave": {
+                                "type": "string",
+                                "description": "La clave de la lista, o `secciones_catalogo` para las secciones del catálogo"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "valores": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                },
+                                "description": "Sus nombres, en su orden"
+                              },
+                              "puede_agregar": {
+                                "type": "boolean",
+                                "description": "Si quien ve puede agregar a esta lista"
+                              }
+                            },
+                            "required": [
+                              "clave",
+                              "nombre",
+                              "valores",
+                              "puede_agregar"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "tipos_prenda": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "nombre"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Para la sección nueva del catálogo: el tipo de prenda que propone"
+                        },
+                        "empresa": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "version": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "razon_social": {
+                              "type": "string"
+                            },
+                            "nombre_comercial": {
+                              "type": "string"
+                            },
+                            "rfc": {
+                              "type": "string"
+                            },
+                            "domicilio": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "version",
+                            "razon_social",
+                            "nombre_comercial",
+                            "rfc",
+                            "domicilio"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "impresoras": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "impresora_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "version": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "modelo": {
+                                "type": "string"
+                              },
+                              "ubicacion_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "ubicacion": {
+                                "type": "string"
+                              },
+                              "dispositivo_id": {
+                                "nullable": true,
+                                "description": "Su programa puente",
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "puente": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "conectada": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "impresora_id",
+                              "version",
+                              "nombre",
+                              "modelo",
+                              "ubicacion_id",
+                              "ubicacion",
+                              "dispositivo_id",
+                              "puente",
+                              "conectada"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "puentes": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "dispositivo_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "dispositivo_id",
+                              "nombre"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Los programas de impresión vigentes, para escoger"
+                        },
+                        "ubicaciones_para_escoger": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "ubicacion_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "ubicacion_id",
+                              "nombre"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "folios": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "folio": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "nombre",
+                              "folio"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Los siguientes PE-, NV-, OC-, G-"
+                        },
+                        "codigo_barras": {
+                          "type": "string",
+                          "description": "«100245 · fábrica 100001–499999»"
+                        }
+                      },
+                      "required": [
+                        "es_duena",
+                        "decisiones",
+                        "permisos_finos",
+                        "parametros",
+                        "tecnicos",
+                        "ubicaciones",
+                        "listas",
+                        "tipos_prenda",
+                        "empresa",
+                        "impresoras",
+                        "puentes",
+                        "ubicaciones_para_escoger",
+                        "folios",
+                        "codigo_barras"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/admin.historial_parametro": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "description": "Los valores que tuvo un parámetro, el más nuevo arriba: desde cuándo y quién lo puso\n\nPermiso: departamento admin.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "in": "query",
+            "name": "clave",
+            "required": true,
+            "description": "La clave del parámetro"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "ubicacion_id",
+            "required": false,
+            "description": "Para un valor por ubicación"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "nombre": {
+                          "type": "string"
+                        },
+                        "renglones": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "valor": {
+                                "nullable": true,
+                                "description": "Como se lee: «3 días», «Sí»; nulo si es en pesos",
+                                "type": "string"
+                              },
+                              "valor_centavos": {
+                                "description": "El valor de un parámetro en pesos",
+                                "nullable": true,
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "desde": {
+                                "type": "string",
+                                "description": "«9 nov · 10:42»"
+                              },
+                              "quien": {
+                                "type": "string",
+                                "description": "Quién lo puso, o «Valor inicial»"
+                              }
+                            },
+                            "required": [
+                              "valor",
+                              "desde",
+                              "quien"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "nombre",
+                        "renglones"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/admin.bitacora": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "description": "La bitácora para leer: quién hizo qué y cuándo, con su buscador sin importar acentos ni mayúsculas, sus fechas y sus filtros\n\nPermiso: departamento admin.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 80
+            },
+            "in": "query",
+            "name": "buscar",
+            "required": false,
+            "description": "Persona, departamento o qué pasó"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "cambio",
+                "acceso",
+                "consulta_sensible"
+              ]
+            },
+            "in": "query",
+            "name": "tipo",
+            "required": false,
+            "description": "Cambios, accesos o consultas sensibles"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "si",
+                "no"
+              ]
+            },
+            "in": "query",
+            "name": "solo_alertas",
+            "required": false,
+            "description": "«si» para ver solo las alertas"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+            },
+            "in": "query",
+            "name": "desde",
+            "required": false,
+            "description": "Desde este día, en hora de México"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+            },
+            "in": "query",
+            "name": "hasta",
+            "required": false,
+            "description": "Hasta este día, en hora de México"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "description": "El cursor que regresó la página anterior; opaco"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "in": "query",
+            "name": "limite",
+            "required": false,
+            "description": "Cuántos renglones, hasta 100"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "es_duena": {
+                          "type": "boolean",
+                          "description": "Solo la dueña marca revisada una alerta"
+                        },
+                        "conteos": {
+                          "type": "object",
+                          "properties": {
+                            "todo": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "cambio": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "acceso": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "consulta_sensible": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "alertas": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "todo",
+                            "cambio",
+                            "acceso",
+                            "consulta_sensible",
+                            "alertas"
+                          ],
+                          "additionalProperties": false,
+                          "description": "Con el buscador y las fechas"
+                        },
+                        "renglones": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "fecha": {
+                                "type": "string",
+                                "description": "«9 nov»"
+                              },
+                              "hora": {
+                                "type": "string",
+                                "description": "«10:42»"
+                              },
+                              "tipo": {
+                                "type": "string",
+                                "enum": [
+                                  "cambio",
+                                  "acceso",
+                                  "consulta_sensible"
+                                ]
+                              },
+                              "tipo_texto": {
+                                "type": "string",
+                                "description": "«Cambios», «Accesos», «Consultas sensibles»"
+                              },
+                              "es_alerta": {
+                                "type": "boolean"
+                              },
+                              "revisada": {
+                                "type": "boolean",
+                                "description": "Si es una alerta: si ya se revisó"
+                              },
+                              "quien": {
+                                "type": "string",
+                                "description": "La persona; un aparato con su persona; o «Sistema»"
+                              },
+                              "departamento": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "descripcion": {
+                                "type": "string",
+                                "description": "Qué pasó; sin el permiso de sueldos, recortada"
+                              },
+                              "folio": {
+                                "nullable": true,
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "fecha",
+                              "hora",
+                              "tipo",
+                              "tipo_texto",
+                              "es_alerta",
+                              "revisada",
+                              "quien",
+                              "departamento",
+                              "descripcion",
+                              "folio"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Los renglones de esta página"
+                        },
+                        "cursor": {
+                          "nullable": true,
+                          "description": "El cursor para pedir la página siguiente; nulo si no hay más",
+                          "type": "string"
+                        },
+                        "hay_mas": {
+                          "type": "boolean",
+                          "description": "Si hay más renglones después de esta página"
+                        }
+                      },
+                      "required": [
+                        "es_duena",
+                        "conteos",
+                        "renglones",
+                        "cursor",
+                        "hay_mas"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/admin.respaldos": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "description": "Respaldos: la recuperación a un punto en el tiempo, el último respaldo semanal, la última restauración probada, cuándo toca la siguiente y las pruebas\n\nPermiso: departamento admin.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "es_duena": {
+                          "type": "boolean",
+                          "description": "Solo la dueña registra una restauración"
+                        },
+                        "recuperacion_dias": {
+                          "nullable": true,
+                          "description": "Los días de recuperación del proveedor; nulo es «Sin dato del proveedor»",
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "semanal": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "texto": {
+                              "type": "string",
+                              "description": "«11 oct · 03:00»"
+                            },
+                            "correcto": {
+                              "type": "boolean"
+                            },
+                            "tamano": {
+                              "nullable": true,
+                              "description": "«1.8 GB»",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "texto",
+                            "correcto",
+                            "tamano"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "ultima_prueba": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "texto": {
+                              "type": "string",
+                              "description": "«29 jul · hace 81 días»"
+                            },
+                            "tono": {
+                              "type": "string",
+                              "enum": [
+                                "normal",
+                                "ambar",
+                                "rojo"
+                              ],
+                              "description": "Ámbar desde `admin.restauracion_aviso_dias`"
+                            },
+                            "siguiente": {
+                              "type": "string",
+                              "description": "«Se prueba cada {n} días en el ambiente de pruebas · la siguiente toca a más tardar el {fecha}»"
+                            }
+                          },
+                          "required": [
+                            "texto",
+                            "tono",
+                            "siguiente"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "cada_dias": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "`admin.restauracion_cada_dias`"
+                        },
+                        "pruebas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "restauracion_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "fecha": {
+                                "type": "string",
+                                "description": "«29 jul · 11:00»"
+                              },
+                              "que": {
+                                "type": "string",
+                                "description": "«Respaldo semanal del 27 jul» o «Punto en el tiempo: 28 jul · 23:00»"
+                              },
+                              "cuadro": {
+                                "type": "boolean"
+                              },
+                              "evidencia_archivo_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "evidencia": {
+                                "type": "string",
+                                "description": "El nombre del archivo"
+                              }
+                            },
+                            "required": [
+                              "restauracion_id",
+                              "fecha",
+                              "que",
+                              "cuadro",
+                              "evidencia_archivo_id",
+                              "evidencia"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "respaldos_correctos": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "respaldo_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "texto": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "respaldo_id",
+                              "texto"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Los últimos respaldos correctos, para escoger cuál se restauró"
+                        }
+                      },
+                      "required": [
+                        "es_duena",
+                        "recuperacion_dias",
+                        "semanal",
+                        "ultima_prueba",
+                        "cada_dias",
+                        "pruebas",
+                        "respaldos_correctos"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/consultas/calidad.pendientes": {
       "get": {
         "tags": [
@@ -43109,6 +45918,123 @@
                       "required": [
                         "productos",
                         "conteos"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/inventario.minimos_vigentes": {
+      "get": {
+        "tags": [
+          "inventario"
+        ],
+        "description": "Los mínimos de existencia vigentes de cada ubicación que lleva mínimo, en el orden de las ubicaciones\n\nPermiso: departamento admin.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "ubicaciones": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "ubicacion_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "ubicacion": {
+                                "type": "string"
+                              },
+                              "mayor_venta": {
+                                "nullable": true,
+                                "description": "Tallas de mayor venta",
+                                "type": "object",
+                                "properties": {
+                                  "piezas": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "version": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  }
+                                },
+                                "required": [
+                                  "piezas",
+                                  "version"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "demas": {
+                                "nullable": true,
+                                "description": "Demás tallas",
+                                "type": "object",
+                                "properties": {
+                                  "piezas": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "version": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  }
+                                },
+                                "required": [
+                                  "piezas",
+                                  "version"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "required": [
+                              "ubicacion_id",
+                              "ubicacion",
+                              "mayor_venta",
+                              "demas"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "ubicaciones"
                       ],
                       "additionalProperties": false
                     },

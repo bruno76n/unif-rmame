@@ -40,9 +40,20 @@ import { accionTrabajosImpresion } from "./acciones/trabajos-impresion.ts";
 import { alEventoDeAdmin } from "./al-evento.ts";
 import { bajadaDeAdmin } from "./bajada.ts";
 import { consultaArmazon } from "./consultas/armazon.ts";
+import { consultaBitacora } from "./consultas/bitacora.ts";
+import { consultaConfiguracion, consultaHistorialParametro } from "./consultas/configuracion.ts";
+import { consultaCodigoRegistro, consultaComandosApartados, consultaDispositivos } from "./consultas/dispositivos.ts";
 import { consultaHistorialEntidad } from "./consultas/historial-entidad.ts";
 import { consultaMisAvisos } from "./consultas/mis-avisos.ts";
 import { consultaMisSesiones } from "./consultas/mis-sesiones.ts";
+import { consultaPendientesAdmin, pastillaAdmin } from "./consultas/pendientes.ts";
+import { consultaRespaldos } from "./consultas/respaldos.ts";
+import {
+	consultaAltaUsuario,
+	consultaCuentaNueva,
+	consultaPantallaAcceso,
+	consultaUsuarios,
+} from "./consultas/usuarios.ts";
 import { semillaDeContadores } from "./dominio/contadores.ts";
 import { semillaDeDepartamentos } from "./dominio/departamentos.ts";
 import { enVivoDeAdmin } from "./en-vivo.ts";
@@ -79,7 +90,25 @@ import { respaldoSemanal } from "./trabajos/respaldo-semanal.ts";
 
 export default definirModulo({
 	nombre: "admin",
-	consultas: [consultaArmazon, consultaMisSesiones, consultaMisAvisos, consultaHistorialEntidad],
+	consultas: [
+		consultaArmazon,
+		consultaMisSesiones,
+		consultaMisAvisos,
+		consultaHistorialEntidad,
+		consultaPendientesAdmin,
+		consultaUsuarios,
+		consultaCuentaNueva,
+		consultaAltaUsuario,
+		consultaPantallaAcceso,
+		consultaDispositivos,
+		consultaCodigoRegistro,
+		consultaComandosApartados,
+		consultaConfiguracion,
+		consultaHistorialParametro,
+		consultaBitacora,
+		consultaRespaldos,
+	],
+	pastillas: { admin: pastillaAdmin },
 	acciones: [
 		accionCambiarParametro,
 		accionCambiarMinimo,

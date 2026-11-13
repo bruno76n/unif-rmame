@@ -16,6 +16,7 @@ import {
 } from "@uniformame/compartido/contratos/direccion/autorizaciones";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
+import { esLaDuena } from "../../../nucleo/acceso/quien.ts";
 import { tomarVersion, versionActual } from "../../../nucleo/acciones/pisadas.ts";
 import { ErrorDeApi, errorDeCampo, errorDeRegla } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeAccion, implementarAccion } from "../../../nucleo/modulos.ts";
@@ -54,7 +55,7 @@ function revisarQuienDecide(
 	tipo: TipoDeAutorizacion,
 	desde: "direccion" | "bodega" | "admin",
 ): void {
-	const esDuena = contexto.quien.tipo === "cuenta" && contexto.quien.esDuena;
+	const esDuena = esLaDuena(contexto.quien);
 	if (tipo === "alta_usuario" && !esDuena) {
 		throw new ErrorDeApi("sin_permiso", "solo_duena", "Las cuentas nuevas solo las da la dueña.");
 	}

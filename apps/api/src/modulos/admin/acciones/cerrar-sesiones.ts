@@ -7,6 +7,7 @@
  */
 
 import { cerrarSesiones } from "@uniformame/compartido/contratos/admin/cuentas";
+import { esLaDuena } from "../../../nucleo/acceso/quien.ts";
 import { ErrorDeApi, errorDeRegla } from "../../../nucleo/http/errores.ts";
 import { implementarAccion } from "../../../nucleo/modulos.ts";
 import {
@@ -21,7 +22,7 @@ export const accionCerrarSesiones = implementarAccion(cerrarSesiones, async (con
 	const quienCierra = cuentaQueLlama(contexto);
 	const cuenta = await leerCuenta(contexto.transaccion, datos.usuario_id);
 	const nombre = nombreDeCuenta(cuenta);
-	const esLaDuenaQuienLlama = contexto.quien.tipo === "cuenta" && contexto.quien.esDuena;
+	const esLaDuenaQuienLlama = esLaDuena(contexto.quien);
 	if (cuenta.esDuena && !esLaDuenaQuienLlama) {
 		throw new ErrorDeApi("sin_permiso", "solo_duena", "Las sesiones de la dueña solo las cierra ella.");
 	}

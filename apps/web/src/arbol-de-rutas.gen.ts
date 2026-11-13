@@ -14,6 +14,12 @@ import { Route as CatalogoRouteRouteImport } from "./rutas/catalogo/route.tsx"
 import { Route as AccesoIndexRouteImport } from "./rutas/acceso/index.tsx"
 import { Route as AccesoConfirmadoRouteImport } from "./rutas/acceso/confirmado.tsx"
 import { Route as AdminIndexRouteImport } from "./rutas/admin/index.tsx"
+import { Route as AdminBitacoraRouteImport } from "./rutas/admin/bitacora.tsx"
+import { Route as AdminConfiguracionRouteImport } from "./rutas/admin/configuracion.tsx"
+import { Route as AdminDispositivosRouteImport } from "./rutas/admin/dispositivos.tsx"
+import { Route as AdminPantallaDeAccesoRouteImport } from "./rutas/admin/pantalla-de-acceso.tsx"
+import { Route as AdminRespaldosRouteImport } from "./rutas/admin/respaldos.tsx"
+import { Route as AdminUsuariosYAccesosRouteImport } from "./rutas/admin/usuarios-y-accesos.tsx"
 import { Route as AduanaIndexRouteImport } from "./rutas/aduana/index.tsx"
 import { Route as BodegaIndexRouteImport } from "./rutas/bodega/index.tsx"
 import { Route as BodegaConteosRouteImport } from "./rutas/bodega/conteos.tsx"
@@ -99,6 +105,36 @@ const AccesoConfirmadoRoute = AccesoConfirmadoRouteImport.update({
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: "/admin/",
   path: "/admin/",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminBitacoraRoute = AdminBitacoraRouteImport.update({
+  id: "/admin/bitacora",
+  path: "/admin/bitacora",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminConfiguracionRoute = AdminConfiguracionRouteImport.update({
+  id: "/admin/configuracion",
+  path: "/admin/configuracion",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminDispositivosRoute = AdminDispositivosRouteImport.update({
+  id: "/admin/dispositivos",
+  path: "/admin/dispositivos",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminPantallaDeAccesoRoute = AdminPantallaDeAccesoRouteImport.update({
+  id: "/admin/pantalla-de-acceso",
+  path: "/admin/pantalla-de-acceso",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRespaldosRoute = AdminRespaldosRouteImport.update({
+  id: "/admin/respaldos",
+  path: "/admin/respaldos",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminUsuariosYAccesosRoute = AdminUsuariosYAccesosRouteImport.update({
+  id: "/admin/usuarios-y-accesos",
+  path: "/admin/usuarios-y-accesos",
   getParentRoute: () => rootRouteImport,
 } as any)
 const AduanaIndexRoute = AduanaIndexRouteImport.update({
@@ -414,6 +450,12 @@ export interface FileRoutesByFullPath {
   "/": typeof IndexRoute
   "/catalogo": typeof CatalogoRouteRouteWithChildren
   "/acceso/confirmado": typeof AccesoConfirmadoRoute
+  "/admin/bitacora": typeof AdminBitacoraRoute
+  "/admin/configuracion": typeof AdminConfiguracionRoute
+  "/admin/dispositivos": typeof AdminDispositivosRoute
+  "/admin/pantalla-de-acceso": typeof AdminPantallaDeAccesoRoute
+  "/admin/respaldos": typeof AdminRespaldosRoute
+  "/admin/usuarios-y-accesos": typeof AdminUsuariosYAccesosRoute
   "/bodega/conteos": typeof BodegaConteosRoute
   "/bodega/diferencias": typeof BodegaDiferenciasRoute
   "/bodega/excepciones": typeof BodegaExcepcionesRoute
@@ -481,6 +523,12 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   "/": typeof IndexRoute
   "/acceso/confirmado": typeof AccesoConfirmadoRoute
+  "/admin/bitacora": typeof AdminBitacoraRoute
+  "/admin/configuracion": typeof AdminConfiguracionRoute
+  "/admin/dispositivos": typeof AdminDispositivosRoute
+  "/admin/pantalla-de-acceso": typeof AdminPantallaDeAccesoRoute
+  "/admin/respaldos": typeof AdminRespaldosRoute
+  "/admin/usuarios-y-accesos": typeof AdminUsuariosYAccesosRoute
   "/bodega/conteos": typeof BodegaConteosRoute
   "/bodega/diferencias": typeof BodegaDiferenciasRoute
   "/bodega/excepciones": typeof BodegaExcepcionesRoute
@@ -550,6 +598,12 @@ export interface FileRoutesById {
   "/": typeof IndexRoute
   "/catalogo": typeof CatalogoRouteRouteWithChildren
   "/acceso/confirmado": typeof AccesoConfirmadoRoute
+  "/admin/bitacora": typeof AdminBitacoraRoute
+  "/admin/configuracion": typeof AdminConfiguracionRoute
+  "/admin/dispositivos": typeof AdminDispositivosRoute
+  "/admin/pantalla-de-acceso": typeof AdminPantallaDeAccesoRoute
+  "/admin/respaldos": typeof AdminRespaldosRoute
+  "/admin/usuarios-y-accesos": typeof AdminUsuariosYAccesosRoute
   "/bodega/conteos": typeof BodegaConteosRoute
   "/bodega/diferencias": typeof BodegaDiferenciasRoute
   "/bodega/excepciones": typeof BodegaExcepcionesRoute
@@ -620,6 +674,12 @@ export interface FileRouteTypes {
     | "/"
     | "/catalogo"
     | "/acceso/confirmado"
+    | "/admin/bitacora"
+    | "/admin/configuracion"
+    | "/admin/dispositivos"
+    | "/admin/pantalla-de-acceso"
+    | "/admin/respaldos"
+    | "/admin/usuarios-y-accesos"
     | "/bodega/conteos"
     | "/bodega/diferencias"
     | "/bodega/excepciones"
@@ -687,6 +747,12 @@ export interface FileRouteTypes {
   to:
     | "/"
     | "/acceso/confirmado"
+    | "/admin/bitacora"
+    | "/admin/configuracion"
+    | "/admin/dispositivos"
+    | "/admin/pantalla-de-acceso"
+    | "/admin/respaldos"
+    | "/admin/usuarios-y-accesos"
     | "/bodega/conteos"
     | "/bodega/diferencias"
     | "/bodega/excepciones"
@@ -755,6 +821,12 @@ export interface FileRouteTypes {
     | "/"
     | "/catalogo"
     | "/acceso/confirmado"
+    | "/admin/bitacora"
+    | "/admin/configuracion"
+    | "/admin/dispositivos"
+    | "/admin/pantalla-de-acceso"
+    | "/admin/respaldos"
+    | "/admin/usuarios-y-accesos"
     | "/bodega/conteos"
     | "/bodega/diferencias"
     | "/bodega/excepciones"
@@ -824,6 +896,12 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CatalogoRouteRoute: typeof CatalogoRouteRouteWithChildren
   AccesoConfirmadoRoute: typeof AccesoConfirmadoRoute
+  AdminBitacoraRoute: typeof AdminBitacoraRoute
+  AdminConfiguracionRoute: typeof AdminConfiguracionRoute
+  AdminDispositivosRoute: typeof AdminDispositivosRoute
+  AdminPantallaDeAccesoRoute: typeof AdminPantallaDeAccesoRoute
+  AdminRespaldosRoute: typeof AdminRespaldosRoute
+  AdminUsuariosYAccesosRoute: typeof AdminUsuariosYAccesosRoute
   BodegaConteosRoute: typeof BodegaConteosRoute
   BodegaDiferenciasRoute: typeof BodegaDiferenciasRoute
   BodegaExcepcionesRoute: typeof BodegaExcepcionesRoute
@@ -918,6 +996,48 @@ declare module "@tanstack/react-router" {
       path: "/admin"
       fullPath: "/admin/"
       preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/admin/bitacora": {
+      id: "/admin/bitacora"
+      path: "/admin/bitacora"
+      fullPath: "/admin/bitacora"
+      preLoaderRoute: typeof AdminBitacoraRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/admin/configuracion": {
+      id: "/admin/configuracion"
+      path: "/admin/configuracion"
+      fullPath: "/admin/configuracion"
+      preLoaderRoute: typeof AdminConfiguracionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/admin/dispositivos": {
+      id: "/admin/dispositivos"
+      path: "/admin/dispositivos"
+      fullPath: "/admin/dispositivos"
+      preLoaderRoute: typeof AdminDispositivosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/admin/pantalla-de-acceso": {
+      id: "/admin/pantalla-de-acceso"
+      path: "/admin/pantalla-de-acceso"
+      fullPath: "/admin/pantalla-de-acceso"
+      preLoaderRoute: typeof AdminPantallaDeAccesoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/admin/respaldos": {
+      id: "/admin/respaldos"
+      path: "/admin/respaldos"
+      fullPath: "/admin/respaldos"
+      preLoaderRoute: typeof AdminRespaldosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/admin/usuarios-y-accesos": {
+      id: "/admin/usuarios-y-accesos"
+      path: "/admin/usuarios-y-accesos"
+      fullPath: "/admin/usuarios-y-accesos"
+      preLoaderRoute: typeof AdminUsuariosYAccesosRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/aduana/": {
@@ -1376,6 +1496,12 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CatalogoRouteRoute: CatalogoRouteRouteWithChildren,
   AccesoConfirmadoRoute: AccesoConfirmadoRoute,
+  AdminBitacoraRoute: AdminBitacoraRoute,
+  AdminConfiguracionRoute: AdminConfiguracionRoute,
+  AdminDispositivosRoute: AdminDispositivosRoute,
+  AdminPantallaDeAccesoRoute: AdminPantallaDeAccesoRoute,
+  AdminRespaldosRoute: AdminRespaldosRoute,
+  AdminUsuariosYAccesosRoute: AdminUsuariosYAccesosRoute,
   BodegaConteosRoute: BodegaConteosRoute,
   BodegaDiferenciasRoute: BodegaDiferenciasRoute,
   BodegaExcepcionesRoute: BodegaExcepcionesRoute,

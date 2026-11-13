@@ -12,6 +12,7 @@ import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
 import { conteosYAjustesDeBodega } from "@uniformame/compartido/contratos/inventario/bodega";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
+import { esLaDuena } from "../../../nucleo/acceso/quien.ts";
 import { leerCursor, paginar } from "../../../nucleo/http/consultas.ts";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
 import { implementarConsulta } from "../../../nucleo/modulos.ts";
@@ -230,7 +231,7 @@ export const consultaConteosYAjustes = implementarConsulta(conteosYAjustesDeBode
 			en_autorizacion: (await leerAjustes(accion, sql`a.estado = 'esperando_autorizacion'`))
 				.reverse()
 				.map(ajusteEscrito),
-			puede_decidir: quien.tipo === "cuenta" && quien.esDuena,
+			puede_decidir: esLaDuena(quien),
 			conteos: await conteosHechos(accion, cursorDe("conteos"), limite),
 			resueltos: { ...pagina, renglones: pagina.renglones.map(ajusteEscrito) },
 		};

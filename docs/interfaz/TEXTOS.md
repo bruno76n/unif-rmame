@@ -84,7 +84,7 @@ Cada estado va en un **cuadro de color sólido con texto blanco en negritas, sin
 
 | Forma | Cuándo | Ejemplos |
 |---|---|---|
-| **Por + verbo** | Le toca a quien ve la pantalla | Por surtir · Por recibir · Por revisar · Por autorizar · Por resolver · Por decidir · Por confirmar entrega · Por mandar a producción · Por imprimir · Por probar |
+| **Por + verbo** | Le toca a quien ve la pantalla | Por surtir · Por recibir · Por revisar · Por autorizar · Por resolver · Por decidir · Por confirmar entrega · Por mandar a producción · Por imprimir · Por probar · Por confirmar · Por capturar · Por cerrar |
 | **Esperando + qué o a quién** | Depende de otra área o de alguien de fuera | Esperando receta · Esperando factura · Esperando prendas · Esperando autorización · Esperando aprobación del cliente · Esperando a Calidad · Esperando al proveedor |
 | **Sin + lo que falta** | Le falta un dato o una cosa | Sin receta · Sin verificar · Sin precio · Sin foto · Sin PIN · Sin factura · Sin depósito · Sin existencia |
 | **En + dónde está** | Dónde está o en qué proceso va | En producción · En aduana · En tránsito · En reproceso · En reparación |
@@ -99,8 +99,8 @@ Cada estado va en un **cuadro de color sólido con texto blanco en negritas, sin
 
 | Color | Qué dice | Estados |
 |---|---|---|
-| **Rojo** | Vencido o bloqueado | Vencido · Vencido hace más de 30 días · Detenido · no cuadra · Atrasado {n} días · Atrasada {n} días · Parada · En reparación · Por entregar · corte hoy · Sin precio · Sin sincronizar · Corte hoy · Falta la receta · Faltará material {n} días · Por revisar hoy · Por resolver · Por autorizar · {n} días · Por surtir · sale hoy · Sin confirmar · {n} días |
-| **Ámbar** | Por hacer | Vence hoy · Vence en {n} días · Corte mañana · Por decidir · Por aclarar · Por entregar · Reportada · En tránsito · Por aplicar · Por pagar · Por enviar · Sin depósito · Por surtir · Por recibir · Por contar · Por revisar · Por autorizar · Por confirmar entrega · Por mandar a producción · Por imprimir · Por probar · Sin foto · Sin PIN · Esperando autorización · Trabaja con falla · En riesgo de atraso |
+| **Rojo** | Vencido o bloqueado | Vencido · Vencido hace más de 30 días · Detenido · no cuadra · Atrasado {n} días · Atrasada {n} días · Parada · En reparación · Por entregar · corte hoy · Sin precio · Sin sincronizar · Corte hoy · Falta la receta · Faltará material {n} días · Por revisar hoy · Por resolver · Por autorizar · {n} días · Por surtir · sale hoy · Sin confirmar · {n} días · Bloqueado |
+| **Ámbar** | Por hacer | Vence hoy · Vence en {n} días · Corte mañana · Por decidir · Por aclarar · Por entregar · Reportada · En tránsito · Por aplicar · Por pagar · Por enviar · Sin depósito · Por surtir · Por recibir · Por contar · Por revisar · Por autorizar · Por confirmar entrega · Por mandar a producción · Por imprimir · Por probar · Sin foto · Sin PIN · Esperando autorización · Trabaja con falla · En riesgo de atraso · Por confirmar · Por capturar · Por cerrar · Sin tarifa |
 | **Azul** | Informativo | Llega esta semana · Esperando aprobación del cliente · Esperando aprobación de Dirección · En reproceso · Corte en {n} días · En tiempo |
 | **Verde** | Resuelto | Cerrada · Listo para entregar · Alcanza · Resuelto · Resuelta · Aprobado · Trabajando · Autorizado por Dirección |
 | **Gris** | Depende de otra área, en borrador o sin empezar | Asistencia sin cerrar · Borrador · Por cortar · Esperando receta · Esperando a {tienda} |

@@ -11,6 +11,7 @@ import { excepcionesDeBodega } from "@uniformame/compartido/contratos/inventario
 import { sql } from "drizzle-orm";
 import { Temporal } from "temporal-polyfill";
 import { z } from "zod";
+import { esLaDuena } from "../../../nucleo/acceso/quien.ts";
 import { leerCursor, paginar } from "../../../nucleo/http/consultas.ts";
 import { implementarConsulta } from "../../../nucleo/modulos.ts";
 
@@ -70,7 +71,7 @@ export const consultaExcepciones = implementarConsulta(excepcionesDeBodega, asyn
 				count(*) FILTER (WHERE estado = 'resuelta') AS resueltas
 			FROM excepciones WHERE area = 'bodega'`);
 		const { quien } = contexto;
-		const esDuena = quien.tipo === "cuenta" && quien.esDuena;
+		const esDuena = esLaDuena(quien);
 		const pagina = paginar(z.array(deLaExcepcion).parse(rows), limite, (excepcion) => ({
 			en: (resueltas ? excepcion.resuelta_en : excepcion.detectada_en) ?? "",
 			id: excepcion.id,

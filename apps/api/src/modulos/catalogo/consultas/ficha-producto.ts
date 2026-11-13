@@ -12,6 +12,7 @@
 import { fichaDeProducto } from "@uniformame/compartido/contratos/catalogo/pantallas";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
+import { esLaDuena } from "../../../nucleo/acceso/quien.ts";
 import { noExiste } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeConsulta, implementarConsulta } from "../../../nucleo/modulos.ts";
 import { detieneDe, filas, formaDeLoQueDetiene, loQueDetieneA, parametroNumero, siguienteCodigo } from "./comunes.ts";
@@ -196,7 +197,7 @@ export const consultaFichaProducto = implementarConsulta(fichaDeProducto, async 
 		z.object({ ocurrido_en: z.string(), quien: z.string(), descripcion: z.string() }),
 	);
 	const conReceta = producto.lleva_receta && !producto.es_servicio;
-	const veTodo = quien.tipo === "cuenta" && quien.esDuena;
+	const veTodo = esLaDuena(quien);
 	return {
 		resultado: {
 			producto: {

@@ -11,6 +11,7 @@ import { pedirCuenta } from "@uniformame/compartido/contratos/admin/cuentas";
 import { eq } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
+import { esLaDuena } from "../../../nucleo/acceso/quien.ts";
 import { errorDeRegla } from "../../../nucleo/http/errores.ts";
 import { implementarAccion } from "../../../nucleo/modulos.ts";
 import {
@@ -30,7 +31,7 @@ const autorizacionPedida = z.object({ autorizacion_id: z.uuid(), folio: z.string
 export const accionPedirCuenta = implementarAccion(pedirCuenta, async (contexto, datos) => {
 	const { transaccion, quien } = contexto;
 	const pide = cuentaQueLlama(contexto);
-	if (quien.tipo === "cuenta" && quien.esDuena) {
+	if (esLaDuena(quien)) {
 		throw errorDeRegla("la_duena_da_de_alta", "Tú das la cuenta directo con «Cuenta nueva».");
 	}
 	const claves = [...new Set(datos.departamentos)];

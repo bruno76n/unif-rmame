@@ -74,3 +74,12 @@ export function veSueldosYTarifas(quien: QuienLlama | { readonly tipo: "sistema"
 		(quien.esDuena || quien.permisosFinos.includes("ven_sueldos_y_tarifas"))
 	);
 }
+
+/**
+ * Si quien llama es la dueña.
+ * @param quien Quién llama o escribe.
+ * Es la única revisión de este tipo: un aparato o el sistema nunca es la dueña.
+ */
+export function esLaDuena(quien: QuienLlama | { readonly tipo: "sistema" }): boolean {
+	return quien.tipo === "cuenta" && quien.esDuena;
+}

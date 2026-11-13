@@ -47,6 +47,7 @@ import { consultaDondeEsta } from "./consultas/donde-esta.ts";
 import { consultaExcepciones } from "./consultas/excepciones.ts";
 import { consultaExistencias } from "./consultas/existencias.ts";
 import { consultaMateriales } from "./consultas/materiales.ts";
+import { consultaMinimosVigentes } from "./consultas/minimos-vigentes.ts";
 import { consultaPastillasMenu, pastillaAduana, pastillaBodega } from "./consultas/pastillas-menu.ts";
 import { consultaReabasto } from "./consultas/reabasto.ts";
 import { consultaUltimoCuadre } from "./consultas/ultimo-cuadre.ts";
@@ -121,6 +122,7 @@ export default definirModulo({
 		consultaDetalleDeLlegadaAduana,
 		consultaDetalleDeConteo,
 		consultaDisponibilidadLinea,
+		consultaMinimosVigentes,
 	],
 	pastillas: { aduana: pastillaAduana, bodega: pastillaBodega },
 	// Las ubicaciones salen en las pantallas de todos los departamentos.
