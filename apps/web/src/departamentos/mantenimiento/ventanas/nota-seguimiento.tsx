@@ -14,8 +14,8 @@ import { Ventana } from "@uniformame/interfaz/contenedores/ventana";
 import { EstadoDePantalla } from "@uniformame/interfaz/estados/estado-de-pantalla";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
+import { erroresEnSusCampos } from "../../../comun/envio.ts";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
-import { erroresEnSusCampos } from "../comun.tsx";
 import { useEnvio } from "../envio.ts";
 
 /** La falla del cajón. */

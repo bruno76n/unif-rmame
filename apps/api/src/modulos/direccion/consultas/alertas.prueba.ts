@@ -8,9 +8,13 @@
 
 import { v7 as uuidv7 } from "uuid";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import type { QuienLlama } from "../../../nucleo/acceso/quien.ts";
+import { crearBase } from "../../../nucleo/base/conexion.ts";
+import { enAccionDePrueba } from "../../../nucleo/pruebas/accion-de-prueba.ts";
 import { quienesDePrueba } from "../../../nucleo/pruebas/cuentas-de-prueba.ts";
 import { pedirConsulta } from "../../../nucleo/pruebas/llamadas.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
+import { alertasConDetalle } from "./alertas.ts";
 
 /** Una alerta como la regresa la consulta. */
 interface Alerta {
@@ -57,6 +61,23 @@ describe("Las alertas cruzadas: con su detalle, su «Ver» según la cuenta, y s
 			expect(alerta.cruza.length).toBeGreaterThan(0);
 			expect(alerta.cruza.every((nombre) => /^[A-ZÁÉÍÓÚ]/.test(nombre))).toBe(true);
 			expect(alerta.ver).not.toBeNull();
+		}
+	});
+
+	it("la cuenta de soporte nunca recibe montos: ni en el título ni en el detalle de una alerta", async () => {
+		// La de soporte de prueba no tiene Dirección; con Dirección, recibe las mismas alertas sin ningún monto.
+		const { soporte, duena } = quienesDePrueba;
+		if (soporte?.tipo !== "cuenta" || duena === undefined) throw new Error("Faltan las cuentas de prueba.");
+		const soporteConDireccion: QuienLlama = { ...soporte, departamentos: ["direccion"] };
+		const leerComo = (quien: QuienLlama) =>
+			enAccionDePrueba(crearBase(servidor.base.app), servidor.modulos, (contexto) =>
+				alertasConDetalle(contexto, quien),
+			);
+		const deLaDuena = await leerComo(duena);
+		const deSoporte = await leerComo(soporteConDireccion);
+		expect(deSoporte.map((alerta) => alerta.clave)).toEqual(deLaDuena.map((alerta) => alerta.clave));
+		for (const alerta of deSoporte) {
+			expect(`${alerta.titulo} ${alerta.detalle}`, alerta.clave).not.toMatch(/\$\d/);
 		}
 	});
 

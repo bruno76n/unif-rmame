@@ -9,6 +9,7 @@
 
 import { editarPersona } from "@uniformame/compartido/contratos/personal/personas";
 import { eq } from "drizzle-orm";
+import { veSueldosYTarifas } from "../../../nucleo/acceso/quien.ts";
 import { tomarVersion, versionActual } from "../../../nucleo/acciones/pisadas.ts";
 import { errorDeRegla } from "../../../nucleo/http/errores.ts";
 import { implementarAccion } from "../../../nucleo/modulos.ts";
@@ -19,7 +20,6 @@ import {
 	pedirPermisoDeSueldos,
 	revisarFicha,
 	tieneCuenta,
-	veSueldos,
 } from "../dominio/personas.ts";
 import { anularPin } from "../internas/pin.ts";
 import { personas } from "../tablas.ts";
@@ -43,10 +43,13 @@ export const accionEditarPersona = implementarAccion(editarPersona, async (conte
 	const { persona_id: personaId, ...ficha } = datos;
 	const antes = await leerPersona(transaccion, personaId);
 	// Sin el permiso, el pago por día no viaja y se conserva; cambiar la forma de pago es cambiar el sueldo.
-	if (!veSueldos(contexto) && (ficha.pago_dia_centavos !== undefined || antes.formaPago !== ficha.forma_pago)) {
+	if (
+		!veSueldosYTarifas(contexto.quien) &&
+		(ficha.pago_dia_centavos !== undefined || antes.formaPago !== ficha.forma_pago)
+	) {
 		pedirPermisoDeSueldos(contexto);
 	}
-	const pagoDia = veSueldos(contexto) ? (ficha.pago_dia_centavos ?? null) : antes.pagoDiaCentavos;
+	const pagoDia = veSueldosYTarifas(contexto.quien) ? (ficha.pago_dia_centavos ?? null) : antes.pagoDiaCentavos;
 	await revisarFicha(contexto, ficha, pagoDia);
 	if (ficha.area === "tienda" && antes.area !== "tienda" && (await tieneCuenta(transaccion, personaId))) {
 		throw errorDeRegla(

@@ -47,6 +47,8 @@ export interface AlertaDeDireccion {
 	entidad: string;
 	entidadId: string;
 	titulo: string;
+	/** El título sin montos, para quien no los ve y para el aviso; solo lo trae la alerta cuyo título lleva un monto. */
+	tituloSinMontos?: string;
 	color: "rojo" | "ambar";
 	departamentos: string[];
 	/** A dónde lleva «Ver», dentro de la web. */
@@ -100,6 +102,7 @@ export function alertasDeDireccion(datos: DatosDeLasAlertas, parametros: Paramet
 			entidad: "clientes",
 			entidadId: mayor.cliente_id,
 			titulo: `${mayor.nombre} concentra el ${Math.round(mayor.parte_milesimas / 10)}% del saldo por cobrar${conVencido ? `, con ${enPesos(mayor.vencido_centavos)} de más de ${parametros.concentracionVencidoDias} días` : ""}`,
+			tituloSinMontos: `${mayor.nombre} concentra el ${Math.round(mayor.parte_milesimas / 10)}% del saldo por cobrar${conVencido ? `, con saldo de más de ${parametros.concentracionVencidoDias} días` : ""}`,
 			color: conVencido ? "rojo" : "ambar",
 			departamentos: ["contaduria", "ventas"],
 			ver: "contaduria/cuentas-por-cobrar",

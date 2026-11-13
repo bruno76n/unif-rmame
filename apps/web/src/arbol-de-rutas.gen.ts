@@ -62,6 +62,9 @@ import { Route as PatronajeDesarrolloRouteImport } from "./rutas/patronaje/desar
 import { Route as PatronajeRecetasRouteImport } from "./rutas/patronaje/recetas.tsx"
 import { Route as PatronajeRendimientoRouteImport } from "./rutas/patronaje/rendimiento.tsx"
 import { Route as PersonalIndexRouteImport } from "./rutas/personal/index.tsx"
+import { Route as PersonalPersonasRouteImport } from "./rutas/personal/personas.tsx"
+import { Route as PersonalPinRouteImport } from "./rutas/personal/pin.tsx"
+import { Route as PersonalTarifasRouteImport } from "./rutas/personal/tarifas.tsx"
 import { Route as ProduccionIndexRouteImport } from "./rutas/produccion/index.tsx"
 import { Route as ProduccionCorteRouteImport } from "./rutas/produccion/corte.tsx"
 import { Route as ProduccionLotesRouteImport } from "./rutas/produccion/lotes.tsx"
@@ -341,6 +344,21 @@ const PersonalIndexRoute = PersonalIndexRouteImport.update({
   path: "/personal/",
   getParentRoute: () => rootRouteImport,
 } as any)
+const PersonalPersonasRoute = PersonalPersonasRouteImport.update({
+  id: "/personal/personas",
+  path: "/personal/personas",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PersonalPinRoute = PersonalPinRouteImport.update({
+  id: "/personal/pin",
+  path: "/personal/pin",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PersonalTarifasRoute = PersonalTarifasRouteImport.update({
+  id: "/personal/tarifas",
+  path: "/personal/tarifas",
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProduccionIndexRoute = ProduccionIndexRouteImport.update({
   id: "/produccion/",
   path: "/produccion/",
@@ -433,6 +451,9 @@ export interface FileRoutesByFullPath {
   "/patronaje/desarrollo": typeof PatronajeDesarrolloRoute
   "/patronaje/recetas": typeof PatronajeRecetasRoute
   "/patronaje/rendimiento": typeof PatronajeRendimientoRoute
+  "/personal/personas": typeof PersonalPersonasRoute
+  "/personal/pin": typeof PersonalPinRoute
+  "/personal/tarifas": typeof PersonalTarifasRoute
   "/produccion/corte": typeof ProduccionCorteRoute
   "/produccion/lotes": typeof ProduccionLotesRoute
   "/produccion/operaciones": typeof ProduccionOperacionesRoute
@@ -497,6 +518,9 @@ export interface FileRoutesByTo {
   "/patronaje/desarrollo": typeof PatronajeDesarrolloRoute
   "/patronaje/recetas": typeof PatronajeRecetasRoute
   "/patronaje/rendimiento": typeof PatronajeRendimientoRoute
+  "/personal/personas": typeof PersonalPersonasRoute
+  "/personal/pin": typeof PersonalPinRoute
+  "/personal/tarifas": typeof PersonalTarifasRoute
   "/produccion/corte": typeof ProduccionCorteRoute
   "/produccion/lotes": typeof ProduccionLotesRoute
   "/produccion/operaciones": typeof ProduccionOperacionesRoute
@@ -563,6 +587,9 @@ export interface FileRoutesById {
   "/patronaje/desarrollo": typeof PatronajeDesarrolloRoute
   "/patronaje/recetas": typeof PatronajeRecetasRoute
   "/patronaje/rendimiento": typeof PatronajeRendimientoRoute
+  "/personal/personas": typeof PersonalPersonasRoute
+  "/personal/pin": typeof PersonalPinRoute
+  "/personal/tarifas": typeof PersonalTarifasRoute
   "/produccion/corte": typeof ProduccionCorteRoute
   "/produccion/lotes": typeof ProduccionLotesRoute
   "/produccion/operaciones": typeof ProduccionOperacionesRoute
@@ -630,6 +657,9 @@ export interface FileRouteTypes {
     | "/patronaje/desarrollo"
     | "/patronaje/recetas"
     | "/patronaje/rendimiento"
+    | "/personal/personas"
+    | "/personal/pin"
+    | "/personal/tarifas"
     | "/produccion/corte"
     | "/produccion/lotes"
     | "/produccion/operaciones"
@@ -694,6 +724,9 @@ export interface FileRouteTypes {
     | "/patronaje/desarrollo"
     | "/patronaje/recetas"
     | "/patronaje/rendimiento"
+    | "/personal/personas"
+    | "/personal/pin"
+    | "/personal/tarifas"
     | "/produccion/corte"
     | "/produccion/lotes"
     | "/produccion/operaciones"
@@ -759,6 +792,9 @@ export interface FileRouteTypes {
     | "/patronaje/desarrollo"
     | "/patronaje/recetas"
     | "/patronaje/rendimiento"
+    | "/personal/personas"
+    | "/personal/pin"
+    | "/personal/tarifas"
     | "/produccion/corte"
     | "/produccion/lotes"
     | "/produccion/operaciones"
@@ -820,6 +856,9 @@ export interface RootRouteChildren {
   PatronajeDesarrolloRoute: typeof PatronajeDesarrolloRoute
   PatronajeRecetasRoute: typeof PatronajeRecetasRoute
   PatronajeRendimientoRoute: typeof PatronajeRendimientoRoute
+  PersonalPersonasRoute: typeof PersonalPersonasRoute
+  PersonalPinRoute: typeof PersonalPinRoute
+  PersonalTarifasRoute: typeof PersonalTarifasRoute
   ProduccionCorteRoute: typeof ProduccionCorteRoute
   ProduccionLotesRoute: typeof ProduccionLotesRoute
   ProduccionOperacionesRoute: typeof ProduccionOperacionesRoute
@@ -1217,6 +1256,27 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof PersonalIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    "/personal/personas": {
+      id: "/personal/personas"
+      path: "/personal/personas"
+      fullPath: "/personal/personas"
+      preLoaderRoute: typeof PersonalPersonasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/personal/pin": {
+      id: "/personal/pin"
+      path: "/personal/pin"
+      fullPath: "/personal/pin"
+      preLoaderRoute: typeof PersonalPinRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/personal/tarifas": {
+      id: "/personal/tarifas"
+      path: "/personal/tarifas"
+      fullPath: "/personal/tarifas"
+      preLoaderRoute: typeof PersonalTarifasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     "/produccion/": {
       id: "/produccion/"
       path: "/produccion"
@@ -1348,6 +1408,9 @@ const rootRouteChildren: RootRouteChildren = {
   PatronajeDesarrolloRoute: PatronajeDesarrolloRoute,
   PatronajeRecetasRoute: PatronajeRecetasRoute,
   PatronajeRendimientoRoute: PatronajeRendimientoRoute,
+  PersonalPersonasRoute: PersonalPersonasRoute,
+  PersonalPinRoute: PersonalPinRoute,
+  PersonalTarifasRoute: PersonalTarifasRoute,
   ProduccionCorteRoute: ProduccionCorteRoute,
   ProduccionLotesRoute: ProduccionLotesRoute,
   ProduccionOperacionesRoute: ProduccionOperacionesRoute,

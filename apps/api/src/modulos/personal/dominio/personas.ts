@@ -7,6 +7,7 @@ import type { darAltaPersona } from "@uniformame/compartido/contratos/personal/p
 import { and, eq, inArray } from "drizzle-orm";
 import { Temporal } from "temporal-polyfill";
 import type { z } from "zod";
+import { veSueldosYTarifas } from "../../../nucleo/acceso/quien.ts";
 import type { Transaccion } from "../../../nucleo/base/transacciones.ts";
 import { ErrorDeApi, errorDeCampo, noExiste } from "../../../nucleo/http/errores.ts";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
@@ -17,28 +18,15 @@ import { personas } from "../tablas.ts";
 /** Una persona como la leen las acciones. */
 export type Persona = typeof personas.$inferSelect;
 
-/** El permiso fino que deja ver y cambiar el pago por día. */
-export const permisoDeSueldos = "ven_sueldos_y_tarifas";
-
 /** El mensaje de quien manda o cambia un sueldo sin el permiso. */
 const sinPermisoDeSueldos = "Esta cuenta no puede poner sueldos. Lo decide la dueña en Administración del sistema.";
-
-/**
- * Dice si quien llama ve y cambia sueldos: la dueña o quien tiene «ven sueldos y tarifas» (nunca soporte).
- * @param contexto El contexto de la acción.
- */
-export function veSueldos(contexto: Pick<ContextoDeAccion, "quien">): boolean {
-	const { quien } = contexto;
-	if (quien.tipo !== "cuenta" || quien.esSoporte) return false;
-	return quien.esDuena || quien.permisosFinos.includes(permisoDeSueldos);
-}
 
 /**
  * Pide el permiso de sueldos.
  * @throws `403 sin_permiso_fino`.
  */
 export function pedirPermisoDeSueldos(contexto: Pick<ContextoDeAccion, "quien">): void {
-	if (!veSueldos(contexto)) throw new ErrorDeApi("sin_permiso", "sin_permiso_fino", sinPermisoDeSueldos);
+	if (!veSueldosYTarifas(contexto.quien)) throw new ErrorDeApi("sin_permiso", "sin_permiso_fino", sinPermisoDeSueldos);
 }
 
 /**

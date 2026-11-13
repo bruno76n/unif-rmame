@@ -1,6 +1,7 @@
 /**
  * El módulo `personal`: las personas, el PIN del taller, la asistencia y las tarifas por operación.
  * Fase 7 · docs/modulos/personal/ (personas.md, pin-del-taller.md, asistencia.md y tarifas.md)
+ * Fase 19 · las consultas de sus pantallas y la pastilla de Personal (docs/interfaz/fabrica/personal.md)
  */
 
 import { definirModulo } from "../../nucleo/modulos.ts";
@@ -17,8 +18,11 @@ import { accionPonerTarifaOperacion } from "./acciones/poner-tarifa-operacion.ts
 import { accionReactivarPersona } from "./acciones/reactivar-persona.ts";
 import { alEventoDePersonal } from "./al-evento.ts";
 import { bajadaDePersonal } from "./bajada.ts";
+import { consultaAsistencia, pastillaPersonal } from "./consultas/asistencia.ts";
 import { consultaPersona } from "./consultas/persona.ts";
 import { consultaPersonas } from "./consultas/personas.ts";
+import { consultaPines } from "./consultas/pines.ts";
+import { consultaTarifas } from "./consultas/tarifas.ts";
 import { anularPin, anularPinesUbicacion, bloquearPin } from "./internas/pin.ts";
 import { copiarTarifasFlujo, tocarTarifasOperacion } from "./internas/tarifas.ts";
 import { datosDePersona } from "./lecturas/datos-de-persona.ts";
@@ -46,7 +50,8 @@ export default definirModulo({
 		accionReabrirSemanaAsistencia,
 		accionPonerTarifaOperacion,
 	],
-	consultas: [consultaPersona, consultaPersonas],
+	consultas: [consultaPersona, consultaPersonas, consultaAsistencia, consultaPines, consultaTarifas],
+	pastillas: { personal: pastillaPersonal },
 	internas: {
 		anular_pin: anularPin,
 		anular_pines_ubicacion: anularPinesUbicacion,

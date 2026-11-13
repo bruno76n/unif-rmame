@@ -17,9 +17,9 @@ import { LineaDeAviso } from "@uniformame/interfaz/estados/textos-con-tono";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
 import { useConsulta } from "../../../comun/api.tsx";
+import { erroresEnSusCampos } from "../../../comun/envio.ts";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
-import { erroresEnSusCampos } from "../comun.tsx";
 import { useEnvio } from "../envio.ts";
 
 /** La máquina del cajón. */

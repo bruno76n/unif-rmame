@@ -97,6 +97,8 @@ describe("Cada alerta sale cuando se cumple su regla y desaparece cuando deja de
 		expect(con({ clienteQueMasDebe: { ...cliente, vencido_centavos: 1_234_500 } })).toEqual([
 			expect.objectContaining({
 				titulo: "Colegio Americano concentra el 42% del saldo por cobrar, con $12,345 de más de 30 días",
+				// Quien no ve montos (la cuenta de soporte) y el aviso reciben el mismo título sin el monto.
+				tituloSinMontos: "Colegio Americano concentra el 42% del saldo por cobrar, con saldo de más de 30 días",
 				color: "rojo",
 			}),
 		]);

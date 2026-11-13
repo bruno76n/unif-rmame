@@ -195,7 +195,8 @@ export async function revisarAlertas(contexto: ContextoDeAccion): Promise<number
 		await contexto.interna("admin.crear_aviso", {
 			tipo: "alerta_direccion",
 			destinatarios: { regla: "departamento:direccion" },
-			texto: alerta.titulo,
+			// El aviso llega a toda cuenta de Dirección, la de soporte también: va sin montos.
+			texto: alerta.tituloSinMontos ?? alerta.titulo,
 			enlace: alerta.ver,
 			entidad: alerta.entidad,
 			entidadId: alerta.entidadId,

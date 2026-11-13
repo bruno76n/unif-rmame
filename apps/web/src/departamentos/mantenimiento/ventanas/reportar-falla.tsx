@@ -17,9 +17,9 @@ import { LineaDeAviso } from "@uniformame/interfaz/estados/textos-con-tono";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useConsulta } from "../../../comun/api.tsx";
+import { erroresEnSusCampos } from "../../../comun/envio.ts";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
-import { erroresEnSusCampos } from "../comun.tsx";
 import { useEnvio } from "../envio.ts";
 
 /** El formulario, con el esquema del contrato: la nota vacía no va. */

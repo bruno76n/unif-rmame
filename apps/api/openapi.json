@@ -48331,6 +48331,76 @@
                           "type": "integer",
                           "minimum": -9007199254740991,
                           "maximum": 9007199254740991
+                        },
+                        "esta_semana": {
+                          "nullable": true,
+                          "description": "Vacío en el alta",
+                          "type": "object",
+                          "properties": {
+                            "dias": {
+                              "nullable": true,
+                              "description": "Sus días de esta semana; vacío si no lleva asistencia",
+                              "type": "number"
+                            },
+                            "piezas": {
+                              "nullable": true,
+                              "description": "Sus piezas buenas de esta semana; vacío fuera del Taller",
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "dias",
+                            "piezas"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "tablet": {
+                          "nullable": true,
+                          "description": "Vacío en el alta",
+                          "type": "object",
+                          "properties": {
+                            "puede": {
+                              "type": "boolean",
+                              "description": "Activa, del Taller y sin cuenta: la única que puede tener PIN"
+                            },
+                            "tiene": {
+                              "type": "boolean",
+                              "description": "Si tiene un PIN vivo"
+                            }
+                          },
+                          "required": [
+                            "puede",
+                            "tiene"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "tiendas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "nombre"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Las tiendas, para el área y su filtro"
+                        },
+                        "ve_sueldos": {
+                          "type": "boolean",
+                          "description": "Si la cuenta ve y cambia el pago por día"
                         }
                       },
                       "required": [
@@ -48346,7 +48416,11 @@
                         "baja_en",
                         "motivo_baja",
                         "entra_al_sistema",
-                        "version"
+                        "version",
+                        "esta_semana",
+                        "tablet",
+                        "tiendas",
+                        "ve_sueldos"
                       ],
                       "additionalProperties": false
                     },
@@ -48376,7 +48450,7 @@
         "tags": [
           "personal"
         ],
-        "description": "Las personas por área; ver las tarifas pide «ven sueldos y tarifas» y queda en la bitácora\n\nPermiso: departamento personal. Se puede recortar: pago_dia_centavos.",
+        "description": "Las personas por área; ver las tarifas pide «ven sueldos y tarifas» y queda en la bitácora\n\nPermiso: departamento personal. Se puede recortar: pago_dia_centavos, tarifa_centavos.",
         "parameters": [
           {
             "schema": {
@@ -48485,6 +48559,13 @@
                                 "minimum": -9007199254740991,
                                 "maximum": 9007199254740991
                               },
+                              "tarifa_centavos": {
+                                "description": "Por pieza, con «ver tarifas»: el promedio de las tarifas vigentes de sus operaciones; vacío si no tiene",
+                                "nullable": true,
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
                               "fecha_ingreso": {
                                 "type": "string"
                               },
@@ -48510,10 +48591,1051 @@
                             ],
                             "additionalProperties": false
                           }
+                        },
+                        "tiendas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "nombre"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Las tiendas, para el área y su filtro"
+                        },
+                        "ve_sueldos": {
+                          "type": "boolean",
+                          "description": "Si la cuenta puede pedir «Ver tarifas»"
+                        }
+                      },
+                      "required": [
+                        "personas",
+                        "tiendas",
+                        "ve_sueldos"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/personal.asistencia": {
+      "get": {
+        "tags": [
+          "personal"
+        ],
+        "description": "Personal · Asistencia: los indicadores, los pendientes (asistencia, PIN y, con el permiso, tarifas), la cuadrícula de la semana y las semanas cerradas\n\nPermiso: departamento personal.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "asistencia_semana_id",
+            "required": false,
+            "description": "La semana de la cuadrícula; sin ella, la que corre (también la pasada mientras siga abierta)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "indicadores": {
+                          "type": "object",
+                          "properties": {
+                            "asistencia": {
+                              "type": "object",
+                              "properties": {
+                                "sin_capturar": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "cerrada": {
+                                  "type": "boolean"
+                                },
+                                "personas": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991,
+                                  "description": "Las que cobran por tiempo o mixta en la semana"
+                                },
+                                "completos": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "medios": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "faltas": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                }
+                              },
+                              "required": [
+                                "sin_capturar",
+                                "cerrada",
+                                "personas",
+                                "completos",
+                                "medios",
+                                "faltas"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "personas": {
+                              "type": "object",
+                              "properties": {
+                                "activas": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "sin_cuenta": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                }
+                              },
+                              "required": [
+                                "activas",
+                                "sin_cuenta"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "tablet": {
+                              "type": "object",
+                              "properties": {
+                                "sin_acceso": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991,
+                                  "description": "Las del Taller sin cuenta ni PIN"
+                                },
+                                "activos": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "bloqueados": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                }
+                              },
+                              "required": [
+                                "sin_acceso",
+                                "activos",
+                                "bloqueados"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "required": [
+                            "asistencia",
+                            "personas",
+                            "tablet"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "pendientes": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "clave": {
+                                "type": "string"
+                              },
+                              "grupo": {
+                                "type": "string",
+                                "enum": [
+                                  "asistencia",
+                                  "pin",
+                                  "tarifas"
+                                ]
+                              },
+                              "tipo": {
+                                "type": "string",
+                                "enum": [
+                                  "Asistencia",
+                                  "PIN",
+                                  "Tarifa"
+                                ]
+                              },
+                              "referencia": {
+                                "type": "string"
+                              },
+                              "detalle": {
+                                "type": "string"
+                              },
+                              "fecha": {
+                                "nullable": true,
+                                "description": "La que importa, para ordenar",
+                                "type": "string"
+                              },
+                              "fecha_texto": {
+                                "nullable": true,
+                                "description": "«Nómina 17 nov» o el día del bloqueo",
+                                "type": "string"
+                              },
+                              "estado": {
+                                "type": "object",
+                                "properties": {
+                                  "texto": {
+                                    "type": "string",
+                                    "description": "El estado: «Por capturar», «Por cerrar», «Cerrada», «Sin PIN», «Bloqueado», «Sin tarifa»"
+                                  },
+                                  "color": {
+                                    "type": "string",
+                                    "enum": [
+                                      "rojo",
+                                      "ambar",
+                                      "azul",
+                                      "verde",
+                                      "gris",
+                                      "morado",
+                                      "verde-azulado",
+                                      "naranja"
+                                    ],
+                                    "description": "El color del cuadro del estado"
+                                  }
+                                },
+                                "required": [
+                                  "texto",
+                                  "color"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "boton": {
+                                "nullable": true,
+                                "oneOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "tipo": {
+                                        "type": "string",
+                                        "enum": [
+                                          "cerrar_semana"
+                                        ]
+                                      },
+                                      "asistencia_semana_id": {
+                                        "nullable": true,
+                                        "description": "La semana; vacía si todavía no se abre en la base",
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                      },
+                                      "version": {
+                                        "nullable": true,
+                                        "description": "Su versión, para cerrarla",
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "principal": {
+                                        "type": "boolean",
+                                        "description": "Negro: ya no hay días por capturar"
+                                      }
+                                    },
+                                    "required": [
+                                      "tipo",
+                                      "asistencia_semana_id",
+                                      "version",
+                                      "principal"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "tipo": {
+                                        "type": "string",
+                                        "enum": [
+                                          "asignar_pin"
+                                        ]
+                                      },
+                                      "persona_id": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                      }
+                                    },
+                                    "required": [
+                                      "tipo",
+                                      "persona_id"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "tipo": {
+                                        "type": "string",
+                                        "enum": [
+                                          "desbloquear_pin"
+                                        ]
+                                      },
+                                      "persona_id": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                      },
+                                      "nombre": {
+                                        "type": "string"
+                                      },
+                                      "version": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991,
+                                        "description": "La versión de su PIN"
+                                      }
+                                    },
+                                    "required": [
+                                      "tipo",
+                                      "persona_id",
+                                      "nombre",
+                                      "version"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "tipo": {
+                                        "type": "string",
+                                        "enum": [
+                                          "poner_tarifa"
+                                        ]
+                                      },
+                                      "flujo_id": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                      },
+                                      "flujo_operacion_id": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                      }
+                                    },
+                                    "required": [
+                                      "tipo",
+                                      "flujo_id",
+                                      "flujo_operacion_id"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "clave",
+                              "grupo",
+                              "tipo",
+                              "referencia",
+                              "detalle",
+                              "fecha",
+                              "fecha_texto",
+                              "estado",
+                              "boton"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "pestanas": {
+                          "type": "object",
+                          "properties": {
+                            "asistencia": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "Los días sin capturar, o 1 por semana que solo falta cerrar"
+                            },
+                            "tablet": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "Las personas sin PIN y las bloqueadas"
+                            },
+                            "tarifas": {
+                              "nullable": true,
+                              "description": "Las operaciones sin tarifa; vacío sin el permiso",
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "asistencia",
+                            "tablet",
+                            "tarifas"
+                          ],
+                          "additionalProperties": false,
+                          "description": "El conteo de cada pestaña"
+                        },
+                        "semanas_abiertas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "asistencia_semana_id": {
+                                "nullable": true,
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "texto": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "asistencia_semana_id",
+                              "texto"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Las semanas que se pueden escoger en la cuadrícula: la que corre y las anteriores abiertas"
+                        },
+                        "semana": {
+                          "type": "object",
+                          "properties": {
+                            "asistencia_semana_id": {
+                              "nullable": true,
+                              "description": "Vacía si la semana todavía no se abre en la base",
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "inicio": {
+                              "type": "string",
+                              "format": "date",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                            },
+                            "fin": {
+                              "type": "string",
+                              "format": "date",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                            },
+                            "texto": {
+                              "type": "string",
+                              "description": "«9 al 14 de noviembre»"
+                            },
+                            "cerrada": {
+                              "type": "boolean"
+                            },
+                            "version": {
+                              "nullable": true,
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "dias": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "fecha": {
+                                    "type": "string",
+                                    "format": "date",
+                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                  },
+                                  "texto": {
+                                    "type": "string",
+                                    "description": "«lun 9»"
+                                  }
+                                },
+                                "required": [
+                                  "fecha",
+                                  "texto"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "personas": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "persona_id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "nombre": {
+                                    "type": "string"
+                                  },
+                                  "detalle": {
+                                    "type": "string",
+                                    "description": "«{área} · {forma de pago}»"
+                                  },
+                                  "dias": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "fecha": {
+                                          "type": "string",
+                                          "format": "date",
+                                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                        },
+                                        "valor": {
+                                          "nullable": true,
+                                          "description": "Lo capturado; vacío si está sin capturar",
+                                          "type": "string",
+                                          "enum": [
+                                            "completo",
+                                            "medio",
+                                            "falta"
+                                          ]
+                                        },
+                                        "version": {
+                                          "nullable": true,
+                                          "description": "La versión del día, si ya estaba capturado",
+                                          "type": "integer",
+                                          "minimum": -9007199254740991,
+                                          "maximum": 9007199254740991
+                                        },
+                                        "capturable": {
+                                          "type": "boolean",
+                                          "description": "Falso fuera de su ingreso o su baja: sale gris, sin botón"
+                                        }
+                                      },
+                                      "required": [
+                                        "fecha",
+                                        "valor",
+                                        "version",
+                                        "capturable"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "total": {
+                                    "type": "number",
+                                    "description": "Completo 1, medio 0.5; falta y sin capturar 0"
+                                  }
+                                },
+                                "required": [
+                                  "persona_id",
+                                  "nombre",
+                                  "detalle",
+                                  "dias",
+                                  "total"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "sin_capturar": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "Los días exigidos que faltan"
+                            },
+                            "primero_sin_capturar": {
+                              "nullable": true,
+                              "description": "Donde se pone el foco si se quiere cerrar con días por capturar",
+                              "type": "object",
+                              "properties": {
+                                "persona_id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "fecha": {
+                                  "type": "string",
+                                  "format": "date",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                }
+                              },
+                              "required": [
+                                "persona_id",
+                                "fecha"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "conteo": {
+                              "type": "object",
+                              "properties": {
+                                "completos": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "medios": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "faltas": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                }
+                              },
+                              "required": [
+                                "completos",
+                                "medios",
+                                "faltas"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "required": [
+                            "asistencia_semana_id",
+                            "inicio",
+                            "fin",
+                            "texto",
+                            "cerrada",
+                            "version",
+                            "dias",
+                            "personas",
+                            "sin_capturar",
+                            "primero_sin_capturar",
+                            "conteo"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "semanas_cerradas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "asistencia_semana_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "texto": {
+                                "type": "string"
+                              },
+                              "la_cerro": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "cuando": {
+                                "nullable": true,
+                                "type": "string",
+                                "format": "date",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                              },
+                              "faltas": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "version": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "reabrible": {
+                                "type": "boolean",
+                                "description": "Solo para la dueña, mientras su nómina no esté pagada"
+                              }
+                            },
+                            "required": [
+                              "asistencia_semana_id",
+                              "texto",
+                              "la_cerro",
+                              "cuando",
+                              "faltas",
+                              "version",
+                              "reabrible"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "ve_tarifas": {
+                          "type": "boolean",
+                          "description": "Si la cuenta tiene «ven sueldos y tarifas»"
+                        },
+                        "pastilla": {
+                          "type": "object",
+                          "properties": {
+                            "conteo": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "rojo": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "conteo",
+                            "rojo"
+                          ],
+                          "additionalProperties": false,
+                          "description": "La pastilla del menú"
+                        }
+                      },
+                      "required": [
+                        "indicadores",
+                        "pendientes",
+                        "pestanas",
+                        "semanas_abiertas",
+                        "semana",
+                        "semanas_cerradas",
+                        "ve_tarifas",
+                        "pastilla"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/personal.pines": {
+      "get": {
+        "tags": [
+          "personal"
+        ],
+        "description": "Personal · PIN del taller: las personas activas del Taller sin cuenta de Google, con su PIN (nunca el PIN)\n\nPermiso: departamento personal.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "personas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "persona_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "puesto": {
+                                "type": "string"
+                              },
+                              "tablet": {
+                                "type": "object",
+                                "properties": {
+                                  "tiene": {
+                                    "type": "boolean",
+                                    "description": "Si tiene un PIN vivo (activo o bloqueado)"
+                                  },
+                                  "estado": {
+                                    "nullable": true,
+                                    "description": "«Sin PIN» o «Bloqueado»; vacío si está activo",
+                                    "type": "object",
+                                    "properties": {
+                                      "texto": {
+                                        "type": "string",
+                                        "description": "El estado: «Por capturar», «Por cerrar», «Cerrada», «Sin PIN», «Bloqueado», «Sin tarifa»"
+                                      },
+                                      "color": {
+                                        "type": "string",
+                                        "enum": [
+                                          "rojo",
+                                          "ambar",
+                                          "azul",
+                                          "verde",
+                                          "gris",
+                                          "morado",
+                                          "verde-azulado",
+                                          "naranja"
+                                        ],
+                                        "description": "El color del cuadro del estado"
+                                      }
+                                    },
+                                    "required": [
+                                      "texto",
+                                      "color"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "bloqueado_desde": {
+                                    "nullable": true,
+                                    "description": "Desde cuándo está bloqueado",
+                                    "type": "string"
+                                  },
+                                  "version": {
+                                    "nullable": true,
+                                    "description": "La versión de su PIN vivo, para restablecer o desbloquear",
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  }
+                                },
+                                "required": [
+                                  "tiene",
+                                  "estado",
+                                  "bloqueado_desde",
+                                  "version"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "required": [
+                              "persona_id",
+                              "nombre",
+                              "puesto",
+                              "tablet"
+                            ],
+                            "additionalProperties": false
+                          }
                         }
                       },
                       "required": [
                         "personas"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/personal.tarifas": {
+      "get": {
+        "tags": [
+          "personal"
+        ],
+        "description": "Personal · Tarifas: cada flujo con sus operaciones y su tarifa por pieza; pide «ven sueldos y tarifas» y queda en la bitácora\n\nPermiso: departamento personal; permiso fino ven_sueldos_y_tarifas. Se puede recortar: tarifa_centavos.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "flujo_id",
+            "required": false,
+            "description": "Un solo flujo; sin él, todos"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "si",
+                "no"
+              ]
+            },
+            "in": "query",
+            "name": "historial",
+            "required": false,
+            "description": "«si» suma las tarifas anteriores con sus fechas"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "sin_tarifa": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "Las operaciones vigentes sin tarifa: sus piezas no suman a la nómina"
+                        },
+                        "flujos": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "flujo_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "operaciones": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "flujo_operacion_id": {
+                                      "type": "string",
+                                      "format": "uuid",
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                    },
+                                    "nombre": {
+                                      "type": "string"
+                                    },
+                                    "la_hace": {
+                                      "type": "string",
+                                      "description": "Quién la hace de base"
+                                    },
+                                    "tarifa_centavos": {
+                                      "nullable": true,
+                                      "description": "La vigente; vacía si está «Sin tarifa»",
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "desde": {
+                                      "nullable": true,
+                                      "description": "Desde cuándo vale la vigente",
+                                      "type": "string"
+                                    },
+                                    "version": {
+                                      "nullable": true,
+                                      "description": "La versión de la vigente, para cambiarla",
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "anteriores": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "tarifa_centavos": {
+                                            "description": "Pesos por pieza, en centavos",
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                          },
+                                          "desde": {
+                                            "type": "string"
+                                          },
+                                          "hasta": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "desde",
+                                          "hasta"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      "description": "Con el historial: las que ya no valen, de la más reciente a la más vieja"
+                                    }
+                                  },
+                                  "required": [
+                                    "flujo_operacion_id",
+                                    "nombre",
+                                    "la_hace",
+                                    "desde",
+                                    "version",
+                                    "anteriores"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "required": [
+                              "flujo_id",
+                              "nombre",
+                              "operaciones"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "sin_tarifa",
+                        "flujos"
                       ],
                       "additionalProperties": false
                     },

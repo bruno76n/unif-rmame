@@ -112,7 +112,13 @@ describe("Las pantallas de Dirección: se ven como la muestra y cada botón llam
 		await enPantalla(ventana.getByText("Escribe el motivo: le llega a quien lo pidió")).toBeVisible();
 		await pantalla.capturar(pagina, "direccion/ventana-rechazar");
 		await motivo.fill("La playera sí estaba en su lugar");
+		const respuesta = pagina.waitForResponse((suya) =>
+			suya.url().includes("/v1/acciones/direccion.decidir_autorizacion"),
+		);
 		await rechazar.click();
+		// Si la API no lo rechazó, su respuesta dice por qué.
+		const llegada = await respuesta;
+		expect(llegada.status(), await llegada.text()).toBe(200);
 		await enPantalla(pagina.getByRole("status").getByText(`${ajuste.ajuste} rechazado`)).toBeVisible();
 		await enPantalla(pagina.getByRole("article", { name: ajuste.resumen })).toHaveCount(0);
 		const [decidida] = await consultar(

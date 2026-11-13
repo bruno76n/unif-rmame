@@ -3,10 +3,12 @@
  * Fase 7 · docs/modulos/personal/pin-del-taller.md («Acciones»)
  *
  * El PIN es un secreto: se entrega una sola vez y la respuesta guardada para los reintentos va sin él.
+ * Fase 19 · la consulta de Personal · PIN del taller, que nunca lleva el PIN (docs/interfaz/fabrica/personal.md)
  */
 
 import { z } from "zod";
-import { definirAccion } from "../definir.ts";
+import { definirAccion, definirConsulta } from "../definir.ts";
+import { estadoDePersonal } from "./asistencia.ts";
 
 /** Lo que regresa dar un PIN: el PIN en claro, solo la primera vez. */
 const pinNuevo = z.object({
@@ -56,4 +58,28 @@ export const desbloquearPin = definirAccion({
 	permiso: { departamento: "personal" },
 	errores: [{ codigo: "no_esta_bloqueado", mensaje: "No está bloqueada." }],
 	edita: true,
+});
+
+/** Personal · PIN del taller: las personas activas del Taller sin cuenta, con cómo está su PIN, sin el PIN. */
+export const pinesDelTaller = definirConsulta({
+	nombre: "personal.pines",
+	descripcion:
+		"Personal · PIN del taller: las personas activas del Taller sin cuenta de Google, con su PIN (nunca el PIN)",
+	entrada: z.object({}),
+	salida: z.object({
+		personas: z.array(
+			z.object({
+				persona_id: z.uuid(),
+				nombre: z.string(),
+				puesto: z.string(),
+				tablet: z.object({
+					tiene: z.boolean().describe("Si tiene un PIN vivo (activo o bloqueado)"),
+					estado: estadoDePersonal.nullable().describe("«Sin PIN» o «Bloqueado»; vacío si está activo"),
+					bloqueado_desde: z.string().nullable().describe("Desde cuándo está bloqueado"),
+					version: z.number().int().nullable().describe("La versión de su PIN vivo, para restablecer o desbloquear"),
+				}),
+			}),
+		),
+	}),
+	permiso: { departamento: "personal" },
 });

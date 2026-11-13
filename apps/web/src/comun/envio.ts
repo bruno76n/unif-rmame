@@ -12,6 +12,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import type { ContratoDeAccion } from "@uniformame/compartido/contratos/definir";
 import { useState } from "react";
+import type { FieldValues, Path, UseFormReturn } from "react-hook-form";
 import type { z } from "zod";
 import { leerFalla, useAccion, volverALeer } from "./api.tsx";
 
@@ -74,4 +75,24 @@ export function useEnvioConCampos<Contrato extends ContratoDeAccion>(contrato: C
 				alFallar?.(falla);
 			}),
 	};
+}
+
+/**
+ * Pone junto a su campo los errores que regresó una acción (`400` con `campos`): solo los de campos que tiene el
+ * formulario; los demás ya los dice el aviso de abajo.
+ * @param campos Los errores por campo que regresó la acción.
+ * @param formulario El formulario de React Hook Form.
+ * @param renombres Los campos de la API que en el formulario se llaman distinto (`ubicacion_id` → `area`).
+ */
+export function erroresEnSusCampos<Valores extends FieldValues>(
+	campos: Readonly<Record<string, string>>,
+	formulario: Pick<UseFormReturn<Valores>, "getValues" | "setError">,
+	renombres: Readonly<Record<string, Path<Valores>>> = {},
+): void {
+	const valores = formulario.getValues();
+	const esCampo = (campo: string): campo is Path<Valores> => campo in valores;
+	for (const [campo, mensaje] of Object.entries(campos)) {
+		const enElFormulario = renombres[campo] ?? campo;
+		if (esCampo(enElFormulario)) formulario.setError(enElFormulario, { message: mensaje });
+	}
 }

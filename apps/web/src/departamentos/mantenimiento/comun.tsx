@@ -1,12 +1,10 @@
 /**
- * Lo que comparten las pestañas y los cajones de Mantenimiento: una lista con su día y los errores de una regla en sus
- * campos.
+ * Lo que comparten las pestañas y los cajones de Mantenimiento: una lista con su día.
  * Fase 19 · docs/interfaz/fabrica/mantenimiento.md («Fallas», «Servicios», «Cajones»)
  */
 
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
 import type { ReactNode } from "react";
-import type { FieldValues, Path, UseFormReturn } from "react-hook-form";
 
 /**
  * Una lista de renglones con su día a la derecha («Historial», «Lo que está deteniendo»).
@@ -30,21 +28,4 @@ export function ListaConDia({
 			))}
 		</ul>
 	);
-}
-
-/**
- * Pone junto a su campo los errores que regresó una acción (`400` con `campos`): solo los de campos que tiene el
- * formulario; los demás ya los dice el aviso de abajo.
- * @param campos Los errores por campo que regresó la acción.
- * @param formulario El formulario de React Hook Form.
- */
-export function erroresEnSusCampos<Valores extends FieldValues>(
-	campos: Readonly<Record<string, string>>,
-	formulario: Pick<UseFormReturn<Valores>, "getValues" | "setError">,
-): void {
-	const valores = formulario.getValues();
-	const esCampo = (campo: string): campo is Path<Valores> => campo in valores;
-	for (const [campo, mensaje] of Object.entries(campos)) {
-		if (esCampo(campo)) formulario.setError(campo, { message: mensaje });
-	}
 }

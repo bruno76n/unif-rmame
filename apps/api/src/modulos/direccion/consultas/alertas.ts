@@ -273,7 +273,8 @@ export async function alertasConDetalle(contexto: ContextoDeAccion, quien: Quien
 		conDetalle.push({
 			clave: alerta.clave,
 			regla: z.enum(reglasDeAlerta).parse(alerta.regla),
-			titulo: alerta.titulo,
+			// Quien no ve montos (la cuenta de soporte) recibe el título sin ellos.
+			titulo: veMontos ? alerta.titulo : (alerta.tituloSinMontos ?? alerta.titulo),
 			detalle: await detalleDe(contexto, alerta, veMontos),
 			cruza: alerta.departamentos.map((clave) => nombres.get(clave) ?? clave),
 			color: alerta.color,

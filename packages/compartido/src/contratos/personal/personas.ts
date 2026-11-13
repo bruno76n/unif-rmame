@@ -3,6 +3,9 @@
  * Fase 7 · docs/modulos/personal/personas.md y docs/interfaz/fabrica/personal.md («La persona»)
  *
  * El pago por día es sueldo: solo lo manda y lo recibe quien tiene «ven sueldos y tarifas».
+ * Fase 19 · lo que piden las pantallas de Personal: los nombres de las áreas y de las formas de pago, las tiendas, si
+ * la cuenta ve sueldos, la tarifa promedio de quien cobra por pieza y, en la ficha, su semana y su PIN
+ * (docs/interfaz/fabrica/personal.md)
  */
 
 import { z } from "zod";
@@ -16,6 +19,32 @@ export const formasDePago = ["tiempo", "pieza", "mixta"] as const;
 
 /** Los roles en una tienda. */
 export const rolesDeTienda = ["cajera", "encargada"] as const;
+
+/** Cómo se llama cada área en pantalla; la tienda lleva su nombre («Tienda 1»). */
+export const nombresDeArea: Readonly<Record<(typeof areas)[number], string>> = {
+	taller: "Taller",
+	oficina: "Oficina",
+	aduana_bodega: "Aduana y bodega",
+	tienda: "Tienda",
+};
+
+/** Cómo se llama cada forma de pago en pantalla. */
+export const nombresDeFormaDePago: Readonly<Record<(typeof formasDePago)[number], string>> = {
+	tiempo: "Por tiempo",
+	pieza: "Por pieza",
+	mixta: "Mixta",
+};
+
+/** Cómo se llama cada rol de tienda en pantalla. */
+export const nombresDeRolDeTienda: Readonly<Record<(typeof rolesDeTienda)[number], string>> = {
+	cajera: "Cajera",
+	encargada: "Encargada",
+};
+
+/** Las tiendas que se pueden escoger como área, con su nombre. */
+const tiendasParaEscoger = z
+	.array(z.object({ id: z.uuid(), nombre: z.string() }))
+	.describe("Las tiendas, para el área y su filtro");
 
 /** El tope del pago por día: $99,999. */
 export const pagoDiaMaximoCentavos = 9_999_900;
@@ -114,6 +143,22 @@ export const persona = definirConsulta({
 		motivo_baja: z.string().nullable(),
 		entra_al_sistema: z.string().nullable().describe("«PIN del taller», «Cuenta de Google · {puesto}»…"),
 		version: z.number().int().nullable(),
+		esta_semana: z
+			.object({
+				dias: z.number().nullable().describe("Sus días de esta semana; vacío si no lleva asistencia"),
+				piezas: z.number().int().nullable().describe("Sus piezas buenas de esta semana; vacío fuera del Taller"),
+			})
+			.nullable()
+			.describe("Vacío en el alta"),
+		tablet: z
+			.object({
+				puede: z.boolean().describe("Activa, del Taller y sin cuenta: la única que puede tener PIN"),
+				tiene: z.boolean().describe("Si tiene un PIN vivo"),
+			})
+			.nullable()
+			.describe("Vacío en el alta"),
+		tiendas: tiendasParaEscoger,
+		ve_sueldos: z.boolean().describe("Si la cuenta ve y cambia el pago por día"),
 	}),
 	permiso: { departamento: "personal" },
 	recortables: ["pago_dia_centavos"],
@@ -142,12 +187,22 @@ export const personasDeLaLista = definirConsulta({
 				puesto: z.string(),
 				forma_pago: z.enum(formasDePago),
 				pago_dia_centavos: z.number().int().nullable().optional().describe("Solo con «ver tarifas» y el permiso"),
+				tarifa_centavos: z
+					.number()
+					.int()
+					.nullable()
+					.optional()
+					.describe(
+						"Por pieza, con «ver tarifas»: el promedio de las tarifas vigentes de sus operaciones; vacío si no tiene",
+					),
 				fecha_ingreso: z.string(),
 				baja_en: z.string().nullable(),
 				entra_al_sistema: z.string(),
 			}),
 		),
+		tiendas: tiendasParaEscoger,
+		ve_sueldos: z.boolean().describe("Si la cuenta puede pedir «Ver tarifas»"),
 	}),
 	permiso: { departamento: "personal" },
-	recortables: ["pago_dia_centavos"],
+	recortables: ["pago_dia_centavos", "tarifa_centavos"],
 });
