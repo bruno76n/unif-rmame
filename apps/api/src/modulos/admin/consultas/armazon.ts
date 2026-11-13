@@ -11,6 +11,7 @@ import { armazon } from "@uniformame/compartido/contratos/admin/armazon";
 import { claveDeDepartamento } from "@uniformame/compartido/contratos/admin/cuentas";
 import { and, asc, count, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
+import { tieneDepartamento } from "../../../nucleo/acceso/quien.ts";
 import { parametroEntero } from "../../../nucleo/acceso/sesion.ts";
 import { noExiste } from "../../../nucleo/http/errores.ts";
 import { implementarConsulta } from "../../../nucleo/modulos.ts";
@@ -55,13 +56,20 @@ export const consultaArmazon = implementarConsulta(armazon, async (contexto) => 
 		.from(departamentos)
 		.orderBy(asc(departamentos.orden));
 	const suyos = todos.filter(
-		(departamento) =>
-			departamento.clave !== "puerta_taller" && (quien.esDuena || quien.departamentos.includes(departamento.clave)),
+		(departamento) => departamento.clave !== "puerta_taller" && tieneDepartamento(quien, departamento.clave),
 	);
 	const conPastilla = await Promise.all(
 		suyos.map(async (departamento) => {
 			const pastilla = registro.pastillas.get(departamento.clave);
-			const cuenta = pastilla === undefined ? undefined : await pastilla(contexto);
+			// Una pastilla que falla no tumba el menú: su departamento sale sin cifra y el error queda en la bitácora del
+			// servidor.
+			const cuenta =
+				pastilla === undefined
+					? undefined
+					: await pastilla(contexto).catch((error: unknown) => {
+							console.error(`La pastilla de ${departamento.clave} falló: el menú sale sin su cifra.`, error);
+							return undefined;
+						});
 			return {
 				clave: claveDeDepartamento.parse(departamento.clave),
 				nombre: departamento.nombre,

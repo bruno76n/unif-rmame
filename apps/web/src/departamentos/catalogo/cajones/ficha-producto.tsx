@@ -18,8 +18,10 @@ import {
 	descontinuarTalla,
 	reactivarProducto,
 	reactivarTalla,
+	subirFotoProducto,
 } from "@uniformame/compartido/contratos/catalogo/productos";
 import { Boton } from "@uniformame/interfaz/botones/boton";
+import { BotonDeArchivo } from "@uniformame/interfaz/botones/boton-de-archivo";
 import { Campo } from "@uniformame/interfaz/captura/campo";
 import { Filtros } from "@uniformame/interfaz/captura/filtros";
 import { Interruptor } from "@uniformame/interfaz/captura/interruptor";
@@ -29,7 +31,7 @@ import { EstadoDePantalla } from "@uniformame/interfaz/estados/estado-de-pantall
 import { Shirt } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import type { z } from "zod";
-import { useConsulta } from "../../../comun/api.tsx";
+import { leerFalla, subirArchivo, useConsulta } from "../../../comun/api.tsx";
 import { useAvisar } from "../../../comun/avisos-de-abajo.tsx";
 import { usePreguntarAntesDeSalir } from "../../../comun/cambios-sin-guardar.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
@@ -361,20 +363,7 @@ function CuerpoDeLaFicha({
 		<div className="flex flex-col gap-5">
 			{choque ? <EstadoDePantalla tipo="choque" documento={producto.nombre} /> : null}
 			<div className="grid grid-cols-[180px_1fr] gap-5 max-telefono:grid-cols-1">
-				<div className="grid h-44 place-items-center rounded-grande bg-suave text-tinta3">
-					{producto.foto_archivo_id === null ? (
-						<span className="flex flex-col items-center gap-2 text-etiqueta">
-							<Shirt aria-hidden="true" size={32} />
-							Sin foto
-						</span>
-					) : (
-						<img
-							src={`/v1/archivos/${producto.foto_archivo_id}`}
-							alt={`Foto de ${producto.nombre}`}
-							className="size-full rounded-grande object-cover"
-						/>
-					)}
-				</div>
+				<FotoDelProducto producto={producto} />
 				<div className="flex flex-col gap-3">
 					<Interruptor
 						etiqueta="Mostrador · Tienda 1 y Tienda 2"
@@ -540,6 +529,63 @@ function CuerpoDeLaFicha({
 					</ul>
 				</div>
 			)}
+		</div>
+	);
+}
+
+/**
+ * La foto de referencia del producto, con «Subir foto» o «Cambiar foto»: sube el archivo y lo guarda en el momento con
+ * `catalogo.subir_foto_producto`; el aviso dice lo que regresa.
+ * @param props El producto de la ficha.
+ */
+function FotoDelProducto({ producto }: { producto: Ficha["producto"] }) {
+	const avisar = useAvisar();
+	const conConexion = useConConexion();
+	const guardar = useAccionDeCatalogo(subirFotoProducto);
+	const [subiendo, setSubiendo] = useState(false);
+	/** Sube la foto escogida y la guarda; si no se puede, el aviso dice por qué. */
+	const subir = async (archivo: File) => {
+		setSubiendo(true);
+		try {
+			const archivoId = await subirArchivo("foto", "catalogo", archivo);
+			await esperar(
+				guardar.mutateAsync({
+					datos: { producto_id: producto.id, archivo_id: archivoId },
+					version: producto.version,
+				}),
+			);
+		} catch (error) {
+			const falla = leerFalla(error);
+			avisar(falla.tipo === "regla" ? falla.mensaje : "La foto no se subió. Intenta otra vez.", "no_se_pudo");
+		} finally {
+			setSubiendo(false);
+		}
+	};
+	return (
+		<div className="flex flex-col gap-2">
+			<div className="grid h-44 place-items-center rounded-grande bg-suave text-tinta3">
+				{producto.foto_archivo_id === null ? (
+					<span className="flex flex-col items-center gap-2 text-etiqueta">
+						<Shirt aria-hidden="true" size={32} />
+						Sin foto
+					</span>
+				) : (
+					<img
+						src={`/v1/archivos/${producto.foto_archivo_id}`}
+						alt={`Foto de ${producto.nombre}`}
+						className="size-full rounded-grande object-cover"
+					/>
+				)}
+			</div>
+			<BotonDeArchivo
+				variante="secundario"
+				chico
+				acepta="image/jpeg,image/png,image/webp"
+				disabled={!conConexion || subiendo}
+				alEscoger={(archivo) => void subir(archivo)}
+			>
+				{producto.foto_archivo_id === null ? "Subir foto" : "Cambiar foto"}
+			</BotonDeArchivo>
 		</div>
 	);
 }

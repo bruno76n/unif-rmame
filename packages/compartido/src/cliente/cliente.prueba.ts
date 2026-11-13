@@ -235,3 +235,67 @@ describe("el cliente solo compila con nombres y datos que existen en los contrat
 		expect(llamadas).toHaveLength(1);
 	});
 });
+
+describe("Subir un archivo: pide la dirección firmada con su suma SHA-256 y lo sube directo con esos encabezados", () => {
+	const archivoId = "01936f2e-8c3a-7b4d-9e5f-0000000000bb";
+	const contenido = new TextEncoder().encode("hola");
+	// La suma SHA-256 de «hola».
+	const suma = "b221d9dbb083a7f33428d7c2a3c3198ae925614d70210e28716ccaa7cd4ddb79";
+	const archivo = new File([contenido], "ticket.png", { type: "image/png" });
+
+	it("manda el propósito, el módulo, el nombre, el tipo, el tamaño y la suma; sube los bytes y regresa el archivo", async () => {
+		const { cliente, llamadas } = clienteCon([
+			respuesta(200, {
+				ok: true,
+				resultado: {
+					archivo_id: archivoId,
+					url_subida: "https://r2.prueba.invalid/subida",
+					encabezados: { "content-type": "image/png", "x-amz-checksum-sha256": "x" },
+				},
+			}),
+			new Response(null, { status: 200 }),
+		]);
+		expect(await cliente.subirArchivo({ proposito: "comprobante", modulo: "contaduria", archivo })).toBe(archivoId);
+		expect(llamadas[0]?.url).toBe("https://api.prueba.invalid/v1/archivos/subida");
+		expect(JSON.parse(String(llamadas[0]?.init.body))).toEqual({
+			proposito: "comprobante",
+			modulo: "contaduria",
+			nombre_original: "ticket.png",
+			tipo_mime: "image/png",
+			tamano_bytes: 4,
+			sha256: suma,
+		});
+		expect(llamadas[1]?.url).toBe("https://r2.prueba.invalid/subida");
+		expect(llamadas[1]?.init.method).toBe("PUT");
+		expect(llamadas[1]?.init.headers).toEqual({ "content-type": "image/png", "x-amz-checksum-sha256": "x" });
+		expect(new Uint8Array(await new Response(llamadas[1]?.init.body).arrayBuffer())).toEqual(contenido);
+	});
+
+	it("si la API no acepta el archivo, el error dice por qué y no sube nada", async () => {
+		const { cliente, llamadas } = clienteCon([
+			respuesta(422, {
+				ok: false,
+				error: "regla",
+				codigo: "tipo_no_aceptado",
+				mensaje: "Ese tipo de archivo no se acepta aquí. Sube una imagen.",
+			}),
+		]);
+		await expect(cliente.subirArchivo({ proposito: "foto", modulo: "catalogo", archivo })).rejects.toBeInstanceOf(
+			ErrorDeLaApi,
+		);
+		expect(llamadas).toHaveLength(1);
+	});
+
+	it("si la subida directa no llega, es falta de red: la pantalla lo puede intentar otra vez", async () => {
+		const { cliente } = clienteCon([
+			respuesta(200, {
+				ok: true,
+				resultado: { archivo_id: archivoId, url_subida: "https://r2.prueba.invalid/subida", encabezados: {} },
+			}),
+			new Response(null, { status: 403 }),
+		]);
+		await expect(
+			cliente.subirArchivo({ proposito: "comprobante", modulo: "contaduria", archivo }),
+		).rejects.toBeInstanceOf(ErrorSinRed);
+	});
+});

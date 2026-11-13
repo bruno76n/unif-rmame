@@ -14,7 +14,9 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { type Browser, chromium, type Page } from "@playwright/test";
 import { createServer, type ViteDevServer } from "vite";
+import { levantarAlmacenDePrueba } from "../../../../../pruebas/navegador/almacen-de-prueba.ts";
 import { opcionesDeChromium } from "../../../../../pruebas/navegador/chromium.ts";
+import { crearAlmacen, direccionDeR2 } from "../../../../api/src/nucleo/almacen.ts";
 import {
 	crearServidorDePrueba,
 	dominios,
@@ -50,9 +52,28 @@ export interface PantallaDePrueba {
 	cerrar: () => Promise<void>;
 }
 
-/** Levanta la API de prueba, la web y el navegador. */
-export async function levantarPantalla(): Promise<PantallaDePrueba> {
-	const servidor = await crearServidorDePrueba();
+/** La cuenta de R2 de las pruebas de pantalla que suben archivos. */
+const cuentaDelAlmacen = "cuentaprueba";
+
+/**
+ * Levanta la API de prueba, la web y el navegador.
+ * @param opciones `conArchivos` para las pantallas que suben archivos: la API tiene almacén (el simulador de R2) y el
+ * navegador sube a él con la dirección firmada.
+ */
+export async function levantarPantalla(opciones: { conArchivos?: true } = {}): Promise<PantallaDePrueba> {
+	const almacen = opciones.conArchivos === true ? levantarAlmacenDePrueba(cuentaDelAlmacen) : undefined;
+	const servidor = await crearServidorDePrueba(
+		almacen === undefined
+			? {}
+			: {
+					almacen: crearAlmacen({
+						direccion: direccionDeR2(cuentaDelAlmacen),
+						cubo: "uniformame-archivos",
+						llaveId: "llave-de-prueba",
+						secreto: "secreto-de-prueba",
+					}),
+				},
+	);
 	const direccionApi = await servidor.app.listen({ host: "127.0.0.1", port: 0 });
 	// La configuración de la web lee estas dos al cargarse: el proxy apunta a esta API con el origen que espera.
 	process.env.UNIFORMAME_API = direccionApi;
@@ -73,6 +94,25 @@ export async function levantarPantalla(): Promise<PantallaDePrueba> {
 				viewport: tamanos[tamano],
 				extraHTTPHeaders: { "x-prueba-quien": quien },
 			});
+			// Lo que el navegador sube al almacén lo atiende el simulador.
+			if (almacen !== undefined) {
+				await contexto.route(`${direccionDeR2(cuentaDelAlmacen)}/**`, async (ruta) => {
+					const pedido = ruta.request();
+					const cuerpo = pedido.postDataBuffer();
+					const {
+						estado,
+						encabezados,
+						cuerpo: devuelto,
+					} = await almacen.responder(
+						new Request(pedido.url(), {
+							method: pedido.method(),
+							headers: await pedido.allHeaders(),
+							...(cuerpo === null ? {} : { body: new Uint8Array(cuerpo) }),
+						}),
+					);
+					await ruta.fulfill({ status: estado, headers: encabezados, body: devuelto });
+				});
+			}
 			const pagina = await contexto.newPage();
 			await pagina.goto(`${direccionWeb}${ruta}`);
 			return pagina;
@@ -86,6 +126,7 @@ export async function levantarPantalla(): Promise<PantallaDePrueba> {
 			await navegador.close();
 			await vite.close();
 			await servidor.cerrar();
+			almacen?.cerrar();
 		},
 	};
 }

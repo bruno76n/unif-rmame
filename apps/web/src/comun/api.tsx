@@ -71,6 +71,19 @@ export function useConsulta<Contrato extends ContratoDeConsulta>(
 }
 
 /**
+ * Sube un archivo que escogió la persona, antes de mandar la acción que lo usa: pide la dirección firmada y lo sube
+ * directo al almacén (docs/modulos/admin/archivos.md, regla 1).
+ * @param proposito El propósito del archivo (`foto`, `comprobante`, `factura_proveedor`, `documento_contador`…).
+ * @param modulo El módulo de la acción que lo usa.
+ * @param archivo El archivo.
+ * @returns El `archivo_id` que se manda en la acción.
+ * @throws Lo mismo que una acción: `leerFalla` lo lee (el tipo o el tamaño que no se aceptan, o sin red).
+ */
+export function subirArchivo(proposito: string, modulo: string, archivo: File): Promise<string> {
+	return crearCliente({ acciones: {}, consultas: {} }, opciones).subirArchivo({ proposito, modulo, archivo });
+}
+
+/**
  * El cursor de la página siguiente, si la consulta lo regresa en `cursor`.
  * @param pagina Lo que regresó una página.
  */

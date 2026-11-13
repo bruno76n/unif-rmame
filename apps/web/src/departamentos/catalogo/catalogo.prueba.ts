@@ -9,7 +9,7 @@
  */
 
 import type { Page } from "@playwright/test";
-import { afterAll, beforeAll, describe, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { enPantalla } from "../../../../../pruebas/navegador/en-pantalla.ts";
 import { levantarPantalla, type PantallaDePrueba } from "../../comun/pruebas/pantalla-de-prueba.ts";
 
@@ -19,7 +19,7 @@ const tiempo = { timeout: 120_000 };
 describe("Las pantallas de Catálogo: pestañas, cajones, botones y avisos", () => {
 	let pantalla: PantallaDePrueba;
 	beforeAll(async () => {
-		pantalla = await levantarPantalla();
+		pantalla = await levantarPantalla({ conArchivos: true });
 	}, 180_000);
 	afterAll(async () => {
 		await pantalla?.cerrar();
@@ -124,6 +124,41 @@ describe("Las pantallas de Catálogo: pestañas, cajones, botones y avisos", () 
 			await cajon.getByRole("button", { name: "Aplicar cambios" }).click();
 			await aviso(pagina, /^1 cambio aplicado a Calcetas blancas \(par\)/);
 			await pagina.close();
+		},
+	);
+
+	it(
+		"«Subir foto» sube el archivo al almacén y la guarda en el momento; la ficha la enseña con «Cambiar foto»",
+		tiempo,
+		async () => {
+			const { rows } = await pantalla.servidor.base.dueno.query(
+				"SELECT id, nombre FROM productos WHERE foto_archivo_id IS NULL AND baja_en IS NULL ORDER BY nombre LIMIT 1",
+			);
+			const producto = { id: String(rows[0]?.id), nombre: String(rows[0]?.nombre) };
+			const pagina = await pantalla.abrir(`/catalogo/productos?cajon=producto&id=${producto.id}`, {
+				quien: "catalogo",
+			});
+			const cajon = pagina.getByRole("dialog", { name: producto.nombre });
+			await enPantalla(cajon.getByText("Sin foto")).toBeVisible();
+			await enPantalla(cajon.getByRole("button", { name: "Subir foto" })).toBeVisible();
+			const guardada = pagina.waitForResponse((suya) =>
+				suya.url().includes("/v1/acciones/catalogo.subir_foto_producto"),
+			);
+			await cajon.locator('input[type="file"]').setInputFiles({
+				name: "polo.png",
+				mimeType: "image/png",
+				buffer: Buffer.from("una foto de prueba"),
+			});
+			const respuesta = await guardada;
+			expect(respuesta.status(), await respuesta.text()).toBe(200);
+			await aviso(pagina, /^Foto guardada/);
+			await enPantalla(cajon.getByRole("img", { name: `Foto de ${producto.nombre}` })).toBeVisible();
+			await enPantalla(cajon.getByRole("button", { name: "Cambiar foto" })).toBeVisible();
+			await pagina.close();
+			// Deja el producto como estaba: sin foto.
+			await pantalla.servidor.base.dueno.query("UPDATE productos SET foto_archivo_id = NULL WHERE id = $1", [
+				producto.id,
+			]);
 		},
 	);
 

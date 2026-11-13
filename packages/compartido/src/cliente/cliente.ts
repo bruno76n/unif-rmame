@@ -85,6 +85,15 @@ export interface OpcionesDelCliente {
 	nuevaClave?: () => string;
 }
 
+/** Lo que regresa `POST /v1/archivos/subida`: el archivo y su dirección firmada, con los encabezados que pide. */
+const subidaFirmada = z.object({
+	resultado: z.object({
+		archivo_id: z.string(),
+		url_subida: z.string(),
+		encabezados: z.record(z.string(), z.string()),
+	}),
+});
+
 /** Los contratos que conoce un cliente: las acciones y las consultas, por nombre. */
 export interface ContratosDelCliente {
 	acciones: Record<string, ContratoDeAccion>;
@@ -197,6 +206,42 @@ export function crearCliente<
 				typeof cuerpo === "object" && cuerpo !== null && "resultado" in cuerpo ? cuerpo.resultado : undefined;
 			const esquema: Acciones[Nombre]["resultado"] = contrato.resultado;
 			return z.parse(esquema, leido);
+		},
+
+		/**
+		 * Sube un archivo en los pasos de la API (docs/modulos/admin/archivos.md, regla 1): pide la dirección firmada con
+		 * el propósito, el tipo, el tamaño y la suma SHA-256, y sube los bytes directo al almacén con esos encabezados.
+		 * La acción que lo usa manda después el `archivo_id`.
+		 * @param datos El propósito (`foto`, `comprobante`…), el módulo que lo usa y el archivo que escogió la persona.
+		 * @returns El `archivo_id`.
+		 * @throws `ErrorDeLaApi` si la API no lo acepta (tipo o tamaño); `ErrorSinRed` si la subida directa no llegó.
+		 */
+		async subirArchivo(datos: { proposito: string; modulo: string; archivo: File }): Promise<string> {
+			const bytes = new Uint8Array(await datos.archivo.arrayBuffer());
+			const suma = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)), (byte) =>
+				byte.toString(16).padStart(2, "0"),
+			).join("");
+			const cuerpo = await pedir(`${opciones.urlBase}/v1/archivos/subida`, {
+				method: "POST",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify({
+					proposito: datos.proposito,
+					modulo: datos.modulo,
+					nombre_original: datos.archivo.name,
+					tipo_mime: datos.archivo.type,
+					tamano_bytes: bytes.byteLength,
+					sha256: suma,
+				}),
+			});
+			const { resultado } = subidaFirmada.parse(cuerpo);
+			// La subida va directo al almacén, sin la cookie ni los encabezados de la API.
+			const subida = await llamar(resultado.url_subida, {
+				method: "PUT",
+				headers: resultado.encabezados,
+				body: bytes,
+			}).catch(() => undefined);
+			if (subida?.ok !== true) throw new ErrorSinRed();
+			return resultado.archivo_id;
 		},
 
 		/**

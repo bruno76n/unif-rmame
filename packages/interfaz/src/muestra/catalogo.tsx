@@ -24,7 +24,9 @@ import { Hilo } from "../avance/hilo.tsx";
 import { Pasos } from "../avance/pasos.tsx";
 import { Boton } from "../botones/boton.tsx";
 import { BotonConCifra } from "../botones/boton-con-cifra.tsx";
+import { BotonDeArchivo } from "../botones/boton-de-archivo.tsx";
 import { Campo } from "../captura/campo.tsx";
+import { CampoDeArchivo } from "../captura/campo-de-archivo.tsx";
 import { Casilla } from "../captura/casilla.tsx";
 import { Filtros } from "../captura/filtros.tsx";
 import { Interruptor } from "../captura/interruptor.tsx";
@@ -193,6 +195,9 @@ export function Catalogo() {
 					</Boton>
 					<Boton variante="fantasma">Cancelar</Boton>
 					<Boton variante="peligro">Rechazar</Boton>
+					<BotonDeArchivo variante="secundario" chico acepta="image/*" alEscoger={() => undefined}>
+						Subir foto
+					</BotonDeArchivo>
 					<Boton variante="principal" chico data-prueba="boton-chico">
 						Surtir
 					</Boton>
@@ -211,6 +216,12 @@ export function Catalogo() {
 				<section className="grid max-w-[720px] grid-cols-2 gap-4 max-telefono:grid-cols-1">
 					<Campo etiqueta="Folio" placeholder="PE-0145" data-prueba="campo" />
 					<Campo etiqueta="Motivo" defaultValue="No" error="Escribe al menos 5 letras." data-prueba="campo-error" />
+					<CampoDeArchivo
+						etiqueta="Comprobante"
+						acepta="image/*,application/pdf"
+						archivo={null}
+						alEscoger={() => undefined}
+					/>
 					<Selector
 						etiqueta="Ubicación"
 						vacio="Todas"

@@ -50,6 +50,7 @@ import {
 import { nombresDeProductos, productosDescontinuados } from "./lecturas/descontinuados.ts";
 import { precioSugerido, precioTalla } from "./lecturas/precios.ts";
 import { datosVariantes, variantePorCodigo } from "./lecturas/variantes.ts";
+import { veDocumento } from "./lecturas/ve-documento.ts";
 import { semillaDeParametrosDeCatalogo } from "./parametros.ts";
 import { lectoresDeCatalogo } from "./permisos.ts";
 import {
@@ -110,6 +111,7 @@ export default definirModulo({
 		precio_sugerido: precioSugerido,
 		variante_por_codigo: variantePorCodigo,
 		datos_variantes: datosVariantes,
+		ve_documento: veDocumento,
 	},
 	semillas: [
 		semillaDeSecciones,

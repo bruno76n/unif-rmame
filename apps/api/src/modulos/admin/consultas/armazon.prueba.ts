@@ -10,6 +10,7 @@
 import { v7 as uuidv7 } from "uuid";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { quienesDePrueba } from "../../../nucleo/pruebas/cuentas-de-prueba.ts";
+import { pedidoListoEnAduana } from "../../../nucleo/pruebas/inventario-de-prueba.ts";
 import { pedirConsulta } from "../../../nucleo/pruebas/llamadas.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 
@@ -198,5 +199,17 @@ describe("El armazón: el menú de la cuenta, sus sesiones, su campana y el hist
 				)
 			).estado,
 		).toBe(404);
+	});
+
+	it("una pastilla que falla no tumba el menú: su departamento sale sin cifra", async () => {
+		// Un pedido confirmado sin renglones (la muestra no tiene ninguno) hace fallar la cuenta de Pendientes de Ventas.
+		await pedidoListoEnAduana(servidor, 3);
+		expect((await pedirConsulta(servidor, "ventas.pendientes", {}, "ventas")).estado).toBe(404);
+		const respuesta = await pedirConsulta(servidor, "admin.armazon", {}, "ventas");
+		expect(respuesta.estado, JSON.stringify(respuesta.cuerpo)).toBe(200);
+		const { departamentos } = respuesta.cuerpo.resultado as {
+			departamentos: { clave: string; conteo: number | null }[];
+		};
+		expect(departamentos.find((departamento) => departamento.clave === "ventas")?.conteo).toBeNull();
 	});
 });
