@@ -65,6 +65,43 @@ export function paginar<Renglon>(
 }
 
 /**
+ * Dónde empieza una página de una lista que se arma completa antes de paginarla (de varias fuentes, o en el orden que da
+ * una cuenta): el cursor guarda el renglón donde sigue.
+ * @param cursor Lo que mandó el cliente, o nada para la primera página.
+ * @returns El renglón donde empieza la página.
+ * @throws `400` si el cursor no es uno que haya dado la API.
+ */
+export function desdeDelCursor(cursor: string | undefined): number {
+	const desde = leerCursor(cursor)?.desde ?? 0;
+	if (typeof desde !== "number" || !Number.isInteger(desde) || desde < 0) return desdeInvalido();
+	return desde;
+}
+
+/** `400`: el cursor no es uno que haya dado la API. */
+function desdeInvalido(): never {
+	throw new ErrorDeApi("validacion", null, undefined, {
+		campos: { cursor: "Ese cursor no es válido. Vuelve a cargar la lista." },
+	});
+}
+
+/**
+ * Corta una página de una lista ya armada y en su orden.
+ * @param lista La lista completa.
+ * @param cursor El cursor de la página anterior, o nada para la primera.
+ * @param limite Cuántos renglones van en la página.
+ */
+export function paginarLista<Renglon>(
+	lista: readonly Renglon[],
+	cursor: string | undefined,
+	limite: number,
+): { renglones: Renglon[]; cursor: string | null; hay_mas: boolean } {
+	const desde = desdeDelCursor(cursor);
+	const hasta = desde + limite;
+	const hayMas = lista.length > hasta;
+	return { renglones: lista.slice(desde, hasta), cursor: hayMas ? cursorDe({ desde: hasta }) : null, hay_mas: hayMas };
+}
+
+/**
  * Quita de un objeto los campos que la cuenta no puede ver.
  * @param objeto Lo que se va a mandar.
  * @param campos Los campos que se le recortan a esta cuenta.

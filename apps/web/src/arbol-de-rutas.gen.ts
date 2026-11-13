@@ -21,6 +21,13 @@ import { Route as AdminPantallaDeAccesoRouteImport } from "./rutas/admin/pantall
 import { Route as AdminRespaldosRouteImport } from "./rutas/admin/respaldos.tsx"
 import { Route as AdminUsuariosYAccesosRouteImport } from "./rutas/admin/usuarios-y-accesos.tsx"
 import { Route as AduanaIndexRouteImport } from "./rutas/aduana/index.tsx"
+import { Route as AduanaDespachoRouteImport } from "./rutas/aduana/despacho.tsx"
+import { Route as AduanaEmpaqueRouteImport } from "./rutas/aduana/empaque.tsx"
+import { Route as AduanaEnCaminoRouteImport } from "./rutas/aduana/en-camino.tsx"
+import { Route as AduanaHistorialRouteImport } from "./rutas/aduana/historial.tsx"
+import { Route as AduanaInventarioRouteImport } from "./rutas/aduana/inventario.tsx"
+import { Route as AduanaRecepcionRouteImport } from "./rutas/aduana/recepcion.tsx"
+import { Route as AduanaTransitoRouteImport } from "./rutas/aduana/transito.tsx"
 import { Route as BodegaIndexRouteImport } from "./rutas/bodega/index.tsx"
 import { Route as BodegaConteosRouteImport } from "./rutas/bodega/conteos.tsx"
 import { Route as BodegaDiferenciasRouteImport } from "./rutas/bodega/diferencias.tsx"
@@ -140,6 +147,41 @@ const AdminUsuariosYAccesosRoute = AdminUsuariosYAccesosRouteImport.update({
 const AduanaIndexRoute = AduanaIndexRouteImport.update({
   id: "/aduana/",
   path: "/aduana/",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AduanaDespachoRoute = AduanaDespachoRouteImport.update({
+  id: "/aduana/despacho",
+  path: "/aduana/despacho",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AduanaEmpaqueRoute = AduanaEmpaqueRouteImport.update({
+  id: "/aduana/empaque",
+  path: "/aduana/empaque",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AduanaEnCaminoRoute = AduanaEnCaminoRouteImport.update({
+  id: "/aduana/en-camino",
+  path: "/aduana/en-camino",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AduanaHistorialRoute = AduanaHistorialRouteImport.update({
+  id: "/aduana/historial",
+  path: "/aduana/historial",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AduanaInventarioRoute = AduanaInventarioRouteImport.update({
+  id: "/aduana/inventario",
+  path: "/aduana/inventario",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AduanaRecepcionRoute = AduanaRecepcionRouteImport.update({
+  id: "/aduana/recepcion",
+  path: "/aduana/recepcion",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AduanaTransitoRoute = AduanaTransitoRouteImport.update({
+  id: "/aduana/transito",
+  path: "/aduana/transito",
   getParentRoute: () => rootRouteImport,
 } as any)
 const BodegaIndexRoute = BodegaIndexRouteImport.update({
@@ -456,6 +498,13 @@ export interface FileRoutesByFullPath {
   "/admin/pantalla-de-acceso": typeof AdminPantallaDeAccesoRoute
   "/admin/respaldos": typeof AdminRespaldosRoute
   "/admin/usuarios-y-accesos": typeof AdminUsuariosYAccesosRoute
+  "/aduana/despacho": typeof AduanaDespachoRoute
+  "/aduana/empaque": typeof AduanaEmpaqueRoute
+  "/aduana/en-camino": typeof AduanaEnCaminoRoute
+  "/aduana/historial": typeof AduanaHistorialRoute
+  "/aduana/inventario": typeof AduanaInventarioRoute
+  "/aduana/recepcion": typeof AduanaRecepcionRoute
+  "/aduana/transito": typeof AduanaTransitoRoute
   "/bodega/conteos": typeof BodegaConteosRoute
   "/bodega/diferencias": typeof BodegaDiferenciasRoute
   "/bodega/excepciones": typeof BodegaExcepcionesRoute
@@ -529,6 +578,13 @@ export interface FileRoutesByTo {
   "/admin/pantalla-de-acceso": typeof AdminPantallaDeAccesoRoute
   "/admin/respaldos": typeof AdminRespaldosRoute
   "/admin/usuarios-y-accesos": typeof AdminUsuariosYAccesosRoute
+  "/aduana/despacho": typeof AduanaDespachoRoute
+  "/aduana/empaque": typeof AduanaEmpaqueRoute
+  "/aduana/en-camino": typeof AduanaEnCaminoRoute
+  "/aduana/historial": typeof AduanaHistorialRoute
+  "/aduana/inventario": typeof AduanaInventarioRoute
+  "/aduana/recepcion": typeof AduanaRecepcionRoute
+  "/aduana/transito": typeof AduanaTransitoRoute
   "/bodega/conteos": typeof BodegaConteosRoute
   "/bodega/diferencias": typeof BodegaDiferenciasRoute
   "/bodega/excepciones": typeof BodegaExcepcionesRoute
@@ -604,6 +660,13 @@ export interface FileRoutesById {
   "/admin/pantalla-de-acceso": typeof AdminPantallaDeAccesoRoute
   "/admin/respaldos": typeof AdminRespaldosRoute
   "/admin/usuarios-y-accesos": typeof AdminUsuariosYAccesosRoute
+  "/aduana/despacho": typeof AduanaDespachoRoute
+  "/aduana/empaque": typeof AduanaEmpaqueRoute
+  "/aduana/en-camino": typeof AduanaEnCaminoRoute
+  "/aduana/historial": typeof AduanaHistorialRoute
+  "/aduana/inventario": typeof AduanaInventarioRoute
+  "/aduana/recepcion": typeof AduanaRecepcionRoute
+  "/aduana/transito": typeof AduanaTransitoRoute
   "/bodega/conteos": typeof BodegaConteosRoute
   "/bodega/diferencias": typeof BodegaDiferenciasRoute
   "/bodega/excepciones": typeof BodegaExcepcionesRoute
@@ -680,6 +743,13 @@ export interface FileRouteTypes {
     | "/admin/pantalla-de-acceso"
     | "/admin/respaldos"
     | "/admin/usuarios-y-accesos"
+    | "/aduana/despacho"
+    | "/aduana/empaque"
+    | "/aduana/en-camino"
+    | "/aduana/historial"
+    | "/aduana/inventario"
+    | "/aduana/recepcion"
+    | "/aduana/transito"
     | "/bodega/conteos"
     | "/bodega/diferencias"
     | "/bodega/excepciones"
@@ -753,6 +823,13 @@ export interface FileRouteTypes {
     | "/admin/pantalla-de-acceso"
     | "/admin/respaldos"
     | "/admin/usuarios-y-accesos"
+    | "/aduana/despacho"
+    | "/aduana/empaque"
+    | "/aduana/en-camino"
+    | "/aduana/historial"
+    | "/aduana/inventario"
+    | "/aduana/recepcion"
+    | "/aduana/transito"
     | "/bodega/conteos"
     | "/bodega/diferencias"
     | "/bodega/excepciones"
@@ -827,6 +904,13 @@ export interface FileRouteTypes {
     | "/admin/pantalla-de-acceso"
     | "/admin/respaldos"
     | "/admin/usuarios-y-accesos"
+    | "/aduana/despacho"
+    | "/aduana/empaque"
+    | "/aduana/en-camino"
+    | "/aduana/historial"
+    | "/aduana/inventario"
+    | "/aduana/recepcion"
+    | "/aduana/transito"
     | "/bodega/conteos"
     | "/bodega/diferencias"
     | "/bodega/excepciones"
@@ -902,6 +986,13 @@ export interface RootRouteChildren {
   AdminPantallaDeAccesoRoute: typeof AdminPantallaDeAccesoRoute
   AdminRespaldosRoute: typeof AdminRespaldosRoute
   AdminUsuariosYAccesosRoute: typeof AdminUsuariosYAccesosRoute
+  AduanaDespachoRoute: typeof AduanaDespachoRoute
+  AduanaEmpaqueRoute: typeof AduanaEmpaqueRoute
+  AduanaEnCaminoRoute: typeof AduanaEnCaminoRoute
+  AduanaHistorialRoute: typeof AduanaHistorialRoute
+  AduanaInventarioRoute: typeof AduanaInventarioRoute
+  AduanaRecepcionRoute: typeof AduanaRecepcionRoute
+  AduanaTransitoRoute: typeof AduanaTransitoRoute
   BodegaConteosRoute: typeof BodegaConteosRoute
   BodegaDiferenciasRoute: typeof BodegaDiferenciasRoute
   BodegaExcepcionesRoute: typeof BodegaExcepcionesRoute
@@ -1045,6 +1136,55 @@ declare module "@tanstack/react-router" {
       path: "/aduana"
       fullPath: "/aduana/"
       preLoaderRoute: typeof AduanaIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/aduana/despacho": {
+      id: "/aduana/despacho"
+      path: "/aduana/despacho"
+      fullPath: "/aduana/despacho"
+      preLoaderRoute: typeof AduanaDespachoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/aduana/empaque": {
+      id: "/aduana/empaque"
+      path: "/aduana/empaque"
+      fullPath: "/aduana/empaque"
+      preLoaderRoute: typeof AduanaEmpaqueRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/aduana/en-camino": {
+      id: "/aduana/en-camino"
+      path: "/aduana/en-camino"
+      fullPath: "/aduana/en-camino"
+      preLoaderRoute: typeof AduanaEnCaminoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/aduana/historial": {
+      id: "/aduana/historial"
+      path: "/aduana/historial"
+      fullPath: "/aduana/historial"
+      preLoaderRoute: typeof AduanaHistorialRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/aduana/inventario": {
+      id: "/aduana/inventario"
+      path: "/aduana/inventario"
+      fullPath: "/aduana/inventario"
+      preLoaderRoute: typeof AduanaInventarioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/aduana/recepcion": {
+      id: "/aduana/recepcion"
+      path: "/aduana/recepcion"
+      fullPath: "/aduana/recepcion"
+      preLoaderRoute: typeof AduanaRecepcionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/aduana/transito": {
+      id: "/aduana/transito"
+      path: "/aduana/transito"
+      fullPath: "/aduana/transito"
+      preLoaderRoute: typeof AduanaTransitoRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/bodega/": {
@@ -1502,6 +1642,13 @@ const rootRouteChildren: RootRouteChildren = {
   AdminPantallaDeAccesoRoute: AdminPantallaDeAccesoRoute,
   AdminRespaldosRoute: AdminRespaldosRoute,
   AdminUsuariosYAccesosRoute: AdminUsuariosYAccesosRoute,
+  AduanaDespachoRoute: AduanaDespachoRoute,
+  AduanaEmpaqueRoute: AduanaEmpaqueRoute,
+  AduanaEnCaminoRoute: AduanaEnCaminoRoute,
+  AduanaHistorialRoute: AduanaHistorialRoute,
+  AduanaInventarioRoute: AduanaInventarioRoute,
+  AduanaRecepcionRoute: AduanaRecepcionRoute,
+  AduanaTransitoRoute: AduanaTransitoRoute,
   BodegaConteosRoute: BodegaConteosRoute,
   BodegaDiferenciasRoute: BodegaDiferenciasRoute,
   BodegaExcepcionesRoute: BodegaExcepcionesRoute,

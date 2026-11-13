@@ -46059,6 +46059,2362 @@
         }
       }
     },
+    "/v1/consultas/inventario.anden": {
+      "get": {
+        "tags": [
+          "inventario"
+        ],
+        "description": "El andén de Aduana: lo que espera entrar y lo que está en aduana por destino, con sus cifras y el conteo de cada pestaña\n\nPermiso: departamento aduana.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "cifras": {
+                          "type": "object",
+                          "properties": {
+                            "por_recibir": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "Todo lo que espera entrar"
+                            },
+                            "atrasadas": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "Las órdenes de compra atrasadas"
+                            },
+                            "salidas": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "Lo que está en aduana con salida hoy, mañana o ya pasada"
+                            },
+                            "parados": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "Lo que pasó de `inventario.horas_aduana_parado`"
+                            },
+                            "dias_parado": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "`inventario.horas_aduana_parado` en días, para «Más de {d} días»"
+                            },
+                            "sin_confirmar": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "Los despachos que su destino no ha confirmado"
+                            }
+                          },
+                          "required": [
+                            "por_recibir",
+                            "atrasadas",
+                            "salidas",
+                            "parados",
+                            "dias_parado",
+                            "sin_confirmar"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "pestanas": {
+                          "type": "object",
+                          "properties": {
+                            "recepcion": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "Lo que falta por recibir"
+                            },
+                            "en_camino": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "Lo que viene en camino a aduana"
+                            },
+                            "parados": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "Lo parado en aduana (en rojo)"
+                            },
+                            "en_transito": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "Los despachos sin confirmar"
+                            },
+                            "empaque": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "Los pedidos en línea listos para empacar"
+                            }
+                          },
+                          "required": [
+                            "recepcion",
+                            "en_camino",
+                            "parados",
+                            "en_transito",
+                            "empaque"
+                          ],
+                          "additionalProperties": false,
+                          "description": "La pastilla de cada pestaña"
+                        },
+                        "carriles": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "clave": {
+                                "type": "string",
+                                "description": "`entra` o el destino"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "tipo": {
+                                "type": "string",
+                                "enum": [
+                                  "entra",
+                                  "tienda",
+                                  "linea",
+                                  "externos",
+                                  "bodega",
+                                  "calidad"
+                                ],
+                                "description": "Para su ícono"
+                              },
+                              "tarjetas": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "clave": {
+                                      "type": "string",
+                                      "description": "Única en el andén"
+                                    },
+                                    "titulo": {
+                                      "type": "string"
+                                    },
+                                    "detalle": {
+                                      "type": "string"
+                                    },
+                                    "cantidad": {
+                                      "type": "string"
+                                    },
+                                    "etiqueta": {
+                                      "nullable": true,
+                                      "description": "Junto al título: «Sale hoy», «Sale mañana» o «Atrasada {n} días»",
+                                      "type": "object",
+                                      "properties": {
+                                        "texto": {
+                                          "type": "string"
+                                        },
+                                        "color": {
+                                          "type": "string",
+                                          "enum": [
+                                            "rojo",
+                                            "ambar",
+                                            "azul",
+                                            "verde",
+                                            "gris",
+                                            "morado",
+                                            "verde-azulado",
+                                            "naranja"
+                                          ],
+                                          "description": "El color del cuadro del estado"
+                                        }
+                                      },
+                                      "required": [
+                                        "texto",
+                                        "color"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    "marca": {
+                                      "type": "object",
+                                      "properties": {
+                                        "texto": {
+                                          "type": "string"
+                                        },
+                                        "color": {
+                                          "nullable": true,
+                                          "type": "string",
+                                          "enum": [
+                                            "rojo",
+                                            "ambar",
+                                            "azul",
+                                            "verde",
+                                            "gris",
+                                            "morado",
+                                            "verde-azulado",
+                                            "naranja"
+                                          ],
+                                          "description": "El color del cuadro del estado"
+                                        }
+                                      },
+                                      "required": [
+                                        "texto",
+                                        "color"
+                                      ],
+                                      "additionalProperties": false,
+                                      "description": "Abajo a la derecha: de dónde viene, cuándo llega o su antigüedad"
+                                    },
+                                    "abre": {
+                                      "type": "object",
+                                      "properties": {
+                                        "a": {
+                                          "type": "string",
+                                          "enum": [
+                                            "taller",
+                                            "material",
+                                            "camino",
+                                            "reproceso",
+                                            "despachar",
+                                            "empaque"
+                                          ],
+                                          "description": "El cajón (o `empaque`, la pestaña de los pedidos en línea)"
+                                        },
+                                        "id": {
+                                          "type": "string",
+                                          "format": "uuid",
+                                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                          "description": "El lote, la orden, el traspaso o el reproceso"
+                                        }
+                                      },
+                                      "required": [
+                                        "a",
+                                        "id"
+                                      ],
+                                      "additionalProperties": false,
+                                      "description": "Qué abre al tocarlo"
+                                    }
+                                  },
+                                  "required": [
+                                    "clave",
+                                    "titulo",
+                                    "detalle",
+                                    "cantidad",
+                                    "etiqueta",
+                                    "marca",
+                                    "abre"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "required": [
+                              "clave",
+                              "nombre",
+                              "tipo",
+                              "tarjetas"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "«Entra», «Tienda 1», «Tienda 2», «En línea», «Clientes externos», «Bodega» y «Calidad»"
+                        }
+                      },
+                      "required": [
+                        "cifras",
+                        "pestanas",
+                        "carriles"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/inventario.aduana_recepcion": {
+      "get": {
+        "tags": [
+          "inventario"
+        ],
+        "description": "Lo que espera entrar a aduana: del taller, de bodega, de proveedores (en la ventana de días o todas) y de los clientes\n\nPermiso: departamento aduana.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "boolean"
+            },
+            "in": "query",
+            "name": "todas_las_ordenes",
+            "required": false,
+            "description": "Si va, también las órdenes que no entran en `inventario.dias_ventana_ordenes`"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "grupos": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "clave": {
+                                "type": "string",
+                                "enum": [
+                                  "taller",
+                                  "bodega",
+                                  "proveedores",
+                                  "clientes"
+                                ]
+                              },
+                              "titulo": {
+                                "type": "string"
+                              },
+                              "resumen": {
+                                "type": "string",
+                                "description": "«{n} por recibir · {descripción}» o «Nada por recibir»"
+                              },
+                              "renglones": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "clave": {
+                                      "type": "string"
+                                    },
+                                    "titulo": {
+                                      "type": "string"
+                                    },
+                                    "detalle": {
+                                      "type": "string"
+                                    },
+                                    "cantidad": {
+                                      "type": "string",
+                                      "description": "Lo del taller lleva lo aprobado: es lo único que lo dice"
+                                    },
+                                    "carril": {
+                                      "type": "string",
+                                      "description": "El destino: el código de su ubicación (`T1`, `T2`, `BOD`), `externos`, `linea`, `calidad` o `proveedor`"
+                                    },
+                                    "destino": {
+                                      "type": "string",
+                                      "description": "A dónde va"
+                                    },
+                                    "abre": {
+                                      "type": "object",
+                                      "properties": {
+                                        "a": {
+                                          "type": "string",
+                                          "enum": [
+                                            "taller",
+                                            "material",
+                                            "camino",
+                                            "reproceso",
+                                            "despachar",
+                                            "empaque"
+                                          ],
+                                          "description": "El cajón (o `empaque`, la pestaña de los pedidos en línea)"
+                                        },
+                                        "id": {
+                                          "type": "string",
+                                          "format": "uuid",
+                                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                          "description": "El lote, la orden, el traspaso o el reproceso"
+                                        }
+                                      },
+                                      "required": [
+                                        "a",
+                                        "id"
+                                      ],
+                                      "additionalProperties": false,
+                                      "description": "Qué abre al tocarlo"
+                                    }
+                                  },
+                                  "required": [
+                                    "clave",
+                                    "titulo",
+                                    "detalle",
+                                    "cantidad",
+                                    "carril",
+                                    "destino",
+                                    "abre"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "required": [
+                              "clave",
+                              "titulo",
+                              "resumen",
+                              "renglones"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Siempre los cuatro, en su orden"
+                        },
+                        "ordenes_fuera": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "Las órdenes por recibir que no entran en la ventana de días"
+                        }
+                      },
+                      "required": [
+                        "grupos",
+                        "ordenes_fuera"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/inventario.en_camino_aduana": {
+      "get": {
+        "tags": [
+          "inventario"
+        ],
+        "description": "Lo que ya salió de Bodega o de una tienda hacia aduana y Aduana no ha recibido, lo más viejo primero\n\nPermiso: departamento aduana.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "description": "El cursor que regresó la página anterior; opaco"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "in": "query",
+            "name": "limite",
+            "required": false,
+            "description": "Cuántos renglones, hasta 100"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "renglones": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "traspaso_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "folio": {
+                                "type": "string"
+                              },
+                              "fecha": {
+                                "type": "string",
+                                "description": "Cuándo salió: «13 oct»"
+                              },
+                              "que": {
+                                "type": "string",
+                                "description": "Qué viene"
+                              },
+                              "detalle": {
+                                "type": "string",
+                                "description": "«{tipo} · va a {destino}»"
+                              },
+                              "cantidad": {
+                                "type": "string"
+                              },
+                              "responde": {
+                                "type": "string",
+                                "description": "Quien lo mandó: Bodega, la tienda o el cliente"
+                              },
+                              "salio": {
+                                "type": "object",
+                                "properties": {
+                                  "texto": {
+                                    "type": "string"
+                                  },
+                                  "color": {
+                                    "type": "string",
+                                    "enum": [
+                                      "rojo",
+                                      "ambar",
+                                      "azul",
+                                      "verde",
+                                      "gris",
+                                      "morado",
+                                      "verde-azulado",
+                                      "naranja"
+                                    ],
+                                    "description": "El color del cuadro del estado"
+                                  }
+                                },
+                                "required": [
+                                  "texto",
+                                  "color"
+                                ],
+                                "additionalProperties": false,
+                                "description": "«Salió hoy» (verde), «1 día» (ámbar) o «{n} días» (rojo desde el parámetro)"
+                              }
+                            },
+                            "required": [
+                              "traspaso_id",
+                              "folio",
+                              "fecha",
+                              "que",
+                              "detalle",
+                              "cantidad",
+                              "responde",
+                              "salio"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Los renglones de esta página"
+                        },
+                        "cursor": {
+                          "nullable": true,
+                          "description": "El cursor para pedir la página siguiente; nulo si no hay más",
+                          "type": "string"
+                        },
+                        "hay_mas": {
+                          "type": "boolean",
+                          "description": "Si hay más renglones después de esta página"
+                        }
+                      },
+                      "required": [
+                        "renglones",
+                        "cursor",
+                        "hay_mas"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/inventario.aduana_despacho": {
+      "get": {
+        "tags": [
+          "inventario"
+        ],
+        "description": "Lo que está en aduana por destino (Tienda 1, Tienda 2, Clientes externos y Bodega), sin los pedidos en línea ni lo que espera a Calidad\n\nPermiso: departamento aduana.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "grupos": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "carril": {
+                                "type": "string",
+                                "description": "El destino: el código de su ubicación (`T1`, `T2`, `BOD`), `externos`, `linea`, `calidad` o `proveedor`"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "resumen": {
+                                "type": "string",
+                                "description": "«{n} por despachar · {m} piezas»"
+                              },
+                              "renglones": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "traspaso_id": {
+                                      "type": "string",
+                                      "format": "uuid",
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                    },
+                                    "folio": {
+                                      "type": "string",
+                                      "description": "El A-"
+                                    },
+                                    "version": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991,
+                                      "description": "La versión del traspaso, para despacharlo"
+                                    },
+                                    "titulo": {
+                                      "type": "string",
+                                      "description": "Qué es: la prenda, «Nota {NV} · {prendas}», «Solicitud de {tienda}»…"
+                                    },
+                                    "detalle": {
+                                      "type": "string",
+                                      "description": "Su detalle: «{cliente} · {PE} · sin nota», «Reabasto de {tienda}»…"
+                                    },
+                                    "cantidad": {
+                                      "type": "string",
+                                      "description": "«{n} piezas», «{n} m» o «{n} {unidad}»"
+                                    },
+                                    "piezas": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991,
+                                      "description": "Las piezas de prenda; el material no suma"
+                                    },
+                                    "carril": {
+                                      "type": "string",
+                                      "description": "El destino: el código de su ubicación (`T1`, `T2`, `BOD`), `externos`, `linea`, `calidad` o `proveedor`"
+                                    },
+                                    "destino": {
+                                      "type": "string",
+                                      "description": "A dónde va: «Tienda 1», el cliente, «Calidad decide», el proveedor"
+                                    },
+                                    "llego": {
+                                      "type": "string",
+                                      "description": "El día que llegó a aduana: «13 oct»"
+                                    },
+                                    "antiguedad": {
+                                      "type": "object",
+                                      "properties": {
+                                        "texto": {
+                                          "type": "string"
+                                        },
+                                        "color": {
+                                          "type": "string",
+                                          "enum": [
+                                            "rojo",
+                                            "ambar",
+                                            "azul",
+                                            "verde",
+                                            "gris",
+                                            "morado",
+                                            "verde-azulado",
+                                            "naranja"
+                                          ],
+                                          "description": "El color del cuadro del estado"
+                                        }
+                                      },
+                                      "required": [
+                                        "texto",
+                                        "color"
+                                      ],
+                                      "additionalProperties": false,
+                                      "description": "«Llegó hoy», «1 día en aduana», «{n} días en aduana», en verde, ámbar o rojo"
+                                    },
+                                    "sale": {
+                                      "nullable": true,
+                                      "description": "«Sale hoy» o «Sale mañana» (rojo), si su salida es hoy, mañana o ya pasó",
+                                      "type": "string"
+                                    },
+                                    "fecha_salida": {
+                                      "nullable": true,
+                                      "description": "El día en que la esperan, en ISO; nada si no tiene fecha",
+                                      "type": "string"
+                                    },
+                                    "etiquetas_por_imprimir": {
+                                      "type": "boolean",
+                                      "description": "Lo recibido del taller y los rollos, hasta que se imprimen"
+                                    },
+                                    "boton": {
+                                      "type": "string",
+                                      "enum": [
+                                        "despachar",
+                                        "sin_nota",
+                                        "ver_pedido",
+                                        "ver",
+                                        "devolver"
+                                      ],
+                                      "description": "«Despachar», «Sin nota», «Ver pedido» (en línea), «Ver» (Calidad) o «Devolver al proveedor»"
+                                    },
+                                    "devolucion": {
+                                      "nullable": true,
+                                      "description": "Solo en lo que regresa a un proveedor: lo que lleva su ventana «Devolver a {proveedor}»",
+                                      "type": "object",
+                                      "properties": {
+                                        "proveedor": {
+                                          "type": "string"
+                                        },
+                                        "material": {
+                                          "type": "string"
+                                        },
+                                        "orden": {
+                                          "type": "string",
+                                          "description": "El folio OC-"
+                                        },
+                                        "cantidad": {
+                                          "type": "string",
+                                          "description": "Lo que regresa, en su unidad"
+                                        },
+                                        "unidad": {
+                                          "type": "string"
+                                        },
+                                        "es_tela": {
+                                          "type": "boolean"
+                                        },
+                                        "rollos": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "object",
+                                            "properties": {
+                                              "rollo_id": {
+                                                "type": "string",
+                                                "format": "uuid",
+                                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                              },
+                                              "folio": {
+                                                "type": "string"
+                                              },
+                                              "metros": {
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": [
+                                              "rollo_id",
+                                              "folio",
+                                              "metros"
+                                            ],
+                                            "additionalProperties": false
+                                          },
+                                          "description": "Si es tela: los rollos de esa orden que están en aduana"
+                                        }
+                                      },
+                                      "required": [
+                                        "proveedor",
+                                        "material",
+                                        "orden",
+                                        "cantidad",
+                                        "unidad",
+                                        "es_tela",
+                                        "rollos"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "required": [
+                                    "traspaso_id",
+                                    "folio",
+                                    "version",
+                                    "titulo",
+                                    "detalle",
+                                    "cantidad",
+                                    "piezas",
+                                    "carril",
+                                    "destino",
+                                    "llego",
+                                    "antiguedad",
+                                    "sale",
+                                    "fecha_salida",
+                                    "etiquetas_por_imprimir",
+                                    "boton",
+                                    "devolucion"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "required": [
+                              "carril",
+                              "nombre",
+                              "resumen",
+                              "renglones"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "grupos"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/inventario.inventario_en_aduana": {
+      "get": {
+        "tags": [
+          "inventario"
+        ],
+        "description": "El cuadre de las piezas de prenda por ubicación y lo que está en aduana, de lo más viejo a lo más nuevo\n\nPermiso: departamento aduana.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "description": "El cursor que regresó la página anterior; opaco"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "in": "query",
+            "name": "limite",
+            "required": false,
+            "description": "Cuántos renglones, hasta 100"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "cuadre": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "piezas": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "resaltada": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "nombre",
+                              "piezas",
+                              "resaltada"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Aduana, Bodega, las tiendas, Taller, Tránsito y En camino a aduana"
+                        },
+                        "total": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "renglones": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "traspaso_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "folio": {
+                                "type": "string",
+                                "description": "El A-"
+                              },
+                              "version": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991,
+                                "description": "La versión del traspaso, para despacharlo"
+                              },
+                              "titulo": {
+                                "type": "string",
+                                "description": "Qué es: la prenda, «Nota {NV} · {prendas}», «Solicitud de {tienda}»…"
+                              },
+                              "detalle": {
+                                "type": "string",
+                                "description": "Su detalle: «{cliente} · {PE} · sin nota», «Reabasto de {tienda}»…"
+                              },
+                              "cantidad": {
+                                "type": "string",
+                                "description": "«{n} piezas», «{n} m» o «{n} {unidad}»"
+                              },
+                              "piezas": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991,
+                                "description": "Las piezas de prenda; el material no suma"
+                              },
+                              "carril": {
+                                "type": "string",
+                                "description": "El destino: el código de su ubicación (`T1`, `T2`, `BOD`), `externos`, `linea`, `calidad` o `proveedor`"
+                              },
+                              "destino": {
+                                "type": "string",
+                                "description": "A dónde va: «Tienda 1», el cliente, «Calidad decide», el proveedor"
+                              },
+                              "llego": {
+                                "type": "string",
+                                "description": "El día que llegó a aduana: «13 oct»"
+                              },
+                              "antiguedad": {
+                                "type": "object",
+                                "properties": {
+                                  "texto": {
+                                    "type": "string"
+                                  },
+                                  "color": {
+                                    "type": "string",
+                                    "enum": [
+                                      "rojo",
+                                      "ambar",
+                                      "azul",
+                                      "verde",
+                                      "gris",
+                                      "morado",
+                                      "verde-azulado",
+                                      "naranja"
+                                    ],
+                                    "description": "El color del cuadro del estado"
+                                  }
+                                },
+                                "required": [
+                                  "texto",
+                                  "color"
+                                ],
+                                "additionalProperties": false,
+                                "description": "«Llegó hoy», «1 día en aduana», «{n} días en aduana», en verde, ámbar o rojo"
+                              },
+                              "sale": {
+                                "nullable": true,
+                                "description": "«Sale hoy» o «Sale mañana» (rojo), si su salida es hoy, mañana o ya pasó",
+                                "type": "string"
+                              },
+                              "fecha_salida": {
+                                "nullable": true,
+                                "description": "El día en que la esperan, en ISO; nada si no tiene fecha",
+                                "type": "string"
+                              },
+                              "etiquetas_por_imprimir": {
+                                "type": "boolean",
+                                "description": "Lo recibido del taller y los rollos, hasta que se imprimen"
+                              },
+                              "boton": {
+                                "type": "string",
+                                "enum": [
+                                  "despachar",
+                                  "sin_nota",
+                                  "ver_pedido",
+                                  "ver",
+                                  "devolver"
+                                ],
+                                "description": "«Despachar», «Sin nota», «Ver pedido» (en línea), «Ver» (Calidad) o «Devolver al proveedor»"
+                              },
+                              "devolucion": {
+                                "nullable": true,
+                                "description": "Solo en lo que regresa a un proveedor: lo que lleva su ventana «Devolver a {proveedor}»",
+                                "type": "object",
+                                "properties": {
+                                  "proveedor": {
+                                    "type": "string"
+                                  },
+                                  "material": {
+                                    "type": "string"
+                                  },
+                                  "orden": {
+                                    "type": "string",
+                                    "description": "El folio OC-"
+                                  },
+                                  "cantidad": {
+                                    "type": "string",
+                                    "description": "Lo que regresa, en su unidad"
+                                  },
+                                  "unidad": {
+                                    "type": "string"
+                                  },
+                                  "es_tela": {
+                                    "type": "boolean"
+                                  },
+                                  "rollos": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "rollo_id": {
+                                          "type": "string",
+                                          "format": "uuid",
+                                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                        },
+                                        "folio": {
+                                          "type": "string"
+                                        },
+                                        "metros": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "rollo_id",
+                                        "folio",
+                                        "metros"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    "description": "Si es tela: los rollos de esa orden que están en aduana"
+                                  }
+                                },
+                                "required": [
+                                  "proveedor",
+                                  "material",
+                                  "orden",
+                                  "cantidad",
+                                  "unidad",
+                                  "es_tela",
+                                  "rollos"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "required": [
+                              "traspaso_id",
+                              "folio",
+                              "version",
+                              "titulo",
+                              "detalle",
+                              "cantidad",
+                              "piezas",
+                              "carril",
+                              "destino",
+                              "llego",
+                              "antiguedad",
+                              "sale",
+                              "fecha_salida",
+                              "etiquetas_por_imprimir",
+                              "boton",
+                              "devolucion"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Los renglones de esta página"
+                        },
+                        "cursor": {
+                          "nullable": true,
+                          "description": "El cursor para pedir la página siguiente; nulo si no hay más",
+                          "type": "string"
+                        },
+                        "hay_mas": {
+                          "type": "boolean",
+                          "description": "Si hay más renglones después de esta página"
+                        }
+                      },
+                      "required": [
+                        "cuadre",
+                        "total",
+                        "renglones",
+                        "cursor",
+                        "hay_mas"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/inventario.en_transito": {
+      "get": {
+        "tags": [
+          "inventario"
+        ],
+        "description": "Los despachos que su destino no ha confirmado, el más nuevo primero\n\nPermiso: departamento aduana.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "description": "El cursor que regresó la página anterior; opaco"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "in": "query",
+            "name": "limite",
+            "required": false,
+            "description": "Cuántos renglones, hasta 100"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "renglones": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "despacho_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "folio": {
+                                "type": "string"
+                              },
+                              "version": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "salio": {
+                                "type": "string",
+                                "description": "El día que salió: «13 oct»"
+                              },
+                              "que": {
+                                "type": "string",
+                                "description": "Qué salió"
+                              },
+                              "a": {
+                                "type": "string",
+                                "description": "«A {destino o cliente}»"
+                              },
+                              "cantidad": {
+                                "type": "string"
+                              },
+                              "debe_confirmar": {
+                                "type": "string",
+                                "description": "«Bodega», «Encargada de {tienda}» o el cliente, con «· {n} recordatorios»"
+                              },
+                              "sin_confirmar": {
+                                "type": "object",
+                                "properties": {
+                                  "texto": {
+                                    "type": "string"
+                                  },
+                                  "color": {
+                                    "type": "string",
+                                    "enum": [
+                                      "rojo",
+                                      "ambar",
+                                      "azul",
+                                      "verde",
+                                      "gris",
+                                      "morado",
+                                      "verde-azulado",
+                                      "naranja"
+                                    ],
+                                    "description": "El color del cuadro del estado"
+                                  }
+                                },
+                                "required": [
+                                  "texto",
+                                  "color"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "boton": {
+                                "type": "string",
+                                "enum": [
+                                  "confirmar_nota",
+                                  "confirmar_tienda",
+                                  "recordar"
+                                ]
+                              },
+                              "tienda": {
+                                "nullable": true,
+                                "description": "La tienda sin caja, para «Confirmar entrega en {tienda}»",
+                                "type": "string"
+                              },
+                              "nota": {
+                                "nullable": true,
+                                "description": "La nota de entrega, sin su total",
+                                "type": "object",
+                                "properties": {
+                                  "nota_id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "folio": {
+                                    "type": "string"
+                                  },
+                                  "version": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "cliente": {
+                                    "type": "string"
+                                  },
+                                  "piezas": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  }
+                                },
+                                "required": [
+                                  "nota_id",
+                                  "folio",
+                                  "version",
+                                  "cliente",
+                                  "piezas"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "renglones": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "traspaso_linea_id": {
+                                      "type": "string",
+                                      "format": "uuid",
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                    },
+                                    "prenda": {
+                                      "type": "string"
+                                    },
+                                    "piezas": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    }
+                                  },
+                                  "required": [
+                                    "traspaso_linea_id",
+                                    "prenda",
+                                    "piezas"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "description": "Lo que salió por renglón, para «Llegó con diferencias» de una tienda sin caja"
+                              }
+                            },
+                            "required": [
+                              "despacho_id",
+                              "folio",
+                              "version",
+                              "salio",
+                              "que",
+                              "a",
+                              "cantidad",
+                              "debe_confirmar",
+                              "sin_confirmar",
+                              "boton",
+                              "tienda",
+                              "nota",
+                              "renglones"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Los renglones de esta página"
+                        },
+                        "cursor": {
+                          "nullable": true,
+                          "description": "El cursor para pedir la página siguiente; nulo si no hay más",
+                          "type": "string"
+                        },
+                        "hay_mas": {
+                          "type": "boolean",
+                          "description": "Si hay más renglones después de esta página"
+                        }
+                      },
+                      "required": [
+                        "renglones",
+                        "cursor",
+                        "hay_mas"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/inventario.aduana_historial": {
+      "get": {
+        "tags": [
+          "inventario"
+        ],
+        "description": "Todo lo que entró y salió de aduana, lo más reciente primero\n\nPermiso: departamento aduana.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "description": "El cursor que regresó la página anterior; opaco"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "in": "query",
+            "name": "limite",
+            "required": false,
+            "description": "Cuántos renglones, hasta 100"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "renglones": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "clave": {
+                                "type": "string"
+                              },
+                              "fecha": {
+                                "type": "string",
+                                "description": "«13 oct»"
+                              },
+                              "movimiento": {
+                                "type": "object",
+                                "properties": {
+                                  "texto": {
+                                    "type": "string"
+                                  },
+                                  "color": {
+                                    "type": "string",
+                                    "enum": [
+                                      "rojo",
+                                      "ambar",
+                                      "azul",
+                                      "verde",
+                                      "gris",
+                                      "morado",
+                                      "verde-azulado",
+                                      "naranja"
+                                    ],
+                                    "description": "El color del cuadro del estado"
+                                  }
+                                },
+                                "required": [
+                                  "texto",
+                                  "color"
+                                ],
+                                "additionalProperties": false,
+                                "description": "«Entró» (verde) o «Salió» (ámbar)"
+                              },
+                              "referencia": {
+                                "type": "string",
+                                "description": "El folio"
+                              },
+                              "que": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "clave",
+                              "fecha",
+                              "movimiento",
+                              "referencia",
+                              "que"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Los renglones de esta página"
+                        },
+                        "cursor": {
+                          "nullable": true,
+                          "description": "El cursor para pedir la página siguiente; nulo si no hay más",
+                          "type": "string"
+                        },
+                        "hay_mas": {
+                          "type": "boolean",
+                          "description": "Si hay más renglones después de esta página"
+                        }
+                      },
+                      "required": [
+                        "renglones",
+                        "cursor",
+                        "hay_mas"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/inventario.detalle_recibir_taller": {
+      "get": {
+        "tags": [
+          "inventario"
+        ],
+        "description": "El cajón Recibir del taller: las tallas que revisó Calidad, para contarlas a ciegas, y a dónde van\n\nPermiso: departamento aduana.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "lote_id",
+            "required": true,
+            "description": "El lote revisado"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "lote_id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "folio": {
+                          "type": "string"
+                        },
+                        "prenda": {
+                          "type": "string"
+                        },
+                        "va_a": {
+                          "type": "string",
+                          "description": "«{destino}» o «{destino} y Bodega» si parte va a Bodega"
+                        },
+                        "recibido": {
+                          "type": "boolean",
+                          "description": "Si ya se recibió en aduana"
+                        },
+                        "tallas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "variante_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "talla": {
+                                "type": "string"
+                              },
+                              "parte_a_bodega": {
+                                "type": "boolean",
+                                "description": "«Parte va a bodega»"
+                              }
+                            },
+                            "required": [
+                              "variante_id",
+                              "talla",
+                              "parte_a_bodega"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Sin lo aprobado: el conteo es a ciegas"
+                        }
+                      },
+                      "required": [
+                        "lote_id",
+                        "folio",
+                        "prenda",
+                        "va_a",
+                        "recibido",
+                        "tallas"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/inventario.detalle_recibir_material": {
+      "get": {
+        "tags": [
+          "inventario"
+        ],
+        "description": "El cajón Recibir material: lo que le falta a cada línea de una orden de compra, sin precios\n\nPermiso: departamento aduana.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "orden_compra_id",
+            "required": true,
+            "description": "La orden"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "orden_compra_id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "folio": {
+                          "type": "string"
+                        },
+                        "proveedor": {
+                          "type": "string"
+                        },
+                        "se_puede_recibir": {
+                          "type": "boolean",
+                          "description": "Si está enviada o recibida en parte"
+                        },
+                        "materiales": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "orden_compra_linea_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "material": {
+                                "type": "string"
+                              },
+                              "es_tela": {
+                                "type": "boolean"
+                              },
+                              "unidad": {
+                                "type": "string"
+                              },
+                              "entera": {
+                                "type": "boolean",
+                                "description": "Si su unidad se cuenta entera"
+                              },
+                              "faltaban": {
+                                "type": "string",
+                                "description": "Lo que faltaba, en su unidad"
+                              }
+                            },
+                            "required": [
+                              "orden_compra_linea_id",
+                              "material",
+                              "es_tela",
+                              "unidad",
+                              "entera",
+                              "faltaban"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Las líneas a las que les falta algo"
+                        }
+                      },
+                      "required": [
+                        "orden_compra_id",
+                        "folio",
+                        "proveedor",
+                        "se_puede_recibir",
+                        "materiales"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/inventario.detalle_recibir_en_camino": {
+      "get": {
+        "tags": [
+          "inventario"
+        ],
+        "description": "El cajón Recibir lo que viene en camino: lo que mandó Bodega, una devolución de un cliente o un reproceso (a ciegas)\n\nPermiso: departamento aduana.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "traspaso_id",
+            "required": false,
+            "description": "Lo que viene en camino, o la devolución de un cliente"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "reproceso_id",
+            "required": false,
+            "description": "Un reproceso aprobado"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "tipo": {
+                          "type": "string",
+                          "enum": [
+                            "camino",
+                            "devolucion",
+                            "reproceso"
+                          ]
+                        },
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                          "description": "El traspaso o el reproceso"
+                        },
+                        "version": {
+                          "nullable": true,
+                          "description": "La del traspaso; un reproceso no la pide",
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "folio": {
+                          "type": "string"
+                        },
+                        "de": {
+                          "type": "string",
+                          "description": "Bodega, la tienda, Calidad o el cliente"
+                        },
+                        "que": {
+                          "type": "string",
+                          "description": "Lo que es"
+                        },
+                        "mandaron": {
+                          "type": "string",
+                          "description": "Cuánto mandaron; en un reproceso, vacío: se cuenta a ciegas"
+                        },
+                        "salio": {
+                          "type": "string",
+                          "description": "Cuándo salió"
+                        },
+                        "va_a": {
+                          "type": "string",
+                          "description": "A dónde va"
+                        },
+                        "recibido": {
+                          "type": "boolean",
+                          "description": "Si ya se recibió"
+                        },
+                        "renglones": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "traspaso_linea_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "prenda": {
+                                "type": "string",
+                                "description": "La prenda y talla, o el material"
+                              },
+                              "es_material": {
+                                "type": "boolean"
+                              },
+                              "mandaron": {
+                                "type": "string",
+                                "description": "Las piezas o la cantidad"
+                              }
+                            },
+                            "required": [
+                              "traspaso_linea_id",
+                              "prenda",
+                              "es_material",
+                              "mandaron"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Vacío en un reproceso"
+                        },
+                        "defectos": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "defecto_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "defecto_id",
+                              "nombre"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "El catálogo de defectos, para una devolución"
+                        }
+                      },
+                      "required": [
+                        "tipo",
+                        "id",
+                        "version",
+                        "folio",
+                        "de",
+                        "que",
+                        "mandaron",
+                        "salio",
+                        "va_a",
+                        "recibido",
+                        "renglones",
+                        "defectos"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/inventario.detalle_despachar": {
+      "get": {
+        "tags": [
+          "inventario"
+        ],
+        "description": "El cajón Despachar: lo que sale, por qué no puede salir si es el caso, lo que se puede juntar y sus etiquetas\n\nPermiso: departamento aduana.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "traspaso_id",
+            "required": true,
+            "description": "Lo que está en aduana"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "traspaso_id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "folio": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "titulo": {
+                          "type": "string"
+                        },
+                        "destino": {
+                          "type": "string",
+                          "description": "«A {destino}»: la tienda, Bodega, el cliente o Calidad"
+                        },
+                        "carril": {
+                          "type": "string",
+                          "description": "El destino: el código de su ubicación (`T1`, `T2`, `BOD`), `externos`, `linea`, `calidad` o `proveedor`"
+                        },
+                        "cantidad": {
+                          "type": "string"
+                        },
+                        "salen": {
+                          "type": "string",
+                          "description": "«salen» o «esperan nota»"
+                        },
+                        "antiguedad": {
+                          "type": "string",
+                          "description": "«3 días en aduana»"
+                        },
+                        "desde": {
+                          "type": "string",
+                          "description": "«desde el {fecha}»"
+                        },
+                        "la_esperan": {
+                          "nullable": true,
+                          "description": "La fecha en que la esperan, o nada: «sin fecha»",
+                          "type": "string"
+                        },
+                        "antiguedad_color": {
+                          "type": "string",
+                          "enum": [
+                            "rojo",
+                            "ambar",
+                            "azul",
+                            "verde",
+                            "gris",
+                            "morado",
+                            "verde-azulado",
+                            "naranja"
+                          ],
+                          "description": "El color del cuadro del estado"
+                        },
+                        "dato_destino": {
+                          "type": "string",
+                          "description": "Destino (y el cliente)"
+                        },
+                        "que_es": {
+                          "type": "string"
+                        },
+                        "caso": {
+                          "type": "string",
+                          "enum": [
+                            "sin_nota",
+                            "nota",
+                            "lote",
+                            "calidad",
+                            "devolucion_pendiente",
+                            "en_linea",
+                            "proveedor",
+                            "otro"
+                          ],
+                          "description": "Qué muestra el cajón"
+                        },
+                        "aviso": {
+                          "nullable": true,
+                          "description": "Por qué no sale: «Sin nota de entrega no sale…», «{folio} espera la revisión de Calidad»…",
+                          "type": "string"
+                        },
+                        "pedido": {
+                          "nullable": true,
+                          "description": "El pedido, para «Ver pedido {PE}» (solo con Ventas a externos)",
+                          "type": "object",
+                          "properties": {
+                            "pedido_id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "folio": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "pedido_id",
+                            "folio"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "nota": {
+                          "nullable": true,
+                          "description": "La nota de entrega, sin precios",
+                          "type": "object",
+                          "properties": {
+                            "folio": {
+                              "type": "string"
+                            },
+                            "pedido": {
+                              "type": "string"
+                            },
+                            "cliente": {
+                              "type": "string"
+                            },
+                            "direccion": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "folio",
+                            "pedido",
+                            "cliente",
+                            "direccion"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "por_talla": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "prenda": {
+                                "type": "string"
+                              },
+                              "tallas": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "talla": {
+                                      "type": "string"
+                                    },
+                                    "piezas": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    }
+                                  },
+                                  "required": [
+                                    "talla",
+                                    "piezas"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "piezas": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "prenda",
+                              "tallas",
+                              "piezas"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "La tabla por talla; vacía en lo demás"
+                        },
+                        "total": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "juntar": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "traspaso_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "version": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "folio": {
+                                "type": "string"
+                              },
+                              "titulo": {
+                                "type": "string"
+                              },
+                              "cantidad": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "traspaso_id",
+                              "version",
+                              "folio",
+                              "titulo",
+                              "cantidad"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Lo que también está en aduana para ese destino y puede salir ahora"
+                        },
+                        "etiquetas": {
+                          "nullable": true,
+                          "description": "«Etiquetas por imprimir» o «Impresas el {fecha}», si las lleva",
+                          "type": "object",
+                          "properties": {
+                            "estado": {
+                              "type": "object",
+                              "properties": {
+                                "texto": {
+                                  "type": "string"
+                                },
+                                "color": {
+                                  "type": "string",
+                                  "enum": [
+                                    "rojo",
+                                    "ambar",
+                                    "azul",
+                                    "verde",
+                                    "gris",
+                                    "morado",
+                                    "verde-azulado",
+                                    "naranja"
+                                  ],
+                                  "description": "El color del cuadro del estado"
+                                }
+                              },
+                              "required": [
+                                "texto",
+                                "color"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "impresas": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "estado",
+                            "impresas"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "queda_en_camino": {
+                          "nullable": true,
+                          "description": "«Queda en camino hasta que {destino} confirme que lo recibió.»",
+                          "type": "string"
+                        },
+                        "boton": {
+                          "nullable": true,
+                          "description": "«Despachar a {destino o cliente}», si puede salir",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "traspaso_id",
+                        "folio",
+                        "version",
+                        "titulo",
+                        "destino",
+                        "carril",
+                        "cantidad",
+                        "salen",
+                        "antiguedad",
+                        "desde",
+                        "la_esperan",
+                        "antiguedad_color",
+                        "dato_destino",
+                        "que_es",
+                        "caso",
+                        "aviso",
+                        "pedido",
+                        "nota",
+                        "por_talla",
+                        "total",
+                        "juntar",
+                        "etiquetas",
+                        "queda_en_camino",
+                        "boton"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/consultas/linea.pendientes": {
       "get": {
         "tags": [

@@ -30,6 +30,7 @@ import { tomarVersion, versionActual } from "../../../nucleo/acciones/pisadas.ts
 import { ErrorDeApi, errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeAccion, implementarAccion } from "../../../nucleo/modulos.ts";
 import { tomarCandadosDeInventario } from "../dominio/candados.ts";
+import { tiposConEtiquetas } from "../dominio/despachos.ts";
 import { abrirDiferencia } from "../dominio/diferencias.ts";
 import { escribirMovimiento, type RenglonDeMovimiento } from "../dominio/escribir-movimiento.ts";
 import { candadoDeLoRecibido, ordenesDeCompras, ubicacionDeTipo, ubicacionPorId } from "../dominio/recepciones.ts";
@@ -58,16 +59,6 @@ type LineaDeTraspaso = typeof traspasoLineas.$inferSelect;
 
 /** Un despacho como se guarda. */
 type Despacho = typeof despachos.$inferSelect;
-
-/** Los tipos de traspaso que salen con etiquetas: los lotes, los reprocesos y los rollos de un proveedor. */
-const conEtiquetas = new Set([
-	"lote_cliente",
-	"lote_reabasto",
-	"lote_temporada",
-	"lote_pedido_especial",
-	"reproceso",
-	"material_proveedor",
-]);
 
 /** Lo que queda de un renglón en aduana (o lo que salió en tránsito): lo recibido en aduana menos lo repartido. */
 function enAduana(linea: LineaDeTraspaso): { piezas: number; milesimos: bigint } {
@@ -398,7 +389,8 @@ export const accionMarcarEtiquetasImpresas = implementarAccion(
 			traspaso_id: traspaso.id,
 			etiquetas_impresas_en: traspaso.etiquetasImpresasEn,
 		}));
-		if (!conEtiquetas.has(traspaso.tipo)) throw errorDeRegla("sin_etiquetas", `${traspaso.folio} no lleva etiquetas.`);
+		if (!tiposConEtiquetas.has(traspaso.tipo))
+			throw errorDeRegla("sin_etiquetas", `${traspaso.folio} no lleva etiquetas.`);
 		// Se anotan al mandarlas: si la Zebra falla, el aviso lo dice y se usa el PDF.
 		if (datos.destino === "impresora") {
 			await contexto.interna("admin.mandar_a_imprimir", {

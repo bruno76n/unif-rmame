@@ -15,7 +15,7 @@ import { sql } from "drizzle-orm";
 import type { Temporal } from "temporal-polyfill";
 import { z } from "zod";
 import type { QuienLlama } from "../../../nucleo/acceso/quien.ts";
-import { cursorDe, leerCursor } from "../../../nucleo/http/consultas.ts";
+import { paginarLista } from "../../../nucleo/http/consultas.ts";
 import type { ContextoDeConsulta } from "../../../nucleo/modulos.ts";
 import { leerTramos } from "../dominio/antiguedad.ts";
 import type { CuentaParaPagar } from "../dominio/saldo-por-pagar.ts";
@@ -104,10 +104,7 @@ export function dondeSeRecibio(medio: string, tercero: string | null): string {
  * @param cursor Dónde empieza: el cursor opaco que regresó la página anterior (`nucleo/http/consultas.ts`).
  */
 export function paginar<Renglon>(lista: readonly Renglon[], cursor: string | undefined) {
-	const desde = Number(leerCursor(cursor)?.desde ?? 0);
-	const hasta = desde + renglonesPorPagina;
-	const hayMas = lista.length > hasta;
-	return { renglones: lista.slice(desde, hasta), cursor: hayMas ? cursorDe({ desde: hasta }) : null, hay_mas: hayMas };
+	return paginarLista(lista, cursor, renglonesPorPagina);
 }
 
 /**

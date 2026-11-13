@@ -17,7 +17,7 @@ import {
 } from "@uniformame/compartido/contratos/inventario/bodega";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
-import { cursorDe, leerCursor } from "../../../nucleo/http/consultas.ts";
+import { paginarLista } from "../../../nucleo/http/consultas.ts";
 import { implementarConsulta } from "../../../nucleo/modulos.ts";
 import { de, leerReabasto, type ReabastoLeido } from "./bodega-comun.ts";
 
@@ -188,9 +188,7 @@ export const consultaExistencias = implementarConsulta(existenciasDeBodega, asyn
 			productos.set(productoId, producto);
 		}
 		const todos = [...productos.values()];
-		const desde = Number(leerCursor(parametros.cursor)?.desde ?? 0);
-		const limite = parametros.limite ?? limitePorOmision;
-		const hasta = desde + limite;
+		const pagina = paginarLista(todos, parametros.cursor, parametros.limite ?? limitePorOmision);
 		const { rows: secciones } = await accion.transaccion.execute(sql`SELECT id, nombre FROM secciones ORDER BY orden`);
 		const { rows: escuelas } = await accion.transaccion.execute(sql`
 			SELECT DISTINCT es.id, es.nombre FROM escuelas es JOIN productos p ON p.escuela_id = es.id ORDER BY es.nombre`);
@@ -202,9 +200,7 @@ export const consultaExistencias = implementarConsulta(existenciasDeBodega, asyn
 				variantes: variantes.length,
 				piezas: variantes.reduce((suma, { cuentas }) => suma + cuentas.total, 0),
 			},
-			renglones: todos.slice(desde, hasta),
-			cursor: hasta < todos.length ? cursorDe({ desde: hasta }) : null,
-			hay_mas: hasta < todos.length,
+			...pagina,
 		};
 	}),
 }));

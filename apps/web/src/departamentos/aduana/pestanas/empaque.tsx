@@ -1,0 +1,98 @@
+/**
+ * Empaque en línea: los pedidos en línea con `linea.pedidos`, con el recorte de Aduana (sin precios, totales ni datos
+ * del pago). Dos columnas con su conteo: «Esperando prendas» (ámbar), cada W- con su folio y fecha, el destinatario y
+ * su municipio y cada prenda con palomita y «En aduana» o con reloj y dónde viene, y abajo «Falta {n} de {m}»; y
+ * «Listos para empacar» (verde azulado). Abajo, la nota de lo que llega con uniformame.mx. Sin botones.
+ * Fase 19 · docs/interfaz/fabrica/aduana.md («Empaque en línea»)
+ */
+
+import type { pedidosLinea } from "@uniformame/compartido/contratos/linea/consultas";
+import { Tarjeta } from "@uniformame/interfaz/contenedores/tarjeta";
+import { Estado } from "@uniformame/interfaz/estados/estado";
+import { EstadoDePantalla } from "@uniformame/interfaz/estados/estado-de-pantalla";
+import { TextoConTono } from "@uniformame/interfaz/estados/textos-con-tono";
+import { Check, Clock } from "lucide-react";
+import type { z } from "zod";
+
+/** Lo que regresa `linea.pedidos`. */
+type Pedidos = z.infer<typeof pedidosLinea.resultado>;
+
+/** Una columna del tablero. */
+type Columna = Pedidos["columnas"][number];
+
+/** Un W- de una columna. */
+type PedidoEnLinea = Columna["pedidos"][number];
+
+/** Las dos columnas de Aduana, en su orden. */
+const columnasDeEmpaque = ["esperando_prendas", "listo_para_empacar"] as const;
+
+/**
+ * Un pedido en línea: su folio y fecha, a quién va y cada prenda con dónde está; si espera prendas, cuántas faltan.
+ * @param props El W- y si todavía espera prendas.
+ */
+function TarjetaDeEmpaque({ pedido, esperando }: { pedido: PedidoEnLinea; esperando: boolean }) {
+	const total = pedido.prendas.reduce((suma, prenda) => suma + prenda.piezas, 0);
+	const faltan = pedido.prendas.filter((prenda) => !prenda.en_aduana).reduce((suma, prenda) => suma + prenda.piezas, 0);
+	return (
+		<Tarjeta nombre={`Pedido en línea ${pedido.folio}`}>
+			<span className="flex items-baseline justify-between gap-2">
+				<b>{pedido.folio}</b>
+				<span className="text-etiqueta text-tinta3">{pedido.fecha}</span>
+			</span>
+			<span className="text-tinta2">{`${pedido.cliente} · ${pedido.municipio}`}</span>
+			<ul className="m-0 flex list-none flex-col gap-1 p-0">
+				{pedido.prendas.map((prenda) => (
+					<li key={`${prenda.prenda}-${prenda.talla}`} className="flex items-center gap-2 text-etiqueta">
+						{prenda.en_aduana ? (
+							<Check size={13} strokeWidth={1.9} aria-hidden />
+						) : (
+							<Clock size={13} strokeWidth={1.9} aria-hidden />
+						)}
+						<span>{`${prenda.prenda} · ${prenda.talla}`}</span>
+						<span className="ml-auto text-tinta3">
+							{prenda.en_aduana ? "En aduana" : (prenda.donde ?? "En camino desde Bodega")}
+						</span>
+					</li>
+				))}
+			</ul>
+			{esperando ? <TextoConTono tono="ambar">{`Falta ${faltan} de ${total}`}</TextoConTono> : null}
+		</Tarjeta>
+	);
+}
+
+/**
+ * Empaque en línea.
+ * @param props Lo que regresa `linea.pedidos`.
+ */
+export function EmpaqueDeAduana({ datos }: { datos: Pedidos }) {
+	const columnas = columnasDeEmpaque.flatMap((estado) => datos.columnas.filter((columna) => columna.estado === estado));
+	const cuantos = columnas.reduce((suma, columna) => suma + columna.pedidos.length, 0);
+	return (
+		<div className="flex flex-col gap-5">
+			{cuantos === 0 ? (
+				<EstadoDePantalla tipo="vacio" texto="Ningún pedido en línea en aduana" />
+			) : (
+				<div className="grid grid-cols-2 items-start gap-4 max-telefono:grid-cols-1">
+					{columnas.map((columna) => (
+						<section key={columna.estado} aria-label={columna.texto} className="flex flex-col gap-3">
+							<header className="flex items-center gap-3">
+								<Estado texto={columna.texto} color={columna.color} />
+								<span className="text-tinta3 tabular-nums">{columna.pedidos.length}</span>
+							</header>
+							{columna.pedidos.map((pedido) => (
+								<TarjetaDeEmpaque
+									key={pedido.pedido_linea_id}
+									pedido={pedido}
+									esperando={columna.estado === "esperando_prendas"}
+								/>
+							))}
+						</section>
+					))}
+				</div>
+			)}
+			<p className="m-0 text-etiqueta text-tinta3">
+				Empacar, pedir la guía y entregar a la paquetería llegan con uniformame.mx.
+			</p>
+		</div>
+	);
+}

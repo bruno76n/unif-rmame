@@ -7,6 +7,7 @@
  * minimos-y-reabasto.md
  * Fase 19 · docs/interfaz/fabrica/direccion.md (la consulta `inventario.ultimo_cuadre`) y
  * docs/interfaz/fabrica/tienda-en-linea.md (la consulta y la lectura `inventario.disponibilidad_linea`)
+ * Fase 19 · docs/interfaz/fabrica/aduana.md (las consultas de las pantallas de Aduana)
  *
  * Las ubicaciones nacen en la fase 4 porque las usan antes los parámetros, las impresoras, las cuentas,
  * los aparatos y las personas; sus responsables nacen vacíos. El libro no tiene acciones propias: lo escribe
@@ -35,17 +36,28 @@ import { accionRecibirDelTaller, accionRecibirReproceso } from "./acciones/recib
 import { accionRecibirEnAduana } from "./acciones/recibir-en-aduana.ts";
 import { accionResolverExcepcion } from "./acciones/resolver-excepcion.ts";
 import { accionSurtirAAduana } from "./acciones/surtir-a-aduana.ts";
+import { consultaDespachoDeAduana } from "./consultas/aduana-despacho.ts";
+import { consultaHistorialDeAduana } from "./consultas/aduana-historial.ts";
+import { consultaRecepcionDeAduana } from "./consultas/aduana-recepcion.ts";
+import { consultaAnden } from "./consultas/anden.ts";
 import { consultaPendientesDeBodega } from "./consultas/bodega-pendientes.ts";
 import { consultaConteosYAjustes } from "./consultas/conteos-y-ajustes.ts";
 import { consultaDetalleDeConteo } from "./consultas/detalle-conteo.ts";
+import { consultaDetalleDespachar } from "./consultas/detalle-despachar.ts";
 import { consultaDetalleDeEntregaCorte } from "./consultas/detalle-entrega-corte.ts";
 import { consultaDetalleDeLlegadaAduana } from "./consultas/detalle-llegada-aduana.ts";
+import { consultaDetalleRecibirEnCamino } from "./consultas/detalle-recibir-en-camino.ts";
+import { consultaDetalleRecibirMaterial } from "./consultas/detalle-recibir-material.ts";
+import { consultaDetalleRecibirTaller } from "./consultas/detalle-recibir-taller.ts";
 import { consultaDetalleDeVariante } from "./consultas/detalle-variante.ts";
 import { consultaDiferencias } from "./consultas/diferencias.ts";
 import { consultaDisponibilidadLinea, lecturaDisponibilidadLinea } from "./consultas/disponibilidad-linea.ts";
 import { consultaDondeEsta } from "./consultas/donde-esta.ts";
+import { consultaEnCaminoAduana } from "./consultas/en-camino-aduana.ts";
+import { consultaEnTransito } from "./consultas/en-transito.ts";
 import { consultaExcepciones } from "./consultas/excepciones.ts";
 import { consultaExistencias } from "./consultas/existencias.ts";
+import { consultaInventarioEnAduana } from "./consultas/inventario-en-aduana.ts";
 import { consultaMateriales } from "./consultas/materiales.ts";
 import { consultaMinimosVigentes } from "./consultas/minimos-vigentes.ts";
 import { consultaPastillasMenu, pastillaAduana, pastillaBodega } from "./consultas/pastillas-menu.ts";
@@ -123,6 +135,17 @@ export default definirModulo({
 		consultaDetalleDeConteo,
 		consultaDisponibilidadLinea,
 		consultaMinimosVigentes,
+		consultaAnden,
+		consultaRecepcionDeAduana,
+		consultaEnCaminoAduana,
+		consultaDespachoDeAduana,
+		consultaInventarioEnAduana,
+		consultaEnTransito,
+		consultaHistorialDeAduana,
+		consultaDetalleRecibirTaller,
+		consultaDetalleRecibirMaterial,
+		consultaDetalleRecibirEnCamino,
+		consultaDetalleDespachar,
 	],
 	pastillas: { aduana: pastillaAduana, bodega: pastillaBodega },
 	// Las ubicaciones salen en las pantallas de todos los departamentos.
