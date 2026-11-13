@@ -22,7 +22,7 @@ import {
 	recibirDespacho,
 	recordarDespacho,
 } from "@uniformame/compartido/contratos/inventario/despachos";
-import { and, asc, eq, inArray, or } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
 import { quienCambia } from "../../../nucleo/acciones/comunes.ts";
@@ -30,12 +30,16 @@ import { tomarVersion, versionActual } from "../../../nucleo/acciones/pisadas.ts
 import { ErrorDeApi, errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeAccion, implementarAccion } from "../../../nucleo/modulos.ts";
 import { tomarCandadosDeInventario } from "../dominio/candados.ts";
-import { tiposConEtiquetas } from "../dominio/despachos.ts";
+import {
+	ordenesConDevolucionPendiente,
+	porQueNoSale,
+	textoDeDevolucionPendiente,
+	tiposConEtiquetas,
+} from "../dominio/despachos.ts";
 import { abrirDiferencia } from "../dominio/diferencias.ts";
 import { escribirMovimiento, type RenglonDeMovimiento } from "../dominio/escribir-movimiento.ts";
 import { candadoDeLoRecibido, ordenesDeCompras, ubicacionDeTipo, ubicacionPorId } from "../dominio/recepciones.ts";
 import { cambiarEstadoTraspaso } from "../dominio/traspasos.ts";
-import { tiposDeDevolucionDeCliente } from "../internas/devoluciones.ts";
 import {
 	despachos,
 	diferencias,
@@ -120,54 +124,21 @@ async function nombreDe(contexto: ContextoDeAccion, ubicacionId: string): Promis
  * `sin_nota` o `devolucion_pendiente`.
  */
 async function revisarQueSalga(contexto: ContextoDeAccion, traspaso: Traspaso): Promise<void> {
-	if (traspaso.estado !== "en_aduana") {
-		throw errorDeRegla("no_esta_en_aduana", `${traspaso.folio} no está en aduana.`);
-	}
-	if (traspaso.tipo === "pedido_linea" || traspaso.destinoExterno === "cliente_linea") {
-		throw errorDeRegla("se_empaca", "Los pedidos en línea no se despachan: salen al empacarlos");
-	}
-	if (traspaso.tipo === "devolucion_proveedor" || traspaso.destinoExterno === "proveedor") {
-		throw errorDeRegla(
-			"es_devolucion_proveedor",
-			"Lo de más que regresa al proveedor sale con «Devolver al proveedor».",
-		);
-	}
-	// Lo que regresó de un cliente con defecto se queda en el padre, sin destino, hasta que Calidad lo revisa.
-	if (
-		traspaso.tipo === "devolucion_defecto" ||
-		(tiposDeDevolucionDeCliente.some((tipo) => tipo === traspaso.tipo) && traspaso.traspasoPadreId === null)
-	) {
-		throw errorDeRegla("espera_calidad", `${traspaso.folio} espera la revisión de Calidad`);
-	}
-	if (
-		traspaso.destinoExterno === "cliente_externo" &&
-		(traspaso.tipo !== "nota_entrega" || traspaso.notaEntregaId === null)
-	) {
-		throw errorDeRegla("sin_nota", "Sin nota de entrega no sale");
-	}
+	const motivo = porQueNoSale({
+		folio: traspaso.folio,
+		estado: traspaso.estado,
+		tipo: traspaso.tipo,
+		destinoExterno: traspaso.destinoExterno,
+		tienePadre: traspaso.traspasoPadreId !== null,
+		tieneNotaDeEntrega: traspaso.notaEntregaId !== null,
+	});
+	if (motivo !== null) throw errorDeRegla(motivo.codigo, motivo.mensaje);
 	// El A- del material de una orden no sale mientras lo de más de esa orden espera regresar desde aduana.
 	if (traspaso.tipo === "material_proveedor" && traspaso.ordenCompraId !== null) {
-		const aduana = await ubicacionDeTipo(contexto.transaccion, "aduana");
-		// Espera en aduana: la que nació ahí y no ha salido, o la que Bodega ya surtió y Aduana recibió.
-		const [pendiente] = await contexto.transaccion
-			.select({ id: traspasos.id })
-			.from(traspasos)
-			.where(
-				and(
-					eq(traspasos.tipo, "devolucion_proveedor"),
-					eq(traspasos.ordenCompraId, traspaso.ordenCompraId),
-					or(
-						and(eq(traspasos.estado, "esperado"), eq(traspasos.origenUbicacionId, aduana)),
-						eq(traspasos.estado, "en_aduana"),
-					),
-				),
-			)
-			.limit(1);
-		if (pendiente !== undefined) {
-			throw errorDeRegla(
-				"devolucion_pendiente",
-				`Primero regresa al proveedor lo de más de ${(await ordenesDeCompras(contexto, [traspaso.ordenCompraId]))[0]?.folio ?? "la orden"}.`,
-			);
+		const pendientes = await ordenesConDevolucionPendiente(contexto.transaccion, [traspaso.ordenCompraId]);
+		if (pendientes.has(traspaso.ordenCompraId)) {
+			const [orden] = await ordenesDeCompras(contexto, [traspaso.ordenCompraId]);
+			throw errorDeRegla("devolucion_pendiente", textoDeDevolucionPendiente(orden?.folio));
 		}
 	}
 }

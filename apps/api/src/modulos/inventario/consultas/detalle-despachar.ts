@@ -13,7 +13,13 @@ import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { noExiste } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeAccion, implementarConsulta } from "../../../nucleo/modulos.ts";
-import { tiposConEtiquetas } from "../dominio/despachos.ts";
+import {
+	ordenesConDevolucionPendiente,
+	type PorQueNoSale,
+	porQueNoSale,
+	textoDeDevolucionPendiente,
+	tiposConEtiquetas,
+} from "../dominio/despachos.ts";
 import { type FilaEnAduana, leerEnAduana, partidaDe } from "./aduana-comun.ts";
 
 /** Lo que regresa la consulta. */
@@ -30,48 +36,37 @@ const conTablaPorTalla = new Set([
 	"excedente_pedido",
 ]);
 
-/**
- * Las órdenes de compra cuya devolución al proveedor espera en aduana: su A- de material no sale hasta que regrese lo
- * de más (docs/modulos/inventario/recepciones-en-aduana.md, regla 6).
- * @param contexto El contexto de la lectura.
- */
-async function ordenesConDevolucionEnAduana(contexto: ContextoDeAccion): Promise<Set<string>> {
-	const { rows } = await contexto.transaccion.execute(sql`
-		SELECT DISTINCT orden_compra_id FROM traspasos
-		WHERE tipo = 'devolucion_proveedor' AND orden_compra_id IS NOT NULL AND (estado = 'en_aduana'
-			OR (estado = 'esperado' AND origen_ubicacion_id = (SELECT id FROM ubicaciones WHERE tipo = 'aduana')))`);
-	return new Set(
-		z
-			.array(z.object({ orden_compra_id: z.uuid() }))
-			.parse(rows)
-			.map((fila) => fila.orden_compra_id),
-	);
-}
+/** El caso del cajón para cada motivo por el que no sale. */
+const casoDelMotivo: Readonly<Record<PorQueNoSale["codigo"], Detalle["caso"]>> = {
+	no_esta_en_aduana: "otro",
+	se_empaca: "en_linea",
+	es_devolucion_proveedor: "proveedor",
+	espera_calidad: "calidad",
+	sin_nota: "sin_nota",
+};
 
 /**
- * Qué muestra el cajón y, si no puede salir, por qué.
+ * Qué muestra el cajón y, si no puede salir, por qué: la misma regla que revisa `inventario.despachar`.
  * @param fila Lo que está en aduana.
- * @param carril Su destino.
- * @param pendientes Las órdenes con su devolución esperando en aduana.
+ * @param pendientes Las órdenes con lo de más esperando regresar al proveedor.
  */
-function casoDe(
-	fila: FilaEnAduana,
-	carril: string,
-	pendientes: ReadonlySet<string>,
-): { caso: Detalle["caso"]; aviso: string | null } {
-	if (carril === "linea") {
-		return { caso: "en_linea", aviso: "Los pedidos en línea no se despachan: salen al empacarlos" };
-	}
-	if (carril === "calidad") return { caso: "calidad", aviso: `${fila.folio} espera la revisión de Calidad` };
-	if (carril === "proveedor") {
-		return { caso: "proveedor", aviso: "Lo de más que regresa al proveedor sale con «Devolver al proveedor»." };
-	}
-	if (carril === "externos" && fila.tipo !== "nota_entrega") {
-		return { caso: "sin_nota", aviso: "Sin nota de entrega no sale. La arma Ventas con lo que recibe el cliente." };
+function casoDe(fila: FilaEnAduana, pendientes: ReadonlySet<string>): { caso: Detalle["caso"]; aviso: string | null } {
+	const motivo = porQueNoSale({
+		folio: fila.folio,
+		estado: fila.estado,
+		tipo: fila.tipo,
+		destinoExterno: fila.destino_externo,
+		tienePadre: fila.es_hijo,
+		tieneNotaDeEntrega: fila.nota !== null,
+	});
+	if (motivo !== null) {
+		const aviso =
+			motivo.codigo === "sin_nota" ? `${motivo.mensaje}. La arma Ventas con lo que recibe el cliente.` : motivo.mensaje;
+		return { caso: casoDelMotivo[motivo.codigo], aviso };
 	}
 	if (fila.tipo === "nota_entrega") return { caso: "nota", aviso: null };
 	if (fila.tipo === "material_proveedor" && fila.orden_compra_id !== null && pendientes.has(fila.orden_compra_id)) {
-		return { caso: "devolucion_pendiente", aviso: `Primero regresa al proveedor lo de más de ${fila.orden ?? ""}.` };
+		return { caso: "devolucion_pendiente", aviso: textoDeDevolucionPendiente(fila.orden) };
 	}
 	if (conTablaPorTalla.has(fila.tipo)) return { caso: "lote", aviso: null };
 	return { caso: "otro", aviso: null };
@@ -138,8 +133,8 @@ export const consultaDetalleDespachar = implementarConsulta(detalleDespachar, as
 		const fila = todas.find((una) => una.id === parametros.traspaso_id);
 		if (fila === undefined) throw noExiste();
 		const partida = await partidaDe(accion, fila);
-		const pendientes = await ordenesConDevolucionEnAduana(accion);
-		const { caso, aviso } = casoDe(fila, partida.carril, pendientes);
+		const pendientes = await ordenesConDevolucionPendiente(accion.transaccion);
+		const { caso, aviso } = casoDe(fila, pendientes);
 		const puedeSalir = caso === "nota" || caso === "lote" || caso === "otro";
 		const esCliente = partida.carril === "externos";
 		const tabla = caso === "sin_nota" || caso === "nota" || caso === "lote" ? await porTalla(accion, fila.id) : [];
@@ -150,7 +145,7 @@ export const consultaDetalleDespachar = implementarConsulta(detalleDespachar, as
 				if (otra.id === fila.id) continue;
 				const suya = await partidaDe(accion, otra);
 				if (suya.carril !== partida.carril || suya.boton !== "despachar") continue;
-				if (casoDe(otra, suya.carril, pendientes).aviso !== null) continue;
+				if (casoDe(otra, pendientes).aviso !== null) continue;
 				juntar.push({
 					traspaso_id: suya.traspaso_id,
 					version: suya.version,

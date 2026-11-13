@@ -171,3 +171,4 @@ Todas son de la web: surtir, con el departamento Bodega; despachar, recordar y l
 **Fase 14, parte 1.** Al confirmar la llegada (`recibir_despacho` y `entregar_a_tienda_sin_caja`), cada renglón que no cuadró abre su DF- en Tránsito, a cargo de Aduana: lo que faltó con su traspaso; lo que sobró o no venía, con el primero del despacho (decisión 634). Lo prueba `acciones/recibir-despacho.prueba.ts`.
 
 **Fase 18, parte 1.** `surtir_a_aduana` de un W- llama `linea.prendas_en_camino`: el W- por surtir queda esperando prendas.
+- **Por qué no sale:** la regla 4 es `porQueNoSale` de `inventario/dominio/despachos.ts` (pura) más `ordenesConDevolucionPendiente`; la usan `inventario.despachar` y el cajón «Despachar» de Aduana, que dice el motivo antes de intentarlo (decisión 796). La prueba `dominio/despachos.prueba.ts`.
