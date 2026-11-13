@@ -1,6 +1,7 @@
 /**
  * `direccion.autorizaciones`: la pantalla de Autorizaciones de Dirección.
  * Fase 7 · docs/interfaz/fabrica/direccion.md («Autorizaciones») y docs/modulos/direccion/autorizaciones.md
+ * Fase 19 · el día en que se pidió y en que se resolvió, y «{n} días esperando» desde `direccion.autorizacion_dias_rojo`
  *
  * Las que esperan, de la más vieja a la más nueva, con «Lo pidió {persona}», «Pedida por ti» y si quien ve
  * la puede decidir; los filtros por tipo con su conteo; y las resueltas por páginas, la más reciente arriba.
@@ -8,6 +9,7 @@
  * un aparato, la persona del comando.
  */
 
+import { zonaDelNegocio } from "@uniformame/compartido/calculos/fechas";
 import {
 	autorizaciones as consultaDeAutorizaciones,
 	nombreDelTipoDeAutorizacion,
@@ -19,10 +21,12 @@ import { Temporal } from "temporal-polyfill";
 import { z } from "zod";
 import { cursorDe, leerCursor } from "../../../nucleo/http/consultas.ts";
 import { implementarConsulta } from "../../../nucleo/modulos.ts";
+import { leerParametro } from "../../../nucleo/parametros.ts";
 import { departamentos, usuarios } from "../../admin/tablas.ts";
 import { personas } from "../../personal/tablas.ts";
 import { documentoDe } from "../dominio/autorizaciones.ts";
 import { autorizaciones } from "../tablas.ts";
+import { conPlural } from "./cifras.ts";
 
 /** Cuántas resueltas por página: lo que cabe en la tabla de la pantalla. */
 const resueltasPorPagina = 20;
@@ -34,8 +38,20 @@ const resueltaEn = sql<string>`coalesce(${autorizaciones.decididaEn}, ${autoriza
 const personaDeLaCuenta = alias(personas, "persona_de_la_cuenta");
 const personaDelAparato = alias(personas, "persona_del_aparato");
 
+/**
+ * El día de negocio de un momento guardado por la base.
+ * @param momento El momento, como lo da la base.
+ */
+function diaDe(momento: string): string {
+	return Temporal.Instant.from(new Date(momento).toISOString())
+		.toZonedDateTimeISO(zonaDelNegocio)
+		.toPlainDate()
+		.toString();
+}
+
 export const consultaAutorizaciones = implementarConsulta(consultaDeAutorizaciones, async (contexto, parametros) => {
 	const { base, quien, ahora } = contexto;
+	const diasParaAvisar = Number(await leerParametro(base, { clave: "direccion.autorizacion_dias_rojo" }));
 	const usuarioId = quien.tipo === "cuenta" ? quien.usuarioId : undefined;
 	const esDuena = quien.tipo === "cuenta" && quien.esDuena;
 	const esperando = eq(autorizaciones.estado, "por_autorizar");
@@ -72,13 +88,17 @@ export const consultaAutorizaciones = implementarConsulta(consultaDeAutorizacion
 		const tipo = z.enum(tiposDeAutorizacion).parse(autorizacion.tipo);
 		const soloLaDuena = tipo === "alta_usuario" && !esDuena;
 		const pedidaEn = Temporal.Instant.from(new Date(autorizacion.creadoEn).toISOString());
+		const dias = Math.max(0, Math.floor(pedidaEn.until(ahora).total("hours") / 24));
 		return {
 			id: autorizacion.id,
 			folio: autorizacion.folio,
 			tipo,
 			departamento,
 			pedida_en: autorizacion.creadoEn,
-			dias_esperando: Math.max(0, Math.floor(pedidaEn.until(ahora).total("hours") / 24)),
+			pedida_el: diaDe(autorizacion.creadoEn),
+			dias_esperando: dias,
+			// Desde los días del parámetro, la tarjeta dice cuántos lleva esperando.
+			esperando: dias >= diasParaAvisar ? `${conPlural(dias, "día", "días")} esperando` : null,
 			resumen: autorizacion.resumen,
 			detalle: autorizacion.detalle,
 			importe_centavos: autorizacion.importeCentavos,
@@ -123,6 +143,7 @@ export const consultaAutorizaciones = implementarConsulta(consultaDeAutorizacion
 				folio: autorizacion.folio,
 				tipo: z.enum(tiposDeAutorizacion).parse(autorizacion.tipo),
 				resuelta_en: en,
+				resuelta_el: diaDe(en),
 				resumen: autorizacion.resumen,
 				detalle: autorizacion.detalle,
 				resultado: z.enum(["autorizada", "rechazada", "cancelada"]).parse(autorizacion.estado),

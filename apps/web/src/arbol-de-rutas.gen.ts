@@ -20,6 +20,9 @@ import { Route as CatalogoIndexRouteImport } from "./rutas/catalogo/index.tsx"
 import { Route as ComprasIndexRouteImport } from "./rutas/compras/index.tsx"
 import { Route as ContaduriaIndexRouteImport } from "./rutas/contaduria/index.tsx"
 import { Route as DireccionIndexRouteImport } from "./rutas/direccion/index.tsx"
+import { Route as DireccionAlertasRouteImport } from "./rutas/direccion/alertas.tsx"
+import { Route as DireccionAutorizacionesRouteImport } from "./rutas/direccion/autorizaciones.tsx"
+import { Route as DireccionIndicadoresRouteImport } from "./rutas/direccion/indicadores.tsx"
 import { Route as LineaIndexRouteImport } from "./rutas/linea/index.tsx"
 import { Route as MantenimientoIndexRouteImport } from "./rutas/mantenimiento/index.tsx"
 import { Route as PatronajeIndexRouteImport } from "./rutas/patronaje/index.tsx"
@@ -88,6 +91,21 @@ const ContaduriaIndexRoute = ContaduriaIndexRouteImport.update({
 const DireccionIndexRoute = DireccionIndexRouteImport.update({
   id: "/direccion/",
   path: "/direccion/",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DireccionAlertasRoute = DireccionAlertasRouteImport.update({
+  id: "/direccion/alertas",
+  path: "/direccion/alertas",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DireccionAutorizacionesRoute = DireccionAutorizacionesRouteImport.update({
+  id: "/direccion/autorizaciones",
+  path: "/direccion/autorizaciones",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DireccionIndicadoresRoute = DireccionIndicadoresRouteImport.update({
+  id: "/direccion/indicadores",
+  path: "/direccion/indicadores",
   getParentRoute: () => rootRouteImport,
 } as any)
 const LineaIndexRoute = LineaIndexRouteImport.update({
@@ -164,6 +182,9 @@ const VentasPedidosRoute = VentasPedidosRouteImport.update({
 export interface FileRoutesByFullPath {
   "/": typeof IndexRoute
   "/acceso/confirmado": typeof AccesoConfirmadoRoute
+  "/direccion/alertas": typeof DireccionAlertasRoute
+  "/direccion/autorizaciones": typeof DireccionAutorizacionesRoute
+  "/direccion/indicadores": typeof DireccionIndicadoresRoute
   "/produccion/corte": typeof ProduccionCorteRoute
   "/produccion/lotes": typeof ProduccionLotesRoute
   "/produccion/operaciones": typeof ProduccionOperacionesRoute
@@ -191,6 +212,9 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   "/": typeof IndexRoute
   "/acceso/confirmado": typeof AccesoConfirmadoRoute
+  "/direccion/alertas": typeof DireccionAlertasRoute
+  "/direccion/autorizaciones": typeof DireccionAutorizacionesRoute
+  "/direccion/indicadores": typeof DireccionIndicadoresRoute
   "/produccion/corte": typeof ProduccionCorteRoute
   "/produccion/lotes": typeof ProduccionLotesRoute
   "/produccion/operaciones": typeof ProduccionOperacionesRoute
@@ -219,6 +243,9 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   "/": typeof IndexRoute
   "/acceso/confirmado": typeof AccesoConfirmadoRoute
+  "/direccion/alertas": typeof DireccionAlertasRoute
+  "/direccion/autorizaciones": typeof DireccionAutorizacionesRoute
+  "/direccion/indicadores": typeof DireccionIndicadoresRoute
   "/produccion/corte": typeof ProduccionCorteRoute
   "/produccion/lotes": typeof ProduccionLotesRoute
   "/produccion/operaciones": typeof ProduccionOperacionesRoute
@@ -248,6 +275,9 @@ export interface FileRouteTypes {
   fullPaths:
     | "/"
     | "/acceso/confirmado"
+    | "/direccion/alertas"
+    | "/direccion/autorizaciones"
+    | "/direccion/indicadores"
     | "/produccion/corte"
     | "/produccion/lotes"
     | "/produccion/operaciones"
@@ -275,6 +305,9 @@ export interface FileRouteTypes {
   to:
     | "/"
     | "/acceso/confirmado"
+    | "/direccion/alertas"
+    | "/direccion/autorizaciones"
+    | "/direccion/indicadores"
     | "/produccion/corte"
     | "/produccion/lotes"
     | "/produccion/operaciones"
@@ -302,6 +335,9 @@ export interface FileRouteTypes {
     | "__root__"
     | "/"
     | "/acceso/confirmado"
+    | "/direccion/alertas"
+    | "/direccion/autorizaciones"
+    | "/direccion/indicadores"
     | "/produccion/corte"
     | "/produccion/lotes"
     | "/produccion/operaciones"
@@ -330,6 +366,9 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AccesoConfirmadoRoute: typeof AccesoConfirmadoRoute
+  DireccionAlertasRoute: typeof DireccionAlertasRoute
+  DireccionAutorizacionesRoute: typeof DireccionAutorizacionesRoute
+  DireccionIndicadoresRoute: typeof DireccionIndicadoresRoute
   ProduccionCorteRoute: typeof ProduccionCorteRoute
   ProduccionLotesRoute: typeof ProduccionLotesRoute
   ProduccionOperacionesRoute: typeof ProduccionOperacionesRoute
@@ -432,6 +471,27 @@ declare module "@tanstack/react-router" {
       path: "/direccion"
       fullPath: "/direccion/"
       preLoaderRoute: typeof DireccionIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/direccion/alertas": {
+      id: "/direccion/alertas"
+      path: "/direccion/alertas"
+      fullPath: "/direccion/alertas"
+      preLoaderRoute: typeof DireccionAlertasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/direccion/autorizaciones": {
+      id: "/direccion/autorizaciones"
+      path: "/direccion/autorizaciones"
+      fullPath: "/direccion/autorizaciones"
+      preLoaderRoute: typeof DireccionAutorizacionesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/direccion/indicadores": {
+      id: "/direccion/indicadores"
+      path: "/direccion/indicadores"
+      fullPath: "/direccion/indicadores"
+      preLoaderRoute: typeof DireccionIndicadoresRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/linea/": {
@@ -538,6 +598,9 @@ declare module "@tanstack/react-router" {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccesoConfirmadoRoute: AccesoConfirmadoRoute,
+  DireccionAlertasRoute: DireccionAlertasRoute,
+  DireccionAutorizacionesRoute: DireccionAutorizacionesRoute,
+  DireccionIndicadoresRoute: DireccionIndicadoresRoute,
   ProduccionCorteRoute: ProduccionCorteRoute,
   ProduccionLotesRoute: ProduccionLotesRoute,
   ProduccionOperacionesRoute: ProduccionOperacionesRoute,

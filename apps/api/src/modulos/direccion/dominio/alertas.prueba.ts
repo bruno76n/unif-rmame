@@ -49,7 +49,7 @@ describe("Cada alerta sale cuando se cumple su regla y desaparece cuando deja de
 				titulo: "L-2026-118 detenido en Costados desde hace 3 días",
 				color: "rojo",
 				departamentos: ["produccion"],
-				ver: `produccion/lotes/${lote}`,
+				ver: `produccion/lotes?cajon=lote&id=${lote}`,
 			},
 		]);
 		const [porMaquina] = con({

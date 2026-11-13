@@ -143,6 +143,11 @@ export interface ContextoDeConsulta {
 	 * lee: así la consulta usa la regla del dueño en vez de repetirla.
 	 */
 	lectura: (nombre: string, datos: unknown) => Promise<unknown>;
+	/**
+	 * Corre lo que se le da con el contexto de una acción, en una transacción que solo lee: así la consulta usa las
+	 * funciones del módulo que reciben ese contexto (la cuenta de un material, las alertas) sin repetirlas.
+	 */
+	comoAccion: <T>(leer: (contexto: ContextoDeAccion) => Promise<T>) => Promise<T>;
 }
 
 /** Lo que cuenta la pastilla de un departamento en el menú: lo que tiene que hacer ya, y si algo va atrasado. */

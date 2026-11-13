@@ -37,7 +37,8 @@
 		"./estados/recuadro": "./src/estados/recuadro.tsx",
 		"./estados/textos-con-tono": "./src/estados/textos-con-tono.tsx",
 		"./estados/muestra-de-color": "./src/estados/muestra-de-color.tsx",
-		"./captura/buscador": "./src/captura/buscador.tsx"
+		"./captura/buscador": "./src/captura/buscador.tsx",
+		"./contenedores/tarjeta": "./src/contenedores/tarjeta.tsx"
 	},
 	"dependencies": {
 		"@base-ui/react": "1.9.0",

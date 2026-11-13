@@ -5,6 +5,7 @@
  * Fase 11 · docs/modulos/inventario/material-en-bodega.md y recepciones-en-aduana.md
  * Fase 14 · docs/modulos/inventario/diferencias-ajustes-y-mermas.md, conteos.md, recepcion-del-taller.md y
  * minimos-y-reabasto.md
+ * Fase 19 · docs/interfaz/fabrica/direccion.md (la consulta `inventario.ultimo_cuadre`)
  *
  * Las ubicaciones nacen en la fase 4 porque las usan antes los parámetros, las impresoras, las cuentas,
  * los aparatos y las personas; sus responsables nacen vacíos. El libro no tiene acciones propias: lo escribe
@@ -35,6 +36,7 @@ import { accionResolverExcepcion } from "./acciones/resolver-excepcion.ts";
 import { accionSurtirAAduana } from "./acciones/surtir-a-aduana.ts";
 import { consultaDondeEsta } from "./consultas/donde-esta.ts";
 import { consultaPastillasMenu, pastillaAduana, pastillaBodega } from "./consultas/pastillas-menu.ts";
+import { consultaUltimoCuadre } from "./consultas/ultimo-cuadre.ts";
 import { aplicarDecisionAjuste } from "./internas/aplicar-decision-ajuste.ts";
 import { aplicarRevisionDevolucion, esperarDevolucion } from "./internas/devoluciones.ts";
 import { registrarEntradaDelTaller } from "./internas/entrada-del-taller.ts";
@@ -90,7 +92,7 @@ const ubicacionesDeLaSiembra = [
 
 export default definirModulo({
 	nombre: "inventario",
-	consultas: [consultaPastillasMenu, consultaDondeEsta],
+	consultas: [consultaPastillasMenu, consultaDondeEsta, consultaUltimoCuadre],
 	pastillas: { aduana: pastillaAduana, bodega: pastillaBodega },
 	// Las ubicaciones salen en las pantallas de todos los departamentos.
 	lectores: {

@@ -24776,6 +24776,284 @@
         }
       }
     },
+    "/v1/consultas/direccion.pendientes": {
+      "get": {
+        "tags": [
+          "direccion"
+        ],
+        "description": "Pendientes de Dirección: los indicadores del periodo de `direccion.primer_vistazo`, las autorizaciones por autorizar y las alertas cruzadas, con el conteo de cada grupo\n\nPermiso: departamento direccion.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "autorizaciones",
+                "alertas"
+              ]
+            },
+            "in": "query",
+            "name": "grupo",
+            "required": false,
+            "description": "Solo los pendientes de ese grupo"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "periodo": {
+                          "type": "string",
+                          "enum": [
+                            "semana",
+                            "dia"
+                          ],
+                          "description": "El de `direccion.primer_vistazo`"
+                        },
+                        "cifras": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "clave": {
+                                "type": "string",
+                                "enum": [
+                                  "ventas",
+                                  "produccion",
+                                  "existencias",
+                                  "cuentas"
+                                ]
+                              },
+                              "numero": {
+                                "type": "string",
+                                "description": "El número ya escrito: «$262,000», «4,175»"
+                              },
+                              "unidad": {
+                                "type": "string",
+                                "description": "Lo que va junto al número: «última semana», «prendas terminadas»"
+                              },
+                              "rojo": {
+                                "type": "boolean",
+                                "description": "Si el número va en rojo (lotes atorados)"
+                              },
+                              "contexto": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "texto": {
+                                      "type": "string"
+                                    },
+                                    "tono": {
+                                      "type": "string",
+                                      "enum": [
+                                        "rojo",
+                                        "ambar",
+                                        "normal"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "texto",
+                                    "tono"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "description": "La línea de contexto, lo rojo primero"
+                              },
+                              "serie": {
+                                "type": "array",
+                                "items": {
+                                  "type": "number"
+                                },
+                                "description": "Los datos de la gráfica chica, del más viejo al más nuevo; vacía si no lleva"
+                              },
+                              "reparto": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "etiqueta": {
+                                      "type": "string"
+                                    },
+                                    "valor": {
+                                      "type": "number",
+                                      "description": "Su tamaño en la barra (piezas o centavos)"
+                                    },
+                                    "color": {
+                                      "type": "string",
+                                      "enum": [
+                                        "rojo",
+                                        "ambar",
+                                        "azul",
+                                        "verde",
+                                        "gris",
+                                        "morado",
+                                        "verde-azulado",
+                                        "naranja"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "etiqueta",
+                                    "valor",
+                                    "color"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "description": "La barra repartida; vacía si no lleva"
+                              },
+                              "lleva_a": {
+                                "nullable": true,
+                                "description": "La ruta de la web a la que lleva («direccion/indicadores»); nula si la cuenta no tiene ese departamento",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "clave",
+                              "numero",
+                              "unidad",
+                              "rojo",
+                              "contexto",
+                              "serie",
+                              "reparto",
+                              "lleva_a"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Ventas, Producción, Existencias y Cuentas por cobrar y pagar"
+                        },
+                        "pendientes": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "clave": {
+                                "type": "string",
+                                "description": "La autorización (`autorizacion:{id}`) o la clave de la alerta"
+                              },
+                              "grupo": {
+                                "type": "string",
+                                "enum": [
+                                  "autorizaciones",
+                                  "alertas"
+                                ]
+                              },
+                              "titulo": {
+                                "type": "string",
+                                "description": "El tipo de autorización, o el título de la alerta"
+                              },
+                              "detalle": {
+                                "nullable": true,
+                                "description": "«{qué se pide} · {departamento}, {quién}», o el detalle de la alerta",
+                                "type": "string"
+                              },
+                              "fecha": {
+                                "nullable": true,
+                                "description": "El día en que se pidió; las alertas no llevan",
+                                "type": "string"
+                              },
+                              "cifra": {
+                                "nullable": true,
+                                "description": "El importe («$1,200») o la cantidad con su unidad («20 m»)",
+                                "type": "string"
+                              },
+                              "estado": {
+                                "type": "string",
+                                "description": "«Por autorizar», «Por autorizar · {n} días» o «Por revisar»"
+                              },
+                              "color": {
+                                "type": "string",
+                                "enum": [
+                                  "rojo",
+                                  "ambar"
+                                ],
+                                "description": "El color de su estado, que también lo ordena"
+                              },
+                              "lleva_a": {
+                                "nullable": true,
+                                "description": "La ruta de la web de su botón; nula si la cuenta no tiene ese departamento (entonces no lleva botón)",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "clave",
+                              "grupo",
+                              "titulo",
+                              "detalle",
+                              "fecha",
+                              "cifra",
+                              "estado",
+                              "color",
+                              "lleva_a"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Rojo primero, luego ámbar; dentro de cada color, por fecha"
+                        },
+                        "conteos": {
+                          "type": "object",
+                          "properties": {
+                            "autorizaciones": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "alertas": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "autorizaciones",
+                            "alertas"
+                          ],
+                          "additionalProperties": false,
+                          "description": "Cuántos hay de cada grupo, sin filtrar"
+                        }
+                      },
+                      "required": [
+                        "periodo",
+                        "cifras",
+                        "pendientes",
+                        "conteos"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/consultas/direccion.autorizaciones": {
       "get": {
         "tags": [
@@ -24894,10 +25172,19 @@
                                 "type": "string",
                                 "description": "Cuándo se pidió"
                               },
+                              "pedida_el": {
+                                "type": "string",
+                                "description": "El día de negocio en que se pidió"
+                              },
                               "dias_esperando": {
                                 "type": "integer",
                                 "minimum": -9007199254740991,
                                 "maximum": 9007199254740991
+                              },
+                              "esperando": {
+                                "nullable": true,
+                                "description": "«{n} días esperando», desde `direccion.autorizacion_dias_rojo` días; nulo antes",
+                                "type": "string"
                               },
                               "resumen": {
                                 "type": "string",
@@ -24964,7 +25251,9 @@
                               "tipo",
                               "departamento",
                               "pedida_en",
+                              "pedida_el",
                               "dias_esperando",
+                              "esperando",
                               "resumen",
                               "detalle",
                               "cantidad",
@@ -25007,6 +25296,10 @@
                               "resuelta_en": {
                                 "type": "string"
                               },
+                              "resuelta_el": {
+                                "type": "string",
+                                "description": "El día de negocio en que se resolvió"
+                              },
                               "resumen": {
                                 "type": "string"
                               },
@@ -25036,6 +25329,7 @@
                               "folio",
                               "tipo",
                               "resuelta_en",
+                              "resuelta_el",
                               "resumen",
                               "detalle",
                               "resultado",
@@ -25060,6 +25354,380 @@
                         "resueltas",
                         "cursor_resueltas",
                         "hay_mas_resueltas"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/direccion.indicadores": {
+      "get": {
+        "tags": [
+          "direccion"
+        ],
+        "description": "Indicadores de Dirección: las ventas de la semana por canal contra lo que se compara, ocho semanas contra el año pasado, las prendas terminadas de 12 días de trabajo y la existencia por ubicación\n\nPermiso: departamento direccion.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "semana_pasada",
+                "hace_un_mes",
+                "temporada_pasada"
+              ]
+            },
+            "in": "query",
+            "name": "comparar",
+            "required": false,
+            "description": "Contra qué se compara la semana; al abrir, la semana pasada"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "semana": {
+                          "type": "object",
+                          "properties": {
+                            "desde": {
+                              "type": "string",
+                              "description": "El primer día de la semana: los últimos siete días, hasta hoy"
+                            },
+                            "total_centavos": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "comparado_centavos": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "variacion": {
+                              "nullable": true,
+                              "description": "«▲ 51%» o «▼ 8%»; nula si no hay contra qué comparar",
+                              "type": "string"
+                            },
+                            "contra": {
+                              "type": "string",
+                              "description": "«contra semana anterior», «contra hace un mes» o «contra misma semana del año pasado»"
+                            },
+                            "nombre_comparado": {
+                              "type": "string",
+                              "description": "Cómo se llama la semana comparada en la gráfica («Semana anterior»)"
+                            },
+                            "canales": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "clave": {
+                                    "type": "string",
+                                    "enum": [
+                                      "tienda_1",
+                                      "tienda_2",
+                                      "externos",
+                                      "en_linea"
+                                    ]
+                                  },
+                                  "nombre": {
+                                    "type": "string",
+                                    "description": "Tienda 1, Tienda 2, Clientes externos o En línea"
+                                  },
+                                  "vendido_centavos": {
+                                    "description": "Lo vendido esta semana",
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "comparado_centavos": {
+                                    "description": "Lo vendido en la semana contra la que se compara",
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "vende_desde": {
+                                    "nullable": true,
+                                    "description": "El día de su primera venta; nulo si todavía no vende",
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "clave",
+                                  "nombre",
+                                  "vende_desde"
+                                ],
+                                "additionalProperties": false
+                              }
+                            }
+                          },
+                          "required": [
+                            "desde",
+                            "variacion",
+                            "contra",
+                            "nombre_comparado",
+                            "canales"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "por_semana": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "desde": {
+                                "type": "string",
+                                "description": "El primer día de la semana"
+                              },
+                              "este_anio_centavos": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "anio_pasado_centavos": {
+                                "description": "La misma semana del año pasado",
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "desde"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Las ocho semanas, de la más vieja a la más nueva"
+                        },
+                        "terminadas": {
+                          "type": "object",
+                          "properties": {
+                            "dias": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "fecha": {
+                                    "type": "string"
+                                  },
+                                  "piezas": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  }
+                                },
+                                "required": [
+                                  "fecha",
+                                  "piezas"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "description": "Los últimos 12 días de trabajo"
+                            },
+                            "esta_semana": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "Las de los últimos 6 días de trabajo"
+                            },
+                            "lotes": {
+                              "type": "string",
+                              "description": "«{n} lote atorado, {n} en proceso, {n} por cortar»"
+                            }
+                          },
+                          "required": [
+                            "dias",
+                            "esta_semana",
+                            "lotes"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "existencias": {
+                          "type": "object",
+                          "properties": {
+                            "total": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "ubicaciones": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "codigo": {
+                                    "type": "string"
+                                  },
+                                  "nombre": {
+                                    "type": "string"
+                                  },
+                                  "piezas": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  }
+                                },
+                                "required": [
+                                  "codigo",
+                                  "nombre",
+                                  "piezas"
+                                ],
+                                "additionalProperties": false
+                              }
+                            }
+                          },
+                          "required": [
+                            "total",
+                            "ubicaciones"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "semana",
+                        "por_semana",
+                        "terminadas",
+                        "existencias"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/direccion.alertas": {
+      "get": {
+        "tags": [
+          "direccion"
+        ],
+        "description": "Las alertas cruzadas de este momento, en el orden de su tabla, con la misma función que el trabajo de alertas\n\nPermiso: departamento direccion.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "alertas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "clave": {
+                                "type": "string",
+                                "description": "La regla y su entidad: `lote_detenido:{lote}`"
+                              },
+                              "regla": {
+                                "type": "string",
+                                "enum": [
+                                  "lote_detenido",
+                                  "consumo_tela",
+                                  "concentracion",
+                                  "descontinuado",
+                                  "sin_reposicion",
+                                  "sin_sincronizar",
+                                  "cuadre_residuo"
+                                ]
+                              },
+                              "titulo": {
+                                "type": "string"
+                              },
+                              "detalle": {
+                                "type": "string",
+                                "description": "La segunda línea de la tarjeta"
+                              },
+                              "cruza": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                },
+                                "description": "Los nombres de los departamentos que cruza"
+                              },
+                              "color": {
+                                "type": "string",
+                                "enum": [
+                                  "rojo",
+                                  "ambar"
+                                ]
+                              },
+                              "ver": {
+                                "nullable": true,
+                                "description": "La ruta de la web de «Ver» (`produccion/lotes/{id}`); nula si la cuenta no tiene ese departamento",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "clave",
+                              "regla",
+                              "titulo",
+                              "detalle",
+                              "cruza",
+                              "color",
+                              "ver"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "alertas"
                       ],
                       "additionalProperties": false
                     },
@@ -25353,6 +26021,131 @@
                       },
                       "required": [
                         "variantes"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/inventario.ultimo_cuadre": {
+      "get": {
+        "tags": [
+          "inventario"
+        ],
+        "description": "El último cuadre de inventario: su fecha, su estado, cuándo empezó y terminó, sus contadores y su error\n\nPermiso: departamento direccion o bodega.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "cuadre": {
+                          "nullable": true,
+                          "description": "Nulo si todavía no corre ninguno",
+                          "type": "object",
+                          "properties": {
+                            "cuadre_id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "fecha": {
+                              "type": "string",
+                              "description": "El día de negocio del cuadre"
+                            },
+                            "estado": {
+                              "type": "string",
+                              "enum": [
+                                "corriendo",
+                                "cuadro",
+                                "con_residuo",
+                                "fallo"
+                              ],
+                              "description": "Cómo quedó"
+                            },
+                            "iniciado_en": {
+                              "type": "string",
+                              "description": "Cuándo empezó"
+                            },
+                            "terminado_en": {
+                              "nullable": true,
+                              "description": "Cuándo terminó; nulo mientras corre",
+                              "type": "string"
+                            },
+                            "renglones_revisados": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "proyecciones_corregidas": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "diferencias_creadas": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "Las diferencias que dejó en Bodega"
+                            },
+                            "excepciones_creadas": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "Las excepciones que dejó en Bodega"
+                            },
+                            "error": {
+                              "nullable": true,
+                              "description": "Por qué falló, si falló",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "cuadre_id",
+                            "fecha",
+                            "estado",
+                            "iniciado_en",
+                            "terminado_en",
+                            "renglones_revisados",
+                            "proyecciones_corregidas",
+                            "diferencias_creadas",
+                            "excepciones_creadas",
+                            "error"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "cuadre"
                       ],
                       "additionalProperties": false
                     },

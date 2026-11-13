@@ -44,6 +44,7 @@ export function contextoDeDibujo(contexto: ContextoDeAccion): ContextoDeConsulta
 		apuntarConsultaSensible: async () => undefined,
 		registro: contexto.registro,
 		lectura: contexto.lectura,
+		comoAccion: (leer) => leer(contexto),
 	};
 }
 

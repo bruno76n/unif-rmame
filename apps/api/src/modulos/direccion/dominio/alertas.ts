@@ -70,7 +70,7 @@ export function alertasDeDireccion(datos: DatosDeLasAlertas, parametros: Paramet
 			titulo: `${lote.folio} detenido en ${lote.operacion}${lote.dias > 0 ? ` desde hace ${lote.dias} días` : ""}${lote.falla === null ? "" : ` · ${lote.falla}`}`,
 			color: "rojo",
 			departamentos: lote.falla === null ? ["produccion"] : ["produccion", "mantenimiento"],
-			ver: `produccion/lotes/${lote.lote_id}`,
+			ver: `produccion/lotes?cajon=lote&id=${lote.lote_id}`,
 		});
 	}
 	// El consumo de tela alto: las de más desperdicio, hasta el máximo.

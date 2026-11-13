@@ -32,6 +32,7 @@ import {
 	type CuerpoDeAccion,
 	correrAccion,
 	crearContexto,
+	lecturasDeConsulta,
 	type ServiciosDelCorredor,
 } from "./nucleo/acciones/corredor.ts";
 import type { Almacen } from "./nucleo/almacen.ts";
@@ -283,18 +284,7 @@ export async function crearServidor(dependencias: DependenciasDelServidor) {
 						apuntarConsultaSensible: (renglon) =>
 							apuntarConsultaSensible(quienDe(peticion), contrato.nombre, ahora, renglon),
 						registro,
-						lectura: (nombre, datos) =>
-							enTransaccion(base, (transaccion) =>
-								crearContexto(
-									registro,
-									transaccion,
-									quienDe(peticion),
-									contrato.nombre,
-									ahora,
-									undefined,
-									dependencias.almacen,
-								).contexto.lectura(nombre, datos),
-							),
+						...lecturasDeConsulta(registro, base, quienDe(peticion), contrato.nombre, ahora, dependencias.almacen),
 					},
 					peticion.query,
 				);
@@ -355,18 +345,7 @@ export async function crearServidor(dependencias: DependenciasDelServidor) {
 					almacen: dependencias.almacen,
 					registro,
 					apuntarConsultaSensible: (renglon) => apuntarConsultaSensible(quien, ruta.nombre, ahora, renglon),
-					lectura: (nombre, datos) =>
-						enTransaccion(base, (transaccion) =>
-							crearContexto(
-								registro,
-								transaccion,
-								quien,
-								ruta.nombre,
-								ahora,
-								undefined,
-								dependencias.almacen,
-							).contexto.lectura(nombre, datos),
-						),
+					...lecturasDeConsulta(registro, base, quien, ruta.nombre, ahora, dependencias.almacen),
 					enTransaccion: (hacer) =>
 						enTransaccion(base, (transaccion) =>
 							hacer(

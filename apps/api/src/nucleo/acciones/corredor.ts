@@ -10,6 +10,7 @@
 
 import { diaDeNegocio } from "@uniformame/compartido/calculos/fechas";
 import { mensajeDeClaveUsada } from "@uniformame/compartido/contratos/protocolo";
+import { sql } from "drizzle-orm";
 import type { Temporal } from "temporal-polyfill";
 import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
@@ -22,6 +23,7 @@ import { apartarClave, guardarRespuesta, huellaDeCarga, sinSecretos } from "../i
 import type {
 	AccionImplementada,
 	ContextoDeAccion,
+	ContextoDeConsulta,
 	Evento,
 	QuienEscribe,
 	RegistroDeModulos,
@@ -265,5 +267,39 @@ function leerRespuestaGuardada(guardada: unknown): RespuestaDeAccion {
 		resultado: guardada.resultado,
 		avisos: guardada.avisos.filter((aviso): aviso is string => typeof aviso === "string"),
 		...(guardada.secreto_entregado === true ? { secreto_entregado: true as const } : {}),
+	};
+}
+
+/**
+ * Las lecturas de una consulta (o de una ruta): `lectura`, una lectura de otro módulo en una transacción corta; y
+ * `comoAccion`, que corre lo que se le da con el contexto de una acción en una transacción que solo lee.
+ * @param registro Lo que registraron los módulos.
+ * @param base La base.
+ * @param quien Quien consulta.
+ * @param nombre La consulta o la ruta, para el contexto.
+ * @param ahora La hora de la consulta.
+ * @param almacen El almacén de archivos, si la consulta lo usa.
+ * Existe para que una consulta use las mismas funciones del módulo que sus acciones y sus trabajos (la cuenta de un
+ * material, las alertas de Dirección) sin repetirlas ni poder escribir.
+ */
+export function lecturasDeConsulta(
+	registro: RegistroDeModulos,
+	base: Base,
+	quien: QuienLlama,
+	nombre: string,
+	ahora: Temporal.Instant,
+	almacen?: Almacen,
+): Pick<ContextoDeConsulta, "lectura" | "comoAccion"> {
+	return {
+		lectura: (lectura, datos) =>
+			enTransaccion(base, (transaccion) =>
+				crearContexto(registro, transaccion, quien, nombre, ahora, undefined, almacen).contexto.lectura(lectura, datos),
+			),
+		comoAccion: (leer) =>
+			enTransaccion(base, async (transaccion) => {
+				// Una consulta solo lee: la base rechaza cualquier escritura dentro de esta transacción.
+				await transaccion.execute(sql`SET TRANSACTION READ ONLY`);
+				return leer(crearContexto(registro, transaccion, quien, nombre, ahora, undefined, almacen).contexto);
+			}),
 	};
 }

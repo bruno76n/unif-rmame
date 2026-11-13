@@ -73,7 +73,12 @@ const porAutorizar = z.object({
 	tipo: z.enum(tiposDeAutorizacion),
 	departamento: z.string().describe("El departamento que la pide"),
 	pedida_en: z.string().describe("Cuándo se pidió"),
+	pedida_el: z.string().describe("El día de negocio en que se pidió"),
 	dias_esperando: z.number().int(),
+	esperando: z
+		.string()
+		.nullable()
+		.describe("«{n} días esperando», desde `direccion.autorizacion_dias_rojo` días; nulo antes"),
 	resumen: z.string().describe("Qué se pide, ya armado"),
 	detalle: z.string().nullable(),
 	importe_centavos: z.number().int().nullable().optional(),
@@ -94,6 +99,7 @@ const resuelta = z.object({
 	folio: z.string(),
 	tipo: z.enum(tiposDeAutorizacion),
 	resuelta_en: z.string(),
+	resuelta_el: z.string().describe("El día de negocio en que se resolvió"),
 	resumen: z.string(),
 	detalle: z.string().nullable(),
 	resultado: z.enum(["autorizada", "rechazada", "cancelada"]),
