@@ -11,6 +11,7 @@ import { useBlocker } from "@tanstack/react-router";
 import { Boton } from "@uniformame/interfaz/botones/boton";
 import { textoCambiosSinGuardar } from "@uniformame/interfaz/contenedores/cajon";
 import { Ventana } from "@uniformame/interfaz/contenedores/ventana";
+import { useEffect, useState } from "react";
 
 /**
  * Detiene la navegación mientras haya cambios sin guardar y pregunta antes de salir.
@@ -31,4 +32,20 @@ export function usePreguntarAntesDeSalir(conCambios: boolean) {
 			}
 		/>
 	);
+}
+
+/**
+ * El cierre de un cajón con captura: con cambios sin guardar, cambiar de pestaña o salir por el menú pregunta antes, y
+ * cerrar el cajón lo pregunta el cajón mismo; ya decidido salir, la dirección cambia sin volver a preguntar.
+ * @param conCambios Si hay cambios sin guardar.
+ * @param cerrar Cómo se cierra el cajón (quita el cajón de la dirección).
+ * @returns `alCerrar` para el cajón y `pregunta`, la ventana que hay que pintar.
+ */
+export function useCierreDelCajon(conCambios: boolean, cerrar: () => void) {
+	const [saliendo, setSaliendo] = useState(false);
+	const pregunta = usePreguntarAntesDeSalir(conCambios && !saliendo);
+	useEffect(() => {
+		if (saliendo) cerrar();
+	}, [saliendo, cerrar]);
+	return { alCerrar: () => setSaliendo(true), pregunta };
 }

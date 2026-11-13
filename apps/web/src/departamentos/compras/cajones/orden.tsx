@@ -30,11 +30,12 @@ import { FileText } from "lucide-react";
 import { useState } from "react";
 import type { z } from "zod";
 import { leerFalla, useAccion, useConsulta } from "../../../comun/api.tsx";
+import { useCierreDelCajon } from "../../../comun/cambios-sin-guardar.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
 import { Historial } from "../../../comun/historial.tsx";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { VentanaConMotivo } from "../../../comun/ventana-con-motivo.tsx";
-import { TituloDeSeccion, useCierreDelCajon } from "../comun.tsx";
+import { TituloDeSeccion } from "../comun.tsx";
 import { useDireccionDeCompras } from "../direccion.ts";
 
 /** Lo que regresa la consulta. */

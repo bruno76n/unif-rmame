@@ -30,10 +30,10 @@ import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { z } from "zod";
 import { useAccion, useConsulta } from "../../../comun/api.tsx";
+import { useCierreDelCajon } from "../../../comun/cambios-sin-guardar.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
 import { rutaDePestana } from "../../../comun/pagina-de-departamento.tsx";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
-import { useCierreDelCajon } from "../comun.tsx";
 import { useDireccionDeCompras } from "../direccion.ts";
 
 /** Lo que regresa la consulta. */

@@ -12,6 +12,7 @@ import { Cajon } from "@uniformame/interfaz/contenedores/cajon";
 import { Estado } from "@uniformame/interfaz/estados/estado";
 import { EstadoDePantalla } from "@uniformame/interfaz/estados/estado-de-pantalla";
 import { LineaDeAviso } from "@uniformame/interfaz/estados/textos-con-tono";
+import { CifraDeCajon } from "@uniformame/interfaz/pagina/cifra-de-cajon";
 import { Dato } from "@uniformame/interfaz/pagina/dato";
 import { TituloDeBloque } from "@uniformame/interfaz/pagina/seccion";
 import { useState } from "react";
@@ -21,7 +22,7 @@ import { useConConexion } from "../../../comun/estado-de-la-app.ts";
 import { montoEnPantalla } from "../../../comun/montos.ts";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { VentanaConMotivo } from "../../../comun/ventana-con-motivo.tsx";
-import { CifraDeCajon, ListaConDia } from "../comun.tsx";
+import { ListaConDia } from "../comun.tsx";
 import { useEnvio } from "../envio.ts";
 import { VentanaQuienLaTrae } from "../ventanas/quien-la-trae.tsx";
 

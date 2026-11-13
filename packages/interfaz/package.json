@@ -33,6 +33,7 @@
 		"./contenedores/emergente": "./src/contenedores/emergente.tsx",
 		"./contenedores/menu-de-opciones": "./src/contenedores/menu-de-opciones.tsx",
 		"./pagina/seccion": "./src/pagina/seccion.tsx",
+		"./pagina/cifra-de-cajon": "./src/pagina/cifra-de-cajon.tsx",
 		"./pagina/dato": "./src/pagina/dato.tsx",
 		"./estados/recuadro": "./src/estados/recuadro.tsx",
 		"./estados/textos-con-tono": "./src/estados/textos-con-tono.tsx",

@@ -35,9 +35,20 @@ import { accionRecibirDelTaller, accionRecibirReproceso } from "./acciones/recib
 import { accionRecibirEnAduana } from "./acciones/recibir-en-aduana.ts";
 import { accionResolverExcepcion } from "./acciones/resolver-excepcion.ts";
 import { accionSurtirAAduana } from "./acciones/surtir-a-aduana.ts";
+import { consultaPendientesDeBodega } from "./consultas/bodega-pendientes.ts";
+import { consultaConteosYAjustes } from "./consultas/conteos-y-ajustes.ts";
+import { consultaDetalleDeConteo } from "./consultas/detalle-conteo.ts";
+import { consultaDetalleDeEntregaCorte } from "./consultas/detalle-entrega-corte.ts";
+import { consultaDetalleDeLlegadaAduana } from "./consultas/detalle-llegada-aduana.ts";
+import { consultaDetalleDeVariante } from "./consultas/detalle-variante.ts";
+import { consultaDiferencias } from "./consultas/diferencias.ts";
 import { consultaDisponibilidadLinea, lecturaDisponibilidadLinea } from "./consultas/disponibilidad-linea.ts";
 import { consultaDondeEsta } from "./consultas/donde-esta.ts";
+import { consultaExcepciones } from "./consultas/excepciones.ts";
+import { consultaExistencias } from "./consultas/existencias.ts";
+import { consultaMateriales } from "./consultas/materiales.ts";
 import { consultaPastillasMenu, pastillaAduana, pastillaBodega } from "./consultas/pastillas-menu.ts";
+import { consultaReabasto } from "./consultas/reabasto.ts";
 import { consultaUltimoCuadre } from "./consultas/ultimo-cuadre.ts";
 import { aplicarDecisionAjuste } from "./internas/aplicar-decision-ajuste.ts";
 import { aplicarRevisionDevolucion, esperarDevolucion } from "./internas/devoluciones.ts";
@@ -94,7 +105,23 @@ const ubicacionesDeLaSiembra = [
 
 export default definirModulo({
 	nombre: "inventario",
-	consultas: [consultaPastillasMenu, consultaDondeEsta, consultaUltimoCuadre, consultaDisponibilidadLinea],
+	consultas: [
+		consultaPastillasMenu,
+		consultaDondeEsta,
+		consultaUltimoCuadre,
+		consultaPendientesDeBodega,
+		consultaExistencias,
+		consultaReabasto,
+		consultaDetalleDeVariante,
+		consultaDiferencias,
+		consultaConteosYAjustes,
+		consultaExcepciones,
+		consultaMateriales,
+		consultaDetalleDeEntregaCorte,
+		consultaDetalleDeLlegadaAduana,
+		consultaDetalleDeConteo,
+		consultaDisponibilidadLinea,
+	],
 	pastillas: { aduana: pastillaAduana, bodega: pastillaBodega },
 	// Las ubicaciones salen en las pantallas de todos los departamentos.
 	lectores: {

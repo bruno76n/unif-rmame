@@ -130,3 +130,4 @@ La línea de la bitácora se escribe al final, con el resultado ya conocido. Esc
 | 13 nov 2026 | 19 | 10 · Mantenimiento | [2026-11-12-fase-19](sesiones/2026-11-12-fase-19.md) |
 | 13 nov 2026 | 19 | 7 · Tienda en línea | [2026-11-12-fase-19](sesiones/2026-11-12-fase-19.md) |
 | 13 nov 2026 | 19 | 13 · Contaduría | [2026-11-12-fase-19](sesiones/2026-11-12-fase-19.md) |
+| 13 nov 2026 | 19 | 12 · Bodega | [2026-11-12-fase-19](sesiones/2026-11-12-fase-19.md) |

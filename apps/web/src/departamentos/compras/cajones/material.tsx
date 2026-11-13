@@ -30,16 +30,11 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
 import { leerFalla, useAccion, useConsulta } from "../../../comun/api.tsx";
+import { useCierreDelCajon } from "../../../comun/cambios-sin-guardar.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { VentanaConMotivo } from "../../../comun/ventana-con-motivo.tsx";
-import {
-	erroresDeLaAccion,
-	numeroEscrito,
-	TituloDeSeccion,
-	useCierreDelCajon,
-	validadorDelContrato,
-} from "../comun.tsx";
+import { erroresDeLaAccion, numeroEscrito, TituloDeSeccion, validadorDelContrato } from "../comun.tsx";
 import { useDireccionDeCompras } from "../direccion.ts";
 import { VentanaOtroProveedor } from "../ventanas/otro-proveedor.tsx";
 

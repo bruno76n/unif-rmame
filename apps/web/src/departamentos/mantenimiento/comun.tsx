@@ -1,28 +1,12 @@
 /**
- * Lo que comparten las pestañas y los cajones de Mantenimiento: una celda de dos líneas, la cifra de un cajón, una lista
- * con su día y la lectura por páginas de una consulta que pagina («Ver más» en Fallas resueltas y en Servicios).
+ * Lo que comparten las pestañas y los cajones de Mantenimiento: una lista con su día y los errores de una regla en sus
+ * campos.
  * Fase 19 · docs/interfaz/fabrica/mantenimiento.md («Fallas», «Servicios», «Cajones»)
  */
 
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
-import { TextoConTono } from "@uniformame/interfaz/estados/textos-con-tono";
 import type { ReactNode } from "react";
 import type { FieldValues, Path, UseFormReturn } from "react-hook-form";
-
-/**
- * Una cifra de un cajón: el número grande y, abajo, qué es.
- * @param props El número, qué es y si va en rojo.
- */
-export function CifraDeCajon({ numero, nombre, rojo = false }: { numero: string; nombre: string; rojo?: boolean }) {
-	return (
-		<div className="flex flex-col gap-0.5 rounded-mediano bg-suave px-4 py-3">
-			<b className="font-bold text-subtitulo tabular-nums">
-				{rojo ? <TextoConTono tono="rojo">{numero}</TextoConTono> : numero}
-			</b>
-			<span className="text-etiqueta text-tinta3">{nombre}</span>
-		</div>
-	);
-}
 
 /**
  * Una lista de renglones con su día a la derecha («Historial», «Lo que está deteniendo»).

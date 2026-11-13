@@ -16,6 +16,12 @@ import { Route as AccesoConfirmadoRouteImport } from "./rutas/acceso/confirmado.
 import { Route as AdminIndexRouteImport } from "./rutas/admin/index.tsx"
 import { Route as AduanaIndexRouteImport } from "./rutas/aduana/index.tsx"
 import { Route as BodegaIndexRouteImport } from "./rutas/bodega/index.tsx"
+import { Route as BodegaConteosRouteImport } from "./rutas/bodega/conteos.tsx"
+import { Route as BodegaDiferenciasRouteImport } from "./rutas/bodega/diferencias.tsx"
+import { Route as BodegaExcepcionesRouteImport } from "./rutas/bodega/excepciones.tsx"
+import { Route as BodegaExistenciasRouteImport } from "./rutas/bodega/existencias.tsx"
+import { Route as BodegaMaterialesRouteImport } from "./rutas/bodega/materiales.tsx"
+import { Route as BodegaReabastoRouteImport } from "./rutas/bodega/reabasto.tsx"
 import { Route as CalidadIndexRouteImport } from "./rutas/calidad/index.tsx"
 import { Route as CalidadDefectosRouteImport } from "./rutas/calidad/defectos.tsx"
 import { Route as CalidadPorRevisarRouteImport } from "./rutas/calidad/por-revisar.tsx"
@@ -100,6 +106,36 @@ const AduanaIndexRoute = AduanaIndexRouteImport.update({
 const BodegaIndexRoute = BodegaIndexRouteImport.update({
   id: "/bodega/",
   path: "/bodega/",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BodegaConteosRoute = BodegaConteosRouteImport.update({
+  id: "/bodega/conteos",
+  path: "/bodega/conteos",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BodegaDiferenciasRoute = BodegaDiferenciasRouteImport.update({
+  id: "/bodega/diferencias",
+  path: "/bodega/diferencias",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BodegaExcepcionesRoute = BodegaExcepcionesRouteImport.update({
+  id: "/bodega/excepciones",
+  path: "/bodega/excepciones",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BodegaExistenciasRoute = BodegaExistenciasRouteImport.update({
+  id: "/bodega/existencias",
+  path: "/bodega/existencias",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BodegaMaterialesRoute = BodegaMaterialesRouteImport.update({
+  id: "/bodega/materiales",
+  path: "/bodega/materiales",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BodegaReabastoRoute = BodegaReabastoRouteImport.update({
+  id: "/bodega/reabasto",
+  path: "/bodega/reabasto",
   getParentRoute: () => rootRouteImport,
 } as any)
 const CalidadIndexRoute = CalidadIndexRouteImport.update({
@@ -360,6 +396,12 @@ export interface FileRoutesByFullPath {
   "/": typeof IndexRoute
   "/catalogo": typeof CatalogoRouteRouteWithChildren
   "/acceso/confirmado": typeof AccesoConfirmadoRoute
+  "/bodega/conteos": typeof BodegaConteosRoute
+  "/bodega/diferencias": typeof BodegaDiferenciasRoute
+  "/bodega/excepciones": typeof BodegaExcepcionesRoute
+  "/bodega/existencias": typeof BodegaExistenciasRoute
+  "/bodega/materiales": typeof BodegaMaterialesRoute
+  "/bodega/reabasto": typeof BodegaReabastoRoute
   "/calidad/defectos": typeof CalidadDefectosRoute
   "/calidad/por-revisar": typeof CalidadPorRevisarRoute
   "/calidad/reclamos": typeof CalidadReclamosRoute
@@ -418,6 +460,12 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   "/": typeof IndexRoute
   "/acceso/confirmado": typeof AccesoConfirmadoRoute
+  "/bodega/conteos": typeof BodegaConteosRoute
+  "/bodega/diferencias": typeof BodegaDiferenciasRoute
+  "/bodega/excepciones": typeof BodegaExcepcionesRoute
+  "/bodega/existencias": typeof BodegaExistenciasRoute
+  "/bodega/materiales": typeof BodegaMaterialesRoute
+  "/bodega/reabasto": typeof BodegaReabastoRoute
   "/calidad/defectos": typeof CalidadDefectosRoute
   "/calidad/por-revisar": typeof CalidadPorRevisarRoute
   "/calidad/reclamos": typeof CalidadReclamosRoute
@@ -478,6 +526,12 @@ export interface FileRoutesById {
   "/": typeof IndexRoute
   "/catalogo": typeof CatalogoRouteRouteWithChildren
   "/acceso/confirmado": typeof AccesoConfirmadoRoute
+  "/bodega/conteos": typeof BodegaConteosRoute
+  "/bodega/diferencias": typeof BodegaDiferenciasRoute
+  "/bodega/excepciones": typeof BodegaExcepcionesRoute
+  "/bodega/existencias": typeof BodegaExistenciasRoute
+  "/bodega/materiales": typeof BodegaMaterialesRoute
+  "/bodega/reabasto": typeof BodegaReabastoRoute
   "/calidad/defectos": typeof CalidadDefectosRoute
   "/calidad/por-revisar": typeof CalidadPorRevisarRoute
   "/calidad/reclamos": typeof CalidadReclamosRoute
@@ -539,6 +593,12 @@ export interface FileRouteTypes {
     | "/"
     | "/catalogo"
     | "/acceso/confirmado"
+    | "/bodega/conteos"
+    | "/bodega/diferencias"
+    | "/bodega/excepciones"
+    | "/bodega/existencias"
+    | "/bodega/materiales"
+    | "/bodega/reabasto"
     | "/calidad/defectos"
     | "/calidad/por-revisar"
     | "/calidad/reclamos"
@@ -597,6 +657,12 @@ export interface FileRouteTypes {
   to:
     | "/"
     | "/acceso/confirmado"
+    | "/bodega/conteos"
+    | "/bodega/diferencias"
+    | "/bodega/excepciones"
+    | "/bodega/existencias"
+    | "/bodega/materiales"
+    | "/bodega/reabasto"
     | "/calidad/defectos"
     | "/calidad/por-revisar"
     | "/calidad/reclamos"
@@ -656,6 +722,12 @@ export interface FileRouteTypes {
     | "/"
     | "/catalogo"
     | "/acceso/confirmado"
+    | "/bodega/conteos"
+    | "/bodega/diferencias"
+    | "/bodega/excepciones"
+    | "/bodega/existencias"
+    | "/bodega/materiales"
+    | "/bodega/reabasto"
     | "/calidad/defectos"
     | "/calidad/por-revisar"
     | "/calidad/reclamos"
@@ -716,6 +788,12 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CatalogoRouteRoute: typeof CatalogoRouteRouteWithChildren
   AccesoConfirmadoRoute: typeof AccesoConfirmadoRoute
+  BodegaConteosRoute: typeof BodegaConteosRoute
+  BodegaDiferenciasRoute: typeof BodegaDiferenciasRoute
+  BodegaExcepcionesRoute: typeof BodegaExcepcionesRoute
+  BodegaExistenciasRoute: typeof BodegaExistenciasRoute
+  BodegaMaterialesRoute: typeof BodegaMaterialesRoute
+  BodegaReabastoRoute: typeof BodegaReabastoRoute
   CalidadDefectosRoute: typeof CalidadDefectosRoute
   CalidadPorRevisarRoute: typeof CalidadPorRevisarRoute
   CalidadReclamosRoute: typeof CalidadReclamosRoute
@@ -815,6 +893,48 @@ declare module "@tanstack/react-router" {
       path: "/bodega"
       fullPath: "/bodega/"
       preLoaderRoute: typeof BodegaIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/bodega/conteos": {
+      id: "/bodega/conteos"
+      path: "/bodega/conteos"
+      fullPath: "/bodega/conteos"
+      preLoaderRoute: typeof BodegaConteosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/bodega/diferencias": {
+      id: "/bodega/diferencias"
+      path: "/bodega/diferencias"
+      fullPath: "/bodega/diferencias"
+      preLoaderRoute: typeof BodegaDiferenciasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/bodega/excepciones": {
+      id: "/bodega/excepciones"
+      path: "/bodega/excepciones"
+      fullPath: "/bodega/excepciones"
+      preLoaderRoute: typeof BodegaExcepcionesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/bodega/existencias": {
+      id: "/bodega/existencias"
+      path: "/bodega/existencias"
+      fullPath: "/bodega/existencias"
+      preLoaderRoute: typeof BodegaExistenciasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/bodega/materiales": {
+      id: "/bodega/materiales"
+      path: "/bodega/materiales"
+      fullPath: "/bodega/materiales"
+      preLoaderRoute: typeof BodegaMaterialesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/bodega/reabasto": {
+      id: "/bodega/reabasto"
+      path: "/bodega/reabasto"
+      fullPath: "/bodega/reabasto"
+      preLoaderRoute: typeof BodegaReabastoRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/calidad/": {
@@ -1196,6 +1316,12 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CatalogoRouteRoute: CatalogoRouteRouteWithChildren,
   AccesoConfirmadoRoute: AccesoConfirmadoRoute,
+  BodegaConteosRoute: BodegaConteosRoute,
+  BodegaDiferenciasRoute: BodegaDiferenciasRoute,
+  BodegaExcepcionesRoute: BodegaExcepcionesRoute,
+  BodegaExistenciasRoute: BodegaExistenciasRoute,
+  BodegaMaterialesRoute: BodegaMaterialesRoute,
+  BodegaReabastoRoute: BodegaReabastoRoute,
   CalidadDefectosRoute: CalidadDefectosRoute,
   CalidadPorRevisarRoute: CalidadPorRevisarRoute,
   CalidadReclamosRoute: CalidadReclamosRoute,

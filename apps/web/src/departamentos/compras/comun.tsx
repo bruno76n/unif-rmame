@@ -6,11 +6,10 @@
  */
 
 import { Buscador as BuscadorDelSistema } from "@uniformame/interfaz/captura/buscador";
-import { type ReactNode, useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import type { FieldErrors, FieldValues, Resolver } from "react-hook-form";
 import type { z } from "zod";
 import { leerFalla } from "../../comun/api.tsx";
-import { usePreguntarAntesDeSalir } from "../../comun/cambios-sin-guardar.tsx";
 import { useDireccionDeCompras } from "./direccion.ts";
 
 /** Un día en milisegundos. */
@@ -119,20 +118,4 @@ export function erroresDeLaAccion<Valores extends FieldValues>(
 	}
 	const delCodigo = leida.codigo === null ? undefined : porCodigo[leida.codigo];
 	if (delCodigo !== undefined) ponerError(delCodigo, { message: leida.mensaje });
-}
-
-/**
- * El cierre de un cajón con captura: con cambios sin guardar, cambiar de pestaña o salir por el menú pregunta antes, y
- * cerrar el cajón lo pregunta el cajón mismo; ya decidido salir, la dirección cambia sin volver a preguntar.
- * @param conCambios Si hay cambios sin guardar.
- * @param cerrar Cómo se cierra el cajón (quita el cajón de la dirección).
- * @returns `alCerrar` para el cajón y `pregunta`, la ventana que hay que pintar.
- */
-export function useCierreDelCajon(conCambios: boolean, cerrar: () => void) {
-	const [saliendo, setSaliendo] = useState(false);
-	const pregunta = usePreguntarAntesDeSalir(conCambios && !saliendo);
-	useEffect(() => {
-		if (saliendo) cerrar();
-	}, [saliendo, cerrar]);
-	return { alCerrar: () => setSaliendo(true), pregunta };
 }
