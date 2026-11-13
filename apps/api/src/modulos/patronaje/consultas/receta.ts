@@ -9,6 +9,7 @@
  */
 
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
+import { plural } from "@uniformame/compartido/calculos/textos";
 import { recetaDeLaPrenda } from "@uniformame/compartido/contratos/patronaje/receta";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
@@ -26,7 +27,6 @@ import {
 	nombresDeEtapa,
 	type PrendaLeida,
 	piezasDelLote,
-	plural,
 	rangoDeTallas,
 	sinEscuela,
 	tallaDeEnMedio,

@@ -11,9 +11,10 @@ import { levantarOrdenPropuesta } from "@uniformame/compartido/contratos/compras
 import { condicionDePago } from "@uniformame/compartido/contratos/compras/textos";
 import { and, eq } from "drizzle-orm";
 import { implementarConsulta } from "../../../nucleo/modulos.ts";
+import { parametroNumero } from "../../../nucleo/parametros.ts";
 import { plazosReales } from "../dominio/ordenes.ts";
 import { ordenesCompra } from "../tablas.ts";
-import { cuentas, datosDeMateriales, estadoDeMaterial, numeroDe, surtidores } from "./comun.ts";
+import { cuentas, datosDeMateriales, estadoDeMaterial, surtidores } from "./comun.ts";
 import { porUrgencia } from "./por-pedir.ts";
 import { proveedoresConNombre } from "./proveedores.ts";
 
@@ -53,8 +54,8 @@ export const consultaLevantarOrdenPropuesta = implementarConsulta(
 								: [{ material_id: id, cantidad: cantidades?.[lugar] ?? Number(cuenta.por_pedir) }];
 						});
 			return {
-				umbral_cambio_precio_pct: await numeroDe(accion, "compras.umbral_cambio_precio_pct"),
-				cantidad_maxima: await numeroDe(accion, "compras.cantidad_maxima_linea"),
+				umbral_cambio_precio_pct: await parametroNumero(accion, "compras.umbral_cambio_precio_pct"),
+				cantidad_maxima: await parametroNumero(accion, "compras.cantidad_maxima_linea"),
 				escogidos,
 				materiales: conCuenta.map(({ material, cuenta }) => ({
 					material_id: material.id,

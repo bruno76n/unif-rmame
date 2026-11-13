@@ -8,7 +8,7 @@
  * acción con su misma clave, y avisa cuando la web es vieja.
  */
 
-import { type QueryClient, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, type QueryClient, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { crearCliente, ErrorDeConflicto, ErrorDeLaApi, ErrorSinRed } from "@uniformame/compartido/cliente/cliente";
 import type { ContratoDeAccion, ContratoDeConsulta } from "@uniformame/compartido/contratos/definir";
 import { useRef } from "react";
@@ -45,17 +45,21 @@ export async function consultar<Contrato extends ContratoDeConsulta>(
  * @param contrato Su contrato.
  * @param parametros Sus parámetros (de la dirección).
  * @param activa Si se lee ya (un cajón cerrado no lee).
+ * @param conservarAnteriores Mientras llegan los datos de otros parámetros, deja los de antes (una casilla que cambia
+ * la consulta no pierde el foco ni la pantalla se vacía).
  */
 export function useConsulta<Contrato extends ContratoDeConsulta>(
 	contrato: Contrato,
 	parametros: z.input<Contrato["entrada"]>,
 	activa = true,
+	conservarAnteriores = false,
 ) {
 	return useQuery({
 		queryKey: [contrato.nombre, parametros],
 		queryFn: () => consultar(contrato, parametros),
 		enabled: activa,
 		retry: false,
+		...(conservarAnteriores ? { placeholderData: keepPreviousData } : {}),
 	});
 }
 

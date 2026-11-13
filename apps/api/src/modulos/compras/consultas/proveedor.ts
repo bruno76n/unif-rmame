@@ -10,18 +10,11 @@ import { proveedorDeCompras } from "@uniformame/compartido/contratos/compras/con
 import { eq } from "drizzle-orm";
 import { noExiste } from "../../../nucleo/http/errores.ts";
 import { implementarConsulta } from "../../../nucleo/modulos.ts";
+import { parametroNumero } from "../../../nucleo/parametros.ts";
 import { terceros } from "../../contaduria/tablas.ts";
 import { plazosReales } from "../dominio/ordenes.ts";
 import { proveedores } from "../tablas.ts";
-import {
-	cuentas,
-	datosDeMateriales,
-	estadoDeMaterial,
-	estadoDeOrden,
-	numeroDe,
-	ordenesResumidas,
-	surtidores,
-} from "./comun.ts";
+import { cuentas, datosDeMateriales, estadoDeMaterial, estadoDeOrden, ordenesResumidas, surtidores } from "./comun.ts";
 import { tonoDelPlazo } from "./proveedores.ts";
 
 /** Cuántas órdenes muestra «Órdenes · Las últimas {n}». */
@@ -97,7 +90,7 @@ export const consultaProveedor = implementarConsulta(proveedorDeCompras, async (
 				estado: estadoDeOrden(orden.estado, orden.diasAtraso),
 				total_centavos: orden.totalCentavos,
 			})),
-			dias_dice_tardar_maximo: await numeroDe(accion, "compras.dias_dice_tardar_maximo"),
+			dias_dice_tardar_maximo: await parametroNumero(accion, "compras.dias_dice_tardar_maximo"),
 		};
 	}),
 }));

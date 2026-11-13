@@ -12,6 +12,14 @@ import {
 } from "./acciones/fallas.ts";
 import { accionAltaMaquina, accionBajaMaquina, accionCambiarAsignacionMaquina } from "./acciones/maquinas.ts";
 import { bajadaDeMantenimiento } from "./bajada.ts";
+import { consultaCostoPorMaquina } from "./consultas/costo-por-maquina.ts";
+import { consultaFallaDeMantenimiento } from "./consultas/falla.ts";
+import { consultaFallasDeMantenimiento } from "./consultas/fallas.ts";
+import { consultaMaquinaDeMantenimiento } from "./consultas/maquina.ts";
+import { consultaMaquinasDeMantenimiento } from "./consultas/maquinas.ts";
+import { consultaOpcionesDeMantenimiento } from "./consultas/opciones.ts";
+import { consultaPendientesDeMantenimiento, pastillaMantenimiento } from "./consultas/pendientes.ts";
+import { consultaServiciosDeMantenimiento } from "./consultas/servicios.ts";
 import { soltarMaquinasDePersona } from "./internas/maquinas.ts";
 import { fallasQueDetienen } from "./lecturas/fallas.ts";
 import { semillaDeParametrosDeMantenimiento } from "./parametros.ts";
@@ -28,6 +36,17 @@ export default definirModulo({
 		accionGuardarNotaSeguimiento,
 		accionRegistrarServicio,
 	],
+	consultas: [
+		consultaPendientesDeMantenimiento,
+		consultaMaquinasDeMantenimiento,
+		consultaFallasDeMantenimiento,
+		consultaServiciosDeMantenimiento,
+		consultaCostoPorMaquina,
+		consultaFallaDeMantenimiento,
+		consultaMaquinaDeMantenimiento,
+		consultaOpcionesDeMantenimiento,
+	],
+	pastillas: { mantenimiento: pastillaMantenimiento },
 	internas: { soltar_maquinas_de_persona: soltarMaquinasDePersona },
 	lecturas: { fallas_que_detienen: fallasQueDetienen },
 	bajada: bajadaDeMantenimiento,

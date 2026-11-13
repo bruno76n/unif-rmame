@@ -5,9 +5,10 @@
  * Fase 19 · docs/interfaz/fabrica/compras.md («Proveedores»)
  */
 
+import { plural } from "@uniformame/compartido/calculos/textos";
 import type { proveedoresDeCompras } from "@uniformame/compartido/contratos/compras/consultas-pestanas";
 import { reactivarProveedor } from "@uniformame/compartido/contratos/compras/proveedores";
-import { plural } from "@uniformame/compartido/contratos/compras/textos";
+
 import { BarraAvance } from "@uniformame/interfaz/avance/barra-avance";
 import { Boton } from "@uniformame/interfaz/botones/boton";
 import { Filtros } from "@uniformame/interfaz/captura/filtros";

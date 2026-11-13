@@ -8,6 +8,7 @@
  * de etapa. Por cliente, los grupos van con su crédito; sin filtros salen todos los clientes activos.
  */
 
+import { plural } from "@uniformame/compartido/calculos/textos";
 import { pedidosVentas } from "@uniformame/compartido/contratos/ventas/consultas-pedidos";
 import type { z } from "zod";
 import { parametroEntero } from "../../../nucleo/acceso/sesion.ts";
@@ -25,7 +26,6 @@ import {
 	leerRenglones,
 	llevaTodas,
 	paraBuscar,
-	plural,
 	prendasDelPedido,
 	sumar,
 	tiposDeCliente,

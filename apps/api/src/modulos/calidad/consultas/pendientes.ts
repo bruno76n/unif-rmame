@@ -14,10 +14,10 @@ import {
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { type ConteoDePastilla, type ContextoDeConsulta, implementarConsulta } from "../../../nucleo/modulos.ts";
+import { escribirParaQuien } from "../../produccion/dominio/para-quien.ts";
 import {
 	defectosDelPeriodo,
 	devolucionesPorRevisar,
-	escribirParaQuien,
 	type LoteParaRevisar,
 	leerReprocesos,
 	lotesParaRevisar,

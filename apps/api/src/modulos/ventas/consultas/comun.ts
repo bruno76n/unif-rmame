@@ -9,6 +9,7 @@
  */
 
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
+import { plural } from "@uniformame/compartido/calculos/textos";
 import { sql } from "drizzle-orm";
 import type { Temporal } from "temporal-polyfill";
 import { z } from "zod";
@@ -52,16 +53,6 @@ export const textosDePago: Readonly<Record<string, string>> = {
 	pagada_en_parte: "Pagada en parte",
 	pagada: "Pagada",
 };
-
-/**
- * Un número con su palabra, en singular o plural: «1 pedido», «3 pedidos».
- * @param numero Cuántos.
- * @param uno La palabra en singular.
- * @param varios La palabra en plural.
- */
-export function plural(numero: number, uno: string, varios: string): string {
-	return `${numero.toLocaleString("es-MX")} ${numero === 1 ? uno : varios}`;
-}
 
 /** Cómo se lee cada tipo de cliente, con mayúscula: «Escuela en Yurécuaro». */
 export const tiposDeCliente: Readonly<Record<string, string>> = {

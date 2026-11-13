@@ -6,8 +6,9 @@
  */
 
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
+import { plural } from "@uniformame/compartido/calculos/textos";
 import type { gruposDeOrdenes, ordenesDeCompra } from "@uniformame/compartido/contratos/compras/consultas-pestanas";
-import { pesos, plural } from "@uniformame/compartido/contratos/compras/textos";
+import { pesos } from "@uniformame/compartido/contratos/compras/textos";
 import { BarraAvance } from "@uniformame/interfaz/avance/barra-avance";
 import type { ColorDeGrupo } from "@uniformame/interfaz/contenedores/grupo-plegable";
 import { GrupoPlegable } from "@uniformame/interfaz/contenedores/grupo-plegable";

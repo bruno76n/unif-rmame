@@ -6,9 +6,10 @@
  */
 
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
+import { plural } from "@uniformame/compartido/calculos/textos";
 import { proveedorDeCompras } from "@uniformame/compartido/contratos/compras/consultas-cajones";
 import { darBajaProveedor, guardarProveedor } from "@uniformame/compartido/contratos/compras/proveedores";
-import { pesos, plural } from "@uniformame/compartido/contratos/compras/textos";
+import { pesos } from "@uniformame/compartido/contratos/compras/textos";
 import { Boton } from "@uniformame/interfaz/botones/boton";
 import { Campo } from "@uniformame/interfaz/captura/campo";
 import { Cajon } from "@uniformame/interfaz/contenedores/cajon";

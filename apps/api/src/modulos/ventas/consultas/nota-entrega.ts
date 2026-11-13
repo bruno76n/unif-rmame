@@ -9,6 +9,7 @@
  */
 
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
+import { plural } from "@uniformame/compartido/calculos/textos";
 import { notaEntregaVentas } from "@uniformame/compartido/contratos/ventas/consultas-notas";
 import { preciosRecortables } from "@uniformame/compartido/contratos/ventas/vistas";
 import { sql } from "drizzle-orm";
@@ -21,7 +22,6 @@ import {
 	diasHasta,
 	estadosDeNota,
 	etapas,
-	plural,
 	porPrenda,
 	textoDeFormaDePago,
 	textosDePago,

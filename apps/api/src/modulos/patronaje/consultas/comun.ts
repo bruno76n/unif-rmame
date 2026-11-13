@@ -270,16 +270,6 @@ export function textoDePorciento(pct: string | number): string {
 }
 
 /**
- * Un texto con su plural: «1 lote», «3 lotes».
- * @param cuantos Cuántos.
- * @param uno El singular.
- * @param varios El plural.
- */
-export function plural(cuantos: number, uno: string, varios: string): string {
-	return `${cuantos} ${cuantos === 1 ? uno : varios}`;
-}
-
-/**
  * Unos metros con dos decimales, como los escribe Patronaje: «0.92».
  * @param metros En texto decimal.
  */

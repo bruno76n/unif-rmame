@@ -1,15 +1,11 @@
 /**
- * Cómo mandan sus acciones los cajones y las ventanas de Ventas: la acción por su contrato (con su clave, su aviso de
- * abajo y lo que vuelve a leer, de `useAccion`), los errores de cada campo para su formulario y el choque de versión,
- * que vuelve a leer lo nuevo y lo avisa en el cajón sin perder lo capturado.
- * Fase 19 · docs/interfaz/comunes.md («Los estados de una pantalla»: choque de versión) y docs/cimientos/API.md
+ * Cómo mandan sus acciones los cajones y las ventanas de Ventas a externos: con `useEnvio` de lo común, volviendo a
+ * leer las consultas de Ventas; los errores de una regla llegan a la pantalla campo por campo.
+ * Fase 19 · docs/interfaz/fabrica/ventas.md y docs/interfaz/comunes.md («Los estados de una pantalla»)
  */
 
-import { useQueryClient } from "@tanstack/react-query";
 import type { ContratoDeAccion } from "@uniformame/compartido/contratos/definir";
-import { useState } from "react";
-import type { z } from "zod";
-import { leerFalla, useAccion, volverALeer } from "../../comun/api.tsx";
+import { useEnvio as useEnvioComun } from "../../comun/envio.ts";
 
 /** Todas las consultas de Ventas: una acción de Ventas puede cambiar cualquiera. */
 export const consultasDeVentas = [
@@ -32,28 +28,20 @@ export const consultasDeVentas = [
 /**
  * Una acción de Ventas lista para un cajón o una ventana.
  * @param contrato Su contrato.
- * @returns `enviar(peticion, alCampos)` (regresa el resultado o nada si no salió), si va en camino y si chocó.
+ * @returns Lo de `useEnvio` de lo común; `enviar(peticion, alCampos)` entrega los errores de la regla por campo.
  */
 export function useEnvio<Contrato extends ContratoDeAccion>(contrato: Contrato) {
-	const accion = useAccion(contrato, consultasDeVentas);
-	const consultas = useQueryClient();
-	const [choco, setChoco] = useState(false);
-	const enviar = async (
-		peticion: { datos: z.input<Contrato["entrada"]>; version?: number },
-		alCampos?: (campos: Record<string, string>) => void,
-	): Promise<z.output<Contrato["resultado"]> | undefined> => {
-		setChoco(false);
-		try {
-			return await accion.mutateAsync(peticion);
-		} catch (error) {
-			const falla = leerFalla(error);
-			if (falla.tipo === "regla" && Object.keys(falla.campos).length > 0) alCampos?.(falla.campos);
-			if (falla.tipo === "choque") {
-				setChoco(true);
-				await volverALeer(consultas, consultasDeVentas);
-			}
-			return undefined;
-		}
+	const envio = useEnvioComun(contrato, consultasDeVentas);
+	return {
+		...envio,
+		enviar: (peticion: Parameters<typeof envio.enviar>[0], alCampos?: (campos: Record<string, string>) => void) =>
+			envio.enviar(
+				peticion,
+				alCampos === undefined
+					? undefined
+					: (falla) => {
+							if (Object.keys(falla.campos).length > 0) alCampos(falla.campos);
+						},
+			),
 	};
-	return { enviar, enviando: accion.isPending, choco };
 }

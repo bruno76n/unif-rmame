@@ -9,6 +9,7 @@
 
 import { deMilesimos, pideLaReceta } from "@uniformame/compartido/calculos/cuenta-material";
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
+import { plural } from "@uniformame/compartido/calculos/textos";
 import type { renglonPatronContraCorte } from "@uniformame/compartido/contratos/patronaje/receta";
 import { rendimientoDePatronaje, rendimientoDeUnaPrenda } from "@uniformame/compartido/contratos/patronaje/rendimiento";
 import { sql } from "drizzle-orm";
@@ -21,7 +22,6 @@ import {
 	metrosConDos,
 	type ParametrosDePatronaje,
 	type PrendaLeida,
-	plural,
 	sinEscuela,
 	tallaDeEnMedio,
 	textoDePorciento,

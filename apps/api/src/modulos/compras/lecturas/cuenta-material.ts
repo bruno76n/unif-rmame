@@ -14,7 +14,7 @@ import { consumoNormal, type Llegada, proyectarMaterial } from "@uniformame/comp
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { z } from "zod";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
-import { parametroNumero } from "../dominio/comunes.ts";
+import { parametroNumero } from "../../../nucleo/parametros.ts";
 import { plazosReales } from "../dominio/ordenes.ts";
 import { materiales, ordenCompraLineas, ordenesCompra, proveedores } from "../tablas.ts";
 import { ordenesPorRecibir } from "./ordenes.ts";

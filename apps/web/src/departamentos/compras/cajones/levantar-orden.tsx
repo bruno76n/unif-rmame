@@ -12,6 +12,7 @@
  */
 
 import { pesosACentavos } from "@uniformame/compartido/calculos/dinero";
+import { plural } from "@uniformame/compartido/calculos/textos";
 import { levantarOrdenPropuesta } from "@uniformame/compartido/contratos/compras/consultas-cajones";
 import { levantarOrden } from "@uniformame/compartido/contratos/compras/ordenes";
 import {
@@ -19,7 +20,6 @@ import {
 	cantidadConUnidad,
 	errorDeCantidad,
 	pesos,
-	plural,
 } from "@uniformame/compartido/contratos/compras/textos";
 import { Boton } from "@uniformame/interfaz/botones/boton";
 import { Campo } from "@uniformame/interfaz/captura/campo";

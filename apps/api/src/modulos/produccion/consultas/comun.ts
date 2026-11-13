@@ -1,6 +1,5 @@
 /**
- * Lo que comparten las consultas de las pantallas de Producción: los parámetros, «para quién» es un lote, cuántos días
- * faltan, el estado de un lote ya escrito con su color, la tira de operaciones y la salud de los lotes en proceso.
+ * Lo que comparten las consultas de las pantallas de Producción: los parámetros, el estado de un lote ya escrito con su color, la tira de operaciones y la salud de los lotes en proceso.
  * Fase 19 · docs/interfaz/fabrica/produccion.md («Lotes»: la tarjeta, la tira y los estados del lote)
  *
  * La salud de un lote en proceso no se calcula aquí: la dan `produccion.salud_de_lotes` y `produccion.lotes_atorados`
@@ -9,79 +8,12 @@
 
 import { diasHasta, textoDeDiaCorto, textoEnDias } from "@uniformame/compartido/calculos/fechas";
 import type { paradaDeLote } from "@uniformame/compartido/contratos/produccion/hilo";
-import type { casillaDeLaTira, estadoEscrito, paraQuien } from "@uniformame/compartido/contratos/produccion/pantallas";
+import type { casillaDeLaTira, estadoEscrito } from "@uniformame/compartido/contratos/produccion/pantallas";
 import { type SQL, sql } from "drizzle-orm";
 import type { Temporal } from "temporal-polyfill";
 import { z } from "zod";
 import type { ContextoDeConsulta } from "../../../nucleo/modulos.ts";
-
-/** Para quién es un lote, como sale de la base. */
-export const deParaQuien = {
-	destino: z.enum(["pedido", "tienda", "temporada"]),
-	pedido_id: z.uuid().nullable(),
-	pedido_folio: z.string().nullable(),
-	cliente: z.string().nullable(),
-	color: z.string().nullable(),
-	tienda: z.string().nullable(),
-	fecha_entrega: z.string(),
-};
-
-/**
- * Las columnas de «para quién» de un lote `l`, para un `SELECT`; van con `uniones` en su `FROM`.
- */
-export const columnasDeParaQuien = sql`l.destino, l.pedido_id, pe.folio AS pedido_folio, ter.nombre AS cliente,
-	esc.color, ub.nombre AS tienda, l.fecha_entrega::text AS fecha_entrega`;
-
-/** Las uniones de «para quién» de un lote `l`. */
-export const unionesDeParaQuien = sql`LEFT JOIN pedidos pe ON pe.id = l.pedido_id
-	LEFT JOIN clientes cli ON cli.id = pe.cliente_id
-	LEFT JOIN terceros ter ON ter.id = cli.tercero_id
-	LEFT JOIN escuelas esc ON esc.id = cli.escuela_id
-	LEFT JOIN ubicaciones ub ON ub.id = l.ubicacion_destino_id`;
-
-/**
- * Escribe para quién es un lote: el cliente con su color, la tienda o la temporada, con su línea.
- * @param fila Lo leído con `columnasDeParaQuien`.
- */
-export function escribirParaQuien(fila: {
-	destino: "pedido" | "tienda" | "temporada";
-	pedido_id: string | null;
-	pedido_folio: string | null;
-	cliente: string | null;
-	color: string | null;
-	tienda: string | null;
-	fecha_entrega: string;
-}): z.infer<typeof paraQuien> {
-	const para = `para el ${textoDeDiaCorto(fila.fecha_entrega)}`;
-	if (fila.destino === "pedido") {
-		return {
-			tipo: "pedido",
-			nombre: fila.cliente ?? "",
-			color: fila.color,
-			linea: `${fila.pedido_folio ?? ""} · ${para}`,
-			pedido_id: fila.pedido_id,
-		};
-	}
-	if (fila.destino === "tienda") {
-		return { tipo: "tienda", nombre: fila.tienda ?? "", color: null, linea: `Reabasto · ${para}`, pedido_id: null };
-	}
-	return {
-		tipo: "temporada",
-		nombre: "Temporada · bodega",
-		color: null,
-		linea: `Para el ${textoDeDiaCorto(fila.fecha_entrega)}`,
-		pedido_id: null,
-	};
-}
-
-/**
- * Lee un parámetro de número con la lectura de Administración.
- * @param contexto El contexto de la consulta.
- * @param clave Su clave (`produccion.riesgo_atraso_dias`).
- */
-export async function parametroNumero(contexto: ContextoDeConsulta, clave: string): Promise<number> {
-	return Number(await contexto.lectura("admin.parametro", { clave }));
-}
+import { columnasDeParaQuien, deParaQuien, unionesDeParaQuien } from "../dominio/para-quien.ts";
 
 /** La salud de un lote en proceso, como la dan las lecturas de Producción. */
 export interface SaludEscrita {

@@ -15,11 +15,15 @@ import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { noExiste } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeConsulta, implementarConsulta } from "../../../nucleo/modulos.ts";
-import { columnasDeParaQuien, deParaQuien, unionesDeParaQuien } from "../../produccion/consultas/comun.ts";
+import {
+	columnasDeParaQuien,
+	deParaQuien,
+	escribirParaQuien,
+	unionesDeParaQuien,
+} from "../../produccion/dominio/para-quien.ts";
 import { cosioEnElLote } from "../dominio/quien-revisa.ts";
 import {
 	defectosVigentes,
-	escribirParaQuien,
 	genteDelTaller,
 	leerReprocesos,
 	lotesParaRevisar,

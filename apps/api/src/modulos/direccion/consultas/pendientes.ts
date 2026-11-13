@@ -10,6 +10,7 @@
  */
 
 import { enPesos } from "@uniformame/compartido/calculos/dinero";
+import { plural } from "@uniformame/compartido/calculos/textos";
 import { autorizaciones, nombreDelTipoDeAutorizacion } from "@uniformame/compartido/contratos/direccion/autorizaciones";
 import { pendientes } from "@uniformame/compartido/contratos/direccion/pendientes";
 import { z } from "zod";
@@ -20,7 +21,6 @@ import { leerParametro } from "../../../nucleo/parametros.ts";
 import { alertasConDetalle } from "./alertas.ts";
 import { consultaAutorizaciones } from "./autorizaciones.ts";
 import {
-	conPlural,
 	existenciaPorUbicacion,
 	formatoDeCantidad,
 	formatoDePiezas,
@@ -97,7 +97,7 @@ async function cifraDeProduccion(contexto: ContextoDeAccion): Promise<Cifra> {
 			...(atorados > 0
 				? [
 						{
-							texto: `${conPlural(atorados, "lote atorado", "lotes atorados")} · ${formatoDePiezas.format(enRiesgo)} en riesgo`,
+							texto: `${plural(atorados, "lote atorado", "lotes atorados")} · ${formatoDePiezas.format(enRiesgo)} en riesgo`,
 							tono: "rojo" as const,
 						},
 					]
@@ -195,7 +195,7 @@ async function autorizacionesPendientes(contexto: ContextoDeConsulta, veMontos: 
 					: veMontos
 						? enPesos(autorizacion.importe_centavos)
 						: null,
-			estado: rojo ? `Por autorizar · ${conPlural(autorizacion.dias_esperando, "día", "días")}` : "Por autorizar",
+			estado: rojo ? `Por autorizar · ${plural(autorizacion.dias_esperando, "día", "días")}` : "Por autorizar",
 			color: rojo ? "rojo" : "ambar",
 			lleva_a: "direccion/autorizaciones",
 		};

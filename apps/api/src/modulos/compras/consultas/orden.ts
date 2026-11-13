@@ -8,13 +8,15 @@
 
 import { deMilesimos } from "@uniformame/compartido/calculos/cuenta-material";
 import { diaDeNegocio, textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
+import { plural } from "@uniformame/compartido/calculos/textos";
 import { ordenDeCompra } from "@uniformame/compartido/contratos/compras/consultas-cajones";
-import { cantidadConUnidad, plural } from "@uniformame/compartido/contratos/compras/textos";
+import { cantidadConUnidad } from "@uniformame/compartido/contratos/compras/textos";
 import { Temporal } from "temporal-polyfill";
 import { nombreDeCuenta } from "../../../nucleo/acciones/comunes.ts";
 import { noExiste } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeAccion, implementarConsulta } from "../../../nucleo/modulos.ts";
-import { condicionDeOrden, estadoDeOrden, numeroDe, type OrdenResumida, ordenesResumidas } from "./comun.ts";
+import { parametroNumero } from "../../../nucleo/parametros.ts";
+import { condicionDeOrden, estadoDeOrden, type OrdenResumida, ordenesResumidas } from "./comun.ts";
 
 /** Los estados que ya terminaron: muestran cuándo llegó. */
 const terminadas = ["recibida", "cerrada", "cerrada_con_faltante"];
@@ -84,7 +86,7 @@ export const consultaOrden = implementarConsulta(ordenDeCompra, async (contexto,
 				llego: terminadas.includes(orden.estado) ? (ultima ?? null) : null,
 				dice_tardar: orden.diasDiceTardar,
 				fecha_propuesta: hoy.add({ days: orden.diasDiceTardar }).toString(),
-				fecha_maxima: hoy.add({ days: await numeroDe(accion, "compras.dias_max_fecha_prometida") }).toString(),
+				fecha_maxima: hoy.add({ days: await parametroNumero(accion, "compras.dias_max_fecha_prometida") }).toString(),
 				avisos: await avisosDe(accion, orden),
 				pdf_archivo_id: orden.pdfArchivoId,
 			},
@@ -106,7 +108,7 @@ export const consultaOrden = implementarConsulta(ordenDeCompra, async (contexto,
 				importe_centavos: linea.importeCentavos,
 			})),
 			total_centavos: orden.totalCentavos,
-			cantidad_maxima: await numeroDe(accion, "compras.cantidad_maxima_linea"),
+			cantidad_maxima: await parametroNumero(accion, "compras.cantidad_maxima_linea"),
 			puede: {
 				editar: orden.estado === "borrador",
 				cancelar: orden.estado === "enviada",

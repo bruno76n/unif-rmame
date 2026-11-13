@@ -10,11 +10,11 @@
  * se comparen los mismos días de la semana.
  */
 
+import { plural } from "@uniformame/compartido/calculos/textos";
 import { indicadores } from "@uniformame/compartido/contratos/direccion/indicadores";
 import type { Temporal } from "temporal-polyfill";
 import { implementarConsulta } from "../../../nucleo/modulos.ts";
 import {
-	conPlural,
 	existenciaPorUbicacion,
 	lotesPorEtapa,
 	primerasVentas,
@@ -100,7 +100,7 @@ export const consultaIndicadores = implementarConsulta(indicadores, async (conte
 				terminadas: {
 					dias: dias.map((dia, i) => ({ fecha: dia.toString(), piezas: terminadas[i] ?? 0 })),
 					esta_semana: terminadas.slice(-diasDeEstaSemana).reduce((suma, piezas) => suma + piezas, 0),
-					lotes: `${conPlural(atorados, "lote atorado", "lotes atorados")}, ${enProceso} en proceso, ${porCortar} por cortar`,
+					lotes: `${plural(atorados, "lote atorado", "lotes atorados")}, ${enProceso} en proceso, ${porCortar} por cortar`,
 				},
 				existencias: {
 					total: ubicaciones.reduce((suma, ubicacion) => suma + ubicacion.piezas, 0),

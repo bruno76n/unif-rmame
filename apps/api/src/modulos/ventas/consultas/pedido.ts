@@ -9,6 +9,7 @@
 
 import { enPesos } from "@uniformame/compartido/calculos/dinero";
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
+import { plural } from "@uniformame/compartido/calculos/textos";
 import { pedidoVentas } from "@uniformame/compartido/contratos/ventas/consultas-pedidos";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
@@ -27,7 +28,6 @@ import {
 	leerNotasDePedidos,
 	leerPedidos,
 	leerRenglones,
-	plural,
 	porPrenda,
 	type RenglonLeido,
 	sumar,

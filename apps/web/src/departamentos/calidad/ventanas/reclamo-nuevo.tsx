@@ -81,6 +81,9 @@ export function VentanaReclamoNuevo({
 			...(loteId === "" ? {} : { lote_id: loteId }),
 		},
 		abierta,
+		// Mientras llegan las opciones de lo nuevo escrito, se quedan las de antes: si la lista se vaciara un momento,
+		// el selector perdería el lote ya escogido.
+		true,
 	);
 	const opciones = consulta.data;
 	// Si hay un solo lote revisado de esa prenda, ya puesto.

@@ -1,21 +1,27 @@
 /**
- * Pendientes de Mantenimiento: la primera pestaña. Hasta que su parte de la fase 19 la construya, muestra la página del
- * departamento sin pendientes.
- * Fase 19 · docs/interfaz/fabrica/ (el archivo de Mantenimiento)
+ * Pendientes de Mantenimiento, la primera pestaña: lee `mantenimiento.pendientes` y la entrega a su pestaña.
+ * Fase 19 · docs/interfaz/fabrica/mantenimiento.md («Pendientes»)
  */
 
 import { createFileRoute } from "@tanstack/react-router";
-import { EstadoDePantalla } from "@uniformame/interfaz/estados/estado-de-pantalla";
-import { PaginaDeDepartamento } from "../../comun/pagina-de-departamento.tsx";
+import { pendientesDeMantenimiento } from "@uniformame/compartido/contratos/mantenimiento/consultas-pestanas";
+import { useConsulta } from "../../comun/api.tsx";
+import { SegunConsulta } from "../../comun/segun-consulta.tsx";
+import { busquedaDeMantenimiento } from "../../departamentos/mantenimiento/direccion.ts";
+import { PaginaDeMantenimiento } from "../../departamentos/mantenimiento/pagina.tsx";
+import { PendientesDeMantenimiento } from "../../departamentos/mantenimiento/pestanas/pendientes.tsx";
+
+/** La pantalla de Pendientes. */
+function Pendientes() {
+	const consulta = useConsulta(pendientesDeMantenimiento, {});
+	return (
+		<PaginaDeMantenimiento activa="pendientes">
+			<SegunConsulta consulta={consulta}>{(datos) => <PendientesDeMantenimiento datos={datos} />}</SegunConsulta>
+		</PaginaDeMantenimiento>
+	);
+}
 
 export const Route = createFileRoute("/mantenimiento/")({
-	component: () => (
-		<PaginaDeDepartamento
-			departamento="mantenimiento"
-			pestanas={[{ clave: "pendientes", texto: "Pendientes" }]}
-			activa="pendientes"
-		>
-			<EstadoDePantalla tipo="vacio" texto="Sin pendientes" bien />
-		</PaginaDeDepartamento>
-	),
+	validateSearch: busquedaDeMantenimiento,
+	component: Pendientes,
 });

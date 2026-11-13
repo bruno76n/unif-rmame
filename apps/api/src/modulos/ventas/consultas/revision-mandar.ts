@@ -10,6 +10,7 @@
  */
 
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
+import { plural } from "@uniformame/compartido/calculos/textos";
 import { revisionMandar } from "@uniformame/compartido/contratos/ventas/consultas-pedidos";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
@@ -17,7 +18,7 @@ import { parametroEntero } from "../../../nucleo/acceso/sesion.ts";
 import { errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
 import type { ContextoDeConsulta } from "../../../nucleo/modulos.ts";
 import { implementarConsulta } from "../../../nucleo/modulos.ts";
-import { avanceDe, fechaDeEntrega, leerClientes, leerPedidos, plural } from "./comun.ts";
+import { avanceDe, fechaDeEntrega, leerClientes, leerPedidos } from "./comun.ts";
 
 /** Una línea con su color. */
 interface Linea {

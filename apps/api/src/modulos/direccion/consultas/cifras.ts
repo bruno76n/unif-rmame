@@ -23,16 +23,6 @@ export const formatoDeCantidad = new Intl.NumberFormat("es-MX", { maximumFractio
 /** El formato de las piezas y los conteos: «4,175». */
 export const formatoDePiezas = new Intl.NumberFormat("es-MX");
 
-/**
- * Un número con su palabra en singular o en plural: «1 hora», «3 horas».
- * @param cuantos El número.
- * @param una La palabra para uno.
- * @param varias La palabra para varios.
- */
-export function conPlural(cuantos: number, una: string, varias: string): string {
-	return `${formatoDePiezas.format(cuantos)} ${cuantos === 1 ? una : varias}`;
-}
-
 /** Los canales que hoy venden en el sistema. */
 export type CanalConVentas = "externos" | "en_linea";
 

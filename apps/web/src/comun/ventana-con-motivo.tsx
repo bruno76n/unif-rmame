@@ -26,6 +26,8 @@ export interface PropsDeVentanaConMotivo {
 	children?: ReactNode;
 	/** El texto del botón. */
 	textoAccion: string;
+	/** Un ejemplo dentro del campo («Por ejemplo: se vendió, ya no tiene arreglo»). */
+	ejemplo?: string | undefined;
 	/** El botón en rojo (lo normal: el motivo es para quitar algo); `false`, en negro. */
 	peligro?: boolean;
 	/** Si la acción va en camino. */
@@ -53,6 +55,7 @@ export function VentanaConMotivo({
 	subtitulo,
 	children,
 	textoAccion,
+	ejemplo,
 	peligro = true,
 	enviando = false,
 	alConfirmar,
@@ -95,6 +98,7 @@ export function VentanaConMotivo({
 					etiqueta="Motivo"
 					enVentana
 					value={motivo}
+					{...(ejemplo === undefined ? {} : { placeholder: ejemplo })}
 					error={error}
 					onChange={(evento) => setMotivo(evento.target.value)}
 				/>

@@ -8,8 +8,9 @@
  * material sin tiempo de entrega o una orden atrasada.
  */
 
+import { plural } from "@uniformame/compartido/calculos/textos";
 import { pendientesDeCompras } from "@uniformame/compartido/contratos/compras/consultas-pestanas";
-import { cantidadConUnidad, pesos, plural } from "@uniformame/compartido/contratos/compras/textos";
+import { cantidadConUnidad, pesos } from "@uniformame/compartido/contratos/compras/textos";
 import { isNull } from "drizzle-orm";
 import { Temporal } from "temporal-polyfill";
 import type { z } from "zod";

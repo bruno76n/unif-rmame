@@ -20,13 +20,13 @@ import { quienCambia, revisarMotivo } from "../../../nucleo/acciones/comunes.ts"
 import { tomarVersion, versionActual } from "../../../nucleo/acciones/pisadas.ts";
 import { errorDeCampo, errorDeRegla } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeAccion, implementarAccion } from "../../../nucleo/modulos.ts";
+import { parametroNumero } from "../../../nucleo/parametros.ts";
 import { listas, listaValores } from "../../admin/tablas.ts";
 import {
 	eventoDeMaterial,
 	leerMaterial,
 	leerProveedor,
 	type Material,
-	parametroNumero,
 	precioATexto,
 	registrarPrecio,
 	revisarPrecio,

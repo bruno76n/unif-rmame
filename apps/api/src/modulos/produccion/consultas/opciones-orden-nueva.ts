@@ -10,7 +10,7 @@ import { opcionesOrdenNueva } from "@uniformame/compartido/contratos/produccion/
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { implementarConsulta } from "../../../nucleo/modulos.ts";
-import { parametroNumero } from "./comun.ts";
+import { parametroNumero } from "../../../nucleo/parametros.ts";
 
 /** Cuántas prendas ofrece a la vez. */
 const prendasALaVez = 20;

@@ -16,10 +16,11 @@ import { z } from "zod";
 import type { Transaccion } from "../../../nucleo/base/transacciones.ts";
 import { errorDeCampo, errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
+import { parametroNumero } from "../../../nucleo/parametros.ts";
 import { listas, listaValores } from "../../admin/tablas.ts";
 import { listaDeUnidades } from "../siembra.ts";
 import { materiales, ordenCompraLineas, ordenesCompra } from "../tablas.ts";
-import { leerMaterial, leerProveedor, parametroNumero } from "./comunes.ts";
+import { leerMaterial, leerProveedor } from "./comunes.ts";
 
 /** Una orden como se guarda, con el nombre de su proveedor. */
 export type Orden = typeof ordenesCompra.$inferSelect & { proveedor: string };

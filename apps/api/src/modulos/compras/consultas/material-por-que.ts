@@ -9,19 +9,16 @@
 
 import { aMilesimos, aMilesimosConSigno, deMilesimos } from "@uniformame/compartido/calculos/cuenta-material";
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
+import { plural } from "@uniformame/compartido/calculos/textos";
 import { materialPorQue } from "@uniformame/compartido/contratos/compras/consultas-cajones";
-import {
-	cantidadConUnidad,
-	condicionDePago,
-	cuandoLlega,
-	plural,
-} from "@uniformame/compartido/contratos/compras/textos";
+import { cantidadConUnidad, condicionDePago, cuandoLlega } from "@uniformame/compartido/contratos/compras/textos";
 import { Temporal } from "temporal-polyfill";
 import { z } from "zod";
 import { noExiste } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeAccion, implementarConsulta } from "../../../nucleo/modulos.ts";
+import { parametroNumero } from "../../../nucleo/parametros.ts";
 import type { CuentaDeMaterial } from "../lecturas/cuenta-material.ts";
-import { comprometidoConLotes, cuentas, datosDeMateriales, enCaminoDe, estadoDeMaterial, numeroDe } from "./comun.ts";
+import { comprometidoConLotes, cuentas, datosDeMateriales, enCaminoDe, estadoDeMaterial } from "./comun.ts";
 
 /** Los meses, en el orden de sus factores. */
 const meses = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"] as const;
@@ -63,7 +60,8 @@ function resumenDe(cuenta: CuentaDeMaterial, proveedor: string, hoy: Temporal.Pl
  */
 async function factoresDeLosMeses(accion: ContextoDeAccion): Promise<{ mes: string; porciento: number }[]> {
 	const factores = [];
-	for (const mes of meses) factores.push({ mes, porciento: await numeroDe(accion, `compras.factor_consumo_${mes}`) });
+	for (const mes of meses)
+		factores.push({ mes, porciento: await parametroNumero(accion, `compras.factor_consumo_${mes}`) });
 	return factores;
 }
 
@@ -127,7 +125,7 @@ export const consultaMaterialPorQue = implementarConsulta(materialPorQue, async 
 				cantidad: sugerido,
 				texto: `${cantidadConUnidad(cuenta.por_pedir, material.unidad)} cubren ${plural(material.diasCubre, "día", "días")} a partir del ${textoDeDiaCorto(cuenta.para_cuando)} y dejan el mínimo de ${cantidadConUnidad(material.minimo, material.unidad)}.`,
 			},
-			cantidad_maxima: await numeroDe(accion, "compras.cantidad_maxima_linea"),
+			cantidad_maxima: await parametroNumero(accion, "compras.cantidad_maxima_linea"),
 			insumos: {
 				hoy: hoy.toString(),
 				libre: aMilesimosConSigno(cuenta.libre_para_comprar).toString(),
@@ -143,9 +141,9 @@ export const consultaMaterialPorQue = implementarConsulta(materialPorQue, async 
 				multiplo: aMilesimosConSigno(material.multiploCompra).toString(),
 				dias_cubre: material.diasCubre,
 				limites: {
-					dias_maximos: await numeroDe(accion, "compras.dias_maximos_proyeccion"),
-					dias_pedir_esta_semana: await numeroDe(accion, "compras.dias_pedir_esta_semana"),
-					dias_mas_de_seis_meses: await numeroDe(accion, "compras.dias_etiqueta_mas_de_6_meses"),
+					dias_maximos: await parametroNumero(accion, "compras.dias_maximos_proyeccion"),
+					dias_pedir_esta_semana: await parametroNumero(accion, "compras.dias_pedir_esta_semana"),
+					dias_mas_de_seis_meses: await parametroNumero(accion, "compras.dias_etiqueta_mas_de_6_meses"),
 				},
 			},
 		};

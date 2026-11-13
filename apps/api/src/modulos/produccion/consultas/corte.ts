@@ -18,14 +18,9 @@ import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { noExiste } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeConsulta, implementarConsulta } from "../../../nucleo/modulos.ts";
-import {
-	deCalcularMaterial,
-	escribirParaQuien,
-	type LoteLeido,
-	leerLotes,
-	parametroNumero,
-	piezasPorTallaDelLote,
-} from "./comun.ts";
+import { parametroNumero } from "../../../nucleo/parametros.ts";
+import { escribirParaQuien } from "../dominio/para-quien.ts";
+import { deCalcularMaterial, type LoteLeido, leerLotes, piezasPorTallaDelLote } from "./comun.ts";
 
 /** El orden de las telas de una receta: la principal, la combinación y el forro. */
 const ordenDePapel: Readonly<Record<string, number>> = { tela_principal: 0, combinacion: 1, forro: 2 };

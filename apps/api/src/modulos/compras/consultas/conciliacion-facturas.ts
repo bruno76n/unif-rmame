@@ -10,8 +10,9 @@
  */
 
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
+import { plural } from "@uniformame/compartido/calculos/textos";
 import { conciliacionFacturas } from "@uniformame/compartido/contratos/compras/consultas-pestanas";
-import { cantidadConUnidad, pesos, plural } from "@uniformame/compartido/contratos/compras/textos";
+import { cantidadConUnidad, pesos } from "@uniformame/compartido/contratos/compras/textos";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";

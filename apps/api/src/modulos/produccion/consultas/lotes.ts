@@ -9,14 +9,14 @@ import { diasHasta, textoDeDiaCorto, textoEnDias } from "@uniformame/compartido/
 import { lotesDeProduccion } from "@uniformame/compartido/contratos/produccion/lotes";
 import { sql } from "drizzle-orm";
 import { implementarConsulta } from "../../../nucleo/modulos.ts";
+import { parametroNumero } from "../../../nucleo/parametros.ts";
+import { escribirParaQuien } from "../dominio/para-quien.ts";
 import {
 	datosDelEstado,
-	escribirParaQuien,
 	estadoDelLote,
 	leerLotes,
 	loHechoPorOperacion,
 	operacionAtorada,
-	parametroNumero,
 	saludDeLosLotes,
 	tiraDelLote,
 	ultimaSincronizacion,

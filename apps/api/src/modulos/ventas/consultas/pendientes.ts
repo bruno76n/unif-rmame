@@ -9,6 +9,7 @@
  */
 
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
+import { plural } from "@uniformame/compartido/calculos/textos";
 import { pendientesVentas } from "@uniformame/compartido/contratos/ventas/consultas-pedidos";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
@@ -28,7 +29,6 @@ import {
 	leerPedidos,
 	leerRenglones,
 	type PedidoLeido,
-	plural,
 	type RenglonLeido,
 	sumar,
 	textoDeAlerta,

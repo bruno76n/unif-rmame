@@ -13,7 +13,8 @@ import { quienCambia } from "../../../nucleo/acciones/comunes.ts";
 import { subirVersion } from "../../../nucleo/acciones/pisadas.ts";
 import { errorDeRegla } from "../../../nucleo/http/errores.ts";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
-import { avisoDePrecio, materialCambiado, parametroNumero, registrarPrecio } from "../dominio/comunes.ts";
+import { parametroNumero } from "../../../nucleo/parametros.ts";
+import { avisoDePrecio, materialCambiado, registrarPrecio } from "../dominio/comunes.ts";
 import {
 	bloquearMaterialesDeOrden,
 	eventoDeOrden,

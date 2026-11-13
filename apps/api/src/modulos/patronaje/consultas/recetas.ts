@@ -6,6 +6,7 @@
  */
 
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
+import { plural } from "@uniformame/compartido/calculos/textos";
 import { listaDeRecetas, type prendaDeLaLista } from "@uniformame/compartido/contratos/patronaje/lista-de-recetas";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
@@ -19,7 +20,6 @@ import {
 	type ParametrosDePatronaje,
 	type PrendaLeida,
 	piezasDelLote,
-	plural,
 	rangoDeTallas,
 	sinEscuela,
 	tallaDeEnMedio,

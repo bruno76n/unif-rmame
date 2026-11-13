@@ -13,6 +13,7 @@ import { quienCambia } from "../../../nucleo/acciones/comunes.ts";
 import { subirVersion } from "../../../nucleo/acciones/pisadas.ts";
 import { errorDeCampo, errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
+import { parametroNumero } from "../../../nucleo/parametros.ts";
 import { materiales, materialProveedores, type origenesDePrecio, preciosCompra, proveedores } from "../tablas.ts";
 
 /** Un proveedor como se guarda. */
@@ -23,15 +24,6 @@ export type Material = typeof materiales.$inferSelect;
 
 /** Lo que regresa `contaduria.datos_terceros`. */
 const datosDeTerceros = z.record(z.string(), z.object({ nombre: z.string(), rfc: z.string().nullable() }));
-
-/**
- * Lee un número de un parámetro.
- * @param contexto El contexto de la acción.
- * @param clave La clave del parámetro.
- */
-export async function parametroNumero(contexto: ContextoDeAccion, clave: string): Promise<number> {
-	return Number(await contexto.lectura("admin.parametro", { clave }));
-}
 
 /**
  * Lee un proveedor con su nombre y su RFC (de su tercero) y lo bloquea.

@@ -11,6 +11,7 @@
 
 import { enPesos } from "@uniformame/compartido/calculos/dinero";
 import { textoDeDia } from "@uniformame/compartido/calculos/fechas";
+import { plural } from "@uniformame/compartido/calculos/textos";
 import { type alertaDeDireccion, alertas, reglasDeAlerta } from "@uniformame/compartido/contratos/direccion/alertas";
 import { sql } from "drizzle-orm";
 import { Temporal } from "temporal-polyfill";
@@ -23,7 +24,7 @@ import { implementarConsulta } from "../../../nucleo/modulos.ts";
 import { leerParametro } from "../../../nucleo/parametros.ts";
 import type { AlertaDeDireccion } from "../dominio/alertas.ts";
 import { alertasDeAhora } from "../trabajos/alertas-direccion.ts";
-import { conPlural, formatoDeCantidad, formatoDePiezas } from "./cifras.ts";
+import { formatoDeCantidad, formatoDePiezas } from "./cifras.ts";
 import { rutaSiLaTiene } from "./departamentos-de-la-cuenta.ts";
 
 /** Una alerta como la regresa la consulta. */
@@ -77,7 +78,7 @@ async function detalleDeLote(contexto: ContextoDeAccion, loteId: string): Promis
 		.parse(await contexto.lectura("mantenimiento.fallas_que_detienen", {}));
 	const falla = fallas.find((una) => nombreDeFalla.endsWith(`(${una.folio})`));
 	if (falla === undefined) return `${base}.`;
-	return `${base}. Falla ${falla.folio}: ${falla.motivo.toLocaleLowerCase("es-MX")}, ${conPlural(falla.horas_paro, "hora", "horas")} de paro.`;
+	return `${base}. Falla ${falla.folio}: ${falla.motivo.toLocaleLowerCase("es-MX")}, ${plural(falla.horas_paro, "hora", "horas")} de paro.`;
 }
 
 /**
@@ -191,8 +192,8 @@ async function detalleDeMaterial(contexto: ContextoDeAccion, materialId: string)
 			? 0
 			: Math.max(0, contexto.diaDeNegocio.until(Temporal.PlainDate.from(cuenta.se_acaba)).days);
 	return (
-		`Cobertura de ${conPlural(cobertura, "día", "días")}; ${proveedor?.nombre ?? ""} entrega en ` +
-		`${conPlural(cuenta.plazo, "día", "días")}. Existencia ${formatoDeCantidad.format(cuenta.hay_bodega)} ` +
+		`Cobertura de ${plural(cobertura, "día", "días")}; ${proveedor?.nombre ?? ""} entrega en ` +
+		`${plural(cuenta.plazo, "día", "días")}. Existencia ${formatoDeCantidad.format(cuenta.hay_bodega)} ` +
 		`${material.unidad} y ${formatoDeCantidad.format(cuenta.comprometido)} comprometidos en producción.`
 	);
 }
@@ -214,7 +215,7 @@ async function detalleDeCuadre(contexto: ContextoDeAccion): Promise<string> {
 		})
 		.parse(await contexto.lectura("inventario.ultimo_cuadre", {}));
 	if (cuadre === null) return "";
-	const cuantas = `${conPlural(cuadre.diferencias_creadas, "diferencia", "diferencias")} y ${conPlural(cuadre.excepciones_creadas, "excepción", "excepciones")} en Bodega`;
+	const cuantas = `${plural(cuadre.diferencias_creadas, "diferencia", "diferencias")} y ${plural(cuadre.excepciones_creadas, "excepción", "excepciones")} en Bodega`;
 	if (cuadre.terminado_en === null) return `${cuantas}.`;
 	const hora = Temporal.Instant.from(new Date(cuadre.terminado_en).toISOString())
 		.toZonedDateTimeISO("America/Mexico_City")

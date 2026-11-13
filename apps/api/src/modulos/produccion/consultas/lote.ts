@@ -14,17 +14,17 @@ import { z } from "zod";
 import { leerCursor, paginar } from "../../../nucleo/http/consultas.ts";
 import { noExiste } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeConsulta, implementarConsulta } from "../../../nucleo/modulos.ts";
+import { parametroNumero } from "../../../nucleo/parametros.ts";
+import { escribirParaQuien } from "../dominio/para-quien.ts";
 import {
 	datosDelEstado,
 	deCalcularMaterial,
-	escribirParaQuien,
 	estadoDelLote,
 	hiloDelLote,
 	type LoteLeido,
 	leerLotes,
 	loHechoPorOperacion,
 	operacionAtorada,
-	parametroNumero,
 	piezasPorTallaDelLote,
 	saludDeLosLotes,
 	tieneDepartamento,

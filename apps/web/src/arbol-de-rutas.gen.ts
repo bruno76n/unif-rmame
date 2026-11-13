@@ -39,6 +39,10 @@ import { Route as DireccionAutorizacionesRouteImport } from "./rutas/direccion/a
 import { Route as DireccionIndicadoresRouteImport } from "./rutas/direccion/indicadores.tsx"
 import { Route as LineaIndexRouteImport } from "./rutas/linea/index.tsx"
 import { Route as MantenimientoIndexRouteImport } from "./rutas/mantenimiento/index.tsx"
+import { Route as MantenimientoCostoRouteImport } from "./rutas/mantenimiento/costo.tsx"
+import { Route as MantenimientoFallasRouteImport } from "./rutas/mantenimiento/fallas.tsx"
+import { Route as MantenimientoMaquinasRouteImport } from "./rutas/mantenimiento/maquinas.tsx"
+import { Route as MantenimientoServiciosRouteImport } from "./rutas/mantenimiento/servicios.tsx"
 import { Route as PatronajeIndexRouteImport } from "./rutas/patronaje/index.tsx"
 import { Route as PatronajeDesarrolloRouteImport } from "./rutas/patronaje/desarrollo.tsx"
 import { Route as PatronajeRecetasRouteImport } from "./rutas/patronaje/recetas.tsx"
@@ -205,6 +209,26 @@ const MantenimientoIndexRoute = MantenimientoIndexRouteImport.update({
   path: "/mantenimiento/",
   getParentRoute: () => rootRouteImport,
 } as any)
+const MantenimientoCostoRoute = MantenimientoCostoRouteImport.update({
+  id: "/mantenimiento/costo",
+  path: "/mantenimiento/costo",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MantenimientoFallasRoute = MantenimientoFallasRouteImport.update({
+  id: "/mantenimiento/fallas",
+  path: "/mantenimiento/fallas",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MantenimientoMaquinasRoute = MantenimientoMaquinasRouteImport.update({
+  id: "/mantenimiento/maquinas",
+  path: "/mantenimiento/maquinas",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MantenimientoServiciosRoute = MantenimientoServiciosRouteImport.update({
+  id: "/mantenimiento/servicios",
+  path: "/mantenimiento/servicios",
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PatronajeIndexRoute = PatronajeIndexRouteImport.update({
   id: "/patronaje/",
   path: "/patronaje/",
@@ -301,6 +325,10 @@ export interface FileRoutesByFullPath {
   "/direccion/alertas": typeof DireccionAlertasRoute
   "/direccion/autorizaciones": typeof DireccionAutorizacionesRoute
   "/direccion/indicadores": typeof DireccionIndicadoresRoute
+  "/mantenimiento/costo": typeof MantenimientoCostoRoute
+  "/mantenimiento/fallas": typeof MantenimientoFallasRoute
+  "/mantenimiento/maquinas": typeof MantenimientoMaquinasRoute
+  "/mantenimiento/servicios": typeof MantenimientoServiciosRoute
   "/patronaje/desarrollo": typeof PatronajeDesarrolloRoute
   "/patronaje/recetas": typeof PatronajeRecetasRoute
   "/patronaje/rendimiento": typeof PatronajeRendimientoRoute
@@ -347,6 +375,10 @@ export interface FileRoutesByTo {
   "/direccion/alertas": typeof DireccionAlertasRoute
   "/direccion/autorizaciones": typeof DireccionAutorizacionesRoute
   "/direccion/indicadores": typeof DireccionIndicadoresRoute
+  "/mantenimiento/costo": typeof MantenimientoCostoRoute
+  "/mantenimiento/fallas": typeof MantenimientoFallasRoute
+  "/mantenimiento/maquinas": typeof MantenimientoMaquinasRoute
+  "/mantenimiento/servicios": typeof MantenimientoServiciosRoute
   "/patronaje/desarrollo": typeof PatronajeDesarrolloRoute
   "/patronaje/recetas": typeof PatronajeRecetasRoute
   "/patronaje/rendimiento": typeof PatronajeRendimientoRoute
@@ -395,6 +427,10 @@ export interface FileRoutesById {
   "/direccion/alertas": typeof DireccionAlertasRoute
   "/direccion/autorizaciones": typeof DireccionAutorizacionesRoute
   "/direccion/indicadores": typeof DireccionIndicadoresRoute
+  "/mantenimiento/costo": typeof MantenimientoCostoRoute
+  "/mantenimiento/fallas": typeof MantenimientoFallasRoute
+  "/mantenimiento/maquinas": typeof MantenimientoMaquinasRoute
+  "/mantenimiento/servicios": typeof MantenimientoServiciosRoute
   "/patronaje/desarrollo": typeof PatronajeDesarrolloRoute
   "/patronaje/recetas": typeof PatronajeRecetasRoute
   "/patronaje/rendimiento": typeof PatronajeRendimientoRoute
@@ -444,6 +480,10 @@ export interface FileRouteTypes {
     | "/direccion/alertas"
     | "/direccion/autorizaciones"
     | "/direccion/indicadores"
+    | "/mantenimiento/costo"
+    | "/mantenimiento/fallas"
+    | "/mantenimiento/maquinas"
+    | "/mantenimiento/servicios"
     | "/patronaje/desarrollo"
     | "/patronaje/recetas"
     | "/patronaje/rendimiento"
@@ -490,6 +530,10 @@ export interface FileRouteTypes {
     | "/direccion/alertas"
     | "/direccion/autorizaciones"
     | "/direccion/indicadores"
+    | "/mantenimiento/costo"
+    | "/mantenimiento/fallas"
+    | "/mantenimiento/maquinas"
+    | "/mantenimiento/servicios"
     | "/patronaje/desarrollo"
     | "/patronaje/recetas"
     | "/patronaje/rendimiento"
@@ -537,6 +581,10 @@ export interface FileRouteTypes {
     | "/direccion/alertas"
     | "/direccion/autorizaciones"
     | "/direccion/indicadores"
+    | "/mantenimiento/costo"
+    | "/mantenimiento/fallas"
+    | "/mantenimiento/maquinas"
+    | "/mantenimiento/servicios"
     | "/patronaje/desarrollo"
     | "/patronaje/recetas"
     | "/patronaje/rendimiento"
@@ -580,6 +628,10 @@ export interface RootRouteChildren {
   DireccionAlertasRoute: typeof DireccionAlertasRoute
   DireccionAutorizacionesRoute: typeof DireccionAutorizacionesRoute
   DireccionIndicadoresRoute: typeof DireccionIndicadoresRoute
+  MantenimientoCostoRoute: typeof MantenimientoCostoRoute
+  MantenimientoFallasRoute: typeof MantenimientoFallasRoute
+  MantenimientoMaquinasRoute: typeof MantenimientoMaquinasRoute
+  MantenimientoServiciosRoute: typeof MantenimientoServiciosRoute
   PatronajeDesarrolloRoute: typeof PatronajeDesarrolloRoute
   PatronajeRecetasRoute: typeof PatronajeRecetasRoute
   PatronajeRendimientoRoute: typeof PatronajeRendimientoRoute
@@ -819,6 +871,34 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof MantenimientoIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    "/mantenimiento/costo": {
+      id: "/mantenimiento/costo"
+      path: "/mantenimiento/costo"
+      fullPath: "/mantenimiento/costo"
+      preLoaderRoute: typeof MantenimientoCostoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/mantenimiento/fallas": {
+      id: "/mantenimiento/fallas"
+      path: "/mantenimiento/fallas"
+      fullPath: "/mantenimiento/fallas"
+      preLoaderRoute: typeof MantenimientoFallasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/mantenimiento/maquinas": {
+      id: "/mantenimiento/maquinas"
+      path: "/mantenimiento/maquinas"
+      fullPath: "/mantenimiento/maquinas"
+      preLoaderRoute: typeof MantenimientoMaquinasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/mantenimiento/servicios": {
+      id: "/mantenimiento/servicios"
+      path: "/mantenimiento/servicios"
+      fullPath: "/mantenimiento/servicios"
+      preLoaderRoute: typeof MantenimientoServiciosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     "/patronaje/": {
       id: "/patronaje/"
       path: "/patronaje"
@@ -964,6 +1044,10 @@ const rootRouteChildren: RootRouteChildren = {
   DireccionAlertasRoute: DireccionAlertasRoute,
   DireccionAutorizacionesRoute: DireccionAutorizacionesRoute,
   DireccionIndicadoresRoute: DireccionIndicadoresRoute,
+  MantenimientoCostoRoute: MantenimientoCostoRoute,
+  MantenimientoFallasRoute: MantenimientoFallasRoute,
+  MantenimientoMaquinasRoute: MantenimientoMaquinasRoute,
+  MantenimientoServiciosRoute: MantenimientoServiciosRoute,
   PatronajeDesarrolloRoute: PatronajeDesarrolloRoute,
   PatronajeRecetasRoute: PatronajeRecetasRoute,
   PatronajeRendimientoRoute: PatronajeRendimientoRoute,

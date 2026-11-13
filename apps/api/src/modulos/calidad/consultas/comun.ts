@@ -12,15 +12,8 @@ import { diasHasta } from "@uniformame/compartido/calculos/fechas";
 import { type SQL, sql } from "drizzle-orm";
 import { z } from "zod";
 import type { ContextoDeConsulta } from "../../../nucleo/modulos.ts";
-import {
-	columnasDeParaQuien,
-	deParaQuien,
-	escribirParaQuien,
-	parametroNumero,
-	unionesDeParaQuien,
-} from "../../produccion/consultas/comun.ts";
-
-export { diasHasta, escribirParaQuien, parametroNumero };
+import { parametroNumero } from "../../../nucleo/parametros.ts";
+import { columnasDeParaQuien, deParaQuien, unionesDeParaQuien } from "../../produccion/dominio/para-quien.ts";
 
 /** La zona del negocio, para pasar un momento a su día. */
 const enMexico = sql`'America/Mexico_City'`;

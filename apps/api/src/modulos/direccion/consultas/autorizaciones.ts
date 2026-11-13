@@ -10,6 +10,7 @@
  */
 
 import { zonaDelNegocio } from "@uniformame/compartido/calculos/fechas";
+import { plural } from "@uniformame/compartido/calculos/textos";
 import {
 	autorizaciones as consultaDeAutorizaciones,
 	nombreDelTipoDeAutorizacion,
@@ -26,7 +27,6 @@ import { departamentos, usuarios } from "../../admin/tablas.ts";
 import { personas } from "../../personal/tablas.ts";
 import { documentoDe } from "../dominio/autorizaciones.ts";
 import { autorizaciones } from "../tablas.ts";
-import { conPlural } from "./cifras.ts";
 
 /** Cuántas resueltas por página: lo que cabe en la tabla de la pantalla. */
 const resueltasPorPagina = 20;
@@ -98,7 +98,7 @@ export const consultaAutorizaciones = implementarConsulta(consultaDeAutorizacion
 			pedida_el: diaDe(autorizacion.creadoEn),
 			dias_esperando: dias,
 			// Desde los días del parámetro, la tarjeta dice cuántos lleva esperando.
-			esperando: dias >= diasParaAvisar ? `${conPlural(dias, "día", "días")} esperando` : null,
+			esperando: dias >= diasParaAvisar ? `${plural(dias, "día", "días")} esperando` : null,
 			resumen: autorizacion.resumen,
 			detalle: autorizacion.detalle,
 			importe_centavos: autorizacion.importeCentavos,

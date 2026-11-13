@@ -20,7 +20,8 @@ import { quienCambia, revisarMotivo } from "../../../nucleo/acciones/comunes.ts"
 import { tomarVersion, versionActual } from "../../../nucleo/acciones/pisadas.ts";
 import { ErrorDeApi, errorDeCampo, errorDeRegla } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeAccion, implementarAccion } from "../../../nucleo/modulos.ts";
-import { eventoDeProveedor, leerProveedor, parametroNumero, revisarProveedorActivo } from "../dominio/comunes.ts";
+import { parametroNumero } from "../../../nucleo/parametros.ts";
+import { eventoDeProveedor, leerProveedor, revisarProveedorActivo } from "../dominio/comunes.ts";
 import { foliosDeOrdenesAbiertas } from "../dominio/ordenes.ts";
 import { materiales, proveedores } from "../tablas.ts";
 

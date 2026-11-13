@@ -18,12 +18,14 @@ import { levantarPantalla, type PantallaDePrueba } from "../../comun/pruebas/pan
 const tiempo = { timeout: 180_000 };
 
 /**
- * Espera la llamada a una acción y regresa lo que mandó.
+ * Espera la respuesta de una acción: con ella llega su aviso de abajo, que solo dura 3 s; esperar solo la petición
+ * deja que el aviso se vaya antes de verlo si la API tarda.
  * @param pagina La página.
  * @param accion El nombre de la acción.
+ * @returns La respuesta, con su petición.
  */
 function esperarAccion(pagina: Page, accion: string) {
-	return pagina.waitForRequest((peticion) => peticion.url().includes(`/v1/acciones/${accion}`));
+	return pagina.waitForResponse((respuesta) => respuesta.url().includes(`/v1/acciones/${accion}`));
 }
 
 /**
@@ -104,7 +106,7 @@ describe("Las pantallas de Calidad", () => {
 			// Aprobar: la acción con los rechazos y el aviso que regresa.
 			const llamada = esperarAccion(pagina, "calidad.revisar_lote");
 			await pagina.getByRole("button", { name: "Aprobar 116 y regresar 2" }).click();
-			const datos = (await llamada).postDataJSON() as {
+			const datos = (await llamada).request().postDataJSON() as {
 				datos: { lote_id: string; rechazos: { piezas: number; persona_id: string }[] };
 			};
 			expect(datos.datos.lote_id).toBe(loteDeLaMuestra);
@@ -136,7 +138,7 @@ describe("Las pantallas de Calidad", () => {
 			const pagina = await pantalla.abrir("/calidad/por-revisar", { quien: "calidad" });
 			const llamada = esperarAccion(pagina, "calidad.aprobar_reproceso");
 			await pagina.getByRole("button", { name: "Aprobar", exact: true }).click();
-			const datos = (await llamada).postDataJSON() as { datos: { reproceso_id: string }; version: number };
+			const datos = (await llamada).request().postDataJSON() as { datos: { reproceso_id: string }; version: number };
 			expect(datos.datos.reproceso_id).toMatch(/^[0-9a-f-]{36}$/);
 			await enPantalla(avisoDeAbajo(pagina)).toHaveText(/^2 piezas de L-2026-001 aprobadas: pasan a aduana/);
 			await enPantalla(pagina.getByText("Aprobado", { exact: true })).toBeVisible();
@@ -158,7 +160,7 @@ describe("Las pantallas de Calidad", () => {
 		await ventana.getByRole("group", { name: "En qué operaciones pasa" }).getByRole("button").first().click();
 		const llamada = esperarAccion(pagina, "calidad.agregar_defecto");
 		await ventana.getByRole("button", { name: "Agregar al catálogo" }).click();
-		const datos = (await llamada).postDataJSON() as { datos: { nombre: string; operacion_ids: string[] } };
+		const datos = (await llamada).request().postDataJSON() as { datos: { nombre: string; operacion_ids: string[] } };
 		expect(datos.datos).toMatchObject({ nombre: "Botón despegado" });
 		expect(datos.datos.operacion_ids).toHaveLength(1);
 		await enPantalla(avisoDeAbajo(pagina)).toHaveText("Botón despegado agregado: ya se puede escoger al revisar");
@@ -207,7 +209,7 @@ describe("Las pantallas de Calidad", () => {
 			await pantalla.capturar(pagina, "calidad/reclamo-nuevo");
 			const llamada = esperarAccion(pagina, "calidad.registrar_reclamo");
 			await ventana.getByRole("button", { name: "Registrar reclamo" }).click();
-			const datos = (await llamada).postDataJSON() as { datos: Record<string, unknown> };
+			const datos = (await llamada).request().postDataJSON() as { datos: Record<string, unknown> };
 			expect(datos.datos).toMatchObject({ lote_id: loteDeLaMuestra, piezas: 2, codigo: String(variante?.codigo) });
 			await enPantalla(avisoDeAbajo(pagina)).toHaveText(/^RC-\d+ registrado\. Del código se llega al lote L-2026-001$/);
 			const rastreo = pagina.getByRole("list", { name: "Rastreo" });
@@ -225,7 +227,7 @@ describe("Las pantallas de Calidad", () => {
 			// Con lo nuevo cargado, otra vez: ahora sí.
 			const resuelto = esperarAccion(pagina, "calidad.resolver_reclamo");
 			await resolver.getByRole("button", { name: "Marcar resuelto" }).click();
-			expect(((await resuelto).postDataJSON() as { datos: { resolucion: string } }).datos.resolucion).toBe(
+			expect(((await resuelto).request().postDataJSON() as { datos: { resolucion: string } }).datos.resolucion).toBe(
 				"Se repusieron las 2 piezas",
 			);
 			await enPantalla(avisoDeAbajo(pagina)).toHaveText(/^RC-\d+ queda resuelto$/);
@@ -260,7 +262,7 @@ describe("Las pantallas de Calidad", () => {
 			await pantalla.capturar(pagina, "calidad/revisar-devolucion");
 			const llamada = esperarAccion(pagina, "calidad.revisar_devolucion");
 			await ventana.getByRole("button", { name: "Guardar decisión" }).click();
-			const datos = (await llamada).postDataJSON() as {
+			const datos = (await llamada).request().postDataJSON() as {
 				datos: { renglones: { piezas: number; decision: string; motivo?: string }[] };
 			};
 			expect(datos.datos.renglones).toEqual([

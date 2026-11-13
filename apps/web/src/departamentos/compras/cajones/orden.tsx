@@ -10,6 +10,7 @@
 import { useRouter } from "@tanstack/react-router";
 import { pesosACentavos } from "@uniformame/compartido/calculos/dinero";
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
+import { plural } from "@uniformame/compartido/calculos/textos";
 import { historialEntidad } from "@uniformame/compartido/contratos/admin/armazon";
 import { ordenDeCompra } from "@uniformame/compartido/contratos/compras/consultas-cajones";
 import {
@@ -18,7 +19,7 @@ import {
 	guardarBorradorOrden,
 	marcarOrdenEnviada,
 } from "@uniformame/compartido/contratos/compras/ordenes";
-import { cantidadConUnidad, errorDeCantidad, pesos, plural } from "@uniformame/compartido/contratos/compras/textos";
+import { cantidadConUnidad, errorDeCantidad, pesos } from "@uniformame/compartido/contratos/compras/textos";
 import { Boton } from "@uniformame/interfaz/botones/boton";
 import { Campo } from "@uniformame/interfaz/captura/campo";
 import { Cajon } from "@uniformame/interfaz/contenedores/cajon";

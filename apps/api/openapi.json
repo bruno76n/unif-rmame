@@ -35003,6 +35003,1765 @@
         }
       }
     },
+    "/v1/consultas/mantenimiento.pendientes": {
+      "get": {
+        "tags": [
+          "mantenimiento"
+        ],
+        "description": "Pendientes de Mantenimiento: las cifras de máquinas, fallas, servicios y costo, y una falla abierta por renglón con lo que detiene\n\nPermiso: departamento mantenimiento.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "indicadores": {
+                          "type": "object",
+                          "properties": {
+                            "maquinas": {
+                              "type": "object",
+                              "properties": {
+                                "activas": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "trabajando": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "con_falla": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991,
+                                  "description": "Las que trabajan con falla"
+                                },
+                                "paradas": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                }
+                              },
+                              "required": [
+                                "activas",
+                                "trabajando",
+                                "con_falla",
+                                "paradas"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "fallas": {
+                              "type": "object",
+                              "properties": {
+                                "abiertas": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "resueltas_en_el_anio": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                }
+                              },
+                              "required": [
+                                "abiertas",
+                                "resueltas_en_el_anio"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "servicios": {
+                              "type": "object",
+                              "properties": {
+                                "en_el_anio": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "este_mes_centavos": {
+                                  "description": "Lo de los servicios del mes, en centavos",
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                }
+                              },
+                              "required": [
+                                "en_el_anio"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "costo": {
+                              "type": "object",
+                              "properties": {
+                                "horas_paro": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991,
+                                  "description": "Las de los servicios del año más las de las fallas abiertas que detuvieron su máquina"
+                                },
+                                "por_paro_centavos": {
+                                  "description": "Las horas de paro por `mantenimiento.costo_hora_paro`, en centavos",
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "reparaciones_centavos": {
+                                  "description": "Lo de los servicios del año, en centavos",
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "horas_por_mes": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "description": "Las horas de paro de los servicios de los últimos 6 meses"
+                                }
+                              },
+                              "required": [
+                                "horas_paro",
+                                "horas_por_mes"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "required": [
+                            "maquinas",
+                            "fallas",
+                            "servicios",
+                            "costo"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "renglones": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "falla_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "referencia": {
+                                "type": "string",
+                                "description": "«{máquina} · {quien la trae}»"
+                              },
+                              "detalle": {
+                                "type": "string",
+                                "description": "Lo que le pasa y, si aplica, «· detiene {lotes}»"
+                              },
+                              "fecha": {
+                                "type": "string",
+                                "description": "El día del reporte"
+                              },
+                              "horas_paro": {
+                                "nullable": true,
+                                "description": "Las que lleva, si detuvo la máquina",
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "parada": {
+                                "type": "boolean",
+                                "description": "Si la falla detuvo la máquina"
+                              },
+                              "estado": {
+                                "type": "object",
+                                "properties": {
+                                  "texto": {
+                                    "type": "string",
+                                    "description": "El estado: «Trabajando», «Parada», «Trabaja con falla», «Reportada»…"
+                                  },
+                                  "color": {
+                                    "type": "string",
+                                    "enum": [
+                                      "rojo",
+                                      "ambar",
+                                      "azul",
+                                      "verde",
+                                      "gris",
+                                      "morado",
+                                      "verde-azulado",
+                                      "naranja"
+                                    ],
+                                    "description": "El color del cuadro del estado"
+                                  }
+                                },
+                                "required": [
+                                  "texto",
+                                  "color"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "required": [
+                              "falla_id",
+                              "referencia",
+                              "detalle",
+                              "fecha",
+                              "horas_paro",
+                              "parada",
+                              "estado"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "pastilla": {
+                          "type": "object",
+                          "properties": {
+                            "conteo": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "rojo": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "conteo",
+                            "rojo"
+                          ],
+                          "additionalProperties": false,
+                          "description": "La pastilla del menú"
+                        }
+                      },
+                      "required": [
+                        "indicadores",
+                        "renglones",
+                        "pastilla"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/mantenimiento.maquinas": {
+      "get": {
+        "tags": [
+          "mantenimiento"
+        ],
+        "description": "Las máquinas activas por área, con su estado y su último servicio, y las dadas de baja\n\nPermiso: departamento mantenimiento.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "activas": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "areas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "area_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "maquinas": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "maquina_id": {
+                                      "type": "string",
+                                      "format": "uuid",
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                    },
+                                    "nombre": {
+                                      "type": "string"
+                                    },
+                                    "folio": {
+                                      "type": "string"
+                                    },
+                                    "tipo": {
+                                      "type": "string"
+                                    },
+                                    "marca_modelo": {
+                                      "nullable": true,
+                                      "description": "La marca y el modelo",
+                                      "type": "string"
+                                    },
+                                    "serie": {
+                                      "nullable": true,
+                                      "type": "string"
+                                    },
+                                    "la_trae": {
+                                      "nullable": true,
+                                      "description": "Quien la trae; vacío si esa persona se dio de baja",
+                                      "type": "string"
+                                    },
+                                    "ultimo_servicio": {
+                                      "nullable": true,
+                                      "type": "object",
+                                      "properties": {
+                                        "fecha": {
+                                          "type": "string"
+                                        },
+                                        "que_se_hizo": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "fecha",
+                                        "que_se_hizo"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    "estado": {
+                                      "type": "object",
+                                      "properties": {
+                                        "texto": {
+                                          "type": "string",
+                                          "description": "El estado: «Trabajando», «Parada», «Trabaja con falla», «Reportada»…"
+                                        },
+                                        "color": {
+                                          "type": "string",
+                                          "enum": [
+                                            "rojo",
+                                            "ambar",
+                                            "azul",
+                                            "verde",
+                                            "gris",
+                                            "morado",
+                                            "verde-azulado",
+                                            "naranja"
+                                          ],
+                                          "description": "El color del cuadro del estado"
+                                        }
+                                      },
+                                      "required": [
+                                        "texto",
+                                        "color"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "required": [
+                                    "maquina_id",
+                                    "nombre",
+                                    "folio",
+                                    "tipo",
+                                    "marca_modelo",
+                                    "serie",
+                                    "la_trae",
+                                    "ultimo_servicio",
+                                    "estado"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "required": [
+                              "area_id",
+                              "nombre",
+                              "maquinas"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "bajas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "maquina_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "folio": {
+                                "type": "string"
+                              },
+                              "desde": {
+                                "type": "string",
+                                "description": "El día de la baja"
+                              },
+                              "motivo": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "maquina_id",
+                              "nombre",
+                              "folio",
+                              "desde",
+                              "motivo"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "activas",
+                        "areas",
+                        "bajas"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/mantenimiento.fallas": {
+      "get": {
+        "tags": [
+          "mantenimiento"
+        ],
+        "description": "Las fallas de un grupo: las abiertas, todas; las resueltas, de la más reciente a la más vieja, por páginas\n\nPermiso: departamento mantenimiento.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "abiertas",
+                "resueltas"
+              ]
+            },
+            "in": "query",
+            "name": "grupo",
+            "required": false,
+            "description": "Sin él, las abiertas"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "description": "El cursor que regresó la página anterior; opaco"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "in": "query",
+            "name": "limite",
+            "required": false,
+            "description": "Cuántos renglones, hasta 100"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "conteos": {
+                          "type": "object",
+                          "properties": {
+                            "abiertas": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "resueltas": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "abiertas",
+                            "resueltas"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "renglones": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "falla_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "folio": {
+                                "type": "string"
+                              },
+                              "fecha": {
+                                "type": "string"
+                              },
+                              "maquina": {
+                                "type": "string"
+                              },
+                              "maquina_folio": {
+                                "type": "string"
+                              },
+                              "motivo": {
+                                "type": "string",
+                                "description": "Qué le pasa"
+                              },
+                              "detuvo": {
+                                "type": "boolean",
+                                "description": "«La detuvo» o «Siguió trabajando»"
+                              },
+                              "reporto": {
+                                "type": "string"
+                              },
+                              "horas_paro": {
+                                "nullable": true,
+                                "description": "De una resuelta, las de su servicio; de una abierta parada, las que lleva",
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "estado": {
+                                "type": "object",
+                                "properties": {
+                                  "texto": {
+                                    "type": "string",
+                                    "description": "El estado: «Trabajando», «Parada», «Trabaja con falla», «Reportada»…"
+                                  },
+                                  "color": {
+                                    "type": "string",
+                                    "enum": [
+                                      "rojo",
+                                      "ambar",
+                                      "azul",
+                                      "verde",
+                                      "gris",
+                                      "morado",
+                                      "verde-azulado",
+                                      "naranja"
+                                    ],
+                                    "description": "El color del cuadro del estado"
+                                  }
+                                },
+                                "required": [
+                                  "texto",
+                                  "color"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "required": [
+                              "falla_id",
+                              "folio",
+                              "fecha",
+                              "maquina",
+                              "maquina_folio",
+                              "motivo",
+                              "detuvo",
+                              "reporto",
+                              "horas_paro",
+                              "estado"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Los renglones de esta página"
+                        },
+                        "cursor": {
+                          "nullable": true,
+                          "description": "El cursor para pedir la página siguiente; nulo si no hay más",
+                          "type": "string"
+                        },
+                        "hay_mas": {
+                          "type": "boolean",
+                          "description": "Si hay más renglones después de esta página"
+                        }
+                      },
+                      "required": [
+                        "conteos",
+                        "renglones",
+                        "cursor",
+                        "hay_mas"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/mantenimiento.servicios": {
+      "get": {
+        "tags": [
+          "mantenimiento"
+        ],
+        "description": "Los servicios de un año, del más reciente al más viejo, por páginas, con lo que suman\n\nPermiso: departamento mantenimiento.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 2000,
+              "maximum": 2100
+            },
+            "in": "query",
+            "name": "anio",
+            "required": false,
+            "description": "El año; sin él, el actual"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "description": "El cursor que regresó la página anterior; opaco"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "in": "query",
+            "name": "limite",
+            "required": false,
+            "description": "Cuántos renglones, hasta 100"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "anio": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "anios": {
+                          "type": "array",
+                          "items": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "description": "Los años con servicios y el actual, del más reciente al más viejo"
+                        },
+                        "resumen": {
+                          "type": "object",
+                          "properties": {
+                            "servicios": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "total_centavos": {
+                              "description": "Lo que suman, en centavos",
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "horas_paro": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "servicios",
+                            "horas_paro"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "renglones": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "servicio_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "folio": {
+                                "type": "string"
+                              },
+                              "fecha": {
+                                "type": "string"
+                              },
+                              "maquina": {
+                                "type": "string"
+                              },
+                              "maquina_folio": {
+                                "type": "string"
+                              },
+                              "tecnico": {
+                                "type": "string"
+                              },
+                              "que_se_hizo": {
+                                "type": "string"
+                              },
+                              "costo_centavos": {
+                                "description": "Su costo, en centavos",
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "horas_paro": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "servicio_id",
+                              "folio",
+                              "fecha",
+                              "maquina",
+                              "maquina_folio",
+                              "tecnico",
+                              "que_se_hizo",
+                              "horas_paro"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Los renglones de esta página"
+                        },
+                        "cursor": {
+                          "nullable": true,
+                          "description": "El cursor para pedir la página siguiente; nulo si no hay más",
+                          "type": "string"
+                        },
+                        "hay_mas": {
+                          "type": "boolean",
+                          "description": "Si hay más renglones después de esta página"
+                        }
+                      },
+                      "required": [
+                        "anio",
+                        "anios",
+                        "resumen",
+                        "renglones",
+                        "cursor",
+                        "hay_mas"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/mantenimiento.costo_por_maquina": {
+      "get": {
+        "tags": [
+          "mantenimiento"
+        ],
+        "description": "Lo gastado contra lo parado de cada máquina en el año: sus reparaciones y su paro en horas y en pesos, de la que más cuesta a la que menos\n\nPermiso: departamento mantenimiento.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 99999999
+            },
+            "in": "query",
+            "name": "costo_hora_centavos",
+            "required": false,
+            "description": "Lo que cuesta una hora de paro solo para esta pantalla; sin él o en 0, el de Configuración"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "costo_hora_centavos": {
+                          "description": "El costo de la hora con que se calculó, en centavos",
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "costo_hora_configuracion_centavos": {
+                          "description": "`mantenimiento.costo_hora_paro`, en centavos",
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "reparaciones_centavos": {
+                          "description": "Las reparaciones del año, en centavos",
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "horas_paro": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "paro_centavos": {
+                          "description": "Las horas de paro por el costo de la hora, en centavos",
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "maquinas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "maquina_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "servicios": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "la_trae": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "reparaciones_centavos": {
+                                "description": "Sus servicios del año, en centavos",
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "horas_paro": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "paro_centavos": {
+                                "description": "Su paro en pesos, en centavos",
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "maquina_id",
+                              "nombre",
+                              "servicios",
+                              "la_trae",
+                              "horas_paro"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "horas_paro",
+                        "maquinas"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/mantenimiento.falla": {
+      "get": {
+        "tags": [
+          "mantenimiento"
+        ],
+        "description": "Una falla: su estado, su paro, quién la reportó y quién traía la máquina, su técnico, su nota de seguimiento, los lotes que detiene y su servicio\n\nPermiso: departamento mantenimiento.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "falla_id",
+            "required": true,
+            "description": "La falla"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "falla_id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "folio": {
+                          "type": "string"
+                        },
+                        "fecha": {
+                          "type": "string"
+                        },
+                        "estado_clave": {
+                          "type": "string",
+                          "enum": [
+                            "reportada",
+                            "en_reparacion",
+                            "resuelta"
+                          ]
+                        },
+                        "estado": {
+                          "type": "object",
+                          "properties": {
+                            "texto": {
+                              "type": "string",
+                              "description": "El estado: «Trabajando», «Parada», «Trabaja con falla», «Reportada»…"
+                            },
+                            "color": {
+                              "type": "string",
+                              "enum": [
+                                "rojo",
+                                "ambar",
+                                "azul",
+                                "verde",
+                                "gris",
+                                "morado",
+                                "verde-azulado",
+                                "naranja"
+                              ],
+                              "description": "El color del cuadro del estado"
+                            }
+                          },
+                          "required": [
+                            "texto",
+                            "color"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "maquina_id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "maquina": {
+                          "type": "string"
+                        },
+                        "titulo": {
+                          "type": "string",
+                          "description": "«{máquina}: {lo que le pasa, en minúsculas}»"
+                        },
+                        "motivo": {
+                          "type": "string"
+                        },
+                        "detuvo": {
+                          "type": "boolean",
+                          "description": "Si la falla detuvo la máquina"
+                        },
+                        "horas_paro": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "horas_propuestas": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "Las horas de paro que propone la reparación"
+                        },
+                        "reparacion_centavos": {
+                          "description": "El costo de su servicio, si ya se resolvió, en centavos",
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "reporto": {
+                          "type": "string",
+                          "description": "«{persona}, desde la tablet», o quien la reportó en Mantenimiento"
+                        },
+                        "la_trae": {
+                          "nullable": true,
+                          "description": "Quien traía la máquina al fallar",
+                          "type": "string"
+                        },
+                        "maquina_detalle": {
+                          "type": "string",
+                          "description": "«{tipo} {marca} {modelo} · {serie}»"
+                        },
+                        "tecnico_id": {
+                          "nullable": true,
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "tecnico": {
+                          "nullable": true,
+                          "description": "El técnico de la reparación",
+                          "type": "string"
+                        },
+                        "nota_seguimiento": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "deteniendo": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "lote_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "folio": {
+                                "type": "string"
+                              },
+                              "texto": {
+                                "type": "string",
+                                "description": "«{prenda} para {destino}»"
+                              },
+                              "entrega": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "lote_id",
+                              "folio",
+                              "texto",
+                              "entrega"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "servicio": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "folio": {
+                              "type": "string"
+                            },
+                            "fecha": {
+                              "type": "string"
+                            },
+                            "que_se_hizo": {
+                              "type": "string"
+                            },
+                            "costo_centavos": {
+                              "description": "Su costo, en centavos",
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "horas_paro": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "paro_centavos": {
+                              "description": "Sus horas de paro por `mantenimiento.costo_hora_paro`, en centavos",
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "folio",
+                            "fecha",
+                            "que_se_hizo",
+                            "horas_paro"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "falla_id",
+                        "version",
+                        "folio",
+                        "fecha",
+                        "estado_clave",
+                        "estado",
+                        "maquina_id",
+                        "maquina",
+                        "titulo",
+                        "motivo",
+                        "detuvo",
+                        "horas_paro",
+                        "horas_propuestas",
+                        "reporto",
+                        "la_trae",
+                        "maquina_detalle",
+                        "tecnico_id",
+                        "tecnico",
+                        "nota_seguimiento",
+                        "deteniendo",
+                        "servicio"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/mantenimiento.maquina": {
+      "get": {
+        "tags": [
+          "mantenimiento"
+        ],
+        "description": "Una máquina: su estado, lo que ha costado en el año, sus datos, quién la trae y su historial\n\nPermiso: departamento mantenimiento.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "maquina_id",
+            "required": true,
+            "description": "La máquina"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "maquina_id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "folio": {
+                          "type": "string"
+                        },
+                        "nombre": {
+                          "type": "string"
+                        },
+                        "area": {
+                          "type": "string"
+                        },
+                        "estado": {
+                          "type": "object",
+                          "properties": {
+                            "texto": {
+                              "type": "string",
+                              "description": "El estado: «Trabajando», «Parada», «Trabaja con falla», «Reportada»…"
+                            },
+                            "color": {
+                              "type": "string",
+                              "enum": [
+                                "rojo",
+                                "ambar",
+                                "azul",
+                                "verde",
+                                "gris",
+                                "morado",
+                                "verde-azulado",
+                                "naranja"
+                              ],
+                              "description": "El color del cuadro del estado"
+                            }
+                          },
+                          "required": [
+                            "texto",
+                            "color"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "tipo": {
+                          "type": "string"
+                        },
+                        "marca_modelo": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "serie": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "la_trae": {
+                          "nullable": true,
+                          "description": "Quien la trae",
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "nombre": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "nombre"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "reparaciones_centavos": {
+                          "description": "Sus servicios del año, en centavos",
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "horas_paro": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "Las de sus servicios del año y las de su falla abierta, si la detuvo"
+                        },
+                        "paro_centavos": {
+                          "description": "Su paro en pesos, en centavos",
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "fallas_en_el_anio": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "historial": {
+                          "type": "array",
+                          "items": {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "tipo": {
+                                    "type": "string",
+                                    "enum": [
+                                      "falla"
+                                    ]
+                                  },
+                                  "clave": {
+                                    "type": "string"
+                                  },
+                                  "fecha": {
+                                    "type": "string"
+                                  },
+                                  "texto": {
+                                    "type": "string",
+                                    "description": "«Falla: {lo que le pasa}, reportó {persona}»"
+                                  }
+                                },
+                                "required": [
+                                  "tipo",
+                                  "clave",
+                                  "fecha",
+                                  "texto"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "tipo": {
+                                    "type": "string",
+                                    "enum": [
+                                      "servicio"
+                                    ]
+                                  },
+                                  "clave": {
+                                    "type": "string"
+                                  },
+                                  "fecha": {
+                                    "type": "string"
+                                  },
+                                  "que_se_hizo": {
+                                    "type": "string"
+                                  },
+                                  "tecnico": {
+                                    "type": "string"
+                                  },
+                                  "costo_centavos": {
+                                    "description": "Su costo, en centavos",
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "horas_paro": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  }
+                                },
+                                "required": [
+                                  "tipo",
+                                  "clave",
+                                  "fecha",
+                                  "que_se_hizo",
+                                  "tecnico",
+                                  "horas_paro"
+                                ],
+                                "additionalProperties": false
+                              }
+                            ]
+                          }
+                        },
+                        "falla_abierta": {
+                          "nullable": true,
+                          "description": "El folio de su falla abierta, si tiene",
+                          "type": "string"
+                        },
+                        "dada_de_baja": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "desde": {
+                              "type": "string"
+                            },
+                            "motivo": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "desde",
+                            "motivo"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "maquina_id",
+                        "version",
+                        "folio",
+                        "nombre",
+                        "area",
+                        "estado",
+                        "tipo",
+                        "marca_modelo",
+                        "serie",
+                        "la_trae",
+                        "horas_paro",
+                        "fallas_en_el_anio",
+                        "historial",
+                        "falla_abierta",
+                        "dada_de_baja"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/mantenimiento.opciones": {
+      "get": {
+        "tags": [
+          "mantenimiento"
+        ],
+        "description": "Las listas de las ventanas de Mantenimiento: tipos, áreas, gente del Taller, técnicos, motivos de falla y máquinas activas\n\nPermiso: departamento mantenimiento.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "tipos": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "nombre"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "areas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "nombre"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "La lista «Áreas del taller»"
+                        },
+                        "personas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "nombre"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "La gente activa del Taller"
+                        },
+                        "tecnicos": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "nombre"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Los técnicos vigentes"
+                        },
+                        "motivos": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "detiene": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "nombre",
+                              "detiene"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "En su orden"
+                        },
+                        "maquinas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "folio": {
+                                "type": "string"
+                              },
+                              "version": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991,
+                                "description": "Para un servicio suelto"
+                              },
+                              "con_falla_abierta": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "nombre",
+                              "folio",
+                              "version",
+                              "con_falla_abierta"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "tipos",
+                        "areas",
+                        "personas",
+                        "tecnicos",
+                        "motivos",
+                        "maquinas"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/consultas/patronaje.pendientes": {
       "get": {
         "tags": [

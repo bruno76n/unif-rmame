@@ -14,7 +14,8 @@ import { opcionesDeReclamo } from "@uniformame/compartido/contratos/calidad/cons
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { type ContextoDeConsulta, implementarConsulta } from "../../../nucleo/modulos.ts";
-import { defectosVigentes, genteDelTaller, parametroNumero, personaPropuesta } from "./comun.ts";
+import { parametroNumero } from "../../../nucleo/parametros.ts";
+import { defectosVigentes, genteDelTaller, personaPropuesta } from "./comun.ts";
 
 /** La zona del negocio, para pasar un momento a su día. */
 const enMexico = sql`'America/Mexico_City'`;

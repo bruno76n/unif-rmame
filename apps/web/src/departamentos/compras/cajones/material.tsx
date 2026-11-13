@@ -8,6 +8,7 @@
  */
 
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
+import { plural } from "@uniformame/compartido/calculos/textos";
 import { materialDeCompras } from "@uniformame/compartido/contratos/compras/consultas-cajones";
 import {
 	darBajaMaterial,
@@ -15,7 +16,7 @@ import {
 	hacerHabitual,
 	quitarProveedorMaterial,
 } from "@uniformame/compartido/contratos/compras/materiales";
-import { cantidadConUnidad, pesos, plural } from "@uniformame/compartido/contratos/compras/textos";
+import { cantidadConUnidad, pesos } from "@uniformame/compartido/contratos/compras/textos";
 import { BarraAvance } from "@uniformame/interfaz/avance/barra-avance";
 import { Boton } from "@uniformame/interfaz/botones/boton";
 import { Campo } from "@uniformame/interfaz/captura/campo";

@@ -15,15 +15,9 @@ import type { Temporal } from "temporal-polyfill";
 import { z } from "zod";
 import { leerCursor, paginar } from "../../../nucleo/http/consultas.ts";
 import { type ContextoDeConsulta, implementarConsulta } from "../../../nucleo/modulos.ts";
-import {
-	escribirParaQuien,
-	hiloDelLote,
-	type LoteLeido,
-	leerLotes,
-	parametroNumero,
-	type SaludEscrita,
-	saludDeLosLotes,
-} from "./comun.ts";
+import { parametroNumero } from "../../../nucleo/parametros.ts";
+import { escribirParaQuien } from "../dominio/para-quien.ts";
+import { hiloDelLote, type LoteLeido, leerLotes, type SaludEscrita, saludDeLosLotes } from "./comun.ts";
 import { consultaHiloPedido } from "./hilo-pedido.ts";
 
 /** Cuántas tarjetas de las que ya salieron del taller van por página. */

@@ -10,8 +10,8 @@ import { and, asc, eq, inArray } from "drizzle-orm";
 import { Temporal } from "temporal-polyfill";
 import { z } from "zod";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
+import { parametroNumero } from "../../../nucleo/parametros.ts";
 import { terceros } from "../../contaduria/tablas.ts";
-import { parametroNumero } from "../dominio/comunes.ts";
 import { faltanteDeLineas, lineasDeOrdenes, precioVigente } from "../dominio/ordenes.ts";
 import { ordenCompraLineas, ordenesCompra, proveedores } from "../tablas.ts";
 

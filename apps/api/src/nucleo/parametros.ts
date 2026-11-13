@@ -237,3 +237,16 @@ export function tipoDeParametro(texto: string): TipoDeParametro {
 export function versionMinimaDeLosParametros(base: Base): (app: App) => Promise<string> {
 	return async (app) => String(await leerParametro(base, { clave: `admin.version_minima_${app}` }));
 }
+
+/**
+ * Lee un parámetro de número con la lectura de Administración, desde una acción o una consulta.
+ * @param contexto Lo que lee (`contexto.lectura`).
+ * @param clave La clave del parámetro (`produccion.riesgo_atraso_dias`).
+ * Es la única forma de leer un número de la configuración desde un módulo: no lo repite cada uno.
+ */
+export async function parametroNumero(
+	contexto: { lectura: (nombre: string, datos: unknown) => Promise<unknown> },
+	clave: string,
+): Promise<number> {
+	return Number(await contexto.lectura("admin.parametro", { clave }));
+}

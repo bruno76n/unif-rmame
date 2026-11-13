@@ -7,6 +7,7 @@
  * Sin nada listo no se abre.
  */
 
+import { plural } from "@uniformame/compartido/calculos/textos";
 import { armarNotaVentas } from "@uniformame/compartido/contratos/ventas/consultas-notas";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
@@ -20,7 +21,6 @@ import {
 	leerNotasDePedidos,
 	leerPedidos,
 	leerRenglones,
-	plural,
 	textoDeFormaDePago,
 } from "./comun.ts";
 

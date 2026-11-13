@@ -14,6 +14,7 @@ import { and, desc, eq, isNull, max, ne } from "drizzle-orm";
 import { Temporal } from "temporal-polyfill";
 import { noExiste } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeAccion, implementarConsulta } from "../../../nucleo/modulos.ts";
+import { parametroNumero } from "../../../nucleo/parametros.ts";
 import { terceros } from "../../contaduria/tablas.ts";
 import { plazosReales } from "../dominio/ordenes.ts";
 import { costoMaterial } from "../lecturas/costo-material.ts";
@@ -24,7 +25,6 @@ import {
 	datosDeMateriales,
 	enCaminoDe,
 	estadoDeMaterial,
-	numeroDe,
 	surtidores,
 	tonoDeExistencia,
 } from "./comun.ts";
@@ -46,7 +46,7 @@ const origenes: Readonly<Record<string, string>> = {
  * @param materialId El material.
  */
 async function ultimosPrecios(accion: ContextoDeAccion, materialId: string) {
-	const umbral = await numeroDe(accion, "compras.umbral_cambio_precio_pct");
+	const umbral = await parametroNumero(accion, "compras.umbral_cambio_precio_pct");
 	const filas = await accion.transaccion
 		.select({
 			precio: preciosCompra.precioCentavos,

@@ -10,8 +10,9 @@
  */
 
 import { aMilesimosConSigno } from "@uniformame/compartido/calculos/cuenta-material";
+import { plural } from "@uniformame/compartido/calculos/textos";
 import type { estadoArmado } from "@uniformame/compartido/contratos/compras/consultas-pestanas";
-import { condicionDePago, plural } from "@uniformame/compartido/contratos/compras/textos";
+import { condicionDePago } from "@uniformame/compartido/contratos/compras/textos";
 import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { Temporal } from "temporal-polyfill";
 import { z } from "zod";
@@ -25,15 +26,6 @@ import { materiales, materialProveedores, ordenCompraLineas, ordenesCompra, prov
 
 /** Un estado armado, como lo pide el contrato. */
 export type EstadoArmado = z.infer<typeof estadoArmado>;
-
-/**
- * Un número de un parámetro.
- * @param accion El contexto de la lectura.
- * @param clave Su clave.
- */
-export async function numeroDe(accion: ContextoDeAccion, clave: string): Promise<number> {
-	return Number(await accion.lectura("admin.parametro", { clave }));
-}
 
 /**
  * La cuenta de los materiales: todos los activos o los que se piden.

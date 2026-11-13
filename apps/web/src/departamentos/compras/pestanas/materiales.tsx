@@ -6,9 +6,10 @@
  */
 
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
+import { plural } from "@uniformame/compartido/calculos/textos";
 import type { materialesDeCompras } from "@uniformame/compartido/contratos/compras/consultas-pestanas";
 import { reactivarMaterial } from "@uniformame/compartido/contratos/compras/materiales";
-import { cantidadConUnidad, cifraEnTexto, pesos, plural } from "@uniformame/compartido/contratos/compras/textos";
+import { cantidadConUnidad, cifraEnTexto, pesos } from "@uniformame/compartido/contratos/compras/textos";
 import { BarraAvance } from "@uniformame/interfaz/avance/barra-avance";
 import { Boton } from "@uniformame/interfaz/botones/boton";
 import { Filtros } from "@uniformame/interfaz/captura/filtros";

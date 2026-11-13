@@ -8,17 +8,8 @@
 
 import { aMilesimosConSigno } from "../../calculos/cuenta-material.ts";
 import { centavosATexto } from "../../calculos/dinero.ts";
+import { plural } from "../../calculos/textos.ts";
 import { centavos } from "../../tipos/base.ts";
-
-/**
- * La palabra en singular o en plural según la cifra: «1 material», «3 materiales».
- * @param cifra La cifra.
- * @param uno La palabra para uno.
- * @param varios La palabra para los demás.
- */
-export function plural(cifra: number, uno: string, varios: string): string {
-	return `${cifra} ${cifra === 1 ? uno : varios}`;
-}
 
 /** El separador de miles de México. */
 const miles = new Intl.NumberFormat("es-MX", { maximumFractionDigits: 0 });

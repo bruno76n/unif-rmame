@@ -10,8 +10,9 @@
  */
 
 import { textoDeDia, textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
+import { plural } from "@uniformame/compartido/calculos/textos";
 import type { porPedir } from "@uniformame/compartido/contratos/compras/consultas-pestanas";
-import { cantidadConUnidad, plural } from "@uniformame/compartido/contratos/compras/textos";
+import { cantidadConUnidad } from "@uniformame/compartido/contratos/compras/textos";
 import { Boton } from "@uniformame/interfaz/botones/boton";
 import { Casilla } from "@uniformame/interfaz/captura/casilla";
 import { Filtros } from "@uniformame/interfaz/captura/filtros";

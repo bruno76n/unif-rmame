@@ -9,19 +9,12 @@ import { aMilesimosConSigno, deMilesimos } from "@uniformame/compartido/calculos
 import { materialesDeCompras } from "@uniformame/compartido/contratos/compras/consultas-pestanas";
 import { and, asc, eq, isNull } from "drizzle-orm";
 import { type ContextoDeAccion, implementarConsulta } from "../../../nucleo/modulos.ts";
+import { parametroNumero } from "../../../nucleo/parametros.ts";
 import { listas, listaValores } from "../../admin/tablas.ts";
 import { terceros } from "../../contaduria/tablas.ts";
 import { listaDeUnidades } from "../siembra.ts";
 import { proveedores } from "../tablas.ts";
-import {
-	cuentas,
-	cumpleBusqueda,
-	datosDeMateriales,
-	estadoDeMaterial,
-	numeroDe,
-	surtidores,
-	tonoDeExistencia,
-} from "./comun.ts";
+import { cuentas, cumpleBusqueda, datosDeMateriales, estadoDeMaterial, surtidores, tonoDeExistencia } from "./comun.ts";
 
 /**
  * Lo que pide «Nuevo material»: las unidades seleccionables de su lista, los proveedores activos y los días que
@@ -46,7 +39,7 @@ async function paraNuevo(accion: ContextoDeAccion) {
 			unidad.clave === null ? [] : [{ clave: unidad.clave, nombre: unidad.nombre }],
 		),
 		proveedores: activos,
-		dias_cubre_inicial: await numeroDe(accion, "compras.dias_cubre_inicial"),
+		dias_cubre_inicial: await parametroNumero(accion, "compras.dias_cubre_inicial"),
 	};
 }
 

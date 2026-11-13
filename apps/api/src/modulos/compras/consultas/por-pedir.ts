@@ -8,13 +8,15 @@
  * `compras.horizonte_corto_semanas`; el largo llega al fin del mes de `compras.fecha_regreso_clases`.
  */
 
+import { plural } from "@uniformame/compartido/calculos/textos";
 import { porPedir } from "@uniformame/compartido/contratos/compras/consultas-pestanas";
-import { cantidadConUnidad, plural } from "@uniformame/compartido/contratos/compras/textos";
+import { cantidadConUnidad } from "@uniformame/compartido/contratos/compras/textos";
 import { Temporal } from "temporal-polyfill";
 import type { z } from "zod";
 import { type ContextoDeAccion, implementarConsulta } from "../../../nucleo/modulos.ts";
+import { parametroNumero } from "../../../nucleo/parametros.ts";
 import type { CuentaDeMaterial } from "../lecturas/cuenta-material.ts";
-import { cuentas, cumpleBusqueda, datosDeMateriales, numeroDe, surtidores } from "./comun.ts";
+import { cuentas, cumpleBusqueda, datosDeMateriales, surtidores } from "./comun.ts";
 
 /** Lo que regresa la consulta. */
 type Resultado = z.infer<typeof porPedir.resultado>;
@@ -60,7 +62,7 @@ function alcanza(cuenta: CuentaDeMaterial, hoy: Temporal.PlainDate): string {
  */
 async function horizonteDe(accion: ContextoDeAccion, tipo: "corto" | "regreso_clases") {
 	const hoy = accion.diaDeNegocio;
-	const semanas = await numeroDe(accion, "compras.horizonte_corto_semanas");
+	const semanas = await parametroNumero(accion, "compras.horizonte_corto_semanas");
 	const regreso = Temporal.PlainDate.from(
 		String(await accion.lectura("admin.parametro", { clave: "compras.fecha_regreso_clases" })),
 	);
@@ -69,7 +71,7 @@ async function horizonteDe(accion: ContextoDeAccion, tipo: "corto" | "regreso_cl
 	const deLosMeses: Resultado["meses"] = [];
 	for (let mes = hoy.with({ day: 1 }); Temporal.PlainDate.compare(mes, hasta) <= 0; mes = mes.add({ months: 1 })) {
 		// Los factores se guardan en por ciento de un mes normal: 320 es 3.2 veces.
-		const porciento = await numeroDe(accion, `compras.factor_consumo_${meses[mes.month - 1]}`);
+		const porciento = await parametroNumero(accion, `compras.factor_consumo_${meses[mes.month - 1]}`);
 		deLosMeses.push({
 			inicio: (Temporal.PlainDate.compare(mes, hoy) < 0 ? hoy : mes).toString(),
 			nombre: mes.toLocaleString("es-MX", { month: "long" }),

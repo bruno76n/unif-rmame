@@ -13,7 +13,8 @@ import { defectosDeCalidad } from "@uniformame/compartido/contratos/calidad/defe
 import { type SQL, sql } from "drizzle-orm";
 import { z } from "zod";
 import { type ContextoDeConsulta, implementarConsulta } from "../../../nucleo/modulos.ts";
-import { defectosDelPeriodo, enElPeriodo, parametroNumero, porcentaje } from "./comun.ts";
+import { parametroNumero } from "../../../nucleo/parametros.ts";
+import { defectosDelPeriodo, enElPeriodo, porcentaje } from "./comun.ts";
 
 /** Un renglón de la tasa, como sale de la base. */
 const deTasa = z.object({
