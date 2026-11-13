@@ -1,21 +1,20 @@
 /**
- * Pendientes de Tienda en línea: la primera pestaña. Hasta que su parte de la fase 19 la construya, muestra la página del
- * departamento sin pendientes.
- * Fase 19 · docs/interfaz/fabrica/ (el archivo de Tienda en línea)
+ * Pendientes de Tienda en línea: la primera pestaña.
+ * Fase 19 · docs/interfaz/fabrica/tienda-en-linea.md («Pendientes»)
+ *
+ * La ruta solo arma la pantalla: el cajón abierto viene de la dirección.
  */
 
 import { createFileRoute } from "@tanstack/react-router";
-import { EstadoDePantalla } from "@uniformame/interfaz/estados/estado-de-pantalla";
-import { PaginaDeDepartamento } from "../../comun/pagina-de-departamento.tsx";
+import { busquedaDeLinea } from "../../departamentos/linea/direccion.ts";
+import { PaginaDeLinea } from "../../departamentos/linea/pagina.tsx";
+import { PestanaPendientes } from "../../departamentos/linea/pestanas/pendientes.tsx";
 
 export const Route = createFileRoute("/linea/")({
+	validateSearch: busquedaDeLinea,
 	component: () => (
-		<PaginaDeDepartamento
-			departamento="linea"
-			pestanas={[{ clave: "pendientes", texto: "Pendientes" }]}
-			activa="pendientes"
-		>
-			<EstadoDePantalla tipo="vacio" texto="Sin pendientes" bien />
-		</PaginaDeDepartamento>
+		<PaginaDeLinea activa="pendientes">
+			<PestanaPendientes />
+		</PaginaDeLinea>
 	),
 });

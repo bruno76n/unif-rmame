@@ -29,14 +29,14 @@ import { useState } from "react";
 import type { z } from "zod";
 import { useConsulta } from "../../../comun/api.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
+import { Historial } from "../../../comun/historial.tsx";
 import { montoEnPantalla } from "../../../comun/montos.ts";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
+import { useTieneDepartamento } from "../../../comun/tiene-departamento.ts";
 import { VentanaConMotivo } from "../../../comun/ventana-con-motivo.tsx";
-import { useTieneDepartamento } from "../cuenta.ts";
 import { useDireccionDeVentas } from "../direccion.ts";
 import { useEnvio } from "../envio.ts";
 import { VentanaPasarABodega } from "../ventanas/pasar-a-bodega.tsx";
-import { Historial } from "./historial.tsx";
 
 /** Lo que da la consulta. */
 type Pedido = z.infer<typeof pedidoVentas.resultado>;

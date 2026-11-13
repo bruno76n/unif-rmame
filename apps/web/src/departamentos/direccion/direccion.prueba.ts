@@ -8,9 +8,10 @@
  * texto que regresa» y «Cada pantalla tiene sus estados»)
  */
 
-import { expect as enPantalla, type Page } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { esEstadoConocido } from "@uniformame/interfaz/estados/colores";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { enPantalla } from "../../../../../pruebas/navegador/en-pantalla.ts";
 import { pedirAjusteDePrueba } from "../../comun/pruebas/autorizaciones-de-prueba.ts";
 import { levantarPantalla, type PantallaDePrueba } from "../../comun/pruebas/pantalla-de-prueba.ts";
 

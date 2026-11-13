@@ -6,6 +6,7 @@
 
 import { and, eq, inArray, sum } from "drizzle-orm";
 import { z } from "zod";
+import { tieneDepartamento } from "../../../nucleo/acceso/quien.ts";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
 import { cuentasPorCobrar } from "../tablas.ts";
 
@@ -14,8 +15,7 @@ import { cuentasPorCobrar } from "../tablas.ts";
  * @param contexto El contexto de quien lee.
  */
 function veMontos(contexto: ContextoDeAccion): boolean {
-	const { quien } = contexto;
-	return quien.tipo === "cuenta" && (quien.esDuena || quien.departamentos.includes("contaduria"));
+	return tieneDepartamento(contexto.quien, "contaduria");
 }
 
 /** Lo que pide `estado_pago_notas`. */

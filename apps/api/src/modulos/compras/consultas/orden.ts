@@ -12,6 +12,7 @@ import { plural } from "@uniformame/compartido/calculos/textos";
 import { ordenDeCompra } from "@uniformame/compartido/contratos/compras/consultas-cajones";
 import { cantidadConUnidad } from "@uniformame/compartido/contratos/compras/textos";
 import { Temporal } from "temporal-polyfill";
+import { tieneDepartamento } from "../../../nucleo/acceso/quien.ts";
 import { nombreDeCuenta } from "../../../nucleo/acciones/comunes.ts";
 import { noExiste } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeAccion, implementarConsulta } from "../../../nucleo/modulos.ts";
@@ -66,7 +67,7 @@ export const consultaOrden = implementarConsulta(ordenDeCompra, async (contexto,
 		if (orden === undefined) throw noExiste();
 		const hoy = accion.diaDeNegocio;
 		const { quien } = contexto;
-		const conContaduria = quien.tipo === "cuenta" && (quien.esDuena || quien.departamentos.includes("contaduria"));
+		const conContaduria = tieneDepartamento(quien, "contaduria");
 		const conAlgoRecibido = orden.lineas.some((linea) => linea.recibido > 0n);
 		const ultima = orden.recepciones.at(-1);
 		return {

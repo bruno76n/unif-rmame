@@ -8,8 +8,9 @@
  * texto que regresa» y «Cada pantalla tiene sus estados») y docs/interfaz/fabrica/catalogo.md
  */
 
-import { expect as enPantalla, type Page } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { afterAll, beforeAll, describe, it } from "vitest";
+import { enPantalla } from "../../../../../pruebas/navegador/en-pantalla.ts";
 import { levantarPantalla, type PantallaDePrueba } from "../../comun/pruebas/pantalla-de-prueba.ts";
 
 /** El tiempo de cada caso: abre la web y espera a la API. */

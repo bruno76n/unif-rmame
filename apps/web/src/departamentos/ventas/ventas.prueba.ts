@@ -7,8 +7,9 @@
  * texto que regresa» y «Cada pantalla tiene sus estados: … choque de versión»)
  */
 
-import { expect as enPantalla, type Page } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { enPantalla } from "../../../../../pruebas/navegador/en-pantalla.ts";
 import { listoEnAduanaDePrueba } from "../../../../api/src/nucleo/pruebas/inventario-de-prueba.ts";
 import {
 	darDeAltaClienteDePrueba,

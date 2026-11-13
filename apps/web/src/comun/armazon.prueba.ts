@@ -7,8 +7,8 @@
  * pantalla"»)
  */
 
-import { expect as enPantalla } from "@playwright/test";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { enPantalla } from "../../../../pruebas/navegador/en-pantalla.ts";
 import { pedirConsulta } from "../../../api/src/nucleo/pruebas/llamadas.ts";
 import { levantarPantalla, type PantallaDePrueba } from "./pruebas/pantalla-de-prueba.ts";
 

@@ -42,7 +42,7 @@ export function VentanaResolverExcepcion({
 	const resolver = useAccion(resolverExcepcion, loQueCambiaEnProduccion);
 	useEffect(() => {
 		formulario.reset({ excepcion_id: excepcion?.excepcion_id ?? "", resolucion: "" });
-	}, [excepcion, formulario]);
+	}, [excepcion?.excepcion_id, formulario]);
 	const falla = resolver.error === null ? null : leerFalla(resolver.error);
 	const error =
 		formulario.formState.errors.resolucion?.message ??

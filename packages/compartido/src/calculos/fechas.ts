@@ -113,6 +113,16 @@ export function textoDeDiaCorto(dia: DiaNegocio | string): string {
 }
 
 /**
+ * Cómo se escribe en una línea corta el día en que pasó algo: «13 oct», del día de negocio.
+ * @param momento El momento en texto ISO, como llega en las salidas (`ocurrido_en`).
+ * @returns El día en hora de México: lo de las 23:30 de un día no sale con el siguiente.
+ * Existe para los historiales de los cajones, que reciben momentos y no días.
+ */
+export function textoDeMomentoCorto(momento: string): string {
+	return textoDeDiaCorto(diaDeNegocio(Temporal.Instant.from(momento)));
+}
+
+/**
  * Cómo se escribe un mes en los mensajes: «octubre de 2026».
  * @param dia Cualquier día del mes, o su texto ISO («2026-10-01»).
  */

@@ -3,6 +3,8 @@
  * empacar.
  * Fase 18 · docs/modulos/linea/pedidos-en-linea.md
  *
+ * Fase 19 · docs/interfaz/fabrica/tienda-en-linea.md: las consultas de sus pantallas y la pastilla del menú.
+ *
  * Empacar, la guía, la entrega, las devoluciones y el panel llegan con uniformame.mx.
  */
 
@@ -10,6 +12,9 @@ import { definirModulo } from "../../nucleo/modulos.ts";
 import { accionCancelarPedidoLinea } from "./acciones/cancelar-pedido.ts";
 import { accionConfirmarPago } from "./acciones/confirmar-pago.ts";
 import { accionRecibirPedido } from "./acciones/recibir-pedido.ts";
+import { consultaPedidoLinea } from "./consultas/pedido.ts";
+import { consultaPedidosLinea } from "./consultas/pedidos.ts";
+import { consultaPendientesLinea, pastillaLinea } from "./consultas/pendientes.ts";
 import { pausarPublicacionesProducto, prendasEnAduana, prendasEnCamino, vencerPedido } from "./internas/pedidos.ts";
 import { foliosDePedidos, pedidosAbiertos, pedidosAbiertosDeVariante } from "./lecturas/pedidos.ts";
 import { semillaDeParametrosDeLinea } from "./parametros.ts";
@@ -17,6 +22,8 @@ import { semillaDeParametrosDeLinea } from "./parametros.ts";
 export default definirModulo({
 	nombre: "linea",
 	acciones: [accionRecibirPedido, accionConfirmarPago, accionCancelarPedidoLinea],
+	consultas: [consultaPendientesLinea, consultaPedidosLinea, consultaPedidoLinea],
+	pastillas: { linea: pastillaLinea },
 	internas: {
 		prendas_en_camino: prendasEnCamino,
 		prendas_en_aduana: prendasEnAduana,

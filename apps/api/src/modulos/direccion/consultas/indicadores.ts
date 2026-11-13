@@ -10,7 +10,7 @@
  * se comparen los mismos días de la semana.
  */
 
-import { plural } from "@uniformame/compartido/calculos/textos";
+import { plural, variacion } from "@uniformame/compartido/calculos/textos";
 import { indicadores } from "@uniformame/compartido/contratos/direccion/indicadores";
 import type { Temporal } from "temporal-polyfill";
 import { implementarConsulta } from "../../../nucleo/modulos.ts";
@@ -21,7 +21,6 @@ import {
 	saludDeLosLotes,
 	terminadasPorDia,
 	ultimosDiasDeTrabajo,
-	variacion,
 	vendidoEntre,
 	ventasPorDia,
 } from "./cifras.ts";

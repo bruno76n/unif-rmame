@@ -23,6 +23,7 @@ export async function aparatosSinSincronizar(contexto: ContextoDeAccion) {
 		.select({
 			dispositivo_id: dispositivos.id,
 			nombre: dispositivos.nombre,
+			ubicacion_id: dispositivos.ubicacionId,
 			ubicacion: ubicaciones.nombre,
 			desde: sql<string>`to_char(${desde} at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')`,
 		})

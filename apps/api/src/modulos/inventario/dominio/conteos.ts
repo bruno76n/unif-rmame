@@ -4,6 +4,7 @@
  */
 
 import { and, eq, inArray } from "drizzle-orm";
+import { tieneDepartamento } from "../../../nucleo/acceso/quien.ts";
 import { ErrorDeApi, errorDeCampo, errorDeRegla } from "../../../nucleo/http/errores.ts";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
 import { productos, secciones, variantes } from "../../catalogo/tablas.ts";
@@ -23,8 +24,7 @@ export async function ubicacionContable(contexto: ContextoDeAccion, ubicacionId:
 	if (ubicacion === undefined || (ubicacion.tipo !== "bodega" && ubicacion.tipo !== "aduana")) {
 		throw errorDeRegla("ubicacion_no_contable", "Aquí solo se cuenta en Bodega o en Aduana.");
 	}
-	const { quien } = contexto;
-	const deBodega = quien.tipo === "cuenta" && (quien.esDuena || quien.departamentos.includes("bodega"));
+	const deBodega = tieneDepartamento(contexto.quien, "bodega");
 	if (ubicacion.tipo === "bodega" && !deBodega) throw new ErrorDeApi("sin_permiso", "sin_departamento");
 	return { ...ubicacion, departamento: deBodega ? ("bodega" as const) : ("aduana" as const) };
 }

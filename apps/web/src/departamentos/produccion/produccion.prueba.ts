@@ -7,8 +7,9 @@
  * que regresa» y «Cada pantalla tiene sus estados») y docs/interfaz/fabrica/produccion.md
  */
 
-import { expect as enPantalla, type Page } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { enPantalla } from "../../../../../pruebas/navegador/en-pantalla.ts";
 import { subirDeLaTablet } from "../../../../api/src/nucleo/pruebas/produccion-de-prueba.ts";
 import { levantarPantalla, type PantallaDePrueba } from "../../comun/pruebas/pantalla-de-prueba.ts";
 

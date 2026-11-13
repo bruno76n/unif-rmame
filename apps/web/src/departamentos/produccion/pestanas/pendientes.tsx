@@ -33,7 +33,8 @@ import { useState } from "react";
 import type { z } from "zod";
 import { useAccion, useConsulta } from "../../../comun/api.tsx";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
-import { enOtroDepartamento, useCuenta } from "../cuenta.ts";
+import { useTieneDepartamento } from "../../../comun/tiene-departamento.ts";
+import { enOtroDepartamento } from "../cuenta.ts";
 import { rutasDeProduccion, useDireccion } from "../direccion.ts";
 import { loQueCambiaEnProduccion } from "../invalidar.ts";
 import { PaginaDeProduccion } from "../pagina.tsx";
@@ -184,7 +185,7 @@ function ColaDeTrabajo({
 }) {
 	const router = useRouter();
 	const { ir } = useDireccion();
-	const { tiene } = useCuenta();
+	const tiene = useTieneDepartamento();
 	const [excepcion, setExcepcion] = useState<Extract<Renglon, { tipo: "excepcion" }> | null>(null);
 	const aplicar = useAccion(aplicarCambioPedido, loQueCambiaEnProduccion);
 	const levantar = useAccion(levantarOrdenSugerencia, loQueCambiaEnProduccion);

@@ -11,6 +11,7 @@ import { diasHasta, textoDeDiaCorto, textoEnDias } from "@uniformame/compartido/
 import { loteDeProduccion } from "@uniformame/compartido/contratos/produccion/lotes";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
+import { tieneDepartamento } from "../../../nucleo/acceso/quien.ts";
 import { leerCursor, paginar } from "../../../nucleo/http/consultas.ts";
 import { noExiste } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeConsulta, implementarConsulta } from "../../../nucleo/modulos.ts";
@@ -27,7 +28,6 @@ import {
 	operacionAtorada,
 	piezasPorTallaDelLote,
 	saludDeLosLotes,
-	tieneDepartamento,
 	tiraDelLote,
 	ultimaSincronizacion,
 } from "./comun.ts";

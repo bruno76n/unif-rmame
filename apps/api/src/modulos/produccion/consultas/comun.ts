@@ -396,15 +396,6 @@ export function hiloDelLote(
 	];
 }
 
-/**
- * Si quien llama tiene alguno de esos departamentos (la dueña los tiene todos).
- * @param quien Quien llama.
- * @param departamentos Las claves de los departamentos.
- */
-export function tieneDepartamento(quien: ContextoDeConsulta["quien"], ...departamentos: readonly string[]): boolean {
-	return quien.tipo === "cuenta" && (quien.esDuena || departamentos.some((uno) => quien.departamentos.includes(uno)));
-}
-
 /** Lo que regresa `patronaje.calcular_material`, lo que se usa. */
 export const deCalcularMaterial = z.object({
 	receta_version_id: z.uuid().nullable(),

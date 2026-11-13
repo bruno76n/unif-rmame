@@ -53,7 +53,7 @@ export function VentanaCancelarRegistro({
 	useEffect(() => {
 		formulario.reset({ registro_id: registro?.registro_id ?? "", motivo: "" });
 		cancelar.reset();
-	}, [registro, formulario, cancelar.reset]);
+	}, [registro?.registro_id, formulario, cancelar.reset]);
 	const falla = cancelar.error === null ? null : leerFalla(cancelar.error);
 	const error =
 		formulario.formState.errors.motivo?.message ??

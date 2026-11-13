@@ -25,7 +25,8 @@ import type { z } from "zod";
 import { consultar, useAccion, useConsulta } from "../../../comun/api.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
-import { enOtroDepartamento, useCuenta } from "../cuenta.ts";
+import { useTieneDepartamento } from "../../../comun/tiene-departamento.ts";
+import { enOtroDepartamento } from "../cuenta.ts";
 import { useDireccion } from "../direccion.ts";
 import { loQueCambiaEnProduccion } from "../invalidar.ts";
 import { PaginaDeProduccion } from "../pagina.tsx";
@@ -157,7 +158,7 @@ function Tarjetas({ tarjetas }: { tarjetas: readonly Tarjeta[] }) {
 function TarjetaDeOrden({ tarjeta, marcada }: { tarjeta: Tarjeta; marcada: boolean }) {
 	const router = useRouter();
 	const { ir } = useDireccion();
-	const { tiene } = useCuenta();
+	const tiene = useTieneDepartamento();
 	const Icono = tarjeta.tipo === "reabasto" ? Store : Warehouse;
 	return (
 		<article

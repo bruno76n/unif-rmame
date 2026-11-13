@@ -7,6 +7,7 @@
  */
 
 import { z } from "zod";
+import { tieneDepartamento } from "../../../nucleo/acceso/quien.ts";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
 
 /** Lo que recibe. */
@@ -20,6 +21,5 @@ const documento = z.object({ entidad: z.string(), entidad_id: z.uuid() });
 export async function veDocumento(contexto: ContextoDeAccion, datos: unknown): Promise<boolean> {
 	const { entidad } = documento.parse(datos);
 	const { quien } = contexto;
-	if (entidad !== "restauraciones_probadas" || quien.tipo !== "cuenta") return false;
-	return quien.esDuena || quien.departamentos.includes("admin");
+	return entidad === "restauraciones_probadas" && tieneDepartamento(quien, "admin");
 }

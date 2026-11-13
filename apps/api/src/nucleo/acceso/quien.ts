@@ -46,3 +46,17 @@ export function appDe(quien: QuienLlama): App | undefined {
 	if (quien.tipo === "cuenta") return "web";
 	return quien.tipoDeAparato === "sitio" ? undefined : quien.tipoDeAparato;
 }
+
+/**
+ * Si quien llama es una cuenta con alguno de esos departamentos (la dueña los tiene todos). Un aparato o el sistema
+ * (un trabajo del worker) no tienen departamentos.
+ * @param quien Quién llama o escribe.
+ * @param departamentos Las claves de los departamentos.
+ * Es la única revisión de este tipo: la usan las consultas que deciden qué ve cada cuenta y a dónde la lleva un enlace.
+ */
+export function tieneDepartamento(
+	quien: QuienLlama | { readonly tipo: "sistema" },
+	...departamentos: readonly string[]
+): boolean {
+	return quien.tipo === "cuenta" && (quien.esDuena || departamentos.some((uno) => quien.departamentos.includes(uno)));
+}

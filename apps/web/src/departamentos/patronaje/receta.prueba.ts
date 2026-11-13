@@ -7,8 +7,9 @@
  * docs/interfaz/fabrica/patronaje.md («La página de la receta»)
  */
 
-import { expect as enPantalla, type Page } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { enPantalla } from "../../../../../pruebas/navegador/en-pantalla.ts";
 import { crearBase } from "../../../../api/src/nucleo/base/conexion.ts";
 import { enAccionDePrueba } from "../../../../api/src/nucleo/pruebas/accion-de-prueba.ts";
 import { levantarPantalla, type PantallaDePrueba } from "../../comun/pruebas/pantalla-de-prueba.ts";

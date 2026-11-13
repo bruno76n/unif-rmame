@@ -6,8 +6,8 @@
  * las piezas de cada ubicación»)
  */
 
-import { expect as enPantalla } from "@playwright/test";
 import { afterAll, beforeAll, describe, it } from "vitest";
+import { enPantalla } from "../../../../pruebas/navegador/en-pantalla.ts";
 import { levantarPantalla, type PantallaDePrueba } from "./pruebas/pantalla-de-prueba.ts";
 
 describe("«¿Dónde está?» encuentra por código o por prenda y talla, con las piezas de cada ubicación", () => {

@@ -2,19 +2,15 @@
  * Las dos ventanas con motivo del cajón del desarrollo: «Cambios a la muestra de {prenda}» («Regresar a muestra» →
  * `patronaje.pedir_cambios_muestra`, aviso «{DS} regresa a muestra») y «Descartar {prenda}» («Descartar» →
  * `patronaje.descartar_desarrollo`, aviso «{DS} descartada. Queda en el historial con su motivo»). Abajo del título,
- * «{escuela} · {DS}». Si el desarrollo cambió mientras se veía, lo dice y conserva el motivo.
+ * «{escuela} · {DS}». Si el desarrollo cambió mientras se veía, lo dice y conserva el motivo. Las dos son la ventana
+ * con motivo común.
  * Fase 19 · docs/interfaz/fabrica/patronaje.md («Ventanas»)
  */
 
-import { useQueryClient } from "@tanstack/react-query";
 import { descartarDesarrollo, pedirCambiosMuestra } from "@uniformame/compartido/contratos/patronaje/desarrollos";
-import { Boton } from "@uniformame/interfaz/botones/boton";
-import { Campo } from "@uniformame/interfaz/captura/campo";
-import { Ventana } from "@uniformame/interfaz/contenedores/ventana";
 import { EstadoDePantalla } from "@uniformame/interfaz/estados/estado-de-pantalla";
-import { useEffect, useState } from "react";
-import { leerFalla, useAccion, volverALeer } from "../../../comun/api.tsx";
-import { useConConexion } from "../../../comun/estado-de-la-app.ts";
+import { useEnvio } from "../../../comun/envio.ts";
+import { VentanaConMotivo } from "../../../comun/ventana-con-motivo.tsx";
 import { loQueCambiaEnPatronaje } from "../invalidar.ts";
 
 /** El desarrollo de la ventana, como lo trae el cajón. */
@@ -45,50 +41,33 @@ export function VentanaMotivoDelDesarrollo({
 	desarrollo: DesarrolloConMotivo | null;
 	alCerrar: () => void;
 }) {
-	const conConexion = useConConexion();
-	const consultas = useQueryClient();
 	const { titulo, boton, contrato } = ventanas[cual];
-	const accion = useAccion(contrato, loQueCambiaEnPatronaje);
-	const [motivo, setMotivo] = useState("");
-	useEffect(() => {
-		if (desarrollo !== null) setMotivo("");
-		accion.reset();
-	}, [desarrollo, accion.reset]);
-	const falla = accion.error === null ? null : leerFalla(accion.error);
+	const { enviar, enviando, choco } = useEnvio(contrato, loQueCambiaEnPatronaje);
+	/** Manda la acción; si sale, cierra; si una regla lo rechaza, regresa lo que dice del motivo. */
+	const confirmar = async (motivo: string) => {
+		if (desarrollo === null) return undefined;
+		let error: string | undefined;
+		const salio = await enviar(
+			{ datos: { desarrollo_id: desarrollo.desarrollo_id, motivo }, version: desarrollo.version },
+			(falla) => {
+				error = falla.campos.motivo ?? falla.mensaje;
+			},
+		);
+		if (salio !== undefined) alCerrar();
+		return error;
+	};
 	return (
-		<Ventana
+		<VentanaConMotivo
 			abierta={desarrollo !== null}
 			alCerrar={alCerrar}
 			titulo={`${titulo} ${desarrollo?.prenda ?? ""}`}
-			{...(desarrollo === null ? {} : { subtitulo: `${desarrollo.para} · ${desarrollo.folio}` })}
-			accion={
-				<Boton
-					variante={cual === "descartar" ? "peligro" : "principal"}
-					disabled={!conConexion || accion.isPending || motivo.trim() === ""}
-					onClick={() =>
-						accion.mutate(
-							{ datos: { desarrollo_id: desarrollo?.desarrollo_id ?? "", motivo }, version: desarrollo?.version ?? 0 },
-							{
-								onSuccess: () => alCerrar(),
-								// Con un choque, se vuelve a leer lo nuevo y se conserva el motivo.
-								onError: () => void volverALeer(consultas, loQueCambiaEnPatronaje),
-							},
-						)
-					}
-				>
-					{boton}
-				</Boton>
-			}
+			subtitulo={desarrollo === null ? undefined : `${desarrollo.para} · ${desarrollo.folio}`}
+			textoAccion={boton}
+			peligro={cual === "descartar"}
+			enviando={enviando}
+			alConfirmar={confirmar}
 		>
-			{falla?.tipo === "choque" ? <EstadoDePantalla tipo="choque" documento={desarrollo?.folio ?? ""} /> : null}
-			<Campo
-				etiqueta="Motivo"
-				enVentana
-				maxLength={200}
-				value={motivo}
-				onChange={(evento) => setMotivo(evento.target.value)}
-				error={falla?.tipo === "regla" ? (falla.campos.motivo ?? undefined) : undefined}
-			/>
-		</Ventana>
+			{choco ? <EstadoDePantalla tipo="choque" documento={desarrollo?.folio ?? ""} /> : null}
+		</VentanaConMotivo>
 	);
 }

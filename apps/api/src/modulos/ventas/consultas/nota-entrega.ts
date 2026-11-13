@@ -15,18 +15,10 @@ import { preciosRecortables } from "@uniformame/compartido/contratos/ventas/vist
 import { sql } from "drizzle-orm";
 import { Temporal } from "temporal-polyfill";
 import { z } from "zod";
+import { tieneDepartamento } from "../../../nucleo/acceso/quien.ts";
 import { noExiste } from "../../../nucleo/http/errores.ts";
 import { implementarConsulta } from "../../../nucleo/modulos.ts";
-import {
-	avanceDe,
-	diasHasta,
-	estadosDeNota,
-	etapas,
-	porPrenda,
-	textoDeFormaDePago,
-	textosDePago,
-	tieneDepartamento,
-} from "./comun.ts";
+import { avanceDe, diasHasta, estadosDeNota, etapas, porPrenda, textoDeFormaDePago, textosDePago } from "./comun.ts";
 import { leerLineas, leerNotas } from "./notas.ts";
 
 /** Lo que regresa `contaduria.estado_pago_notas`. */
@@ -53,10 +45,10 @@ export const consultaNotaEntrega = implementarConsulta(notaEntregaVentas, async 
 	const [nota] = await leerNotas(base, parametros.nota_id);
 	if (nota === undefined) throw noExiste();
 	const vePrecios = ["ventas", "contaduria", "direccion"].some((departamento) =>
-		tieneDepartamento(contexto, departamento),
+		tieneDepartamento(contexto.quien, departamento),
 	);
-	const veSaldo = tieneDepartamento(contexto, "contaduria");
-	const esVentas = tieneDepartamento(contexto, "ventas");
+	const veSaldo = tieneDepartamento(contexto.quien, "contaduria");
+	const esVentas = tieneDepartamento(contexto.quien, "ventas");
 	const lineas = await leerLineas(base, [nota.id]);
 	const entregada = nota.estado === "entregada";
 	const pago = entregada
@@ -182,7 +174,7 @@ export const consultaNotaEntrega = implementarConsulta(notaEntregaVentas, async 
 			})),
 			puede: {
 				cancelar: esVentas && nota.estado === "por_despachar",
-				confirmar_entrega: (esVentas || tieneDepartamento(contexto, "aduana")) && nota.estado === "en_camino",
+				confirmar_entrega: (esVentas || tieneDepartamento(contexto.quien, "aduana")) && nota.estado === "en_camino",
 				nota_credito: esVentas && entregada && esperando === undefined,
 				pdf: nota.estado !== "cancelada",
 			},

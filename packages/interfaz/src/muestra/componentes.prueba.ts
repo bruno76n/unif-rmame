@@ -10,12 +10,13 @@
 import { mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { type Browser, chromium, expect as enPantalla, type Page } from "@playwright/test";
+import { type Browser, chromium, type Page } from "@playwright/test";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { createServer, type ViteDevServer } from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { opcionesDeChromium } from "../../../../pruebas/navegador/chromium.ts";
+import { enPantalla } from "../../../../pruebas/navegador/en-pantalla.ts";
 import { colorDelEstado, esEstadoConocido } from "../estados/colores.ts";
 import { estadosDeMuestra } from "./catalogo.tsx";
 

@@ -12,6 +12,7 @@
 import { pastillasMenu } from "@uniformame/compartido/contratos/inventario/armazon";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
+import { tieneDepartamento } from "../../../nucleo/acceso/quien.ts";
 import type { Base } from "../../../nucleo/base/conexion.ts";
 import type { Transaccion } from "../../../nucleo/base/transacciones.ts";
 import { type ConteoDePastilla, type ContextoDeConsulta, implementarConsulta } from "../../../nucleo/modulos.ts";
@@ -79,8 +80,7 @@ export async function pastillaBodega({ base }: ContextoDeConsulta): Promise<Cont
 
 export const consultaPastillasMenu = implementarConsulta(pastillasMenu, async (contexto) => {
 	const { quien } = contexto;
-	const tiene = (departamento: string) =>
-		quien.tipo === "cuenta" && (quien.esDuena || quien.departamentos.includes(departamento));
+	const tiene = (departamento: string) => tieneDepartamento(quien, departamento);
 	return {
 		resultado: {
 			aduana: tiene("aduana") ? await pastillaAduana(contexto) : null,

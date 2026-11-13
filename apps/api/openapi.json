@@ -35003,6 +35003,1364 @@
         }
       }
     },
+    "/v1/consultas/inventario.disponibilidad_linea": {
+      "get": {
+        "tags": [
+          "inventario"
+        ],
+        "description": "Por talla de los productos activos que se venden en línea (sin las de pedido especial): sale hoy, sale mañana o agotado\n\nPermiso: departamento linea o bodega.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "producto_id",
+            "required": false,
+            "description": "Solo las tallas de ese producto"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-fA-F-]{36}(,[0-9a-fA-F-]{36})*$"
+            },
+            "in": "query",
+            "name": "variante_ids",
+            "required": false,
+            "description": "Solo esas variantes"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "productos": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "producto_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "tallas": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "variante_id": {
+                                      "type": "string",
+                                      "format": "uuid",
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                    },
+                                    "talla": {
+                                      "type": "string"
+                                    },
+                                    "promesa": {
+                                      "type": "string",
+                                      "enum": [
+                                        "sale_hoy",
+                                        "sale_manana",
+                                        "agotado"
+                                      ]
+                                    },
+                                    "texto": {
+                                      "type": "string",
+                                      "description": "«Sale hoy: hay en bodega», «Sale mañana: está en una tienda» o «Agotado»"
+                                    }
+                                  },
+                                  "required": [
+                                    "variante_id",
+                                    "talla",
+                                    "promesa",
+                                    "texto"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "description": "En el orden de sus tallas; vacía si no tiene ninguna: «Sin existencia»"
+                              }
+                            },
+                            "required": [
+                              "producto_id",
+                              "nombre",
+                              "tallas"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Por nombre"
+                        },
+                        "conteos": {
+                          "type": "object",
+                          "properties": {
+                            "sale_hoy": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "sale_manana": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "agotado": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "sale_hoy",
+                            "sale_manana",
+                            "agotado"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "productos",
+                        "conteos"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/linea.pendientes": {
+      "get": {
+        "tags": [
+          "linea"
+        ],
+        "description": "Pendientes de Tienda en línea: los pedidos abiertos, las ventas de la semana, la disponibilidad, los W- por surtir, esperando prendas y listos para empacar, y la pastilla del menú\n\nPermiso: departamento linea.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "cifras": {
+                          "type": "object",
+                          "properties": {
+                            "pedidos": {
+                              "type": "object",
+                              "properties": {
+                                "abiertos": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991,
+                                  "description": "Los W- por surtir, esperando prendas y listos para empacar"
+                                },
+                                "tono": {
+                                  "nullable": true,
+                                  "description": "Rojo si hay alguno por surtir; ámbar si hay abiertos",
+                                  "type": "string",
+                                  "enum": [
+                                    "rojo",
+                                    "ambar"
+                                  ]
+                                },
+                                "contexto": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "texto": {
+                                        "type": "string"
+                                      },
+                                      "tono": {
+                                        "type": "string",
+                                        "enum": [
+                                          "normal",
+                                          "ambar",
+                                          "rojo"
+                                        ],
+                                        "description": "Normal, ámbar o rojo"
+                                      }
+                                    },
+                                    "required": [
+                                      "texto",
+                                      "tono"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "description": "La línea de abajo, lo rojo y lo ámbar primero"
+                                },
+                                "reparto": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "etiqueta": {
+                                        "type": "string"
+                                      },
+                                      "valor": {
+                                        "type": "integer",
+                                        "minimum": -9007199254740991,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "color": {
+                                        "type": "string",
+                                        "enum": [
+                                          "rojo",
+                                          "ambar",
+                                          "azul",
+                                          "verde",
+                                          "gris",
+                                          "morado",
+                                          "verde-azulado",
+                                          "naranja"
+                                        ],
+                                        "description": "El color del cuadro del estado"
+                                      }
+                                    },
+                                    "required": [
+                                      "etiqueta",
+                                      "valor",
+                                      "color"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "description": "Por surtir · Esperando prendas · Listo para empacar"
+                                }
+                              },
+                              "required": [
+                                "abiertos",
+                                "tono",
+                                "contexto",
+                                "reparto"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "ventas": {
+                              "type": "object",
+                              "properties": {
+                                "semana_centavos": {
+                                  "description": "El total con envío de los W- pagados en los últimos 7 días, sin los cancelados",
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "serie_centavos": {
+                                  "description": "Lo vendido cada uno de los últimos 14 días, del más viejo a hoy",
+                                  "type": "array",
+                                  "items": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  }
+                                },
+                                "contexto": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "texto": {
+                                        "type": "string"
+                                      },
+                                      "tono": {
+                                        "type": "string",
+                                        "enum": [
+                                          "normal",
+                                          "ambar",
+                                          "rojo"
+                                        ],
+                                        "description": "Normal, ámbar o rojo"
+                                      }
+                                    },
+                                    "required": [
+                                      "texto",
+                                      "tono"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "description": "«▲ {n}% contra la anterior»; vacía si la semana anterior no vendió"
+                                }
+                              },
+                              "required": [
+                                "contexto"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "disponibilidad": {
+                              "type": "object",
+                              "properties": {
+                                "salen_hoy": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991,
+                                  "description": "Las tallas de los productos en línea que salen hoy"
+                                },
+                                "contexto": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "texto": {
+                                        "type": "string"
+                                      },
+                                      "tono": {
+                                        "type": "string",
+                                        "enum": [
+                                          "normal",
+                                          "ambar",
+                                          "rojo"
+                                        ],
+                                        "description": "Normal, ámbar o rojo"
+                                      }
+                                    },
+                                    "required": [
+                                      "texto",
+                                      "tono"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "description": "«{m} agotadas» o «Ninguna agotada»"
+                                }
+                              },
+                              "required": [
+                                "salen_hoy",
+                                "contexto"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "required": [
+                            "pedidos",
+                            "ventas",
+                            "disponibilidad"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "renglones": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "pedido_linea_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "folio": {
+                                "type": "string"
+                              },
+                              "titulo": {
+                                "type": "string",
+                                "description": "«W-1045 · Laura Méndez»"
+                              },
+                              "detalle": {
+                                "type": "string",
+                                "description": "Lo que falta y dónde está lo primero, o «Completo en aduana · listo para empacar»; abajo de la referencia"
+                              },
+                              "fecha": {
+                                "type": "object",
+                                "properties": {
+                                  "fecha": {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                                    "description": "Cuándo se pagó: ordena"
+                                  },
+                                  "texto": {
+                                    "type": "string",
+                                    "description": "«Pagado 11 oct»"
+                                  }
+                                },
+                                "required": [
+                                  "fecha",
+                                  "texto"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "total_centavos": {
+                                "description": "El total con envío",
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "estado": {
+                                "type": "object",
+                                "properties": {
+                                  "texto": {
+                                    "type": "string"
+                                  },
+                                  "color": {
+                                    "type": "string",
+                                    "enum": [
+                                      "rojo",
+                                      "ambar",
+                                      "azul",
+                                      "verde",
+                                      "gris",
+                                      "morado",
+                                      "verde-azulado",
+                                      "naranja"
+                                    ],
+                                    "description": "El color del cuadro del estado"
+                                  }
+                                },
+                                "required": [
+                                  "texto",
+                                  "color"
+                                ],
+                                "additionalProperties": false,
+                                "description": "La etapa, roja desde `linea.dias_pedido_rojo` días de pagado, ámbar antes"
+                              }
+                            },
+                            "required": [
+                              "pedido_linea_id",
+                              "folio",
+                              "titulo",
+                              "detalle",
+                              "fecha",
+                              "estado"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Del pagado hace más tiempo al más nuevo"
+                        },
+                        "pastilla": {
+                          "type": "object",
+                          "properties": {
+                            "conteo": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "Los W- por surtir"
+                            },
+                            "rojo": {
+                              "type": "boolean",
+                              "description": "Si algún W- abierto se pagó hace `linea.dias_pedido_rojo` días o más"
+                            }
+                          },
+                          "required": [
+                            "conteo",
+                            "rojo"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "cifras",
+                        "renglones",
+                        "pastilla"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/linea.pedidos": {
+      "get": {
+        "tags": [
+          "linea"
+        ],
+        "description": "Los W- por etapa (esperando pago, por surtir, esperando prendas y listos para empacar), con sus prendas y dónde está cada una, y los cerrados del más reciente al más viejo; sin totales para Aduana y Bodega\n\nPermiso: departamento linea o aduana o bodega. Se puede recortar: total_centavos.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "esperando_pago",
+                "por_surtir",
+                "esperando_prendas",
+                "listo_para_empacar",
+                "cancelado",
+                "vencido"
+              ]
+            },
+            "in": "query",
+            "name": "estado",
+            "required": false,
+            "description": "Solo los de esa etapa"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 80
+            },
+            "in": "query",
+            "name": "buscar",
+            "required": false,
+            "description": "Folio o cliente"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "description": "El cursor que regresó la página anterior; opaco"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "in": "query",
+            "name": "limite",
+            "required": false,
+            "description": "Cuántos renglones, hasta 100"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "columnas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "estado": {
+                                "type": "string",
+                                "enum": [
+                                  "esperando_pago",
+                                  "por_surtir",
+                                  "esperando_prendas",
+                                  "listo_para_empacar"
+                                ]
+                              },
+                              "texto": {
+                                "type": "string"
+                              },
+                              "color": {
+                                "type": "string",
+                                "enum": [
+                                  "rojo",
+                                  "ambar",
+                                  "azul",
+                                  "verde",
+                                  "gris",
+                                  "morado",
+                                  "verde-azulado",
+                                  "naranja"
+                                ],
+                                "description": "El color del cuadro del estado"
+                              },
+                              "pedidos": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "pedido_linea_id": {
+                                      "type": "string",
+                                      "format": "uuid",
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                    },
+                                    "folio": {
+                                      "type": "string"
+                                    },
+                                    "fecha": {
+                                      "type": "string",
+                                      "description": "«Pagado 11 oct» o, esperando el pago, «Vence 12 oct 18:30»"
+                                    },
+                                    "cliente": {
+                                      "type": "string"
+                                    },
+                                    "municipio": {
+                                      "type": "string",
+                                      "description": "A dónde va"
+                                    },
+                                    "estado": {
+                                      "type": "string",
+                                      "enum": [
+                                        "esperando_pago",
+                                        "por_surtir",
+                                        "esperando_prendas",
+                                        "listo_para_empacar"
+                                      ]
+                                    },
+                                    "estado_desde": {
+                                      "type": "string",
+                                      "format": "date-time",
+                                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                                      "description": "Desde cuándo está en esa etapa"
+                                    },
+                                    "promesa": {
+                                      "nullable": true,
+                                      "description": "Por surtir o esperando prendas: «Sale hoy» (verde) o «Sale mañana» (ámbar)",
+                                      "type": "object",
+                                      "properties": {
+                                        "texto": {
+                                          "type": "string"
+                                        },
+                                        "color": {
+                                          "type": "string",
+                                          "enum": [
+                                            "rojo",
+                                            "ambar",
+                                            "azul",
+                                            "verde",
+                                            "gris",
+                                            "morado",
+                                            "verde-azulado",
+                                            "naranja"
+                                          ],
+                                          "description": "El color del cuadro del estado"
+                                        }
+                                      },
+                                      "required": [
+                                        "texto",
+                                        "color"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    "prendas": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "prenda": {
+                                            "type": "string"
+                                          },
+                                          "talla": {
+                                            "type": "string"
+                                          },
+                                          "piezas": {
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                          },
+                                          "en_aduana": {
+                                            "type": "boolean",
+                                            "description": "Si todas sus piezas ya están en aduana: palomita; si no, reloj"
+                                          },
+                                          "donde": {
+                                            "nullable": true,
+                                            "description": "Dónde está lo que falta: «Bodega la surte», «En camino a aduana · A-0311»…",
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "prenda",
+                                          "talla",
+                                          "piezas",
+                                          "en_aduana",
+                                          "donde"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    },
+                                    "total_centavos": {
+                                      "description": "El total con envío; Aduana y Bodega no lo reciben",
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "version": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991,
+                                      "description": "La versión del W-, para cancelarlo"
+                                    }
+                                  },
+                                  "required": [
+                                    "pedido_linea_id",
+                                    "folio",
+                                    "fecha",
+                                    "cliente",
+                                    "municipio",
+                                    "estado",
+                                    "estado_desde",
+                                    "promesa",
+                                    "prendas",
+                                    "version"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "description": "Del pagado hace más tiempo al más nuevo"
+                              }
+                            },
+                            "required": [
+                              "estado",
+                              "texto",
+                              "color",
+                              "pedidos"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "«Esperando pago» solo si hay alguno; vacía en las páginas que siguen: solo traen cerrados"
+                        },
+                        "cerrados": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "pedido_linea_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "folio": {
+                                "type": "string"
+                              },
+                              "estado": {
+                                "type": "string",
+                                "enum": [
+                                  "cancelado",
+                                  "vencido"
+                                ]
+                              },
+                              "estado_texto": {
+                                "type": "object",
+                                "properties": {
+                                  "texto": {
+                                    "type": "string"
+                                  },
+                                  "color": {
+                                    "type": "string",
+                                    "enum": [
+                                      "rojo",
+                                      "ambar",
+                                      "azul",
+                                      "verde",
+                                      "gris",
+                                      "morado",
+                                      "verde-azulado",
+                                      "naranja"
+                                    ],
+                                    "description": "El color del cuadro del estado"
+                                  }
+                                },
+                                "required": [
+                                  "texto",
+                                  "color"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "fecha": {
+                                "type": "string",
+                                "description": "Cuándo se cerró: «12 oct»"
+                              },
+                              "detalle": {
+                                "type": "string",
+                                "description": "«{cliente} · {municipio} · {motivo}» o «… · Venció sin pago»"
+                              },
+                              "total_centavos": {
+                                "description": "El total con envío; Aduana y Bodega no lo reciben",
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "pedido_linea_id",
+                              "folio",
+                              "estado",
+                              "estado_texto",
+                              "fecha",
+                              "detalle"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Cancelados y vencidos, el más reciente arriba: esta página"
+                        },
+                        "cursor": {
+                          "nullable": true,
+                          "description": "El cursor para pedir la página siguiente; nulo si no hay más",
+                          "type": "string"
+                        },
+                        "hay_mas": {
+                          "type": "boolean",
+                          "description": "Si hay más renglones después de esta página"
+                        }
+                      },
+                      "required": [
+                        "columnas",
+                        "cerrados",
+                        "cursor",
+                        "hay_mas"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/linea.pedido": {
+      "get": {
+        "tags": [
+          "linea"
+        ],
+        "description": "Un W- con su cliente, su envío, su pago, sus prendas y dónde está cada una, sus excepciones abiertas, su camino y lo que se puede hacer con él\n\nPermiso: departamento linea.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "pedido_linea_id",
+            "required": false,
+            "description": "El W-"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 20
+            },
+            "in": "query",
+            "name": "folio",
+            "required": false,
+            "description": "O su folio"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "pedido_linea_id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "folio": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "La versión del W-, para cancelarlo"
+                        },
+                        "estado": {
+                          "type": "string",
+                          "enum": [
+                            "esperando_pago",
+                            "por_surtir",
+                            "esperando_prendas",
+                            "listo_para_empacar",
+                            "cancelado",
+                            "vencido"
+                          ]
+                        },
+                        "etapa": {
+                          "type": "object",
+                          "properties": {
+                            "texto": {
+                              "type": "string"
+                            },
+                            "color": {
+                              "type": "string",
+                              "enum": [
+                                "rojo",
+                                "ambar",
+                                "azul",
+                                "verde",
+                                "gris",
+                                "morado",
+                                "verde-azulado",
+                                "naranja"
+                              ],
+                              "description": "El color del cuadro del estado"
+                            }
+                          },
+                          "required": [
+                            "texto",
+                            "color"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "cliente": {
+                          "type": "object",
+                          "properties": {
+                            "nombre": {
+                              "type": "string"
+                            },
+                            "correo": {
+                              "type": "string"
+                            },
+                            "telefono": {
+                              "nullable": true,
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "nombre",
+                            "correo",
+                            "telefono"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "relacionados": {
+                          "type": "object",
+                          "properties": {
+                            "en_aduana": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "Las prendas que ya están en aduana"
+                            },
+                            "prendas": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "Todas sus prendas"
+                            },
+                            "por_surtir_bodega": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "Las que Bodega tiene apartadas por surtir"
+                            }
+                          },
+                          "required": [
+                            "en_aduana",
+                            "prendas",
+                            "por_surtir_bodega"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "cifras": {
+                          "type": "object",
+                          "properties": {
+                            "total_centavos": {
+                              "description": "El total con envío",
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "total_linea": {
+                              "type": "string",
+                              "description": "«pagó, con envío» o «por pagar · vence {día} {hora}»"
+                            },
+                            "municipio": {
+                              "type": "string"
+                            },
+                            "promesa": {
+                              "type": "object",
+                              "properties": {
+                                "texto": {
+                                  "type": "string"
+                                },
+                                "linea": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "texto",
+                                "linea"
+                              ],
+                              "additionalProperties": false,
+                              "description": "Por surtir o esperando prendas: la promesa y «lo que se le prometió»; después, la etapa y «estado»"
+                            }
+                          },
+                          "required": [
+                            "total_linea",
+                            "municipio",
+                            "promesa"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "envio": {
+                          "type": "object",
+                          "properties": {
+                            "destinatario": {
+                              "type": "string"
+                            },
+                            "telefono": {
+                              "nullable": true,
+                              "type": "string"
+                            },
+                            "direccion": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "La calle y su colonia; el código postal, el municipio y el estado"
+                            },
+                            "referencias": {
+                              "nullable": true,
+                              "type": "string"
+                            },
+                            "metodo": {
+                              "type": "string",
+                              "description": "«{método} · {paquetería}»"
+                            },
+                            "costo_centavos": {
+                              "description": "Lo que pagó de envío",
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "destinatario",
+                            "telefono",
+                            "direccion",
+                            "referencias",
+                            "metodo"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "pago": {
+                          "type": "object",
+                          "properties": {
+                            "metodo": {
+                              "type": "string",
+                              "description": "«{pasarela} · {método}»"
+                            },
+                            "referencia": {
+                              "type": "string"
+                            },
+                            "pagado": {
+                              "nullable": true,
+                              "description": "«Pagado el {fecha} {hora}»; nulo si no se ha pagado",
+                              "type": "string"
+                            },
+                            "comision_centavos": {
+                              "description": "La comisión de la pasarela",
+                              "nullable": true,
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "metodo",
+                            "referencia",
+                            "pagado"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "cupon": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "avisos": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "Una por excepción abierta, con quién la resuelve"
+                        },
+                        "prendas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "renglon": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "prenda": {
+                                "type": "string"
+                              },
+                              "talla": {
+                                "type": "string"
+                              },
+                              "piezas": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "donde": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "texto": {
+                                      "type": "string"
+                                    },
+                                    "color": {
+                                      "type": "string",
+                                      "enum": [
+                                        "rojo",
+                                        "ambar",
+                                        "azul",
+                                        "verde",
+                                        "gris",
+                                        "morado",
+                                        "verde-azulado",
+                                        "naranja"
+                                      ],
+                                      "description": "El color del cuadro del estado"
+                                    }
+                                  },
+                                  "required": [
+                                    "texto",
+                                    "color"
+                                  ],
+                                  "additionalProperties": false,
+                                  "description": "«Bodega la surte», «En camino a aduana · {A}», «En aduana» o «Sin pieza: Bodega la busca», con su punto"
+                                },
+                                "description": "Vacía si ya no tiene nada apartado (cancelado o vencido)"
+                              },
+                              "precio_unitario_centavos": {
+                                "description": "El precio en línea con que se vendió",
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "importe_centavos": {
+                                "description": "Lo que paga por el renglón",
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "paquete": {
+                                "nullable": true,
+                                "description": "«Paquete {n}», si vino en uno",
+                                "type": "string"
+                              },
+                              "descuento_paquete_centavos": {
+                                "description": "Su parte de la rebaja del paquete",
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "renglon",
+                              "prenda",
+                              "talla",
+                              "piezas",
+                              "donde",
+                              "paquete"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "totales": {
+                          "type": "object",
+                          "properties": {
+                            "subtotal_centavos": {
+                              "description": "Subtotal",
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "descuento_centavos": {
+                              "description": "Descuento",
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "envio_centavos": {
+                              "description": "Envío",
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "descuento_envio_centavos": {
+                              "description": "Descuento del envío",
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "total_centavos": {
+                              "description": "Total",
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        "camino": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "texto": {
+                                "type": "string"
+                              },
+                              "detalle": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "hecho": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "texto",
+                              "detalle",
+                              "hecho"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "«Pagó» · «Surtido a aduana» · «Prendas reunidas en aduana»"
+                        },
+                        "cierre": {
+                          "nullable": true,
+                          "description": "«Cancelado el {fecha} por {persona}: {motivo}» o «Venció sin pago el {fecha}»",
+                          "type": "string"
+                        },
+                        "puede": {
+                          "type": "object",
+                          "properties": {
+                            "cancelar": {
+                              "type": "boolean",
+                              "description": "Esperando pago, por surtir, esperando prendas o listo para empacar"
+                            },
+                            "ver_en_aduana": {
+                              "type": "boolean",
+                              "description": "Listo para empacar"
+                            }
+                          },
+                          "required": [
+                            "cancelar",
+                            "ver_en_aduana"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "pedido_linea_id",
+                        "folio",
+                        "version",
+                        "estado",
+                        "etapa",
+                        "cliente",
+                        "relacionados",
+                        "cifras",
+                        "envio",
+                        "pago",
+                        "cupon",
+                        "avisos",
+                        "prendas",
+                        "totales",
+                        "camino",
+                        "cierre",
+                        "puede"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/consultas/mantenimiento.pendientes": {
       "get": {
         "tags": [

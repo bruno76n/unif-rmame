@@ -9,8 +9,9 @@
  * sesión de prueba queda confirmada con el encabezado `x-prueba-google`, como en las pruebas de la API.
  */
 
-import { expect as enPantalla, type Page } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { enPantalla } from "../../../../pruebas/navegador/en-pantalla.ts";
 import { pedirAjusteDePrueba } from "./pruebas/autorizaciones-de-prueba.ts";
 import { levantarPantalla, type PantallaDePrueba } from "./pruebas/pantalla-de-prueba.ts";
 

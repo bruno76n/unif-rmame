@@ -30,6 +30,7 @@ import { useAvisar } from "../../../comun/avisos-de-abajo.tsx";
 import { usePreguntarAntesDeSalir } from "../../../comun/cambios-sin-guardar.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
+import { useTieneDepartamento } from "../../../comun/tiene-departamento.ts";
 import {
 	type CapturaDelCorte,
 	type CorteCapturado,
@@ -43,7 +44,7 @@ import {
 	tela0,
 	telaEnPantalla,
 } from "../corte-en-pantalla.ts";
-import { enOtroDepartamento, useCuenta } from "../cuenta.ts";
+import { enOtroDepartamento } from "../cuenta.ts";
 import { rutasDeProduccion, useDireccion } from "../direccion.ts";
 import { loQueCambiaEnProduccion } from "../invalidar.ts";
 import { PaginaDeProduccion } from "../pagina.tsx";
@@ -136,7 +137,7 @@ export function PestanaCorte() {
  */
 function Captura({ captura }: { captura: CapturaDelCorte }) {
 	const router = useRouter();
-	const { tiene } = useCuenta();
+	const tiene = useTieneDepartamento();
 	const encabezado = (
 		<header className="flex flex-col gap-1.5">
 			<span className="font-semibold text-etiqueta text-tinta3">

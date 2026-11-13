@@ -6,8 +6,9 @@
  * cambiar de pestaña o de salir por el menú»), decisión 748
  */
 
-import { expect as enPantalla, type Page } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { afterAll, beforeAll, describe, it } from "vitest";
+import { enPantalla } from "../../../../pruebas/navegador/en-pantalla.ts";
 import { levantarPantalla, type PantallaDePrueba } from "./pruebas/pantalla-de-prueba.ts";
 
 /** La pregunta de la guía de textos. */

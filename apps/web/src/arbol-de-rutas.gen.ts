@@ -38,6 +38,8 @@ import { Route as DireccionAlertasRouteImport } from "./rutas/direccion/alertas.
 import { Route as DireccionAutorizacionesRouteImport } from "./rutas/direccion/autorizaciones.tsx"
 import { Route as DireccionIndicadoresRouteImport } from "./rutas/direccion/indicadores.tsx"
 import { Route as LineaIndexRouteImport } from "./rutas/linea/index.tsx"
+import { Route as LineaDisponibilidadRouteImport } from "./rutas/linea/disponibilidad.tsx"
+import { Route as LineaPedidosRouteImport } from "./rutas/linea/pedidos.tsx"
 import { Route as MantenimientoIndexRouteImport } from "./rutas/mantenimiento/index.tsx"
 import { Route as MantenimientoCostoRouteImport } from "./rutas/mantenimiento/costo.tsx"
 import { Route as MantenimientoFallasRouteImport } from "./rutas/mantenimiento/fallas.tsx"
@@ -204,6 +206,16 @@ const LineaIndexRoute = LineaIndexRouteImport.update({
   path: "/linea/",
   getParentRoute: () => rootRouteImport,
 } as any)
+const LineaDisponibilidadRoute = LineaDisponibilidadRouteImport.update({
+  id: "/linea/disponibilidad",
+  path: "/linea/disponibilidad",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LineaPedidosRoute = LineaPedidosRouteImport.update({
+  id: "/linea/pedidos",
+  path: "/linea/pedidos",
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MantenimientoIndexRoute = MantenimientoIndexRouteImport.update({
   id: "/mantenimiento/",
   path: "/mantenimiento/",
@@ -325,6 +337,8 @@ export interface FileRoutesByFullPath {
   "/direccion/alertas": typeof DireccionAlertasRoute
   "/direccion/autorizaciones": typeof DireccionAutorizacionesRoute
   "/direccion/indicadores": typeof DireccionIndicadoresRoute
+  "/linea/disponibilidad": typeof LineaDisponibilidadRoute
+  "/linea/pedidos": typeof LineaPedidosRoute
   "/mantenimiento/costo": typeof MantenimientoCostoRoute
   "/mantenimiento/fallas": typeof MantenimientoFallasRoute
   "/mantenimiento/maquinas": typeof MantenimientoMaquinasRoute
@@ -375,6 +389,8 @@ export interface FileRoutesByTo {
   "/direccion/alertas": typeof DireccionAlertasRoute
   "/direccion/autorizaciones": typeof DireccionAutorizacionesRoute
   "/direccion/indicadores": typeof DireccionIndicadoresRoute
+  "/linea/disponibilidad": typeof LineaDisponibilidadRoute
+  "/linea/pedidos": typeof LineaPedidosRoute
   "/mantenimiento/costo": typeof MantenimientoCostoRoute
   "/mantenimiento/fallas": typeof MantenimientoFallasRoute
   "/mantenimiento/maquinas": typeof MantenimientoMaquinasRoute
@@ -427,6 +443,8 @@ export interface FileRoutesById {
   "/direccion/alertas": typeof DireccionAlertasRoute
   "/direccion/autorizaciones": typeof DireccionAutorizacionesRoute
   "/direccion/indicadores": typeof DireccionIndicadoresRoute
+  "/linea/disponibilidad": typeof LineaDisponibilidadRoute
+  "/linea/pedidos": typeof LineaPedidosRoute
   "/mantenimiento/costo": typeof MantenimientoCostoRoute
   "/mantenimiento/fallas": typeof MantenimientoFallasRoute
   "/mantenimiento/maquinas": typeof MantenimientoMaquinasRoute
@@ -480,6 +498,8 @@ export interface FileRouteTypes {
     | "/direccion/alertas"
     | "/direccion/autorizaciones"
     | "/direccion/indicadores"
+    | "/linea/disponibilidad"
+    | "/linea/pedidos"
     | "/mantenimiento/costo"
     | "/mantenimiento/fallas"
     | "/mantenimiento/maquinas"
@@ -530,6 +550,8 @@ export interface FileRouteTypes {
     | "/direccion/alertas"
     | "/direccion/autorizaciones"
     | "/direccion/indicadores"
+    | "/linea/disponibilidad"
+    | "/linea/pedidos"
     | "/mantenimiento/costo"
     | "/mantenimiento/fallas"
     | "/mantenimiento/maquinas"
@@ -581,6 +603,8 @@ export interface FileRouteTypes {
     | "/direccion/alertas"
     | "/direccion/autorizaciones"
     | "/direccion/indicadores"
+    | "/linea/disponibilidad"
+    | "/linea/pedidos"
     | "/mantenimiento/costo"
     | "/mantenimiento/fallas"
     | "/mantenimiento/maquinas"
@@ -628,6 +652,8 @@ export interface RootRouteChildren {
   DireccionAlertasRoute: typeof DireccionAlertasRoute
   DireccionAutorizacionesRoute: typeof DireccionAutorizacionesRoute
   DireccionIndicadoresRoute: typeof DireccionIndicadoresRoute
+  LineaDisponibilidadRoute: typeof LineaDisponibilidadRoute
+  LineaPedidosRoute: typeof LineaPedidosRoute
   MantenimientoCostoRoute: typeof MantenimientoCostoRoute
   MantenimientoFallasRoute: typeof MantenimientoFallasRoute
   MantenimientoMaquinasRoute: typeof MantenimientoMaquinasRoute
@@ -864,6 +890,20 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof LineaIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    "/linea/disponibilidad": {
+      id: "/linea/disponibilidad"
+      path: "/linea/disponibilidad"
+      fullPath: "/linea/disponibilidad"
+      preLoaderRoute: typeof LineaDisponibilidadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/linea/pedidos": {
+      id: "/linea/pedidos"
+      path: "/linea/pedidos"
+      fullPath: "/linea/pedidos"
+      preLoaderRoute: typeof LineaPedidosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     "/mantenimiento/": {
       id: "/mantenimiento/"
       path: "/mantenimiento"
@@ -1044,6 +1084,8 @@ const rootRouteChildren: RootRouteChildren = {
   DireccionAlertasRoute: DireccionAlertasRoute,
   DireccionAutorizacionesRoute: DireccionAutorizacionesRoute,
   DireccionIndicadoresRoute: DireccionIndicadoresRoute,
+  LineaDisponibilidadRoute: LineaDisponibilidadRoute,
+  LineaPedidosRoute: LineaPedidosRoute,
   MantenimientoCostoRoute: MantenimientoCostoRoute,
   MantenimientoFallasRoute: MantenimientoFallasRoute,
   MantenimientoMaquinasRoute: MantenimientoMaquinasRoute,

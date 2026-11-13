@@ -6,8 +6,8 @@
  * permiso, sin conexión y choque de versión»)
  */
 
-import { expect as enPantalla } from "@playwright/test";
 import { afterAll, beforeAll, describe, it } from "vitest";
+import { enPantalla } from "../../../../pruebas/navegador/en-pantalla.ts";
 import { levantarPantalla, type PantallaDePrueba } from "./pruebas/pantalla-de-prueba.ts";
 
 describe("Cada pantalla tiene sus estados: cargando, vacío, error, sin permiso, sin conexión y versión vieja", () => {

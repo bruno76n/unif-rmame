@@ -5,7 +5,8 @@
  * Fase 11 · docs/modulos/inventario/material-en-bodega.md y recepciones-en-aduana.md
  * Fase 14 · docs/modulos/inventario/diferencias-ajustes-y-mermas.md, conteos.md, recepcion-del-taller.md y
  * minimos-y-reabasto.md
- * Fase 19 · docs/interfaz/fabrica/direccion.md (la consulta `inventario.ultimo_cuadre`)
+ * Fase 19 · docs/interfaz/fabrica/direccion.md (la consulta `inventario.ultimo_cuadre`) y
+ * docs/interfaz/fabrica/tienda-en-linea.md (la consulta y la lectura `inventario.disponibilidad_linea`)
  *
  * Las ubicaciones nacen en la fase 4 porque las usan antes los parámetros, las impresoras, las cuentas,
  * los aparatos y las personas; sus responsables nacen vacíos. El libro no tiene acciones propias: lo escribe
@@ -34,6 +35,7 @@ import { accionRecibirDelTaller, accionRecibirReproceso } from "./acciones/recib
 import { accionRecibirEnAduana } from "./acciones/recibir-en-aduana.ts";
 import { accionResolverExcepcion } from "./acciones/resolver-excepcion.ts";
 import { accionSurtirAAduana } from "./acciones/surtir-a-aduana.ts";
+import { consultaDisponibilidadLinea, lecturaDisponibilidadLinea } from "./consultas/disponibilidad-linea.ts";
 import { consultaDondeEsta } from "./consultas/donde-esta.ts";
 import { consultaPastillasMenu, pastillaAduana, pastillaBodega } from "./consultas/pastillas-menu.ts";
 import { consultaUltimoCuadre } from "./consultas/ultimo-cuadre.ts";
@@ -92,7 +94,7 @@ const ubicacionesDeLaSiembra = [
 
 export default definirModulo({
 	nombre: "inventario",
-	consultas: [consultaPastillasMenu, consultaDondeEsta, consultaUltimoCuadre],
+	consultas: [consultaPastillasMenu, consultaDondeEsta, consultaUltimoCuadre, consultaDisponibilidadLinea],
 	pastillas: { aduana: pastillaAduana, bodega: pastillaBodega },
 	// Las ubicaciones salen en las pantallas de todos los departamentos.
 	lectores: {
@@ -194,6 +196,7 @@ export default definirModulo({
 		recibido_de_ordenes: recibidoDeOrdenes,
 		sugerencias_de_fabricar: sugerenciasDeFabricar,
 		minimos_vigentes: minimosVigentes,
+		disponibilidad_linea: lecturaDisponibilidadLinea,
 	},
 	trabajos: [cuadreNocturno, rollosSugeridos, vencerReservas],
 	semillas: [

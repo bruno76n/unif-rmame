@@ -11,7 +11,6 @@ import { useRouter } from "@tanstack/react-router";
 import { pesosACentavos } from "@uniformame/compartido/calculos/dinero";
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
 import { plural } from "@uniformame/compartido/calculos/textos";
-import { historialEntidad } from "@uniformame/compartido/contratos/admin/armazon";
 import { ordenDeCompra } from "@uniformame/compartido/contratos/compras/consultas-cajones";
 import {
 	cancelarOrden,
@@ -32,6 +31,7 @@ import { useState } from "react";
 import type { z } from "zod";
 import { leerFalla, useAccion, useConsulta } from "../../../comun/api.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
+import { Historial } from "../../../comun/historial.tsx";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { VentanaConMotivo } from "../../../comun/ventana-con-motivo.tsx";
 import { TituloDeSeccion, useCierreDelCajon } from "../comun.tsx";
@@ -68,34 +68,6 @@ const cambianConLaOrden = [
 /** La dirección de la ventana «Capturar nota o factura» de Contaduría, con la orden ya puesta. */
 export function direccionCapturarFactura(ordenId: string): string {
 	return `/contaduria/cuentas-por-pagar?${new URLSearchParams({ ventana: "capturar_factura", orden_compra_id: ordenId }).toString()}`;
-}
-
-/**
- * El historial de la orden, de su bitácora.
- * @param props La orden.
- */
-function Historial({ ordenId }: { ordenId: string }) {
-	const historial = useConsulta(historialEntidad, { entidad: "ordenes_compra", entidad_id: ordenId });
-	return (
-		<SegunConsulta consulta={historial} renglones={2}>
-			{({ renglones }) =>
-				renglones.length === 0 ? (
-					<span className="text-tinta3">Sin movimientos</span>
-				) : (
-					<ol className="m-0 flex list-none flex-col gap-2 p-0">
-						{renglones.map((renglon) => (
-							<li key={`${renglon.ocurrido_en}-${renglon.descripcion}`} className="flex flex-col">
-								<span>{renglon.descripcion}</span>
-								<span className="text-etiqueta text-tinta3">
-									{renglon.quien} · {textoDeDiaCorto(renglon.ocurrido_en.slice(0, 10))}
-								</span>
-							</li>
-						))}
-					</ol>
-				)
-			}
-		</SegunConsulta>
-	);
 }
 
 /**
@@ -287,8 +259,7 @@ function ContenidoDeOrden({
 					},
 				]}
 			/>
-			<TituloDeSeccion titulo="Historial" />
-			<Historial ordenId={orden.orden_compra_id} />
+			<Historial entidad="ordenes_compra" entidadId={orden.orden_compra_id} />
 		</div>
 	);
 }

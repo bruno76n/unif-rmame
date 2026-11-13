@@ -8,9 +8,10 @@
  * («Corte»)
  */
 
-import { expect as enPantalla, type Page } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { aMilesimos } from "@uniformame/compartido/calculos/cuenta-material";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { enPantalla } from "../../../../../pruebas/navegador/en-pantalla.ts";
 import { levantarPantalla, type PantallaDePrueba } from "../../comun/pruebas/pantalla-de-prueba.ts";
 
 /** Lo que tarda cada caso, con el navegador. */

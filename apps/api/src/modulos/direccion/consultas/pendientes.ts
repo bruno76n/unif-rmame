@@ -10,7 +10,7 @@
  */
 
 import { enPesos } from "@uniformame/compartido/calculos/dinero";
-import { plural } from "@uniformame/compartido/calculos/textos";
+import { plural, variacion } from "@uniformame/compartido/calculos/textos";
 import { autorizaciones, nombreDelTipoDeAutorizacion } from "@uniformame/compartido/contratos/direccion/autorizaciones";
 import { pendientes } from "@uniformame/compartido/contratos/direccion/pendientes";
 import { z } from "zod";
@@ -27,7 +27,6 @@ import {
 	saludDeLosLotes,
 	terminadasPorDia,
 	ultimosDiasDeTrabajo,
-	variacion,
 	vendidoEntre,
 	ventasPorDia,
 } from "./cifras.ts";

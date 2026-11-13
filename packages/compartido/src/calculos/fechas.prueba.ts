@@ -13,6 +13,7 @@ import {
 	inicioDeSemana,
 	sumarDiasHabiles,
 	textoDeDiaCorto,
+	textoDeMomentoCorto,
 	zonaDelNegocio,
 } from "./fechas.ts";
 
@@ -131,5 +132,11 @@ describe("los días cortos de las líneas del hilo: «13 oct», sin punto", () =
 		expect(textoDeDiaCorto("2026-10-13")).toBe("13 oct");
 		expect(textoDeDiaCorto(Temporal.PlainDate.from("2026-09-01"))).toBe("1 sep");
 		expect(textoDeDiaCorto("2026-12-31")).toBe("31 dic");
+	});
+
+	it("un momento se escribe con su día en hora de México, no en UTC", () => {
+		// 13 oct a las 23:30 en México es 14 oct en UTC.
+		expect(textoDeMomentoCorto("2026-10-14T05:30:00Z")).toBe("13 oct");
+		expect(textoDeMomentoCorto("2026-10-14T06:00:00Z")).toBe("14 oct");
 	});
 });

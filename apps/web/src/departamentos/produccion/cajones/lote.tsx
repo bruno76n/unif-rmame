@@ -28,7 +28,8 @@ import type { z } from "zod";
 import { consultar, leerFalla, useAccion, useConsulta } from "../../../comun/api.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
-import { enOtroDepartamento, useCuenta } from "../cuenta.ts";
+import { useTieneDepartamento } from "../../../comun/tiene-departamento.ts";
+import { enOtroDepartamento } from "../cuenta.ts";
 import { rutasDeProduccion, useDireccion } from "../direccion.ts";
 import { loQueCambiaEnProduccion } from "../invalidar.ts";
 import { ParaQuien } from "../piezas.tsx";
@@ -69,7 +70,7 @@ export function CajonLote() {
 function BotonesDelLote({ lote }: { lote: Lote }) {
 	const router = useRouter();
 	const { ir } = useDireccion();
-	const { tiene } = useCuenta();
+	const tiene = useTieneDepartamento();
 	if (lote.etapa === "por_cortar") {
 		if (lote.con_receta) {
 			return (

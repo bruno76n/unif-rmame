@@ -2,7 +2,8 @@
  * La ventana que confirma algo con su motivo (cancelar, descontinuar, dar de baja…): lo que pasa arriba, el campo
  * «Motivo» con «Escribe al menos {n} letras.» que cambia a «Listo.», y el botón, que se prende al llegar a esas letras
  * (`general.largo_minimo_motivo`, que trae `admin.armazon`) y con conexión. El error que da la API al motivo sale junto
- * al campo. La usan todos los departamentos.
+ * al campo. Cada vez que se abre empieza vacía; si la acción no sale (una regla o un choque de versión), el motivo se
+ * queda. La usan todos los departamentos.
  * Fase 19 · docs/interfaz/comunes.md («La ventana», regla 3)
  */
 
@@ -64,22 +65,24 @@ export function VentanaConMotivo({
 	const conConexion = useConConexion();
 	const [motivo, setMotivo] = useState("");
 	const [error, setError] = useState<string | undefined>(undefined);
+	// Al abrirse, vacía. Se hace al pintar y no en un efecto: un efecto corre después y borraría lo que ya se escribió.
+	const [abiertaAntes, setAbiertaAntes] = useState(abierta);
+	if (abierta !== abiertaAntes) {
+		setAbiertaAntes(abierta);
+		if (abierta) {
+			setMotivo("");
+			setError(undefined);
+		}
+	}
 	const listo = motivo.trim().length >= largoMinimo;
-	const cerrar = () => {
-		setMotivo("");
-		setError(undefined);
-		alCerrar();
-	};
 	const confirmar = async () => {
 		const respuesta = await alConfirmar(motivo.trim());
-		const conError = typeof respuesta === "string" ? respuesta : undefined;
-		setError(conError);
-		if (conError === undefined) setMotivo("");
+		setError(typeof respuesta === "string" ? respuesta : undefined);
 	};
 	return (
 		<Ventana
 			abierta={abierta}
-			alCerrar={cerrar}
+			alCerrar={alCerrar}
 			titulo={titulo}
 			{...(subtitulo === undefined ? {} : { subtitulo })}
 			accion={

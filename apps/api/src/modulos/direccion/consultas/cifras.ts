@@ -188,15 +188,3 @@ export async function existenciaPorUbicacion(
 		.array(z.object({ codigo: z.string(), nombre: z.string(), tipo: z.string(), piezas: z.coerce.number() }))
 		.parse(rows);
 }
-
-/**
- * Cómo se escribe una variación contra lo anterior: «▲ 51%» si subió o se quedó igual, «▼ 8%» si bajó.
- * @param actual Lo de ahora.
- * @param anterior Lo de antes.
- * @returns El texto, o `null` si antes no hubo nada contra qué comparar.
- */
-export function variacion(actual: number, anterior: number): string | null {
-	if (anterior === 0) return null;
-	const porciento = Math.round((actual / anterior - 1) * 100);
-	return `${porciento >= 0 ? "▲" : "▼"} ${Math.abs(porciento)}%`;
-}

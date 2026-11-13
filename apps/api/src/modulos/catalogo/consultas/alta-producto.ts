@@ -13,6 +13,7 @@
 import { altaDeProducto } from "@uniformame/compartido/contratos/catalogo/pantallas";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
+import { tieneDepartamento } from "../../../nucleo/acceso/quien.ts";
 import { ErrorDeApi, noExiste } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeConsulta, implementarConsulta } from "../../../nucleo/modulos.ts";
 import { enLista, filas, siguienteCodigo } from "./comunes.ts";
@@ -89,8 +90,7 @@ async function baseDelAlta({ base }: ContextoDeConsulta, id: string, listaIds: r
 
 export const consultaAltaProducto = implementarConsulta(altaDeProducto, async (contexto, parametros) => {
 	const { base, quien } = contexto;
-	const tiene = (departamento: string) =>
-		quien.tipo === "cuenta" && (quien.esDuena || quien.departamentos.includes(departamento));
+	const tiene = (departamento: string) => tieneDepartamento(quien, departamento);
 	// Ventas a externos solo da de alta desde un pedido, igual que la acción.
 	if (!tiene("catalogo") && parametros.origen !== "pedido") throw new ErrorDeApi("sin_permiso", "sin_departamento");
 	const generales = await filas(

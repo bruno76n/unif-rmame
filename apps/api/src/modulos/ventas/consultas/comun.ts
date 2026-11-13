@@ -459,16 +459,6 @@ export async function creditosDe(
 }
 
 /**
- * Si quien llama ve un departamento: la dueña los ve todos.
- * @param contexto El contexto de la consulta.
- * @param departamento La clave del departamento.
- */
-export function tieneDepartamento(contexto: ContextoDeConsulta, departamento: string): boolean {
-	const { quien } = contexto;
-	return quien.tipo === "cuenta" && (quien.esDuena || quien.departamentos.includes(departamento));
-}
-
-/**
  * Un texto sin mayúsculas ni acentos, para buscar.
  * @param texto El texto.
  */

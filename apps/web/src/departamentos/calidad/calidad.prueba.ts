@@ -9,8 +9,9 @@
  * menú» y «Cada pantalla tiene sus estados») y docs/interfaz/fabrica/calidad.md
  */
 
-import { expect as enPantalla, type Page } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { enPantalla } from "../../../../../pruebas/navegador/en-pantalla.ts";
 import { devolucionEnAduana, loteEnAduana } from "../../../../api/src/modulos/calidad/consultas/de-prueba.ts";
 import { levantarPantalla, type PantallaDePrueba } from "../../comun/pruebas/pantalla-de-prueba.ts";
 
@@ -209,8 +210,11 @@ describe("Las pantallas de Calidad", () => {
 			await pantalla.capturar(pagina, "calidad/reclamo-nuevo");
 			const llamada = esperarAccion(pagina, "calidad.registrar_reclamo");
 			await ventana.getByRole("button", { name: "Registrar reclamo" }).click();
-			const datos = (await llamada).request().postDataJSON() as { datos: Record<string, unknown> };
+			const respuesta = await llamada;
+			const datos = respuesta.request().postDataJSON() as { datos: Record<string, unknown> };
 			expect(datos.datos).toMatchObject({ lote_id: loteDeLaMuestra, piezas: 2, codigo: String(variante?.codigo) });
+			// Si la API no lo registró, su respuesta dice por qué.
+			expect(respuesta.status(), await respuesta.text()).toBe(200);
 			await enPantalla(avisoDeAbajo(pagina)).toHaveText(/^RC-\d+ registrado\. Del código se llega al lote L-2026-001$/);
 			const rastreo = pagina.getByRole("list", { name: "Rastreo" });
 			await enPantalla(rastreo.getByText("L-2026-001", { exact: true })).toBeVisible();

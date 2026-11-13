@@ -13,6 +13,7 @@ import { plural } from "@uniformame/compartido/calculos/textos";
 import { pedidoVentas } from "@uniformame/compartido/contratos/ventas/consultas-pedidos";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
+import { tieneDepartamento } from "../../../nucleo/acceso/quien.ts";
 import { parametroEntero } from "../../../nucleo/acceso/sesion.ts";
 import { noExiste } from "../../../nucleo/http/errores.ts";
 import { implementarConsulta } from "../../../nucleo/modulos.ts";
@@ -32,7 +33,6 @@ import {
 	type RenglonLeido,
 	sumar,
 	textoDeFormaDePago,
-	tieneDepartamento,
 	tramosDeAvance,
 } from "./comun.ts";
 
@@ -228,7 +228,7 @@ export const consultaPedidoVentas = implementarConsulta(pedidoVentas, async (con
 				.filter((fila) => fila.total > 0),
 		};
 	});
-	const esVentas = tieneDepartamento(contexto, "ventas");
+	const esVentas = tieneDepartamento(contexto.quien, "ventas");
 	const confirmado = pedido.estado === "confirmado";
 	const entregadas = sumar(avance.tallas, (talla) => talla.entregado);
 	return {
