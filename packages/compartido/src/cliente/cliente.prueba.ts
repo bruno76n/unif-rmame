@@ -299,3 +299,30 @@ describe("Subir un archivo: pide la dirección firmada con su suma SHA-256 y lo 
 		).rejects.toBeInstanceOf(ErrorSinRed);
 	});
 });
+
+describe("los avisos de una acción llegan a la pantalla", () => {
+	it("con avisos, `alAvisos` los recibe tal cual; sin avisos, no se llama", async () => {
+		const alAvisos = vi.fn();
+		const respuestas = [
+			respuesta(200, {
+				ok: true,
+				resultado: { mensaje: "PE-0150 confirmado", folio: "PE-0150", version: 42 },
+				avisos: ["Ojo: cambio de más de 30 %"],
+			}),
+			correcta.clone(),
+		];
+		const cliente = crearCliente(contratos, {
+			urlBase: "https://api.prueba.invalid",
+			versionApp: "1.0.0",
+			alReautenticar: async () => undefined,
+			alActualizar: () => undefined,
+			alAvisos,
+			esperar: async () => undefined,
+			fetch: async () => respuestas.shift() ?? new Response(null, { status: 500 }),
+		});
+		await cliente.accion("ventas.confirmar_pedido", { datos: { pedido_id: pedidoId }, version: 41 });
+		expect(alAvisos).toHaveBeenCalledWith(["Ojo: cambio de más de 30 %"]);
+		await cliente.accion("ventas.confirmar_pedido", { datos: { pedido_id: pedidoId }, version: 42 });
+		expect(alAvisos).toHaveBeenCalledTimes(1);
+	});
+});

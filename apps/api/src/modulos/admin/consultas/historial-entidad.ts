@@ -15,6 +15,7 @@ import { ErrorDeApi, noExiste } from "../../../nucleo/http/errores.ts";
 import { implementarConsulta } from "../../../nucleo/modulos.ts";
 import { personas } from "../../personal/tablas.ts";
 import { bitacora, departamentos, dispositivos, usuarios } from "../tablas.ts";
+import { sinMontosEnTexto } from "./comun.ts";
 
 /** Cuántos renglones por página si no se pide otro número. */
 const porPagina = 20;
@@ -52,7 +53,10 @@ export const consultaHistorialEntidad = implementarConsulta(
 		if (!quien.esDuena && !lectores.some((departamento) => quien.departamentos.includes(departamento))) {
 			throw new ErrorDeApi("sin_permiso", "sin_departamento");
 		}
-		const veMontos = quien.esDuena || quien.departamentos.some((departamento) => !sinMontos.includes(departamento));
+		// La cuenta de soporte nunca recibe un monto; Aduana y Bodega no los ven.
+		const veMontos =
+			!quien.esSoporte &&
+			(quien.esDuena || quien.departamentos.some((departamento) => !sinMontos.includes(departamento)));
 		const veSueldos = veSueldosYTarifas(quien);
 		const posicion = leerCursor(parametros.cursor);
 		const despues: SQL | undefined =
@@ -86,16 +90,19 @@ export const consultaHistorialEntidad = implementarConsulta(
 		const pagina = leidos.slice(0, limite);
 		const ultimo = pagina.at(-1);
 		const recortar = (valor: unknown) => comoObjeto(veMontos ? valor : sinCentavos(valor));
+		// Quien no ve montos tampoco los lee en la descripción.
+		const verDescripcion = (texto: string) => (veMontos ? texto : sinMontosEnTexto(texto));
 		return {
 			resultado: {
 				renglones: pagina.map((renglon) => ({
 					ocurrido_en: new Date(renglon.ocurridoEn).toISOString(),
 					quien: renglon.quien,
 					departamento: renglon.departamento,
-					descripcion:
+					descripcion: verDescripcion(
 						renglon.sensible && !veSueldos
 							? (renglon.descripcionRecortada ?? renglon.descripcion)
 							: renglon.descripcion,
+					),
 					antes: recortar(renglon.antes),
 					despues: recortar(renglon.despues),
 				})),

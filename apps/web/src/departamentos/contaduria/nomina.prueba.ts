@@ -81,8 +81,15 @@ describe("Lo que se ve en la nómina es lo que se paga", () => {
 			.object({ datos: z.object({ total_visto_centavos: z.number() }) })
 			.parse((await pedida).postDataJSON());
 		expect(cuerpo.datos.total_visto_centavos).toBe(vista.total_nomina_centavos);
-		expect((await respuesta).status()).toBe(200);
-		await enPantalla(pagina.locator("[role=status]", { hasText: /^Nómina del .+ pagada$/ })).toBeVisible();
+		const llegada = await respuesta;
+		expect(llegada.status()).toBe(200);
+		// El aviso dice el mensaje de la acción y, después, sus avisos (lo que no alcanzó a descontarse).
+		const { resultado, avisos } = z
+			.object({ resultado: z.object({ mensaje: z.string() }), avisos: z.array(z.string()) })
+			.parse(await llegada.json());
+		expect(resultado.mensaje).toMatch(/^Nómina del .+ pagada$/);
+		const texto = [resultado.mensaje, ...avisos].join(". ");
+		await enPantalla(pagina.locator("[role=status]", { hasText: texto })).toHaveText(texto);
 		await enPantalla(pagina.getByText(/^Pagada el /)).toBeVisible();
 		expect((await laNomina(semana.semanaId)).nomina.estado).toBe("pagada");
 		await pagina.close();

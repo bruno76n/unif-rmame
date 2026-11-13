@@ -34,6 +34,8 @@ describe("admin.bitacora: la bitácora para leer", () => {
 	let servidor: ServidorDePrueba;
 	/** Una palabra que solo llevan los renglones de esta prueba. */
 	const marca = `Zapateria${Date.now()}`;
+	/** La de los renglones con monto, aparte para no mover los conteos de las demás. */
+	const conMonto = `Mercerias${Date.now()}`;
 	beforeAll(async () => {
 		servidor = await crearServidorDePrueba();
 		const escribir = (descripcion: string, extra: { tipo?: string; recortada?: string; tablet?: boolean } = {}) =>
@@ -56,6 +58,7 @@ describe("admin.bitacora: la bitácora para leer", () => {
 		await escribir(`Consultó la ${marca}`, { tipo: "consulta_sensible" });
 		await escribir(`Pagó a Ana $500 ${marca}`, { recortada: `Pagó a Ana •••• ${marca}` });
 		await escribir(`Reportó bultos ${marca}`, { tablet: true });
+		await escribir(`Registró PG-0302 por $12,500.50 ${conMonto}`);
 	});
 	afterAll(async () => {
 		await servidor.cerrar();
@@ -89,6 +92,19 @@ describe("admin.bitacora: la bitácora para leer", () => {
 		expect(JSON.stringify(sinPermiso)).not.toContain("$500");
 		const deLaDuena = await bitacora({ buscar: `pagó a ana` }, "duena");
 		expect(deLaDuena.renglones.map((renglon) => renglon.descripcion)).toContain(`Pagó a Ana $500 ${marca}`);
+	});
+
+	it("la cuenta de soporte nunca recibe un monto: la descripción llega con sus montos tapados y no se buscan", async () => {
+		const deSoporte = await bitacora({ buscar: conMonto }, "soporte");
+		expect(deSoporte.renglones.map((renglon) => renglon.descripcion)).toEqual([
+			`Registró PG-0302 por $•••• ${conMonto}`,
+		]);
+		expect(JSON.stringify(deSoporte)).not.toContain("12,500");
+		expect((await bitacora({ buscar: "12,500" }, "soporte")).renglones).toHaveLength(0);
+		const deAdmin = await bitacora({ buscar: conMonto });
+		expect(deAdmin.renglones.map((renglon) => renglon.descripcion)).toEqual([
+			`Registró PG-0302 por $12,500.50 ${conMonto}`,
+		]);
 	});
 
 	it("un aparato sale con su persona; el folio viaja; lo más reciente arriba, con «Ver más»", async () => {

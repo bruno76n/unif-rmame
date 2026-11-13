@@ -137,26 +137,40 @@ describe("Las pantallas de Contaduría: pestañas, cajones, botones y avisos", (
 		},
 	);
 
-	it("el cajón del cliente: sus notas y su crédito; «Cambiar límite» guarda y lo avisa", espera, async () => {
-		const pagina = await abrir("/contaduria/cuentas-por-cobrar");
-		await pagina
-			.getByRole("table", { name: "Antigüedad de saldos por cliente" })
-			.getByText("Distribuidora Escolar Zamora", { exact: true })
-			.click();
-		await enPantalla(pagina).toHaveURL(/cajon=cliente/);
-		const cajon = pagina.getByRole("dialog");
-		await enPantalla(cajon.getByText("Consultas de este saldo quedan en la bitácora")).toBeVisible();
-		await enPantalla(cajon.getByText("por pagar")).toBeVisible();
-		await pantalla.capturar(pagina, "contaduria/cajon-cliente");
-		await cajon.getByRole("button", { name: "Cambiar límite" }).click();
-		const ventana = pagina.getByRole("dialog", { name: /Límite de crédito de/ });
-		await ventana.getByLabel("Límite nuevo, en pesos").fill("95000");
-		const mensaje = await avisaLoQueRegresa(pagina, "contaduria.cambiar_limite_credito", () =>
-			ventana.getByRole("button", { name: "Guardar" }).click(),
-		);
-		expect(mensaje).toMatch(/^Límite de crédito de Distribuidora Escolar Zamora: \$95,000/);
-		await pagina.close();
-	});
+	it(
+		"el cajón del cliente: sus notas y su crédito; «Cambiar límite» guarda y lo avisa, con los avisos de la acción",
+		espera,
+		async () => {
+			const pagina = await abrir("/contaduria/cuentas-por-cobrar");
+			await pagina
+				.getByRole("table", { name: "Antigüedad de saldos por cliente" })
+				.getByText("Distribuidora Escolar Zamora", { exact: true })
+				.click();
+			await enPantalla(pagina).toHaveURL(/cajon=cliente/);
+			const cajon = pagina.getByRole("dialog");
+			await enPantalla(cajon.getByText("Consultas de este saldo quedan en la bitácora")).toBeVisible();
+			await enPantalla(cajon.getByText("por pagar")).toBeVisible();
+			await pantalla.capturar(pagina, "contaduria/cajon-cliente");
+			await cajon.getByRole("button", { name: "Cambiar límite" }).click();
+			const ventana = pagina.getByRole("dialog", { name: /Límite de crédito de/ });
+			await ventana.getByLabel("Límite nuevo, en pesos").fill("95000");
+			const mensaje = await avisaLoQueRegresa(pagina, "contaduria.cambiar_limite_credito", () =>
+				ventana.getByRole("button", { name: "Guardar" }).click(),
+			);
+			expect(mensaje).toMatch(/^Límite de crédito de Distribuidora Escolar Zamora: \$95,000/);
+			// Los avisos que no bloquean de la acción salen en el mismo aviso, después de su mensaje.
+			await cajon.getByRole("button", { name: "Cambiar límite" }).click();
+			await ventana.getByLabel("Días de crédito").fill("45");
+			const conAviso = await avisaLoQueRegresa(pagina, "contaduria.cambiar_dias_credito", () =>
+				ventana.getByRole("button", { name: "Guardar" }).click(),
+			);
+			expect(conAviso).toBe("Crédito de Distribuidora Escolar Zamora: 45 días");
+			await enPantalla(
+				pagina.locator("[role=status]", { hasText: `${conAviso}. Los pedidos ya guardados conservan sus días` }),
+			).toBeVisible();
+			await pagina.close();
+		},
+	);
 
 	it("un choque de versión al cambiar el límite lo avisa sin perder lo capturado", espera, async () => {
 		const pagina = await abrir("/contaduria/cuentas-por-cobrar");

@@ -101,6 +101,13 @@ export function VentanaReclamoNuevo({
 		formulario.setValue("flujo_operacion_id", primera?.id ?? "");
 		formulario.setValue("persona_id", primera?.persona_id ?? undefined);
 	}, [opciones?.operaciones, formulario]);
+	// El cliente de lo escrito, también cuando su lista llega después de escribirlo (las opciones se piden con el texto).
+	useEffect(() => {
+		const cliente = opciones?.clientes.find((uno) => uno.nombre === clienteTexto);
+		if (cliente !== undefined && formulario.getValues("cliente_id") !== cliente.id) {
+			formulario.setValue("cliente_id", cliente.id);
+		}
+	}, [opciones?.clientes, clienteTexto, formulario]);
 	const falla = registrar.error === null ? null : leerFalla(registrar.error);
 	const errorDe = (campo: keyof Captura) =>
 		formulario.formState.errors[campo]?.message ?? (falla?.tipo === "regla" ? falla.campos[campo] : undefined);

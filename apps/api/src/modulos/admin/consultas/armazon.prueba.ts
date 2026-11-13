@@ -145,7 +145,7 @@ describe("El armazón: el menú de la cuenta, sus sesiones, su campana y el hist
 		expect(sesiones.map((sesion) => sesion.ciudad)).toContain("Zamora");
 	});
 
-	it("el historial de un documento: solo quien lee su tabla; sin montos para Bodega; los sueldos tapados", async () => {
+	it("el historial de un documento: solo quien lee su tabla; sin montos para Bodega, tampoco en la descripción; los sueldos tapados", async () => {
 		const traspaso = uuidv7();
 		const escribir = (descripcion: string, despues: Record<string, unknown>, recortada: string | null = null) =>
 			consultar(
@@ -154,7 +154,7 @@ describe("El armazón: el menú de la cuenta, sus sesiones, su campana y el hist
 				 VALUES ($1, 'cambio', 'inventario', 'fabrica', 'inventario.prueba', $2, $3, $4, 'traspasos', $5, $6, $7)`,
 				[uuidv7(), descripcion, recortada, recortada !== null, traspaso, JSON.stringify(despues), usuarioDe("bodega")],
 			);
-		await escribir("Surtió T-0001", { piezas: 3, costo_centavos: 12_000 });
+		await escribir("Surtió T-0001 con costo de $1,120.50", { piezas: 3, costo_centavos: 112_050 });
 		await escribir("Pagó a Ana $500", { pago_dia_centavos: 50_000 }, "Pagó a Ana ••••");
 		const deBodega = await pedirConsulta(
 			servidor,
@@ -165,7 +165,11 @@ describe("El armazón: el menú de la cuenta, sus sesiones, su campana y el hist
 		expect(deBodega.estado, JSON.stringify(deBodega.cuerpo)).toBe(200);
 		const renglones = (deBodega.cuerpo.resultado as { renglones: { descripcion: string; despues: unknown }[] })
 			.renglones;
-		expect(renglones.map((renglon) => renglon.descripcion)).toEqual(["Pagó a Ana ••••", "Surtió T-0001"]);
+		// Los montos de la descripción también se tapan a quien no ve montos.
+		expect(renglones.map((renglon) => renglon.descripcion)).toEqual([
+			"Pagó a Ana ••••",
+			"Surtió T-0001 con costo de $••••",
+		]);
 		expect(renglones[1]?.despues).toEqual({ piezas: 3 });
 		expect(renglones[0]?.despues).toEqual({});
 		// La dueña lo ve todo.
@@ -177,7 +181,8 @@ describe("El armazón: el menú de la cuenta, sus sesiones, su campana y el hist
 		);
 		const suyos = (deLaDuena.cuerpo.resultado as { renglones: { descripcion: string; despues: unknown }[] }).renglones;
 		expect(suyos[0]?.descripcion).toBe("Pagó a Ana $500");
-		expect(suyos[1]?.despues).toEqual({ piezas: 3, costo_centavos: 12_000 });
+		expect(suyos[1]?.descripcion).toBe("Surtió T-0001 con costo de $1,120.50");
+		expect(suyos[1]?.despues).toEqual({ piezas: 3, costo_centavos: 112_050 });
 		// Quien no lee traspasos no lo ve; una tabla que no existe, tampoco.
 		expect(
 			(

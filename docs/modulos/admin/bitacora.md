@@ -121,3 +121,4 @@ La pantalla, sus filtros y su buscador están en [pantallas de Administración](
   - `ip`, `sesion_id` de verdad y `departamento_id`, con la sesión de la fase 5;
   - `persona_id`, con el PIN de la fase 7.
 - **Las pruebas** están en `modulos/admin/internas/escribir-bitacora.prueba.ts`. La de prueba es la consulta `prueba.ficha`.
+- **Los montos escritos en la descripción** (fase 19): las acciones de Contaduría, Compras y Catálogo escriben montos en texto. La cuenta de soporte los recibe tapados en `admin.bitacora` («$••••», con `sinMontosEnLaBase`, así el buscador no los encuentra), y en `admin.historial_entidad` quien no ve montos (soporte, Aduana y Bodega) también (`sinMontosEnTexto`); los dos en `consultas/comun.ts` con el mismo patrón (decisión 804). Lo prueban `consultas/bitacora.prueba.ts` y el historial de `consultas/armazon.prueba.ts`.

@@ -142,7 +142,8 @@ export function leerFalla(error: unknown): FallaDeAccion {
 /**
  * Manda una acción por su contrato. La clave nace cuando la persona aprieta el botón y se reusa si vuelve a intentar
  * la misma intención después de una falla sin respuesta; al salir bien, avisa abajo con el `mensaje` que regresa y
- * vuelve a leer las consultas que se le digan.
+ * sus avisos que no bloquean («Crédito de X: 30 días. Los pedidos ya guardados conservan sus días»), y vuelve a leer
+ * las consultas que se le digan.
  * @param contrato Su contrato.
  * @param invalidar Las consultas (por nombre) que cambian con ella.
  */
@@ -151,16 +152,23 @@ export function useAccion<Contrato extends ContratoDeAccion>(contrato: Contrato,
 	const avisar = useAvisar();
 	// La clave de la intención en curso: se reusa si no hubo respuesta y la persona vuelve a intentar.
 	const clave = useRef<string | undefined>(undefined);
+	// Los avisos que no bloquean de la última respuesta: salen en el aviso verde, después del mensaje.
+	const avisos = useRef<readonly string[]>([]);
 	return useMutation({
 		mutationFn: (peticion: { datos: z.input<Contrato["entrada"]>; version?: number }) => {
-			const cliente = crearCliente({ acciones: { [contrato.nombre]: contrato }, consultas: {} }, opciones);
+			avisos.current = [];
+			const cliente = crearCliente(
+				{ acciones: { [contrato.nombre]: contrato }, consultas: {} },
+				{ ...opciones, alAvisos: (llegados) => (avisos.current = llegados) },
+			);
 			clave.current = clave.current ?? crypto.randomUUID();
 			return cliente.accion(contrato.nombre, peticion, clave.current);
 		},
 		onSuccess: (resultado: z.output<Contrato["resultado"]>) => {
 			clave.current = undefined;
 			const mensaje = (resultado as { mensaje?: unknown }).mensaje;
-			if (typeof mensaje === "string") avisar(mensaje, "bien");
+			const partes = [...(typeof mensaje === "string" ? [mensaje] : []), ...avisos.current];
+			if (partes.length > 0) avisar(partes.join(". "), "bien");
 			return volverALeer(consultas, invalidar);
 		},
 		onError: (error) => {

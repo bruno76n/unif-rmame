@@ -11,6 +11,7 @@ Lleva el taller de la orden al lote terminado: qué hay que cortar y cuándo, la
 
 ## Quién entra
 
+- **«Cancelar el registro de {persona}»** (`ventanas/cancelar-registro.tsx`) es la ventana con motivo de lo común, con el choque de versión adentro (decisión 804).
 - Las cuentas con Producción: el encargado del taller y la dueña. No hay precios de venta ni importes.
 - El precio de la tela y el costo del lote, solo con Compras o Contaduría; la mano de obra del costo y las tarifas, solo con `ven_sueldos_y_tarifas`.
 - «Ver pedido» solo sale con Ventas a externos; «Capturar receta» y «Ver receta», con Patronaje.

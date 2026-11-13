@@ -77,6 +77,8 @@ export interface OpcionesDelCliente {
 	encabezados?: () => Record<string, string>;
 	/** `include` en la web, para mandar la cookie de sesión. */
 	credenciales?: "include" | "same-origin" | "omit";
+	/** Los avisos que no bloquean de una acción («Ojo: cambio de más de 30 %»), si trae alguno: la pantalla los dice. */
+	alAvisos?: (avisos: readonly string[]) => void;
 	/** Cuántas veces se reintenta sin red, sin respuesta, con `500` o con `503` (por omisión, 4). */
 	reintentos?: number;
 	/** Para las pruebas: otro `fetch`, otra espera y otra forma de hacer claves. */
@@ -93,6 +95,9 @@ const subidaFirmada = z.object({
 		encabezados: z.record(z.string(), z.string()),
 	}),
 });
+
+/** Los avisos de la respuesta de una acción. */
+const avisosDe = z.object({ avisos: z.array(z.string()) });
 
 /** Los contratos que conoce un cliente: las acciones y las consultas, por nombre. */
 export interface ContratosDelCliente {
@@ -180,7 +185,7 @@ export function crearCliente<
 		 * @param nombre El nombre del contrato.
 		 * @param peticion Los datos y, si la acción edita, la versión que se leyó.
 		 * @param clave La clave de la intención, si la pantalla ya la tiene (por ejemplo, al reintentar a mano).
-		 * @returns El resultado, del tipo del contrato.
+		 * @returns El resultado, del tipo del contrato. Sus avisos, si trae, van a `alAvisos`.
 		 */
 		async accion<Nombre extends keyof Acciones & string>(
 			nombre: Nombre,
@@ -205,7 +210,11 @@ export function crearCliente<
 			const leido =
 				typeof cuerpo === "object" && cuerpo !== null && "resultado" in cuerpo ? cuerpo.resultado : undefined;
 			const esquema: Acciones[Nombre]["resultado"] = contrato.resultado;
-			return z.parse(esquema, leido);
+			const resultado = z.parse(esquema, leido);
+			// Los avisos que no bloquean van aparte del resultado: los dice la pantalla junto a su mensaje.
+			const avisos = avisosDe.safeParse(cuerpo);
+			if (avisos.success && avisos.data.avisos.length > 0) opciones.alAvisos?.(avisos.data.avisos);
+			return resultado;
 		},
 
 		/**

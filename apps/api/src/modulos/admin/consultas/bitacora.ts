@@ -4,7 +4,8 @@
  *
  * Lo más reciente arriba, por páginas. El buscador compara sin acentos ni mayúsculas contra quién, el departamento y
  * lo que pasó (con `sin_acentos`, la función de la base que usa su índice). Sin «ven sueldos y tarifas», el renglón
- * sensible llega con su descripción recortada, y el buscador busca en esa: un monto tapado no se encuentra.
+ * sensible llega con su descripción recortada, y el buscador busca en esa: un monto tapado no se encuentra. A la cuenta
+ * de soporte le llega sin ningún monto («$••••»), porque nunca recibe uno.
  */
 
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
@@ -23,6 +24,7 @@ import {
 	personaDeLaBitacora,
 	personaDelRenglon,
 	quienEnLaBitacora,
+	sinMontosEnLaBase,
 } from "./comun.ts";
 
 /** Cuántos renglones por página si no se pide otro número. */
@@ -41,10 +43,12 @@ function tipoDe(tipo: string): keyof typeof textoDelTipo {
 
 export const consultaBitacora = implementarConsulta(bitacoraDeAdmin, async ({ base, quien }, parametros) => {
 	const veSueldos = veSueldosYTarifas(quien);
-	// Lo que ve quien pregunta: sin el permiso, la descripción sin los montos de sueldos.
-	const descripcion: SQL<string> = veSueldos
+	// Lo que ve quien pregunta: sin el permiso, la descripción sin los montos de sueldos; la cuenta de soporte, sin
+	// ningún monto.
+	const conSueldos: SQL<string> = veSueldos
 		? sql<string>`${bitacora.descripcion}`
 		: sql<string>`case when ${bitacora.sensibleSueldos} then coalesce(${bitacora.descripcionRecortada}, '••••') else ${bitacora.descripcion} end`;
+	const descripcion = quien.tipo === "cuenta" && quien.esSoporte ? sinMontosEnLaBase(conSueldos) : conSueldos;
 	const texto = parametros.buscar ?? "";
 	const buscado: SQL | undefined =
 		texto === ""

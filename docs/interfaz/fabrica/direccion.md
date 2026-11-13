@@ -11,6 +11,7 @@ Es la pantalla de la dueña para decidir y vigilar: autoriza o rechaza lo que ot
 
 ## Quién entra
 
+- **La ventana «Rechazar»** (`ventanas/rechazar.tsx`) no es la ventana con motivo de lo común: su archivo le da su propio texto («Escribe el motivo: le llega a quien lo pidió») y el tope de 90 letras del contrato (decisión 804).
 - Las cuentas con Dirección; al inicio, solo la dueña. Ve importes en pesos, nunca sueldos; sin «ven sueldos y tarifas», lo que se debe no lleva la nómina.
 - **Pastilla del menú:** las autorizaciones por autorizar; roja cuando una lleva `direccion.autorizacion_dias_menu_rojo` (3) días esperando. Las alertas no cuentan.
 - **Acción principal:** «Autorizar», solo si hay alguna por autorizar: abre Autorizaciones.

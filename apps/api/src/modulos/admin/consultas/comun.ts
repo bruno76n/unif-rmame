@@ -1,7 +1,8 @@
 /**
  * Lo que comparten las consultas de las pantallas de Administración del sistema: cómo se escribe un momento (la hora,
  * el día con la hora, la última entrada), el área de una persona, el inicio de un día de negocio, el nombre de quien
- * hizo algo en la bitácora, cuándo una alerta sigue sin revisar y las altas de usuario por confirmar.
+ * hizo algo en la bitácora, cuándo una alerta sigue sin revisar, las altas de usuario por confirmar y cómo se tapan los
+ * montos escritos en la descripción de un renglón de la bitácora.
  * Fase 19 · docs/interfaz/fabrica/administracion.md y docs/modulos/admin/bitacora.md («`admin.marcar_alerta_revisada`»)
  */
 
@@ -147,4 +148,30 @@ export async function altasPorConfirmar(base: Base) {
 		.leftJoin(personaQuePidio, eq(personaQuePidio.id, quienPidio.personaId))
 		.where(and(eq(usuarios.estado, "solicitada"), eq(autorizaciones.estado, "por_autorizar")))
 		.orderBy(asc(autorizaciones.creadoEn));
+}
+
+/**
+ * Un monto escrito en un texto («$1,250», «$12,500.50»), como lo escribe `enPesos`: el mismo patrón para la base
+ * (`regexp_replace`) y para JavaScript.
+ */
+const patronDeMonto = "\\$ ?[0-9][0-9,]*(\\.[0-9]+)?";
+/** Cómo queda un monto tapado. */
+const montoTapado = "$••••";
+
+/**
+ * La descripción de la bitácora sin sus montos, para quien no ve montos: «Pagó FP-1172 por $••••».
+ * Existe porque las acciones escriben montos en su descripción (Contaduría, Compras, Catálogo) y la cuenta de soporte,
+ * y quien no ve montos en el historial de un documento, nunca reciben uno (docs/cimientos/ACCESO-Y-PERMISOS.md).
+ * @param texto La descripción.
+ */
+export function sinMontosEnTexto(texto: string): string {
+	return texto.replace(new RegExp(patronDeMonto, "g"), montoTapado);
+}
+
+/**
+ * Lo mismo que `sinMontosEnTexto`, en la base: así el buscador busca en lo que se ve y un monto tapado no se encuentra.
+ * @param descripcion La expresión de la descripción.
+ */
+export function sinMontosEnLaBase(descripcion: SQL<string>): SQL<string> {
+	return sql<string>`regexp_replace(${descripcion}, ${patronDeMonto}, ${montoTapado}, 'g')`;
 }
