@@ -39,7 +39,7 @@ export function Estado({ texto, color, abajo }: PropsDeEstado) {
 	return (
 		<span
 			className={unirClases(
-				"inline-flex min-w-estado flex-col items-center justify-center rounded-chico px-3 text-center font-bold text-etiqueta text-white leading-tight",
+				"inline-flex min-w-estado flex-col items-center justify-center whitespace-nowrap rounded-chico px-3 text-center font-bold text-etiqueta text-white leading-tight",
 				abajo === undefined ? "h-estado-alto" : "min-h-estado-alto py-1",
 				fondo[color ?? colorDelEstado(texto)],
 			)}

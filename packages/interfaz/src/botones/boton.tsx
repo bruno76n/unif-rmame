@@ -55,7 +55,9 @@ export function Boton({
 			{...resto}
 		>
 			{Icono === undefined ? null : <Icono aria-hidden="true" size={17} strokeWidth={1.9} />}
-			{children}
+			{/* Con ícono, el texto va en su propio lugar: en la barra del teléfono queda solo el ícono (el texto, para el
+			lector de pantalla). */}
+			{Icono === undefined ? children : <span data-texto-con-icono="">{children}</span>}
 		</button>
 	);
 }

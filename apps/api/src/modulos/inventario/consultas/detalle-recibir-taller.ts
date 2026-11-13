@@ -10,6 +10,7 @@ import { detalleRecibirTaller } from "@uniformame/compartido/contratos/inventari
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { implementarConsulta } from "../../../nucleo/modulos.ts";
+import { ordenDeTallas } from "../../catalogo/dominio/tallas.ts";
 import { destinoDelLote } from "./aduana-comun.ts";
 
 /** Lo que regresa `calidad.aprobadas_del_lote`, en lo único que se usa aquí: qué tallas revisó. */
@@ -30,7 +31,7 @@ export const consultaDetalleRecibirTaller = implementarConsulta(detalleRecibirTa
 				? { rows: [] }
 				: await accion.transaccion.execute(sql`
 				SELECT v.id AS variante_id, t.nombre AS talla FROM variantes v JOIN tallas t ON t.id = v.talla_id
-				WHERE v.id IN (${sql.join(ids, sql`, `)}) ORDER BY t.orden`);
+				WHERE v.id IN (${sql.join(ids, sql`, `)}) ORDER BY ${ordenDeTallas("t")}`);
 		const tallas = z.array(z.object({ variante_id: z.uuid(), talla: z.string() })).parse(rows);
 		return {
 			lote_id: lote.lote_id,

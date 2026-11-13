@@ -13,6 +13,7 @@ import { sql } from "drizzle-orm";
 import { z } from "zod";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
 import { parametroNumero } from "../../../nucleo/parametros.ts";
+import { ordenDeTallas } from "../../catalogo/dominio/tallas.ts";
 import { cuentaDelReabasto, type RenglonDeReabasto } from "../dominio/cuenta-reabasto.ts";
 
 /** Las columnas del nombre de una variante `v` (con su producto `p`, su talla `t` y su escuela `es`). */
@@ -103,7 +104,7 @@ export async function leerReabasto(contexto: ContextoDeAccion, soloVariante?: st
 	const ubicaciones = await leerUbicaciones(contexto);
 	const { rows: filasDeVariantes } = await transaccion.execute(sql`
 		SELECT ${columnasDeVariante}, p.canal_mostrador AS mostrador,
-			row_number() OVER (ORDER BY p.nombre, t.orden) AS orden
+			row_number() OVER (ORDER BY p.nombre, ${ordenDeTallas("t")}) AS orden
 		FROM variantes v ${unionesDeVariante}
 		WHERE p.baja_en IS NULL AND NOT p.es_servicio AND v.baja_en IS NULL AND v.descontinuada_en IS NULL
 			AND NOT v.es_pedido_especial ${deVariante}`);

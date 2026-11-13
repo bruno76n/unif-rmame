@@ -78,4 +78,23 @@ describe("El menú solo muestra los departamentos de la cuenta, con sus pastilla
 		await pantalla.capturar(pagina, "comun/armazon-telefono");
 		await pagina.close();
 	});
+
+	it("en el teléfono, dos acciones en la barra (Mantenimiento) quedan solo con su ícono y no tapan el menú ni la campana", {
+		timeout: 90_000,
+	}, async () => {
+		const pagina = await pantalla.abrir("/mantenimiento", { quien: "duena", tamano: "telefono" });
+		await enPantalla(pagina.locator("h1")).toHaveText("Mantenimiento");
+		await pagina.waitForLoadState("networkidle");
+		const menu = pagina.getByRole("button", { name: "Abrir el menú" });
+		await menu.click({ trial: true, timeout: 5_000 });
+		const caja = await menu.boundingBox();
+		expect(caja?.x ?? -1).toBeGreaterThanOrEqual(0);
+		// Las acciones conservan su nombre para el lector de pantalla.
+		await enPantalla(pagina.getByRole("button", { name: "Reportar falla" })).toBeVisible();
+		await enPantalla(pagina.getByRole("button", { name: "Registrar servicio" })).toBeVisible();
+		const ancho = await pagina.evaluate(() => document.documentElement.scrollWidth);
+		expect(ancho).toBeLessThanOrEqual(390);
+		await pantalla.capturar(pagina, "comun/armazon-telefono-dos-acciones");
+		await pagina.close();
+	});
 });

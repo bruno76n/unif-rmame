@@ -69,7 +69,7 @@ Cómo se entra, cómo se revisa el permiso en cada llamada y qué puede cada cue
 
 ## La versión de la app
 
-Cada llamada manda `X-App-Version`. Si falta o es menor que la mínima de su cliente (los parámetros `admin.version_minima_web`, `admin.version_minima_tablet` y `admin.version_minima_puente`; el de la caja llega con el POS), la API responde `426 actualizar` con la versión mínima. La web recarga; un aparato se actualiza.
+Cada llamada manda `X-App-Version`, salvo un `GET` de una ruta fija (abrir un archivo, el PDF de unas etiquetas), que el navegador pide desde un enlace o una imagen y no puede mandarlo: ese solo identifica a quien llama (decisión 798). Si falta o es menor que la mínima de su cliente (los parámetros `admin.version_minima_web`, `admin.version_minima_tablet` y `admin.version_minima_puente`; el de la caja llega con el POS), la API responde `426 actualizar` con la versión mínima. La web recarga; un aparato se actualiza.
 
 **Cuando cambia un contrato:** la revisión completa compara `openapi.json` con el que está en git y muestra qué contratos cambiaron. Si un cambio rompe un contrato que usa un aparato, se sube la versión mínima de esa app en la misma fase, para que ningún aparato se quede a medias con la versión vieja.
 

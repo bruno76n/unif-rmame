@@ -19,6 +19,7 @@ import { z } from "zod";
 import { noExiste } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeConsulta, implementarConsulta } from "../../../nucleo/modulos.ts";
 import { parametroNumero } from "../../../nucleo/parametros.ts";
+import { ordenDeTallas } from "../../catalogo/dominio/tallas.ts";
 import { escribirParaQuien } from "../dominio/para-quien.ts";
 import { deCalcularMaterial, type LoteLeido, leerLotes, piezasPorTallaDelLote } from "./comun.ts";
 
@@ -240,7 +241,7 @@ async function laCaptura(
 	const { rows: tallas } = await contexto.base.execute(sql`
 		SELECT t.variante_id, v.talla_id, ta.nombre AS talla, t.piezas_planeadas AS planeadas
 		FROM lote_tallas t JOIN variantes v ON v.id = t.variante_id JOIN tallas ta ON ta.id = v.talla_id
-		WHERE t.lote_id = ${lote.id} AND t.piezas_planeadas > 0 ORDER BY ta.orden`);
+		WHERE t.lote_id = ${lote.id} AND t.piezas_planeadas > 0 ORDER BY ${ordenDeTallas("ta")}`);
 	const material = deCalcularMaterial.parse(
 		await contexto.lectura("patronaje.calcular_material", {
 			producto_id: lote.producto_id,

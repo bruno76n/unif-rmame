@@ -13,6 +13,7 @@ import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { noExiste } from "../../../nucleo/http/errores.ts";
 import { implementarConsulta } from "../../../nucleo/modulos.ts";
+import { ordenDeTallas } from "../../catalogo/dominio/tallas.ts";
 import { leerClientes, llevaTodas, paraBuscar, rangoDeTallas } from "./comun.ts";
 import { sugeridoDe } from "./prendas.ts";
 
@@ -39,8 +40,8 @@ export const consultaBuscarPrendas = implementarConsulta(buscarPrendas, async (c
 	);
 	const lista = z.object({ id: z.uuid(), nombre: z.string() }).optional().parse(deLista[0]);
 	const { rows } = await base.execute(sql`SELECT p.id, p.nombre, p.escuela_id, e.nombre AS escuela, s.nombre AS seccion,
-			array_agg(t.nombre ORDER BY t.orden) AS tallas,
-			(array_agg(v.id ORDER BY v.es_pedido_especial, t.orden))[1] AS primera,
+			array_agg(t.nombre ORDER BY ${ordenDeTallas("t")}) AS tallas,
+			(array_agg(v.id ORDER BY v.es_pedido_especial, ${ordenDeTallas("t")}))[1] AS primera,
 			EXISTS (SELECT 1 FROM precios pr WHERE pr.producto_id = p.id AND pr.vigente_hasta IS NULL
 				AND pr.lista_id = ${lista?.id ?? null}) AS en_lista
 		FROM productos p JOIN secciones s ON s.id = p.seccion_id LEFT JOIN escuelas e ON e.id = p.escuela_id

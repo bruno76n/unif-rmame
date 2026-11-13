@@ -22,7 +22,10 @@ export interface PropsDeDosRenglones {
 export function DosRenglones({ arriba, abajo, rojo = false }: PropsDeDosRenglones) {
 	return (
 		<span className="flex min-w-0 flex-col">
-			<span className={unirClases("tabular-nums", rojo && "font-semibold text-texto-error")}>{arriba}</span>
+			{/* El de arriba es el folio o el nombre: en negritas, como pide el diseño, y sin partirse. */}
+			<span className={unirClases("whitespace-nowrap font-semibold tabular-nums", rojo && "text-texto-error")}>
+				{arriba}
+			</span>
 			{abajo === undefined ? null : <span className="text-etiqueta text-tinta2">{abajo}</span>}
 		</span>
 	);

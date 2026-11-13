@@ -11,6 +11,7 @@ import { dondeEsta } from "@uniformame/compartido/contratos/inventario/armazon";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { implementarConsulta } from "../../../nucleo/modulos.ts";
+import { ordenDeTallas } from "../../catalogo/dominio/tallas.ts";
 
 /** Una variante encontrada. */
 const encontrada = z.object({ id: z.uuid(), prenda: z.string(), talla: z.string(), codigo: z.string().nullable() });
@@ -60,7 +61,7 @@ function busqueda(texto: string, limite: number) {
 	return sql`SELECT v.id, p.nombre AS prenda, t.nombre AS talla, v.codigo FROM variantes v
 		JOIN productos p ON p.id = v.producto_id JOIN tallas t ON t.id = v.talla_id
 		WHERE ${sql.join(condiciones, sql` AND `)} AND (${enLaPrenda}) AND p.baja_en IS NULL
-		ORDER BY p.nombre, t.orden LIMIT ${limite}`;
+		ORDER BY p.nombre, ${ordenDeTallas("t")} LIMIT ${limite}`;
 }
 
 export const consultaDondeEsta = implementarConsulta(dondeEsta, async ({ base }, parametros) => {

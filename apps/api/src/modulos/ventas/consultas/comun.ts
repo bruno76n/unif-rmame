@@ -15,6 +15,7 @@ import type { Temporal } from "temporal-polyfill";
 import { z } from "zod";
 import type { Base } from "../../../nucleo/base/conexion.ts";
 import type { ContextoDeConsulta } from "../../../nucleo/modulos.ts";
+import { ordenDeTallas } from "../../catalogo/dominio/tallas.ts";
 
 /** Un color de estado de la guía. */
 export type Color = "rojo" | "ambar" | "azul" | "verde" | "gris" | "morado" | "verde-azulado";
@@ -294,7 +295,7 @@ export async function leerRenglones(base: Base, pedidoIds: readonly string[]): P
 			pedidoIds.map((id) => sql`${id}::uuid`),
 			sql`, `,
 		)})
-		ORDER BY pr.nombre, t.orden`);
+		ORDER BY pr.nombre, ${ordenDeTallas("t")}`);
 	return z.array(renglonLeido).parse(rows);
 }
 

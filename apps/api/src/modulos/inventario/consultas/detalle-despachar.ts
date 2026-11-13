@@ -13,6 +13,7 @@ import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { noExiste } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeAccion, implementarConsulta } from "../../../nucleo/modulos.ts";
+import { ordenDeTallas } from "../../catalogo/dominio/tallas.ts";
 import {
 	ordenesConDevolucionPendiente,
 	type PorQueNoSale,
@@ -83,7 +84,7 @@ async function porTalla(contexto: ContextoDeAccion, traspasoId: string): Promise
 			sum(coalesce(l.piezas_recibidas_aduana, 0) - l.piezas_repartidas) AS piezas
 		FROM traspaso_lineas l JOIN variantes v ON v.id = l.variante_id JOIN productos p ON p.id = v.producto_id
 		JOIN tallas t ON t.id = v.talla_id
-		WHERE l.traspaso_id = ${traspasoId}::uuid GROUP BY p.nombre, t.nombre, t.orden ORDER BY p.nombre, t.orden`);
+		WHERE l.traspaso_id = ${traspasoId}::uuid GROUP BY p.nombre, t.nombre, t.orden, t.grupo_talla_id ORDER BY p.nombre, ${ordenDeTallas("t")}`);
 	const filas = z.array(z.object({ prenda: z.string(), talla: z.string(), piezas: z.coerce.number() })).parse(rows);
 	const prendas = [...new Set(filas.map((fila) => fila.prenda))];
 	return prendas.map((prenda) => {

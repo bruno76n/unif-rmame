@@ -22,6 +22,7 @@ import { type SQL, sql } from "drizzle-orm";
 import { z } from "zod";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
 import { implementarConsulta } from "../../../nucleo/modulos.ts";
+import { ordenDeTallas } from "../../catalogo/dominio/tallas.ts";
 
 /** Lo que regresa la consulta. */
 type Disponibilidad = z.infer<typeof disponibilidadLinea.resultado>;
@@ -125,7 +126,7 @@ async function leerTallas(
 		WHERE p.baja_en IS NULL AND p.canal_en_linea AND NOT p.es_servicio
 			${filtro.productoId === undefined ? sql`` : sql`AND p.id = ${filtro.productoId}::uuid`}
 			${filtro.varianteIds === undefined ? sql`` : sql`AND v.id IN (${enLista(filtro.varianteIds)})`}
-		ORDER BY lower(p.nombre), p.id, t.orden, t.nombre`);
+		ORDER BY lower(p.nombre), p.id, ${ordenDeTallas("t")}, t.nombre`);
 	return z.array(talla).parse(rows);
 }
 

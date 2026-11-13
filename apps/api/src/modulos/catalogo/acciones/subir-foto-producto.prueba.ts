@@ -107,6 +107,14 @@ describe("la foto se guarda en el momento y regresa la versión nueva del produc
 			servidor.app.inject({ method: "GET", url: `/v1/archivos/${segunda}`, headers: encabezadosDeLaWeb(quien) });
 		expect((await abrir("bodega")).statusCode).toBe(302);
 		expect((await abrir("personal")).statusCode).toBe(404);
+		// Un `<img>` o un enlace del navegador no manda la versión de la app: la foto abre igual.
+		const { "x-app-version": _version, ...sinVersion } = encabezadosDeLaWeb("bodega");
+		const desdeUnEnlace = await servidor.app.inject({
+			method: "GET",
+			url: `/v1/archivos/${segunda}`,
+			headers: sinVersion,
+		});
+		expect(desdeUnEnlace.statusCode).toBe(302);
 	});
 
 	it("HEIC no se acepta (foto_formato); una más pesada que catalogo.foto_max_mb tampoco (foto_pesada)", async () => {

@@ -242,3 +242,4 @@ Este archivo no tiene parámetros propios. Usa:
 **Fase 12, parte 2.** `catalogo.dar_baja_talla` pregunta `produccion.lotes_sin_terminar_de_variante` después de tomar la versión del producto: un lote nuevo lee la prenda con `FOR SHARE`, así que la baja lo ve o él ve la baja (decisión 599). Lo prueba `produccion/internas/pasar-pedido-a-temporada.prueba.ts`.
 
 **Fase 18, parte 1.** El candado `talla_con_pedidos` junta los folios de `ventas.pedidos_abiertos_de_variante` y de `linea.pedidos_abiertos_de_variante` (los W- no cancelados ni vencidos con esa talla).
+- **El orden de las tallas** en todo el sistema es el de su grupo y luego su lugar en él: `ordenDeTallas` de `catalogo/dominio/tallas.ts`, que usan las consultas de todos los módulos (decisión 797). La prueba `dominio/tallas.prueba.ts`.

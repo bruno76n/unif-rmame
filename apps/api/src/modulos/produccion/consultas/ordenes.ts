@@ -16,6 +16,7 @@ import { z } from "zod";
 import { leerCursor, paginar } from "../../../nucleo/http/consultas.ts";
 import { type ContextoDeConsulta, implementarConsulta } from "../../../nucleo/modulos.ts";
 import { parametroNumero } from "../../../nucleo/parametros.ts";
+import { ordenDeTallas } from "../../catalogo/dominio/tallas.ts";
 import { escribirParaQuien } from "../dominio/para-quien.ts";
 import { hiloDelLote, type LoteLeido, leerLotes, type SaludEscrita, saludDeLosLotes } from "./comun.ts";
 import { consultaHiloPedido } from "./hilo-pedido.ts";
@@ -163,8 +164,8 @@ function plazo(hoy: Temporal.PlainDate, entrega: string, riesgo: number) {
  */
 async function sugerenciasPorDecidir(contexto: ContextoDeConsulta) {
 	const { rows } = await contexto.base.execute(sql`
-		SELECT array_agg(s.id ORDER BY t.orden) AS sugerencia_ids, p.nombre AS prenda, u.nombre AS ubicacion,
-			string_agg(t.nombre || ': ' || s.piezas, ' · ' ORDER BY t.orden) AS tallas, sum(s.piezas)::int AS piezas
+		SELECT array_agg(s.id ORDER BY ${ordenDeTallas("t")}) AS sugerencia_ids, p.nombre AS prenda, u.nombre AS ubicacion,
+			string_agg(t.nombre || ': ' || s.piezas, ' · ' ORDER BY ${ordenDeTallas("t")}) AS tallas, sum(s.piezas)::int AS piezas
 		FROM sugerencias_reabasto s JOIN variantes v ON v.id = s.variante_id JOIN productos p ON p.id = v.producto_id
 		JOIN tallas t ON t.id = v.talla_id JOIN ubicaciones u ON u.id = s.ubicacion_id
 		WHERE s.estado = 'por_decidir'

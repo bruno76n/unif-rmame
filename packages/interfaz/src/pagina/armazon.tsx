@@ -169,7 +169,9 @@ export function Armazon({ grupos, migas, cuenta, busqueda, campana, accion, fran
 								</span>
 							))}
 						</nav>
-						<div className="ml-auto flex min-w-0 flex-1 items-center justify-end gap-3">
+						{/* En el teléfono, la acción con ícono queda solo con su ícono; y si aun así no cabe, se recorta por la
+						derecha («safe»): nunca tapa el menú. */}
+						<div className="ml-auto flex min-w-0 flex-1 items-center justify-end-safe gap-3 max-telefono:gap-2 max-telefono:[&_[data-texto-con-icono]]:sr-only">
 							{busqueda}
 							{campana}
 							{accion}

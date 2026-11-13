@@ -18,6 +18,7 @@ import { parametroEntero } from "../../../nucleo/acceso/sesion.ts";
 import { errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
 import type { ContextoDeConsulta } from "../../../nucleo/modulos.ts";
 import { implementarConsulta } from "../../../nucleo/modulos.ts";
+import { ordenDeTallas } from "../../catalogo/dominio/tallas.ts";
 import { avanceDe, fechaDeEntrega, leerClientes, leerPedidos } from "./comun.ts";
 
 /** Una línea con su color. */
@@ -169,7 +170,7 @@ export const consultaRevisionMandar = implementarConsulta(revisionMandar, async 
 			WHERE v.id IN (${sql.join(
 				porMandar.map((talla) => sql`${talla.variante_id}::uuid`),
 				sql`, `,
-			)}) ORDER BY t.orden`)
+			)}) ORDER BY ${ordenDeTallas("t")}`)
 		).rows,
 	);
 	const { rows: deBodega } = await base.execute(sql`SELECT id FROM ubicaciones WHERE tipo = 'bodega' LIMIT 1`);

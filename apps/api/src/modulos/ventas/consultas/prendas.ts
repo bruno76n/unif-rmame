@@ -12,6 +12,7 @@ import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { noExiste } from "../../../nucleo/http/errores.ts";
 import type { ContextoDeConsulta } from "../../../nucleo/modulos.ts";
+import { ordenDeTallas } from "../../catalogo/dominio/tallas.ts";
 import type { AvanceDeTalla, RenglonLeido } from "./comun.ts";
 
 /** Una prenda del editor, como la da el contrato. */
@@ -88,7 +89,7 @@ export async function prendaParaElEditor(
 			[...suyos.map((renglon) => sql`${renglon.variante_id}::uuid`), sql`NULL::uuid`],
 			sql`, `,
 		)}))
-		ORDER BY t.orden`);
+		ORDER BY ${ordenDeTallas("t")}`);
 	const tallas = tallasLeidas.parse(rows);
 	const primera = tallas.find((talla) => !talla.especial) ?? tallas[0];
 	if (primera === undefined) throw noExiste();

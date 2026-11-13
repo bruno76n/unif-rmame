@@ -99,8 +99,13 @@ export function PanelPendientes({
 								clave: "tipo",
 								encabezado: "Tipo",
 								celda: ({ tipo: { texto, icono: Icono, color } }) => (
-									<span className="inline-flex items-center gap-2.5">
-										<span className={unirClases("grid size-8 place-items-center rounded-mediano", iconoDeTipo[color])}>
+									<span className="inline-flex items-center gap-2.5 whitespace-nowrap">
+										<span
+											className={unirClases(
+												"grid size-8 flex-none place-items-center rounded-mediano",
+												iconoDeTipo[color],
+											)}
+										>
 											<Icono aria-hidden="true" size={18} strokeWidth={1.9} />
 										</span>
 										{texto}
@@ -111,7 +116,7 @@ export function PanelPendientes({
 								clave: "referencia",
 								encabezado: "Referencia",
 								celda: ({ referencia }) => (
-									<span className="flex flex-col">
+									<span className="flex min-w-48 flex-col">
 										<b className="font-bold">{referencia.titulo}</b>
 										{referencia.detalle === undefined ? null : (
 											<span className="text-etiqueta text-tinta2">{referencia.detalle}</span>
@@ -126,7 +131,9 @@ export function PanelPendientes({
 									fecha === undefined ? (
 										"—"
 									) : (
-										<span className={unirClases(fecha.roja === true && "font-bold text-estado-rojo")}>
+										<span
+											className={unirClases("whitespace-nowrap", fecha.roja === true && "font-bold text-estado-rojo")}
+										>
 											{fecha.texto}
 										</span>
 									),

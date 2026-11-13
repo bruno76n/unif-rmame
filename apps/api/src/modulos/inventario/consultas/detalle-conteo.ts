@@ -15,6 +15,7 @@ import { z } from "zod";
 import { tieneDepartamento } from "../../../nucleo/acceso/quien.ts";
 import { errorDeRegla } from "../../../nucleo/http/errores.ts";
 import { implementarConsulta } from "../../../nucleo/modulos.ts";
+import { ordenDeTallas } from "../../catalogo/dominio/tallas.ts";
 import { listaDeMotivosAjuste } from "../siembra.ts";
 
 /** Un nombre con su id. */
@@ -87,7 +88,7 @@ export const consultaDetalleDeConteo = implementarConsulta(detalleDeConteo, asyn
 			FROM variantes v JOIN productos p ON p.id = v.producto_id JOIN tallas t ON t.id = v.talla_id
 			LEFT JOIN escuelas es ON es.id = p.escuela_id
 			WHERE ${filtro} AND v.baja_en IS NULL AND NOT v.es_pedido_especial AND p.baja_en IS NULL AND NOT p.es_servicio
-			ORDER BY p.nombre, t.orden`);
+			ORDER BY p.nombre, ${ordenDeTallas("t")}`);
 		return {
 			ubicaciones: deNombre.parse(ubicaciones),
 			secciones: deNombre.parse(secciones),

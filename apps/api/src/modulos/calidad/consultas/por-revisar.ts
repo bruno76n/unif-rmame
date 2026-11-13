@@ -15,6 +15,7 @@ import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { noExiste } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeConsulta, implementarConsulta } from "../../../nucleo/modulos.ts";
+import { ordenDeTallas } from "../../catalogo/dominio/tallas.ts";
 import {
 	columnasDeParaQuien,
 	deParaQuien,
@@ -151,7 +152,7 @@ async function tallasDelLote(contexto: ContextoDeConsulta, loteId: string) {
 	const { rows } = await contexto.base.execute(sql`
 		SELECT lt.variante_id, t.nombre AS talla, lt.piezas_terminadas AS listas
 		FROM lote_tallas lt JOIN variantes v ON v.id = lt.variante_id JOIN tallas t ON t.id = v.talla_id
-		WHERE lt.lote_id = ${loteId} AND coalesce(lt.piezas_cortadas, 0) > 0 ORDER BY t.orden`);
+		WHERE lt.lote_id = ${loteId} AND coalesce(lt.piezas_cortadas, 0) > 0 ORDER BY ${ordenDeTallas("t")}`);
 	return z.array(z.object({ variante_id: z.uuid(), talla: z.string(), listas: z.number() })).parse(rows);
 }
 

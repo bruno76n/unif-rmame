@@ -14,6 +14,7 @@ import { z } from "zod";
 import { parametroEntero } from "../../../nucleo/acceso/sesion.ts";
 import { errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
 import { implementarConsulta } from "../../../nucleo/modulos.ts";
+import { ordenDeTallas } from "../../catalogo/dominio/tallas.ts";
 import {
 	avanceDe,
 	fechaDeEntrega,
@@ -44,7 +45,7 @@ export const consultaArmarNota = implementarConsulta(armarNotaVentas, async (con
 			WHERE v.id IN (${sql.join(
 				tallas.map((talla) => sql`${talla.variante_id}::uuid`),
 				sql`, `,
-			)}) ORDER BY p.nombre, t.orden`)
+			)}) ORDER BY p.nombre, ${ordenDeTallas("t")}`)
 		).rows,
 	);
 	const cliente = (await leerClientes(base)).find((suyo) => suyo.id === pedido.cliente_id);

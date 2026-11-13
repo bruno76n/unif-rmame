@@ -324,8 +324,10 @@ export async function crearServidor(dependencias: DependenciasDelServidor) {
 	for (const ruta of registro.rutas) registrarRutaFija(ruta);
 
 	/**
-	 * Una ruta fija de un módulo: identifica, revisa la versión (y el `Origin` en un `POST`) y la atiende con
-	 * un contexto que puede abrir su transacción.
+	 * Una ruta fija de un módulo: identifica, revisa la versión y el `Origin` en un `POST`, y la atiende con un contexto
+	 * que puede abrir su transacción. Un `GET` fijo (abrir un archivo, el PDF de unas etiquetas) lo pide el navegador
+	 * desde un enlace o una imagen, que no mandan `X-App-Version`: solo identifica; nada de lo que regresa cambia con la
+	 * versión de la app.
 	 */
 	function registrarRutaFija(ruta: RutaFija): void {
 		app.route({
@@ -333,7 +335,13 @@ export async function crearServidor(dependencias: DependenciasDelServidor) {
 			url: ruta.url,
 			schema: { description: ruta.descripcion, tags: [ruta.nombre.split(".")[0] ?? ""] },
 			preValidation:
-				ruta.metodo === "POST" ? [identificarYRevisarVersion, revisarOrigen] : [identificarYRevisarVersion],
+				ruta.metodo === "POST"
+					? [identificarYRevisarVersion, revisarOrigen]
+					: [
+							async (peticion) => {
+								await identificar(peticion);
+							},
+						],
 			handler: async (peticion, respuesta) => {
 				const quien = quienDe(peticion);
 				const ahora = reloj();

@@ -128,8 +128,9 @@ export function Tabla<Fila extends RowData>({
 			})
 		: renglones;
 	const conSuma = columnas.some((columna) => columna.suma !== undefined);
+	// Las cifras de la derecha (cantidades, montos) nunca se parten en dos renglones.
 	const alineacion = (columna: ColumnaDeTabla<Fila> | undefined) =>
-		columna?.alinear === "derecha" ? "text-right tabular-nums" : "text-left";
+		columna?.alinear === "derecha" ? "whitespace-nowrap text-right tabular-nums" : "text-left";
 	return (
 		<div
 			ref={contenedor}

@@ -19,6 +19,7 @@ import { z } from "zod";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
 import { implementarConsulta } from "../../../nucleo/modulos.ts";
 import { parametroNumero } from "../../../nucleo/parametros.ts";
+import { ordenDeTallas } from "../../catalogo/dominio/tallas.ts";
 import { datosDeDevolucion, lineasDeDevolucion } from "../dominio/devoluciones.ts";
 import { traspasos } from "../tablas.ts";
 import {
@@ -68,7 +69,7 @@ async function pedidosPorSurtir(contexto: ContextoDeAccion): Promise<Pendiente[]
 		LEFT JOIN clientes c ON c.id = pe.cliente_id LEFT JOIN terceros ter ON ter.id = c.tercero_id
 		LEFT JOIN pedidos_linea w ON w.id = r.pedido_linea_id AND w.estado = 'por_surtir'
 		WHERE r.estado = 'activa' AND r.traspaso_id IS NULL AND (pe.id IS NOT NULL OR w.id IS NOT NULL)
-		ORDER BY p.nombre, t.orden`);
+		ORDER BY p.nombre, ${ordenDeTallas("t")}`);
 	const filas = z
 		.array(
 			z.object({

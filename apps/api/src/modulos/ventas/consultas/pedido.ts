@@ -17,6 +17,7 @@ import { tieneDepartamento } from "../../../nucleo/acceso/quien.ts";
 import { parametroEntero } from "../../../nucleo/acceso/sesion.ts";
 import { noExiste } from "../../../nucleo/http/errores.ts";
 import { implementarConsulta } from "../../../nucleo/modulos.ts";
+import { ordenDeTallas } from "../../catalogo/dominio/tallas.ts";
 import {
 	type Avance,
 	type AvanceDeTalla,
@@ -136,7 +137,7 @@ export const consultaPedidoVentas = implementarConsulta(pedidoVentas, async (con
 						WHERE v.id IN (${sql.join(
 							avance.tallas.map((talla) => sql`${talla.variante_id}::uuid`),
 							sql`, `,
-						)}) ORDER BY t.orden`)
+						)}) ORDER BY ${ordenDeTallas("t")}`)
 					).rows,
 				);
 	const { rows: deLotes } = await base.execute(

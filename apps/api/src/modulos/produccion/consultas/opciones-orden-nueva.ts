@@ -11,6 +11,7 @@ import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { implementarConsulta } from "../../../nucleo/modulos.ts";
 import { parametroNumero } from "../../../nucleo/parametros.ts";
+import { ordenDeTallas } from "../../catalogo/dominio/tallas.ts";
 
 /** Cuántas prendas ofrece a la vez. */
 const prendasALaVez = 20;
@@ -26,7 +27,7 @@ export const consultaOpcionesOrdenNueva = implementarConsulta(opcionesOrdenNueva
 		SELECT p.id AS producto_id, p.nombre,
 			EXISTS (SELECT 1 FROM recetas r WHERE r.producto_id = p.id AND r.version_vigente_id IS NOT NULL) AS con_receta,
 			coalesce((SELECT json_agg(json_build_object('variante_id', v.id, 'talla', t.nombre,
-				'especial', v.es_pedido_especial, 'descontinuada', v.descontinuada_en IS NOT NULL) ORDER BY t.orden)
+				'especial', v.es_pedido_especial, 'descontinuada', v.descontinuada_en IS NOT NULL) ORDER BY ${ordenDeTallas("t")})
 				FROM variantes v JOIN tallas t ON t.id = v.talla_id
 				WHERE v.producto_id = p.id AND v.baja_en IS NULL), '[]') AS tallas
 		FROM productos p

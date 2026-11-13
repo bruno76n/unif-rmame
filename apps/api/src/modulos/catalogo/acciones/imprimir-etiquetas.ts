@@ -15,6 +15,7 @@ import { contextoDeDibujo, quienCambia } from "../../../nucleo/acciones/comunes.
 import { errorDeCampo, errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeAccion, implementarAccion } from "../../../nucleo/modulos.ts";
 import { subirVersionDelProducto } from "../dominio/precios.ts";
+import { ordenDeTallas } from "../dominio/tallas.ts";
 import { productos, tallas, variantes } from "../tablas.ts";
 
 /** El tipo de etiqueta con que se dibujan las prendas. */
@@ -64,7 +65,7 @@ async function leerVariantes(
 		.innerJoin(productos, eq(productos.id, variantes.productoId))
 		.innerJoin(tallas, eq(tallas.id, variantes.tallaId))
 		.where(donde)
-		.orderBy(productos.nombre, tallas.orden)
+		.orderBy(productos.nombre, ordenDeTallas("tallas"))
 		.for("update", { of: variantes });
 }
 

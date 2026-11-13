@@ -9,6 +9,7 @@ import { diasHasta, textoDeDiaCorto, textoEnDias } from "@uniformame/compartido/
 import { type SQL, sql } from "drizzle-orm";
 import { z } from "zod";
 import type { ContextoDeConsulta } from "../../../nucleo/modulos.ts";
+import { ordenDeTallas } from "../../catalogo/dominio/tallas.ts";
 
 /** Cómo se dice la prenda sin escuela en las listas. */
 export const sinEscuela = "Básico";
@@ -140,7 +141,7 @@ async function tallasDe(contexto: ContextoDeConsulta, ids?: readonly string[]): 
 						sql`, `,
 					)})`
 		}
-		ORDER BY t.orden`);
+		ORDER BY ${ordenDeTallas("t")}`);
 	const porPrenda = new Map<string, TallaLeida[]>();
 	for (const talla of z
 		.array(z.object({ producto_id: z.uuid(), talla_id: z.uuid(), nombre: z.string(), especial: z.boolean() }))

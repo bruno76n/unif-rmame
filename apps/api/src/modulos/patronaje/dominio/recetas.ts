@@ -10,6 +10,7 @@ import { quienCambia } from "../../../nucleo/acciones/comunes.ts";
 import type { Transaccion } from "../../../nucleo/base/transacciones.ts";
 import { noExiste } from "../../../nucleo/http/errores.ts";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
+import { ordenDeTallas } from "../../catalogo/dominio/tallas.ts";
 import { escuelas, productos, secciones, tallas, variantes } from "../../catalogo/tablas.ts";
 import { recetaLineas, recetaLineaTallas, recetaMedidas, recetas, recetaVersiones } from "../tablas.ts";
 
@@ -84,7 +85,7 @@ export async function leerPrenda(transaccion: Transaccion, productoId: string): 
 		.from(variantes)
 		.innerJoin(tallas, eq(tallas.id, variantes.tallaId))
 		.where(and(eq(variantes.productoId, productoId), isNull(variantes.bajaEn)))
-		.orderBy(asc(tallas.orden));
+		.orderBy(ordenDeTallas("tallas"));
 	return {
 		id: producto.id,
 		nombre: producto.nombre,

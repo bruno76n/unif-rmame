@@ -17,6 +17,7 @@ import { revisarVersion, tomarVersion } from "../../../nucleo/acciones/pisadas.t
 import { ErrorDeApi, errorDeCampo, errorDeRegla, noExiste } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeAccion, implementarAccion } from "../../../nucleo/modulos.ts";
 import { usuarios } from "../../admin/tablas.ts";
+import { ordenDeTallas } from "../../catalogo/dominio/tallas.ts";
 import { personas } from "../../personal/tablas.ts";
 import { lotes, operaciones } from "../../produccion/tablas.ts";
 import { cosioEnElLote } from "../dominio/quien-revisa.ts";
@@ -128,7 +129,7 @@ export const accionRevisarLote = implementarAccion(revisarLote, async (contexto,
 	const { rows: suyas } = await transaccion.execute(sql`
 		SELECT lt.variante_id, t.nombre AS talla, lt.piezas_terminadas AS listas
 		FROM lote_tallas lt JOIN variantes v ON v.id = lt.variante_id JOIN tallas t ON t.id = v.talla_id
-		WHERE lt.lote_id = ${lote.id} AND coalesce(lt.piezas_cortadas, 0) > 0 ORDER BY t.orden`);
+		WHERE lt.lote_id = ${lote.id} AND coalesce(lt.piezas_cortadas, 0) > 0 ORDER BY ${ordenDeTallas("t")}`);
 	const tallas = tallasDelLote.parse(suyas);
 	const pedidos = datos.rechazos ?? [];
 	await revisarRechazos(contexto, lote, tallas, pedidos);

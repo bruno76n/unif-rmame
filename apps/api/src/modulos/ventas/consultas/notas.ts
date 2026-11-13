@@ -6,6 +6,7 @@
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 import type { Base } from "../../../nucleo/base/conexion.ts";
+import { ordenDeTallas } from "../../catalogo/dominio/tallas.ts";
 
 /** Una nota de entrega con su pedido y su cliente. */
 const notaLeida = z.object({
@@ -89,6 +90,6 @@ export async function leerLineas(base: Base, notaIds: readonly string[]): Promis
 		WHERE l.nota_entrega_id IN (${sql.join(
 			notaIds.map((id) => sql`${id}::uuid`),
 			sql`, `,
-		)}) ORDER BY p.nombre, t.orden`);
+		)}) ORDER BY p.nombre, ${ordenDeTallas("t")}`);
 	return z.array(lineaLeida).parse(rows);
 }

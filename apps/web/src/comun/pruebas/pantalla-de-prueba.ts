@@ -92,6 +92,9 @@ export async function levantarPantalla(opciones: { conArchivos?: true } = {}): P
 		abrir: async (ruta, { quien, tamano = "escritorio" }) => {
 			const contexto = await navegador.newContext({
 				viewport: tamanos[tamano],
+				// Como en la fábrica: el navegador en español de México y en su hora (los campos de fecha y mes lo usan).
+				locale: "es-MX",
+				timezoneId: "America/Mexico_City",
 				extraHTTPHeaders: { "x-prueba-quien": quien },
 			});
 			// Lo que el navegador sube al almacén lo atiende el simulador.
