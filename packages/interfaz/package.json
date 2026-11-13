@@ -39,7 +39,8 @@
 		"./estados/muestra-de-color": "./src/estados/muestra-de-color.tsx",
 		"./captura/buscador": "./src/captura/buscador.tsx",
 		"./contenedores/tarjeta": "./src/contenedores/tarjeta.tsx",
-		"./contenedores/grupo-plegable": "./src/contenedores/grupo-plegable.tsx"
+		"./contenedores/grupo-plegable": "./src/contenedores/grupo-plegable.tsx",
+		"./pagina/panel": "./src/pagina/panel.tsx"
 	},
 	"dependencies": {
 		"@base-ui/react": "1.9.0",

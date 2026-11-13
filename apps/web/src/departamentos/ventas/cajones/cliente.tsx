@@ -27,8 +27,8 @@ import type { z } from "zod";
 import { useConsulta } from "../../../comun/api.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
+import { VentanaConMotivo } from "../../../comun/ventana-con-motivo.tsx";
 import { useEnvio } from "../envio.ts";
-import { VentanaConMotivo } from "../ventanas/con-motivo.tsx";
 
 /** Lo que da la consulta. */
 type DelCliente = z.infer<typeof clienteVentas.resultado>;
@@ -240,20 +240,26 @@ function FormularioDeCliente({
 			{dandoDeBaja && cliente !== null ? (
 				<VentanaConMotivo
 					titulo={`Dar de baja a ${cliente.nombre}`}
-					texto="Ya no sale para pedidos nuevos. Sus pedidos, notas y pagos se conservan."
-					accion="Dar de baja"
-					esquema={darBajaCliente.entrada.shape.motivo}
+					textoAccion="Dar de baja"
 					enviando={baja.enviando}
 					alCerrar={() => setDandoDeBaja(false)}
-					alConfirmar={async (motivo, alCampos) => {
+					alConfirmar={async (motivo) => {
+						let error: string | undefined;
 						const hecho = await baja.enviar(
 							{ datos: { cliente_id: cliente.cliente_id, motivo }, version: cliente.version },
-							alCampos,
+							(campos) => {
+								error = campos.motivo;
+							},
 						);
-						if (hecho !== undefined) alCerrar();
-						return hecho !== undefined;
+						if (hecho !== undefined) {
+							setDandoDeBaja(false);
+							alCerrar();
+						}
+						return error;
 					}}
-				/>
+				>
+					<p className="m-0 text-tinta2">Ya no sale para pedidos nuevos. Sus pedidos, notas y pagos se conservan.</p>
+				</VentanaConMotivo>
 			) : null}
 		</>
 	);

@@ -39,6 +39,10 @@ export const armazon = definirConsulta({
 		avisos_sin_leer: z.number().int(),
 		confirmado_hasta: z.string().nullable().describe("Hasta cuándo vale su «Confirmar con Google»"),
 		version_minima_web: z.string(),
+		largo_minimo_motivo: z
+			.number()
+			.int()
+			.describe("`general.largo_minimo_motivo`: las letras que pide un motivo; el botón se prende al llegar"),
 		servidor_en: z.string(),
 	}),
 	permiso: {},

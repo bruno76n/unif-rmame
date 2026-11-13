@@ -27,10 +27,10 @@ import type { z } from "zod";
 import { useConsulta } from "../../../comun/api.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
+import { VentanaConMotivo } from "../../../comun/ventana-con-motivo.tsx";
 import { useTieneDepartamento } from "../cuenta.ts";
 import { useDireccionDeVentas } from "../direccion.ts";
 import { useEnvio } from "../envio.ts";
-import { VentanaConMotivo } from "../ventanas/con-motivo.tsx";
 import { VentanaConfirmarEntrega } from "../ventanas/confirmar-entrega.tsx";
 import { VentanaNotaCredito } from "../ventanas/nota-credito.tsx";
 import { abrirHoja } from "./pedido.tsx";
@@ -250,16 +250,19 @@ export function CajonNota({ notaId, alCerrar }: { notaId: string; alCerrar: () =
 			{ventana === "cancelar" && nota !== undefined ? (
 				<VentanaConMotivo
 					titulo={`Cancelar ${nota.folio}`}
-					accion="Cancelar nota"
-					esquema={cancelarNotaEntrega.entrada.shape.motivo}
+					textoAccion="Cancelar nota"
 					enviando={cancelar.enviando}
 					alCerrar={() => setVentana(undefined)}
-					alConfirmar={async (motivo, alCampos) => {
+					alConfirmar={async (motivo) => {
+						let error: string | undefined;
 						const hecho = await cancelar.enviar(
 							{ datos: { nota_id: nota.nota_id, motivo }, version: nota.version },
-							alCampos,
+							(campos) => {
+								error = campos.motivo;
+							},
 						);
-						return hecho !== undefined;
+						if (hecho !== undefined) setVentana(undefined);
+						return error;
 					}}
 				/>
 			) : null}

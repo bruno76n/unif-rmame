@@ -21,6 +21,7 @@ import type { z } from "zod";
 import { leerFalla, useAccion, useConsulta } from "../../../comun/api.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
+import { VentanaConMotivo } from "../../../comun/ventana-con-motivo.tsx";
 import {
 	erroresDeLaAccion,
 	numeroEscrito,
@@ -30,7 +31,6 @@ import {
 } from "../comun.tsx";
 import { useDireccionDeCompras } from "../direccion.ts";
 import { textoDelTono } from "../pestanas/proveedores.tsx";
-import { VentanaConMotivo } from "../ventanas/con-motivo.tsx";
 
 /** Lo que regresa la consulta. */
 type Proveedor = z.infer<typeof proveedorDeCompras.resultado>;
@@ -289,8 +289,7 @@ export function CajonProveedor({ proveedorId, alCerrar }: { proveedorId: string;
 					abierta={baja}
 					alCerrar={() => setBaja(false)}
 					titulo={`Dar de baja ${proveedor.nombre}`}
-					boton="Dar de baja"
-					largoMinimo={datos.largo_minimo_motivo}
+					textoAccion="Dar de baja"
 					enviando={darDeBaja.isPending}
 					alConfirmar={(motivo) =>
 						darDeBaja.mutate(

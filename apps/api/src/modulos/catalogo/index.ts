@@ -3,7 +3,8 @@
  * sus tallas, sus precios y sus etiquetas.
  * Fase 8 · docs/modulos/catalogo/
  *
- * El tipo de etiqueta `prenda`, con su dibujo, llega en la fase 20.
+ * El tipo de etiqueta `prenda`, con su dibujo, llega en la fase 20. Las consultas de sus pantallas y la pastilla del menú
+ * son de la fase 19 (docs/interfaz/fabrica/catalogo.md).
  */
 
 import { definirModulo } from "../../nucleo/modulos.ts";
@@ -29,6 +30,15 @@ import {
 	accionReactivarTalla,
 } from "./acciones/tallas-del-producto.ts";
 import { bajadaDeCatalogo } from "./bajada.ts";
+import { consultaAltaProducto } from "./consultas/alta-producto.ts";
+import { consultaBitacora } from "./consultas/bitacora.ts";
+import { consultaCambioEnBloquePrevio } from "./consultas/cambio-en-bloque-previo.ts";
+import { consultaEscuelasYTallas } from "./consultas/escuelas-y-tallas.ts";
+import { consultaEtiquetas } from "./consultas/etiquetas.ts";
+import { consultaFichaProducto } from "./consultas/ficha-producto.ts";
+import { consultaListasPrecios } from "./consultas/listas-precios.ts";
+import { consultaPendientes, pastillaCatalogo } from "./consultas/pendientes.ts";
+import { consultaProductos } from "./consultas/productos.ts";
 import { cambiarPrecioEnLinea } from "./internas/cambiar-precio-en-linea.ts";
 import { crearEscuelaParaCliente } from "./internas/crear-escuela-para-cliente.ts";
 import {
@@ -73,6 +83,18 @@ export default definirModulo({
 		accionCambiarPreciosEnBloque,
 		accionImprimirEtiquetas,
 	],
+	consultas: [
+		consultaPendientes,
+		consultaProductos,
+		consultaListasPrecios,
+		consultaEtiquetas,
+		consultaEscuelasYTallas,
+		consultaBitacora,
+		consultaFichaProducto,
+		consultaAltaProducto,
+		consultaCambioEnBloquePrevio,
+	],
+	pastillas: { catalogo: pastillaCatalogo },
 	internas: {
 		crear_escuela_para_cliente: crearEscuelaParaCliente,
 		crear_lista_cliente: crearListaCliente,

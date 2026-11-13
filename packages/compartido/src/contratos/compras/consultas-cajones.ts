@@ -21,9 +21,6 @@ const listaDeIds = z
 	.regex(/^[0-9a-fA-F-]{36}(,[0-9a-fA-F-]{36})*$/)
 	.describe("Ids separados por comas");
 
-/** `general.largo_minimo_motivo`: lo que piden las ventanas con motivo. */
-const largoMinimoMotivo = z.number().int().describe("`general.largo_minimo_motivo`: las letras que pide un motivo");
-
 /** Lo que regresa cada consulta de un material: su estado en la proyección. */
 const proyectado = {
 	estado: z.enum(estadosDeMaterial),
@@ -213,7 +210,6 @@ export const ordenDeCompra = definirConsulta({
 		),
 		total_centavos: z.number().int().optional(),
 		cantidad_maxima: z.number().int(),
-		largo_minimo_motivo: largoMinimoMotivo,
 		puede: z.object({
 			editar: z.boolean(),
 			cancelar: z.boolean(),
@@ -282,7 +278,6 @@ export const materialDeCompras = definirConsulta({
 				fecha: z.string(),
 			}),
 		),
-		largo_minimo_motivo: largoMinimoMotivo,
 	}),
 	permiso: { departamento: "compras" },
 });
@@ -333,7 +328,6 @@ export const proveedorDeCompras = definirConsulta({
 			}),
 		),
 		dias_dice_tardar_maximo: z.number().int(),
-		largo_minimo_motivo: largoMinimoMotivo,
 	}),
 	permiso: { departamento: "compras" },
 });

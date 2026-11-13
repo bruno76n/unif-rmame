@@ -31,10 +31,10 @@ import { useConsulta } from "../../../comun/api.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
 import { montoEnPantalla } from "../../../comun/montos.ts";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
+import { VentanaConMotivo } from "../../../comun/ventana-con-motivo.tsx";
 import { useTieneDepartamento } from "../cuenta.ts";
 import { useDireccionDeVentas } from "../direccion.ts";
 import { useEnvio } from "../envio.ts";
-import { VentanaConMotivo } from "../ventanas/con-motivo.tsx";
 import { VentanaPasarABodega } from "../ventanas/pasar-a-bodega.tsx";
 import { Historial } from "./historial.tsx";
 
@@ -367,24 +367,31 @@ export function CajonPedido({ pedidoId, alCerrar }: { pedidoId: string; alCerrar
 			{ventana === "cancelar" && pedido !== undefined ? (
 				<VentanaConMotivo
 					titulo={`Cancelar ${pedido.folio}`}
-					{...(pedido.lotes_a_temporada > 0
-						? {
-								texto: `Sus ${pedido.lotes_a_temporada} ${pedido.lotes_a_temporada === 1 ? "lote pasa" : "lotes pasan"} a temporada: lo que se produzca va a bodega.`,
-							}
-						: {})}
-					accion="Cancelar pedido"
-					esquema={cancelarPedido.entrada.shape.motivo}
+					textoAccion="Cancelar pedido"
 					enviando={cancelar.enviando}
 					alCerrar={() => setVentana(undefined)}
-					alConfirmar={async (motivo, alCampos) => {
+					alConfirmar={async (motivo) => {
+						let error: string | undefined;
 						const salio = await cancelar.enviar(
 							{ datos: { pedido_id: pedido.pedido_id, motivo }, version: pedido.version },
-							alCampos,
+							(campos) => {
+								error = campos.motivo;
+							},
 						);
-						if (salio !== undefined) alCerrar();
-						return salio !== undefined;
+						if (salio !== undefined) {
+							setVentana(undefined);
+							alCerrar();
+						}
+						return error;
 					}}
-				/>
+				>
+					{pedido.lotes_a_temporada > 0 ? (
+						<p className="m-0 text-tinta2">
+							Sus {pedido.lotes_a_temporada} {pedido.lotes_a_temporada === 1 ? "lote pasa" : "lotes pasan"} a temporada:
+							lo que se produzca va a bodega.
+						</p>
+					) : null}
+				</VentanaConMotivo>
 			) : null}
 			{ventana === "bodega" && pedido !== undefined ? (
 				<VentanaPasarABodega

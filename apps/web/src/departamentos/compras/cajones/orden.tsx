@@ -32,9 +32,9 @@ import type { z } from "zod";
 import { leerFalla, useAccion, useConsulta } from "../../../comun/api.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
+import { VentanaConMotivo } from "../../../comun/ventana-con-motivo.tsx";
 import { TituloDeSeccion, useCierreDelCajon } from "../comun.tsx";
 import { useDireccionDeCompras } from "../direccion.ts";
-import { VentanaConMotivo } from "../ventanas/con-motivo.tsx";
 
 /** Lo que regresa la consulta. */
 type Orden = z.infer<typeof ordenDeCompra.resultado>;
@@ -444,8 +444,7 @@ export function CajonOrden({ ordenId, alCerrar }: { ordenId: string; alCerrar: (
 						alCerrar={() => setVentana(null)}
 						titulo={puede?.editar ? `Descartar ${orden.folio}` : `Cancelar ${orden.folio}`}
 						subtitulo={`${orden.proveedor}, ${plural(datos.lineas.length, "material", "materiales")}, ${pesos(datos.total_centavos)}.`}
-						boton={puede?.editar ? "Descartar orden" : "Cancelar orden"}
-						largoMinimo={datos.largo_minimo_motivo}
+						textoAccion={puede?.editar ? "Descartar orden" : "Cancelar orden"}
 						enviando={cancelar.isPending}
 						alConfirmar={(motivo) =>
 							cancelar.mutate(
@@ -459,8 +458,7 @@ export function CajonOrden({ ordenId, alCerrar }: { ordenId: string; alCerrar: (
 						alCerrar={() => setVentana(null)}
 						titulo={`Cerrar ${orden.folio} con faltante`}
 						subtitulo={`Falta: ${faltante}`}
-						boton="Cerrar orden"
-						largoMinimo={datos.largo_minimo_motivo}
+						textoAccion="Cerrar orden"
 						enviando={cerrarConFaltante.isPending}
 						alConfirmar={(motivo) =>
 							cerrarConFaltante.mutate(

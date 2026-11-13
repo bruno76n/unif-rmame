@@ -107,7 +107,6 @@ export const consultaOrden = implementarConsulta(ordenDeCompra, async (contexto,
 			})),
 			total_centavos: orden.totalCentavos,
 			cantidad_maxima: await numeroDe(accion, "compras.cantidad_maxima_linea"),
-			largo_minimo_motivo: await numeroDe(accion, "general.largo_minimo_motivo"),
 			puede: {
 				editar: orden.estado === "borrador",
 				cancelar: orden.estado === "enviada",

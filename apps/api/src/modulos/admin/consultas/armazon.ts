@@ -102,6 +102,7 @@ export const consultaArmazon = implementarConsulta(armazon, async (contexto) => 
 					? null
 					: quien.confirmadoConGoogleEn.add({ minutes: minutos }).toString(),
 			version_minima_web: String(await leerParametro(base, { clave: "admin.version_minima_web" })),
+			largo_minimo_motivo: await parametroEntero(base, "general.largo_minimo_motivo"),
 			servidor_en: ahora.toString(),
 		},
 	};

@@ -31,6 +31,7 @@ import type { z } from "zod";
 import { leerFalla, useAccion, useConsulta } from "../../../comun/api.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
+import { VentanaConMotivo } from "../../../comun/ventana-con-motivo.tsx";
 import {
 	erroresDeLaAccion,
 	numeroEscrito,
@@ -39,7 +40,6 @@ import {
 	validadorDelContrato,
 } from "../comun.tsx";
 import { useDireccionDeCompras } from "../direccion.ts";
-import { VentanaConMotivo } from "../ventanas/con-motivo.tsx";
 import { VentanaOtroProveedor } from "../ventanas/otro-proveedor.tsx";
 
 /** Lo que regresa la consulta. */
@@ -399,8 +399,7 @@ export function CajonMaterial({ materialId, alCerrar }: { materialId: string; al
 						abierta={ventana === "baja"}
 						alCerrar={() => setVentana(null)}
 						titulo={`Dar de baja ${material.nombre}`}
-						boton="Dar de baja"
-						largoMinimo={datos.largo_minimo_motivo}
+						textoAccion="Dar de baja"
 						enviando={baja.isPending}
 						alConfirmar={(motivo) =>
 							baja.mutate(
@@ -420,8 +419,7 @@ export function CajonMaterial({ materialId, alCerrar }: { materialId: string; al
 						titulo={
 							typeof ventana === "object" && ventana !== null ? `${ventana.nombre} ya no surte ${material.nombre}` : ""
 						}
-						boton="Ya no lo surte"
-						largoMinimo={datos.largo_minimo_motivo}
+						textoAccion="Ya no lo surte"
 						enviando={quitar.isPending}
 						alConfirmar={(motivo) =>
 							typeof ventana === "object" && ventana !== null

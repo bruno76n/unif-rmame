@@ -98,7 +98,6 @@ export const consultaProveedor = implementarConsulta(proveedorDeCompras, async (
 				total_centavos: orden.totalCentavos,
 			})),
 			dias_dice_tardar_maximo: await numeroDe(accion, "compras.dias_dice_tardar_maximo"),
-			largo_minimo_motivo: await numeroDe(accion, "general.largo_minimo_motivo"),
 		};
 	}),
 }));

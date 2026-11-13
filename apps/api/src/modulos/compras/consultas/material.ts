@@ -150,7 +150,6 @@ export const consultaMaterial = implementarConsulta(materialDeCompras, async (co
 			otros_proveedores: otros.filter((otro) => !surtidoresIds.includes(otro.proveedor_id)),
 			ultimo_precio_centavos: costo[material.id] ?? null,
 			precios: await ultimosPrecios(accion, material.id),
-			largo_minimo_motivo: await numeroDe(accion, "general.largo_minimo_motivo"),
 		};
 	}),
 }));

@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from "./rutas/__root.tsx"
 import { Route as IndexRouteImport } from "./rutas/index.tsx"
+import { Route as CatalogoRouteRouteImport } from "./rutas/catalogo/route.tsx"
 import { Route as AccesoIndexRouteImport } from "./rutas/acceso/index.tsx"
 import { Route as AccesoConfirmadoRouteImport } from "./rutas/acceso/confirmado.tsx"
 import { Route as AdminIndexRouteImport } from "./rutas/admin/index.tsx"
@@ -17,6 +18,11 @@ import { Route as AduanaIndexRouteImport } from "./rutas/aduana/index.tsx"
 import { Route as BodegaIndexRouteImport } from "./rutas/bodega/index.tsx"
 import { Route as CalidadIndexRouteImport } from "./rutas/calidad/index.tsx"
 import { Route as CatalogoIndexRouteImport } from "./rutas/catalogo/index.tsx"
+import { Route as CatalogoBitacoraRouteImport } from "./rutas/catalogo/bitacora.tsx"
+import { Route as CatalogoEscuelasYTallasRouteImport } from "./rutas/catalogo/escuelas-y-tallas.tsx"
+import { Route as CatalogoEtiquetasRouteImport } from "./rutas/catalogo/etiquetas.tsx"
+import { Route as CatalogoListasDePreciosRouteImport } from "./rutas/catalogo/listas-de-precios.tsx"
+import { Route as CatalogoProductosRouteImport } from "./rutas/catalogo/productos.tsx"
 import { Route as ComprasIndexRouteImport } from "./rutas/compras/index.tsx"
 import { Route as ComprasConciliacionRouteImport } from "./rutas/compras/conciliacion.tsx"
 import { Route as ComprasMaterialesRouteImport } from "./rutas/compras/materiales.tsx"
@@ -46,6 +52,11 @@ import { Route as VentasPedidosRouteImport } from "./rutas/ventas/pedidos.tsx"
 const IndexRoute = IndexRouteImport.update({
   id: "/",
   path: "/",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CatalogoRouteRoute = CatalogoRouteRouteImport.update({
+  id: "/catalogo",
+  path: "/catalogo",
   getParentRoute: () => rootRouteImport,
 } as any)
 const AccesoIndexRoute = AccesoIndexRouteImport.update({
@@ -79,9 +90,34 @@ const CalidadIndexRoute = CalidadIndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const CatalogoIndexRoute = CatalogoIndexRouteImport.update({
-  id: "/catalogo/",
-  path: "/catalogo/",
-  getParentRoute: () => rootRouteImport,
+  id: "/",
+  path: "/",
+  getParentRoute: () => CatalogoRouteRoute,
+} as any)
+const CatalogoBitacoraRoute = CatalogoBitacoraRouteImport.update({
+  id: "/bitacora",
+  path: "/bitacora",
+  getParentRoute: () => CatalogoRouteRoute,
+} as any)
+const CatalogoEscuelasYTallasRoute = CatalogoEscuelasYTallasRouteImport.update({
+  id: "/escuelas-y-tallas",
+  path: "/escuelas-y-tallas",
+  getParentRoute: () => CatalogoRouteRoute,
+} as any)
+const CatalogoEtiquetasRoute = CatalogoEtiquetasRouteImport.update({
+  id: "/etiquetas",
+  path: "/etiquetas",
+  getParentRoute: () => CatalogoRouteRoute,
+} as any)
+const CatalogoListasDePreciosRoute = CatalogoListasDePreciosRouteImport.update({
+  id: "/listas-de-precios",
+  path: "/listas-de-precios",
+  getParentRoute: () => CatalogoRouteRoute,
+} as any)
+const CatalogoProductosRoute = CatalogoProductosRouteImport.update({
+  id: "/productos",
+  path: "/productos",
+  getParentRoute: () => CatalogoRouteRoute,
 } as any)
 const ComprasIndexRoute = ComprasIndexRouteImport.update({
   id: "/compras/",
@@ -211,7 +247,13 @@ const VentasPedidosRoute = VentasPedidosRouteImport.update({
 
 export interface FileRoutesByFullPath {
   "/": typeof IndexRoute
+  "/catalogo": typeof CatalogoRouteRouteWithChildren
   "/acceso/confirmado": typeof AccesoConfirmadoRoute
+  "/catalogo/bitacora": typeof CatalogoBitacoraRoute
+  "/catalogo/escuelas-y-tallas": typeof CatalogoEscuelasYTallasRoute
+  "/catalogo/etiquetas": typeof CatalogoEtiquetasRoute
+  "/catalogo/listas-de-precios": typeof CatalogoListasDePreciosRoute
+  "/catalogo/productos": typeof CatalogoProductosRoute
   "/compras/conciliacion": typeof ComprasConciliacionRoute
   "/compras/materiales": typeof ComprasMaterialesRoute
   "/compras/ordenes": typeof ComprasOrdenesRoute
@@ -247,6 +289,11 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   "/": typeof IndexRoute
   "/acceso/confirmado": typeof AccesoConfirmadoRoute
+  "/catalogo/bitacora": typeof CatalogoBitacoraRoute
+  "/catalogo/escuelas-y-tallas": typeof CatalogoEscuelasYTallasRoute
+  "/catalogo/etiquetas": typeof CatalogoEtiquetasRoute
+  "/catalogo/listas-de-precios": typeof CatalogoListasDePreciosRoute
+  "/catalogo/productos": typeof CatalogoProductosRoute
   "/compras/conciliacion": typeof ComprasConciliacionRoute
   "/compras/materiales": typeof ComprasMaterialesRoute
   "/compras/ordenes": typeof ComprasOrdenesRoute
@@ -282,7 +329,13 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   "/": typeof IndexRoute
+  "/catalogo": typeof CatalogoRouteRouteWithChildren
   "/acceso/confirmado": typeof AccesoConfirmadoRoute
+  "/catalogo/bitacora": typeof CatalogoBitacoraRoute
+  "/catalogo/escuelas-y-tallas": typeof CatalogoEscuelasYTallasRoute
+  "/catalogo/etiquetas": typeof CatalogoEtiquetasRoute
+  "/catalogo/listas-de-precios": typeof CatalogoListasDePreciosRoute
+  "/catalogo/productos": typeof CatalogoProductosRoute
   "/compras/conciliacion": typeof ComprasConciliacionRoute
   "/compras/materiales": typeof ComprasMaterialesRoute
   "/compras/ordenes": typeof ComprasOrdenesRoute
@@ -319,7 +372,13 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | "/"
+    | "/catalogo"
     | "/acceso/confirmado"
+    | "/catalogo/bitacora"
+    | "/catalogo/escuelas-y-tallas"
+    | "/catalogo/etiquetas"
+    | "/catalogo/listas-de-precios"
+    | "/catalogo/productos"
     | "/compras/conciliacion"
     | "/compras/materiales"
     | "/compras/ordenes"
@@ -355,6 +414,11 @@ export interface FileRouteTypes {
   to:
     | "/"
     | "/acceso/confirmado"
+    | "/catalogo/bitacora"
+    | "/catalogo/escuelas-y-tallas"
+    | "/catalogo/etiquetas"
+    | "/catalogo/listas-de-precios"
+    | "/catalogo/productos"
     | "/compras/conciliacion"
     | "/compras/materiales"
     | "/compras/ordenes"
@@ -389,7 +453,13 @@ export interface FileRouteTypes {
   id:
     | "__root__"
     | "/"
+    | "/catalogo"
     | "/acceso/confirmado"
+    | "/catalogo/bitacora"
+    | "/catalogo/escuelas-y-tallas"
+    | "/catalogo/etiquetas"
+    | "/catalogo/listas-de-precios"
+    | "/catalogo/productos"
     | "/compras/conciliacion"
     | "/compras/materiales"
     | "/compras/ordenes"
@@ -425,6 +495,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CatalogoRouteRoute: typeof CatalogoRouteRouteWithChildren
   AccesoConfirmadoRoute: typeof AccesoConfirmadoRoute
   ComprasConciliacionRoute: typeof ComprasConciliacionRoute
   ComprasMaterialesRoute: typeof ComprasMaterialesRoute
@@ -447,7 +518,6 @@ export interface RootRouteChildren {
   AduanaIndexRoute: typeof AduanaIndexRoute
   BodegaIndexRoute: typeof BodegaIndexRoute
   CalidadIndexRoute: typeof CalidadIndexRoute
-  CatalogoIndexRoute: typeof CatalogoIndexRoute
   ComprasIndexRoute: typeof ComprasIndexRoute
   ContaduriaIndexRoute: typeof ContaduriaIndexRoute
   DireccionIndexRoute: typeof DireccionIndexRoute
@@ -466,6 +536,13 @@ declare module "@tanstack/react-router" {
       path: "/"
       fullPath: "/"
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/catalogo": {
+      id: "/catalogo"
+      path: "/catalogo"
+      fullPath: "/catalogo"
+      preLoaderRoute: typeof CatalogoRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/acceso/": {
@@ -512,10 +589,45 @@ declare module "@tanstack/react-router" {
     }
     "/catalogo/": {
       id: "/catalogo/"
-      path: "/catalogo"
+      path: "/"
       fullPath: "/catalogo/"
       preLoaderRoute: typeof CatalogoIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof CatalogoRouteRoute
+    }
+    "/catalogo/bitacora": {
+      id: "/catalogo/bitacora"
+      path: "/bitacora"
+      fullPath: "/catalogo/bitacora"
+      preLoaderRoute: typeof CatalogoBitacoraRouteImport
+      parentRoute: typeof CatalogoRouteRoute
+    }
+    "/catalogo/escuelas-y-tallas": {
+      id: "/catalogo/escuelas-y-tallas"
+      path: "/escuelas-y-tallas"
+      fullPath: "/catalogo/escuelas-y-tallas"
+      preLoaderRoute: typeof CatalogoEscuelasYTallasRouteImport
+      parentRoute: typeof CatalogoRouteRoute
+    }
+    "/catalogo/etiquetas": {
+      id: "/catalogo/etiquetas"
+      path: "/etiquetas"
+      fullPath: "/catalogo/etiquetas"
+      preLoaderRoute: typeof CatalogoEtiquetasRouteImport
+      parentRoute: typeof CatalogoRouteRoute
+    }
+    "/catalogo/listas-de-precios": {
+      id: "/catalogo/listas-de-precios"
+      path: "/listas-de-precios"
+      fullPath: "/catalogo/listas-de-precios"
+      preLoaderRoute: typeof CatalogoListasDePreciosRouteImport
+      parentRoute: typeof CatalogoRouteRoute
+    }
+    "/catalogo/productos": {
+      id: "/catalogo/productos"
+      path: "/productos"
+      fullPath: "/catalogo/productos"
+      preLoaderRoute: typeof CatalogoProductosRouteImport
+      parentRoute: typeof CatalogoRouteRoute
     }
     "/compras/": {
       id: "/compras/"
@@ -695,8 +807,31 @@ declare module "@tanstack/react-router" {
   }
 }
 
+interface CatalogoRouteRouteChildren {
+  CatalogoBitacoraRoute: typeof CatalogoBitacoraRoute
+  CatalogoEscuelasYTallasRoute: typeof CatalogoEscuelasYTallasRoute
+  CatalogoEtiquetasRoute: typeof CatalogoEtiquetasRoute
+  CatalogoListasDePreciosRoute: typeof CatalogoListasDePreciosRoute
+  CatalogoProductosRoute: typeof CatalogoProductosRoute
+  CatalogoIndexRoute: typeof CatalogoIndexRoute
+}
+
+const CatalogoRouteRouteChildren: CatalogoRouteRouteChildren = {
+  CatalogoBitacoraRoute: CatalogoBitacoraRoute,
+  CatalogoEscuelasYTallasRoute: CatalogoEscuelasYTallasRoute,
+  CatalogoEtiquetasRoute: CatalogoEtiquetasRoute,
+  CatalogoListasDePreciosRoute: CatalogoListasDePreciosRoute,
+  CatalogoProductosRoute: CatalogoProductosRoute,
+  CatalogoIndexRoute: CatalogoIndexRoute,
+}
+
+const CatalogoRouteRouteWithChildren = CatalogoRouteRoute._addFileChildren(
+  CatalogoRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CatalogoRouteRoute: CatalogoRouteRouteWithChildren,
   AccesoConfirmadoRoute: AccesoConfirmadoRoute,
   ComprasConciliacionRoute: ComprasConciliacionRoute,
   ComprasMaterialesRoute: ComprasMaterialesRoute,
@@ -719,7 +854,6 @@ const rootRouteChildren: RootRouteChildren = {
   AduanaIndexRoute: AduanaIndexRoute,
   BodegaIndexRoute: BodegaIndexRoute,
   CalidadIndexRoute: CalidadIndexRoute,
-  CatalogoIndexRoute: CatalogoIndexRoute,
   ComprasIndexRoute: ComprasIndexRoute,
   ContaduriaIndexRoute: ContaduriaIndexRoute,
   DireccionIndexRoute: DireccionIndexRoute,

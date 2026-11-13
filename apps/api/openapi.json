@@ -24262,6 +24262,12 @@
                         "version_minima_web": {
                           "type": "string"
                         },
+                        "largo_minimo_motivo": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "`general.largo_minimo_motivo`: las letras que pide un motivo; el botón se prende al llegar"
+                        },
                         "servidor_en": {
                           "type": "string"
                         }
@@ -24273,6 +24279,7 @@
                         "avisos_sin_leer",
                         "confirmado_hasta",
                         "version_minima_web",
+                        "largo_minimo_motivo",
                         "servidor_en"
                       ],
                       "additionalProperties": false
@@ -24653,6 +24660,3099 @@
                         "renglones",
                         "cursor",
                         "hay_mas"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/catalogo.pendientes": {
+      "get": {
+        "tags": [
+          "catalogo"
+        ],
+        "description": "Pendientes de Catálogo: las cifras de la barra y los modelos sin precio, las etiquetas nuevas y las que se reimprimen\n\nPermiso: departamento catalogo.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "todos",
+                "productos",
+                "etiquetas"
+              ]
+            },
+            "in": "query",
+            "name": "grupo",
+            "required": false,
+            "description": "El grupo del panel; todos si no viene"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "cifras": {
+                          "type": "object",
+                          "properties": {
+                            "productos_activos": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "modelos_sin_precio": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "listas": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "Las listas de precios activas"
+                            },
+                            "siguiente_codigo": {
+                              "nullable": true,
+                              "description": "El siguiente código de barras de fábrica",
+                              "type": "string"
+                            },
+                            "cambios_por_semana": {
+                              "type": "array",
+                              "items": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "description": "Cambios de precio de las 6 semanas, de la más vieja a esta"
+                            },
+                            "cambios_esta_semana": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "Cambios de precio desde el lunes"
+                            },
+                            "variantes_sin_etiqueta": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "productos_con_etiquetas_nuevas": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "productos_activos",
+                            "modelos_sin_precio",
+                            "listas",
+                            "siguiente_codigo",
+                            "cambios_por_semana",
+                            "cambios_esta_semana",
+                            "variantes_sin_etiqueta",
+                            "productos_con_etiquetas_nuevas"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "renglones": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "tipo": {
+                                "type": "string",
+                                "enum": [
+                                  "modelo_sin_precio",
+                                  "etiquetas",
+                                  "reimprimir"
+                                ]
+                              },
+                              "grupo": {
+                                "type": "string",
+                                "enum": [
+                                  "productos",
+                                  "etiquetas"
+                                ]
+                              },
+                              "producto_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "producto": {
+                                "type": "string"
+                              },
+                              "escuela": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "lista": {
+                                "nullable": true,
+                                "description": "Con `modelo_sin_precio`: la lista del cliente",
+                                "type": "string"
+                              },
+                              "tallas": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                },
+                                "description": "Las tallas por etiquetar, en orden"
+                              }
+                            },
+                            "required": [
+                              "tipo",
+                              "grupo",
+                              "producto_id",
+                              "producto",
+                              "escuela",
+                              "lista",
+                              "tallas"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "conteos": {
+                          "type": "object",
+                          "properties": {
+                            "todos": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "productos": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "etiquetas": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "todos",
+                            "productos",
+                            "etiquetas"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "cifras",
+                        "renglones",
+                        "conteos"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/catalogo.productos": {
+      "get": {
+        "tags": [
+          "catalogo"
+        ],
+        "description": "Productos de Catálogo por sección, con sus filtros y sus píldoras\n\nPermiso: departamento catalogo.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 80
+            },
+            "in": "query",
+            "name": "buscar",
+            "required": false,
+            "description": "Producto, escuela o código (4 cifras o más)"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "seccion_id",
+            "required": false
+          },
+          {
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "basico"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                }
+              ]
+            },
+            "in": "query",
+            "name": "escuela",
+            "required": false,
+            "description": "`basico` (sin escuela) o el id de la escuela"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "activos",
+                "descontinuados",
+                "todos"
+              ]
+            },
+            "in": "query",
+            "name": "estado",
+            "required": false,
+            "description": "Activos si no viene"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "mostrador",
+                "en_linea",
+                "externos"
+              ]
+            },
+            "in": "query",
+            "name": "canal",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sin_foto",
+                "sin_etiqueta",
+                "sin_precio_cliente"
+              ]
+            },
+            "in": "query",
+            "name": "pildora",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "producto",
+                "mayoreo",
+                "tallas",
+                "mostrador"
+              ]
+            },
+            "in": "query",
+            "name": "orden",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "secciones": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "productos": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "string",
+                                      "format": "uuid",
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                    },
+                                    "version": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "nombre": {
+                                      "type": "string"
+                                    },
+                                    "escuela": {
+                                      "nullable": true,
+                                      "type": "object",
+                                      "properties": {
+                                        "id": {
+                                          "type": "string",
+                                          "format": "uuid",
+                                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                        },
+                                        "nombre": {
+                                          "type": "string"
+                                        },
+                                        "color": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "id",
+                                        "nombre",
+                                        "color"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    "categoria": {
+                                      "type": "string",
+                                      "description": "Básico, Especial, Accesorio o Sin descuento"
+                                    },
+                                    "canales": {
+                                      "type": "object",
+                                      "properties": {
+                                        "mostrador": {
+                                          "type": "boolean"
+                                        },
+                                        "en_linea": {
+                                          "type": "boolean"
+                                        },
+                                        "externos": {
+                                          "type": "boolean"
+                                        }
+                                      },
+                                      "required": [
+                                        "mostrador",
+                                        "en_linea",
+                                        "externos"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    "tiene_foto": {
+                                      "type": "boolean"
+                                    },
+                                    "tallas": {
+                                      "type": "string",
+                                      "description": "El rango de tallas: «4 a 16 y CH a XG»"
+                                    },
+                                    "variantes": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991,
+                                      "description": "Sus variantes vivas"
+                                    },
+                                    "por_pedido": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991,
+                                      "description": "Cuántas son de pedido especial"
+                                    },
+                                    "etiquetables": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991,
+                                      "description": "Sus tallas vivas normales, no descontinuadas: las que lleva «Imprimir etiquetas»"
+                                    },
+                                    "mostrador_centavos": {
+                                      "description": "El precio base de Mostrador",
+                                      "nullable": true,
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "tiene_precio": {
+                                      "type": "boolean",
+                                      "description": "Si tiene precio en alguna lista"
+                                    },
+                                    "descontinuado": {
+                                      "type": "boolean"
+                                    },
+                                    "detiene": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "tipo": {
+                                            "type": "string",
+                                            "enum": [
+                                              "descontinuado",
+                                              "sin_precio",
+                                              "sin_foto",
+                                              "sin_etiqueta"
+                                            ]
+                                          },
+                                          "cuantas": {
+                                            "description": "Con `sin_etiqueta`: cuántas variantes",
+                                            "type": "integer",
+                                            "minimum": -9007199254740991,
+                                            "maximum": 9007199254740991
+                                          },
+                                          "lista": {
+                                            "description": "Con `sin_precio`: la lista del cliente que no tiene su precio",
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "tipo"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "version",
+                                    "nombre",
+                                    "escuela",
+                                    "categoria",
+                                    "canales",
+                                    "tiene_foto",
+                                    "tallas",
+                                    "variantes",
+                                    "por_pedido",
+                                    "etiquetables",
+                                    "tiene_precio",
+                                    "descontinuado",
+                                    "detiene"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "nombre",
+                              "productos"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "total": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "pildoras": {
+                          "type": "object",
+                          "properties": {
+                            "todo": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "sin_foto": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "sin_etiqueta": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "sin_precio_cliente": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "todo",
+                            "sin_foto",
+                            "sin_etiqueta",
+                            "sin_precio_cliente"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "filtros": {
+                          "type": "object",
+                          "properties": {
+                            "secciones": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "nombre": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "nombre"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "escuelas": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "nombre": {
+                                    "type": "string"
+                                  },
+                                  "color": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "nombre",
+                                  "color"
+                                ],
+                                "additionalProperties": false
+                              }
+                            }
+                          },
+                          "required": [
+                            "secciones",
+                            "escuelas"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "secciones",
+                        "total",
+                        "pildoras",
+                        "filtros"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/catalogo.listas_precios": {
+      "get": {
+        "tags": [
+          "catalogo"
+        ],
+        "description": "Una lista de precios con sus productos por sección, su referencia y desde cuándo vale cada precio\n\nPermiso: departamento catalogo.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "lista_id",
+            "required": false,
+            "description": "Mostrador si no viene"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 80
+            },
+            "in": "query",
+            "name": "buscar",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "listas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "tipo": {
+                                "type": "string",
+                                "enum": [
+                                  "mostrador",
+                                  "mayoreo",
+                                  "en_linea",
+                                  "cliente"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "nombre",
+                              "tipo"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Las generales y las de los clientes activos"
+                        },
+                        "lista": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "version": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "tipo": {
+                              "type": "string",
+                              "enum": [
+                                "mostrador",
+                                "mayoreo",
+                                "en_linea",
+                                "cliente"
+                              ]
+                            },
+                            "nombre": {
+                              "type": "string"
+                            },
+                            "descripcion": {
+                              "nullable": true,
+                              "type": "string"
+                            },
+                            "cliente": {
+                              "nullable": true,
+                              "type": "object",
+                              "properties": {
+                                "tipo": {
+                                  "type": "string",
+                                  "enum": [
+                                    "escuela",
+                                    "mayorista",
+                                    "empresa_otro"
+                                  ]
+                                },
+                                "municipio": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "tipo",
+                                "municipio"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "pct_basicos": {
+                              "nullable": true,
+                              "type": "string"
+                            },
+                            "pct_especiales": {
+                              "nullable": true,
+                              "type": "string"
+                            },
+                            "modelos_sin_precio": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "referencia": {
+                              "type": "string",
+                              "description": "La lista de referencia: Mostrador, o En línea si se ve Mostrador"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "version",
+                            "tipo",
+                            "nombre",
+                            "descripcion",
+                            "cliente",
+                            "pct_basicos",
+                            "pct_especiales",
+                            "modelos_sin_precio",
+                            "referencia"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "secciones": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "productos": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "string",
+                                      "format": "uuid",
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                    },
+                                    "version": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "nombre": {
+                                      "type": "string"
+                                    },
+                                    "escuela": {
+                                      "nullable": true,
+                                      "type": "string"
+                                    },
+                                    "categoria": {
+                                      "type": "string"
+                                    },
+                                    "etiquetables": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991,
+                                      "description": "Las tallas que lleva «Imprimir etiquetas»"
+                                    },
+                                    "precio_centavos": {
+                                      "nullable": true,
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "referencia_centavos": {
+                                      "nullable": true,
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "diferencia_centavos": {
+                                      "description": "Precio menos referencia; vacío si falta uno",
+                                      "nullable": true,
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "vigente_desde": {
+                                      "nullable": true,
+                                      "description": "Desde cuándo vale el precio (ISO)",
+                                      "type": "string"
+                                    },
+                                    "antes_centavos": {
+                                      "description": "El precio que tenía antes, si cambió",
+                                      "nullable": true,
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "version",
+                                    "nombre",
+                                    "escuela",
+                                    "categoria",
+                                    "etiquetables",
+                                    "vigente_desde"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "nombre",
+                              "productos"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "total": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "listas",
+                        "lista",
+                        "secciones",
+                        "total"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/catalogo.etiquetas": {
+      "get": {
+        "tags": [
+          "catalogo"
+        ],
+        "description": "Las variantes nuevas sin etiqueta por producto y, de un producto, cada variante con su código\n\nPermiso: departamento catalogo.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "producto_id",
+            "required": false,
+            "description": "El producto de «Por variante»"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "nuevas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "producto_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "escuela": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "variantes": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "foto_archivo_id": {
+                                "nullable": true,
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              }
+                            },
+                            "required": [
+                              "producto_id",
+                              "nombre",
+                              "escuela",
+                              "variantes",
+                              "foto_archivo_id"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "productos": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "escuela": {
+                                "nullable": true,
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "nombre",
+                              "escuela"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "producto": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "nombre": {
+                              "type": "string"
+                            },
+                            "escuela": {
+                              "nullable": true,
+                              "type": "string"
+                            },
+                            "variantes": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "talla": {
+                                    "type": "string"
+                                  },
+                                  "codigo": {
+                                    "type": "string"
+                                  },
+                                  "es_pedido_especial": {
+                                    "type": "boolean"
+                                  },
+                                  "estado_etiqueta": {
+                                    "type": "string",
+                                    "enum": [
+                                      "por_imprimir",
+                                      "impresa",
+                                      "por_reimprimir",
+                                      "al_fabricar"
+                                    ]
+                                  },
+                                  "descontinuada": {
+                                    "type": "boolean"
+                                  },
+                                  "precio_centavos": {
+                                    "description": "Con `catalogo.etiqueta_lleva_precio`: el de Mostrador (con su recargo si es de pedido especial)",
+                                    "nullable": true,
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "talla",
+                                  "codigo",
+                                  "es_pedido_especial",
+                                  "estado_etiqueta",
+                                  "descontinuada"
+                                ],
+                                "additionalProperties": false
+                              }
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "nombre",
+                            "escuela",
+                            "variantes"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "maximo_por_talla": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "`catalogo.etiquetas_max_por_talla`"
+                        },
+                        "lleva_precio": {
+                          "type": "boolean",
+                          "description": "`catalogo.etiqueta_lleva_precio`"
+                        }
+                      },
+                      "required": [
+                        "nuevas",
+                        "productos",
+                        "producto",
+                        "maximo_por_talla",
+                        "lleva_precio"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/catalogo.escuelas_y_tallas": {
+      "get": {
+        "tags": [
+          "catalogo"
+        ],
+        "description": "Las escuelas con sus modelos, los grupos de tallas, los tipos de prenda y las secciones\n\nPermiso: departamento catalogo.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "escuelas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "version": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "municipio": {
+                                "type": "string"
+                              },
+                              "color": {
+                                "type": "string"
+                              },
+                              "cliente_externo": {
+                                "type": "boolean"
+                              },
+                              "modelos": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991,
+                                "description": "Sus productos activos"
+                              },
+                              "baja": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "version",
+                              "nombre",
+                              "municipio",
+                              "color",
+                              "cliente_externo",
+                              "modelos",
+                              "baja"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "grupos": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "version": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "productos": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991,
+                                "description": "Los productos que la usan"
+                              },
+                              "tallas": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "string",
+                                      "format": "uuid",
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                    },
+                                    "nombre": {
+                                      "type": "string"
+                                    },
+                                    "orden": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "nombre",
+                                    "orden"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "version",
+                              "nombre",
+                              "productos",
+                              "tallas"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "tipos": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "version": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "seccion_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "seccion": {
+                                "type": "string"
+                              },
+                              "flujo_id": {
+                                "nullable": true,
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "flujo": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "medidas": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "medida": {
+                                      "type": "string"
+                                    },
+                                    "orden": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "valores": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "talla_id": {
+                                            "type": "string",
+                                            "format": "uuid",
+                                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                          },
+                                          "talla": {
+                                            "type": "string"
+                                          },
+                                          "valor_cm": {
+                                            "nullable": true,
+                                            "type": "number"
+                                          }
+                                        },
+                                        "required": [
+                                          "talla_id",
+                                          "talla",
+                                          "valor_cm"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "medida",
+                                    "orden",
+                                    "valores"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "version",
+                              "nombre",
+                              "seccion_id",
+                              "seccion",
+                              "flujo_id",
+                              "flujo",
+                              "medidas"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "secciones": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "lleva_receta": {
+                                "type": "boolean"
+                              },
+                              "productos": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "nombre",
+                              "lleva_receta",
+                              "productos"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "flujos": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "nombre"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Los flujos vigentes del taller"
+                        }
+                      },
+                      "required": [
+                        "escuelas",
+                        "grupos",
+                        "tipos",
+                        "secciones",
+                        "flujos"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/catalogo.bitacora": {
+      "get": {
+        "tags": [
+          "catalogo"
+        ],
+        "description": "Los cambios de los productos, lo más reciente arriba\n\nPermiso: departamento catalogo.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 80
+            },
+            "in": "query",
+            "name": "buscar",
+            "required": false,
+            "description": "Producto, persona o código"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "precio",
+                "producto_nuevo",
+                "variante_baja",
+                "descontinuado",
+                "reactivado",
+                "talla_agregada",
+                "canal",
+                "categoria"
+              ]
+            },
+            "in": "query",
+            "name": "tipo_cambio",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "lista_id",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "cursor",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            },
+            "in": "query",
+            "name": "limite",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "renglones": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "ocurrido_en": {
+                                "type": "string"
+                              },
+                              "quien": {
+                                "type": "string"
+                              },
+                              "tipo_cambio": {
+                                "nullable": true,
+                                "type": "string",
+                                "enum": [
+                                  "precio",
+                                  "producto_nuevo",
+                                  "variante_baja",
+                                  "descontinuado",
+                                  "reactivado",
+                                  "talla_agregada",
+                                  "canal",
+                                  "categoria"
+                                ]
+                              },
+                              "producto_id": {
+                                "nullable": true,
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "producto": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "escuela": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "detalle": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "ocurrido_en",
+                              "quien",
+                              "tipo_cambio",
+                              "producto_id",
+                              "producto",
+                              "escuela",
+                              "detalle"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "total": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "cursor": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "hay_mas": {
+                          "type": "boolean"
+                        },
+                        "listas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "tipo": {
+                                "type": "string",
+                                "enum": [
+                                  "mostrador",
+                                  "mayoreo",
+                                  "en_linea",
+                                  "cliente"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "nombre",
+                              "tipo"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "renglones",
+                        "total",
+                        "cursor",
+                        "hay_mas",
+                        "listas"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/catalogo.ficha_producto": {
+      "get": {
+        "tags": [
+          "catalogo"
+        ],
+        "description": "La ficha de un producto: sus canales, su categoría, su matriz de tallas, códigos y precios, su receta\n\nPermiso: departamento catalogo.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "producto_id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "producto": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "version": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "nombre": {
+                              "type": "string"
+                            },
+                            "seccion": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "nombre": {
+                                  "type": "string"
+                                },
+                                "lleva_receta": {
+                                  "type": "boolean"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "nombre",
+                                "lleva_receta"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "escuela": {
+                              "nullable": true,
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "nombre": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "nombre"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "es_servicio": {
+                              "type": "boolean"
+                            },
+                            "descontinuado": {
+                              "type": "boolean"
+                            },
+                            "foto_archivo_id": {
+                              "nullable": true,
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "canales": {
+                              "type": "object",
+                              "properties": {
+                                "mostrador": {
+                                  "type": "boolean"
+                                },
+                                "en_linea": {
+                                  "type": "boolean"
+                                },
+                                "externos": {
+                                  "type": "boolean"
+                                }
+                              },
+                              "required": [
+                                "mostrador",
+                                "en_linea",
+                                "externos"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "categoria_mayoreo_id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "recargo_centavos": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "tipo_prenda_id": {
+                              "nullable": true,
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "flujo_id": {
+                              "nullable": true,
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "version",
+                            "nombre",
+                            "seccion",
+                            "escuela",
+                            "es_servicio",
+                            "descontinuado",
+                            "foto_archivo_id",
+                            "canales",
+                            "categoria_mayoreo_id",
+                            "tipo_prenda_id",
+                            "flujo_id"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "detiene": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "tipo": {
+                                "type": "string",
+                                "enum": [
+                                  "descontinuado",
+                                  "sin_precio",
+                                  "sin_foto",
+                                  "sin_etiqueta"
+                                ]
+                              },
+                              "cuantas": {
+                                "description": "Con `sin_etiqueta`: cuántas variantes",
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "lista": {
+                                "description": "Con `sin_precio`: la lista del cliente que no tiene su precio",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "tipo"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "categorias": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "descripcion": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "nombre",
+                              "descripcion"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "flujos": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "nombre"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "listas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "tipo": {
+                                "type": "string",
+                                "enum": [
+                                  "mostrador",
+                                  "mayoreo",
+                                  "en_linea",
+                                  "cliente"
+                                ]
+                              },
+                              "nombre": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "tipo",
+                              "nombre"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Las columnas: las tres generales y las de cliente donde tiene precio"
+                        },
+                        "otras_listas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "nombre"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Las listas de cliente activas donde todavía no tiene precio"
+                        },
+                        "precios": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "lista_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "variante_id": {
+                                "nullable": true,
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "precio_centavos": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "lista_id",
+                              "variante_id"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "variantes": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "talla": {
+                                "type": "string"
+                              },
+                              "codigo": {
+                                "type": "string"
+                              },
+                              "es_pedido_especial": {
+                                "type": "boolean"
+                              },
+                              "estado": {
+                                "type": "string",
+                                "enum": [
+                                  "activa",
+                                  "descontinuada",
+                                  "baja"
+                                ]
+                              },
+                              "existencia": {
+                                "nullable": true,
+                                "description": "En toda la fábrica; vacía si nunca se ha recibido",
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "baja": {
+                                "nullable": true,
+                                "type": "object",
+                                "properties": {
+                                  "en": {
+                                    "type": "string"
+                                  },
+                                  "por": {
+                                    "type": "string"
+                                  },
+                                  "motivo": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "en",
+                                  "por",
+                                  "motivo"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "talla",
+                              "codigo",
+                              "es_pedido_especial",
+                              "estado",
+                              "existencia",
+                              "baja"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "pocas_piezas": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "`catalogo.pocas_piezas`"
+                        },
+                        "aviso_cambio_precio_pct": {
+                          "type": "number",
+                          "description": "`catalogo.aviso_cambio_precio_pct`: los «Ojo» de la ficha"
+                        },
+                        "agregar": {
+                          "type": "object",
+                          "properties": {
+                            "tallas": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "talla_id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "talla": {
+                                    "type": "string"
+                                  },
+                                  "grupo": {
+                                    "type": "string"
+                                  },
+                                  "tuvo_baja": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "talla_id",
+                                  "talla",
+                                  "grupo",
+                                  "tuvo_baja"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "siguiente_codigo": {
+                              "nullable": true,
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "tallas",
+                            "siguiente_codigo"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "receta": {
+                          "nullable": true,
+                          "description": "Vacía en una sección que no lleva receta",
+                          "type": "object",
+                          "properties": {
+                            "estado": {
+                              "type": "string",
+                              "enum": [
+                                "sin_receta",
+                                "sin_verificar",
+                                "verificada"
+                              ]
+                            },
+                            "version": {
+                              "nullable": true,
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "tela": {
+                              "nullable": true,
+                              "type": "string"
+                            },
+                            "metros": {
+                              "nullable": true,
+                              "description": "De la tela principal, por prenda, en la talla de en medio",
+                              "type": "string"
+                            },
+                            "talla": {
+                              "nullable": true,
+                              "type": "string"
+                            },
+                            "avios": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "estado",
+                            "version",
+                            "tela",
+                            "metros",
+                            "talla",
+                            "avios"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "medidas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "medida": {
+                                "type": "string"
+                              },
+                              "valores": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "talla": {
+                                      "type": "string"
+                                    },
+                                    "valor_cm": {
+                                      "type": "number"
+                                    }
+                                  },
+                                  "required": [
+                                    "talla",
+                                    "valor_cm"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "required": [
+                              "medida",
+                              "valores"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "cambios": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "ocurrido_en": {
+                                "type": "string"
+                              },
+                              "quien": {
+                                "type": "string"
+                              },
+                              "descripcion": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "ocurrido_en",
+                              "quien",
+                              "descripcion"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "puede_patronaje": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "producto",
+                        "detiene",
+                        "categorias",
+                        "flujos",
+                        "listas",
+                        "otras_listas",
+                        "precios",
+                        "variantes",
+                        "pocas_piezas",
+                        "aviso_cambio_precio_pct",
+                        "agregar",
+                        "receta",
+                        "medidas",
+                        "cambios",
+                        "puede_patronaje"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/catalogo.alta_producto": {
+      "get": {
+        "tags": [
+          "catalogo"
+        ],
+        "description": "Lo que necesita el alta de un producto: secciones, escuelas, tallas, listas y, si lo hay, el base\n\nPermiso: departamento catalogo o ventas.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "catalogo",
+                "pedido",
+                "desarrollo"
+              ]
+            },
+            "in": "query",
+            "name": "origen",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "producto_base_id",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "seccion_id",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "cliente_id",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "desarrollo_id",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "siguiente_codigo": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "secciones": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "lleva_receta": {
+                                "type": "boolean"
+                              },
+                              "tipo_prenda_defecto_id": {
+                                "nullable": true,
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "nombre",
+                              "lleva_receta",
+                              "tipo_prenda_defecto_id"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "tipos": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "seccion_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "flujo": {
+                                "nullable": true,
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "nombre",
+                              "seccion_id",
+                              "flujo"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "escuelas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "color": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "nombre",
+                              "color"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "categorias": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "descripcion": {
+                                "type": "string"
+                              },
+                              "defecto_para": {
+                                "nullable": true,
+                                "type": "string",
+                                "enum": [
+                                  "con_escuela",
+                                  "sin_escuela"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "nombre",
+                              "descripcion",
+                              "defecto_para"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "grupos": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "tallas": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "string",
+                                      "format": "uuid",
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                    },
+                                    "nombre": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "nombre"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "nombre",
+                              "tallas"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "listas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "tipo": {
+                                "type": "string",
+                                "enum": [
+                                  "mostrador",
+                                  "mayoreo",
+                                  "en_linea",
+                                  "cliente"
+                                ]
+                              },
+                              "nombre_corto": {
+                                "nullable": true,
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "nombre",
+                              "tipo",
+                              "nombre_corto"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "productos_base": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "escuela": {
+                                "nullable": true,
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "nombre",
+                              "escuela"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "base": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "nombre": {
+                              "type": "string"
+                            },
+                            "seccion_id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "escuela_id": {
+                              "nullable": true,
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "categoria_mayoreo_id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "canales": {
+                              "type": "object",
+                              "properties": {
+                                "mostrador": {
+                                  "type": "boolean"
+                                },
+                                "en_linea": {
+                                  "type": "boolean"
+                                },
+                                "externos": {
+                                  "type": "boolean"
+                                }
+                              },
+                              "required": [
+                                "mostrador",
+                                "en_linea",
+                                "externos"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "tallas": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "talla_id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "grupo_id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "es_pedido_especial": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "talla_id",
+                                  "grupo_id",
+                                  "es_pedido_especial"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "precios": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "lista_id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "precio_centavos": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  }
+                                },
+                                "required": [
+                                  "lista_id",
+                                  "precio_centavos"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "receta": {
+                              "nullable": true,
+                              "type": "object",
+                              "properties": {
+                                "version": {
+                                  "nullable": true,
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                }
+                              },
+                              "required": [
+                                "version"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "medidas": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "medida": {
+                                    "type": "string"
+                                  },
+                                  "orden": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "valores": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "talla_id": {
+                                          "type": "string",
+                                          "format": "uuid",
+                                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                        },
+                                        "valor_cm": {
+                                          "nullable": true,
+                                          "type": "number"
+                                        }
+                                      },
+                                      "required": [
+                                        "talla_id",
+                                        "valor_cm"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "medida",
+                                  "orden",
+                                  "valores"
+                                ],
+                                "additionalProperties": false
+                              }
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "nombre",
+                            "seccion_id",
+                            "escuela_id",
+                            "categoria_mayoreo_id",
+                            "canales",
+                            "tallas",
+                            "precios",
+                            "receta",
+                            "medidas"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "cliente": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "nombre": {
+                              "type": "string"
+                            },
+                            "lista_id": {
+                              "nullable": true,
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "nombre",
+                            "lista_id"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "desarrollo": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "folio": {
+                              "type": "string"
+                            },
+                            "prenda": {
+                              "type": "string"
+                            },
+                            "escuela_id": {
+                              "nullable": true,
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "folio",
+                            "prenda",
+                            "escuela_id"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "puede_patronaje": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "siguiente_codigo",
+                        "secciones",
+                        "tipos",
+                        "escuelas",
+                        "categorias",
+                        "grupos",
+                        "listas",
+                        "productos_base",
+                        "base",
+                        "cliente",
+                        "desarrollo",
+                        "puede_patronaje"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/catalogo.cambio_en_bloque_previo": {
+      "get": {
+        "tags": [
+          "catalogo"
+        ],
+        "description": "La vista previa de «Cambiar precios en bloque», con la misma cuenta que la acción\n\nPermiso: departamento catalogo.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f-]{36}(,[0-9a-f-]{36})*$"
+            },
+            "in": "query",
+            "name": "productos",
+            "required": true,
+            "description": "Los productos escogidos, separados por coma"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "lista_id",
+            "required": false,
+            "description": "La primera donde alguno tiene precio si no viene"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "subir",
+                "bajar"
+              ]
+            },
+            "in": "query",
+            "name": "direccion",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "por_ciento",
+                "pesos"
+              ]
+            },
+            "in": "query",
+            "name": "modo",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 999
+            },
+            "in": "query",
+            "name": "cantidad",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "si",
+                "no"
+              ]
+            },
+            "in": "query",
+            "name": "redondear",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "listas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "nombre"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Solo donde alguno tiene precio"
+                        },
+                        "lista": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "nombre": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "nombre"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "renglones": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "producto": {
+                                "type": "string"
+                              },
+                              "escuela": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "antes_centavos": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "despues_centavos": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "producto",
+                              "escuela"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Hasta 5 productos que cambian, con su precio base"
+                        },
+                        "cambian": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "Cuántos productos cambian en la lista"
+                        },
+                        "escogidos": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "sin_precio": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "Cuántos no tienen precio en la lista y se dejan igual"
+                        },
+                        "precios": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "Cuántos precios cambian, base y de talla"
+                        },
+                        "redondeo_centavos": {
+                          "description": "`catalogo.bloque_redondeo_centavos`: el «Redondear a $5»",
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "error": {
+                          "nullable": true,
+                          "type": "object",
+                          "properties": {
+                            "codigo": {
+                              "type": "string"
+                            },
+                            "mensaje": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "codigo",
+                            "mensaje"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "listas",
+                        "lista",
+                        "renglones",
+                        "cambian",
+                        "escogidos",
+                        "sin_precio",
+                        "precios",
+                        "error"
                       ],
                       "additionalProperties": false
                     },
@@ -27335,12 +30435,6 @@
                           "minimum": -9007199254740991,
                           "maximum": 9007199254740991
                         },
-                        "largo_minimo_motivo": {
-                          "type": "integer",
-                          "minimum": -9007199254740991,
-                          "maximum": 9007199254740991,
-                          "description": "`general.largo_minimo_motivo`: las letras que pide un motivo"
-                        },
                         "puede": {
                           "type": "object",
                           "properties": {
@@ -27371,7 +30465,6 @@
                         "orden",
                         "lineas",
                         "cantidad_maxima",
-                        "largo_minimo_motivo",
                         "puede"
                       ],
                       "additionalProperties": false
@@ -27778,12 +30871,6 @@
                             ],
                             "additionalProperties": false
                           }
-                        },
-                        "largo_minimo_motivo": {
-                          "type": "integer",
-                          "minimum": -9007199254740991,
-                          "maximum": 9007199254740991,
-                          "description": "`general.largo_minimo_motivo`: las letras que pide un motivo"
                         }
                       },
                       "required": [
@@ -27792,8 +30879,7 @@
                         "en_camino",
                         "proveedores",
                         "otros_proveedores",
-                        "precios",
-                        "largo_minimo_motivo"
+                        "precios"
                       ],
                       "additionalProperties": false
                     },
@@ -28113,12 +31199,6 @@
                           "type": "integer",
                           "minimum": -9007199254740991,
                           "maximum": 9007199254740991
-                        },
-                        "largo_minimo_motivo": {
-                          "type": "integer",
-                          "minimum": -9007199254740991,
-                          "maximum": 9007199254740991,
-                          "description": "`general.largo_minimo_motivo`: las letras que pide un motivo"
                         }
                       },
                       "required": [
@@ -28127,8 +31207,7 @@
                         "entregas",
                         "materiales",
                         "ordenes",
-                        "dias_dice_tardar_maximo",
-                        "largo_minimo_motivo"
+                        "dias_dice_tardar_maximo"
                       ],
                       "additionalProperties": false
                     },
