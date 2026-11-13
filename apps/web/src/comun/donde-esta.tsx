@@ -42,7 +42,7 @@ export function DondeEsta() {
 	}, [texto]);
 	const resultado = useConsulta(dondeEsta, { texto: buscado, limite: 5 }, buscado.length > 0);
 	return (
-		<div className="relative w-full max-w-[480px] max-telefono:max-w-none">
+		<div className="relative w-full min-w-0 max-w-[480px] max-telefono:max-w-none">
 			<label className="flex h-11 items-center gap-2.5 rounded-mediano border border-linea2 bg-panel px-3.5 text-tinta3 focus-within:border-marca focus-within:ring-3 focus-within:ring-marca/20">
 				<Search aria-hidden="true" size={18} strokeWidth={1.9} />
 				<span className="sr-only">¿Dónde está?</span>

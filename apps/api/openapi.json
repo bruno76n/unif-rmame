@@ -24677,6 +24677,3482 @@
         }
       }
     },
+    "/v1/consultas/compras.pendientes": {
+      "get": {
+        "tags": [
+          "compras"
+        ],
+        "description": "Pendientes de Compras: los indicadores, los materiales sin tiempo o por pedir esta semana, las órdenes atrasadas o que llegan esta semana y las facturas que no cuadran o no han llegado\n\nPermiso: departamento compras.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "todos",
+                "materiales",
+                "ordenes",
+                "facturas"
+              ]
+            },
+            "in": "query",
+            "name": "grupo",
+            "required": false,
+            "description": "El filtro; sin él, todos"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "indicadores": {
+                          "type": "object",
+                          "properties": {
+                            "por_pedir": {
+                              "type": "object",
+                              "properties": {
+                                "sin_tiempo": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "esta_semana": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "suficiente": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "contexto": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "texto": {
+                                        "type": "string"
+                                      },
+                                      "tono": {
+                                        "type": "string",
+                                        "enum": [
+                                          "rojo",
+                                          "ambar",
+                                          "normal"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "texto",
+                                      "tono"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "description": "La línea de contexto"
+                                }
+                              },
+                              "required": [
+                                "sin_tiempo",
+                                "esta_semana",
+                                "suficiente",
+                                "contexto"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "ordenes": {
+                              "type": "object",
+                              "properties": {
+                                "en_camino": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991,
+                                  "description": "Enviadas o recibidas en parte"
+                                },
+                                "por_semana": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "description": "Las que llegan cada una de las próximas 4 semanas"
+                                },
+                                "contexto": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "texto": {
+                                        "type": "string"
+                                      },
+                                      "tono": {
+                                        "type": "string",
+                                        "enum": [
+                                          "rojo",
+                                          "ambar",
+                                          "normal"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "texto",
+                                      "tono"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "description": "La línea de contexto"
+                                }
+                              },
+                              "required": [
+                                "en_camino",
+                                "por_semana",
+                                "contexto"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "materiales": {
+                              "type": "object",
+                              "properties": {
+                                "activos": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "contexto": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "texto": {
+                                        "type": "string"
+                                      },
+                                      "tono": {
+                                        "type": "string",
+                                        "enum": [
+                                          "rojo",
+                                          "ambar",
+                                          "normal"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "texto",
+                                      "tono"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "description": "La línea de contexto"
+                                }
+                              },
+                              "required": [
+                                "activos",
+                                "contexto"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "proveedores": {
+                              "type": "object",
+                              "properties": {
+                                "activos": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "contexto": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "texto": {
+                                        "type": "string"
+                                      },
+                                      "tono": {
+                                        "type": "string",
+                                        "enum": [
+                                          "rojo",
+                                          "ambar",
+                                          "normal"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "texto",
+                                      "tono"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "description": "La línea de contexto"
+                                }
+                              },
+                              "required": [
+                                "activos",
+                                "contexto"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "facturas": {
+                              "type": "object",
+                              "properties": {
+                                "sin_conciliar": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "contexto": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "texto": {
+                                        "type": "string"
+                                      },
+                                      "tono": {
+                                        "type": "string",
+                                        "enum": [
+                                          "rojo",
+                                          "ambar",
+                                          "normal"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "texto",
+                                      "tono"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "description": "La línea de contexto"
+                                }
+                              },
+                              "required": [
+                                "sin_conciliar",
+                                "contexto"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "required": [
+                            "por_pedir",
+                            "ordenes",
+                            "materiales",
+                            "proveedores",
+                            "facturas"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "renglones": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "clave": {
+                                "type": "string"
+                              },
+                              "grupo": {
+                                "type": "string",
+                                "enum": [
+                                  "materiales",
+                                  "ordenes",
+                                  "facturas"
+                                ]
+                              },
+                              "tipo": {
+                                "type": "string",
+                                "enum": [
+                                  "material",
+                                  "orden",
+                                  "factura"
+                                ]
+                              },
+                              "referencia": {
+                                "type": "string"
+                              },
+                              "detalle": {
+                                "type": "string"
+                              },
+                              "fecha": {
+                                "nullable": true,
+                                "description": "La fecha que importa, ISO",
+                                "type": "string"
+                              },
+                              "fecha_roja": {
+                                "type": "boolean"
+                              },
+                              "cifra": {
+                                "nullable": true,
+                                "description": "La cantidad o el total, ya escritos",
+                                "type": "string"
+                              },
+                              "estado": {
+                                "type": "object",
+                                "properties": {
+                                  "texto": {
+                                    "type": "string",
+                                    "description": "El estado, en su forma de la guía de textos"
+                                  },
+                                  "color": {
+                                    "type": "string",
+                                    "enum": [
+                                      "rojo",
+                                      "ambar",
+                                      "azul",
+                                      "verde",
+                                      "gris",
+                                      "morado",
+                                      "verde-azulado",
+                                      "naranja"
+                                    ],
+                                    "description": "El color del cuadro del estado"
+                                  },
+                                  "abajo": {
+                                    "nullable": true,
+                                    "description": "La línea de abajo, en el mismo cuadro",
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "texto",
+                                  "color",
+                                  "abajo"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "abre": {
+                                "type": "object",
+                                "properties": {
+                                  "cajon": {
+                                    "type": "string",
+                                    "enum": [
+                                      "material",
+                                      "orden",
+                                      "conciliacion"
+                                    ]
+                                  },
+                                  "id": {
+                                    "nullable": true,
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  }
+                                },
+                                "required": [
+                                  "cajon",
+                                  "id"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "required": [
+                              "clave",
+                              "grupo",
+                              "tipo",
+                              "referencia",
+                              "detalle",
+                              "fecha",
+                              "fecha_roja",
+                              "cifra",
+                              "estado",
+                              "abre"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "conteos": {
+                          "type": "object",
+                          "properties": {
+                            "todos": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "materiales": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "ordenes": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "facturas": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "todos",
+                            "materiales",
+                            "ordenes",
+                            "facturas"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "pastilla": {
+                          "type": "object",
+                          "properties": {
+                            "conteo": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "rojo": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "conteo",
+                            "rojo"
+                          ],
+                          "additionalProperties": false,
+                          "description": "La pastilla del menú"
+                        }
+                      },
+                      "required": [
+                        "indicadores",
+                        "renglones",
+                        "conteos",
+                        "pastilla"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/compras.por_pedir": {
+      "get": {
+        "tags": [
+          "compras"
+        ],
+        "description": "Por pedir: cada material activo con su estado, cuándo se acaba, cuándo llegaría un pedido de hoy, lo que viene y su pedido sugerido, para la línea de tiempo\n\nPermiso: departamento compras.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 80
+            },
+            "in": "query",
+            "name": "buscar",
+            "required": false,
+            "description": "Material o proveedor: todas las palabras"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "proveedor_id",
+            "required": false,
+            "description": "Solo los que surte ese proveedor"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "corto",
+                "regreso_clases"
+              ]
+            },
+            "in": "query",
+            "name": "horizonte",
+            "required": false,
+            "description": "Hasta dónde llega la línea de tiempo"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "hoy": {
+                          "type": "string"
+                        },
+                        "horizonte": {
+                          "type": "object",
+                          "properties": {
+                            "tipo": {
+                              "type": "string",
+                              "enum": [
+                                "corto",
+                                "regreso_clases"
+                              ]
+                            },
+                            "hasta": {
+                              "type": "string",
+                              "description": "El último día de la línea de tiempo"
+                            },
+                            "semanas": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991,
+                              "description": "`compras.horizonte_corto_semanas`"
+                            },
+                            "regreso_clases": {
+                              "type": "string",
+                              "description": "`compras.fecha_regreso_clases`"
+                            },
+                            "mes_regreso": {
+                              "type": "string",
+                              "description": "El mes del regreso a clases, para «Hasta {mes}»"
+                            }
+                          },
+                          "required": [
+                            "tipo",
+                            "hasta",
+                            "semanas",
+                            "regreso_clases",
+                            "mes_regreso"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "meses": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "inicio": {
+                                "type": "string"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "factor": {
+                                "type": "string",
+                                "description": "En veces un mes normal"
+                              }
+                            },
+                            "required": [
+                              "inicio",
+                              "nombre",
+                              "factor"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Los meses de la línea de tiempo, con su factor de consumo"
+                        },
+                        "proveedores": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "proveedor_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "proveedor_id",
+                              "nombre"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "materiales": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "material_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "color": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "unidad": {
+                                "type": "string"
+                              },
+                              "proveedor": {
+                                "type": "string"
+                              },
+                              "plazo": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "estado": {
+                                "type": "string",
+                                "enum": [
+                                  "sin_tiempo_de_entrega",
+                                  "pedir_esta_semana",
+                                  "alcanza"
+                                ]
+                              },
+                              "linea": {
+                                "type": "string"
+                              },
+                              "alcanza": {
+                                "type": "string",
+                                "description": "«Alcanza {n} días», «Ya no alcanza» o «Sin consumo»"
+                              },
+                              "se_acaba": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "llegaria_hoy": {
+                                "type": "string"
+                              },
+                              "dias_sin_material": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "por_pedir": {
+                                "type": "string",
+                                "description": "Texto decimal con tres decimales, en la unidad de inventario"
+                              },
+                              "por_pedir_texto": {
+                                "type": "string"
+                              },
+                              "llegadas": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "orden_compra_id": {
+                                      "type": "string",
+                                      "format": "uuid",
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                    },
+                                    "folio": {
+                                      "type": "string"
+                                    },
+                                    "dia": {
+                                      "type": "string",
+                                      "description": "Su llegada esperada"
+                                    },
+                                    "cantidad": {
+                                      "type": "string",
+                                      "description": "Texto decimal con tres decimales, en la unidad de inventario"
+                                    },
+                                    "atrasada": {
+                                      "type": "boolean"
+                                    }
+                                  },
+                                  "required": [
+                                    "orden_compra_id",
+                                    "folio",
+                                    "dia",
+                                    "cantidad",
+                                    "atrasada"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "en_borrador": {
+                                "nullable": true,
+                                "type": "object",
+                                "properties": {
+                                  "orden_compra_id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "folio": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "orden_compra_id",
+                                  "folio"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "required": [
+                              "material_id",
+                              "nombre",
+                              "color",
+                              "unidad",
+                              "proveedor",
+                              "plazo",
+                              "estado",
+                              "linea",
+                              "alcanza",
+                              "se_acaba",
+                              "llegaria_hoy",
+                              "dias_sin_material",
+                              "por_pedir",
+                              "por_pedir_texto",
+                              "llegadas",
+                              "en_borrador"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "hoy",
+                        "horizonte",
+                        "meses",
+                        "proveedores",
+                        "materiales"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/compras.ordenes": {
+      "get": {
+        "tags": [
+          "compras"
+        ],
+        "description": "Órdenes de compra por grupo: atrasadas, llegan esta semana, más adelante, borradores y terminadas\n\nPermiso: departamento compras.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 80
+            },
+            "in": "query",
+            "name": "buscar",
+            "required": false,
+            "description": "Folio, proveedor o material"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "ordenes": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "orden_compra_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "folio": {
+                                "type": "string"
+                              },
+                              "grupo": {
+                                "type": "string",
+                                "enum": [
+                                  "atrasadas",
+                                  "esta_semana",
+                                  "mas_adelante",
+                                  "borradores",
+                                  "terminadas"
+                                ]
+                              },
+                              "creada": {
+                                "type": "string"
+                              },
+                              "proveedor": {
+                                "type": "string"
+                              },
+                              "condicion": {
+                                "type": "string"
+                              },
+                              "material": {
+                                "type": "string",
+                                "description": "El primero"
+                              },
+                              "material_detalle": {
+                                "type": "string",
+                                "description": "«y {n} materiales más» o su presentación"
+                              },
+                              "avance": {
+                                "type": "object",
+                                "properties": {
+                                  "texto": {
+                                    "type": "string"
+                                  },
+                                  "por_ciento": {
+                                    "type": "number",
+                                    "description": "Lo recibido, de 0 a 100"
+                                  },
+                                  "tono": {
+                                    "type": "string",
+                                    "enum": [
+                                      "rojo",
+                                      "naranja",
+                                      "azul",
+                                      "gris"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "texto",
+                                  "por_ciento",
+                                  "tono"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "llega": {
+                                "type": "object",
+                                "properties": {
+                                  "texto": {
+                                    "type": "string"
+                                  },
+                                  "detalle": {
+                                    "nullable": true,
+                                    "type": "string"
+                                  },
+                                  "rojo": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "texto",
+                                  "detalle",
+                                  "rojo"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "estado": {
+                                "type": "object",
+                                "properties": {
+                                  "texto": {
+                                    "type": "string",
+                                    "description": "El estado, en su forma de la guía de textos"
+                                  },
+                                  "color": {
+                                    "type": "string",
+                                    "enum": [
+                                      "rojo",
+                                      "ambar",
+                                      "azul",
+                                      "verde",
+                                      "gris",
+                                      "morado",
+                                      "verde-azulado",
+                                      "naranja"
+                                    ],
+                                    "description": "El color del cuadro del estado"
+                                  },
+                                  "abajo": {
+                                    "nullable": true,
+                                    "description": "La línea de abajo, en el mismo cuadro",
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "texto",
+                                  "color",
+                                  "abajo"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "total_centavos": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "orden_compra_id",
+                              "folio",
+                              "grupo",
+                              "creada",
+                              "proveedor",
+                              "condicion",
+                              "material",
+                              "material_detalle",
+                              "avance",
+                              "llega",
+                              "estado"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "ordenes"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/compras.materiales": {
+      "get": {
+        "tags": [
+          "compras"
+        ],
+        "description": "Materiales por tipo, con su proveedor habitual, su último precio, lo libre y lo comprometido, su mínimo, lo que viene y su estado; y lo que pide «Nuevo material»\n\nPermiso: departamento compras.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 80
+            },
+            "in": "query",
+            "name": "buscar",
+            "required": false,
+            "description": "Material, proveedor o medida"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "si",
+                "no"
+              ]
+            },
+            "in": "query",
+            "name": "incluir_bajas",
+            "required": false,
+            "description": "«si» para ver los dados de baja"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "materiales": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "material_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "version": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "tipo": {
+                                "type": "string",
+                                "enum": [
+                                  "tela",
+                                  "avio",
+                                  "consumible"
+                                ]
+                              },
+                              "color": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "presentacion": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "unidad": {
+                                "type": "string"
+                              },
+                              "proveedor": {
+                                "type": "string"
+                              },
+                              "proveedores_mas": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "ultimo_precio_centavos": {
+                                "nullable": true,
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "plazo": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "hay": {
+                                "type": "string",
+                                "description": "Texto decimal con tres decimales, en la unidad de inventario"
+                              },
+                              "libre": {
+                                "type": "string",
+                                "description": "Texto decimal con tres decimales, en la unidad de inventario"
+                              },
+                              "comprometido": {
+                                "type": "string",
+                                "description": "Texto decimal con tres decimales, en la unidad de inventario"
+                              },
+                              "minimo": {
+                                "type": "string",
+                                "description": "Texto decimal con tres decimales, en la unidad de inventario"
+                              },
+                              "tono_existencia": {
+                                "type": "string",
+                                "enum": [
+                                  "azul",
+                                  "ambar",
+                                  "rojo"
+                                ]
+                              },
+                              "en_camino": {
+                                "nullable": true,
+                                "type": "object",
+                                "properties": {
+                                  "cantidad": {
+                                    "type": "string",
+                                    "description": "Texto decimal con tres decimales, en la unidad de inventario"
+                                  },
+                                  "dia": {
+                                    "type": "string"
+                                  },
+                                  "varias": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "cantidad",
+                                  "dia",
+                                  "varias"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "estado": {
+                                "type": "object",
+                                "properties": {
+                                  "texto": {
+                                    "type": "string",
+                                    "description": "El estado, en su forma de la guía de textos"
+                                  },
+                                  "color": {
+                                    "type": "string",
+                                    "enum": [
+                                      "rojo",
+                                      "ambar",
+                                      "azul",
+                                      "verde",
+                                      "gris",
+                                      "morado",
+                                      "verde-azulado",
+                                      "naranja"
+                                    ],
+                                    "description": "El color del cuadro del estado"
+                                  },
+                                  "abajo": {
+                                    "nullable": true,
+                                    "description": "La línea de abajo, en el mismo cuadro",
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "texto",
+                                  "color",
+                                  "abajo"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "dado_de_baja": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "material_id",
+                              "version",
+                              "nombre",
+                              "tipo",
+                              "color",
+                              "presentacion",
+                              "unidad",
+                              "proveedor",
+                              "proveedores_mas",
+                              "plazo",
+                              "hay",
+                              "libre",
+                              "comprometido",
+                              "minimo",
+                              "tono_existencia",
+                              "en_camino",
+                              "estado",
+                              "dado_de_baja"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "para_nuevo": {
+                          "type": "object",
+                          "properties": {
+                            "unidades": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "clave": {
+                                    "type": "string"
+                                  },
+                                  "nombre": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "clave",
+                                  "nombre"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "proveedores": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "proveedor_id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "nombre": {
+                                    "type": "string"
+                                  },
+                                  "surte": {
+                                    "nullable": true,
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "proveedor_id",
+                                  "nombre",
+                                  "surte"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "dias_cubre_inicial": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "unidades",
+                            "proveedores",
+                            "dias_cubre_inicial"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "materiales",
+                        "para_nuevo"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/compras.proveedores": {
+      "get": {
+        "tags": [
+          "compras"
+        ],
+        "description": "Proveedores con lo que surten, lo que dicen que tardan y lo que tardan de verdad, sus entregas a tiempo, su condición y su teléfono\n\nPermiso: departamento compras.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 80
+            },
+            "in": "query",
+            "name": "buscar",
+            "required": false,
+            "description": "Proveedor, ciudad o lo que surte"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "si",
+                "no"
+              ]
+            },
+            "in": "query",
+            "name": "incluir_bajas",
+            "required": false,
+            "description": "«si» para ver los dados de baja"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "proveedores": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "proveedor_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "version": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "ciudad": {
+                                "type": "string"
+                              },
+                              "surte": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "dice": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "tarda": {
+                                "nullable": true,
+                                "description": "El plazo real; nulo sin entregas",
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "tono_plazo": {
+                                "type": "string",
+                                "enum": [
+                                  "verde",
+                                  "ambar",
+                                  "rojo",
+                                  "gris"
+                                ]
+                              },
+                              "a_tiempo": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "entregas": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "tono_entregas": {
+                                "type": "string",
+                                "enum": [
+                                  "verde",
+                                  "ambar",
+                                  "rojo",
+                                  "gris"
+                                ]
+                              },
+                              "condicion": {
+                                "type": "string"
+                              },
+                              "telefono": {
+                                "type": "string"
+                              },
+                              "dado_de_baja": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "proveedor_id",
+                              "version",
+                              "nombre",
+                              "ciudad",
+                              "surte",
+                              "dice",
+                              "tarda",
+                              "tono_plazo",
+                              "a_tiempo",
+                              "entregas",
+                              "tono_entregas",
+                              "condicion",
+                              "telefono",
+                              "dado_de_baja"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "proveedores"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/compras.conciliacion_facturas": {
+      "get": {
+        "tags": [
+          "compras"
+        ],
+        "description": "Las facturas que no cuadran con su orden y su recepción, y las órdenes recibidas cuya factura no ha llegado. Solo consulta: se resuelve en Contaduría\n\nPermiso: departamento compras.",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "renglones": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "clave": {
+                                "type": "string"
+                              },
+                              "factura": {
+                                "nullable": true,
+                                "description": "El FP-, o nulo si no ha llegado",
+                                "type": "string"
+                              },
+                              "folio_proveedor": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "orden_compra_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "orden": {
+                                "type": "string"
+                              },
+                              "proveedor": {
+                                "type": "string"
+                              },
+                              "condicion": {
+                                "type": "string"
+                              },
+                              "puntos": {
+                                "type": "object",
+                                "properties": {
+                                  "orden": {
+                                    "type": "object",
+                                    "properties": {
+                                      "texto": {
+                                        "type": "string"
+                                      },
+                                      "como": {
+                                        "type": "string",
+                                        "enum": [
+                                          "coincide",
+                                          "no_coincide",
+                                          "falta"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "texto",
+                                      "como"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "recepcion": {
+                                    "type": "object",
+                                    "properties": {
+                                      "texto": {
+                                        "type": "string"
+                                      },
+                                      "como": {
+                                        "type": "string",
+                                        "enum": [
+                                          "coincide",
+                                          "no_coincide",
+                                          "falta"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "texto",
+                                      "como"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "factura": {
+                                    "type": "object",
+                                    "properties": {
+                                      "texto": {
+                                        "type": "string"
+                                      },
+                                      "como": {
+                                        "type": "string",
+                                        "enum": [
+                                          "coincide",
+                                          "no_coincide",
+                                          "falta"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "texto",
+                                      "como"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "required": [
+                                  "orden",
+                                  "recepcion",
+                                  "factura"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "que_no_cuadra": {
+                                "type": "string"
+                              },
+                              "estado": {
+                                "type": "object",
+                                "properties": {
+                                  "texto": {
+                                    "type": "string",
+                                    "description": "El estado, en su forma de la guía de textos"
+                                  },
+                                  "color": {
+                                    "type": "string",
+                                    "enum": [
+                                      "rojo",
+                                      "ambar",
+                                      "azul",
+                                      "verde",
+                                      "gris",
+                                      "morado",
+                                      "verde-azulado",
+                                      "naranja"
+                                    ],
+                                    "description": "El color del cuadro del estado"
+                                  },
+                                  "abajo": {
+                                    "nullable": true,
+                                    "description": "La línea de abajo, en el mismo cuadro",
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "texto",
+                                  "color",
+                                  "abajo"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "required": [
+                              "clave",
+                              "factura",
+                              "folio_proveedor",
+                              "orden_compra_id",
+                              "orden",
+                              "proveedor",
+                              "condicion",
+                              "puntos",
+                              "que_no_cuadra",
+                              "estado"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "renglones"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/compras.levantar_orden_propuesta": {
+      "get": {
+        "tags": [
+          "compras"
+        ],
+        "description": "Lo que propone Levantar orden: los materiales escogidos (o los sin tiempo de entrega y los de esta semana) con su pedido sugerido, sus proveedores con su último precio y el borrador de cada proveedor\n\nPermiso: departamento compras.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-fA-F-]{36}(,[0-9a-fA-F-]{36})*$"
+            },
+            "in": "query",
+            "name": "material_ids",
+            "required": false,
+            "description": "Los materiales; sin ellos, los sin tiempo y los de esta semana"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d+(,\\d+)*$"
+            },
+            "in": "query",
+            "name": "cantidades",
+            "required": false,
+            "description": "La cantidad de cada material, en el mismo orden; sin ellas, el pedido sugerido"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "umbral_cambio_precio_pct": {
+                          "type": "number",
+                          "description": "`compras.umbral_cambio_precio_pct`"
+                        },
+                        "cantidad_maxima": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "`compras.cantidad_maxima_linea`"
+                        },
+                        "escogidos": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "material_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "cantidad": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "material_id",
+                              "cantidad"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "materiales": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "material_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "unidad": {
+                                "type": "string"
+                              },
+                              "multiplo": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "sugerido": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "estado": {
+                                "type": "string",
+                                "enum": [
+                                  "sin_tiempo_de_entrega",
+                                  "pedir_esta_semana",
+                                  "alcanza"
+                                ]
+                              },
+                              "estado_armado": {
+                                "type": "object",
+                                "properties": {
+                                  "texto": {
+                                    "type": "string",
+                                    "description": "El estado, en su forma de la guía de textos"
+                                  },
+                                  "color": {
+                                    "type": "string",
+                                    "enum": [
+                                      "rojo",
+                                      "ambar",
+                                      "azul",
+                                      "verde",
+                                      "gris",
+                                      "morado",
+                                      "verde-azulado",
+                                      "naranja"
+                                    ],
+                                    "description": "El color del cuadro del estado"
+                                  },
+                                  "abajo": {
+                                    "nullable": true,
+                                    "description": "La línea de abajo, en el mismo cuadro",
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "texto",
+                                  "color",
+                                  "abajo"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "linea": {
+                                "type": "string"
+                              },
+                              "proveedor_habitual_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "surtidores": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "proveedor_id": {
+                                      "type": "string",
+                                      "format": "uuid",
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                    },
+                                    "nombre": {
+                                      "type": "string"
+                                    },
+                                    "ultimo_precio_centavos": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "habitual": {
+                                      "type": "boolean"
+                                    }
+                                  },
+                                  "required": [
+                                    "proveedor_id",
+                                    "nombre",
+                                    "habitual"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "required": [
+                              "material_id",
+                              "nombre",
+                              "unidad",
+                              "multiplo",
+                              "sugerido",
+                              "estado",
+                              "estado_armado",
+                              "linea",
+                              "proveedor_habitual_id",
+                              "surtidores"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Todos los activos, de lo más urgente a lo menos"
+                        },
+                        "proveedores": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "proveedor_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "condicion": {
+                                "type": "string"
+                              },
+                              "plazo": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "borrador": {
+                                "nullable": true,
+                                "description": "El folio de su borrador, si tiene",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "proveedor_id",
+                              "nombre",
+                              "condicion",
+                              "plazo",
+                              "borrador"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "umbral_cambio_precio_pct",
+                        "cantidad_maxima",
+                        "escogidos",
+                        "materiales",
+                        "proveedores"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/compras.material_por_que": {
+      "get": {
+        "tags": [
+          "compras"
+        ],
+        "description": "El «por qué» de un material: su resumen, la cuenta (hay, en camino, comprometido y libre), el consumo por mes, de dónde sale, el pedido sugerido y los insumos de la proyección\n\nPermiso: departamento compras.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "material_id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "material": {
+                          "type": "object",
+                          "properties": {
+                            "material_id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "nombre": {
+                              "type": "string"
+                            },
+                            "tipo": {
+                              "type": "string",
+                              "enum": [
+                                "tela",
+                                "avio",
+                                "consumible"
+                              ]
+                            },
+                            "unidad": {
+                              "type": "string"
+                            },
+                            "proveedor": {
+                              "type": "string"
+                            },
+                            "condicion": {
+                              "type": "string"
+                            },
+                            "estado": {
+                              "type": "string",
+                              "enum": [
+                                "sin_tiempo_de_entrega",
+                                "pedir_esta_semana",
+                                "alcanza"
+                              ]
+                            },
+                            "estado_armado": {
+                              "type": "object",
+                              "properties": {
+                                "texto": {
+                                  "type": "string",
+                                  "description": "El estado, en su forma de la guía de textos"
+                                },
+                                "color": {
+                                  "type": "string",
+                                  "enum": [
+                                    "rojo",
+                                    "ambar",
+                                    "azul",
+                                    "verde",
+                                    "gris",
+                                    "morado",
+                                    "verde-azulado",
+                                    "naranja"
+                                  ],
+                                  "description": "El color del cuadro del estado"
+                                },
+                                "abajo": {
+                                  "nullable": true,
+                                  "description": "La línea de abajo, en el mismo cuadro",
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "texto",
+                                "color",
+                                "abajo"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "linea": {
+                              "type": "string"
+                            },
+                            "en_borrador": {
+                              "nullable": true,
+                              "type": "object",
+                              "properties": {
+                                "orden_compra_id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "folio": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "orden_compra_id",
+                                "folio"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "required": [
+                            "material_id",
+                            "nombre",
+                            "tipo",
+                            "unidad",
+                            "proveedor",
+                            "condicion",
+                            "estado",
+                            "estado_armado",
+                            "linea",
+                            "en_borrador"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "resumen": {
+                          "type": "string"
+                        },
+                        "cuenta": {
+                          "type": "object",
+                          "properties": {
+                            "hay_bodega": {
+                              "type": "string",
+                              "description": "Texto decimal con tres decimales, en la unidad de inventario"
+                            },
+                            "hay_aduana": {
+                              "type": "string",
+                              "description": "Texto decimal con tres decimales, en la unidad de inventario"
+                            },
+                            "en_camino": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "orden_compra_id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "folio": {
+                                    "type": "string"
+                                  },
+                                  "dia": {
+                                    "type": "string"
+                                  },
+                                  "cantidad": {
+                                    "type": "string",
+                                    "description": "Texto decimal con tres decimales, en la unidad de inventario"
+                                  },
+                                  "atrasada": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "orden_compra_id",
+                                  "folio",
+                                  "dia",
+                                  "cantidad",
+                                  "atrasada"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "en_camino_total": {
+                              "type": "string",
+                              "description": "Texto decimal con tres decimales, en la unidad de inventario"
+                            },
+                            "comprometido": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "lote_id": {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                  },
+                                  "folio": {
+                                    "type": "string"
+                                  },
+                                  "detalle": {
+                                    "type": "string",
+                                    "description": "«Pantalón azul marino, Distribuidora Escolar Zamora»"
+                                  },
+                                  "cantidad": {
+                                    "type": "string",
+                                    "description": "Texto decimal con tres decimales, en la unidad de inventario"
+                                  }
+                                },
+                                "required": [
+                                  "lote_id",
+                                  "folio",
+                                  "detalle",
+                                  "cantidad"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "comprometido_total": {
+                              "type": "string",
+                              "description": "Texto decimal con tres decimales, en la unidad de inventario"
+                            },
+                            "libre": {
+                              "type": "string",
+                              "description": "Texto decimal con tres decimales, en la unidad de inventario"
+                            }
+                          },
+                          "required": [
+                            "hay_bodega",
+                            "hay_aduana",
+                            "en_camino",
+                            "en_camino_total",
+                            "comprometido",
+                            "comprometido_total",
+                            "libre"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "consumo": {
+                          "type": "object",
+                          "properties": {
+                            "medido": {
+                              "type": "boolean"
+                            },
+                            "normal": {
+                              "nullable": true,
+                              "description": "El de un mes normal, por día",
+                              "type": "string"
+                            },
+                            "meses": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "nombre": {
+                                    "type": "string"
+                                  },
+                                  "por_dia": {
+                                    "type": "string",
+                                    "description": "Texto decimal con tres decimales, en la unidad de inventario"
+                                  },
+                                  "factor": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "nombre",
+                                  "por_dia",
+                                  "factor"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "temporada": {
+                              "nullable": true,
+                              "description": "«Julio es el mes más fuerte: …»",
+                              "type": "string"
+                            },
+                            "se_usa_en": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "required": [
+                            "medido",
+                            "normal",
+                            "meses",
+                            "temporada",
+                            "se_usa_en"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "sugerido": {
+                          "type": "object",
+                          "properties": {
+                            "cantidad": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "texto": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "cantidad",
+                            "texto"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "cantidad_maxima": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "insumos": {
+                          "type": "object",
+                          "properties": {
+                            "hoy": {
+                              "type": "string"
+                            },
+                            "libre": {
+                              "type": "string",
+                              "description": "En milésimos"
+                            },
+                            "llegadas": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "dia": {
+                                    "type": "string"
+                                  },
+                                  "cantidad": {
+                                    "type": "string",
+                                    "description": "En milésimos"
+                                  }
+                                },
+                                "required": [
+                                  "dia",
+                                  "cantidad"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "consumo_normal": {
+                              "nullable": true,
+                              "description": "En milésimos",
+                              "type": "string"
+                            },
+                            "factores": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "Los doce, en milésimos del factor"
+                            },
+                            "plazo": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "minimo": {
+                              "type": "string",
+                              "description": "En milésimos"
+                            },
+                            "multiplo": {
+                              "type": "string",
+                              "description": "En milésimos"
+                            },
+                            "dias_cubre": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "limites": {
+                              "type": "object",
+                              "properties": {
+                                "dias_maximos": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "dias_pedir_esta_semana": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "dias_mas_de_seis_meses": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                }
+                              },
+                              "required": [
+                                "dias_maximos",
+                                "dias_pedir_esta_semana",
+                                "dias_mas_de_seis_meses"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "required": [
+                            "hoy",
+                            "libre",
+                            "llegadas",
+                            "consumo_normal",
+                            "factores",
+                            "plazo",
+                            "minimo",
+                            "multiplo",
+                            "dias_cubre",
+                            "limites"
+                          ],
+                          "additionalProperties": false,
+                          "description": "Lo que necesita `proyectarMaterial` para correr en la pantalla"
+                        }
+                      },
+                      "required": [
+                        "material",
+                        "resumen",
+                        "cuenta",
+                        "consumo",
+                        "sugerido",
+                        "cantidad_maxima",
+                        "insumos"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/compras.orden": {
+      "get": {
+        "tags": [
+          "compras"
+        ],
+        "description": "Una orden de compra: sus datos, sus avisos, lo que se pidió contra lo recibido con su precio, y qué se puede hacer con ella\n\nPermiso: departamento compras.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "orden_compra_id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "orden": {
+                          "type": "object",
+                          "properties": {
+                            "orden_compra_id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "version": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "folio": {
+                              "type": "string"
+                            },
+                            "estado": {
+                              "type": "string",
+                              "enum": [
+                                "borrador",
+                                "enviada",
+                                "recibida_en_parte",
+                                "recibida",
+                                "cerrada",
+                                "cerrada_con_faltante",
+                                "cancelada"
+                              ]
+                            },
+                            "estado_armado": {
+                              "type": "object",
+                              "properties": {
+                                "texto": {
+                                  "type": "string",
+                                  "description": "El estado, en su forma de la guía de textos"
+                                },
+                                "color": {
+                                  "type": "string",
+                                  "enum": [
+                                    "rojo",
+                                    "ambar",
+                                    "azul",
+                                    "verde",
+                                    "gris",
+                                    "morado",
+                                    "verde-azulado",
+                                    "naranja"
+                                  ],
+                                  "description": "El color del cuadro del estado"
+                                },
+                                "abajo": {
+                                  "nullable": true,
+                                  "description": "La línea de abajo, en el mismo cuadro",
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "texto",
+                                "color",
+                                "abajo"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "proveedor_id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "proveedor": {
+                              "type": "string"
+                            },
+                            "condicion": {
+                              "type": "string"
+                            },
+                            "levanto": {
+                              "type": "string"
+                            },
+                            "creada": {
+                              "type": "string"
+                            },
+                            "enviada": {
+                              "nullable": true,
+                              "type": "string"
+                            },
+                            "fecha_prometida": {
+                              "nullable": true,
+                              "type": "string"
+                            },
+                            "llego": {
+                              "nullable": true,
+                              "type": "string"
+                            },
+                            "dice_tardar": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "fecha_propuesta": {
+                              "type": "string",
+                              "description": "Hoy más lo que dice tardar el proveedor"
+                            },
+                            "fecha_maxima": {
+                              "type": "string",
+                              "description": "Hoy más `compras.dias_max_fecha_prometida`"
+                            },
+                            "avisos": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "pdf_archivo_id": {
+                              "nullable": true,
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            }
+                          },
+                          "required": [
+                            "orden_compra_id",
+                            "version",
+                            "folio",
+                            "estado",
+                            "estado_armado",
+                            "proveedor_id",
+                            "proveedor",
+                            "condicion",
+                            "levanto",
+                            "creada",
+                            "enviada",
+                            "fecha_prometida",
+                            "llego",
+                            "dice_tardar",
+                            "fecha_propuesta",
+                            "fecha_maxima",
+                            "avisos",
+                            "pdf_archivo_id"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "lineas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "orden_compra_linea_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "material_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "material": {
+                                "type": "string"
+                              },
+                              "unidad": {
+                                "type": "string"
+                              },
+                              "multiplo": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "pedido": {
+                                "type": "string",
+                                "description": "Texto decimal con tres decimales, en la unidad de inventario"
+                              },
+                              "recibido": {
+                                "type": "string",
+                                "description": "Texto decimal con tres decimales, en la unidad de inventario"
+                              },
+                              "falta": {
+                                "type": "string",
+                                "description": "Texto decimal con tres decimales, en la unidad de inventario"
+                              },
+                              "falta_rojo": {
+                                "type": "boolean"
+                              },
+                              "precio_centavos": {
+                                "description": "El vigente",
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "precio_orden_centavos": {
+                                "description": "«La orden decía», si la nota cobró otro",
+                                "nullable": true,
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "importe_centavos": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "orden_compra_linea_id",
+                              "material_id",
+                              "material",
+                              "unidad",
+                              "multiplo",
+                              "pedido",
+                              "recibido",
+                              "falta",
+                              "falta_rojo"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "total_centavos": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "cantidad_maxima": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "largo_minimo_motivo": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "`general.largo_minimo_motivo`: las letras que pide un motivo"
+                        },
+                        "puede": {
+                          "type": "object",
+                          "properties": {
+                            "editar": {
+                              "type": "boolean"
+                            },
+                            "cancelar": {
+                              "type": "boolean"
+                            },
+                            "cerrar_con_faltante": {
+                              "type": "boolean"
+                            },
+                            "capturar_factura": {
+                              "type": "boolean",
+                              "description": "Con algo recibido y si la cuenta tiene Contaduría"
+                            }
+                          },
+                          "required": [
+                            "editar",
+                            "cancelar",
+                            "cerrar_con_faltante",
+                            "capturar_factura"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "orden",
+                        "lineas",
+                        "cantidad_maxima",
+                        "largo_minimo_motivo",
+                        "puede"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/compras.material": {
+      "get": {
+        "tags": [
+          "compras"
+        ],
+        "description": "Un material: sus cifras, lo comprometido y lo que viene, sus proveedores con su último precio, sus últimos precios y cómo se pide\n\nPermiso: departamento compras.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "material_id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "material": {
+                          "type": "object",
+                          "properties": {
+                            "material_id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "version": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "nombre": {
+                              "type": "string"
+                            },
+                            "tipo": {
+                              "type": "string",
+                              "enum": [
+                                "tela",
+                                "avio",
+                                "consumible"
+                              ]
+                            },
+                            "unidad": {
+                              "type": "string"
+                            },
+                            "presentacion": {
+                              "nullable": true,
+                              "type": "string"
+                            },
+                            "color": {
+                              "nullable": true,
+                              "type": "string"
+                            },
+                            "estado": {
+                              "type": "string",
+                              "enum": [
+                                "sin_tiempo_de_entrega",
+                                "pedir_esta_semana",
+                                "alcanza"
+                              ]
+                            },
+                            "estado_armado": {
+                              "type": "object",
+                              "properties": {
+                                "texto": {
+                                  "type": "string",
+                                  "description": "El estado, en su forma de la guía de textos"
+                                },
+                                "color": {
+                                  "type": "string",
+                                  "enum": [
+                                    "rojo",
+                                    "ambar",
+                                    "azul",
+                                    "verde",
+                                    "gris",
+                                    "morado",
+                                    "verde-azulado",
+                                    "naranja"
+                                  ],
+                                  "description": "El color del cuadro del estado"
+                                },
+                                "abajo": {
+                                  "nullable": true,
+                                  "description": "La línea de abajo, en el mismo cuadro",
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "texto",
+                                "color",
+                                "abajo"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "linea": {
+                              "type": "string"
+                            },
+                            "hay": {
+                              "type": "string",
+                              "description": "Texto decimal con tres decimales, en la unidad de inventario"
+                            },
+                            "libre": {
+                              "type": "string",
+                              "description": "Texto decimal con tres decimales, en la unidad de inventario"
+                            },
+                            "comprometido": {
+                              "type": "string",
+                              "description": "Texto decimal con tres decimales, en la unidad de inventario"
+                            },
+                            "minimo": {
+                              "type": "string",
+                              "description": "Texto decimal con tres decimales, en la unidad de inventario"
+                            },
+                            "tono_existencia": {
+                              "type": "string",
+                              "enum": [
+                                "azul",
+                                "ambar",
+                                "rojo"
+                              ]
+                            },
+                            "multiplo_compra": {
+                              "type": "string",
+                              "description": "Texto decimal con tres decimales, en la unidad de inventario"
+                            },
+                            "dias_cubre": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "consumo_diario_inicial": {
+                              "nullable": true,
+                              "type": "string",
+                              "description": "Texto decimal con tres decimales, en la unidad de inventario"
+                            },
+                            "unidad_tablet": {
+                              "nullable": true,
+                              "type": "string"
+                            },
+                            "factor_tablet": {
+                              "nullable": true,
+                              "type": "string"
+                            },
+                            "dado_de_baja": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "material_id",
+                            "version",
+                            "nombre",
+                            "tipo",
+                            "unidad",
+                            "presentacion",
+                            "color",
+                            "estado",
+                            "estado_armado",
+                            "linea",
+                            "hay",
+                            "libre",
+                            "comprometido",
+                            "minimo",
+                            "tono_existencia",
+                            "multiplo_compra",
+                            "dias_cubre",
+                            "consumo_diario_inicial",
+                            "unidad_tablet",
+                            "factor_tablet",
+                            "dado_de_baja"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "comprometido": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "lote_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "folio": {
+                                "type": "string"
+                              },
+                              "detalle": {
+                                "type": "string",
+                                "description": "«Pantalón azul marino, Distribuidora Escolar Zamora»"
+                              },
+                              "cantidad": {
+                                "type": "string",
+                                "description": "Texto decimal con tres decimales, en la unidad de inventario"
+                              }
+                            },
+                            "required": [
+                              "lote_id",
+                              "folio",
+                              "detalle",
+                              "cantidad"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "en_camino": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "orden_compra_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "folio": {
+                                "type": "string"
+                              },
+                              "dia": {
+                                "type": "string"
+                              },
+                              "cantidad": {
+                                "type": "string",
+                                "description": "Texto decimal con tres decimales, en la unidad de inventario"
+                              },
+                              "atrasada": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "orden_compra_id",
+                              "folio",
+                              "dia",
+                              "cantidad",
+                              "atrasada"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "proveedores": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "proveedor_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "plazo": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "ultima_compra": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "ultimo_precio_centavos": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "habitual": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "proveedor_id",
+                              "nombre",
+                              "plazo",
+                              "ultima_compra",
+                              "habitual"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "otros_proveedores": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "proveedor_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "surte": {
+                                "nullable": true,
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "proveedor_id",
+                              "nombre",
+                              "surte"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Los activos que no lo surten, para «Otro proveedor»"
+                        },
+                        "ultimo_precio_centavos": {
+                          "description": "La última compra, con cualquier proveedor",
+                          "nullable": true,
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "precios": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "precio_centavos": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "proveedor": {
+                                "type": "string"
+                              },
+                              "folio": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "origen": {
+                                "type": "string",
+                                "description": "«en la orden», «según la nota», «al agregar al proveedor» o «alta»"
+                              },
+                              "cambio": {
+                                "nullable": true,
+                                "type": "object",
+                                "properties": {
+                                  "texto": {
+                                    "type": "string"
+                                  },
+                                  "ambar": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "texto",
+                                  "ambar"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "fecha": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "proveedor",
+                              "folio",
+                              "origen",
+                              "cambio",
+                              "fecha"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "largo_minimo_motivo": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "`general.largo_minimo_motivo`: las letras que pide un motivo"
+                        }
+                      },
+                      "required": [
+                        "material",
+                        "comprometido",
+                        "en_camino",
+                        "proveedores",
+                        "otros_proveedores",
+                        "precios",
+                        "largo_minimo_motivo"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consultas/compras.proveedor": {
+      "get": {
+        "tags": [
+          "compras"
+        ],
+        "description": "Un proveedor: lo que dice que tarda y lo que tarda, sus últimas entregas, su ficha, los materiales que surte y sus últimas órdenes\n\nPermiso: departamento compras.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "query",
+            "name": "proveedor_id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "resultado": {
+                      "type": "object",
+                      "properties": {
+                        "proveedor": {
+                          "type": "object",
+                          "properties": {
+                            "proveedor_id": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            "version": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "nombre": {
+                              "type": "string"
+                            },
+                            "rfc": {
+                              "nullable": true,
+                              "type": "string"
+                            },
+                            "ciudad": {
+                              "type": "string"
+                            },
+                            "telefono": {
+                              "type": "string"
+                            },
+                            "dias_credito": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "dias_dice_tardar": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "surte": {
+                              "nullable": true,
+                              "type": "string"
+                            },
+                            "dado_de_baja": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "proveedor_id",
+                            "version",
+                            "nombre",
+                            "rfc",
+                            "ciudad",
+                            "telefono",
+                            "dias_credito",
+                            "dias_dice_tardar",
+                            "surte",
+                            "dado_de_baja"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "plazo": {
+                          "type": "object",
+                          "properties": {
+                            "tarda": {
+                              "nullable": true,
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "tono": {
+                              "type": "string",
+                              "enum": [
+                                "verde",
+                                "ambar",
+                                "rojo",
+                                "gris"
+                              ]
+                            },
+                            "a_tiempo": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "entregas": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": [
+                            "tarda",
+                            "tono",
+                            "a_tiempo",
+                            "entregas"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "entregas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "recepcion_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "folio": {
+                                "type": "string"
+                              },
+                              "dias": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "a_tiempo": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "recepcion_id",
+                              "folio",
+                              "dias",
+                              "a_tiempo"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "materiales": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "material_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "ultimo_precio_centavos": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "habitual": {
+                                "type": "boolean"
+                              },
+                              "estado": {
+                                "type": "object",
+                                "properties": {
+                                  "texto": {
+                                    "type": "string",
+                                    "description": "El estado, en su forma de la guía de textos"
+                                  },
+                                  "color": {
+                                    "type": "string",
+                                    "enum": [
+                                      "rojo",
+                                      "ambar",
+                                      "azul",
+                                      "verde",
+                                      "gris",
+                                      "morado",
+                                      "verde-azulado",
+                                      "naranja"
+                                    ],
+                                    "description": "El color del cuadro del estado"
+                                  },
+                                  "abajo": {
+                                    "nullable": true,
+                                    "description": "La línea de abajo, en el mismo cuadro",
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "texto",
+                                  "color",
+                                  "abajo"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "required": [
+                              "material_id",
+                              "nombre",
+                              "habitual",
+                              "estado"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "ordenes": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "orden_compra_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "folio": {
+                                "type": "string"
+                              },
+                              "creada": {
+                                "type": "string"
+                              },
+                              "estado": {
+                                "type": "object",
+                                "properties": {
+                                  "texto": {
+                                    "type": "string",
+                                    "description": "El estado, en su forma de la guía de textos"
+                                  },
+                                  "color": {
+                                    "type": "string",
+                                    "enum": [
+                                      "rojo",
+                                      "ambar",
+                                      "azul",
+                                      "verde",
+                                      "gris",
+                                      "morado",
+                                      "verde-azulado",
+                                      "naranja"
+                                    ],
+                                    "description": "El color del cuadro del estado"
+                                  },
+                                  "abajo": {
+                                    "nullable": true,
+                                    "description": "La línea de abajo, en el mismo cuadro",
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "texto",
+                                  "color",
+                                  "abajo"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "total_centavos": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "orden_compra_id",
+                              "folio",
+                              "creada",
+                              "estado"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "dias_dice_tardar_maximo": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "largo_minimo_motivo": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991,
+                          "description": "`general.largo_minimo_motivo`: las letras que pide un motivo"
+                        }
+                      },
+                      "required": [
+                        "proveedor",
+                        "plazo",
+                        "entregas",
+                        "materiales",
+                        "ordenes",
+                        "dias_dice_tardar_maximo",
+                        "largo_minimo_motivo"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recortado": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Los campos que la cuenta no puede ver y no viajan"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "resultado",
+                    "recortado"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/consultas/contaduria.estado_pago_notas": {
       "get": {
         "tags": [

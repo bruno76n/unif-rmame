@@ -9,6 +9,7 @@
 
 import { aMilesimosConSigno } from "@uniformame/compartido/calculos/cuenta-material";
 import { diaDeNegocio } from "@uniformame/compartido/calculos/fechas";
+import { fallaDeCantidad } from "@uniformame/compartido/contratos/compras/textos";
 import { and, asc, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import { Temporal } from "temporal-polyfill";
 import { z } from "zod";
@@ -97,7 +98,8 @@ export function precioVigente(linea: Pick<LineaDeOrden, "precioOrdenCentavos" | 
 }
 
 /**
- * Revisa la cantidad de una línea: hasta `compras.cantidad_maxima_linea` y múltiplo de lo que se compra junto.
+ * Revisa la cantidad de una línea con `fallaDeCantidad` del paquete compartido: hasta `compras.cantidad_maxima_linea` y
+ * múltiplo de lo que se compra junto.
  * @param contexto El contexto de la acción.
  * @param material El material, con su unidad y su múltiplo.
  * @param cantidad La cantidad, entera.
@@ -109,17 +111,12 @@ export async function revisarCantidad(
 	material: { unidad: string; multiploCompra: string },
 	cantidad: number,
 ): Promise<void> {
-	if (cantidad > (await parametroNumero(contexto, "compras.cantidad_maxima_linea"))) {
-		throw errorDeRegla("cantidad_demasiada", "Es demasiado: revisa la cantidad");
-	}
-	const multiplo = Number(material.multiploCompra);
-	if (cantidad % multiplo !== 0) {
-		const cercana = Math.max(multiplo, Math.round(cantidad / multiplo) * multiplo);
-		throw errorDeRegla(
-			"no_es_multiplo",
-			`Se compra de ${multiplo} en ${multiplo} ${material.unidad}. Prueba con ${cercana}`,
-		);
-	}
+	const falla = fallaDeCantidad(cantidad, {
+		multiplo: Number(material.multiploCompra),
+		maxima: await parametroNumero(contexto, "compras.cantidad_maxima_linea"),
+		unidad: material.unidad,
+	});
+	if (falla !== null) throw errorDeRegla(falla.codigo, falla.mensaje);
 }
 
 /**

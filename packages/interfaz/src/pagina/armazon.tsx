@@ -154,7 +154,7 @@ export function Armazon({ grupos, migas, cuenta, busqueda, campana, accion, fran
 							type="button"
 							aria-label="Abrir el menú"
 							onClick={() => setAbierto(true)}
-							className="hidden size-9 place-items-center rounded-mediano text-tinta2 hover:bg-riel max-menu:grid"
+							className="hidden size-9 flex-none place-items-center rounded-mediano text-tinta2 hover:bg-riel max-menu:grid"
 						>
 							<Menu aria-hidden="true" size={20} />
 						</button>

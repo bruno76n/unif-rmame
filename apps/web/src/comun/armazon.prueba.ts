@@ -65,6 +65,9 @@ describe("El menú solo muestra los departamentos de la cuenta, con sus pastilla
 	it("en el teléfono el menú se abre con su botón y lleva al departamento", { timeout: 90_000 }, async () => {
 		const pagina = await pantalla.abrir("/", { quien: "duena", tamano: "telefono" });
 		await enPantalla(pagina.locator("h1")).toHaveText("Dirección");
+		// Con todo cargado (la búsqueda, la campana y la acción principal en la barra), nada tapa el botón del menú.
+		await pagina.waitForLoadState("networkidle");
+		await pagina.getByRole("button", { name: "Abrir el menú" }).click({ trial: true, timeout: 5_000 });
 		await pagina.getByRole("button", { name: "Abrir el menú" }).click();
 		await pantalla.capturar(pagina, "comun/armazon-telefono-menu");
 		await pagina

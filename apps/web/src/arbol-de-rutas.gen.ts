@@ -18,6 +18,11 @@ import { Route as BodegaIndexRouteImport } from "./rutas/bodega/index.tsx"
 import { Route as CalidadIndexRouteImport } from "./rutas/calidad/index.tsx"
 import { Route as CatalogoIndexRouteImport } from "./rutas/catalogo/index.tsx"
 import { Route as ComprasIndexRouteImport } from "./rutas/compras/index.tsx"
+import { Route as ComprasConciliacionRouteImport } from "./rutas/compras/conciliacion.tsx"
+import { Route as ComprasMaterialesRouteImport } from "./rutas/compras/materiales.tsx"
+import { Route as ComprasOrdenesRouteImport } from "./rutas/compras/ordenes.tsx"
+import { Route as ComprasPorPedirRouteImport } from "./rutas/compras/por-pedir.tsx"
+import { Route as ComprasProveedoresRouteImport } from "./rutas/compras/proveedores.tsx"
 import { Route as ContaduriaIndexRouteImport } from "./rutas/contaduria/index.tsx"
 import { Route as DireccionIndexRouteImport } from "./rutas/direccion/index.tsx"
 import { Route as DireccionAlertasRouteImport } from "./rutas/direccion/alertas.tsx"
@@ -81,6 +86,31 @@ const CatalogoIndexRoute = CatalogoIndexRouteImport.update({
 const ComprasIndexRoute = ComprasIndexRouteImport.update({
   id: "/compras/",
   path: "/compras/",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ComprasConciliacionRoute = ComprasConciliacionRouteImport.update({
+  id: "/compras/conciliacion",
+  path: "/compras/conciliacion",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ComprasMaterialesRoute = ComprasMaterialesRouteImport.update({
+  id: "/compras/materiales",
+  path: "/compras/materiales",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ComprasOrdenesRoute = ComprasOrdenesRouteImport.update({
+  id: "/compras/ordenes",
+  path: "/compras/ordenes",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ComprasPorPedirRoute = ComprasPorPedirRouteImport.update({
+  id: "/compras/por-pedir",
+  path: "/compras/por-pedir",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ComprasProveedoresRoute = ComprasProveedoresRouteImport.update({
+  id: "/compras/proveedores",
+  path: "/compras/proveedores",
   getParentRoute: () => rootRouteImport,
 } as any)
 const ContaduriaIndexRoute = ContaduriaIndexRouteImport.update({
@@ -182,6 +212,11 @@ const VentasPedidosRoute = VentasPedidosRouteImport.update({
 export interface FileRoutesByFullPath {
   "/": typeof IndexRoute
   "/acceso/confirmado": typeof AccesoConfirmadoRoute
+  "/compras/conciliacion": typeof ComprasConciliacionRoute
+  "/compras/materiales": typeof ComprasMaterialesRoute
+  "/compras/ordenes": typeof ComprasOrdenesRoute
+  "/compras/por-pedir": typeof ComprasPorPedirRoute
+  "/compras/proveedores": typeof ComprasProveedoresRoute
   "/direccion/alertas": typeof DireccionAlertasRoute
   "/direccion/autorizaciones": typeof DireccionAutorizacionesRoute
   "/direccion/indicadores": typeof DireccionIndicadoresRoute
@@ -212,6 +247,11 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   "/": typeof IndexRoute
   "/acceso/confirmado": typeof AccesoConfirmadoRoute
+  "/compras/conciliacion": typeof ComprasConciliacionRoute
+  "/compras/materiales": typeof ComprasMaterialesRoute
+  "/compras/ordenes": typeof ComprasOrdenesRoute
+  "/compras/por-pedir": typeof ComprasPorPedirRoute
+  "/compras/proveedores": typeof ComprasProveedoresRoute
   "/direccion/alertas": typeof DireccionAlertasRoute
   "/direccion/autorizaciones": typeof DireccionAutorizacionesRoute
   "/direccion/indicadores": typeof DireccionIndicadoresRoute
@@ -243,6 +283,11 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   "/": typeof IndexRoute
   "/acceso/confirmado": typeof AccesoConfirmadoRoute
+  "/compras/conciliacion": typeof ComprasConciliacionRoute
+  "/compras/materiales": typeof ComprasMaterialesRoute
+  "/compras/ordenes": typeof ComprasOrdenesRoute
+  "/compras/por-pedir": typeof ComprasPorPedirRoute
+  "/compras/proveedores": typeof ComprasProveedoresRoute
   "/direccion/alertas": typeof DireccionAlertasRoute
   "/direccion/autorizaciones": typeof DireccionAutorizacionesRoute
   "/direccion/indicadores": typeof DireccionIndicadoresRoute
@@ -275,6 +320,11 @@ export interface FileRouteTypes {
   fullPaths:
     | "/"
     | "/acceso/confirmado"
+    | "/compras/conciliacion"
+    | "/compras/materiales"
+    | "/compras/ordenes"
+    | "/compras/por-pedir"
+    | "/compras/proveedores"
     | "/direccion/alertas"
     | "/direccion/autorizaciones"
     | "/direccion/indicadores"
@@ -305,6 +355,11 @@ export interface FileRouteTypes {
   to:
     | "/"
     | "/acceso/confirmado"
+    | "/compras/conciliacion"
+    | "/compras/materiales"
+    | "/compras/ordenes"
+    | "/compras/por-pedir"
+    | "/compras/proveedores"
     | "/direccion/alertas"
     | "/direccion/autorizaciones"
     | "/direccion/indicadores"
@@ -335,6 +390,11 @@ export interface FileRouteTypes {
     | "__root__"
     | "/"
     | "/acceso/confirmado"
+    | "/compras/conciliacion"
+    | "/compras/materiales"
+    | "/compras/ordenes"
+    | "/compras/por-pedir"
+    | "/compras/proveedores"
     | "/direccion/alertas"
     | "/direccion/autorizaciones"
     | "/direccion/indicadores"
@@ -366,6 +426,11 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AccesoConfirmadoRoute: typeof AccesoConfirmadoRoute
+  ComprasConciliacionRoute: typeof ComprasConciliacionRoute
+  ComprasMaterialesRoute: typeof ComprasMaterialesRoute
+  ComprasOrdenesRoute: typeof ComprasOrdenesRoute
+  ComprasPorPedirRoute: typeof ComprasPorPedirRoute
+  ComprasProveedoresRoute: typeof ComprasProveedoresRoute
   DireccionAlertasRoute: typeof DireccionAlertasRoute
   DireccionAutorizacionesRoute: typeof DireccionAutorizacionesRoute
   DireccionIndicadoresRoute: typeof DireccionIndicadoresRoute
@@ -457,6 +522,41 @@ declare module "@tanstack/react-router" {
       path: "/compras"
       fullPath: "/compras/"
       preLoaderRoute: typeof ComprasIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/compras/conciliacion": {
+      id: "/compras/conciliacion"
+      path: "/compras/conciliacion"
+      fullPath: "/compras/conciliacion"
+      preLoaderRoute: typeof ComprasConciliacionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/compras/materiales": {
+      id: "/compras/materiales"
+      path: "/compras/materiales"
+      fullPath: "/compras/materiales"
+      preLoaderRoute: typeof ComprasMaterialesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/compras/ordenes": {
+      id: "/compras/ordenes"
+      path: "/compras/ordenes"
+      fullPath: "/compras/ordenes"
+      preLoaderRoute: typeof ComprasOrdenesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/compras/por-pedir": {
+      id: "/compras/por-pedir"
+      path: "/compras/por-pedir"
+      fullPath: "/compras/por-pedir"
+      preLoaderRoute: typeof ComprasPorPedirRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/compras/proveedores": {
+      id: "/compras/proveedores"
+      path: "/compras/proveedores"
+      fullPath: "/compras/proveedores"
+      preLoaderRoute: typeof ComprasProveedoresRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/contaduria/": {
@@ -598,6 +698,11 @@ declare module "@tanstack/react-router" {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccesoConfirmadoRoute: AccesoConfirmadoRoute,
+  ComprasConciliacionRoute: ComprasConciliacionRoute,
+  ComprasMaterialesRoute: ComprasMaterialesRoute,
+  ComprasOrdenesRoute: ComprasOrdenesRoute,
+  ComprasPorPedirRoute: ComprasPorPedirRoute,
+  ComprasProveedoresRoute: ComprasProveedoresRoute,
   DireccionAlertasRoute: DireccionAlertasRoute,
   DireccionAutorizacionesRoute: DireccionAutorizacionesRoute,
   DireccionIndicadoresRoute: DireccionIndicadoresRoute,

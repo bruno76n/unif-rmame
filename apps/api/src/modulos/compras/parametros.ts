@@ -2,6 +2,8 @@
  * Los parámetros que declara `compras`, con su valor inicial.
  * Fase 10 · docs/modulos/compras/proveedores-y-precios.md, materiales.md, ordenes-de-compra.md y
  * proyeccion-de-material.md («Parámetros»)
+ * Fase 19 · docs/interfaz/fabrica/compras.md («Por pedir»): el horizonte corto y la fecha del regreso a clases, como
+ * texto ISO porque los parámetros no tienen un tipo de fecha (decisión 547).
  *
  * Los factores de consumo de cada mes se guardan en por ciento de un mes normal (0.9 es 90 %): los parámetros no
  * tienen un tipo decimal.
@@ -270,5 +272,26 @@ export const semillaDeParametrosDeCompras = semillaDeParametros("compras", [
 		inicial: 200,
 		minimo: 1,
 		orden: 24,
+	},
+	{
+		clave: "compras.horizonte_corto_semanas",
+		seccion: "parametro",
+		nombre: "Semanas del horizonte corto de Por pedir",
+		explicacion: "Hasta dónde llega la línea de tiempo de Por pedir al abrir",
+		tipo: "entero",
+		unidad: "semanas",
+		inicial: 12,
+		minimo: 1,
+		maximo: 52,
+		orden: 25,
+	},
+	{
+		clave: "compras.fecha_regreso_clases",
+		seccion: "parametro",
+		nombre: "Fecha del regreso a clases",
+		explicacion: "La bandera de la línea de tiempo de Por pedir; su horizonte largo llega al fin de ese mes",
+		tipo: "texto",
+		inicial: "2027-08-17",
+		orden: 26,
 	},
 ]);
