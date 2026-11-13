@@ -33,9 +33,19 @@ type PorPedir = z.infer<typeof porPedir.resultado>;
 /** Un material de Por pedir. */
 type MaterialPorPedir = PorPedir["materiales"][number];
 
-/** Las columnas de cada renglón y del eje: casilla, color, nombre, línea de tiempo, estado y pedido sugerido. */
+/**
+ * Las columnas de cada renglón y del eje: casilla, color, nombre, línea de tiempo, estado y pedido sugerido. En el
+ * teléfono se apilan: la casilla, el color y el nombre arriba, y abajo, a todo lo ancho, la línea de tiempo, el estado
+ * y el pedido sugerido (`aTodoLoAncho`).
+ */
 const columnas =
-	"grid min-w-[860px] grid-cols-[1.5rem_2rem_13rem_minmax(14rem,1fr)_12rem_7rem] items-center gap-4 px-4";
+	"grid min-w-[860px] grid-cols-[1.5rem_2rem_13rem_minmax(14rem,1fr)_12rem_7rem] items-center gap-4 px-4 max-telefono:min-w-0 max-telefono:grid-cols-[1.5rem_2rem_minmax(0,1fr)] max-telefono:gap-x-3 max-telefono:gap-y-2";
+
+/** Lo que en el teléfono va abajo, a todo lo ancho del renglón. */
+const aTodoLoAncho = "max-telefono:col-span-3";
+
+/** Lo del eje que en el teléfono no sale: ahí el eje solo lleva sus fechas, sobre la línea de tiempo apilada. */
+const soloEnEscritorio = "max-telefono:hidden";
 
 /** Los grupos, de lo más urgente a lo menos. */
 const grupos = [
@@ -146,10 +156,10 @@ function Eje({ datos }: { datos: PorPedir }) {
 	return (
 		<div className="overflow-x-auto rounded-grande bg-panel shadow-panel">
 			<div className={`${columnas} h-encabezado-tabla font-semibold text-etiqueta text-tinta3`}>
-				<span />
-				<span />
-				<span>Material</span>
-				<span className="relative h-5">
+				<span className={soloEnEscritorio} />
+				<span className={soloEnEscritorio} />
+				<span className={soloEnEscritorio}>Material</span>
+				<span className={`relative h-5 ${aTodoLoAncho}`}>
 					{marcasDelEje(datos).map((marca) => (
 						<span
 							key={marca.dia}
@@ -169,8 +179,8 @@ function Eje({ datos }: { datos: PorPedir }) {
 						</span>
 					) : null}
 				</span>
-				<span>Estado</span>
-				<span className="text-right">Pedido sugerido</span>
+				<span className={soloEnEscritorio}>Estado</span>
+				<span className={`text-right ${soloEnEscritorio}`}>Pedido sugerido</span>
 			</div>
 		</div>
 	);
@@ -214,8 +224,10 @@ function Renglon({
 					{material.proveedor} · tarda {plural(material.plazo, "día", "días")}
 				</span>
 			</div>
-			<LineaDeTiempo material={material} datos={datos} />
-			<div className="flex flex-col items-start gap-1">
+			<div className={aTodoLoAncho}>
+				<LineaDeTiempo material={material} datos={datos} />
+			</div>
+			<div className={`flex flex-col items-start gap-1 ${aTodoLoAncho}`}>
 				<Estado texto={material.linea} color={colorDelEstado[material.estado]} />
 				{material.en_borrador === null ? null : (
 					<span title={`Ya está en el borrador ${material.en_borrador.folio}`} className="text-etiqueta text-tinta3">
@@ -223,7 +235,9 @@ function Renglon({
 					</span>
 				)}
 			</div>
-			<b className={`text-right tabular-nums ${material.estado === "alcanza" ? "text-tinta3" : ""}`}>
+			<b
+				className={`text-right tabular-nums max-telefono:text-left ${aTodoLoAncho} ${material.estado === "alcanza" ? "text-tinta3" : ""}`}
+			>
 				{material.por_pedir_texto}
 			</b>
 		</div>

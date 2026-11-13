@@ -31,6 +31,14 @@ import {
 	type ReabastoLeido,
 } from "./bodega-comun.ts";
 
+/**
+ * Unas piezas como las escribe la columna de Pendientes: «8 pz», «1,250 pz», con el separador de miles.
+ * @param piezas Cuántas.
+ */
+function piezasCortas(piezas: number): string {
+	return plural(piezas, "pz", "pz");
+}
+
 /** Un renglón de Pendientes. */
 type Pendiente = z.infer<typeof pendientesDeBodega.resultado>["renglones"][number];
 
@@ -102,7 +110,7 @@ async function pedidosPorSurtir(contexto: ContextoDeAccion): Promise<Pendiente[]
 				detalle: suyas.map((fila) => `${fila.prenda} ${fila.talla}: ${fila.piezas}`).join(" · "),
 				fecha: primera.entrega === null ? null : `Entrega ${textoDeDiaCorto(primera.entrega)}`,
 				orden: primera.entrega ?? "",
-				cantidad: `${piezas} pz`,
+				cantidad: piezasCortas(piezas),
 				estado: { texto: "Por surtir", color: "ambar" },
 				boton: "surtir",
 				documento_id: documentoId,
@@ -123,7 +131,7 @@ async function pedidosPorSurtir(contexto: ContextoDeAccion): Promise<Pendiente[]
 			detalle: suyas.map((fila) => `${fila.prenda} ${fila.talla}`).join(" · "),
 			fecha: pagado === null ? null : `Pagado ${textoDeDiaCorto(diaDe(pagado))} ${hora}`,
 			orden: pagado ?? "",
-			cantidad: `${piezas} pz`,
+			cantidad: piezasCortas(piezas),
 			estado: { texto: "Por surtir · sale hoy", color: "rojo" },
 			boton: "surtir",
 			documento_id: documentoId,
@@ -214,7 +222,7 @@ async function recepcionesPorConfirmar(contexto: ContextoDeAccion): Promise<Pend
 			detalle: despacho.trae ?? "",
 			fecha: textoDeDiaCorto(diaDe(despacho.salio)),
 			orden: despacho.salio,
-			cantidad: despacho.piezas === null ? `${metrosEscritos(despacho.metros ?? 0)} m` : `${despacho.piezas} pz`,
+			cantidad: despacho.piezas === null ? `${metrosEscritos(despacho.metros ?? 0)} m` : piezasCortas(despacho.piezas),
 			estado: { texto: "En tránsito", color: "ambar" },
 			boton: "confirmar_llegada",
 			documento_id: despacho.id,
@@ -338,7 +346,7 @@ async function diferenciasAbiertas(contexto: ContextoDeAccion): Promise<Pendient
 			const cantidad =
 				diferencia.piezas === null
 					? `${metrosEscritos(Math.abs(Number(diferencia.cantidad ?? 0)))} ${diferencia.unidad ?? ""}`
-					: `${Math.abs(diferencia.piezas)} pz`;
+					: piezasCortas(Math.abs(diferencia.piezas));
 			const comun = {
 				clave: `df:${diferencia.id}`,
 				grupo: "diferencias",

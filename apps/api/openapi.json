@@ -30712,7 +30712,7 @@
             "in": "query",
             "name": "producto_id",
             "required": false,
-            "description": "El producto de «Por variante»"
+            "description": "El producto de «Por variante»; sin él, el primero con etiquetas por imprimir o el primero de la lista"
           }
         ],
         "responses": {
@@ -40850,7 +40850,7 @@
                               },
                               "archivo_id": {
                                 "nullable": true,
-                                "description": "El ZIP, cuando ya está armado",
+                                "description": "El ZIP, cuando ya está armado y quien llama ve sueldos y tarifas (lleva la nómina)",
                                 "type": "string",
                                 "format": "uuid",
                                 "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
@@ -46721,7 +46721,7 @@
                               },
                               "resumen": {
                                 "type": "string",
-                                "description": "«{n} por despachar · {m} piezas»"
+                                "description": "«{n} por despachar · {m} piezas»; con solo material, «{n} por despachar»"
                               },
                               "renglones": {
                                 "type": "array",
@@ -54426,13 +54426,18 @@
                                         "capturable": {
                                           "type": "boolean",
                                           "description": "Falso fuera de su ingreso o su baja: sale gris, sin botón"
+                                        },
+                                        "por_llegar": {
+                                          "type": "boolean",
+                                          "description": "Si el día todavía no llega (después de hoy, en hora de México): sin capturar, no va en rojo"
                                         }
                                       },
                                       "required": [
                                         "fecha",
                                         "valor",
                                         "version",
-                                        "capturable"
+                                        "capturable",
+                                        "por_llegar"
                                       ],
                                       "additionalProperties": false
                                     }

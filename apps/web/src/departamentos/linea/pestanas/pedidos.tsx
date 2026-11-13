@@ -199,7 +199,7 @@ export function PestanaPedidos() {
 				<EstadoDePantalla tipo="vacio" texto="Ningún pedido con ese folio o cliente" />
 			) : (
 				<>
-					<div className="grid auto-cols-[minmax(250px,1fr)] grid-flow-col gap-4 overflow-x-auto pb-1">
+					<div className="grid auto-cols-[minmax(250px,1fr)] grid-flow-col items-start gap-4 overflow-x-auto pb-1">
 						{primera.columnas.map((columna) => (
 							<ColumnaDelTablero key={columna.estado} columna={columna} alAbrir={abrir} />
 						))}

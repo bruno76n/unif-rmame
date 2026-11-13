@@ -8,6 +8,7 @@
  */
 
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
+import { plural } from "@uniformame/compartido/calculos/textos";
 import type { materialesDeBodega } from "@uniformame/compartido/contratos/inventario/bodega";
 import { recibirDelCorte } from "@uniformame/compartido/contratos/inventario/corte";
 import { Boton } from "@uniformame/interfaz/botones/boton";
@@ -15,6 +16,7 @@ import { Estado } from "@uniformame/interfaz/estados/estado";
 import { EstadoDePantalla } from "@uniformame/interfaz/estados/estado-de-pantalla";
 import { MuestraDeColor } from "@uniformame/interfaz/estados/muestra-de-color";
 import { TextoConTono } from "@uniformame/interfaz/estados/textos-con-tono";
+import { Panel } from "@uniformame/interfaz/pagina/panel";
 import { Seccion, TituloDeBloque } from "@uniformame/interfaz/pagina/seccion";
 import { DosRenglones } from "@uniformame/interfaz/tablas/dos-renglones";
 import { Tabla } from "@uniformame/interfaz/tablas/tabla";
@@ -51,63 +53,71 @@ function Entregas({ entregas, entregados }: Pick<Materiales, "entregas" | "entre
 			{filas.length === 0 ? (
 				<EstadoDePantalla tipo="vacio" texto="Sin entregas pendientes" />
 			) : (
-				<Tabla
-					nombre="Entregas de material al corte"
-					filas={filas}
-					claveDeFila={(fila: Fila) => `${fila.entrega.lote_id}:${fila.tela.material_id}`}
-					columnas={[
-						{
-							clave: "corte",
-							encabezado: "Corte",
-							celda: ({ entrega }) => (
-								<span className="flex flex-col">
-									<span>{textoDeDiaCorto(entrega.fecha_corte)}</span>
-									<TextoConTono tono={entrega.tono ?? "normal"}>{entrega.en_dias}</TextoConTono>
-								</span>
-							),
-						},
-						{
-							clave: "lote",
-							encabezado: "Lote",
-							celda: ({ entrega }) => (
-								<DosRenglones arriba={entrega.prenda} abajo={`${entrega.folio} · ${entrega.piezas} piezas`} />
-							),
-						},
-						{
-							clave: "tela",
-							encabezado: "Tela",
-							celda: ({ entrega, tela, primera }) => (
-								<DosRenglones
-									arriba={tela.papel === null ? tela.tela : `${tela.tela} · ${tela.papel}`}
-									abajo={`${tela.metros} m${primera && entrega.avios !== null ? ` · ${entrega.avios} avíos` : ""}`}
-								/>
-							),
-						},
-						{
-							clave: "sugeridos",
-							encabezado: "Rollos sugeridos",
-							celda: ({ tela }) =>
-								tela.sugeridos === null ? (
-									<TextoConTono tono="rojo">No alcanza</TextoConTono>
-								) : (
+				<Panel>
+					<Tabla
+						nombre="Entregas de material al corte"
+						filas={filas}
+						claveDeFila={(fila: Fila) => `${fila.entrega.lote_id}:${fila.tela.material_id}`}
+						columnas={[
+							{
+								clave: "corte",
+								encabezado: "Corte",
+								celda: ({ entrega }) => (
+									<span className="flex flex-col">
+										<span>{textoDeDiaCorto(entrega.fecha_corte)}</span>
+										<TextoConTono tono={entrega.tono ?? "normal"}>{entrega.en_dias}</TextoConTono>
+									</span>
+								),
+							},
+							{
+								clave: "lote",
+								encabezado: "Lote",
+								celda: ({ entrega }) => (
 									<DosRenglones
-										arriba={`${tela.sugeridos.rollos} · ${tela.sugeridos.metros} m`}
-										abajo={tela.sugeridos.partidas.length === 0 ? "" : `partida ${tela.sugeridos.partidas.join(", ")}`}
+										arriba={entrega.prenda}
+										abajo={`${entrega.folio} · ${plural(entrega.piezas, "pieza", "piezas")}`}
 									/>
 								),
-						},
-						{
-							clave: "entregar",
-							encabezado: "",
-							alinear: "derecha",
-							celda: ({ entrega }) => (
-								<Boton chico onClick={() => abrir("entrega", entrega.lote_id)}>
-									Entregar
-								</Boton>
-							),
-						},
-					]}
-				/>
+							},
+							{
+								clave: "tela",
+								encabezado: "Tela",
+								celda: ({ entrega, tela, primera }) => (
+									<DosRenglones
+										arriba={tela.papel === null ? tela.tela : `${tela.tela} · ${tela.papel}`}
+										abajo={`${tela.metros} m${primera && entrega.avios !== null ? ` · ${entrega.avios} avíos` : ""}`}
+									/>
+								),
+							},
+							{
+								clave: "sugeridos",
+								encabezado: "Rollos sugeridos",
+								alinear: "derecha",
+								celda: ({ tela }) =>
+									tela.sugeridos === null ? (
+										<TextoConTono tono="rojo">No alcanza</TextoConTono>
+									) : (
+										<DosRenglones
+											arriba={`${tela.sugeridos.rollos} · ${tela.sugeridos.metros} m`}
+											abajo={
+												tela.sugeridos.partidas.length === 0 ? "" : `partida ${tela.sugeridos.partidas.join(", ")}`
+											}
+										/>
+									),
+							},
+							{
+								clave: "entregar",
+								encabezado: "",
+								alinear: "derecha",
+								celda: ({ entrega }) => (
+									<Boton chico onClick={() => abrir("entrega", entrega.lote_id)}>
+										Entregar
+									</Boton>
+								),
+							},
+						]}
+					/>
+				</Panel>
 			)}
 			{entregados.length === 0 ? null : (
 				<div className="flex flex-wrap gap-2">
@@ -133,56 +143,58 @@ function Regresa({ regresa }: Pick<Materiales, "regresa">) {
 			{regresa.length === 0 ? (
 				<EstadoDePantalla tipo="vacio" texto="Nada por recibir del corte" />
 			) : (
-				<Tabla
-					nombre="Regresa del corte"
-					filas={regresa}
-					claveDeFila={(fila: Fila) => fila.rollo_id}
-					columnas={[
-						{
-							clave: "rollo",
-							encabezado: "Rollo o retazo",
-							celda: (fila) => <DosRenglones arriba={fila.folio} abajo={fila.es_retazo ? "Retazo" : "Rollo"} />,
-						},
-						{
-							clave: "tela",
-							encabezado: "Tela",
-							celda: (fila) => (
-								<DosRenglones arriba={fila.tela} abajo={fila.partida === null ? "" : `partida ${fila.partida}`} />
-							),
-						},
-						{
-							clave: "corte",
-							encabezado: "Del corte",
-							celda: (fila) => (
-								<DosRenglones
-									arriba={fila.lote ?? "—"}
-									abajo={fila.fecha === null ? "" : textoDeDiaCorto(fila.fecha)}
-								/>
-							),
-						},
-						{ clave: "metros", encabezado: "Metros", alinear: "derecha", celda: (fila) => `${fila.metros} m` },
-						{
-							clave: "botones",
-							encabezado: "",
-							alinear: "derecha",
-							celda: (fila) => (
-								<span className="flex justify-end gap-2">
-									<Boton chico onClick={() => abrirEtiquetas([fila.rollo_id])}>
-										Etiqueta
-									</Boton>
-									<Boton
-										chico
-										variante="principal"
-										disabled={!conConexion || enviando}
-										onClick={() => void enviar({ datos: { rollo_id: fila.rollo_id }, version: fila.version })}
-									>
-										Recibir
-									</Boton>
-								</span>
-							),
-						},
-					]}
-				/>
+				<Panel>
+					<Tabla
+						nombre="Regresa del corte"
+						filas={regresa}
+						claveDeFila={(fila: Fila) => fila.rollo_id}
+						columnas={[
+							{
+								clave: "rollo",
+								encabezado: "Rollo o retazo",
+								celda: (fila) => <DosRenglones arriba={fila.folio} abajo={fila.es_retazo ? "Retazo" : "Rollo"} />,
+							},
+							{
+								clave: "tela",
+								encabezado: "Tela",
+								celda: (fila) => (
+									<DosRenglones arriba={fila.tela} abajo={fila.partida === null ? "" : `partida ${fila.partida}`} />
+								),
+							},
+							{
+								clave: "corte",
+								encabezado: "Del corte",
+								celda: (fila) => (
+									<DosRenglones
+										arriba={fila.lote ?? "—"}
+										abajo={fila.fecha === null ? "" : textoDeDiaCorto(fila.fecha)}
+									/>
+								),
+							},
+							{ clave: "metros", encabezado: "Metros", alinear: "derecha", celda: (fila) => `${fila.metros} m` },
+							{
+								clave: "botones",
+								encabezado: "",
+								alinear: "derecha",
+								celda: (fila) => (
+									<span className="flex justify-end gap-2">
+										<Boton chico onClick={() => abrirEtiquetas([fila.rollo_id])}>
+											Etiqueta
+										</Boton>
+										<Boton
+											chico
+											variante="principal"
+											disabled={!conConexion || enviando}
+											onClick={() => void enviar({ datos: { rollo_id: fila.rollo_id }, version: fila.version })}
+										>
+											Recibir
+										</Boton>
+									</span>
+								),
+							},
+						]}
+					/>
+				</Panel>
 			)}
 		</Seccion>
 	);
@@ -206,81 +218,85 @@ function EnBodega({ telas, avios, sin_carga }: Pick<Materiales, "telas" | "avios
 			}
 		>
 			<TituloDeBloque titulo="Telas" />
-			<Tabla
-				nombre="Telas"
-				filas={telas}
-				claveDeFila={(tela: Tela) => tela.material_id}
-				columnas={[
-					{
-						clave: "material",
-						encabezado: "Material",
-						celda: (tela) => (
-							<span className="flex items-center gap-2">
-								{tela.color === null ? null : <MuestraDeColor color={tela.color} />}
-								<DosRenglones arriba={tela.nombre} abajo={tela.detalle ?? ""} />
-							</span>
-						),
-					},
-					{
-						clave: "en_bodega",
-						encabezado: "En bodega",
-						alinear: "derecha",
-						celda: (tela) => (
-							<DosRenglones
-								arriba={`${tela.en_bodega} m`}
-								abajo={[
-									Number(tela.en_aduana) === 0 ? null : `${tela.en_aduana} en aduana`,
-									Number(tela.en_taller) === 0 ? null : `${tela.en_taller} en el taller`,
-								]
-									.filter((parte) => parte !== null)
-									.join(" · ")}
-							/>
-						),
-					},
-					{
-						clave: "rollos",
-						encabezado: "Rollos",
-						celda: (tela) => (
-							<DosRenglones
-								arriba={`${tela.rollos} rollos y ${tela.retazos} retazos`}
-								abajo={tela.rollos_taller === 0 ? "" : `${tela.rollos_taller} en el taller`}
-							/>
-						),
-					},
-					{ clave: "partidas", encabezado: "Partidas", celda: (tela) => tela.partidas.join(", ") },
-					{
-						clave: "etiquetas",
-						encabezado: "",
-						alinear: "derecha",
-						celda: (tela) =>
-							tela.rollo_ids.length === 0 ? null : (
-								<Boton chico onClick={() => abrirEtiquetas(tela.rollo_ids)}>
-									Etiquetas
-								</Boton>
+			<Panel>
+				<Tabla
+					nombre="Telas"
+					filas={telas}
+					claveDeFila={(tela: Tela) => tela.material_id}
+					columnas={[
+						{
+							clave: "material",
+							encabezado: "Material",
+							celda: (tela) => (
+								<span className="flex items-center gap-2">
+									{tela.color === null ? null : <MuestraDeColor color={tela.color} />}
+									<DosRenglones arriba={tela.nombre} abajo={tela.detalle ?? ""} />
+								</span>
 							),
-					},
-				]}
-			/>
+						},
+						{
+							clave: "en_bodega",
+							encabezado: "En bodega",
+							alinear: "derecha",
+							celda: (tela) => (
+								<DosRenglones
+									arriba={`${tela.en_bodega} m`}
+									abajo={[
+										Number(tela.en_aduana) === 0 ? null : `${tela.en_aduana} en aduana`,
+										Number(tela.en_taller) === 0 ? null : `${tela.en_taller} en el taller`,
+									]
+										.filter((parte) => parte !== null)
+										.join(" · ")}
+								/>
+							),
+						},
+						{
+							clave: "rollos",
+							encabezado: "Rollos",
+							celda: (tela) => (
+								<DosRenglones
+									arriba={`${tela.rollos} rollos y ${tela.retazos} retazos`}
+									abajo={tela.rollos_taller === 0 ? "" : `${tela.rollos_taller} en el taller`}
+								/>
+							),
+						},
+						{ clave: "partidas", encabezado: "Partidas", celda: (tela) => tela.partidas.join(", ") },
+						{
+							clave: "etiquetas",
+							encabezado: "",
+							alinear: "derecha",
+							celda: (tela) =>
+								tela.rollo_ids.length === 0 ? null : (
+									<Boton chico onClick={() => abrirEtiquetas(tela.rollo_ids)}>
+										Etiquetas
+									</Boton>
+								),
+						},
+					]}
+				/>
+			</Panel>
 			<TituloDeBloque titulo="Avíos" />
-			<Tabla
-				nombre="Avíos"
-				filas={avios}
-				claveDeFila={(avio: Avio) => avio.material_id}
-				columnas={[
-					{
-						clave: "material",
-						encabezado: "Material",
-						celda: (avio) => <DosRenglones arriba={avio.nombre} abajo={avio.presentacion ?? ""} />,
-					},
-					{
-						clave: "existencia",
-						encabezado: "Existencia",
-						alinear: "derecha",
-						celda: (avio) => `${avio.existencia} ${avio.unidad}`,
-					},
-					{ clave: "uso", encabezado: "Uso", celda: (avio) => avio.usos.join(" · ") },
-				]}
-			/>
+			<Panel>
+				<Tabla
+					nombre="Avíos"
+					filas={avios}
+					claveDeFila={(avio: Avio) => avio.material_id}
+					columnas={[
+						{
+							clave: "material",
+							encabezado: "Material",
+							celda: (avio) => <DosRenglones arriba={avio.nombre} abajo={avio.presentacion ?? ""} />,
+						},
+						{
+							clave: "existencia",
+							encabezado: "Existencia",
+							alinear: "derecha",
+							celda: (avio) => `${avio.existencia} ${avio.unidad}`,
+						},
+						{ clave: "uso", encabezado: "Uso", celda: (avio) => avio.usos.join(" · ") },
+					]}
+				/>
+			</Panel>
 			{cargando ? <VentanaCargaMaterial materiales={sin_carga} alCerrar={() => setCargando(false)} /> : null}
 		</Seccion>
 	);

@@ -1,6 +1,7 @@
 /**
  * La pestaña Contador externo: el paquete del mes con su fecha límite y «Preparar paquete» (o «Al día»), los paquetes
- * con su estado y su archivo, y los documentos que regresó el contador.
+ * con su estado y su archivo, y los documentos que regresó el contador, con «Adjuntar documento»; cada documento lo abre
+ * su enlace a `/v1/archivos/{id}`.
  * Fase 19 · docs/interfaz/fabrica/contaduria.md («Contador externo»)
  */
 
@@ -11,15 +12,18 @@ import { EstadoDePantalla } from "@uniformame/interfaz/estados/estado-de-pantall
 import { Recuadro } from "@uniformame/interfaz/estados/recuadro";
 import { Panel } from "@uniformame/interfaz/pagina/panel";
 import { Tabla } from "@uniformame/interfaz/tablas/tabla";
+import { Plus } from "lucide-react";
 import { useState } from "react";
 import { usePaginas } from "../../../comun/api.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
+import { VentanaAdjuntarDocumento } from "../ventanas/adjuntar-documento.tsx";
 import { VentanaPaqueteMes } from "../ventanas/paquete-mes.tsx";
 
 /** La pestaña Contador externo. */
 export function PestanaContadorExterno() {
 	const conConexion = useConConexion();
 	const [paquete, setPaquete] = useState<string | undefined>(undefined);
+	const [adjuntando, setAdjuntando] = useState(false);
 	const paginas = usePaginas(contadorExterno, {});
 	const [datos] = paginas.data?.pages ?? [];
 	const documentos = paginas.data?.pages.flatMap((pagina) => pagina.documentos) ?? [];
@@ -89,7 +93,14 @@ export function PestanaContadorExterno() {
 					/>
 				)}
 			</Panel>
-			<Panel titulo="Documentos del contador">
+			<Panel
+				titulo="Documentos del contador"
+				derecha={
+					<Boton chico icono={Plus} disabled={!conConexion} onClick={() => setAdjuntando(true)}>
+						Adjuntar documento
+					</Boton>
+				}
+			>
 				{documentos.length === 0 ? (
 					<EstadoDePantalla tipo="vacio" texto="Sin documentos del contador" />
 				) : (
@@ -122,6 +133,7 @@ export function PestanaContadorExterno() {
 				)}
 			</Panel>
 			{paquete === undefined ? null : <VentanaPaqueteMes paqueteId={paquete} alCerrar={() => setPaquete(undefined)} />}
+			{adjuntando ? <VentanaAdjuntarDocumento alCerrar={() => setAdjuntando(false)} /> : null}
 		</>
 	);
 }

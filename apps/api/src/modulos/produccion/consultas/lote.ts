@@ -40,7 +40,8 @@ const deRegistro = z.object({
 	id: z.uuid(),
 	version: z.coerce.number(),
 	hecho_en: z.string(),
-	cuando: z.string(),
+	dia: z.string(),
+	hora: z.string(),
 	bulto: z.string(),
 	persona: z.string(),
 	operacion: z.string(),
@@ -76,7 +77,8 @@ async function registrosDelLote(contexto: ContextoDeConsulta, lote: LoteLeido, c
 			: sql`(r.hecho_en, r.id) < (${String(desde.hecho_en)}::timestamptz, ${String(desde.id)}::uuid)`;
 	const { rows } = await contexto.base.execute(sql`
 		SELECT r.id, r.version, r.hecho_en::text AS hecho_en,
-			to_char(r.hecho_en AT TIME ZONE 'America/Mexico_City', 'DD/MM HH24:MI') AS cuando,
+			to_char(r.hecho_en AT TIME ZONE 'America/Mexico_City', 'YYYY-MM-DD') AS dia,
+			to_char(r.hecho_en AT TIME ZONE 'America/Mexico_City', 'HH24:MI') AS hora,
 			b.folio AS bulto, p.nombre AS persona, o.nombre AS operacion, r.piezas_buenas AS buenas,
 			r.piezas_danadas AS danadas, r.origen, r.estado, r.motivo_cancelacion AS motivo, r.tarifa_centavos
 		FROM registros_operacion r JOIN bultos b ON b.id = r.bulto_id JOIN personas p ON p.id = r.persona_id
@@ -96,7 +98,8 @@ async function registrosDelLote(contexto: ContextoDeConsulta, lote: LoteLeido, c
 		renglones: pagina.renglones.map((registro) => ({
 			registro_id: registro.id,
 			version: registro.version,
-			cuando: `${registro.cuando} · ${registro.bulto}`,
+			// «10 nov 16:03 · B-0012»: el día en hora de México, como en todo el sistema, y su hora.
+			cuando: `${textoDeDiaCorto(registro.dia)} ${registro.hora} · ${registro.bulto}`,
 			bulto: registro.bulto,
 			persona: registro.persona,
 			operacion: registro.operacion,

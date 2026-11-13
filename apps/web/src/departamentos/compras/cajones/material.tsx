@@ -65,6 +65,15 @@ interface ComoSePide {
 }
 
 /**
+ * El título de los precios: «Precios · Los últimos {n}», en singular con uno y sin cifra sin ninguno.
+ * @param cuantos Cuántos precios trae.
+ */
+function tituloDePrecios(cuantos: number): string {
+	if (cuantos === 0) return "Precios";
+	return cuantos === 1 ? "Precios · El último" : `Precios · Los últimos ${cuantos}`;
+}
+
+/**
  * Un número guardado («150.000») como se escribe en un campo («150»).
  * @param texto El decimal guardado.
  */
@@ -223,7 +232,7 @@ export function CajonMaterial({ materialId, alCerrar }: { materialId: string; al
 									leidos.comprometido.map((lote) => (
 										<div key={lote.lote_id} className="flex justify-between gap-3 text-etiqueta">
 											<span>
-												<b className="font-mono">{lote.folio}</b> {lote.detalle}
+												<b className="font-bold tabular-nums">{lote.folio}</b> {lote.detalle}
 											</span>
 											<span className="tabular-nums">{cantidadConUnidad(lote.cantidad, unidad)}</span>
 										</div>
@@ -241,7 +250,7 @@ export function CajonMaterial({ materialId, alCerrar }: { materialId: string; al
 											className="flex justify-between gap-3 text-left text-etiqueta hover:text-marca"
 										>
 											<span>
-												<b className="font-mono">{viene.folio}</b> · llega el {textoDeDiaCorto(viene.dia)}
+												<b className="font-bold tabular-nums">{viene.folio}</b> · llega el {textoDeDiaCorto(viene.dia)}
 											</span>
 											<span className="tabular-nums">+{cantidadConUnidad(viene.cantidad, unidad)}</span>
 										</button>
@@ -315,7 +324,7 @@ export function CajonMaterial({ materialId, alCerrar }: { materialId: string; al
 										},
 									]}
 								/>
-								<TituloDeSeccion titulo={`Precios · Los últimos ${leidos.precios.length}`} />
+								<TituloDeSeccion titulo={tituloDePrecios(leidos.precios.length)} />
 								{leidos.precios.map((precio) => (
 									<div
 										key={`${precio.fecha}-${precio.proveedor}-${precio.precio_centavos}-${precio.origen}`}

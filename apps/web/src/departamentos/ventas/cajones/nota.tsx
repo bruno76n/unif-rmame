@@ -194,18 +194,22 @@ export function CajonNota({ notaId, alCerrar }: { notaId: string; alCerrar: () =
 				/>
 			</>
 		);
-	const izquierda =
-		nota === undefined ? undefined : nota.puede.cancelar ? (
-			<Boton variante="peligro" disabled={!conConexion} onClick={() => setVentana("cancelar")}>
-				Cancelar nota
+	// El pie: a la izquierda «Cerrar» y, por despachar, «Cancelar nota» (o lo que espera de Dirección); a la derecha
+	// «PDF» y la acción de su estado en negro.
+	const izquierda = (
+		<div className="flex flex-wrap items-center gap-2">
+			<Boton variante="fantasma" onClick={alCerrar}>
+				Cerrar
 			</Boton>
-		) : nota.esperando !== null ? (
-			<span className="font-semibold text-tinta2">{nota.esperando}</span>
-		) : nota.puede.nota_credito ? (
-			<Boton variante="fantasma" disabled={!conConexion} onClick={() => setVentana("credito")}>
-				Nota de crédito
-			</Boton>
-		) : undefined;
+			{nota?.puede.cancelar === true ? (
+				<Boton variante="peligro" disabled={!conConexion} onClick={() => setVentana("cancelar")}>
+					Cancelar nota
+				</Boton>
+			) : nota === undefined || nota.esperando === null ? null : (
+				<span className="font-semibold text-tinta2">{nota.esperando}</span>
+			)}
+		</div>
+	);
 	return (
 		<>
 			<Cajon
@@ -217,7 +221,7 @@ export function CajonNota({ notaId, alCerrar }: { notaId: string; alCerrar: () =
 				}
 				titulo={nota?.cliente.nombre ?? ""}
 				{...(relacionados === undefined ? {} : { relacionados })}
-				{...(izquierda === undefined ? {} : { pieIzquierda: izquierda })}
+				pieIzquierda={izquierda}
 				accion={
 					nota === undefined ? undefined : (
 						<div className="flex flex-wrap justify-end gap-2">
@@ -234,6 +238,11 @@ export function CajonNota({ notaId, alCerrar }: { notaId: string; alCerrar: () =
 									onClick={() => setVentana("confirmar")}
 								>
 									Confirmar entrega
+								</Boton>
+							) : null}
+							{nota.puede.nota_credito && nota.esperando === null ? (
+								<Boton variante="principal" disabled={!conConexion} onClick={() => setVentana("credito")}>
+									Nota de crédito
 								</Boton>
 							) : null}
 						</div>

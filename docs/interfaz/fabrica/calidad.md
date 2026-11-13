@@ -107,6 +107,8 @@ Los mensajes de error de cada acción están en su archivo del módulo.
 
 **Fase 19, parte 9.**
 
+- **Al revisar el diseño:** las tablas de Por revisar y de Defectos van en su panel blanco; «Reproceso en el taller» no lleva «0 reprocesos» junto a «Sin reprocesos»; y la cifra de cada defecto del periodo va en rojo, con su separador de miles.
+
 - **Las consultas** están en `apps/api/src/modulos/calidad/consultas/`, con sus contratos en `packages/compartido/src/contratos/calidad/` (`pendientes.ts`, `por-revisar.ts`, `defectos.ts`, `consultas-reclamos.ts` y `devolucion.ts`); todas piden el departamento Calidad y ninguna manda precios, importes, tarifas ni sueldos. Lo que comparten (los lotes por revisar, los reprocesos, las devoluciones que esperan a Calidad, los defectos del periodo y las listas de los selectores) está en `consultas/comun.ts`; «para quién» es un lote lo escriben las consultas de Producción (`escribirParaQuien`).
   - `calidad.pendientes` (`pendientes.ts`) arma las tres cifras y los renglones ya escritos, con su estado y su color; la pastilla (`pastillaCalidad`, en `pastillas` del `index.ts`) cuenta los lotes por revisar, las devoluciones por revisar y los reprocesos con su lote en aduana, y va en rojo con un lote «Por revisar hoy» (`calidad.por_revisar_hoy_dias`).
   - `calidad.por_revisar` y `calidad.revision_lote` (`por-revisar.ts`): «Reproceso en el taller» lleva los que siguen en reproceso y los aprobados hoy. La revisión propone, por defecto, la primera operación del flujo que suele causarlo (o la última), y por operación y talla la persona de `produccion.persona_que_la_hizo` (regla 3).

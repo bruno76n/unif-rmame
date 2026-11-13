@@ -34,6 +34,28 @@ export function rutaDePestana(departamento: string, pestana: string): string {
 }
 
 /**
+ * Las pestañas con Pendientes contando todo lo pendiente (sus renglones), roja si alguno va en rojo, y no solo lo de la
+ * pastilla del menú (comunes, regla 3). Sin la consulta todavía, quedan como vienen y Pendientes lleva la pastilla.
+ * @param pestanas Las pestañas del departamento.
+ * @param renglones Los renglones de su consulta de Pendientes, sin filtro.
+ */
+export function conTodoLoPendiente(
+	pestanas: readonly Pestana[],
+	renglones: readonly { estado: { color: string } }[] | undefined,
+): readonly Pestana[] {
+	if (renglones === undefined) return pestanas;
+	return pestanas.map((pestana) =>
+		pestana.clave === "pendientes"
+			? {
+					...pestana,
+					conteo: renglones.length,
+					rojo: renglones.some((renglon) => renglon.estado.color === "rojo"),
+				}
+			: pestana,
+	);
+}
+
+/**
  * La página de un departamento, con su título y sus pestañas en la dirección.
  * @param props El departamento, sus pestañas, la activa y el contenido.
  */

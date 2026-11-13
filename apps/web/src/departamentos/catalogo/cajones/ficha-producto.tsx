@@ -107,17 +107,8 @@ export function CajonFichaDeProducto({ productoId }: { productoId: string }) {
 							Descartar cambios
 						</Boton>
 					) : (
-						<span className="flex flex-wrap gap-2">
-							<Boton
-								variante="fantasma"
-								onClick={salir(() => ir({ ...sinCajon, etiquetas_de: productoId }, "etiquetas"))}
-							>
-								Etiquetas
-							</Boton>
-							<Boton variante="fantasma" onClick={salir(() => ir(conAlta({ base: productoId })))}>
-								Crear otro a partir de este
-							</Boton>
-						</span>
+						// Sin cambios, «Listo» cierra a la derecha: no hace falta otro «Cerrar».
+						<span />
 					)
 				}
 				accion={
@@ -135,7 +126,13 @@ export function CajonFichaDeProducto({ productoId }: { productoId: string }) {
 							}}
 						/>
 					) : (
-						<Boton onClick={() => ir(sinCajon)}>Listo</Boton>
+						<span className="flex flex-wrap justify-end gap-2">
+							<Boton onClick={salir(() => ir({ ...sinCajon, etiquetas_de: productoId }, "etiquetas"))}>Etiquetas</Boton>
+							<Boton onClick={salir(() => ir(conAlta({ base: productoId })))}>Crear otro a partir de este</Boton>
+							<Boton variante="principal" onClick={() => ir(sinCajon)}>
+								Listo
+							</Boton>
+						</span>
 					)
 				}
 			>
@@ -305,7 +302,11 @@ function AplicarCambios({
 		else if (salida.falla.tipo === "choque") alChocar();
 	};
 	return (
-		<Boton disabled={conErrores || accion.isPending || !conConexion} onClick={() => void aplicar()}>
+		<Boton
+			variante="principal"
+			disabled={conErrores || accion.isPending || !conConexion}
+			onClick={() => void aplicar()}
+		>
 			Aplicar cambios
 		</Boton>
 	);
@@ -677,7 +678,7 @@ function MatrizDeTallas({
 							</td>
 							{columnas.map((lista) => (
 								<td key={lista.id} className="px-2 py-2">
-									{cajita(lista.id, null, `Precio base en ${lista.nombre}`)}
+									{cajita(lista.id, null, `Precio base · ${lista.nombre}`)}
 								</td>
 							))}
 							<td />
@@ -723,7 +724,7 @@ function MatrizDeTallas({
 													cajita(
 														lista.id,
 														variante.id,
-														`Talla ${variante.talla} en ${lista.nombre}`,
+														`Talla ${variante.talla} · ${lista.nombre}`,
 														precioDe(lista.id, null),
 													)
 												)}

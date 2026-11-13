@@ -80,7 +80,10 @@ export const contadorExterno = definirConsulta({
 				mes_texto: z.string(),
 				enviado: z.string().nullable().describe("«12 nov»"),
 				estado: estadoArmado,
-				archivo_id: z.uuid().nullable().describe("El ZIP, cuando ya está armado"),
+				archivo_id: z
+					.uuid()
+					.nullable()
+					.describe("El ZIP, cuando ya está armado y quien llama ve sueldos y tarifas (lleva la nómina)"),
 			}),
 		),
 		documentos: z.array(

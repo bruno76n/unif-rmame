@@ -140,7 +140,7 @@ function ContenidoPorQue({
 						className="flex w-full justify-between gap-4 py-1.5 pl-4 text-left text-etiqueta text-tinta2 hover:text-marca"
 					>
 						<span>
-							<b className="font-mono">{viene.folio}</b> · llega el {textoDeDiaCorto(viene.dia)}
+							<b className="font-bold tabular-nums">{viene.folio}</b> · llega el {textoDeDiaCorto(viene.dia)}
 							{viene.atrasada ? " · atrasada" : ""}
 						</span>
 						<span className="tabular-nums">{cantidadConUnidad(viene.cantidad, unidad)}</span>
@@ -153,7 +153,7 @@ function ContenidoPorQue({
 				{cuenta.comprometido.map((lote) => (
 					<div key={lote.lote_id} className="flex justify-between gap-4 py-1.5 pl-4 text-etiqueta text-tinta2">
 						<span>
-							<b className="font-mono">{lote.folio}</b> {lote.detalle}
+							<b className="font-bold tabular-nums">{lote.folio}</b> {lote.detalle}
 						</span>
 						<span className="tabular-nums">{cantidadConUnidad(lote.cantidad, unidad)}</span>
 					</div>

@@ -86,6 +86,9 @@ describe("Las pantallas de Calidad", () => {
 		async () => {
 			const pagina = await pantalla.abrir("/calidad/por-revisar", { quien: "calidad" });
 			await enPantalla(pagina.getByText("Pants marino liso")).toBeVisible();
+			// Sin reprocesos, «Sin reprocesos» no se repite con «0 reprocesos» junto al título.
+			await enPantalla(pagina.getByText("Sin reprocesos")).toBeVisible();
+			await enPantalla(pagina.getByText("0 reprocesos")).toHaveCount(0);
 			await pantalla.capturar(pagina, "calidad/por-revisar-escritorio");
 			await pagina.getByRole("button", { name: "Revisar", exact: true }).click();
 			await enPantalla(pagina).toHaveURL(new RegExp(`lote=${loteDeLaMuestra}`));
@@ -154,6 +157,9 @@ describe("Las pantallas de Calidad", () => {
 		await enPantalla(pagina.getByRole("heading", { name: "Por operación" })).toBeVisible();
 		await enPantalla(pagina.getByRole("heading", { name: "Por persona" })).toBeVisible();
 		await enPantalla(pagina.getByRole("heading", { name: "Catálogo de defectos" })).toBeVisible();
+		// La cifra de cada defecto del periodo va en rojo (#C23A31).
+		const chips = pagina.getByRole("list", { name: "Los defectos del periodo" }).locator("b");
+		await enPantalla(chips.first()).toHaveCSS("color", "rgb(194, 58, 49)");
 		await pantalla.capturar(pagina, "calidad/defectos-escritorio");
 		await pagina.getByRole("button", { name: "Agregar defecto" }).click();
 		const ventana = pagina.getByRole("dialog", { name: "Defecto nuevo" });

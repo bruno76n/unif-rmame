@@ -57,6 +57,11 @@ describe("produccion.lotes: los lotes del taller en cuatro grupos, sin dinero", 
 				if (i > 0) expect(casilla.puede_hasta).toBe(tarjeta.tira[i - 1]?.hechas);
 			});
 			expect(tarjeta.tira.filter((casilla) => casilla.marca !== null).length).toBeLessThanOrEqual(1);
+			// Cada estado lleva su línea; «Sin datos de la tablet», «Desde el {fecha}» aunque las tablets nunca hayan subido.
+			expect(tarjeta.estado.linea, tarjeta.folio).not.toBe("");
+			if (tarjeta.estado.texto === "Sin datos de la tablet") {
+				expect(tarjeta.estado.linea).toMatch(/^Desde el \d{1,2} [a-z]{3,4}$/);
+			}
 		}
 		// Por cortar, por fecha de corte, con su receta; el L-2026-019 es del pedido de Zamora, sin verificar.
 		const pantalon = lotes.por_cortar.find((lote) => lote.folio === "L-2026-019");

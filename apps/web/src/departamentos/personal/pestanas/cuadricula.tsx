@@ -1,7 +1,8 @@
 /**
  * La cuadrícula «Asistencia del {semana}»: una fila por persona que cobra por tiempo o mixta, un botón por día de
- * trabajo («✓» completo, «½» medio, «F» falta, vacío sin capturar; gris y sin botón fuera de su ingreso o su baja) y
- * «Días». Abajo, la leyenda, los días sin capturar y «Cerrar semana» (o «Cerrada · la tiene contaduría»).
+ * trabajo («✓» completo, «½» medio, «F» falta, vacío sin capturar, con borde rojo si el día ya llegó; gris y sin botón
+ * fuera de su ingreso o su baja) y «Días». Abajo, la leyenda, los días sin capturar y «Cerrar semana» (o «Cerrada · la
+ * tiene contaduría»).
  * Fase 19 · docs/interfaz/fabrica/personal.md («Asistencia»)
  *
  * Cada toque manda `personal.cambiar_dia_asistencia` con el valor que queda (✓ → ½ → F → ✓; uno vacío pasa a ✓) y el
@@ -19,6 +20,7 @@ import { Boton } from "@uniformame/interfaz/botones/boton";
 import { unirClases } from "@uniformame/interfaz/clases";
 import { EstadoDePantalla } from "@uniformame/interfaz/estados/estado-de-pantalla";
 import { LineaDeAviso, TextoConTono } from "@uniformame/interfaz/estados/textos-con-tono";
+import { Panel } from "@uniformame/interfaz/pagina/panel";
 import { DosRenglones } from "@uniformame/interfaz/tablas/dos-renglones";
 import { Tabla } from "@uniformame/interfaz/tablas/tabla";
 import { Lock } from "lucide-react";
@@ -46,6 +48,9 @@ const comoSeVe: Readonly<
 	falta: { marca: "F", nombre: "Falta", clase: "bg-rojo/12 text-texto-error" },
 	vacio: { marca: "", nombre: "Sin capturar", clase: "bg-panel ring-[1.5px] ring-estado-rojo ring-inset" },
 };
+
+/** Un día sin capturar que todavía no llega: con su borde, sin el rojo de lo que falta. */
+const porLlegar = "bg-panel ring-[1.5px] ring-linea2 ring-inset";
 
 /** El valor que sigue al tocar un día: ✓ → ½ → F → ✓; uno vacío pasa a ✓. */
 const siguiente: Readonly<Record<"completo" | "medio" | "falta" | "vacio", (typeof valoresDeDia)[number]>> = {
@@ -92,7 +97,11 @@ function Dia({
 			title={forma.nombre}
 			disabled={cerrada}
 			onClick={alTocar}
-			className={unirClases(caja, forma.clase, "disabled:cursor-default disabled:opacity-75")}
+			className={unirClases(
+				caja,
+				dia.valor === null && dia.por_llegar ? porLlegar : forma.clase,
+				"disabled:cursor-default disabled:opacity-75",
+			)}
 		>
 			{forma.marca}
 		</button>
@@ -182,40 +191,42 @@ export function Cuadricula({ semana }: { semana: SemanaDeAsistencia }) {
 	return (
 		<div className="flex flex-col gap-2.5" aria-busy={enviando}>
 			{choco ? <EstadoDePantalla tipo="choque" documento={`La semana del ${semana.texto}`} /> : null}
-			<Tabla
-				nombre={`Asistencia del ${semana.texto}`}
-				filas={semana.personas}
-				claveDeFila={(persona) => persona.persona_id}
-				columnas={[
-					{
-						clave: "persona",
-						encabezado: "Persona",
-						celda: (persona) => <DosRenglones arriba={persona.nombre} abajo={persona.detalle} />,
-					},
-					...semana.dias.map((encabezado, indice) => ({
-						clave: encabezado.fecha,
-						encabezado: encabezado.texto,
-						celda: (persona: PersonaDeLaSemana) => {
-							const dia = persona.dias[indice];
-							return dia === undefined ? null : (
-								<Dia
-									persona={persona}
-									dia={dia}
-									encabezado={encabezado.texto}
-									cerrada={semana.cerrada}
-									alTocar={() => void tocar(persona, dia)}
-								/>
-							);
+			<Panel>
+				<Tabla
+					nombre={`Asistencia del ${semana.texto}`}
+					filas={semana.personas}
+					claveDeFila={(persona) => persona.persona_id}
+					columnas={[
+						{
+							clave: "persona",
+							encabezado: "Persona",
+							celda: (persona) => <DosRenglones arriba={persona.nombre} abajo={persona.detalle} />,
 						},
-					})),
-					{
-						clave: "dias",
-						encabezado: "Días",
-						alinear: "derecha" as const,
-						celda: (persona) => <b className="tabular-nums">{persona.total}</b>,
-					},
-				]}
-			/>
+						...semana.dias.map((encabezado, indice) => ({
+							clave: encabezado.fecha,
+							encabezado: encabezado.texto,
+							celda: (persona: PersonaDeLaSemana) => {
+								const dia = persona.dias[indice];
+								return dia === undefined ? null : (
+									<Dia
+										persona={persona}
+										dia={dia}
+										encabezado={encabezado.texto}
+										cerrada={semana.cerrada}
+										alTocar={() => void tocar(persona, dia)}
+									/>
+								);
+							},
+						})),
+						{
+							clave: "dias",
+							encabezado: "Días",
+							alinear: "derecha" as const,
+							celda: (persona) => <b className="tabular-nums">{persona.total}</b>,
+						},
+					]}
+				/>
+			</Panel>
 			<div className="flex flex-wrap items-center gap-3">
 				<Leyenda />
 				<span className="flex-1" />

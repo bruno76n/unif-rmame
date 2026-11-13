@@ -1,8 +1,8 @@
 /**
  * Asistencia, la primera pestaña de Personal: la barra de indicadores (Asistencia de la semana, Personas y PIN del
  * taller, cada cifra lleva a su pestaña), el panel de Pendientes con sus filtros (Todos, Asistencia, PIN y, con el
- * permiso, Tarifas), la cuadrícula «Asistencia del {semana}» con su selector si hay dos semanas abiertas, y «Semanas
- * cerradas», con «Reabrir semana» para la dueña.
+ * permiso, Tarifas; solo los que tienen renglones), la cuadrícula «Asistencia del {semana}» con su selector si hay dos
+ * semanas abiertas, y «Semanas cerradas», con «Reabrir semana» para la dueña.
  * Fase 19 · docs/interfaz/fabrica/personal.md («Asistencia») y docs/interfaz/comunes.md («La página de un
  * departamento»)
  */
@@ -204,9 +204,12 @@ function Pendientes({ datos }: { datos: Asistencia }) {
 				}}
 				filtros={[
 					{ clave: "todos", texto: "Todos", conteo: datos.pendientes.length },
-					{ clave: "asistencia", texto: "Asistencia", conteo: cuantos("asistencia") },
-					{ clave: "pin", texto: "PIN", conteo: cuantos("pin") },
-					...(datos.ve_tarifas ? [{ clave: "tarifas", texto: "Tarifas", conteo: cuantos("tarifas") }] : []),
+					...[
+						{ clave: "asistencia", texto: "Asistencia", conteo: cuantos("asistencia") },
+						{ clave: "pin", texto: "PIN", conteo: cuantos("pin") },
+						...(datos.ve_tarifas ? [{ clave: "tarifas", texto: "Tarifas", conteo: cuantos("tarifas") }] : []),
+						// Solo salen los grupos con renglones, y el que está escogido aunque se haya vaciado.
+					].filter((filtro) => filtro.conteo > 0 || filtro.clave === busqueda.grupo),
 				]}
 				pendientes={pendientes}
 			/>

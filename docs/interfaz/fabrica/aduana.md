@@ -81,7 +81,7 @@ Tabla: Qué llega (título y detalle) · Cuánto · Va a (el punto del color del
 
 ## Despacho
 
-**Consulta:** `inventario.aduana_despacho`. Un grupo por destino, en este orden: «Tienda 1», «Tienda 2», «Clientes externos» y «Bodega»; solo los que tienen algo, con «{n} por despachar · {m} piezas» (el material no suma piezas). No salen los pedidos en línea ni lo que espera a Calidad. **Vacío:** «Nada por despachar.»
+**Consulta:** `inventario.aduana_despacho`. Un grupo por destino, en este orden: «Tienda 1», «Tienda 2», «Clientes externos» y «Bodega»; solo los que tienen algo, con «{n} por despachar · {m} piezas» (el material no suma piezas: un grupo con solo material dice «{n} por despachar»). No salen los pedidos en línea ni lo que espera a Calidad. **Vacío:** «Nada por despachar.»
 
 - **Columnas:** Qué sale (el título, con «Sale hoy» o «Sale mañana» si toca, y «{folio} · {detalle}») · Cuánto (piezas, o metros) · Aquí desde (su antigüedad) · el botón: «Sin nota» si va a un cliente y no tiene nota de entrega, «Despachar» en lo demás. Los dos abren el cajón Despachar; con «Sin nota», bloqueado.
 
@@ -212,3 +212,4 @@ Los mensajes de error de cada acción están en su archivo del módulo.
 - **Pruebas:** una por consulta en `consultas/*.prueba.ts` (el departamento, sin precios ni costos, y lo que trae con la muestra y con lo que pone cada caso con las ayudas de `nucleo/pruebas/`; `aduana-de-prueba.ts` pide como Aduana y recibe un lote), y `apps/web/src/departamentos/aduana/aduana.prueba.ts`: cada pestaña en escritorio y en teléfono con su captura en `.revision/capturas/aduana/`, los cajones por su dirección y cada botón con su acción y su aviso de abajo.
 - **Al juntar:** las listas que se arman completas (En camino, Inventario en aduana) se cortan con `paginarLista` del núcleo, y las que se leen por página leen su cursor con `desdeDelCursor` (decisión 792).
 - **El cajón «Despachar»** dice por qué algo no sale con la misma regla de la acción (`porQueNoSale` y `ordenesConDevolucionPendiente`, decisión 796).
+- **Con el revisor de diseño:** el andén pone seis carriles por renglón (el séptimo baja), cada uno con su orilla de color (`orillaDelCarril` en `comun.tsx`: «Entra» en tinta y los demás del color de su destino), y «Sale hoy», «Sale mañana» o «Atrasada {n} días» van en su cuadro de estado. El cuadre de Inventario en aduana va en cifras, una por ubicación y el total en negro; las tablas de las pestañas van en su `Panel`. Un grupo de Despacho con solo material dice «{n} por despachar», sin «0 piezas». Lo prueban `aduana-despacho.prueba.ts` y `aduana.prueba.ts` (el cuadro rojo de la orden atrasada y el cuadre con su separador de miles).

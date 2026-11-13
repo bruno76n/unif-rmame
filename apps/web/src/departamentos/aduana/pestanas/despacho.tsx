@@ -8,6 +8,7 @@
 import type { despachoDeAduana } from "@uniformame/compartido/contratos/inventario/aduana";
 import { Estado } from "@uniformame/interfaz/estados/estado";
 import { EstadoDePantalla } from "@uniformame/interfaz/estados/estado-de-pantalla";
+import { Panel } from "@uniformame/interfaz/pagina/panel";
 import { Seccion } from "@uniformame/interfaz/pagina/seccion";
 import { Tabla } from "@uniformame/interfaz/tablas/tabla";
 import type { z } from "zod";
@@ -28,27 +29,29 @@ export function DespachoDeAduana({ datos }: { datos: Despacho }) {
 		<div className="flex flex-col gap-6">
 			{datos.grupos.map((grupo) => (
 				<Seccion key={grupo.carril} titulo={grupo.nombre} nota={grupo.resumen}>
-					<Tabla
-						nombre={grupo.nombre}
-						filas={grupo.renglones}
-						claveDeFila={(partida: PartidaEnAduana) => partida.traspaso_id}
-						alTocarFila={(partida) => abrir({ a: "despachar", id: partida.traspaso_id })}
-						columnas={[
-							{ clave: "que", encabezado: "Qué sale", celda: (partida) => <QueEs partida={partida} /> },
-							{ clave: "cuanto", encabezado: "Cuánto", alinear: "derecha", celda: (partida) => partida.cantidad },
-							{
-								clave: "desde",
-								encabezado: "Aquí desde",
-								celda: (partida) => <Estado texto={partida.antiguedad.texto} color={partida.antiguedad.color} />,
-							},
-							{
-								clave: "boton",
-								encabezado: "",
-								alinear: "derecha",
-								celda: (partida) => <BotonDePartida partida={partida} />,
-							},
-						]}
-					/>
+					<Panel>
+						<Tabla
+							nombre={grupo.nombre}
+							filas={grupo.renglones}
+							claveDeFila={(partida: PartidaEnAduana) => partida.traspaso_id}
+							alTocarFila={(partida) => abrir({ a: "despachar", id: partida.traspaso_id })}
+							columnas={[
+								{ clave: "que", encabezado: "Qué sale", celda: (partida) => <QueEs partida={partida} /> },
+								{ clave: "cuanto", encabezado: "Cuánto", alinear: "derecha", celda: (partida) => partida.cantidad },
+								{
+									clave: "desde",
+									encabezado: "Aquí desde",
+									celda: (partida) => <Estado texto={partida.antiguedad.texto} color={partida.antiguedad.color} />,
+								},
+								{
+									clave: "boton",
+									encabezado: "",
+									alinear: "derecha",
+									celda: (partida) => <BotonDePartida partida={partida} />,
+								},
+							]}
+						/>
+					</Panel>
 				</Seccion>
 			))}
 		</div>

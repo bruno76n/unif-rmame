@@ -203,6 +203,8 @@ async function cuadricula(accion: ContextoDeAccion, semana: SemanaLeida): Promis
 				valor: capturado === undefined ? null : z.enum(valoresDeDia).parse(capturado.valor),
 				version: capturado?.version ?? null,
 				capturable: capturado !== undefined || exigidos.has(clave),
+				// Un día que todavía no llega no se pinta como falta de captura.
+				por_llegar: Temporal.PlainDate.compare(fecha, accion.diaDeNegocio) > 0,
 			};
 		}),
 		total: totales.get(fila.id) ?? 0,

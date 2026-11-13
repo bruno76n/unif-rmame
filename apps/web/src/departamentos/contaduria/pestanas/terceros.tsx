@@ -11,7 +11,6 @@ import { Boton } from "@uniformame/interfaz/botones/boton";
 import { Buscador } from "@uniformame/interfaz/captura/buscador";
 import { Filtros } from "@uniformame/interfaz/captura/filtros";
 import { EstadoDePantalla } from "@uniformame/interfaz/estados/estado-de-pantalla";
-import { TextoConTono } from "@uniformame/interfaz/estados/textos-con-tono";
 import { Panel } from "@uniformame/interfaz/pagina/panel";
 import { Tabla } from "@uniformame/interfaz/tablas/tabla";
 import { Plus } from "lucide-react";
@@ -29,7 +28,8 @@ import { VentanaRegistrarDeuda } from "../ventanas/registrar-deuda.tsx";
 type Terceros = z.infer<typeof tercerosDeContaduria.resultado>;
 
 /**
- * El saldo neto escrito: «A favor {monto}» en verde, «En contra {monto}» en ámbar o «Saldado».
+ * El saldo neto escrito: «A favor {monto}» en verde, «En contra {monto}» en ámbar (los dos en negritas, del mismo
+ * tamaño) o «Saldado».
  * @param neto El saldo neto.
  */
 export function SaldoNeto({ neto }: { neto: Terceros["renglones"][number]["neto"] }) {
@@ -37,7 +37,7 @@ export function SaldoNeto({ neto }: { neto: Terceros["renglones"][number]["neto"
 	return neto.como === "a_favor" ? (
 		<b className="text-texto-bien">A favor {montoEnPantalla(neto.monto_centavos)}</b>
 	) : (
-		<TextoConTono tono="ambar">En contra {montoEnPantalla(neto.monto_centavos)}</TextoConTono>
+		<b className="text-texto-advertencia">En contra {montoEnPantalla(neto.monto_centavos)}</b>
 	);
 }
 
@@ -149,13 +149,15 @@ export function PestanaTerceros() {
 									clave: "por_cobrar",
 									encabezado: "Por cobrar",
 									alinear: "derecha",
-									celda: (tercero) => montoEnPantalla(tercero.por_cobrar_centavos),
+									celda: (tercero) =>
+										tercero.por_cobrar_centavos === 0 ? "—" : montoEnPantalla(tercero.por_cobrar_centavos),
 								},
 								{
 									clave: "por_pagar",
 									encabezado: "Por pagar",
 									alinear: "derecha",
-									celda: (tercero) => montoEnPantalla(tercero.por_pagar_centavos),
+									celda: (tercero) =>
+										tercero.por_pagar_centavos === 0 ? "—" : montoEnPantalla(tercero.por_pagar_centavos),
 								},
 								{
 									clave: "neto",

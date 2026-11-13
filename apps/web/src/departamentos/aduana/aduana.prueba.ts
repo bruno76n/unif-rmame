@@ -92,10 +92,37 @@ describe("Las pantallas de Aduana: pestañas, cajones, botones y estados", () =>
 		}
 	});
 
+	it(
+		"Inventario en aduana: el cuadre va en cifras, una por ubicación y el total, con su separador de miles",
+		tiempo,
+		async () => {
+			const pagina = await pantalla.abrir("/aduana/inventario", { quien: "aduana" });
+			const cuadre = pagina.getByRole("region", { name: "Cuadre de piezas" });
+			await enPantalla(cuadre).toBeVisible({ timeout: 30_000 });
+			for (const nombre of [
+				"Aduana",
+				"Bodega",
+				"Tienda 1",
+				"Tienda 2",
+				"Taller",
+				"Tránsito",
+				"En camino a aduana",
+				"Total",
+			]) {
+				await enPantalla(cuadre.getByText(nombre, { exact: true })).toBeVisible();
+			}
+			// La muestra tiene miles de piezas en Bodega: el total lleva su coma.
+			await enPantalla(cuadre).toContainText(/Total\s*\d{1,3}(,\d{3})+/);
+			await pagina.close();
+		},
+	);
+
 	it("el andén: «Recibir» lleva a Recepción y una orden de «Entra» abre Recibir material", tiempo, async () => {
 		const pagina = await pantalla.abrir("/aduana", { quien: "aduana" });
 		const entra = pagina.getByRole("region", { name: "Entra" });
 		await enPantalla(entra.getByRole("button").first()).toBeVisible({ timeout: 30_000 });
+		// Una orden atrasada dice «Atrasada {n} días» en su cuadro de estado rojo, no en texto.
+		await enPantalla(entra.locator('[data-color="rojo"]', { hasText: /^Atrasada \d+ días?$/ }).first()).toBeVisible();
 		await entra.getByRole("button", { name: /OC-/ }).first().click();
 		expect(new URL(pagina.url()).searchParams.get("cajon")).toBe("material");
 		await enPantalla(pagina.getByRole("dialog").getByRole("heading", { name: "Recibir material" })).toBeVisible();

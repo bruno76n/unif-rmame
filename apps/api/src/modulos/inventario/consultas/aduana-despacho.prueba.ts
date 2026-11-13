@@ -1,6 +1,6 @@
 /**
  * Prueba de `inventario.aduana_despacho` con los datos de la muestra y lo que pone cada caso: un grupo por destino en
- * su orden, solo los que tienen algo, con su resumen (el material no suma piezas); «Sin nota» en lo que va a un
+ * su orden, solo los que tienen algo, con su resumen (el material no suma piezas, y solo material no dice «0 piezas»); «Sin nota» en lo que va a un
  * cliente sin nota de entrega; sin los pedidos en línea; y que solo la pide Aduana, sin precios ni costos.
  * Fase 19 · docs/fases/19-web-principal.md (criterio «Cada consulta revisa el departamento y el permiso fino en el
  * servidor y no manda lo que la cuenta no debe ver…») y docs/interfaz/fabrica/aduana.md («Despacho»)
@@ -49,9 +49,9 @@ describe("Despacho de Aduana", () => {
 		const cliente = datos.grupos[1]?.renglones.find((renglon) => renglon.traspaso_id === delPedido.lote.traspasoId);
 		expect(cliente?.boton).toBe("sin_nota");
 		expect(cliente?.detalle).toMatch(/ · PE-\S+ · sin nota$/);
-		// El material de la muestra que sigue en aduana va a Bodega y no suma piezas.
+		// El material de la muestra que sigue en aduana va a Bodega y no suma piezas: con solo material, no dice «0 piezas».
 		const bodega = datos.grupos[2];
-		expect(bodega?.resumen).toMatch(/^\d+ por despachar · 0 piezas$/);
+		expect(bodega?.resumen).toMatch(/^\d+ por despachar$/);
 		expect(bodega?.renglones.some((renglon) => renglon.cantidad.endsWith(" m"))).toBe(true);
 		const todos = datos.grupos.flatMap((grupo) => grupo.renglones.map((renglon) => renglon.traspaso_id));
 		expect(todos).not.toContain(enLinea.traspasoId);

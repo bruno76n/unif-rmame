@@ -113,6 +113,11 @@ describe("Las pantallas de Tienda en línea: pestañas, cajón, botones y avisos
 			await enPantalla(tabla.getByRole("row", { name: new RegExp(folios.cancelado) })).toHaveCount(0);
 			// El más viejo va arriba: está en rojo.
 			await enPantalla(tabla.getByRole("row").nth(1)).toContainText(folios.viejo);
+			// La pestaña cuenta todo lo pendiente, lo mismo que el panel; la pastilla del menú, solo los por surtir.
+			const renglones = (await tabla.getByRole("row").count()) - 1;
+			await enPantalla(pagina.getByRole("tab", { name: /Pendientes/ })).toHaveText(
+				new RegExp(`^Pendientes\\s*${renglones}$`),
+			);
 			await pantalla.capturar(pagina, "linea/pendientes-escritorio");
 			await viejo.getByRole("button", { name: "Ver pedido" }).click();
 			await enPantalla(pagina).toHaveURL(new RegExp(`cajon=pedido&id=${w.viejo}`));
@@ -201,6 +206,8 @@ describe("Las pantallas de Tienda en línea: pestañas, cajón, botones y avisos
 			await enPantalla(cajon.getByText("0 de 2 prendas en aduana")).toBeVisible();
 			await enPantalla(cajon.getByText("Surtido a aduana")).toBeVisible();
 			await enPantalla(cajon.getByText("Historial")).toBeVisible();
+			// El pie lleva «Cerrar» a la izquierda, junto a «Cancelar pedido».
+			await enPantalla(cajon.getByRole("button", { name: "Cerrar", exact: true })).toHaveCount(2);
 			await pantalla.capturar(pagina, "linea/cajon-pedido");
 			await cajon.getByRole("button", { name: "Cancelar pedido" }).click();
 			const ventana = pagina.getByRole("dialog", { name: `Cancelar ${folios.esperando}` });

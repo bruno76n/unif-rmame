@@ -137,3 +137,4 @@ La línea de la bitácora se escribe al final, con el resultado ya conocido. Esc
 | 13 nov 2026 | 19 | Subir archivos desde la web; el menú no se cae por una pastilla | [2026-11-12-fase-19](sesiones/2026-11-12-fase-19.md) |
 | 13 nov 2026 | 19 | «Por qué no sale» por despacho en el dominio de inventario | [2026-11-12-fase-19](sesiones/2026-11-12-fase-19.md) |
 | 13 nov 2026 | 19 | Lo común que corrigió la revisión de diseño y el `GET` de las rutas fijas | [2026-11-12-fase-19](sesiones/2026-11-12-fase-19.md) |
+| 13 nov 2026 | 19 | Correcciones de diseño de los catorce departamentos, subida de archivos en Contaduría y Administración, y lo común que pidieron | [2026-11-12-fase-19](sesiones/2026-11-12-fase-19.md) |

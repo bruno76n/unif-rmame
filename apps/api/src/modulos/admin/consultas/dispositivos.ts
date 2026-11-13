@@ -55,11 +55,12 @@ function llaveParaLeer(llaveId: string): string {
 }
 
 /**
- * Hace cuánto pasó algo: «hace 5 min», «hace 3 h», «hace 4 días».
+ * Hace cuánto pasó algo: «hace 5 min», «hace 3 h», «hace 4 días». Lo de menos de un minuto dice «hace 1 min», nunca «hace
+ * 0 min».
  * @param minutos Los minutos que pasaron.
  */
 function haceCuanto(minutos: number): string {
-	if (minutos < 60) return `hace ${minutos} min`;
+	if (minutos < 60) return `hace ${Math.max(1, minutos)} min`;
 	const horas = Math.floor(minutos / 60);
 	return horas < 48 ? `hace ${horas} h` : `hace ${Math.floor(horas / 24)} días`;
 }

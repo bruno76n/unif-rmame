@@ -14,6 +14,7 @@ import { Boton } from "@uniformame/interfaz/botones/boton";
 import { GrupoPlegable } from "@uniformame/interfaz/contenedores/grupo-plegable";
 import { EstadoDePantalla } from "@uniformame/interfaz/estados/estado-de-pantalla";
 import { TextoConTono } from "@uniformame/interfaz/estados/textos-con-tono";
+import { Panel } from "@uniformame/interfaz/pagina/panel";
 import { Tabla } from "@uniformame/interfaz/tablas/tabla";
 import { useState } from "react";
 import type { z } from "zod";
@@ -56,7 +57,7 @@ function Propuesta({ renglon }: { renglon: Renglon }) {
 			{partes.map((parte, indice) => (
 				<span key={parte.clave}>
 					{indice > 0 ? "· " : null}
-					{parte.gris ? <TextoConTono tono="normal">{parte.texto}</TextoConTono> : parte.texto}
+					{parte.gris ? <TextoConTono tono="normal">{parte.texto}</TextoConTono> : <b>{parte.texto}</b>}
 				</span>
 			))}
 		</span>
@@ -113,69 +114,71 @@ export function ReabastoDeBodega({ datos }: { datos: Reabasto }) {
 								</Boton>
 							</div>
 						) : null}
-						<Tabla
-							nombre={titulo}
-							filas={grupo.renglones}
-							claveDeFila={(renglon) => `${renglon.variante_id}:${renglon.ubicacion_id}`}
-							alTocarFila={(renglon) => abrir("variante", renglon.variante_id)}
-							columnas={[
-								{
-									clave: "variante",
-									encabezado: "Variante",
-									celda: (renglon) => <VarianteEnDosRenglones variante={renglon} />,
-								},
-								{
-									clave: "ubicacion",
-									encabezado: "Ubicación",
-									celda: (renglon) => (
-										<span className="flex flex-col">
-											<span>{renglon.ubicacion}</span>
-											{renglon.en_cero ? (
-												<TextoConTono tono="rojo">{`en cero · mínimo ${renglon.minimo}`}</TextoConTono>
-											) : (
-												<TextoConTono tono="normal">{`hay ${renglon.libres} · mínimo ${renglon.minimo}`}</TextoConTono>
-											)}
-										</span>
-									),
-								},
-								{ clave: "propuesta", encabezado: "Propuesta", celda: (renglon) => <Propuesta renglon={renglon} /> },
-								{
-									clave: "botones",
-									encabezado: "",
-									alinear: "derecha",
-									celda: (renglon) => (
-										<span className="flex justify-end gap-2">
-											{renglon.mover > 0 ? (
-												<Boton chico disabled={ocupado} onClick={() => moverRenglones([renglon])}>
-													{`Mover ${renglon.mover}`}
-												</Boton>
-											) : null}
-											{renglon.fabricar > 0 ? (
-												<Boton
-													chico
-													disabled={ocupado}
-													onClick={() =>
-														void sugerir.enviar({
-															datos: {
-																renglones: [
-																	{
-																		variante_id: renglon.variante_id,
-																		ubicacion_id: renglon.ubicacion_id,
-																		piezas: renglon.fabricar,
-																	},
-																],
-															},
-														})
-													}
-												>
-													A producción
-												</Boton>
-											) : null}
-										</span>
-									),
-								},
-							]}
-						/>
+						<Panel>
+							<Tabla
+								nombre={titulo}
+								filas={grupo.renglones}
+								claveDeFila={(renglon) => `${renglon.variante_id}:${renglon.ubicacion_id}`}
+								alTocarFila={(renglon) => abrir("variante", renglon.variante_id)}
+								columnas={[
+									{
+										clave: "variante",
+										encabezado: "Variante",
+										celda: (renglon) => <VarianteEnDosRenglones variante={renglon} />,
+									},
+									{
+										clave: "ubicacion",
+										encabezado: "Ubicación",
+										celda: (renglon) => (
+											<span className="flex flex-col">
+												<span>{renglon.ubicacion}</span>
+												{renglon.en_cero ? (
+													<TextoConTono tono="rojo">{`en cero · mínimo ${renglon.minimo}`}</TextoConTono>
+												) : (
+													<TextoConTono tono="normal">{`hay ${renglon.libres} · mínimo ${renglon.minimo}`}</TextoConTono>
+												)}
+											</span>
+										),
+									},
+									{ clave: "propuesta", encabezado: "Propuesta", celda: (renglon) => <Propuesta renglon={renglon} /> },
+									{
+										clave: "botones",
+										encabezado: "",
+										alinear: "derecha",
+										celda: (renglon) => (
+											<span className="flex justify-end gap-2">
+												{renglon.mover > 0 ? (
+													<Boton chico disabled={ocupado} onClick={() => moverRenglones([renglon])}>
+														{`Mover ${renglon.mover}`}
+													</Boton>
+												) : null}
+												{renglon.fabricar > 0 ? (
+													<Boton
+														chico
+														disabled={ocupado}
+														onClick={() =>
+															void sugerir.enviar({
+																datos: {
+																	renglones: [
+																		{
+																			variante_id: renglon.variante_id,
+																			ubicacion_id: renglon.ubicacion_id,
+																			piezas: renglon.fabricar,
+																		},
+																	],
+																},
+															})
+														}
+													>
+														A producción
+													</Boton>
+												) : null}
+											</span>
+										),
+									},
+								]}
+							/>
+						</Panel>
 					</GrupoPlegable>
 				);
 			})}

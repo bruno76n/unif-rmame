@@ -49,6 +49,22 @@ describe("Las pantallas de Compras: pestañas, cajones, botones y estados", () =
 				await enPantalla(pagina.locator("h1")).toHaveText("Compras");
 				await enPantalla(pagina.getByText(pestana.seVe, { exact: false }).first()).toBeVisible({ timeout: 30_000 });
 				await enPantalla(pagina.locator("[aria-busy='true']")).toHaveCount(0);
+				if (pestana.nombre === "por-pedir" && tamano === "telefono") {
+					// En el teléfono el renglón se apila: su estado y su pedido sugerido caben en la pantalla (390 px).
+					const primerEstado = pagina.locator("[role='button'] [data-color]").first();
+					await enPantalla(primerEstado).toBeVisible();
+					const caja = await primerEstado.boundingBox();
+					expect(caja).not.toBeNull();
+					expect((caja?.x ?? 0) + (caja?.width ?? 0)).toBeLessThanOrEqual(390);
+				}
+				if (pestana.nombre === "materiales") {
+					// Las dos cifras llevan su unidad: «331 m comprometidos de 700 m».
+					const comprometidos = pagina.getByText(/ comprometidos de /);
+					await enPantalla(comprometidos.first()).toBeVisible();
+					for (const texto of await comprometidos.allTextContents()) {
+						expect(texto).toMatch(/^[\d,.]+ [^\d\s]+ comprometidos de [\d,.]+ [^\d\s]+$/);
+					}
+				}
 				await pantalla.capturar(pagina, `compras/${pestana.nombre}-${tamano}`);
 				await pagina.close();
 			}
@@ -59,12 +75,19 @@ describe("Las pantallas de Compras: pestañas, cajones, botones y estados", () =
 		timeout: 90_000,
 	}, async () => {
 		const pendientes = await pedirConsulta(pantalla.servidor, "compras.pendientes", {}, "compras");
-		const { conteos, renglones } = pendientes.cuerpo.resultado as {
+		const { conteos, renglones, indicadores } = pendientes.cuerpo.resultado as {
 			conteos: { todos: number };
 			renglones: { tipo: string; referencia: string }[];
+			indicadores: { por_pedir: { sin_tiempo: number }; facturas: { sin_conciliar: number } };
 		};
 		const pagina = await pantalla.abrir("/compras", { quien: "compras" });
 		await enPantalla(pagina.getByRole("tab", { name: /Pendientes/ })).toContainText(String(conteos.todos));
+		// «Por pedir» va en rojo si hay algo sin tiempo de entrega (#D5443B) y «sin conciliar», en ámbar (#B3690C).
+		expect(indicadores.por_pedir.sin_tiempo).toBeGreaterThan(0);
+		expect(indicadores.facturas.sin_conciliar).toBeGreaterThan(0);
+		const numeroDe = (cifra: RegExp) => pagina.getByRole("button", { name: cifra }).locator("b").first();
+		await enPantalla(numeroDe(/^Por pedir/)).toHaveCSS("color", "rgb(213, 68, 59)");
+		await enPantalla(numeroDe(/^Conciliación de facturas/)).toHaveCSS("color", "rgb(179, 105, 12)");
 		const orden = renglones.find((renglon) => renglon.tipo === "orden");
 		if (orden === undefined) throw new Error("la muestra no trae órdenes en Pendientes");
 		const fila = pagina.getByRole("row").filter({ hasText: orden.referencia });
@@ -156,6 +179,9 @@ describe("Las pantallas de Compras: pestañas, cajones, botones y estados", () =
 		const cajon = pagina.getByRole("dialog", { name: nombre });
 		const dias = cajon.getByLabel("Cada pedido cubre (días)");
 		await enPantalla(dias).not.toHaveValue("");
+		// «Precios · Los últimos {n}», en singular con uno: nunca «Los últimos 1».
+		await enPantalla(cajon.getByText(/^Precios( · (El último|Los últimos \d+))?$/)).toBeVisible();
+		await enPantalla(cajon.getByText("Precios · Los últimos 1", { exact: true })).toHaveCount(0);
 		await dias.fill(String(Number(await dias.inputValue()) + 7));
 		await enPantalla(cajon.getByRole("button", { name: "Guardar cambios" })).toBeEnabled();
 		await cajon.getByRole("button", { name: "Cerrar" }).first().click();

@@ -41,7 +41,7 @@ import {
 import { useState } from "react";
 import type { z } from "zod";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
-import { useEnvio, VarianteEnDosRenglones } from "../comun.tsx";
+import { enteros, useEnvio, VarianteEnDosRenglones } from "../comun.tsx";
 import { type PestanaDeBodega, useDireccionDeBodega } from "../direccion.ts";
 import { VentanaNoLaEncuentro } from "../ventanas/no-la-encuentro.tsx";
 import { VentanaRegresaAProveedor } from "../ventanas/regresa-a-proveedor.tsx";
@@ -122,9 +122,11 @@ function Indicadores({
 					nombre: "Existencia total",
 					icono: Boxes,
 					color: "azul",
-					numero: existencia.total,
+					numero: enteros.format(existencia.total),
 					unidad: "pz",
-					contexto: [{ texto: `Bodega ${existencia.bodega} · tiendas ${existencia.tiendas}` }],
+					contexto: [
+						{ texto: `Bodega ${enteros.format(existencia.bodega)} · tiendas ${enteros.format(existencia.tiendas)}` },
+					],
 					reparto: [
 						{ color: "azul", valor: existencia.bodega, etiqueta: "Bodega" },
 						{ color: "verde", valor: existencia.tiendas, etiqueta: "Tiendas" },
@@ -137,7 +139,7 @@ function Indicadores({
 					nombre: "Por surtir",
 					icono: ShoppingBag,
 					color: "ambar",
-					numero: por_surtir.total,
+					numero: enteros.format(por_surtir.total),
 					...(por_surtir.en_linea > 0 ? { tono: "rojo" as const } : {}),
 					contexto:
 						por_surtir.en_linea > 0
@@ -150,7 +152,7 @@ function Indicadores({
 					nombre: "Variantes en cero",
 					icono: PackageX,
 					color: "rojo",
-					numero: en_cero,
+					numero: enteros.format(en_cero),
 					...(en_cero > 0 ? { tono: "rojo" as const } : {}),
 					contexto: [{ texto: "En alguna ubicación" }],
 					alTocar: () => alTocar("reabasto"),
@@ -160,7 +162,7 @@ function Indicadores({
 					nombre: "Diferencias abiertas",
 					icono: Scale,
 					color: "violeta",
-					numero: diferencias.piezas,
+					numero: enteros.format(diferencias.piezas),
 					unidad: "pz",
 					contexto: [{ texto: plural(diferencias.registros, "registro", "registros") }],
 					alTocar: () => alTocar("diferencias"),
@@ -170,7 +172,7 @@ function Indicadores({
 					nombre: "Ajustes por autorizar",
 					icono: ClipboardCheck,
 					color: "pizarra",
-					numero: ajustes,
+					numero: enteros.format(ajustes),
 					contexto: ajustes > 0 ? [{ texto: "En Dirección", tono: "ambar" }] : [{ texto: "Ninguno" }],
 					alTocar: () => alTocar("conteos"),
 				},

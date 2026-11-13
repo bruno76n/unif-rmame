@@ -1,7 +1,8 @@
 /**
  * Conteos y ajustes de Bodega: arriba «Nuevo conteo» y «Carga inicial» (cada uno a su cajón); «Ajustes en
- * autorización» (la dueña ve «Rechazar» y «Autorizar», con «Confirmar con Google»; las demás cuentas, «En autorización
- * de Dirección»); «Conteos» y «Ajustes resueltos», cada uno con «Ver más».
+ * autorización» (la dueña ve «Rechazar» y «Autorizar», con «Confirmar con Google»; las demás cuentas, «Esperando
+ * autorización»); «Conteos» (su resultado en texto de color, como en la muestra: no es un estado) y «Ajustes
+ * resueltos», cada uno con «Ver más».
  * Fase 19 · docs/interfaz/fabrica/bodega.md («Conteos y ajustes»)
  */
 
@@ -11,7 +12,8 @@ import { type ajusteDeBodega, conteosYAjustesDeBodega } from "@uniformame/compar
 import { Boton } from "@uniformame/interfaz/botones/boton";
 import { Estado } from "@uniformame/interfaz/estados/estado";
 import { EstadoDePantalla } from "@uniformame/interfaz/estados/estado-de-pantalla";
-import { TextoConTono } from "@uniformame/interfaz/estados/textos-con-tono";
+import { LineaDeAviso } from "@uniformame/interfaz/estados/textos-con-tono";
+import { Panel } from "@uniformame/interfaz/pagina/panel";
 import { Seccion } from "@uniformame/interfaz/pagina/seccion";
 import { DosRenglones } from "@uniformame/interfaz/tablas/dos-renglones";
 import { type ColumnaDeTabla, Tabla } from "@uniformame/interfaz/tablas/tabla";
@@ -27,6 +29,21 @@ import { useDireccionDeBodega } from "../direccion.ts";
 
 /** Lo que regresa la consulta. */
 type ConteosYAjustes = z.infer<typeof conteosYAjustesDeBodega.resultado>;
+
+/**
+ * El resultado de un conteo, en texto de color como en la muestra: «{n} diferencias» en ámbar, «Cuadró» en verde y
+ * «Carga inicial» en gris. No es un estado: dice cómo salió, no qué falta.
+ * @param props El resultado, con su color.
+ */
+function ResultadoDelConteo({
+	resultado,
+}: {
+	resultado: ConteosYAjustes["conteos"]["renglones"][number]["resultado"];
+}) {
+	if (resultado.color === "ambar") return <LineaDeAviso tono="advertencia">{resultado.texto}</LineaDeAviso>;
+	if (resultado.color === "verde") return <LineaDeAviso tono="bien">{resultado.texto}</LineaDeAviso>;
+	return <span className="text-tinta3">{resultado.texto}</span>;
+}
 
 /** Un ajuste. */
 type Ajuste = z.infer<typeof ajusteDeBodega>;
@@ -79,37 +96,39 @@ function EnAutorizacion({ ajustes, puedeDecidir }: { ajustes: readonly Ajuste[];
 			{ajustes.length === 0 ? (
 				<EstadoDePantalla tipo="vacio" texto="Ningún ajuste espera autorización" bien />
 			) : (
-				<Tabla
-					nombre="Ajustes en autorización"
-					filas={ajustes}
-					claveDeFila={(ajuste) => ajuste.ajuste_id}
-					columnas={[
-						...columnasDeAjuste,
-						{
-							clave: "botones",
-							encabezado: "",
-							alinear: "derecha",
-							celda: (ajuste) =>
-								puedeDecidir ? (
-									<span className="flex justify-end gap-2">
-										<Boton chico variante="peligro" disabled={!conConexion} onClick={() => setRechazando(ajuste)}>
-											Rechazar
-										</Boton>
-										<Boton
-											chico
-											variante="principal"
-											disabled={!conConexion || enviando}
-											onClick={() => void decidir(ajuste, "autorizar")}
-										>
-											Autorizar
-										</Boton>
-									</span>
-								) : (
-									<TextoConTono tono="ambar">En autorización de Dirección</TextoConTono>
-								),
-						},
-					]}
-				/>
+				<Panel>
+					<Tabla
+						nombre="Ajustes en autorización"
+						filas={ajustes}
+						claveDeFila={(ajuste) => ajuste.ajuste_id}
+						columnas={[
+							...columnasDeAjuste,
+							{
+								clave: "botones",
+								encabezado: "",
+								alinear: "derecha",
+								celda: (ajuste) =>
+									puedeDecidir ? (
+										<span className="flex justify-end gap-2">
+											<Boton chico variante="peligro" disabled={!conConexion} onClick={() => setRechazando(ajuste)}>
+												Rechazar
+											</Boton>
+											<Boton
+												chico
+												variante="principal"
+												disabled={!conConexion || enviando}
+												onClick={() => void decidir(ajuste, "autorizar")}
+											>
+												Autorizar
+											</Boton>
+										</span>
+									) : (
+										<Estado texto="Esperando autorización" />
+									),
+							},
+						]}
+					/>
+				</Panel>
 			)}
 			{rechazando === null ? null : (
 				<VentanaConMotivo
@@ -148,32 +167,34 @@ function Conteos() {
 			<SegunConsulta consulta={paginas} renglones={3}>
 				{({ pages }) => (
 					<div className="flex flex-col gap-3">
-						<Tabla
-							nombre="Conteos"
-							filas={pages.flatMap((pagina) => pagina.conteos.renglones)}
-							claveDeFila={(conteo: Conteo) => conteo.conteo_id}
-							columnas={[
-								{
-									clave: "conteo",
-									encabezado: "Conteo",
-									celda: (conteo) => <DosRenglones arriba={conteo.folio} abajo={textoDeDiaCorto(conteo.fecha)} />,
-								},
-								{ clave: "ubicacion", encabezado: "Ubicación", celda: (conteo) => conteo.ubicacion },
-								{ clave: "seccion", encabezado: "Sección", celda: (conteo) => conteo.seccion },
-								{ clave: "responsable", encabezado: "Responsable", celda: (conteo) => conteo.responsable },
-								{
-									clave: "variantes",
-									encabezado: "Variantes",
-									alinear: "derecha",
-									celda: (conteo) => conteo.variantes,
-								},
-								{
-									clave: "resultado",
-									encabezado: "Resultado",
-									celda: (conteo) => <Estado texto={conteo.resultado.texto} color={conteo.resultado.color} />,
-								},
-							]}
-						/>
+						<Panel>
+							<Tabla
+								nombre="Conteos"
+								filas={pages.flatMap((pagina) => pagina.conteos.renglones)}
+								claveDeFila={(conteo: Conteo) => conteo.conteo_id}
+								columnas={[
+									{
+										clave: "conteo",
+										encabezado: "Conteo",
+										celda: (conteo) => <DosRenglones arriba={conteo.folio} abajo={textoDeDiaCorto(conteo.fecha)} />,
+									},
+									{ clave: "ubicacion", encabezado: "Ubicación", celda: (conteo) => conteo.ubicacion },
+									{ clave: "seccion", encabezado: "Sección", celda: (conteo) => conteo.seccion },
+									{ clave: "responsable", encabezado: "Responsable", celda: (conteo) => conteo.responsable },
+									{
+										clave: "variantes",
+										encabezado: "Variantes",
+										alinear: "derecha",
+										celda: (conteo) => conteo.variantes,
+									},
+									{
+										clave: "resultado",
+										encabezado: "Resultado",
+										celda: (conteo) => <ResultadoDelConteo resultado={conteo.resultado} />,
+									},
+								]}
+							/>
+						</Panel>
 						{paginas.hasNextPage ? (
 							<Boton chico disabled={paginas.isFetchingNextPage} onClick={() => void paginas.fetchNextPage()}>
 								Ver más
@@ -198,26 +219,28 @@ function Resueltos() {
 			<SegunConsulta consulta={paginas} renglones={3}>
 				{({ pages }) => (
 					<div className="flex flex-col gap-3">
-						<Tabla
-							nombre="Ajustes resueltos"
-							filas={pages.flatMap((pagina) => pagina.resueltos.renglones)}
-							claveDeFila={(ajuste) => ajuste.ajuste_id}
-							columnas={[
-								...columnasDeAjuste,
-								{
-									clave: "resultado",
-									encabezado: "Resultado",
-									celda: (ajuste) =>
-										ajuste.resultado === null ? null : (
-											<Estado
-												texto={ajuste.resultado.texto}
-												color={ajuste.resultado.color}
-												{...(ajuste.detalle_resultado === null ? {} : { abajo: ajuste.detalle_resultado })}
-											/>
-										),
-								},
-							]}
-						/>
+						<Panel>
+							<Tabla
+								nombre="Ajustes resueltos"
+								filas={pages.flatMap((pagina) => pagina.resueltos.renglones)}
+								claveDeFila={(ajuste) => ajuste.ajuste_id}
+								columnas={[
+									...columnasDeAjuste,
+									{
+										clave: "resultado",
+										encabezado: "Resultado",
+										celda: (ajuste) =>
+											ajuste.resultado === null ? null : (
+												<Estado
+													texto={ajuste.resultado.texto}
+													color={ajuste.resultado.color}
+													{...(ajuste.detalle_resultado === null ? {} : { abajo: ajuste.detalle_resultado })}
+												/>
+											),
+									},
+								]}
+							/>
+						</Panel>
 						{paginas.hasNextPage ? (
 							<Boton chico disabled={paginas.isFetchingNextPage} onClick={() => void paginas.fetchNextPage()}>
 								Ver más

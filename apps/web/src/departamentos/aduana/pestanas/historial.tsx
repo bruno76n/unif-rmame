@@ -8,6 +8,7 @@ import { historialDeAduana } from "@uniformame/compartido/contratos/inventario/a
 import { Boton } from "@uniformame/interfaz/botones/boton";
 import { Estado } from "@uniformame/interfaz/estados/estado";
 import { EstadoDePantalla } from "@uniformame/interfaz/estados/estado-de-pantalla";
+import { Panel } from "@uniformame/interfaz/pagina/panel";
 import { Tabla } from "@uniformame/interfaz/tablas/tabla";
 import type { z } from "zod";
 import { usePaginas } from "../../../comun/api.tsx";
@@ -26,21 +27,23 @@ export function HistorialDeAduana() {
 				if (renglones.length === 0) return <EstadoDePantalla tipo="vacio" texto="Nada entró ni salió de aduana" />;
 				return (
 					<div className="flex flex-col gap-3">
-						<Tabla
-							nombre="Historial de aduana"
-							filas={renglones}
-							claveDeFila={(renglon: Renglon) => renglon.clave}
-							columnas={[
-								{ clave: "fecha", encabezado: "Fecha", celda: (renglon) => renglon.fecha },
-								{
-									clave: "movimiento",
-									encabezado: "Movimiento",
-									celda: (renglon) => <Estado texto={renglon.movimiento.texto} color={renglon.movimiento.color} />,
-								},
-								{ clave: "referencia", encabezado: "Referencia", celda: (renglon) => <b>{renglon.referencia}</b> },
-								{ clave: "que", encabezado: "Qué", celda: (renglon) => renglon.que },
-							]}
-						/>
+						<Panel>
+							<Tabla
+								nombre="Historial de aduana"
+								filas={renglones}
+								claveDeFila={(renglon: Renglon) => renglon.clave}
+								columnas={[
+									{ clave: "fecha", encabezado: "Fecha", celda: (renglon) => renglon.fecha },
+									{
+										clave: "movimiento",
+										encabezado: "Movimiento",
+										celda: (renglon) => <Estado texto={renglon.movimiento.texto} color={renglon.movimiento.color} />,
+									},
+									{ clave: "referencia", encabezado: "Referencia", celda: (renglon) => <b>{renglon.referencia}</b> },
+									{ clave: "que", encabezado: "Qué", celda: (renglon) => renglon.que },
+								]}
+							/>
+						</Panel>
 						{paginas.hasNextPage ? (
 							<Boton chico disabled={paginas.isFetchingNextPage} onClick={() => void paginas.fetchNextPage()}>
 								Ver más

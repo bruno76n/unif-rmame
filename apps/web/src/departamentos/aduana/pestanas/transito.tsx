@@ -12,6 +12,7 @@ import { Boton } from "@uniformame/interfaz/botones/boton";
 import { Estado } from "@uniformame/interfaz/estados/estado";
 import { EstadoDePantalla } from "@uniformame/interfaz/estados/estado-de-pantalla";
 import { TextoConTono } from "@uniformame/interfaz/estados/textos-con-tono";
+import { Panel } from "@uniformame/interfaz/pagina/panel";
 import { DosRenglones } from "@uniformame/interfaz/tablas/dos-renglones";
 import { Tabla } from "@uniformame/interfaz/tablas/tabla";
 import { useState } from "react";
@@ -70,49 +71,51 @@ export function TransitoDeAduana() {
 				if (renglones.length === 0) return <EstadoDePantalla tipo="vacio" texto="Nada en tránsito" />;
 				return (
 					<div className="flex flex-col gap-3">
-						<Tabla
-							nombre="En tránsito"
-							filas={renglones}
-							claveDeFila={(despacho: Despacho) => despacho.despacho_id}
-							columnas={[
-								{
-									clave: "despacho",
-									encabezado: "Despacho",
-									celda: (despacho) => (
-										<DosRenglones
-											arriba={<b>{despacho.folio}</b>}
-											abajo={
-												busqueda.resaltar === despacho.despacho_id ? (
-													<TextoConTono tono="ambar">{`Recién despachado · ${despacho.salio}`}</TextoConTono>
-												) : (
-													despacho.salio
-												)
-											}
-										/>
-									),
-								},
-								{
-									clave: "que",
-									encabezado: "Qué salió",
-									celda: (despacho) => <DosRenglones arriba={despacho.que} abajo={despacho.a} />,
-								},
-								{ clave: "cuanto", encabezado: "Cuánto", alinear: "derecha", celda: (despacho) => despacho.cantidad },
-								{ clave: "confirma", encabezado: "Debe confirmar", celda: (despacho) => despacho.debe_confirmar },
-								{
-									clave: "sin_confirmar",
-									encabezado: "Sin confirmar",
-									celda: (despacho) => (
-										<Estado texto={despacho.sin_confirmar.texto} color={despacho.sin_confirmar.color} />
-									),
-								},
-								{
-									clave: "boton",
-									encabezado: "",
-									alinear: "derecha",
-									celda: (despacho) => <BotonDelDespacho despacho={despacho} alConfirmar={setConfirmando} />,
-								},
-							]}
-						/>
+						<Panel>
+							<Tabla
+								nombre="En tránsito"
+								filas={renglones}
+								claveDeFila={(despacho: Despacho) => despacho.despacho_id}
+								columnas={[
+									{
+										clave: "despacho",
+										encabezado: "Despacho",
+										celda: (despacho) => (
+											<DosRenglones
+												arriba={<b>{despacho.folio}</b>}
+												abajo={
+													busqueda.resaltar === despacho.despacho_id ? (
+														<TextoConTono tono="ambar">{`Recién despachado · ${despacho.salio}`}</TextoConTono>
+													) : (
+														despacho.salio
+													)
+												}
+											/>
+										),
+									},
+									{
+										clave: "que",
+										encabezado: "Qué salió",
+										celda: (despacho) => <DosRenglones arriba={despacho.que} abajo={despacho.a} />,
+									},
+									{ clave: "cuanto", encabezado: "Cuánto", alinear: "derecha", celda: (despacho) => despacho.cantidad },
+									{ clave: "confirma", encabezado: "Debe confirmar", celda: (despacho) => despacho.debe_confirmar },
+									{
+										clave: "sin_confirmar",
+										encabezado: "Sin confirmar",
+										celda: (despacho) => (
+											<Estado texto={despacho.sin_confirmar.texto} color={despacho.sin_confirmar.color} />
+										),
+									},
+									{
+										clave: "boton",
+										encabezado: "",
+										alinear: "derecha",
+										celda: (despacho) => <BotonDelDespacho despacho={despacho} alConfirmar={setConfirmando} />,
+									},
+								]}
+							/>
+						</Panel>
 						{paginas.hasNextPage ? (
 							<Boton chico disabled={paginas.isFetchingNextPage} onClick={() => void paginas.fetchNextPage()}>
 								Ver más

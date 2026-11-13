@@ -3,14 +3,18 @@
  * cajón con el primer cliente que tiene algo por pagar) y los cajones y la ventana que abre la dirección.
  * Fase 19 · docs/interfaz/fabrica/contaduria.md («Quién entra») y docs/interfaz/comunes.md («La página de un
  * departamento»)
+ *
+ * Pendientes cuenta todos sus renglones (`conTodoLoPendiente`); la pastilla del menú, solo lo de ya.
  */
 
+import { pendientesDeContaduria } from "@uniformame/compartido/contratos/contaduria/consultas-pendientes";
 import { Boton } from "@uniformame/interfaz/botones/boton";
 import { Plus } from "lucide-react";
 import type { ReactNode } from "react";
 import { AccionPrincipal } from "../../comun/accion-principal.tsx";
+import { useConsulta } from "../../comun/api.tsx";
 import { useConConexion } from "../../comun/estado-de-la-app.ts";
-import { PaginaDeDepartamento } from "../../comun/pagina-de-departamento.tsx";
+import { conTodoLoPendiente, PaginaDeDepartamento } from "../../comun/pagina-de-departamento.tsx";
 import { CajonesDeContaduria } from "./cajones/cajones.tsx";
 import { type PestanaDeContaduria, pestanasDeContaduria, useDireccionDeContaduria } from "./direccion.ts";
 import { VentanaCapturarFactura } from "./ventanas/capturar-factura.tsx";
@@ -22,8 +26,13 @@ import { VentanaCapturarFactura } from "./ventanas/capturar-factura.tsx";
 export function PaginaDeContaduria({ activa, children }: { activa: PestanaDeContaduria; children: ReactNode }) {
 	const { busqueda, abrir, navegar } = useDireccionDeContaduria();
 	const conConexion = useConConexion();
+	const pendientes = useConsulta(pendientesDeContaduria, {}).data;
 	return (
-		<PaginaDeDepartamento departamento="contaduria" pestanas={pestanasDeContaduria} activa={activa}>
+		<PaginaDeDepartamento
+			departamento="contaduria"
+			pestanas={conTodoLoPendiente(pestanasDeContaduria, pendientes?.renglones)}
+			activa={activa}
+		>
 			<AccionPrincipal>
 				<Boton variante="principal" icono={Plus} disabled={!conConexion} onClick={() => abrir("registrar_pago")}>
 					Registrar pago

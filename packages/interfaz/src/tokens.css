@@ -87,6 +87,8 @@
 	/* Sombras */
 	--shadow-panel: 0 1px 2px rgb(23 24 28 / 0.04), 0 8px 24px rgb(23 24 28 / 0.05);
 	--shadow-flotante: 0 2px 4px rgb(23 24 28 / 0.05), 0 18px 44px rgb(23 24 28 / 0.12);
+	/* El filo de una muestra de color: así se ve una escuela de color blanco. */
+	--shadow-muestra: inset 0 0 0 1px rgb(0 0 0 / 0.08);
 
 	/* Hasta 980 px el menú se esconde; hasta 700 px es teléfono */
 	--breakpoint-menu: 980px;

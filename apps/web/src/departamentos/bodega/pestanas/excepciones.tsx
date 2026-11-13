@@ -12,6 +12,7 @@ import { Boton } from "@uniformame/interfaz/botones/boton";
 import { Tarjeta } from "@uniformame/interfaz/contenedores/tarjeta";
 import { EstadoDePantalla } from "@uniformame/interfaz/estados/estado-de-pantalla";
 import { TextoConTono } from "@uniformame/interfaz/estados/textos-con-tono";
+import { Panel } from "@uniformame/interfaz/pagina/panel";
 import { Seccion } from "@uniformame/interfaz/pagina/seccion";
 import { Tabla } from "@uniformame/interfaz/tablas/tabla";
 import type { z } from "zod";
@@ -78,21 +79,23 @@ function Resueltas() {
 				if (resueltas.length === 0) return null;
 				return (
 					<Seccion titulo="Resueltas">
-						<Tabla
-							nombre="Excepciones resueltas"
-							filas={resueltas}
-							claveDeFila={(excepcion) => excepcion.excepcion_id}
-							columnas={[
-								{ clave: "que", encabezado: "Qué pasó", celda: (excepcion) => excepcion.descripcion },
-								{
-									clave: "quien",
-									encabezado: "Quién la resolvió",
-									celda: (excepcion) => excepcion.resuelta_por ?? "—",
-								},
-								{ clave: "cuando", encabezado: "Cuándo", celda: (excepcion) => excepcion.resuelta_en ?? "—" },
-								{ clave: "hizo", encabezado: "Qué se hizo", celda: (excepcion) => excepcion.resolucion ?? "" },
-							]}
-						/>
+						<Panel>
+							<Tabla
+								nombre="Excepciones resueltas"
+								filas={resueltas}
+								claveDeFila={(excepcion) => excepcion.excepcion_id}
+								columnas={[
+									{ clave: "que", encabezado: "Qué pasó", celda: (excepcion) => excepcion.descripcion },
+									{
+										clave: "quien",
+										encabezado: "Quién la resolvió",
+										celda: (excepcion) => excepcion.resuelta_por ?? "—",
+									},
+									{ clave: "cuando", encabezado: "Cuándo", celda: (excepcion) => excepcion.resuelta_en ?? "—" },
+									{ clave: "hizo", encabezado: "Qué se hizo", celda: (excepcion) => excepcion.resolucion ?? "" },
+								]}
+							/>
+						</Panel>
 						{paginas.hasNextPage ? (
 							<Boton chico disabled={paginas.isFetchingNextPage} onClick={() => void paginas.fetchNextPage()}>
 								Ver más

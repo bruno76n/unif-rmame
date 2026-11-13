@@ -1,6 +1,7 @@
 /**
  * `inventario.aduana_despacho`: Despacho de Aduana. Un grupo por destino, en este orden: las tiendas, «Clientes
- * externos» y «Bodega»; solo los que tienen algo, con «{n} por despachar · {m} piezas» (el material no suma piezas).
+ * externos» y «Bodega»; solo los que tienen algo, con «{n} por despachar · {m} piezas» (el material no suma piezas: un
+ * grupo con solo material dice «{n} por despachar»).
  * No salen los pedidos en línea, lo que espera a Calidad ni lo que regresa a un proveedor.
  * Fase 19 · docs/interfaz/fabrica/aduana.md («Despacho»)
  */
@@ -31,7 +32,11 @@ export const consultaDespachoDeAduana = implementarConsulta(despachoDeAduana, as
 				return [
 					{
 						...destino,
-						resumen: `${suyas.length} por despachar · ${piezasEscritas(piezas)}`,
+						// Solo material: no dice «0 piezas».
+						resumen:
+							piezas === 0
+								? `${suyas.length} por despachar`
+								: `${suyas.length} por despachar · ${piezasEscritas(piezas)}`,
 						renglones: suyas,
 					},
 				];

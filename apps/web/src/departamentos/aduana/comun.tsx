@@ -1,6 +1,6 @@
 /**
  * Lo que comparten las pestañas, los cajones y las ventanas de Aduana: las consultas que cambian con sus acciones (y
- * `useEnvio` con ellas), el color de cada destino, el destino con su punto, lo que abre una tarjeta o un renglón, y el
+ * `useEnvio` con ellas), el color de cada destino y la orilla de su carril, el destino con su punto, lo que abre una tarjeta o un renglón, y el
  * botón y el renglón de lo que está en aduana.
  * Fase 19 · docs/interfaz/fabrica/aduana.md y docs/interfaz/comunes.md («Los estados de una pantalla»: choque de versión)
  */
@@ -56,6 +56,27 @@ const coloresDeDestino: Readonly<Record<string, ColorDeEstado>> = {
  */
 export function colorDeDestino(carril: string): ColorDeEstado {
 	return coloresDeDestino[carril] ?? "gris";
+}
+
+/** La orilla de arriba de un carril, del color de su destino (clases completas, para que Tailwind las vea). */
+const orillaDelColor: Readonly<Record<ColorDeEstado, string>> = {
+	rojo: "border-t-estado-rojo",
+	ambar: "border-t-estado-ambar",
+	azul: "border-t-estado-azul",
+	verde: "border-t-estado-verde",
+	gris: "border-t-estado-gris",
+	morado: "border-t-estado-morado",
+	"verde-azulado": "border-t-estado-verde-azulado",
+	naranja: "border-t-estado-naranja",
+};
+
+/**
+ * La clase de la orilla de un carril del andén: «Entra» en tinta, como en la muestra; los demás, del color de su
+ * destino.
+ * @param carril `entra` o el destino.
+ */
+export function orillaDelCarril(carril: string): string {
+	return carril === "entra" ? "border-t-tinta" : orillaDelColor[colorDeDestino(carril)];
 }
 
 /**

@@ -278,7 +278,7 @@ function BotonesDelAlta({
 	const ocupado = accion.isPending || !conConexion;
 	if (origen === "pedido") {
 		return (
-			<Boton disabled={ocupado} onClick={() => void crear("pedido")}>
+			<Boton variante="principal" disabled={ocupado} onClick={() => void crear("pedido")}>
 				Crear y agregar al pedido
 			</Boton>
 		);
@@ -290,7 +290,7 @@ function BotonesDelAlta({
 					Crear y seguir con la receta
 				</Boton>
 			) : null}
-			<Boton disabled={ocupado} onClick={() => void crear("ficha")}>
+			<Boton variante="principal" disabled={ocupado} onClick={() => void crear("ficha")}>
 				Crear producto
 			</Boton>
 		</span>

@@ -6,7 +6,9 @@
  * Fase 19 · docs/interfaz/fabrica/produccion.md («Corte») y docs/interfaz/TEXTOS.md («El corte»)
  *
  * Los textos son los de la guía: «La tela alcanza · 190 piezas llevan 214 m según la receta · los 3 rollos tienen
- * 277 m», «Se usan 25.5 m · quedan 63 m según la receta», «R-0432 regresa a bodega con 60 m»…
+ * 277 m», «Se usan 25.5 m · quedan 63 m según la receta», «R-0432 regresa a bodega con 60 m»… Los metros se leen con
+ * un decimal a lo más (y los de por pieza con dos, como la receta); la cuenta sigue en milésimos, y lo exacto de cada
+ * rollo viaja aparte para comprobar que es lo que guarda la acción.
  */
 
 import {
@@ -57,9 +59,16 @@ export interface CorteCapturado {
 export interface TelaEnPantalla {
 	tela: TelaDeLaCaptura;
 	/** Sus rollos puestos, en orden, con lo que se usa de cada uno. */
-	rollos: { rolloId: string; texto: string }[];
-	/** La línea de la tela; vacía con cero piezas. */
-	linea: { texto: string; alcanza: boolean } | null;
+	rollos: {
+		rolloId: string;
+		texto: string;
+		/** Lo que se usa del rollo, exacto en metros («32.984»). */
+		usados: string;
+		/** Lo que queda del último, exacto en metros; nulo en los demás. */
+		quedan: string | null;
+	}[];
+	/** La línea de la tela, con lo que pide la receta exacto en metros («213.484»); vacía con cero piezas. */
+	linea: { texto: string; alcanza: boolean; pide: string } | null;
 	/** El rollo que conviene agregar si falta tela, y su texto («Agregar R-0432 · 88.5 m»). */
 	agregar: { rolloId: string; texto: string } | null;
 	/** Lo que quedó del último, calculado, y lo escrito si se cambió. */
@@ -146,12 +155,20 @@ export function rollosPuestos(tela: TelaDeLaCaptura, capturada: TelaCapturada, p
 	).map((rollo) => rollo.rolloId);
 }
 
+/** Los metros como se leen: con un decimal a lo más («213.5»); nadie mide tela al milímetro. */
+const formatoDeMetros = new Intl.NumberFormat("es-MX", { maximumFractionDigits: 1 });
+/** Los metros por pieza, con dos decimales a lo más («1.06»), como la receta. */
+const formatoPorPieza = new Intl.NumberFormat("es-MX", { maximumFractionDigits: 2 });
+/** Los metros que se ponen en un campo: con un decimal y sin separador de miles, para que se puedan corregir. */
+const formatoDeCampo = new Intl.NumberFormat("es-MX", { maximumFractionDigits: 1, useGrouping: false });
+
 /**
  * «{n} m»: unos milésimos de metro como se dicen.
  * @param milesimos Los milésimos.
+ * @param formato Cómo se escriben: con un decimal o, por pieza, con dos.
  */
-function metros(milesimos: bigint): string {
-	return `${cantidadEnTexto(milesimos)} m`;
+function metros(milesimos: bigint, formato = formatoDeMetros): string {
+	return `${formato.format(Number(milesimos) / 1000)} m`;
 }
 
 /**
@@ -216,17 +233,20 @@ export function telaEnPantalla(
 				i < todos.length - 1
 					? `Completo · ${metros(usado.milesimos)}`
 					: `Se usan ${metros(usado.milesimos)} · quedan ${metros(quedan)}${cambiado ? "" : " según la receta"}`,
+			usados: cantidadEnTexto(usado.milesimos),
+			quedan: i < todos.length - 1 ? null : cantidadEnTexto(quedan),
 		})),
 		linea:
 			cuenta.piezas === 0
 				? null
 				: alcanza
-					? { texto: `La tela alcanza · ${llevan} · ${tienenTexto}`, alcanza: true }
+					? { texto: `La tela alcanza · ${llevan} · ${tienenTexto}`, alcanza: true, pide: cantidadEnTexto(cuenta.pide) }
 					: {
 							texto: `Faltan ${metros(cuenta.pide - tienen)} de ${tela.nombre} · ${llevan} · ${tienenTexto}${
 								siguiente === undefined ? " · no hay más rollos de esta tela en bodega" : ""
 							}`,
 							alcanza: false,
+							pide: cantidadEnTexto(cuenta.pide),
 						},
 		agregar:
 			alcanza || siguiente === undefined
@@ -237,7 +257,7 @@ export function telaEnPantalla(
 					},
 		quedo: {
 			folio: ultimoFolio,
-			calculado: cantidadEnTexto(calculado?.quedan ?? 0n),
+			calculado: formatoDeCampo.format(Number(calculado?.quedan ?? 0n) / 1000),
 			cambiado: capturada.quedaron !== null,
 			error,
 		},
@@ -268,8 +288,8 @@ export function cifrasDelCorte(principal: TelaEnPantalla | undefined, piezas: nu
 	return {
 		piezas: String(piezas),
 		usados: metros(principal.usados),
-		porPieza: metros(principal.usados / cuantas),
-		patron: metros(principal.piso / cuantas),
+		porPieza: metros(principal.usados / cuantas, formatoPorPieza),
+		patron: metros(principal.piso / cuantas, formatoPorPieza),
 		contraPatron: `${sobre >= 0 ? "+" : "−"}${Math.abs(sobre)}%`,
 		rojo: sobre > rojo,
 	};

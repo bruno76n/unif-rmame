@@ -1,7 +1,8 @@
 /**
  * La ventana «Registrar gasto»: la categoría (sin «Reparación de máquinas»), el monto en pesos enteros, dónde (la
- * Fábrica al abrir, una ubicación o En línea), la fecha (hoy o antes), de dónde salió y el tipo de comprobante.
- * «Registrar gasto» llama a `contaduria.registrar_gasto`.
+ * Fábrica al abrir, una ubicación o En línea), la fecha (hoy o antes), de dónde salió, el comprobante (imagen, PDF o XML,
+ * opcional) y su tipo. «Registrar gasto» sube el comprobante y llama a `contaduria.registrar_gasto` con su `archivo_id`;
+ * si la subida falla, el aviso dice por qué y lo capturado se queda.
  * Fase 19 · docs/interfaz/fabrica/contaduria.md («Ventanas») y docs/modulos/contaduria/gastos.md
  */
 
@@ -11,11 +12,14 @@ import type { gastosDeContaduria } from "@uniformame/compartido/contratos/contad
 import { registrarGasto } from "@uniformame/compartido/contratos/contaduria/gastos";
 import { Boton } from "@uniformame/interfaz/botones/boton";
 import { Campo } from "@uniformame/interfaz/captura/campo";
+import { CampoDeArchivo } from "@uniformame/interfaz/captura/campo-de-archivo";
 import { Selector } from "@uniformame/interfaz/captura/selector";
 import { Ventana } from "@uniformame/interfaz/contenedores/ventana";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
+import { aceptaDe, useSubidaAlMandar } from "../../../comun/subida.ts";
 import { medioDe, opcionesDeSaleDe } from "../comun.tsx";
 import { useEnvio } from "../envio.ts";
 
@@ -58,6 +62,9 @@ function hoy(): string {
 export function VentanaRegistrarGasto({ opciones, alCerrar }: { opciones: Opciones; alCerrar: () => void }) {
 	const { enviar, enviando } = useEnvio(registrarGasto);
 	const conConexion = useConConexion();
+	const { subir, subiendo } = useSubidaAlMandar("comprobante", "contaduria");
+	const [comprobante, setComprobante] = useState<File | null>(null);
+	const [errorDelComprobante, setErrorDelComprobante] = useState<string | undefined>(undefined);
 	const saleDe = opcionesDeSaleDe(opciones.cuentas_fabrica);
 	const formulario = useForm<z.input<typeof formularioDeGasto>>({
 		resolver: zodResolver(formularioDeGasto),
@@ -72,6 +79,9 @@ export function VentanaRegistrarGasto({ opciones, alCerrar }: { opciones: Opcion
 	});
 	const errores = formulario.formState.errors;
 	const registrar = formulario.handleSubmit(async (valores) => {
+		// El comprobante se sube primero; si no se pudo, ya lo avisó y no se registra.
+		const comprobanteId = comprobante === null ? undefined : await subir(comprobante);
+		if (comprobante !== null && comprobanteId === undefined) return;
 		const area = valores.donde === fabrica ? "fabrica" : valores.donde === enLinea ? "en_linea" : "ubicacion";
 		const salio = await enviar(
 			{
@@ -82,10 +92,12 @@ export function VentanaRegistrarGasto({ opciones, alCerrar }: { opciones: Opcion
 					...(area === "ubicacion" ? { ubicacion_id: valores.donde } : {}),
 					fecha: valores.fecha,
 					...medioDe(valores.sale_de),
+					...(comprobanteId === undefined ? {} : { comprobante_archivo_id: comprobanteId }),
 					...(valores.tipo_comprobante_id === "" ? {} : { tipo_comprobante_id: valores.tipo_comprobante_id }),
 				},
 			},
 			(campos) => {
+				setErrorDelComprobante(campos.comprobante_archivo_id);
 				for (const [campo, mensaje] of Object.entries(campos)) {
 					const enElFormulario =
 						campo === "monto_centavos"
@@ -108,7 +120,7 @@ export function VentanaRegistrarGasto({ opciones, alCerrar }: { opciones: Opcion
 			alCerrar={alCerrar}
 			titulo="Registrar gasto"
 			accion={
-				<Boton variante="principal" disabled={!conConexion || enviando} onClick={() => void registrar()}>
+				<Boton variante="principal" disabled={!conConexion || enviando || subiendo} onClick={() => void registrar()}>
 					Registrar gasto
 				</Boton>
 			}
@@ -154,6 +166,17 @@ export function VentanaRegistrarGasto({ opciones, alCerrar }: { opciones: Opcion
 					opciones={saleDe}
 					error={errores.sale_de?.message}
 					{...formulario.register("sale_de")}
+				/>
+				<CampoDeArchivo
+					enVentana
+					etiqueta="Comprobante (opcional)"
+					acepta={aceptaDe.comprobante}
+					archivo={comprobante}
+					error={errorDelComprobante}
+					alEscoger={(archivo) => {
+						setComprobante(archivo);
+						setErrorDelComprobante(undefined);
+					}}
 				/>
 				<Selector
 					enVentana

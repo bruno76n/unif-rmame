@@ -92,6 +92,11 @@ describe("Las pantallas de Catálogo: pestañas, cajones, botones y avisos", () 
 			for (const tamano of ["escritorio", "telefono"] as const) {
 				const pagina = await pantalla.abrir(`/catalogo/${ruta}`, { quien: "catalogo", tamano });
 				await enPantalla(pagina.getByText(ve).first()).toBeVisible();
+				if (ruta === "etiquetas") {
+					// Abre ya con un producto en «Por variante», como la muestra: sin texto que explique la pantalla.
+					await enPantalla(pagina.getByText(/^Así queda la etiqueta de la talla /)).toBeVisible();
+					await enPantalla(pagina.getByText("Escoge un producto para ver sus variantes.")).toHaveCount(0);
+				}
 				await pantalla.capturar(pagina, `catalogo/${ruta}-${tamano}`);
 				await pagina.close();
 			}
@@ -106,8 +111,11 @@ describe("Las pantallas de Catálogo: pestañas, cajones, botones y avisos", () 
 			const pagina = await pantalla.abrir(`/catalogo/productos?cajon=producto&id=${id}`, { quien: "catalogo" });
 			const cajon = pagina.getByRole("dialog", { name: "Calcetas blancas (par)" });
 			await enPantalla(cajon.getByRole("table", { name: "Tallas, códigos y precios" })).toBeVisible();
+			// El pie lleva «Listo» en negro (tinta #17181C) a la derecha; ninguna casilla dice «en En línea».
+			await enPantalla(cajon.getByRole("button", { name: "Listo" })).toHaveCSS("background-color", "rgb(23, 24, 28)");
+			await enPantalla(cajon.getByLabel(/ en En /)).toHaveCount(0);
 			await pantalla.capturar(pagina, "catalogo/ficha-escritorio");
-			const base = cajon.getByLabel("Precio base en Mostrador");
+			const base = cajon.getByLabel("Precio base · Mostrador");
 			await base.fill("45");
 			await enPantalla(cajon.getByText("1 cambio por aplicar")).toBeVisible();
 			await enPantalla(cajon.getByText("Precio de Mostrador: $40 a $45")).toBeVisible();
@@ -214,9 +222,16 @@ describe("Las pantallas de Catálogo: pestañas, cajones, botones y avisos", () 
 		tiempo,
 		async () => {
 			const pagina = await pantalla.abrir("/catalogo/productos", { quien: "catalogo" });
-			await pagina.getByRole("button", { name: "Nuevo producto" }).first().click();
+			// La acción principal de la barra va en negro, como en todos los departamentos.
+			const nuevo = pagina.getByRole("button", { name: "Nuevo producto" }).first();
+			await enPantalla(nuevo).toHaveCSS("background-color", "rgb(23, 24, 28)");
+			await nuevo.click();
 			const cajon = pagina.getByRole("dialog", { name: "¿Qué prenda es?" });
 			await enPantalla(cajon.getByText(/^Nuevo producto \d{6}/)).toBeVisible();
+			await enPantalla(cajon.getByRole("button", { name: "Crear producto" })).toHaveCSS(
+				"background-color",
+				"rgb(23, 24, 28)",
+			);
 			await pantalla.capturar(pagina, "catalogo/nuevo-producto-escritorio");
 			await cajon.getByLabel("Nombre de la prenda").fill("Moño de prueba de pantalla");
 			const alta = pagina.getByRole("dialog", { name: "Moño de prueba de pantalla" });

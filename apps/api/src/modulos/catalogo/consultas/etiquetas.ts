@@ -3,7 +3,8 @@
  * Fase 19 · docs/interfaz/fabrica/catalogo.md («Etiquetas») y docs/modulos/catalogo/variantes-codigos-y-etiquetas.md
  *
  * «Variantes nuevas sin etiqueta»: por producto activo, cuántas tallas vivas están por imprimir. «Por variante»: las
- * tallas de un producto que no están dadas de baja, con su código y el estado de su etiqueta. El precio de la vista
+ * tallas de un producto que no están dadas de baja, con su código y el estado de su etiqueta; sin producto pedido, abre
+ * con el primero que tiene etiquetas por imprimir o, si no hay, con el primero de la lista. El precio de la vista
  * previa solo viaja con `catalogo.etiqueta_lleva_precio`, y sale de la lectura `catalogo.precio_talla` en Mostrador
  * (con su recargo en una talla de pedido especial).
  */
@@ -70,11 +71,13 @@ export const consultaEtiquetas = implementarConsulta(etiquetasDeCatalogo, async 
 	);
 	const llevaPrecio = await parametroSiNo(base, "catalogo.etiqueta_lleva_precio");
 	let producto = null;
-	if (parametros.producto_id !== undefined) {
+	// «Por variante» abre ya con un producto: el pedido, el primero por imprimir o el primero de la lista.
+	const productoId = parametros.producto_id ?? nuevas[0]?.producto_id ?? productos[0]?.id;
+	if (productoId !== undefined) {
 		const [elegido] = await filas(
 			base,
 			sql`SELECT p.id, p.nombre, e.nombre AS escuela FROM productos p LEFT JOIN escuelas e ON e.id = p.escuela_id
-				WHERE p.id = ${parametros.producto_id}`,
+				WHERE p.id = ${productoId}`,
 			z.object({ id: z.uuid(), nombre: z.string(), escuela: z.string().nullable() }),
 		);
 		if (elegido === undefined) throw noExiste();

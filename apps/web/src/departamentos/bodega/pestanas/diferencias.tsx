@@ -6,11 +6,13 @@
  */
 
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
+import { plural } from "@uniformame/compartido/calculos/textos";
 import { type diferenciaPorAclarar, diferenciasDeBodega } from "@uniformame/compartido/contratos/inventario/bodega";
 import { Boton } from "@uniformame/interfaz/botones/boton";
 import { Tarjeta } from "@uniformame/interfaz/contenedores/tarjeta";
 import { EstadoDePantalla } from "@uniformame/interfaz/estados/estado-de-pantalla";
 import { TextoConTono } from "@uniformame/interfaz/estados/textos-con-tono";
+import { Panel } from "@uniformame/interfaz/pagina/panel";
 import { Seccion, TituloDeBloque } from "@uniformame/interfaz/pagina/seccion";
 import { Tabla } from "@uniformame/interfaz/tablas/tabla";
 import type { z } from "zod";
@@ -32,27 +34,29 @@ type PorAclarar = z.infer<typeof diferenciaPorAclarar>;
 function TablaPorAclarar({ diferencias, nombre }: { diferencias: readonly PorAclarar[]; nombre: string }) {
 	const { navegar } = useDireccionDeBodega();
 	return (
-		<Tabla
-			nombre={nombre}
-			filas={diferencias}
-			claveDeFila={(diferencia) => diferencia.diferencia_id}
-			columnas={[
-				{ clave: "folio", encabezado: "Diferencia", celda: (diferencia) => <b>{diferencia.folio}</b> },
-				{ clave: "prenda", encabezado: "Prenda", celda: (diferencia) => diferencia.prenda },
-				{ clave: "que", encabezado: "Qué pasó", celda: (diferencia) => diferencia.descripcion },
-				{ clave: "cargo", encabezado: "A cargo de", celda: (diferencia) => diferencia.a_cargo },
-				{
-					clave: "aclarar",
-					encabezado: "",
-					alinear: "derecha",
-					celda: (diferencia) => (
-						<Boton chico onClick={() => navegar({ aclarar: diferencia.diferencia_id })}>
-							Aclarar
-						</Boton>
-					),
-				},
-			]}
-		/>
+		<Panel>
+			<Tabla
+				nombre={nombre}
+				filas={diferencias}
+				claveDeFila={(diferencia) => diferencia.diferencia_id}
+				columnas={[
+					{ clave: "folio", encabezado: "Diferencia", celda: (diferencia) => <b>{diferencia.folio}</b> },
+					{ clave: "prenda", encabezado: "Prenda", celda: (diferencia) => diferencia.prenda },
+					{ clave: "que", encabezado: "Qué pasó", celda: (diferencia) => diferencia.descripcion },
+					{ clave: "cargo", encabezado: "A cargo de", celda: (diferencia) => diferencia.a_cargo },
+					{
+						clave: "aclarar",
+						encabezado: "",
+						alinear: "derecha",
+						celda: (diferencia) => (
+							<Boton chico onClick={() => navegar({ aclarar: diferencia.diferencia_id })}>
+								Aclarar
+							</Boton>
+						),
+					},
+				]}
+			/>
+		</Panel>
 	);
 }
 
@@ -67,17 +71,19 @@ function Resueltas() {
 				if (resueltas.length === 0) return null;
 				return (
 					<Seccion titulo="Diferencias resueltas">
-						<Tabla
-							nombre="Diferencias resueltas"
-							filas={resueltas}
-							claveDeFila={(resuelta: Resuelta) => resuelta.diferencia_id}
-							columnas={[
-								{ clave: "folio", encabezado: "Diferencia", celda: (resuelta) => <b>{resuelta.folio}</b> },
-								{ clave: "prenda", encabezado: "Prenda", celda: (resuelta) => resuelta.prenda },
-								{ clave: "donde", encabezado: "Dónde", celda: (resuelta) => resuelta.ubicacion },
-								{ clave: "como", encabezado: "Cómo se resolvió", celda: (resuelta) => resuelta.como },
-							]}
-						/>
+						<Panel>
+							<Tabla
+								nombre="Diferencias resueltas"
+								filas={resueltas}
+								claveDeFila={(resuelta: Resuelta) => resuelta.diferencia_id}
+								columnas={[
+									{ clave: "folio", encabezado: "Diferencia", celda: (resuelta) => <b>{resuelta.folio}</b> },
+									{ clave: "prenda", encabezado: "Prenda", celda: (resuelta) => resuelta.prenda },
+									{ clave: "donde", encabezado: "Dónde", celda: (resuelta) => resuelta.ubicacion },
+									{ clave: "como", encabezado: "Cómo se resolvió", celda: (resuelta) => resuelta.como },
+								]}
+							/>
+						</Panel>
 						{paginas.hasNextPage ? (
 							<Boton chico disabled={paginas.isFetchingNextPage} onClick={() => void paginas.fetchNextPage()}>
 								Ver más
@@ -111,7 +117,9 @@ export function DiferenciasDeBodega({ datos }: { datos: Diferencias }) {
 							<Tarjeta key={diferencia.diferencia_id} nombre={diferencia.folio} orilla="ambar">
 								<div className="flex items-start justify-between gap-4">
 									<div className="flex flex-col gap-1">
-										<b className="font-bold text-subtitulo tabular-nums">{`${diferencia.piezas} piezas`}</b>
+										<b className="font-bold text-subtitulo tabular-nums">
+											{plural(diferencia.piezas, "pieza", "piezas")}
+										</b>
 										<span>{`${diferencia.prenda} · talla ${diferencia.talla}`}</span>
 										<span className="text-tinta2">{diferencia.descripcion}</span>
 										<TextoConTono tono="normal">

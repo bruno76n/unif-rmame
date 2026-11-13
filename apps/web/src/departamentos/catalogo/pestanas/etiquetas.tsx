@@ -94,14 +94,15 @@ export function PestanaEtiquetas() {
 										valor: producto.id,
 										texto: `${producto.nombre} · ${escuelaOBasico(producto.escuela)}`,
 									}))}
-									value={busqueda.etiquetas_de ?? ""}
+									value={busqueda.etiquetas_de ?? datos.producto?.id ?? ""}
 									onChange={(evento) => ir({ etiquetas_de: evento.target.value || undefined })}
 								/>
 							</div>
 						}
 					>
 						{datos.producto === null ? (
-							<EstadoDePantalla tipo="vacio" texto="Escoge un producto para ver sus variantes." />
+							// La consulta abre con un producto; sin ninguno en el catálogo, no hay variantes que ver.
+							<EstadoDePantalla tipo="vacio" texto="Sin productos" />
 						) : (
 							<PorVariante
 								key={datos.producto.id}

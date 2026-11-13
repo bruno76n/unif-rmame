@@ -51,7 +51,7 @@ function CuerpoDeCliente({ cliente, alAbrir }: { cliente: Cliente; alAbrir: (ven
 	return (
 		<div className="flex flex-col gap-5">
 			<section className="grid grid-cols-4 gap-4 max-telefono:grid-cols-2">
-				<Dato etiqueta="Nos debe">
+				<Dato etiqueta="Por cobrar">
 					<b>{montoEnPantalla(cliente.nos_debe_centavos)}</b>
 				</Dato>
 				<Dato etiqueta="Límite de crédito">
@@ -206,7 +206,7 @@ export function CajonCliente({ clienteId, alCerrar }: { clienteId: string; alCer
 								icono={CreditCard}
 							/>
 							<BotonConCifra
-								texto={leDebemos > 0 ? `${montoEnPantalla(leDebemos)} le debemos` : "—"}
+								texto={leDebemos > 0 ? `${montoEnPantalla(leDebemos)} por pagar` : "—"}
 								icono={Wallet}
 								alTocar={leDebemos > 0 ? () => abrir("tercero", cliente.tercero_id) : undefined}
 							/>

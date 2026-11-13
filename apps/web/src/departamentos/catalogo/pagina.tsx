@@ -36,7 +36,7 @@ export function PaginaDeCatalogo({ children }: { children: ReactNode }) {
 				{children}
 			</PaginaDeDepartamento>
 			<AccionPrincipal>
-				<Boton icono={Plus} onClick={() => ir(conAlta())}>
+				<Boton variante="principal" icono={Plus} onClick={() => ir(conAlta())}>
 					Nuevo producto
 				</Boton>
 			</AccionPrincipal>

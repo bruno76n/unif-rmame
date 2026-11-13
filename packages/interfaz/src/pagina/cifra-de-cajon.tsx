@@ -3,7 +3,7 @@
  * Fase 19 · docs/interfaz/DISENO.md (la letra) y docs/interfaz/comunes.md («El cajón»)
  */
 
-import { TextoConTono } from "../estados/textos-con-tono.tsx";
+import { unirClases } from "../clases.ts";
 
 /**
  * Una cifra de un cajón.
@@ -12,9 +12,7 @@ import { TextoConTono } from "../estados/textos-con-tono.tsx";
 export function CifraDeCajon({ numero, nombre, rojo = false }: { numero: string; nombre: string; rojo?: boolean }) {
 	return (
 		<div className="flex flex-col gap-0.5 rounded-mediano bg-suave px-4 py-3">
-			<b className="font-bold text-subtitulo tabular-nums">
-				{rojo ? <TextoConTono tono="rojo">{numero}</TextoConTono> : numero}
-			</b>
+			<b className={unirClases("font-bold text-subtitulo tabular-nums", rojo && "text-estado-rojo")}>{numero}</b>
 			<span className="text-etiqueta text-tinta3">{nombre}</span>
 		</div>
 	);

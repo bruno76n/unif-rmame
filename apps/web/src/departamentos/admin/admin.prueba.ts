@@ -20,12 +20,13 @@ import {
 	registrarRespaldoDePrueba,
 	registrarRestauracionDePrueba,
 } from "../../../../api/src/modulos/admin/consultas/de-prueba.ts";
+import { versionDeLaWeb } from "../../comun/estado-de-la-app.ts";
 import { levantarPantalla, type PantallaDePrueba } from "../../comun/pruebas/pantalla-de-prueba.ts";
 
 describe("Las pantallas de Administración del sistema: se ven como la muestra y cada botón llama a su acción", () => {
 	let pantalla: PantallaDePrueba;
 	beforeAll(async () => {
-		pantalla = await levantarPantalla();
+		pantalla = await levantarPantalla({ conArchivos: true });
 		const respaldo = await registrarRespaldoDePrueba(pantalla.servidor, 3);
 		await registrarRestauracionDePrueba(pantalla.servidor, respaldo, 84);
 	}, 180_000);
@@ -90,6 +91,14 @@ describe("Las pantallas de Administración del sistema: se ven como la muestra y
 			expect(esEstadoConocido(texto), estado).toBe(true);
 		}
 		await enPantalla(panel.locator('[data-color="ambar"]').getByText("Por confirmar", { exact: true })).toBeVisible();
+		// La pestaña cuenta todo lo pendiente, lo mismo que «Todos» del panel (comunes, regla 3).
+		const todos = await pagina
+			.getByRole("toolbar", { name: "Filtrar pendientes" })
+			.getByRole("button", { name: /^Todos/ })
+			.textContent();
+		await enPantalla(pagina.getByRole("tab", { name: /Pendientes/ })).toHaveText(
+			new RegExp(`^Pendientes\\s*${(todos ?? "").replace(/\D/g, "")}$`),
+		);
 		await pantalla.capturar(pagina, "admin/pendientes-escritorio");
 		await pagina
 			.getByRole("toolbar", { name: "Filtrar pendientes" })
@@ -301,6 +310,53 @@ describe("Las pantallas de Administración del sistema: se ven como la muestra y
 	}, async () => {
 		const pagina = await pantalla.abrir("/admin/usuarios-y-accesos", { quien: "ventas" });
 		await enPantalla(pagina.getByText("No tienes acceso a esta pantalla")).toBeVisible();
+		await pagina.close();
+	});
+
+	it("«Registrar restauración probada»: sin evidencia lo dice en su campo; con ella, la sube al registrar, llega con `evidencia_archivo_id` y su enlace la abre", {
+		timeout: 120_000,
+	}, async () => {
+		const pagina = await abrir("/admin/respaldos");
+		await pagina.getByRole("button", { name: "Registrar restauración probada" }).click();
+		const ventana = pagina.getByRole("dialog", { name: "Registrar restauración probada" });
+		// Ayer a esta hora, como la escribe la casilla de fecha y hora («AAAA-MM-DDTHH:MM», hora local).
+		const ayer = new Date(Date.now() - 86_400_000 - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+		await ventana.getByLabel("Cuándo se probó").fill(ayer);
+		// Que no cuadró: así la última restauración probada de la muestra no cambia.
+		await ventana.getByRole("checkbox", { name: "Los conteos y el cuadre de inventario cuadraron" }).click();
+		const sinEvidencia = pagina.waitForResponse((una) =>
+			una.url().includes("/v1/acciones/admin.registrar_restauracion"),
+		);
+		await ventana.getByRole("button", { name: "Registrar" }).click();
+		expect((await sinEvidencia).status()).toBe(400);
+		await enPantalla(ventana.getByRole("alert").getByText("Sube la evidencia de la prueba.")).toBeVisible();
+		await ventana.locator('input[type="file"]').setInputFiles({
+			name: "conteos-restauracion.txt",
+			mimeType: "text/plain",
+			buffer: Buffer.from("tabla,esperados,encontrados\nnotas_entrega,151,151"),
+		});
+		const registrada = pagina.waitForResponse((una) => una.url().includes("/v1/acciones/admin.registrar_restauracion"));
+		await ventana.getByRole("button", { name: "Registrar" }).click();
+		const respuesta = await registrada;
+		expect(respuesta.status(), await respuesta.text()).toBe(200);
+		const { datos } = respuesta.request().postDataJSON() as { datos: { evidencia_archivo_id?: string } };
+		await enPantalla(
+			pagina.getByRole("status").getByText("La prueba no cuadró: el respaldo sigue por probar."),
+		).toBeVisible();
+		const [ligada] = await consultar(
+			"SELECT r.id, a.entidad FROM restauraciones_probadas r JOIN archivos a ON a.id = r.evidencia_archivo_id AND a.entidad_id = r.id WHERE r.evidencia_archivo_id = $1",
+			[datos.evidencia_archivo_id],
+		);
+		expect(ligada?.entidad).toBe("restauraciones_probadas");
+		// La evidencia sale en «Pruebas» y su enlace la abre: la API, pedida con la versión de la web, la redirige.
+		const enlace = pagina.getByRole("link", { name: "conteos-restauracion.txt" });
+		await enPantalla(enlace).toBeVisible();
+		const direccion = new URL((await enlace.getAttribute("href")) ?? "", pagina.url()).toString();
+		expect(direccion).toContain(`/v1/archivos/${datos.evidencia_archivo_id}`);
+		const abierta = await pagina
+			.context()
+			.request.get(direccion, { maxRedirects: 0, headers: { "x-app-version": versionDeLaWeb } });
+		expect(abierta.status()).toBe(302);
 		await pagina.close();
 	});
 });

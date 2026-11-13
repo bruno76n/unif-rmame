@@ -294,9 +294,14 @@ export function CajonPedidoLinea({ pedidoLineaId, alCerrar }: { pedidoLineaId: s
 				{...(pedido?.puede.cancelar === true
 					? {
 							pieIzquierda: (
-								<Boton variante="peligro" disabled={!conConexion} onClick={() => setCancelando(true)}>
-									Cancelar pedido
-								</Boton>
+								<span className="flex gap-2">
+									<Boton variante="fantasma" onClick={alCerrar}>
+										Cerrar
+									</Boton>
+									<Boton variante="peligro" disabled={!conConexion} onClick={() => setCancelando(true)}>
+										Cancelar pedido
+									</Boton>
+								</span>
 							),
 						}
 					: {})}

@@ -135,7 +135,7 @@ export function CajonVariante({ varianteId, alCerrar }: { varianteId: string; al
 							? detalle.tiendas_sin_caja.map((suya) => (
 									<Boton
 										key={suya.ubicacion_id}
-										variante="principal"
+										variante={detalle.tiendas_sin_caja.length === 1 ? "principal" : "secundario"}
 										disabled={!conConexion}
 										onClick={() => setTienda(suya)}
 									>

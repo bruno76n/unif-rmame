@@ -15,6 +15,7 @@ import { BarraAvance } from "@uniformame/interfaz/avance/barra-avance";
 import { Campo } from "@uniformame/interfaz/captura/campo";
 import { Tarjeta } from "@uniformame/interfaz/contenedores/tarjeta";
 import { TextoConTono } from "@uniformame/interfaz/estados/textos-con-tono";
+import { Panel } from "@uniformame/interfaz/pagina/panel";
 import { DosRenglones } from "@uniformame/interfaz/tablas/dos-renglones";
 import { Tabla } from "@uniformame/interfaz/tablas/tabla";
 import { type ReactNode, useState } from "react";
@@ -42,8 +43,8 @@ function CifraDeArriba({ nombre, rojo = false, children }: { nombre: string; roj
 	return (
 		<Tarjeta nombre={nombre}>
 			<span className="font-semibold text-etiqueta text-tinta3">{nombre}</span>
-			<b className="font-bold text-titulo-seccion tabular-nums">
-				{rojo ? <TextoConTono tono="rojo">{children}</TextoConTono> : children}
+			<b className={`font-bold text-titulo-seccion tabular-nums ${rojo ? "text-estado-rojo" : "text-tinta"}`}>
+				{children}
 			</b>
 		</Tarjeta>
 	);
@@ -93,19 +94,26 @@ function CasillaDeLaHora({ deConfiguracion }: { deConfiguracion: number | undefi
 	const inicial = busqueda.hora ?? (deConfiguracion === undefined ? undefined : Math.round(deConfiguracion / 100));
 	const [texto, setTexto] = useState(inicial === undefined ? "" : String(inicial));
 	return (
-		<Campo
-			etiqueta="Una hora de máquina parada cuesta"
-			inputMode="numeric"
-			maxLength={6}
-			value={texto}
-			onChange={(evento) => {
-				// Solo números: lo demás no se escribe.
-				const limpio = evento.target.value.replace(/\D/g, "");
-				setTexto(limpio);
-				const pesos = Number(limpio);
-				navegar({ hora: limpio === "" || pesos === 0 ? undefined : pesos });
-			}}
-		/>
+		<span className="flex items-end gap-2">
+			<span aria-hidden="true" className="grid h-campo place-items-center font-semibold text-tinta3">
+				$
+			</span>
+			<span className="min-w-0 flex-1">
+				<Campo
+					etiqueta="Una hora de máquina parada cuesta"
+					inputMode="numeric"
+					maxLength={6}
+					value={texto}
+					onChange={(evento) => {
+						// Solo números: lo demás no se escribe.
+						const limpio = evento.target.value.replace(/\D/g, "");
+						setTexto(limpio);
+						const pesos = Number(limpio);
+						navegar({ hora: limpio === "" || pesos === 0 ? undefined : pesos });
+					}}
+				/>
+			</span>
+		</span>
 	);
 }
 
@@ -134,44 +142,46 @@ export function CostoDeMantenimiento({ datos }: { datos: Costo }) {
 				<DeLaLeyenda tramo={tramos.reparacion} />
 				<DeLaLeyenda tramo={tramos.paro} />
 			</div>
-			<Tabla
-				nombre="Costo por máquina"
-				filas={datos.maquinas}
-				claveDeFila={(maquina) => maquina.maquina_id}
-				alTocarFila={(maquina) => abrir("maquina", maquina.maquina_id)}
-				columnas={[
-					{
-						clave: "maquina",
-						encabezado: "Máquina",
-						celda: (maquina) => (
-							<DosRenglones
-								arriba={maquina.nombre}
-								abajo={[plural(maquina.servicios, "servicio", "servicios"), maquina.la_trae]
-									.filter((parte) => parte !== null)
-									.join(" · ")}
-							/>
-						),
-					},
-					{
-						clave: "reparaciones",
-						encabezado: "Reparaciones",
-						alinear: "derecha",
-						celda: (maquina) => montoEnPantalla(maquina.reparaciones_centavos),
-					},
-					{ clave: "paro", encabezado: "Paro", alinear: "derecha", celda: (maquina) => `${maquina.horas_paro} h` },
-					{
-						clave: "pesos",
-						encabezado: "Paro en pesos",
-						alinear: "derecha",
-						celda: (maquina) => <TextoConTono tono="rojo">{montoEnPantalla(maquina.paro_centavos)}</TextoConTono>,
-					},
-					{
-						clave: "barra",
-						encabezado: "Lo gastado contra lo parado",
-						celda: (maquina) => <GastadoContraParado maquina={maquina} mayor={mayor} />,
-					},
-				]}
-			/>
+			<Panel>
+				<Tabla
+					nombre="Costo por máquina"
+					filas={datos.maquinas}
+					claveDeFila={(maquina) => maquina.maquina_id}
+					alTocarFila={(maquina) => abrir("maquina", maquina.maquina_id)}
+					columnas={[
+						{
+							clave: "maquina",
+							encabezado: "Máquina",
+							celda: (maquina) => (
+								<DosRenglones
+									arriba={maquina.nombre}
+									abajo={[plural(maquina.servicios, "servicio", "servicios"), maquina.la_trae]
+										.filter((parte) => parte !== null)
+										.join(" · ")}
+								/>
+							),
+						},
+						{
+							clave: "reparaciones",
+							encabezado: "Reparaciones",
+							alinear: "derecha",
+							celda: (maquina) => montoEnPantalla(maquina.reparaciones_centavos),
+						},
+						{ clave: "paro", encabezado: "Paro", alinear: "derecha", celda: (maquina) => `${maquina.horas_paro} h` },
+						{
+							clave: "pesos",
+							encabezado: "Paro en pesos",
+							alinear: "derecha",
+							celda: (maquina) => <TextoConTono tono="rojo">{montoEnPantalla(maquina.paro_centavos)}</TextoConTono>,
+						},
+						{
+							clave: "barra",
+							encabezado: "Lo gastado contra lo parado",
+							celda: (maquina) => <GastadoContraParado maquina={maquina} mayor={mayor} />,
+						},
+					]}
+				/>
+			</Panel>
 		</div>
 	);
 }

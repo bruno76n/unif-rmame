@@ -70,10 +70,10 @@ export function VentanaCompensar({ tercero, alCerrar }: { tercero: Tercero; alCe
 		>
 			<form className="flex flex-col gap-4" onSubmit={(evento) => void guardar(evento)}>
 				<div className="grid grid-cols-3 gap-3 max-telefono:grid-cols-1">
-					<Dato etiqueta="Nos debe">
+					<Dato etiqueta="Por cobrar">
 						{montoEnPantalla(nosDebe)} → {montoEnPantalla(nosDebe - monto)}
 					</Dato>
-					<Dato etiqueta="Le debemos">
+					<Dato etiqueta="Por pagar">
 						{montoEnPantalla(leDebemos)} → {montoEnPantalla(leDebemos - monto)}
 					</Dato>
 					<Dato etiqueta="Saldo neto">{montoEnPantalla(tercero.neto.monto_centavos)} · no cambia</Dato>

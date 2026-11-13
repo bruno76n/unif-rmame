@@ -3,7 +3,8 @@
  * gris de los que no son escuela, o nada (una tienda o la temporada).
  * Fase 19 · docs/interfaz/DISENO.md («Los colores») y docs/interfaz/fabrica/ventas.md
  *
- * El color viene de los datos (cada escuela tiene el suyo), por eso va en `style`: no es un color de la guía.
+ * El color viene de los datos (cada escuela tiene el suyo), por eso va en `style`: no es un color de la guía. Lleva su
+ * filo (`shadow-muestra`), como en la muestra, para que una escuela de color blanco se vea.
  */
 
 import { unirClases } from "../clases.ts";
@@ -29,7 +30,11 @@ export function MuestraDeColor({ color, tamano = "mediano", sinColor = "gris" }:
 	return (
 		<span
 			aria-hidden="true"
-			className={unirClases("inline-block flex-none rounded-chico", tamanos[tamano], color === null && "bg-pizarra")}
+			className={unirClases(
+				"inline-block flex-none rounded-chico shadow-muestra",
+				tamanos[tamano],
+				color === null && "bg-pizarra",
+			)}
 			style={color === null ? undefined : { backgroundColor: color }}
 		/>
 	);

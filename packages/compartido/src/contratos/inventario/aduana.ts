@@ -189,7 +189,7 @@ export const despachoDeAduana = definirConsulta({
 			z.object({
 				carril: carrilDeAduana,
 				nombre: z.string(),
-				resumen: z.string().describe("«{n} por despachar · {m} piezas»"),
+				resumen: z.string().describe("«{n} por despachar · {m} piezas»; con solo material, «{n} por despachar»"),
 				renglones: z.array(partidaEnAduana),
 			}),
 		),

@@ -89,6 +89,11 @@ describe("Las pantallas de Producción", () => {
 		await enPantalla(pagina.getByRole("heading", { name: "Por cortar" })).toBeVisible();
 		await enPantalla(pagina.getByRole("heading", { name: "Terminados" })).toBeVisible();
 		await enPantalla(pagina.getByText("Ninguna operación reporta más piezas que la anterior")).toBeVisible();
+		// Las piezas de cada grupo van con su separador de miles: «19 lotes · 2,381 piezas».
+		for (const cuenta of await pagina.getByText(/^\d[\d,]* lotes? · [\d,]+ piezas?$/).allTextContents()) {
+			expect(cuenta, cuenta).toMatch(/^\d{1,3}(,\d{3})* lotes? · \d{1,3}(,\d{3})* piezas?$/);
+		}
+		await enPantalla(pagina.getByText(/^\d[\d,]* lotes? · [\d,]+ piezas?$/).first()).toBeVisible();
 		await pantalla.capturar(pagina, "produccion/lotes-escritorio");
 		await pagina.locator(`[data-lote="${lotes["L-2026-002"]}"]`).click();
 		await enPantalla(pagina).toHaveURL(new RegExp(`cajon=lote&id=${lotes["L-2026-002"]}`));
@@ -257,7 +262,9 @@ describe("Las pantallas de Producción", () => {
 		const pagina = await pantalla.abrir(`/produccion/corte?cortar=${lotes["L-2026-019"]}`, { quien: "produccion" });
 		await enPantalla(pagina.getByRole("heading", { name: "Lotes por cortar" })).toBeVisible();
 		await enPantalla(pagina.getByRole("heading", { name: "Pantalón azul marino" })).toBeVisible();
-		await enPantalla(pagina.getByText(/^La tela alcanza · 190 piezas llevan [\d.]+ m según la receta/)).toBeVisible();
+		await enPantalla(
+			pagina.getByText(/^La tela alcanza · 190 piezas llevan [\d,]+(\.\d)? m según la receta/),
+		).toBeVisible();
 		await enPantalla(pagina.getByText("Con este corte queda verificada la receta.")).toBeVisible();
 		await pantalla.capturar(pagina, "produccion/corte-escritorio");
 		// Un lote sin receta no tiene captura.

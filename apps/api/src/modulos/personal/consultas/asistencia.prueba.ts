@@ -43,7 +43,13 @@ interface Asistencia {
 			persona_id: string;
 			nombre: string;
 			detalle: string;
-			dias: { fecha: string; valor: string | null; version: number | null; capturable: boolean }[];
+			dias: {
+				fecha: string;
+				valor: string | null;
+				version: number | null;
+				capturable: boolean;
+				por_llegar: boolean;
+			}[];
 			total: number;
 		}[];
 		sin_capturar: number;
@@ -111,6 +117,16 @@ describe("Personal · Asistencia: la cuadrícula de la semana, los pendientes y 
 		expect(semana.personas.find((persona) => persona.nombre === "Sergio Gómez")?.detalle).toBe("Taller · Mixta");
 		expect(semana.sin_capturar).toBe(conAsistencia * 6);
 		expect(semana.primero_sin_capturar).not.toBeNull();
+	});
+
+	it("los días que todavía no llegan van marcados para no pintarse en rojo; los de hoy y antes, no", async () => {
+		const { semana } = await asistencia();
+		const hoy = Temporal.Now.plainDateISO("America/Mexico_City");
+		const [persona] = semana.personas;
+		expect(persona).toBeDefined();
+		for (const dia of persona?.dias ?? []) {
+			expect(dia.por_llegar, dia.fecha).toBe(Temporal.PlainDate.compare(Temporal.PlainDate.from(dia.fecha), hoy) > 0);
+		}
 	});
 
 	it("un día capturado se pinta con su valor y su versión, y «Días» suma completo 1 y medio 0.5", async () => {

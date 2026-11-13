@@ -1,13 +1,15 @@
 /**
  * Existencias de Bodega: el buscador «Prenda y talla, o código», la sección, la escuela, «Copiar para Excel», los
- * filtros y, por producto (que se pliega, con la suma de cada columna), cada variante con sus piezas en Aduana, Bodega,
- * Tienda 1, Tienda 2 y el Taller (su color contra el mínimo y lo que tiene en diferencia), Tránsito, En camino a
- * aduana, el total, lo comprometido y lo libre. Cada variante abre su cajón. Se piden por páginas de productos.
+ * filtros y una sola matriz: por producto (su renglón se pliega y lleva la suma de cada columna), cada variante con sus
+ * piezas en Aduana, Bodega, Tienda 1, Tienda 2 y el Taller (su color contra el mínimo y lo que tiene en diferencia),
+ * Tránsito, En camino a aduana, el total, lo comprometido y lo libre. Cada variante abre su cajón. Se piden por páginas
+ * de productos.
  * Fase 19 · docs/interfaz/fabrica/bodega.md («Existencias»)
  *
  * Las cuentas y los colores llegan de `inventario.existencias`; la pantalla solo suma las columnas del producto.
  */
 
+import { plural } from "@uniformame/compartido/calculos/textos";
 import {
 	columnasDeExistencias,
 	existenciasDeBodega,
@@ -18,17 +20,17 @@ import { Boton } from "@uniformame/interfaz/botones/boton";
 import { Buscador } from "@uniformame/interfaz/captura/buscador";
 import { Filtros } from "@uniformame/interfaz/captura/filtros";
 import { Selector } from "@uniformame/interfaz/captura/selector";
-import { GrupoPlegable } from "@uniformame/interfaz/contenedores/grupo-plegable";
 import { EstadoDePantalla } from "@uniformame/interfaz/estados/estado-de-pantalla";
 import { TextoConTono } from "@uniformame/interfaz/estados/textos-con-tono";
-import { DosRenglones } from "@uniformame/interfaz/tablas/dos-renglones";
+import { Panel } from "@uniformame/interfaz/pagina/panel";
 import { type ColumnaDeTabla, Tabla } from "@uniformame/interfaz/tablas/tabla";
-import { Copy } from "lucide-react";
+import { ChevronDown, ChevronRight, Copy } from "lucide-react";
 import { useState } from "react";
 import type { z } from "zod";
 import { usePaginas } from "../../../comun/api.tsx";
 import { useAvisar } from "../../../comun/avisos-de-abajo.tsx";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
+import { enteros } from "../comun.tsx";
 import { useDireccionDeBodega } from "../direccion.ts";
 
 /** Lo que regresa una página. */
@@ -61,66 +63,149 @@ const nombresDeFiltros: Readonly<Record<(typeof filtrosDeExistencias)[number], s
 	con_diferencia: "Con diferencia",
 };
 
+/** Un renglón de la matriz: el de un producto (que se pliega, con la suma de cada columna) o el de una variante. */
+type Renglon =
+	| { tipo: "producto"; producto: Producto; abierto: boolean }
+	| { tipo: "variante"; producto: Producto; variante: Variante };
+
+/**
+ * Una cifra de la matriz con su separador de miles; el cero, en gris en todas las columnas.
+ * @param props La cifra y si va en negritas (la suma del producto).
+ */
+function Cifra({ valor, negritas = false }: { valor: number; negritas?: boolean }) {
+	const texto = enteros.format(valor);
+	if (valor === 0) return <span className="text-tinta3">{texto}</span>;
+	return negritas ? <b>{texto}</b> : <span>{texto}</span>;
+}
+
+/** El color del número de una celda de ubicación, contra su mínimo. */
+const claseDelTono: Readonly<Record<NonNullable<Variante["celdas"][number]["tono"]>, string>> = {
+	rojo: "font-bold text-estado-rojo",
+	ambar: "font-bold text-texto-advertencia",
+	gris: "text-tinta3",
+};
+
 /**
  * Una celda de ubicación: el número en su color, «Mínimo {n}» al pasar el puntero y lo que tiene en diferencia.
  * @param props La celda.
  */
 function Celda({ celda }: { celda: Variante["celdas"][number] }) {
-	const numero = String(celda.piezas);
 	return (
 		<span
 			title={celda.minimo === null ? undefined : `Mínimo ${celda.minimo}`}
 			className="inline-flex flex-col items-end"
 		>
-			{celda.tono === "rojo" || celda.tono === "ambar" ? (
-				<TextoConTono tono={celda.tono}>{numero}</TextoConTono>
-			) : celda.tono === "gris" ? (
-				<TextoConTono tono="normal">{numero}</TextoConTono>
-			) : (
-				<span className="tabular-nums">{numero}</span>
-			)}
+			<span className={celda.tono === null ? undefined : claseDelTono[celda.tono]}>{enteros.format(celda.piezas)}</span>
 			{celda.en_diferencia > 0 ? (
-				<TextoConTono tono="ambar">{`${celda.en_diferencia} en diferencia`}</TextoConTono>
+				<TextoConTono tono="ambar">{`${enteros.format(celda.en_diferencia)} en diferencia`}</TextoConTono>
 			) : null}
 		</span>
 	);
 }
 
 /**
- * Las columnas de la tabla de un producto, con la suma del producto abajo.
- * @param variantes Las variantes del producto.
+ * Lo que tiene una variante en una ubicación.
+ * @param variante La variante.
+ * @param codigo La ubicación.
  */
-function columnas(variantes: readonly Variante[]): ColumnaDeTabla<Variante>[] {
-	const suma = (valor: (variante: Variante) => number) =>
-		variantes.reduce((total, variante) => total + valor(variante), 0);
+function piezasEn(variante: Variante, codigo: (typeof columnasDeExistencias)[number]): number {
+	return variante.celdas.find((suya) => suya.codigo === codigo)?.piezas ?? 0;
+}
+
+/**
+ * La suma de una columna en las variantes de un producto: va en su renglón.
+ * @param producto El producto.
+ * @param valor Lo de cada variante.
+ */
+function sumaDe(producto: Producto, valor: (variante: Variante) => number): number {
+	return producto.variantes.reduce((total, variante) => total + valor(variante), 0);
+}
+
+/**
+ * El nombre del producto en su renglón: la flecha que lo pliega, el nombre y su escuela.
+ * @param props El producto, si está abierto y qué hacer al plegarlo.
+ */
+function NombreDelProducto({
+	producto,
+	abierto,
+	alCambiar,
+}: {
+	producto: Producto;
+	abierto: boolean;
+	alCambiar: () => void;
+}) {
+	const Flecha = abierto ? ChevronDown : ChevronRight;
+	return (
+		<span className="flex items-center gap-2">
+			<button
+				type="button"
+				aria-expanded={abierto}
+				aria-label={abierto ? `Plegar ${producto.prenda}` : `Abrir ${producto.prenda}`}
+				onClick={(evento) => {
+					// El renglón también pliega: el botón no lo repite.
+					evento.stopPropagation();
+					alCambiar();
+				}}
+				className="grid size-6 place-items-center rounded-chico text-tinta2 hover:bg-riel"
+			>
+				<Flecha aria-hidden="true" size={15} strokeWidth={1.9} />
+			</button>
+			<b>{producto.prenda}</b>
+			<span className="text-etiqueta text-tinta3">{producto.escuela}</span>
+		</span>
+	);
+}
+
+/**
+ * Las columnas de la matriz: en el renglón del producto, la suma de cada una; en el de la variante, lo suyo.
+ * @param alPlegar Pliega o abre un producto.
+ */
+function columnas(alPlegar: (productoId: string) => void): ColumnaDeTabla<Renglon>[] {
 	const numero = (
 		clave: string,
 		encabezado: string,
 		valor: (variante: Variante) => number,
-	): ColumnaDeTabla<Variante> => ({
+	): ColumnaDeTabla<Renglon> => ({
 		clave,
 		encabezado,
 		alinear: "derecha",
-		celda: (variante) => valor(variante),
-		suma: suma(valor),
+		celda: (renglon) =>
+			renglon.tipo === "producto" ? (
+				<Cifra valor={sumaDe(renglon.producto, valor)} negritas />
+			) : (
+				<Cifra valor={valor(renglon.variante)} />
+			),
 	});
 	return [
 		{
 			clave: "variante",
 			encabezado: "Prenda y talla",
-			celda: (variante) => <DosRenglones arriba={`Talla ${variante.talla}`} abajo={variante.codigo ?? ""} />,
-			suma: "Suma",
+			celda: (renglon) =>
+				renglon.tipo === "producto" ? (
+					<NombreDelProducto
+						producto={renglon.producto}
+						abierto={renglon.abierto}
+						alCambiar={() => alPlegar(renglon.producto.producto_id)}
+					/>
+				) : (
+					<span className="flex items-baseline gap-3 pl-8">
+						<b>{`Talla ${renglon.variante.talla}`}</b>
+						<span className="text-etiqueta text-tinta3 tabular-nums">{renglon.variante.codigo ?? ""}</span>
+					</span>
+				),
 		},
 		...columnasDeExistencias.map(
-			(codigo): ColumnaDeTabla<Variante> => ({
+			(codigo): ColumnaDeTabla<Renglon> => ({
 				clave: codigo,
 				encabezado: nombresDeColumnas[codigo],
 				alinear: "derecha",
-				celda: (variante) => {
-					const celda = variante.celdas.find((suya) => suya.codigo === codigo);
+				celda: (renglon) => {
+					if (renglon.tipo === "producto") {
+						return <Cifra valor={sumaDe(renglon.producto, (variante) => piezasEn(variante, codigo))} negritas />;
+					}
+					const celda = renglon.variante.celdas.find((suya) => suya.codigo === codigo);
 					return celda === undefined ? null : <Celda celda={celda} />;
 				},
-				suma: suma((variante) => variante.celdas.find((suya) => suya.codigo === codigo)?.piezas ?? 0),
 			}),
 		),
 		numero("transito", "Tránsito", (variante) => variante.transito),
@@ -132,28 +217,46 @@ function columnas(variantes: readonly Variante[]): ColumnaDeTabla<Variante>[] {
 }
 
 /**
- * Un producto: su grupo plegable con la tabla de sus variantes.
- * @param props El producto y qué hacer al tocar una variante.
+ * La matriz de existencias: una sola tabla, con el renglón de cada producto (que se pliega y lleva la suma de cada
+ * columna) y abajo sus variantes. Tocar el producto lo pliega; tocar una variante abre su cajón.
+ * @param props Los productos y qué hacer al tocar una variante.
  */
-function GrupoDelProducto({ producto, alTocar }: { producto: Producto; alTocar: (varianteId: string) => void }) {
-	const [abierto, setAbierto] = useState(true);
-	const cuantas = producto.variantes.length;
+function MatrizDeExistencias({
+	productos,
+	alTocar,
+}: {
+	productos: readonly Producto[];
+	alTocar: (varianteId: string) => void;
+}) {
+	const [plegados, setPlegados] = useState<ReadonlySet<string>>(new Set());
+	const alPlegar = (productoId: string) =>
+		setPlegados((antes) => {
+			const despues = new Set(antes);
+			if (despues.has(productoId)) despues.delete(productoId);
+			else despues.add(productoId);
+			return despues;
+		});
+	const renglones: Renglon[] = productos.flatMap((producto) => {
+		const abierto = !plegados.has(producto.producto_id);
+		return [
+			{ tipo: "producto" as const, producto, abierto },
+			...(abierto ? producto.variantes.map((variante) => ({ tipo: "variante" as const, producto, variante })) : []),
+		];
+	});
 	return (
-		<GrupoPlegable
-			titulo={`${producto.prenda} · ${producto.escuela}`}
-			color="pizarra"
-			cuantos={`${cuantas} ${cuantas === 1 ? "variante" : "variantes"}`}
-			abierto={abierto}
-			alCambiar={setAbierto}
-		>
+		<Panel>
 			<Tabla
-				nombre={producto.prenda}
-				filas={producto.variantes}
-				claveDeFila={(variante) => variante.variante_id}
-				alTocarFila={(variante) => alTocar(variante.variante_id)}
-				columnas={columnas(producto.variantes)}
+				nombre="Existencias"
+				filas={renglones}
+				claveDeFila={(renglon) =>
+					renglon.tipo === "producto" ? `producto:${renglon.producto.producto_id}` : renglon.variante.variante_id
+				}
+				alTocarFila={(renglon) =>
+					renglon.tipo === "producto" ? alPlegar(renglon.producto.producto_id) : alTocar(renglon.variante.variante_id)
+				}
+				columnas={columnas(alPlegar)}
 			/>
-		</GrupoPlegable>
+		</Panel>
 	);
 }
 
@@ -271,7 +374,7 @@ export function ExistenciasDeBodega() {
 				/>
 				{primera === undefined ? null : (
 					<span className="text-tinta3 tabular-nums">
-						{`${primera.resumen.variantes} variantes · ${primera.resumen.piezas} piezas`}
+						{`${plural(primera.resumen.variantes, "variante", "variantes")} · ${plural(primera.resumen.piezas, "pieza", "piezas")}`}
 					</span>
 				)}
 			</div>
@@ -292,13 +395,7 @@ export function ExistenciasDeBodega() {
 					}
 					return (
 						<div className="flex flex-col gap-3">
-							{productos.map((producto) => (
-								<GrupoDelProducto
-									key={producto.producto_id}
-									producto={producto}
-									alTocar={(varianteId) => abrir("variante", varianteId)}
-								/>
-							))}
+							<MatrizDeExistencias productos={productos} alTocar={(varianteId) => abrir("variante", varianteId)} />
 							{paginas.hasNextPage ? (
 								<Boton chico disabled={paginas.isFetchingNextPage} onClick={() => void paginas.fetchNextPage()}>
 									Ver más

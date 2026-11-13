@@ -40,8 +40,8 @@ export async function pedidoLineaDePrueba(
 			descuento_envio_centavos, total_centavos, estado, estado_en, pago_estado, pago_pasarela, pago_referencia,
 			pago_metodo, pago_monto_centavos, pagado_en, pago_vence_en, dispositivo_id)
 		 VALUES ($1::uuid, $2, 'Cliente de prueba', 'cliente@prueba.invalid', 'Cliente de prueba', 'Calle', '1', 'Centro',
-			'Zamora', 'Michoacán', '59600', 'estandar', 'Estafeta', 0, 0, 0, 0, 0, $3, now(), $4, 'prueba', $1::text,
-			'tarjeta', 0, $5, $6, $7)`,
+			'Zamora', 'Michoacán', '59600', 'Estándar', 'Estafeta', 0, 0, 0, 0, 0, $3, now(), $4, 'prueba', $1::text,
+			'Tarjeta', 0, $5, $6, $7)`,
 		[
 			id,
 			`W-P${id.slice(-6)}`,
@@ -108,7 +108,7 @@ export function pedidoDelSitio(
 			municipio: "Zamora",
 			entidad_federativa: "Michoacán",
 			codigo_postal: "59600",
-			metodo: "estandar",
+			metodo: "Estándar",
 			paqueteria: "Estafeta",
 			costo_centavos: 9_900,
 		},
@@ -119,9 +119,9 @@ export function pedidoDelSitio(
 		total_centavos: total,
 		pago: {
 			estado: "pagado",
-			pasarela: "mercado_pago",
+			pasarela: "Mercado Pago",
 			referencia: `MP-${id.slice(-12)}`,
-			metodo: "tarjeta",
+			metodo: "Tarjeta",
 			monto_centavos: total,
 			comision_centavos: 1_500,
 			pagado_en: new Date().toISOString(),

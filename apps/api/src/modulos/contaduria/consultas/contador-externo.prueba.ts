@@ -1,12 +1,13 @@
 /**
  * Prueba de `contaduria.contador_externo` y `contaduria.paquete_mes`: el paquete por enviar con su fecha límite, los
  * paquetes con su estado, la cuenta del mes en vivo (con la nómina solo con «ven sueldos y tarifas») y congelada al
- * mandarlo, y solo Contaduría las pide.
+ * mandarlo, el ZIP del paquete solo para quien ve sueldos y tarifas, y solo Contaduría las pide.
  * Fase 19 · docs/fases/19-web-principal.md (criterio «Cada consulta revisa el departamento y el permiso fino en el
  * servidor y no manda lo que la cuenta no debe ver: … sueldos y tarifas sin su permiso») y
  * docs/interfaz/fabrica/contaduria.md («Contador externo», «Paquete de {mes}»)
  */
 
+import { v7 as uuidv7 } from "uuid";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { mandarAccion, pedirConsulta } from "../../../nucleo/pruebas/llamadas.ts";
@@ -15,7 +16,9 @@ import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pr
 /** Lo que se lee de Contador externo. */
 const contador = z.object({
 	por_enviar: z.object({ paquete_contador_id: z.string(), mes_texto: z.string(), fecha_limite: z.string() }).nullable(),
-	paquetes: z.array(z.object({ mes_texto: z.string(), estado: z.object({ texto: z.string() }) })),
+	paquetes: z.array(
+		z.object({ mes_texto: z.string(), estado: z.object({ texto: z.string() }), archivo_id: z.string().nullable() }),
+	),
 });
 
 /** Lo que se lee del paquete. */
@@ -112,6 +115,27 @@ describe("Contador externo y el paquete del mes", () => {
 		);
 		expect(lista.por_enviar).toBeNull();
 		expect(lista.paquetes[0]?.estado.texto).toBe("Enviado");
+	});
+
+	it("no manda lo que la cuenta no debe ver: el ZIP del paquete lleva la nómina y sin «ven sueldos y tarifas» va sin su archivo", async () => {
+		const archivoId = uuidv7();
+		await servidor.base.dueno.query(
+			`INSERT INTO archivos (id, proposito, modulo, entidad, entidad_id, nombre_original, tipo_mime, tamano_bytes, sha256, almacen_clave, subido_en)
+			 VALUES ($1, 'documento_contador', 'contaduria', 'paquetes_contador', $2, 'paquete.zip', 'application/zip', 1000, repeat('c', 64), $3, now())`,
+			[archivoId, paqueteId, `contaduria/prueba/${archivoId}`],
+		);
+		await servidor.base.dueno.query("UPDATE paquetes_contador SET archivo_id = $1 WHERE id = $2", [
+			archivoId,
+			paqueteId,
+		]);
+		const delPaquete = async (quien: string) =>
+			contador
+				.parse((await pedirConsulta(servidor, "contaduria.contador_externo", {}, quien)).cuerpo.resultado)
+				.paquetes.find((uno) => uno.mes_texto === "octubre 2026")?.archivo_id;
+		expect(await delPaquete("contaduria_sueldos")).toBe(archivoId);
+		expect(await delPaquete("contaduria")).toBeNull();
+		await servidor.base.dueno.query("UPDATE paquetes_contador SET archivo_id = NULL WHERE id = $1", [paqueteId]);
+		await servidor.base.dueno.query("DELETE FROM archivos WHERE id = $1", [archivoId]);
 	});
 
 	it("solo Contaduría los pide: Dirección recibe 403", async () => {

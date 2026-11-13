@@ -65,6 +65,7 @@ import { estadoPagoNotas, saldoPorCobrarDeCliente } from "./lecturas/cuentas.ts"
 import { facturacionDeOrden } from "./lecturas/facturas.ts";
 import { resumenDireccion } from "./lecturas/resumen-direccion.ts";
 import { datosTerceros } from "./lecturas/terceros.ts";
+import { veDocumento } from "./lecturas/ve-documento.ts";
 import { semillaDeParametrosDeContaduria } from "./parametros.ts";
 import { camposDeSueldoDeContaduria } from "./permisos.ts";
 import { semillaDeCuentasFabrica, semillaDeListasDeGastos } from "./siembra.ts";
@@ -144,6 +145,7 @@ export default definirModulo({
 		estado_nomina_semana: estadoNominaSemana,
 		fin_ultima_nomina_pagada: finUltimaNominaPagada,
 		resumen_direccion: resumenDireccion,
+		ve_documento: veDocumento,
 	},
 	trabajos: [crearPaqueteMes, armarArchivoPaquete, cuadreSaldos],
 	semillas: [semillaDeParametrosDeContaduria, semillaDeCuentasFabrica, semillaDeListasDeGastos],

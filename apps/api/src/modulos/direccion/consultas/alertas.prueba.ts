@@ -81,6 +81,11 @@ describe("Las alertas cruzadas: con su detalle, su «Ver» según la cuenta, y s
 		}
 	});
 
+	it("la concentración dice su semáforo a media frase, en minúsculas: «Semáforo: detenido.»", async () => {
+		const concentracion = (await leer("duena")).find((alerta) => alerta.regla === "concentracion");
+		expect(concentracion?.detalle).toMatch(/\. Semáforo: (al corriente|cerca del límite|detenido)\.$/);
+	});
+
 	it("un cuadre con residuo dice sus diferencias, sus excepciones y la hora en que terminó; «Ver» lleva a Bodega", async () => {
 		await consultar(
 			`INSERT INTO cuadres (id, fecha, iniciado_en, terminado_en, estado, diferencias_creadas, excepciones_creadas)

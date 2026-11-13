@@ -26,14 +26,20 @@ function avisoDeAbajo(pagina: Page) {
 }
 
 /**
- * Los metros de un texto («213.484 m»), en milésimos.
- * @param texto El texto.
- * @param forma Dónde están los metros.
+ * Los metros exactos que la pantalla calculó, de un atributo («213.484»), en milésimos: el texto los dice redondeados.
+ * @param valor El valor del atributo.
  */
-function metrosDe(texto: string, forma: RegExp): bigint {
-	const encontrado = forma.exec(texto)?.[1];
-	if (encontrado === undefined) throw new Error(`no encontré los metros en «${texto}»`);
-	return aMilesimos(encontrado);
+function metrosDe(valor: string | null): bigint {
+	if (valor === null) throw new Error("no encontré los metros exactos");
+	return aMilesimos(valor);
+}
+
+/**
+ * Los metros de un texto como se leen: un decimal a lo más («213.5 m»).
+ * @param milesimos Los milésimos.
+ */
+function metrosComoSeLeen(milesimos: bigint): string {
+	return `${new Intl.NumberFormat("es-MX", { maximumFractionDigits: 1 }).format(Number(milesimos) / 1000)} m`;
 }
 
 describe("La captura del corte: lo que se calcula al escribir es lo que se guarda al cerrar", () => {
@@ -82,18 +88,25 @@ describe("La captura del corte: lo que se calcula al escribir es lo que se guard
 			const primera = pagina.getByLabel(/^Talla /).first();
 			const planeadas = Number(await primera.inputValue());
 			await primera.fill(String(planeadas - 3));
-			const linea = pagina.getByText(/^La tela alcanza · 187 piezas llevan [\d.]+ m según la receta/);
+			// Los metros se leen con un decimal a lo más: «213.5 m», nunca «213.484 m».
+			const linea = pagina.getByText(/^La tela alcanza · 187 piezas llevan [\d,]+(\.\d)? m según la receta/);
 			await enPantalla(linea).toBeVisible();
-			const pide = metrosDe((await linea.textContent()) ?? "", /llevan ([\d.]+) m/);
-			// Lo que se usa de cada rollo y lo que queda del último, como lo dice la pantalla.
-			const completos = await pagina.getByText(/^Completo · [\d.]+ m$/).allTextContents();
-			const ultimo =
-				(await pagina.getByText(/^Se usan [\d.]+ m · quedan [\d.]+ m según la receta$/).textContent()) ?? "";
-			const usadosEnPantalla = [
-				...completos.map((texto) => metrosDe(texto, /([\d.]+) m$/)),
-				metrosDe(ultimo, /^Se usan ([\d.]+) m/),
-			];
-			const quedan = metrosDe(ultimo, /quedan ([\d.]+) m/);
+			const pide = metrosDe(await pagina.locator("[data-metros-pide]").first().getAttribute("data-metros-pide"));
+			await enPantalla(linea).toContainText(`llevan ${metrosComoSeLeen(pide)} según la receta`);
+			// Lo que se usa de cada rollo y lo que queda del último, como lo calculó la pantalla.
+			const rollos = pagina.locator("[data-metros-usados]");
+			const usadosEnPantalla = await Promise.all(
+				(await rollos.all()).map(async (rollo) => metrosDe(await rollo.getAttribute("data-metros-usados"))),
+			);
+			const ultimo = rollos.last();
+			const quedan = metrosDe(await ultimo.getAttribute("data-metros-quedan"));
+			await enPantalla(ultimo).toHaveText(
+				`Se usan ${metrosComoSeLeen(usadosEnPantalla.at(-1) ?? 0n)} · quedan ${metrosComoSeLeen(quedan)} según la receta`,
+			);
+			// «Quedó del rollo» viene lleno con lo que queda, como se lee.
+			await enPantalla(pagina.getByLabel(/^Quedó del rollo /).first()).toHaveValue(
+				metrosComoSeLeen(quedan).replace(" m", "").replace(",", ""),
+			);
 			expect(usadosEnPantalla.reduce((suma, uno) => suma + uno, 0n)).toBe(pide);
 			await pantalla.capturar(pagina, "produccion/corte-capturando");
 			await pagina.getByRole("button", { name: "Cerrar corte" }).click();
@@ -123,8 +136,8 @@ describe("La captura del corte: lo que se calcula al escribir es lo que se guard
 				.getByRole("button", { name: /^Quitar R-/ })
 				.last()
 				.click();
-			await enPantalla(pagina.getByText(/^Faltan [\d.]+ m de Felpa marino · 250 piezas llevan/)).toBeVisible();
-			await pagina.getByRole("button", { name: /^Agregar R-\d+ · [\d.]+ m$/ }).click();
+			await enPantalla(pagina.getByText(/^Faltan [\d.,]+ m de Felpa marino · 250 piezas llevan/)).toBeVisible();
+			await pagina.getByRole("button", { name: /^Agregar R-\d+ · [\d.,]+ m$/ }).click();
 			await enPantalla(pagina.getByText(/^La tela alcanza · 250 piezas llevan/)).toBeVisible();
 			// Quedaron 10 m del último, que ya no sirven: merma.
 			await pagina.getByLabel(/^Quedó del rollo /).fill("10");

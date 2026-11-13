@@ -137,6 +137,41 @@ describe("Las pantallas de Bodega: pestañas, cajones, botones y estados", () =>
 		},
 	);
 
+	it(
+		"Existencias es una sola matriz: el renglón del producto suma sus columnas y se pliega; las cifras llevan su coma",
+		espera,
+		async () => {
+			const pagina = await pantalla.abrir("/bodega/existencias", { quien: "bodega" });
+			const matriz = pagina.getByRole("table", { name: "Existencias" });
+			await enPantalla(matriz).toBeVisible({ timeout: 30_000 });
+			await enPantalla(pagina.getByRole("table")).toHaveCount(1);
+			// La muestra tiene miles de piezas: el resumen las escribe con su separador de miles.
+			await enPantalla(pagina.getByText(/ variantes · .* piezas$/)).toHaveText(
+				/^[\d,]+ variantes · \d{1,3}(,\d{3})+ piezas$/,
+			);
+			await pagina.close();
+			// Con pocos renglones (sin virtualizar): el primer producto se pliega y sus variantes dejan de verse.
+			const buscada = await pantalla.abrir("/bodega/existencias?texto=polo%2012", { quien: "bodega" });
+			const suya = buscada.getByRole("table", { name: "Existencias" });
+			const plegar = suya.getByRole("button", { name: /^Plegar / }).first();
+			await enPantalla(plegar).toBeVisible({ timeout: 30_000 });
+			const prenda = (await plegar.getAttribute("aria-label"))?.replace(/^Plegar /, "") ?? "";
+			const antes = await suya.getByRole("row").count();
+			await plegar.click();
+			await enPantalla(suya.getByRole("button", { name: `Abrir ${prenda}` }).first()).toHaveAttribute(
+				"aria-expanded",
+				"false",
+			);
+			expect(await suya.getByRole("row").count()).toBeLessThan(antes);
+			await buscada.close();
+			const pendientes = await pantalla.abrir("/bodega", { quien: "bodega" });
+			await enPantalla(pendientes.getByRole("button", { name: /Existencia total/ })).toContainText(/\d{1,3},\d{3}/, {
+				timeout: 30_000,
+			});
+			await pendientes.close();
+		},
+	);
+
 	it("Reabasto: «A producción» sugiere fabricar lo que falta en Bodega", espera, async () => {
 		const pagina = await pantalla.abrir("/bodega/reabasto", { quien: "bodega" });
 		const boton = pagina.getByRole("button", { name: "A producción" }).first();
@@ -151,7 +186,7 @@ describe("Las pantallas de Bodega: pestañas, cajones, botones y estados", () =>
 		espera,
 		async () => {
 			const pagina = await pantalla.abrir("/bodega/conteos", { quien: "bodega" });
-			await enPantalla(pagina.getByText("En autorización de Dirección")).toBeVisible({ timeout: 30_000 });
+			await enPantalla(pagina.getByText("Esperando autorización")).toBeVisible({ timeout: 30_000 });
 			await enPantalla(pagina.getByRole("button", { name: "Autorizar" })).toHaveCount(0);
 			await pagina.getByRole("button", { name: "Nuevo conteo" }).click();
 			const cajon = pagina.getByRole("dialog");

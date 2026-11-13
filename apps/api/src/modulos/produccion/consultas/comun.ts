@@ -145,7 +145,11 @@ function estadoEnProceso(
 		const maquina = datos.atorado?.maquina ?? null;
 		return { texto, color: "rojo", linea: maquina === null ? desde(datos.ultimoAvance) : `${maquina} parada` };
 	}
-	if (texto === "Sin datos de la tablet") return { texto, color: "gris", linea: desde(datos.ultimaSincronizacion) };
+	// «Desde el {fecha}» de la última sincronización; si las tablets nunca han subido nada, desde el último avance del
+	// lote, que es lo último que se sabe de él.
+	if (texto === "Sin datos de la tablet") {
+		return { texto, color: "gris", linea: desde(datos.ultimaSincronizacion ?? datos.ultimoAvance) };
+	}
 	if (texto === "Atrasado") return { texto, color: "rojo", linea: `Faltan ${faltan}` };
 	if (texto === "En riesgo de atraso") {
 		return {

@@ -13,6 +13,7 @@ import { Boton } from "@uniformame/interfaz/botones/boton";
 import { GrupoPlegable } from "@uniformame/interfaz/contenedores/grupo-plegable";
 import { Estado } from "@uniformame/interfaz/estados/estado";
 import { EstadoDePantalla } from "@uniformame/interfaz/estados/estado-de-pantalla";
+import { Panel } from "@uniformame/interfaz/pagina/panel";
 import { DosRenglones } from "@uniformame/interfaz/tablas/dos-renglones";
 import { Tabla } from "@uniformame/interfaz/tablas/tabla";
 import { useState } from "react";
@@ -116,7 +117,9 @@ export function FallasDeMantenimiento({ abiertas }: { abiertas: Fallas }) {
 					abierto={abiertasDesplegadas}
 					alCambiar={setAbiertasDesplegadas}
 				>
-					<TablaDeFallas fallas={abiertas.renglones} alTocar={alTocar} />
+					<Panel>
+						<TablaDeFallas fallas={abiertas.renglones} alTocar={alTocar} />
+					</Panel>
 				</GrupoPlegable>
 			)}
 			{conteos.resueltas === 0 ? null : (
@@ -127,7 +130,9 @@ export function FallasDeMantenimiento({ abiertas }: { abiertas: Fallas }) {
 					abierto={resueltasDesplegadas}
 					alCambiar={setResueltasDesplegadas}
 				>
-					<Resueltas alTocar={alTocar} />
+					<Panel>
+						<Resueltas alTocar={alTocar} />
+					</Panel>
 				</GrupoPlegable>
 			)}
 		</div>

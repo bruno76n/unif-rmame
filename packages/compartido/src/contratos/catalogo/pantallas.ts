@@ -179,7 +179,14 @@ export const listasDePrecios = definirConsulta({
 export const etiquetasDeCatalogo = definirConsulta({
 	nombre: "catalogo.etiquetas",
 	descripcion: "Las variantes nuevas sin etiqueta por producto y, de un producto, cada variante con su código",
-	entrada: z.object({ producto_id: z.uuid().optional().describe("El producto de «Por variante»") }),
+	entrada: z.object({
+		producto_id: z
+			.uuid()
+			.optional()
+			.describe(
+				"El producto de «Por variante»; sin él, el primero con etiquetas por imprimir o el primero de la lista",
+			),
+	}),
 	salida: z.object({
 		nuevas: z.array(
 			z.object({

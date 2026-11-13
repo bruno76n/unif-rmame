@@ -15,6 +15,7 @@ interface Etiquetas {
 	nuevas: { producto_id: string; nombre: string; escuela: string | null; variantes: number }[];
 	productos: { id: string; nombre: string }[];
 	producto: {
+		id: string;
 		nombre: string;
 		variantes: {
 			talla: string;
@@ -50,13 +51,15 @@ describe("catalogo.etiquetas: las nuevas por producto y cada variante con su có
 		return String(rows[0]?.id);
 	}
 
-	it("las nuevas sin etiqueta van por producto, con cuántas variantes; sin producto no hay «Por variante»", async () => {
+	it("las nuevas sin etiqueta van por producto, con cuántas variantes; sin producto, «Por variante» abre con el primero por imprimir", async () => {
 		const resultado = await etiquetas();
 		expect(resultado.nuevas.map((nueva) => [nueva.nombre, nueva.variantes]).sort()).toEqual([
 			["Playera polo blanca con escudo", 9],
 			["Suéter verde con escudo", 8],
 		]);
-		expect(resultado.producto).toBeNull();
+		// Como la muestra: la pestaña abre ya con un producto, el primero que tiene etiquetas por imprimir.
+		expect(resultado.producto?.id).toBe(resultado.nuevas[0]?.producto_id);
+		expect(resultado.producto?.variantes.length).toBeGreaterThan(0);
 		expect(resultado.maximo_por_talla).toBe(999);
 		expect(resultado.lleva_precio).toBe(false);
 		expect(resultado.productos.length).toBeGreaterThan(20);

@@ -12,6 +12,7 @@ import type { maquinasDeMantenimiento } from "@uniformame/compartido/contratos/m
 import { Boton } from "@uniformame/interfaz/botones/boton";
 import { GrupoPlegable } from "@uniformame/interfaz/contenedores/grupo-plegable";
 import { Estado } from "@uniformame/interfaz/estados/estado";
+import { Panel } from "@uniformame/interfaz/pagina/panel";
 import { Seccion } from "@uniformame/interfaz/pagina/seccion";
 import { DosRenglones } from "@uniformame/interfaz/tablas/dos-renglones";
 import { Tabla } from "@uniformame/interfaz/tablas/tabla";
@@ -110,26 +111,30 @@ export function MaquinasDeMantenimiento({ datos }: { datos: Maquinas }) {
 							})
 						}
 					>
-						<TablaDeMaquinas maquinas={area.maquinas} alTocar={(id) => abrir("maquina", id)} />
+						<Panel>
+							<TablaDeMaquinas maquinas={area.maquinas} alTocar={(id) => abrir("maquina", id)} />
+						</Panel>
 					</GrupoPlegable>
 				))}
 			</Seccion>
 			{datos.bajas.length === 0 ? null : (
 				<Seccion titulo="Dadas de baja">
-					<Tabla
-						nombre="Dadas de baja"
-						filas={datos.bajas}
-						claveDeFila={(baja) => baja.maquina_id}
-						columnas={[
-							{
-								clave: "maquina",
-								encabezado: "Máquina",
-								celda: (baja) => <DosRenglones arriba={baja.nombre} abajo={baja.folio} />,
-							},
-							{ clave: "desde", encabezado: "Desde", celda: (baja) => textoDeDiaCorto(baja.desde) },
-							{ clave: "motivo", encabezado: "Motivo", celda: (baja) => baja.motivo },
-						]}
-					/>
+					<Panel>
+						<Tabla
+							nombre="Dadas de baja"
+							filas={datos.bajas}
+							claveDeFila={(baja) => baja.maquina_id}
+							columnas={[
+								{
+									clave: "maquina",
+									encabezado: "Máquina",
+									celda: (baja) => <DosRenglones arriba={baja.nombre} abajo={baja.folio} />,
+								},
+								{ clave: "desde", encabezado: "Desde", celda: (baja) => textoDeDiaCorto(baja.desde) },
+								{ clave: "motivo", encabezado: "Motivo", celda: (baja) => baja.motivo },
+							]}
+						/>
+					</Panel>
 				</Seccion>
 			)}
 			{nueva ? <VentanaMaquinaNueva alCerrar={() => setNueva(false)} /> : null}

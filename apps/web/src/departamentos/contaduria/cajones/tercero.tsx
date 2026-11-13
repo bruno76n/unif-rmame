@@ -37,10 +37,10 @@ function CuerpoDeTercero({ tercero, alCancelar }: { tercero: Tercero; alCancelar
 	return (
 		<div className="flex flex-col gap-5">
 			<section className="grid grid-cols-3 gap-4 max-telefono:grid-cols-1">
-				<Dato etiqueta="Nos debe">
+				<Dato etiqueta="Por cobrar">
 					<b>{montoEnPantalla(tercero.nos_debe_centavos)}</b>
 				</Dato>
-				<Dato etiqueta="Le debemos">
+				<Dato etiqueta="Por pagar">
 					<b>{montoEnPantalla(tercero.le_debemos_centavos)}</b>
 				</Dato>
 				<Dato etiqueta="Saldo neto">
@@ -49,7 +49,7 @@ function CuerpoDeTercero({ tercero, alCancelar }: { tercero: Tercero; alCancelar
 			</section>
 			{tercero.nos_debe.length === 0 ? null : (
 				<section className="flex flex-col gap-2">
-					<TituloDeBloque titulo="Nos debe" />
+					<TituloDeBloque titulo="Por cobrar" />
 					<ul className="m-0 list-none p-0">
 						{tercero.nos_debe.map((nota) => (
 							<RenglonDeLista
@@ -64,7 +64,7 @@ function CuerpoDeTercero({ tercero, alCancelar }: { tercero: Tercero; alCancelar
 			)}
 			{tercero.le_debemos.length === 0 ? null : (
 				<section className="flex flex-col gap-2">
-					<TituloDeBloque titulo="Le debemos" />
+					<TituloDeBloque titulo="Por pagar" />
 					<ul className="m-0 list-none p-0">
 						{tercero.le_debemos.map((cuenta) => (
 							<RenglonDeLista

@@ -23,7 +23,8 @@ export const tiposPorProposito: Readonly<Record<Proposito, { tipos: readonly str
 	comprobante: { tipos: [...imagenes, ...pdf, ...xml], texto: "una imagen, un PDF o un XML" },
 	factura_proveedor: { tipos: [...pdf, ...imagenes, ...xml], texto: "un PDF, una imagen o un XML" },
 	documento_contador: {
-		tipos: [...pdf, ...imagenes, ...xml, "application/zip"],
+		// Windows dice `application/x-zip-compressed` de un ZIP.
+		tipos: [...pdf, ...imagenes, ...xml, "application/zip", "application/x-zip-compressed"],
 		texto: "un PDF, una imagen, un XML o un ZIP",
 	},
 	guia: { tipos: pdf, texto: "un PDF" },

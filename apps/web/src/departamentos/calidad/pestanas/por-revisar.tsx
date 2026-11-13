@@ -5,11 +5,13 @@
  * Fase 19 · docs/interfaz/fabrica/calidad.md («Por revisar»)
  */
 
+import { plural } from "@uniformame/compartido/calculos/textos";
 import { porRevisarDeCalidad } from "@uniformame/compartido/contratos/calidad/por-revisar";
 import { aprobarReproceso } from "@uniformame/compartido/contratos/calidad/revision";
 import { Boton } from "@uniformame/interfaz/botones/boton";
 import { Estado } from "@uniformame/interfaz/estados/estado";
 import { EstadoDePantalla } from "@uniformame/interfaz/estados/estado-de-pantalla";
+import { Panel } from "@uniformame/interfaz/pagina/panel";
 import { Seccion } from "@uniformame/interfaz/pagina/seccion";
 import { DosRenglones } from "@uniformame/interfaz/tablas/dos-renglones";
 import { Tabla } from "@uniformame/interfaz/tablas/tabla";
@@ -61,40 +63,42 @@ function LotesPorRevisar({ lotes }: { lotes: PorRevisar["lotes"] }) {
 	const { ir } = useDireccion();
 	if (lotes.length === 0) return <EstadoDePantalla tipo="vacio" texto="Ningún lote espera revisión." />;
 	return (
-		<Tabla
-			nombre="Lotes por revisar"
-			filas={lotes}
-			claveDeFila={(lote) => lote.lote_id}
-			alTocarFila={(lote) => ir({ lote: lote.lote_id })}
-			columnas={[
-				{
-					clave: "lote",
-					encabezado: "Lote",
-					celda: (lote) => <DosRenglones arriba={lote.prenda} abajo={lote.linea} />,
-				},
-				{ clave: "piezas", encabezado: "Piezas", alinear: "derecha", celda: (lote) => <b>{lote.listas}</b> },
-				{
-					clave: "para",
-					encabezado: "Para",
-					celda: (lote) => <DosRenglones arriba={lote.para.nombre} abajo={lote.para.linea} />,
-				},
-				{
-					clave: "revisar",
-					encabezado: "",
-					alinear: "derecha",
-					celda: (lote) => (
-						<Boton
-							chico
-							variante={lote.urgente ? "principal" : "secundario"}
-							icono={Check}
-							onClick={() => ir({ lote: lote.lote_id })}
-						>
-							Revisar
-						</Boton>
-					),
-				},
-			]}
-		/>
+		<Panel>
+			<Tabla
+				nombre="Lotes por revisar"
+				filas={lotes}
+				claveDeFila={(lote) => lote.lote_id}
+				alTocarFila={(lote) => ir({ lote: lote.lote_id })}
+				columnas={[
+					{
+						clave: "lote",
+						encabezado: "Lote",
+						celda: (lote) => <DosRenglones arriba={lote.prenda} abajo={lote.linea} />,
+					},
+					{ clave: "piezas", encabezado: "Piezas", alinear: "derecha", celda: (lote) => <b>{lote.listas}</b> },
+					{
+						clave: "para",
+						encabezado: "Para",
+						celda: (lote) => <DosRenglones arriba={lote.para.nombre} abajo={lote.para.linea} />,
+					},
+					{
+						clave: "revisar",
+						encabezado: "",
+						alinear: "derecha",
+						celda: (lote) => (
+							<Boton
+								chico
+								variante={lote.urgente ? "principal" : "secundario"}
+								icono={Check}
+								onClick={() => ir({ lote: lote.lote_id })}
+							>
+								Revisar
+							</Boton>
+						),
+					},
+				]}
+			/>
+		</Panel>
 	);
 }
 
@@ -104,7 +108,7 @@ function LotesPorRevisar({ lotes }: { lotes: PorRevisar["lotes"] }) {
  */
 function RevisadosHoy({ revisados }: { revisados: PorRevisar["revisados_hoy"] }) {
 	return (
-		<Seccion titulo="Revisados hoy" nota="Ya pasan a aduana">
+		<Seccion titulo="Revisados hoy" nota="Ya pasan a aduana" enPanel>
 			<Tabla
 				nombre="Revisados hoy"
 				filas={revisados}
@@ -145,9 +149,10 @@ function RevisadosHoy({ revisados }: { revisados: PorRevisar["revisados_hoy"] })
 function ReprocesosEnElTaller({ reprocesos }: { reprocesos: PorRevisar["reprocesos"] }) {
 	const conConexion = useConConexion();
 	const aprobar = useAccion(aprobarReproceso, loQueCambiaEnCalidad);
-	const nota = reprocesos.length === 1 ? "1 reproceso" : `${reprocesos.length} reprocesos`;
+	// Sin reprocesos, «Sin reprocesos» ya lo dice: la nota no lo repite con un cero.
+	const nota = reprocesos.length === 0 ? undefined : plural(reprocesos.length, "reproceso", "reprocesos");
 	return (
-		<Seccion titulo="Reproceso en el taller" nota={nota}>
+		<Seccion titulo="Reproceso en el taller" nota={nota} enPanel>
 			{reprocesos.length === 0 ? (
 				<EstadoDePantalla tipo="vacio" texto="Sin reprocesos" />
 			) : (

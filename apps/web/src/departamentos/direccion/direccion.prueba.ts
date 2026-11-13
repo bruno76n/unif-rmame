@@ -134,6 +134,8 @@ describe("Las pantallas de Dirección: se ven como la muestra y cada botón llam
 		const pagina = await abrirComoLaDuena("/direccion/autorizaciones");
 		const tarjeta = pagina.getByRole("article", { name: ajuste.resumen });
 		await enPantalla(tarjeta).toBeVisible();
+		// La tarjeta lleva el folio AU- que nombra el choque.
+		await enPantalla(tarjeta.getByText(ajuste.folio, { exact: true })).toBeVisible();
 		// Otro la toca mientras la dueña la ve: su versión sube.
 		await consultar("UPDATE autorizaciones SET detalle = 'Otra vista' WHERE id = $1", [ajuste.id]);
 		await tarjeta.getByRole("button", { name: "Autorizar" }).click();
@@ -170,7 +172,10 @@ describe("Las pantallas de Dirección: se ven como la muestra y cada botón llam
 
 	it("Indicadores: los cuatro paneles, y la comparación cambia en la dirección", { timeout: 90_000 }, async () => {
 		const pagina = await abrirComoLaDuena("/direccion/indicadores");
-		await enPantalla(pagina.getByRole("region", { name: /^Ventas de la semana del / })).toBeVisible();
+		// El día va corto, como en todo el sistema: «Ventas de la semana del 5 oct».
+		await enPantalla(
+			pagina.getByRole("region", { name: /^Ventas de la semana del \d{1,2} [a-z]{3,4}$/ }),
+		).toBeVisible();
 		for (const panel of [
 			"Ventas por semana, las tres vías",
 			"Prendas terminadas por día",
@@ -182,7 +187,12 @@ describe("Las pantallas de Dirección: se ven como la muestra y cada botón llam
 		await pantalla.capturar(pagina, "direccion/indicadores-escritorio");
 		await pagina.getByRole("toolbar", { name: "Comparar contra" }).getByRole("button", { name: "Hace un mes" }).click();
 		await enPantalla(pagina).toHaveURL(/comparar=hace_un_mes/);
-		await enPantalla(pagina.getByText("contra hace un mes")).toBeVisible();
+		// La gráfica compara contra «Hace un mes»; la línea «contra hace un mes» sale solo con su flecha y su porcentaje.
+		await enPantalla(pagina.getByRole("img", { name: "Esta semana, Hace un mes" })).toBeVisible();
+		const ventas = pagina.getByRole("region", { name: /^Ventas de la semana del / });
+		const conFlecha = await ventas.getByText(/^[▲▼] \d+% contra hace un mes$/).count();
+		const sinComparar = await ventas.getByText(/contra hace un mes/).count();
+		expect(sinComparar).toBe(conFlecha);
 		await pagina.close();
 		const telefono = await abrirComoLaDuena("/direccion/indicadores", "telefono");
 		await enPantalla(telefono.getByRole("region", { name: "Existencia por ubicación" })).toBeVisible();

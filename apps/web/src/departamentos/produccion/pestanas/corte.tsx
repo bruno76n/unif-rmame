@@ -256,7 +256,7 @@ function CapturaConReceta({ captura, encabezado }: { captura: CapturaDelCorte; e
 								)}
 							</b>
 							{enPantalla.linea === null ? null : (
-								<div className="flex flex-wrap items-center gap-3">
+								<div className="flex flex-wrap items-center gap-3" data-metros-pide={enPantalla.linea.pide}>
 									<LineaDeAviso tono={enPantalla.linea.alcanza ? "bien" : "error"}>
 										{enPantalla.linea.texto}
 									</LineaDeAviso>
@@ -303,7 +303,13 @@ function CapturaConReceta({ captura, encabezado }: { captura: CapturaDelCorte; e
 											}));
 										}}
 									/>
-									<span className="pb-3 text-tinta2">{rollo.texto}</span>
+									<span
+										className="pb-3 text-tinta2"
+										data-metros-usados={rollo.usados}
+										data-metros-quedan={rollo.quedan ?? undefined}
+									>
+										{rollo.texto}
+									</span>
 									{enPantalla.rollos.length > 1 ? (
 										<Boton
 											variante="fantasma"

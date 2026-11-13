@@ -6,6 +6,7 @@
  * Fase 19 · docs/interfaz/fabrica/produccion.md («Lotes»)
  */
 
+import { plural } from "@uniformame/compartido/calculos/textos";
 import { lotesDeProduccion } from "@uniformame/compartido/contratos/produccion/lotes";
 import { BarraAvance } from "@uniformame/interfaz/avance/barra-avance";
 import { Boton } from "@uniformame/interfaz/botones/boton";
@@ -233,7 +234,7 @@ function Grupo({
 				</button>
 				<h2 className="m-0 font-bold text-subtitulo">{titulo}</h2>
 				<span className="text-tinta2 tabular-nums">
-					{lotes} {lotes === 1 ? "lote" : "lotes"} · {piezas} piezas
+					{plural(lotes, "lote", "lotes")} · {plural(piezas, "pieza", "piezas")}
 				</span>
 			</header>
 			{plegado ? null : <div className="rounded-grande bg-panel p-4 shadow-panel">{children}</div>}

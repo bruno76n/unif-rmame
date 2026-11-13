@@ -9,7 +9,7 @@ import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
 import { plural } from "@uniformame/compartido/calculos/textos";
 import type { materialesDeCompras } from "@uniformame/compartido/contratos/compras/consultas-pestanas";
 import { reactivarMaterial } from "@uniformame/compartido/contratos/compras/materiales";
-import { cantidadConUnidad, cifraEnTexto, pesos } from "@uniformame/compartido/contratos/compras/textos";
+import { cantidadConUnidad, pesos } from "@uniformame/compartido/contratos/compras/textos";
 import { BarraAvance } from "@uniformame/interfaz/avance/barra-avance";
 import { Boton } from "@uniformame/interfaz/botones/boton";
 import { Filtros } from "@uniformame/interfaz/captura/filtros";
@@ -59,7 +59,7 @@ function EnBodega({ material }: { material: MaterialDeLaLista }) {
 			/>
 			<span className="text-etiqueta text-tinta2">
 				{comprometido > 0
-					? `${cifraEnTexto(material.comprometido)} comprometidos de ${cantidadConUnidad(material.hay, material.unidad)}`
+					? `${cantidadConUnidad(material.comprometido, material.unidad)} comprometidos de ${cantidadConUnidad(material.hay, material.unidad)}`
 					: `${cantidadConUnidad(material.hay, material.unidad)} en bodega`}
 			</span>
 		</span>

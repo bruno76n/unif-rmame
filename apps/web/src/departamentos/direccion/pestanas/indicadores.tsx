@@ -8,7 +8,7 @@
  */
 
 import { enPesos } from "@uniformame/compartido/calculos/dinero";
-import { textoDeDia, textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
+import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
 import type { comparaciones, indicadores } from "@uniformame/compartido/contratos/direccion/indicadores";
 import { Filtros } from "@uniformame/interfaz/captura/filtros";
 import { Grafica } from "@uniformame/interfaz/graficas/grafica";
@@ -83,9 +83,16 @@ export function PestanaIndicadores({ datos, comparar, alComparar }: PropsDeIndic
 				filtros={botonesDeComparacion}
 			/>
 			<Panel
-				nombre={`Ventas de la semana del ${textoDeDia(semana.desde)}`}
+				nombre={`Ventas de la semana del ${textoDeDiaCorto(semana.desde)}`}
 				cifra={semana.total_centavos === undefined ? "—" : enPesos(semana.total_centavos)}
-				junto={<span className="text-tinta2">{[semana.variacion, semana.contra].filter(Boolean).join(" ")}</span>}
+				junto={
+					// Sin nada contra qué comparar no hay flecha ni porcentaje, y «contra…» solo no dice nada.
+					semana.variacion === null ? null : (
+						<span className="text-tinta2">
+							{semana.variacion} {semana.contra}
+						</span>
+					)
+				}
 			>
 				<Grafica
 					tipo="barras"

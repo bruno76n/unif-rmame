@@ -112,7 +112,8 @@ export const consultaContadorExterno = implementarConsulta(contadorExterno, asyn
 					paquete.estado === "enviado"
 						? { texto: "Enviado", color: "verde" as const, abajo: null }
 						: { texto: "Por enviar", color: "ambar" as const, abajo: null },
-				archivo_id: paquete.archivo_id,
+				// El ZIP lleva la nómina del mes: sin «ven sueldos y tarifas» no se puede abrir, y no se manda su id.
+				archivo_id: veSueldosYTarifas(contexto.quien) ? paquete.archivo_id : null,
 			})),
 			documentos: pagina.renglones.map((documento) => ({
 				documento_contador_id: documento.id,

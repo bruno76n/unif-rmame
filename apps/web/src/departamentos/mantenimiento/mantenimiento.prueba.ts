@@ -262,6 +262,10 @@ describe("Las pantallas de Mantenimiento: pestañas, cajones, botones y estados"
 			const pagina = await pantalla.abrir("/mantenimiento/costo", { quien: "mantenimiento" });
 			const casilla = pagina.getByLabel("Una hora de máquina parada cuesta");
 			await enPantalla(casilla).toHaveValue("450");
+			// La casilla va en pesos: lleva su «$» delante, como en la muestra.
+			await enPantalla(pagina.getByRole("article", { name: "Costo de la hora de paro" })).toContainText("$");
+			// La tabla de la pestaña va en su panel blanco, no sobre el fondo.
+			await enPantalla(pagina.locator("section.bg-panel table")).toHaveCount(1);
 			const conOtro = await pedirConsulta(
 				pantalla.servidor,
 				"mantenimiento.costo_por_maquina",

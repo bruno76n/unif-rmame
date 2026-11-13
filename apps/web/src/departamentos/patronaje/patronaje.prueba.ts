@@ -226,6 +226,11 @@ describe("Las pantallas de Patronaje", () => {
 			pagina.getByRole("heading", { name: "Tela por pieza: patrón contra lo que se gasta en el tendido" }),
 		).toBeVisible();
 		await enPantalla(pagina.getByRole("heading", { name: "Sin medir en corte" })).toBeVisible();
+		// Lo que se gasta de más va en el mismo color en la barra y en su leyenda: ámbar (#E9A03F) en «Desperdicio normal».
+		const barra = pagina.getByRole("img", { name: /^Patrón: [\d.]+, Lo que se gasta de más: / }).first();
+		await enPantalla(barra.locator("span").nth(1)).toHaveCSS("background-color", "rgb(233, 160, 63)");
+		const leyenda = pagina.getByRole("listitem").filter({ hasText: "Lo que se gasta de más" });
+		await enPantalla(leyenda.locator("span")).toHaveCSS("background-color", "rgb(233, 160, 63)");
 		await pantalla.capturar(pagina, "patronaje/rendimiento-escritorio");
 		await pagina.getByText("Pants marino liso").click();
 		await enPantalla(pagina).toHaveURL(new RegExp(`cajon=rendimiento&id=${prendas["Pants marino liso"]}`));

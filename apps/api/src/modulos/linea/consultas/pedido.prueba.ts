@@ -77,10 +77,10 @@ describe("El cajón del pedido en línea", () => {
 			envio: {
 				destinatario: "Laura Méndez",
 				direccion: ["Hidalgo 120, Centro", "59600 Zamora, Michoacán"],
-				metodo: "estandar · Estafeta",
+				metodo: "Estándar · Estafeta",
 				costo_centavos: 9_900,
 			},
-			pago: { metodo: "mercado_pago · tarjeta", comision_centavos: 1_500 },
+			pago: { metodo: "Mercado Pago · Tarjeta", comision_centavos: 1_500 },
 			avisos: [],
 			totales: { subtotal_centavos: 50_000, envio_centavos: 9_900, total_centavos: 59_900 },
 			cierre: null,

@@ -30,11 +30,11 @@ import { rutaSiLaTiene } from "./departamentos-de-la-cuenta.ts";
 /** Una alerta como la regresa la consulta. */
 type AlertaConDetalle = z.infer<typeof alertaDeDireccion>;
 
-/** Cómo se dice cada semáforo de crédito en la pantalla. */
+/** Cómo se dice cada semáforo de crédito a media frase («Semáforo: detenido»), en minúsculas. */
 const nombreDelSemaforo: Readonly<Record<string, string>> = {
-	al_corriente: "Al corriente",
-	cerca_del_limite: "Cerca del límite",
-	detenido: "Detenido",
+	al_corriente: "al corriente",
+	cerca_del_limite: "cerca del límite",
+	detenido: "detenido",
 };
 
 /**

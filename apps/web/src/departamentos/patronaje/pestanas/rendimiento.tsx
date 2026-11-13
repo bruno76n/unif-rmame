@@ -32,8 +32,15 @@ export function PestanaRendimiento() {
 				</p>
 			</header>
 			<ul className="m-0 flex list-none flex-wrap gap-x-5 gap-y-1 p-0 text-etiqueta text-tinta2">
-				<li>Patrón: el piso</li>
-				<li className="font-semibold text-texto-error">Lo que se gasta de más</li>
+				{/* Cada leyenda con el color de su tramo en la barra: el patrón en gris y lo de más en ámbar (rojo si es alto). */}
+				<li className="inline-flex items-center gap-2">
+					<span aria-hidden="true" className="h-1.5 w-5 rounded-full bg-estado-gris" />
+					Patrón: el piso
+				</li>
+				<li className="inline-flex items-center gap-2">
+					<span aria-hidden="true" className="h-1.5 w-5 rounded-full bg-estado-ambar" />
+					Lo que se gasta de más
+				</li>
 				<li className="font-semibold text-texto-advertencia">Pocos lotes: dato flojo</li>
 			</ul>
 			<SegunConsulta consulta={consulta}>{(datos) => <GruposDeRendimiento datos={datos} />}</SegunConsulta>
@@ -108,7 +115,7 @@ function TablaDeMedidas({ nombre, medidas }: { nombre: string; medidas: readonly
 									{
 										etiqueta: "Lo que se gasta de más",
 										valor: Number(medida.real) - Number(medida.patron),
-										color: medida.alto ? "rojo" : "azul",
+										color: medida.alto ? "rojo" : "ambar",
 									},
 								]}
 							/>

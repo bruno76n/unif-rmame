@@ -11,6 +11,7 @@ import { Boton } from "@uniformame/interfaz/botones/boton";
 import { Estado } from "@uniformame/interfaz/estados/estado";
 import { EstadoDePantalla } from "@uniformame/interfaz/estados/estado-de-pantalla";
 import { LineaDeAviso } from "@uniformame/interfaz/estados/textos-con-tono";
+import { Panel } from "@uniformame/interfaz/pagina/panel";
 import { Tabla } from "@uniformame/interfaz/tablas/tabla";
 import type { z } from "zod";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
@@ -53,49 +54,51 @@ export function PinDePersonal({ datos }: { datos: Pines }) {
 			{datos.personas.length === 0 ? (
 				<EstadoDePantalla tipo="vacio" texto="Nadie del Taller puede tener PIN" />
 			) : (
-				<Tabla
-					nombre="PIN del taller"
-					filas={datos.personas}
-					claveDeFila={(persona) => persona.persona_id}
-					columnas={[
-						{ clave: "persona", encabezado: "Persona", celda: (persona) => persona.nombre },
-						{ clave: "puesto", encabezado: "Puesto", celda: (persona) => persona.puesto },
-						{ clave: "pin", encabezado: "PIN", celda: (persona) => <SuPin tablet={persona.tablet} /> },
-						{
-							clave: "boton",
-							encabezado: "",
-							alinear: "derecha",
-							celda: (persona) => {
-								const { tablet } = persona;
-								if (!tablet.tiene || tablet.version === null) {
-									return (
-										<Boton chico variante="principal" disabled={apagado} onClick={() => void pin.asignar(persona)}>
-											Asignar PIN
-										</Boton>
-									);
-								}
-								const version = tablet.version;
-								return (
-									<span className="inline-flex gap-2">
-										{tablet.bloqueado_desde !== null ? (
-											<Boton
-												chico
-												variante="principal"
-												disabled={apagado}
-												onClick={() => void desbloqueo.enviar({ datos: { persona_id: persona.persona_id }, version })}
-											>
-												Desbloquear
+				<Panel>
+					<Tabla
+						nombre="PIN del taller"
+						filas={datos.personas}
+						claveDeFila={(persona) => persona.persona_id}
+						columnas={[
+							{ clave: "persona", encabezado: "Persona", celda: (persona) => persona.nombre },
+							{ clave: "puesto", encabezado: "Puesto", celda: (persona) => persona.puesto },
+							{ clave: "pin", encabezado: "PIN", celda: (persona) => <SuPin tablet={persona.tablet} /> },
+							{
+								clave: "boton",
+								encabezado: "",
+								alinear: "derecha",
+								celda: (persona) => {
+									const { tablet } = persona;
+									if (!tablet.tiene || tablet.version === null) {
+										return (
+											<Boton chico variante="principal" disabled={apagado} onClick={() => void pin.asignar(persona)}>
+												Asignar PIN
 											</Boton>
-										) : null}
-										<Boton chico disabled={apagado} onClick={() => void pin.restablecer(persona, version)}>
-											Restablecer
-										</Boton>
-									</span>
-								);
+										);
+									}
+									const version = tablet.version;
+									return (
+										<span className="inline-flex gap-2">
+											{tablet.bloqueado_desde !== null ? (
+												<Boton
+													chico
+													variante="principal"
+													disabled={apagado}
+													onClick={() => void desbloqueo.enviar({ datos: { persona_id: persona.persona_id }, version })}
+												>
+													Desbloquear
+												</Boton>
+											) : null}
+											<Boton chico disabled={apagado} onClick={() => void pin.restablecer(persona, version)}>
+												Restablecer
+											</Boton>
+										</span>
+									);
+								},
 							},
-						},
-					]}
-				/>
+						]}
+					/>
+				</Panel>
 			)}
 			<LineaDeAviso tono="info">El PIN solo sirve en la tablet registrada del taller</LineaDeAviso>
 			{pin.ventana}

@@ -123,15 +123,16 @@ export function PestanaPendientes() {
 							pendientes={pendientes}
 							filtros={[
 								{ clave: "todos", texto: "Todos", conteo: datos.conteos.todos },
-								{ clave: "usuarios", texto: "Usuarios", conteo: datos.conteos.usuarios, punto: "bg-azul" },
+								{ clave: "usuarios", texto: "Usuarios", conteo: datos.conteos.usuarios, punto: "bg-azul" as const },
 								{
 									clave: "dispositivos",
 									texto: "Dispositivos",
 									conteo: datos.conteos.dispositivos,
-									punto: "bg-pizarra",
+									punto: "bg-pizarra" as const,
 								},
-								{ clave: "seguridad", texto: "Seguridad", conteo: datos.conteos.seguridad, punto: "bg-rojo" },
-							]}
+								{ clave: "seguridad", texto: "Seguridad", conteo: datos.conteos.seguridad, punto: "bg-rojo" as const },
+								// Solo los grupos con renglones, y el escogido (como en Bodega).
+							].filter((uno) => uno.clave === "todos" || uno.conteo > 0 || uno.clave === grupo)}
 							filtro={grupo}
 							alEscogerFiltro={(clave) =>
 								navegar({ grupo: clave === "todos" ? undefined : busquedaDeAdmin.shape.grupo.parse(clave) })

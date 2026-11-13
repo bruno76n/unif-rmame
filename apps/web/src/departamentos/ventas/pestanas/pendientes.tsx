@@ -67,7 +67,16 @@ export function PestanaPendientes() {
 					grupo: renglon.grupo,
 					tipo: deTipo[renglon.tipo],
 					referencia: { titulo: renglon.titulo, detalle: renglon.detalle },
-					...(renglon.fecha === null ? {} : { fecha: { texto: renglon.fecha.texto, orden: renglon.fecha.fecha } }),
+					// La fecha que ya pasó va en rojo, como la manda la consulta.
+					...(renglon.fecha === null
+						? {}
+						: {
+								fecha: {
+									texto: renglon.fecha.texto,
+									orden: renglon.fecha.fecha,
+									roja: renglon.fecha.tono === "rojo",
+								},
+							}),
 					...(renglon.importe_centavos !== null
 						? { cifra: montoEnPantalla(renglon.importe_centavos) }
 						: renglon.piezas !== null
@@ -80,6 +89,8 @@ export function PestanaPendientes() {
 					},
 					accion: {
 						texto: renglon.accion.texto,
+						// Lo urgente (su estado en rojo) lleva el botón negro.
+						principal: renglon.estado.color === "rojo",
 						alTocar: () => {
 							const { tipo, pedido_id, nota_id, cliente_id } = renglon.accion;
 							if (tipo === "confirmar_entrega") setConfirmando(nota_id ?? undefined);

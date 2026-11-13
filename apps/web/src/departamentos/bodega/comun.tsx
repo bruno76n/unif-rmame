@@ -1,6 +1,6 @@
 /**
  * Lo que comparten las pestañas, los cajones y las ventanas de Bodega: las consultas que cambian con sus acciones (y
- * `useEnvio` con ellas) y la variante en dos renglones.
+ * `useEnvio` con ellas), la variante en dos renglones y las cifras con su separador de miles.
  * Fase 19 · docs/interfaz/fabrica/bodega.md y docs/interfaz/comunes.md («Los estados de una pantalla»: choque de versión)
  */
 
@@ -23,6 +23,9 @@ export const consultasDeBodega = [
 	"inventario.detalle_conteo",
 	"admin.armazon",
 ] as const;
+
+/** Las cifras enteras con el separador de miles de México («22,899»). */
+export const enteros = new Intl.NumberFormat("es-MX");
 
 /**
  * Una acción de Bodega lista para un botón, un cajón o una ventana.

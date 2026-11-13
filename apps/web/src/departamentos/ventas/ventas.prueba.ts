@@ -81,6 +81,11 @@ describe("Las pantallas de Ventas a externos: pestañas, cajones, botones y avis
 			.click();
 		await enPantalla(pagina).toHaveURL(/grupo=clientes/);
 		await enPantalla(tabla.getByRole("row")).toHaveCount(2);
+		// Lo urgente (detenido por crédito, en rojo) lleva el botón negro (tinta #17181C).
+		await enPantalla(tabla.getByRole("button", { name: "Ver cliente" })).toHaveCSS(
+			"background-color",
+			"rgb(23, 24, 28)",
+		);
 		// «Ver cliente» lleva a Pedidos, a su grupo.
 		await tabla.getByRole("button", { name: "Ver cliente" }).click();
 		await enPantalla(pagina).toHaveURL(/\/ventas\/pedidos\?de_cliente=/);
@@ -110,6 +115,9 @@ describe("Las pantallas de Ventas a externos: pestañas, cajones, botones y avis
 			await enPantalla(pagina.getByRole("table", { name: "Pedidos" }).getByText("Sin confirmar")).toHaveCount(2);
 			await pagina.getByRole("toolbar", { name: "Ver pedidos" }).getByRole("button", { name: "Por estado" }).click();
 			await enPantalla(pagina.getByRole("region", { name: "Borrador" })).toBeVisible();
+			// Con el filtro de una etapa solo sale su columna: ninguna otra dice «Ninguno» junto a su conteo.
+			await enPantalla(pagina.getByRole("region", { name: "En producción" })).toHaveCount(0);
+			await enPantalla(pagina.getByText("Ninguno", { exact: true })).toHaveCount(0);
 			await pantalla.capturar(pagina, "ventas/pedidos-por-estado");
 			await pagina.getByLabel("Buscar pedidos").fill("zzzz");
 			await enPantalla(pagina.getByText("No hay pedidos con esos filtros")).toBeVisible();
@@ -146,7 +154,16 @@ describe("Las pantallas de Ventas a externos: pestañas, cajones, botones y avis
 			await enPantalla(tabla.getByText("Sin pagar")).toBeVisible();
 			await pantalla.capturar(pagina, "ventas/notas-escritorio");
 			await tabla.getByText("NV-0010").click();
-			await enPantalla(pagina.getByRole("dialog").getByText("Nota de crédito")).toBeVisible();
+			const cajonNota = pagina.getByRole("dialog");
+			// El pie: «Cerrar» a la izquierda y «Nota de crédito», la acción, en negro (tinta #17181C) a la derecha.
+			const notaDeCredito = cajonNota.getByRole("button", { name: "Nota de crédito" });
+			await enPantalla(notaDeCredito).toBeVisible();
+			await enPantalla(notaDeCredito).toHaveCSS("background-color", "rgb(23, 24, 28)");
+			// El de la equis del encabezado y el del pie.
+			await enPantalla(cajonNota.getByRole("button", { name: "Cerrar", exact: true })).toHaveCount(2);
+			const cerrar = cajonNota.getByRole("button", { name: "Cerrar", exact: true }).last();
+			const [cajaCerrar, cajaCredito] = await Promise.all([cerrar.boundingBox(), notaDeCredito.boundingBox()]);
+			expect(cajaCerrar?.x ?? 0).toBeLessThan(cajaCredito?.x ?? 0);
 			await pantalla.capturar(pagina, "ventas/cajon-nota");
 			await pagina.close();
 		},

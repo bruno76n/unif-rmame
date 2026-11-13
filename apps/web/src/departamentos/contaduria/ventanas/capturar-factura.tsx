@@ -1,8 +1,9 @@
 /**
  * La ventana «Capturar nota o factura» (ancha): el proveedor y sus órdenes (una o varias, con lo que le toca a cada una
- * sin IVA), el folio, la fecha, el subtotal, el IVA, el total y el UUID; por orden con algo recibido, sus materiales con
- * el precio «En la nota»; y el recuadro con la orden, lo recibido y la factura. «Guardar» llama a
- * `contaduria.capturar_factura_proveedor`. Se abre desde Cuentas por pagar y desde la orden en Compras, por la
+ * sin IVA), el folio, la fecha, el subtotal, el IVA, el total, el UUID y el XML y el PDF o la foto (opcionales); por orden
+ * con algo recibido, sus materiales con el precio «En la nota»; y el recuadro con la orden, lo recibido y la factura.
+ * «Guardar» sube el XML y el PDF y llama a `contaduria.capturar_factura_proveedor` con sus `archivo_id`; si una subida
+ * falla, el aviso dice por qué y lo capturado se queda. Se abre desde Cuentas por pagar y desde la orden en Compras, por la
  * dirección (`?ventana=capturar_factura&orden_compra_id=…`).
  * Fase 19 · docs/interfaz/fabrica/contaduria.md («Capturar nota o factura») y
  * docs/modulos/contaduria/facturas-de-proveedor.md
@@ -17,6 +18,7 @@ import { capturarFacturaOpciones } from "@uniformame/compartido/contratos/contad
 import { capturarFacturaProveedor } from "@uniformame/compartido/contratos/contaduria/por-pagar";
 import { Boton } from "@uniformame/interfaz/botones/boton";
 import { Campo } from "@uniformame/interfaz/captura/campo";
+import { CampoDeArchivo } from "@uniformame/interfaz/captura/campo-de-archivo";
 import { Casilla } from "@uniformame/interfaz/captura/casilla";
 import { Selector } from "@uniformame/interfaz/captura/selector";
 import { Ventana } from "@uniformame/interfaz/contenedores/ventana";
@@ -31,6 +33,7 @@ import { useConsulta } from "../../../comun/api.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
 import { montoEnPantalla } from "../../../comun/montos.ts";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
+import { aceptaDe, useSubidaAlMandar } from "../../../comun/subida.ts";
 import { useEnvio } from "../envio.ts";
 
 /** Lo que da la consulta. */
@@ -64,6 +67,10 @@ function CapturaDeFactura({
 }) {
 	const { enviar, enviando } = useEnvio(capturarFacturaProveedor);
 	const conConexion = useConConexion();
+	const { subir, subiendo } = useSubidaAlMandar("factura_proveedor", "contaduria");
+	const [xml, setXml] = useState<File | null>(null);
+	const [pdf, setPdf] = useState<File | null>(null);
+	const [erroresDeArchivo, setErroresDeArchivo] = useState<Record<string, string>>({});
 	const [escogidas, setEscogidas] = useState<string[]>([]);
 	const [importes, setImportes] = useState<Record<string, string>>({});
 	const [precios, setPrecios] = useState<Record<string, string>>({});
@@ -89,6 +96,11 @@ function CapturaDeFactura({
 	const ordenes = opciones.ordenes.filter((orden) => escogidas.includes(orden.orden_compra_id));
 	const varias = ordenes.length > 1;
 	const guardar = formulario.handleSubmit(async (valores) => {
+		// El XML y el PDF se suben primero; si alguno no se pudo, ya lo avisó y no se guarda.
+		const xmlId = xml === null ? undefined : await subir(xml);
+		if (xml !== null && xmlId === undefined) return;
+		const pdfId = pdf === null ? undefined : await subir(pdf);
+		if (pdf !== null && pdfId === undefined) return;
 		const preciosNota = ordenes.flatMap((orden) =>
 			orden.lineas.flatMap((linea) => {
 				const nuevo = pesosACentavos(precios[linea.orden_compra_linea_id] ?? "");
@@ -110,10 +122,13 @@ function CapturaDeFactura({
 					iva_centavos: pesosACentavos(valores.iva) ?? 0,
 					total_centavos: pesosACentavos(valores.total) ?? 0,
 					...(valores.uuid_cfdi === "" ? {} : { uuid_cfdi: valores.uuid_cfdi }),
+					...(xmlId === undefined ? {} : { archivo_xml_id: xmlId }),
+					...(pdfId === undefined ? {} : { archivo_pdf_id: pdfId }),
 					...(preciosNota.length === 0 ? {} : { precios_nota: preciosNota }),
 				},
 			},
 			(campos) => {
+				setErroresDeArchivo(campos);
 				for (const [campo, mensaje] of Object.entries(campos)) {
 					const enElFormulario = campo.replace("_centavos", "").replace("total_facturado", "total");
 					const conocido = formularioDeFactura.keyof().safeParse(enElFormulario);
@@ -208,6 +223,22 @@ function CapturaDeFactura({
 					error={errores.uuid_cfdi?.message}
 					{...formulario.register("uuid_cfdi")}
 				/>
+				<CampoDeArchivo
+					enVentana
+					etiqueta="XML (opcional)"
+					acepta={aceptaDe.xml}
+					archivo={xml}
+					error={erroresDeArchivo.archivo_xml_id}
+					alEscoger={setXml}
+				/>
+				<CampoDeArchivo
+					enVentana
+					etiqueta="PDF o foto (opcional)"
+					acepta={aceptaDe.pdfOFoto}
+					archivo={pdf}
+					error={erroresDeArchivo.archivo_pdf_id}
+					alEscoger={setPdf}
+				/>
 			</div>
 			{ordenes
 				.filter((orden) => orden.lineas.length > 0)
@@ -267,7 +298,7 @@ function CapturaDeFactura({
 			<div className="flex justify-end">
 				<Boton
 					variante="principal"
-					disabled={!conConexion || enviando || ordenes.length === 0}
+					disabled={!conConexion || enviando || subiendo || ordenes.length === 0}
 					onClick={() => void guardar()}
 				>
 					Guardar

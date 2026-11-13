@@ -103,6 +103,9 @@ const diaDeLaCuadricula = z.object({
 	valor: z.enum(valoresDeDia).nullable().describe("Lo capturado; vacío si está sin capturar"),
 	version: z.number().int().nullable().describe("La versión del día, si ya estaba capturado"),
 	capturable: z.boolean().describe("Falso fuera de su ingreso o su baja: sale gris, sin botón"),
+	por_llegar: z
+		.boolean()
+		.describe("Si el día todavía no llega (después de hoy, en hora de México): sin capturar, no va en rojo"),
 });
 
 /** Una semana de asistencia: sus días de trabajo y la gente que la lleva, con lo que falta. */

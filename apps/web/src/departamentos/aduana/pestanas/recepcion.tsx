@@ -8,6 +8,7 @@
 
 import type { recepcionDeAduana } from "@uniformame/compartido/contratos/inventario/aduana";
 import { Boton } from "@uniformame/interfaz/botones/boton";
+import { Panel } from "@uniformame/interfaz/pagina/panel";
 import { Seccion } from "@uniformame/interfaz/pagina/seccion";
 import { DosRenglones } from "@uniformame/interfaz/tablas/dos-renglones";
 import { Tabla } from "@uniformame/interfaz/tablas/tabla";
@@ -44,35 +45,37 @@ export function RecepcionDeAduana({ datos }: { datos: Recepcion }) {
 					}
 				>
 					{grupo.renglones.length === 0 ? null : (
-						<Tabla
-							nombre={grupo.titulo}
-							filas={grupo.renglones}
-							claveDeFila={(renglon: Renglon) => renglon.clave}
-							alTocarFila={(renglon) => abrir(renglon.abre)}
-							columnas={[
-								{
-									clave: "que",
-									encabezado: "Qué llega",
-									celda: (renglon) => <DosRenglones arriba={renglon.titulo} abajo={renglon.detalle} />,
-								},
-								{ clave: "cuanto", encabezado: "Cuánto", alinear: "derecha", celda: (renglon) => renglon.cantidad },
-								{
-									clave: "va_a",
-									encabezado: "Va a",
-									celda: (renglon) => <DestinoConPunto carril={renglon.carril} nombre={renglon.destino} />,
-								},
-								{
-									clave: "recibir",
-									encabezado: "",
-									alinear: "derecha",
-									celda: (renglon) => (
-										<Boton chico onClick={() => abrir(renglon.abre)}>
-											Recibir
-										</Boton>
-									),
-								},
-							]}
-						/>
+						<Panel>
+							<Tabla
+								nombre={grupo.titulo}
+								filas={grupo.renglones}
+								claveDeFila={(renglon: Renglon) => renglon.clave}
+								alTocarFila={(renglon) => abrir(renglon.abre)}
+								columnas={[
+									{
+										clave: "que",
+										encabezado: "Qué llega",
+										celda: (renglon) => <DosRenglones arriba={renglon.titulo} abajo={renglon.detalle} />,
+									},
+									{ clave: "cuanto", encabezado: "Cuánto", alinear: "derecha", celda: (renglon) => renglon.cantidad },
+									{
+										clave: "va_a",
+										encabezado: "Va a",
+										celda: (renglon) => <DestinoConPunto carril={renglon.carril} nombre={renglon.destino} />,
+									},
+									{
+										clave: "recibir",
+										encabezado: "",
+										alinear: "derecha",
+										celda: (renglon) => (
+											<Boton chico onClick={() => abrir(renglon.abre)}>
+												Recibir
+											</Boton>
+										),
+									},
+								]}
+							/>
+						</Panel>
 					)}
 				</Seccion>
 			))}

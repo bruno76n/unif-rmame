@@ -9,6 +9,7 @@
 
 import { plural } from "@uniformame/compartido/calculos/textos";
 import type { andenDeAduana } from "@uniformame/compartido/contratos/inventario/aduana";
+import { Estado } from "@uniformame/interfaz/estados/estado";
 import { TextoConTono } from "@uniformame/interfaz/estados/textos-con-tono";
 import { BarraIndicadores } from "@uniformame/interfaz/pagina/barra-indicadores";
 import {
@@ -25,7 +26,7 @@ import {
 	Users,
 } from "lucide-react";
 import type { z } from "zod";
-import { useAbrir } from "../comun.tsx";
+import { orillaDelCarril, useAbrir } from "../comun.tsx";
 import { useDireccionDeAduana } from "../direccion.ts";
 
 /** Lo que regresa la consulta. */
@@ -65,7 +66,8 @@ function tonoSiHay(numero: number, tono: "rojo" | "ambar"): { tono?: "rojo" | "a
 }
 
 /**
- * Una tarjeta de un carril: el título (con «Sale hoy» o «Atrasada» al lado), el detalle, la cantidad y su marca.
+ * Una tarjeta de un carril: el título, abajo «Sale hoy», «Sale mañana» o «Atrasada {n} días» en su cuadro de estado,
+ * el detalle, la cantidad y su marca.
  * @param props La tarjeta.
  */
 function TarjetaDelCarril({ tarjeta }: { tarjeta: Tarjeta }) {
@@ -76,12 +78,12 @@ function TarjetaDelCarril({ tarjeta }: { tarjeta: Tarjeta }) {
 			onClick={() => abrir(tarjeta.abre)}
 			className="flex w-full cursor-pointer flex-col gap-1 rounded-mediano border border-linea bg-panel px-3 py-2.5 text-left shadow-panel hover:border-linea2 focus-visible:outline-2 focus-visible:outline-marca"
 		>
-			<span className="flex flex-wrap items-baseline gap-2">
-				<b className="text-tinta">{tarjeta.titulo}</b>
-				{tarjeta.etiqueta === null ? null : (
-					<TextoConTono tono={tonoDe(tarjeta.etiqueta.color)}>{tarjeta.etiqueta.texto}</TextoConTono>
-				)}
-			</span>
+			<b className="text-tinta">{tarjeta.titulo}</b>
+			{tarjeta.etiqueta === null ? null : (
+				<span className="flex">
+					<Estado texto={tarjeta.etiqueta.texto} color={tarjeta.etiqueta.color} />
+				</span>
+			)}
 			<span className="text-etiqueta text-tinta3">{tarjeta.detalle}</span>
 			<span className="flex flex-wrap items-baseline justify-between gap-x-2">
 				<b className="text-tinta tabular-nums">{tarjeta.cantidad}</b>
@@ -94,7 +96,8 @@ function TarjetaDelCarril({ tarjeta }: { tarjeta: Tarjeta }) {
 }
 
 /**
- * Un carril del andén: su ícono, su nombre y su conteo, y sus tarjetas; vacío, «Nada por ahora».
+ * Un carril del andén: su orilla de color, su ícono, su nombre y su conteo, y sus tarjetas; vacío, «Nada por ahora».
+ * Van seis por renglón, como en la muestra; el séptimo baja.
  * @param props El carril.
  */
 function CarrilDelAnden({ carril }: { carril: Carril }) {
@@ -102,7 +105,7 @@ function CarrilDelAnden({ carril }: { carril: Carril }) {
 	return (
 		<section
 			aria-label={carril.nombre}
-			className="flex min-w-0 flex-col gap-2 rounded-grande bg-suave p-2.5 max-telefono:min-w-[82%]"
+			className={`flex min-w-0 flex-col gap-2 rounded-grande border-t-4 bg-suave p-2.5 max-telefono:min-w-[82%] ${orillaDelCarril(carril.clave)}`}
 		>
 			<header className="flex items-center gap-2 px-1 text-tinta">
 				<Icono size={17} strokeWidth={1.9} aria-hidden />
@@ -173,7 +176,7 @@ export function AndenDeAduana({ datos }: { datos: Anden }) {
 					},
 				]}
 			/>
-			<div className="grid grid-cols-7 items-start gap-2.5 overflow-x-auto pb-2 max-menu:grid-cols-[repeat(7,minmax(200px,1fr))] max-telefono:flex">
+			<div className="grid grid-cols-6 items-start gap-2.5 pb-2 max-menu:grid-cols-3 max-telefono:flex max-telefono:overflow-x-auto">
 				{datos.carriles.map((carril) => (
 					<CarrilDelAnden key={carril.clave} carril={carril} />
 				))}

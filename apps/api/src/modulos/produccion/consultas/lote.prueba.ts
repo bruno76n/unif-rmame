@@ -14,6 +14,7 @@ import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pr
 /** Un registro del cajón. */
 interface Registro {
 	registro_id: string;
+	cuando: string;
 	del_corte: boolean;
 	cancelable: boolean;
 	tarifa_centavos?: number | null;
@@ -71,6 +72,10 @@ describe("produccion.lote y produccion.costo_lote: el cajón del lote y su costo
 		expect(lote.registros.renglones).toHaveLength(10);
 		expect(lote.registros.hay_mas).toBe(true);
 		expect(lote.registros.total).toBe(96);
+		// La fecha de cada registro se escribe como en todo el sistema, con su hora y su bulto: «10 nov 16:03 · B-0012».
+		for (const registro of lote.registros.renglones) {
+			expect(registro.cuando).toMatch(/^\d{1,2} [a-z]{3,4} \d{2}:\d{2} · \S+$/);
+		}
 		const siguiente = await pedirConsulta(
 			servidor,
 			"produccion.lote",

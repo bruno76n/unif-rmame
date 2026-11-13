@@ -3,7 +3,7 @@
  * «Rechazar» y «Autorizar») y la tabla de las resueltas, que solo se lee.
  * Fase 19 · docs/interfaz/fabrica/direccion.md («Autorizaciones»)
  *
- * La tarjeta muestra lo que la consulta trae armado: qué se pide, su detalle, «Lo pidió {persona}», «Pedida por ti» y
+ * La tarjeta muestra lo que la consulta trae armado: su folio AU- (el que nombra el choque de versión), qué se pide, su detalle, «Lo pidió {persona}», «Pedida por ti» y
  * «{n} días esperando». Si la cuenta no la puede decidir (un alta de usuario sin ser la dueña), los botones van
  * apagados con el porqué.
  */
@@ -66,7 +66,8 @@ function TarjetaDeAutorizacion({
 					{nombreDelTipoDeAutorizacion[autorizacion.tipo]}
 				</span>
 				<span className="text-etiqueta text-tinta3">
-					{autorizacion.departamento} · {textoDeDiaCorto(autorizacion.pedida_el)}
+					<b className="font-bold text-tinta2 tabular-nums">{autorizacion.folio}</b> · {autorizacion.departamento} ·{" "}
+					{textoDeDiaCorto(autorizacion.pedida_el)}
 					{autorizacion.esperando === null ? null : (
 						<>
 							{" · "}

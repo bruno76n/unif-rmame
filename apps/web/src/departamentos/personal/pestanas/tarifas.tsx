@@ -19,6 +19,7 @@ import { Tarjeta } from "@uniformame/interfaz/contenedores/tarjeta";
 import { EstadoDePantalla } from "@uniformame/interfaz/estados/estado-de-pantalla";
 import { Recuadro } from "@uniformame/interfaz/estados/recuadro";
 import { LineaDeAviso } from "@uniformame/interfaz/estados/textos-con-tono";
+import { Panel } from "@uniformame/interfaz/pagina/panel";
 import { TituloDeBloque } from "@uniformame/interfaz/pagina/seccion";
 import { Tabla } from "@uniformame/interfaz/tablas/tabla";
 import { useEffect, useState } from "react";
@@ -132,27 +133,29 @@ function TarjetaDeFlujo({ flujo, enfocada }: { flujo: Flujo; enfocada: string | 
 					{conHistorial ? "Ocultar historial" : "Ver historial"}
 				</Boton>
 			</div>
-			<Tabla
-				nombre={`Tarifas de ${flujo.nombre}`}
-				filas={flujo.operaciones}
-				claveDeFila={(operacion) => operacion.flujo_operacion_id}
-				columnas={[
-					{ clave: "operacion", encabezado: "Operación", celda: (operacion) => operacion.nombre },
-					{ clave: "la_hace", encabezado: "La hace", celda: (operacion) => operacion.la_hace },
-					{
-						clave: "tarifa",
-						encabezado: "Tarifa por pieza",
-						celda: (operacion) => (
-							<CasillaDeTarifa operacion={operacion} enfocar={operacion.flujo_operacion_id === enfocada} />
-						),
-					},
-					{
-						clave: "desde",
-						encabezado: "Desde",
-						celda: (operacion) => (operacion.desde === null ? "—" : `Desde ${textoDeMomentoCorto(operacion.desde)}`),
-					},
-				]}
-			/>
+			<Panel>
+				<Tabla
+					nombre={`Tarifas de ${flujo.nombre}`}
+					filas={flujo.operaciones}
+					claveDeFila={(operacion) => operacion.flujo_operacion_id}
+					columnas={[
+						{ clave: "operacion", encabezado: "Operación", celda: (operacion) => operacion.nombre },
+						{ clave: "la_hace", encabezado: "La hace", celda: (operacion) => operacion.la_hace },
+						{
+							clave: "tarifa",
+							encabezado: "Tarifa por pieza",
+							celda: (operacion) => (
+								<CasillaDeTarifa operacion={operacion} enfocar={operacion.flujo_operacion_id === enfocada} />
+							),
+						},
+						{
+							clave: "desde",
+							encabezado: "Desde",
+							celda: (operacion) => (operacion.desde === null ? "—" : `Desde ${textoDeMomentoCorto(operacion.desde)}`),
+						},
+					]}
+				/>
+			</Panel>
 			{conHistorial ? <Historial flujoId={flujo.flujo_id} /> : null}
 		</Tarjeta>
 	);

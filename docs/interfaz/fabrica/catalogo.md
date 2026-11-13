@@ -63,7 +63,7 @@ Fecha: siempre «—». Orden: rojo, luego ámbar. Vacío: «Sin pendientes».
 **Consulta:** `catalogo.etiquetas` (`producto_id`).
 
 - **«Variantes nuevas sin etiqueta»:** por producto, foto, nombre, «{escuela} · {n} variantes» y «PDF de {n} etiquetas» → `catalogo.imprimir_etiquetas`. Aviso: «PDF de {n} etiquetas de {producto} listo. Ya se pueden recibir en las tiendas».
-- **«Por variante»:** el producto («{producto} · {escuela}») y «{n} variantes con código»; tabla Talla (con «Pedido especial») · Código · Etiqueta («Por imprimir», «Al fabricar el pedido», «Impresa») · Cuántas (hasta `catalogo.etiquetas_max_por_talla`); abajo «{n} etiquetas» y «Generar PDF».
+- **«Por variante»:** abre ya con un producto (el primero con etiquetas por imprimir o, si no hay, el primero de la lista); el producto («{producto} · {escuela}») y «{n} variantes con código»; tabla Talla (con «Pedido especial») · Código · Etiqueta («Por imprimir», «Al fabricar el pedido», «Impresa») · Cuántas (hasta `catalogo.etiquetas_max_por_talla`); abajo «{n} etiquetas» y «Generar PDF».
 - **La vista previa:** «Así queda la etiqueta de la talla {t}»: prenda, «{escuela o Básico} · Talla {t}», las barras, el código, el precio de mostrador si `catalogo.etiqueta_lleva_precio` (con su recargo si es de pedido especial) y «Pedido especial» si lo es (el diseño de la etiqueta, en [etiquetas](../../impresos/etiquetas.md)).
 
 ## Escuelas y tallas
@@ -128,6 +128,8 @@ Fecha: siempre «—». Orden: rojo, luego ámbar. Vacío: «Sin pendientes».
 ## Cómo está hecho
 
 **Fase 19, parte 4.**
+
+- **Al revisar el diseño:** `catalogo.etiquetas` escoge el producto de «Por variante» si no se pide uno; «Nuevo producto» de la barra, «Listo», «Aplicar cambios», «Crear producto» y «Crear y agregar al pedido» van en negro, con «Etiquetas» y «Crear otro a partir de este» a la derecha del pie; y cada casilla de precio se llama «Precio base · {lista}» o «Talla {t} · {lista}».
 
 - **Las consultas** viven en `apps/api/src/modulos/catalogo/consultas/`, una por archivo, con sus contratos en `packages/compartido/src/contratos/catalogo/pantallas.ts`, y se registran en el `index.ts` del módulo: `catalogo.pendientes` (con la pastilla del menú, `pastillaCatalogo`: los productos distintos con algo pendiente, nunca roja), `catalogo.productos`, `catalogo.listas_precios`, `catalogo.etiquetas`, `catalogo.escuelas_y_tallas`, `catalogo.bitacora`, `catalogo.ficha_producto`, `catalogo.alta_producto` y `catalogo.cambio_en_bloque_previo`. Todas piden Catálogo; el alta, también Ventas a externos, que solo la lee desde un pedido, igual que `catalogo.crear_producto`. Lo que comparten (los modelos sin precio de la regla 8 de [listas de precios](../../modulos/catalogo/listas-de-precios.md), lo que detiene a un producto, el rango de tallas, el siguiente código con `admin.siguiente_folio`) está en `consultas/comunes.ts`.
 - **Reglas que reusan:** el precio de la vista previa de una etiqueta sale de la lectura `catalogo.precio_talla`; la vista previa del cambio en bloque usa `precioDelCambioEnBloque` y `topeDelCambioEnBloque` del paquete compartido con los mismos parámetros que la acción; los «Ojo» de la ficha salen de `avisosDeLaFicha`. «Sin foto» es un producto activo que se vende en línea sin foto de referencia. El tipo de cambio de la bitácora sale de la acción del renglón y de su descripción («Precio …», «Empieza a / Deja de venderse …», la categoría en `despues`).

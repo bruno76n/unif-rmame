@@ -216,7 +216,7 @@ export function PestanaPedidos() {
 									}
 								/>
 							) : vista === "estado" ? (
-								<PorEstado datos={datos} alAbrir={(id) => abrir("pedido", id)} />
+								<PorEstado datos={datos} etapa={busqueda.etapa} alAbrir={(id) => abrir("pedido", id)} />
 							) : (
 								<PorCliente
 									datos={datos}
@@ -295,13 +295,23 @@ function PorCliente({
 }
 
 /**
- * Por estado: una columna por etapa con su conteo, y una tarjeta por pedido.
- * @param props Los datos y qué hacer al abrir un pedido.
+ * Por estado: una columna por etapa con su conteo, y una tarjeta por pedido. Con el filtro de una etapa, solo sale su
+ * columna: las demás dirían «Ninguno» junto a un conteo que sí tienen.
+ * @param props Los datos, la etapa del filtro (si hay) y qué hacer al abrir un pedido.
  */
-function PorEstado({ datos, alAbrir }: { datos: Pedidos; alAbrir: (id: string) => void }) {
+function PorEstado({
+	datos,
+	etapa: filtrada,
+	alAbrir,
+}: {
+	datos: Pedidos;
+	etapa: Pedidos["etapas"][number]["clave"] | undefined;
+	alAbrir: (id: string) => void;
+}) {
+	const columnas = filtrada === undefined ? datos.etapas : datos.etapas.filter((etapa) => etapa.clave === filtrada);
 	return (
 		<div className="grid auto-cols-[minmax(240px,1fr)] grid-flow-col gap-4 overflow-x-auto pb-2">
-			{datos.etapas.map((etapa) => {
+			{columnas.map((etapa) => {
 				const suyos = datos.pedidos.filter((pedido) => pedido.etapa.clave === etapa.clave);
 				return (
 					<section key={etapa.clave} aria-label={etapa.texto} className="flex flex-col gap-3">

@@ -113,7 +113,7 @@ function BotonesDelLote({ lote }: { lote: Lote }) {
 function CuerpoDelLote({ lote }: { lote: Lote }) {
 	return (
 		<div className="flex flex-col gap-6">
-			<div className="flex flex-col gap-2">
+			<div className="flex flex-col items-start gap-2">
 				<Estado
 					texto={lote.estado.texto}
 					color={lote.estado.color}

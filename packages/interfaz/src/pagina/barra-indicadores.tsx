@@ -42,19 +42,16 @@ export interface Cifra {
 const claseDelTono = { rojo: "text-estado-rojo", ambar: "text-texto-advertencia" } as const;
 
 /**
- * El color del número: el que da la cifra o, si no da, el de lo más urgente de su contexto.
+ * El tono del número y de su gráfica chica: el que da la cifra o, si no da, el de lo más urgente de su contexto.
  * @param tono El de la cifra.
  * @param contexto Su línea de contexto.
+ * @returns «rojo», «ambar» o nada (en tinta).
  */
-function tonoDelNumero(tono: Cifra["tono"], contexto: readonly Contexto[] | undefined): string {
-	const urgente =
-		tono ??
-		(contexto?.some((parte) => parte.tono === "rojo")
-			? "rojo"
-			: contexto?.some((parte) => parte.tono === "ambar")
-				? "ambar"
-				: undefined);
-	return urgente === undefined ? "text-tinta" : claseDelTono[urgente];
+function tonoDeLaCifra(tono: Cifra["tono"], contexto: readonly Contexto[] | undefined): Cifra["tono"] {
+	if (tono !== undefined) return tono;
+	if (contexto?.some((parte) => parte.tono === "rojo")) return "rojo";
+	if (contexto?.some((parte) => parte.tono === "ambar")) return "ambar";
+	return undefined;
 }
 
 /** Las columnas de la barra en escritorio, por cuántas cifras lleva (clases completas, para que Tailwind las vea). */
@@ -80,6 +77,7 @@ export function BarraIndicadores({ cifras }: { cifras: readonly Cifra[] }) {
 			)}
 		>
 			{cifras.map(({ clave, nombre, icono: Icono, color, numero, tono, unidad, contexto, serie, reparto, alTocar }) => {
+				const urgente = tonoDeLaCifra(tono, contexto);
 				const ordenado = [...(contexto ?? [])].sort(
 					(una, otra) =>
 						["rojo", "ambar", "normal"].indexOf(una.tono ?? "normal") -
@@ -99,12 +97,17 @@ export function BarraIndicadores({ cifras }: { cifras: readonly Cifra[] }) {
 							{nombre}
 							{serie !== undefined && serie.length >= 3 ? (
 								<span className="ml-auto">
-									<GraficaChica valores={serie} />
+									<GraficaChica valores={serie} tono={urgente} />
 								</span>
 							) : null}
 						</span>
 						<span className="flex items-baseline gap-2">
-							<b className={unirClases("font-bold text-titulo-seccion tabular-nums", tonoDelNumero(tono, contexto))}>
+							<b
+								className={unirClases(
+									"font-bold text-titulo-seccion tabular-nums",
+									urgente === undefined ? "text-tinta" : claseDelTono[urgente],
+								)}
+							>
 								{numero}
 							</b>
 							{unidad === undefined ? null : <span className="text-tinta2">{unidad}</span>}

@@ -12,7 +12,7 @@ Saber dónde está cada pieza y para quién está apartada, y mover la mercancí
 ## Quién entra
 
 - Las cuentas con Bodega. Nunca ven precios ni costos.
-- «Autorizar» y «Rechazar» de un ajuste, solo la dueña, con «Confirmar con Google»; las demás cuentas ven «En autorización de Dirección».
+- «Autorizar» y «Rechazar» de un ajuste, solo la dueña, con «Confirmar con Google»; las demás cuentas ven «Esperando autorización» (ámbar).
 - «en línea sale», en el cajón Variante, solo lleva a algún lado con Tienda en línea.
 - **Pastilla del menú:** excepciones por resolver, pedidos externos y en línea y devoluciones a proveedor por surtir, recepciones por confirmar y diferencias por contar; roja si hay un pedido en línea por surtir (ver [lo común](../comunes.md#sus-consultas)).
 - **Acción principal:** «Surtir» (ícono de tienda): abre Pendientes con «Surtido».
@@ -116,9 +116,9 @@ Cuánto pide un corte y qué rollos se sugieren lo calculan [cuenta de material]
 **Consulta:** `inventario.conteos_y_ajustes` (`cursor`, de los conteos y de los ajustes resueltos).
 
 - **Arriba:** «Nuevo conteo» y «Carga inicial», cada uno a su cajón.
-- **«Ajustes en autorización»:** Ajuste (folio; «{fecha} · {iniciales}») · Ubicación · Cambio (por renglón, «{prenda} · {talla}» y «Al contar: sistema {n}, contado {m}, diferencia {±d}»; uno de recepción o de material dice su DF-) · Motivo · los botones: la dueña ve «Rechazar» y «Autorizar»; las demás cuentas, «En autorización de Dirección». **Vacío:** «Ningún ajuste espera autorización».
+- **«Ajustes en autorización»:** Ajuste (folio; «{fecha} · {iniciales}») · Ubicación · Cambio (por renglón, «{prenda} · {talla}» y «Al contar: sistema {n}, contado {m}, diferencia {±d}»; uno de recepción o de material dice su DF-) · Motivo · los botones: la dueña ve «Rechazar» y «Autorizar»; las demás cuentas, «Esperando autorización» (ámbar). **Vacío:** «Ningún ajuste espera autorización».
 - **«Autorizar»** → `direccion.decidir_autorizacion` (`autorizar`, desde Bodega), con «Confirmar con Google» («Autorizado por Dirección: ajuste de inventario»). Se mueve solo la diferencia que se vio al contar; el ajuste baja a Resueltos.
-- **«Conteos»,** con «Ver más»: Conteo (folio y fecha) · Ubicación · Sección (o «Carga inicial» y su alcance) · Responsable · Variantes · Resultado («{n} diferencias» ámbar, «Cuadró» verde, o «Carga inicial» gris).
+- **«Conteos»,** con «Ver más»: Conteo (folio y fecha) · Ubicación · Sección (o «Carga inicial» y su alcance) · Responsable · Variantes · Resultado, en texto de color y no en cuadro de estado: dice cómo salió el conteo («{n} diferencias» ámbar, «Cuadró» verde, o «Carga inicial» gris).
 - **«Ajustes resueltos»,** con «Ver más»: Ajuste · Ubicación · Cambio · Motivo · Resultado («Autorizado por Dirección» verde con su fecha, o «Rechazado» rojo con su razón).
 
 ## Excepciones
@@ -141,7 +141,7 @@ Cuánto pide un corte y qué rollos se sugieren lo calculan [cuenta de material]
 - **La tabla:** Ubicación · Hay · Mínimo («—» sin mínimo) · la etiqueta («{n} en diferencia» ámbar, «En cero» rojo o «Bajo mínimo» ámbar); Aduana, Bodega, Tienda 1, Tienda 2 y Taller, y al final Tránsito y En camino a aduana.
 - **«Apartadas»,** si hay: «Apartada para {W, NV o PE} · {dónde}» y las piezas.
 - **«Moviéndose»,** si hay: su folio, «En aduana para {destino}», «En camino a aduana desde {quién}» o «En camino a {destino}», y las piezas.
-- **El pie:** «Cerrar» · «Ver en reabasto», si alguna ubicación está bajo su mínimo · «Mandar a {tienda}», por cada tienda sin caja, con libres en Bodega → ventana «Mandar a {tienda}»: «{prenda} · talla {t}», «{n} libres en bodega» y «Piezas». «Mandar» → `inventario.mover_a_tienda` («Traspaso a {tienda}: {n} {prenda} {talla}, enviado a aduana»). Mientras una tienda no tiene caja, Reabasto no la cuenta: le llega lo que pide así (ver [mínimos y reabasto](../../modulos/inventario/minimos-y-reabasto.md#reglas), regla 12).
+- **El pie:** «Cerrar» · «Ver en reabasto», si alguna ubicación está bajo su mínimo · «Mandar a {tienda}», por cada tienda sin caja, con libres en Bodega (en negro si es una sola; con dos o más, ninguna va en negro) → ventana «Mandar a {tienda}»: «{prenda} · talla {t}», «{n} libres en bodega» y «Piezas». «Mandar» → `inventario.mover_a_tienda` («Traspaso a {tienda}: {n} {prenda} {talla}, enviado a aduana»). Mientras una tienda no tiene caja, Reabasto no la cuenta: le llega lo que pide así (ver [mínimos y reabasto](../../modulos/inventario/minimos-y-reabasto.md#reglas), regla 12).
 
 ### Entrega al corte (ancho)
 
@@ -221,3 +221,4 @@ Los mensajes de error de cada acción están en su archivo del módulo.
 - **El conteo es ciego:** `inventario.detalle_conteo` nunca manda lo que tiene el sistema; en la carga inicial dice qué variantes ya tienen movimientos en la ubicación.
 - **La web** está en `apps/web/src/rutas/bodega/` (una ruta por pestaña; Conteos y ajustes es `/bodega/conteos`) y `apps/web/src/departamentos/bodega/`: `pagina.tsx` (las pestañas, con el conteo y el rojo de Pendientes, y «Surtir», que abre Pendientes con «Surtido»), `direccion.ts` (el cajón —`variante`, `entrega`, `llegada`, `conteo` y `carga`—, el filtro de Pendientes, la búsqueda y los filtros de Existencias, y la diferencia por aclarar o la excepción por resolver van en la dirección), `comun.tsx` (las consultas que vuelve a leer cada acción y la variante en dos renglones; «Ver más» es `usePaginas` y el cierre de un cajón con captura es `useCierreDelCajon`, de lo común, y la cifra de un cajón es `CifraDeCajon` del sistema de diseño), `pestanas/`, `cajones/` y `ventanas/`. «Aclarar» y «Resolver» de Pendientes abren su ventana en Diferencias y en Excepciones por la dirección (`?aclarar=…`, `?resolver=…`).
 - **Pruebas:** una por consulta en `consultas/*.prueba.ts` (el departamento, sin precios ni costos, y lo que trae con la muestra; lo que la muestra no trae —una pieza apartada, una diferencia, una excepción— lo pone y lo quita `bodega-de-prueba.ts`), y `apps/web/src/departamentos/bodega/bodega.prueba.ts`: cada pestaña en escritorio y en teléfono con su captura en `.revision/capturas/bodega/`, los cajones por su dirección y cada botón con su acción y su aviso de abajo.
+- **Con el revisor de diseño:** Existencias es una sola matriz (`MatrizDeExistencias`): el renglón del producto se pliega y lleva la suma de cada columna, y el cero va en gris en todas. Las cifras llevan su separador de miles (`enteros` en `comun.tsx`, y «{n} pz» de la consulta con `plural`). El resultado de un conteo va en texto de color, no en cuadro de estado, y quien no decide un ajuste ve «Esperando autorización». «Fabricar {n}» va en negritas, «Rollos sugeridos» a la derecha, y con dos tiendas sin caja ningún «Mandar a» va en negro. Las tablas de las pestañas van en su `Panel`. Lo prueba `bodega.prueba.ts` (una sola matriz que se pliega y las cifras con su coma).

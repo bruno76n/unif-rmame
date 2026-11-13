@@ -19,6 +19,7 @@ import { Selector } from "@uniformame/interfaz/captura/selector";
 import { GrupoPlegable } from "@uniformame/interfaz/contenedores/grupo-plegable";
 import { EstadoDePantalla } from "@uniformame/interfaz/estados/estado-de-pantalla";
 import { LineaDeAviso, TextoConTono } from "@uniformame/interfaz/estados/textos-con-tono";
+import { Panel } from "@uniformame/interfaz/pagina/panel";
 import { DosRenglones } from "@uniformame/interfaz/tablas/dos-renglones";
 import { Tabla } from "@uniformame/interfaz/tablas/tabla";
 import { Eye, EyeOff, Plus } from "lucide-react";
@@ -109,32 +110,34 @@ function TablaDePersonas({
 	alTocar: (id: string) => void;
 }) {
 	return (
-		<Tabla
-			nombre="Personas"
-			filas={personas}
-			claveDeFila={(persona) => persona.id}
-			alTocarFila={(persona) => alTocar(persona.id)}
-			columnas={[
-				{
-					clave: "persona",
-					encabezado: "Persona",
-					celda: (persona) => <DosRenglones arriba={persona.nombre} abajo={persona.folio} />,
-				},
-				{ clave: "puesto", encabezado: "Puesto", celda: (persona) => persona.puesto },
-				{ clave: "forma", encabezado: "Forma de pago", celda: (persona) => nombresDeFormaDePago[persona.forma_pago] },
-				{ clave: "tarifa", encabezado: "Tarifa", celda: (persona) => <Tarifa persona={persona} ver={ver} /> },
-				{
-					clave: "ingreso",
-					encabezado: "Ingreso",
-					celda: (persona) => `${textoDeDiaCorto(persona.fecha_ingreso)} ${persona.fecha_ingreso.slice(0, 4)}`,
-				},
-				{
-					clave: "entra",
-					encabezado: "Entra al sistema",
-					celda: (persona) => <EntraAlSistema texto={persona.entra_al_sistema} />,
-				},
-			]}
-		/>
+		<Panel>
+			<Tabla
+				nombre="Personas"
+				filas={personas}
+				claveDeFila={(persona) => persona.id}
+				alTocarFila={(persona) => alTocar(persona.id)}
+				columnas={[
+					{
+						clave: "persona",
+						encabezado: "Persona",
+						celda: (persona) => <DosRenglones arriba={persona.nombre} abajo={persona.folio} />,
+					},
+					{ clave: "puesto", encabezado: "Puesto", celda: (persona) => persona.puesto },
+					{ clave: "forma", encabezado: "Forma de pago", celda: (persona) => nombresDeFormaDePago[persona.forma_pago] },
+					{ clave: "tarifa", encabezado: "Tarifa", celda: (persona) => <Tarifa persona={persona} ver={ver} /> },
+					{
+						clave: "ingreso",
+						encabezado: "Ingreso",
+						celda: (persona) => `${textoDeDiaCorto(persona.fecha_ingreso)} ${persona.fecha_ingreso.slice(0, 4)}`,
+					},
+					{
+						clave: "entra",
+						encabezado: "Entra al sistema",
+						celda: (persona) => <EntraAlSistema texto={persona.entra_al_sistema} />,
+					},
+				]}
+			/>
+		</Panel>
 	);
 }
 
