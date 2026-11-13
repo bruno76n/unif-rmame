@@ -12,7 +12,7 @@
  * y del más chico al más grande, como los sugiere Bodega (docs/modulos/inventario/entregas-a-corte.md, regla 1).
  */
 
-import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
+import { diasHasta, textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
 import { capturaDeCorte } from "@uniformame/compartido/contratos/produccion/captura-corte";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
@@ -20,7 +20,6 @@ import { noExiste } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeConsulta, implementarConsulta } from "../../../nucleo/modulos.ts";
 import {
 	deCalcularMaterial,
-	diasHasta,
 	escribirParaQuien,
 	type LoteLeido,
 	leerLotes,

@@ -37,6 +37,9 @@ import { Route as DireccionIndicadoresRouteImport } from "./rutas/direccion/indi
 import { Route as LineaIndexRouteImport } from "./rutas/linea/index.tsx"
 import { Route as MantenimientoIndexRouteImport } from "./rutas/mantenimiento/index.tsx"
 import { Route as PatronajeIndexRouteImport } from "./rutas/patronaje/index.tsx"
+import { Route as PatronajeDesarrolloRouteImport } from "./rutas/patronaje/desarrollo.tsx"
+import { Route as PatronajeRecetasRouteImport } from "./rutas/patronaje/recetas.tsx"
+import { Route as PatronajeRendimientoRouteImport } from "./rutas/patronaje/rendimiento.tsx"
 import { Route as PersonalIndexRouteImport } from "./rutas/personal/index.tsx"
 import { Route as ProduccionIndexRouteImport } from "./rutas/produccion/index.tsx"
 import { Route as ProduccionCorteRouteImport } from "./rutas/produccion/corte.tsx"
@@ -189,6 +192,21 @@ const PatronajeIndexRoute = PatronajeIndexRouteImport.update({
   path: "/patronaje/",
   getParentRoute: () => rootRouteImport,
 } as any)
+const PatronajeDesarrolloRoute = PatronajeDesarrolloRouteImport.update({
+  id: "/patronaje/desarrollo",
+  path: "/patronaje/desarrollo",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PatronajeRecetasRoute = PatronajeRecetasRouteImport.update({
+  id: "/patronaje/recetas",
+  path: "/patronaje/recetas",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PatronajeRendimientoRoute = PatronajeRendimientoRouteImport.update({
+  id: "/patronaje/rendimiento",
+  path: "/patronaje/rendimiento",
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PersonalIndexRoute = PersonalIndexRouteImport.update({
   id: "/personal/",
   path: "/personal/",
@@ -262,6 +280,9 @@ export interface FileRoutesByFullPath {
   "/direccion/alertas": typeof DireccionAlertasRoute
   "/direccion/autorizaciones": typeof DireccionAutorizacionesRoute
   "/direccion/indicadores": typeof DireccionIndicadoresRoute
+  "/patronaje/desarrollo": typeof PatronajeDesarrolloRoute
+  "/patronaje/recetas": typeof PatronajeRecetasRoute
+  "/patronaje/rendimiento": typeof PatronajeRendimientoRoute
   "/produccion/corte": typeof ProduccionCorteRoute
   "/produccion/lotes": typeof ProduccionLotesRoute
   "/produccion/operaciones": typeof ProduccionOperacionesRoute
@@ -302,6 +323,9 @@ export interface FileRoutesByTo {
   "/direccion/alertas": typeof DireccionAlertasRoute
   "/direccion/autorizaciones": typeof DireccionAutorizacionesRoute
   "/direccion/indicadores": typeof DireccionIndicadoresRoute
+  "/patronaje/desarrollo": typeof PatronajeDesarrolloRoute
+  "/patronaje/recetas": typeof PatronajeRecetasRoute
+  "/patronaje/rendimiento": typeof PatronajeRendimientoRoute
   "/produccion/corte": typeof ProduccionCorteRoute
   "/produccion/lotes": typeof ProduccionLotesRoute
   "/produccion/operaciones": typeof ProduccionOperacionesRoute
@@ -344,6 +368,9 @@ export interface FileRoutesById {
   "/direccion/alertas": typeof DireccionAlertasRoute
   "/direccion/autorizaciones": typeof DireccionAutorizacionesRoute
   "/direccion/indicadores": typeof DireccionIndicadoresRoute
+  "/patronaje/desarrollo": typeof PatronajeDesarrolloRoute
+  "/patronaje/recetas": typeof PatronajeRecetasRoute
+  "/patronaje/rendimiento": typeof PatronajeRendimientoRoute
   "/produccion/corte": typeof ProduccionCorteRoute
   "/produccion/lotes": typeof ProduccionLotesRoute
   "/produccion/operaciones": typeof ProduccionOperacionesRoute
@@ -387,6 +414,9 @@ export interface FileRouteTypes {
     | "/direccion/alertas"
     | "/direccion/autorizaciones"
     | "/direccion/indicadores"
+    | "/patronaje/desarrollo"
+    | "/patronaje/recetas"
+    | "/patronaje/rendimiento"
     | "/produccion/corte"
     | "/produccion/lotes"
     | "/produccion/operaciones"
@@ -427,6 +457,9 @@ export interface FileRouteTypes {
     | "/direccion/alertas"
     | "/direccion/autorizaciones"
     | "/direccion/indicadores"
+    | "/patronaje/desarrollo"
+    | "/patronaje/recetas"
+    | "/patronaje/rendimiento"
     | "/produccion/corte"
     | "/produccion/lotes"
     | "/produccion/operaciones"
@@ -468,6 +501,9 @@ export interface FileRouteTypes {
     | "/direccion/alertas"
     | "/direccion/autorizaciones"
     | "/direccion/indicadores"
+    | "/patronaje/desarrollo"
+    | "/patronaje/recetas"
+    | "/patronaje/rendimiento"
     | "/produccion/corte"
     | "/produccion/lotes"
     | "/produccion/operaciones"
@@ -505,6 +541,9 @@ export interface RootRouteChildren {
   DireccionAlertasRoute: typeof DireccionAlertasRoute
   DireccionAutorizacionesRoute: typeof DireccionAutorizacionesRoute
   DireccionIndicadoresRoute: typeof DireccionIndicadoresRoute
+  PatronajeDesarrolloRoute: typeof PatronajeDesarrolloRoute
+  PatronajeRecetasRoute: typeof PatronajeRecetasRoute
+  PatronajeRendimientoRoute: typeof PatronajeRendimientoRoute
   ProduccionCorteRoute: typeof ProduccionCorteRoute
   ProduccionLotesRoute: typeof ProduccionLotesRoute
   ProduccionOperacionesRoute: typeof ProduccionOperacionesRoute
@@ -727,6 +766,27 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof PatronajeIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    "/patronaje/desarrollo": {
+      id: "/patronaje/desarrollo"
+      path: "/patronaje/desarrollo"
+      fullPath: "/patronaje/desarrollo"
+      preLoaderRoute: typeof PatronajeDesarrolloRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/patronaje/recetas": {
+      id: "/patronaje/recetas"
+      path: "/patronaje/recetas"
+      fullPath: "/patronaje/recetas"
+      preLoaderRoute: typeof PatronajeRecetasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/patronaje/rendimiento": {
+      id: "/patronaje/rendimiento"
+      path: "/patronaje/rendimiento"
+      fullPath: "/patronaje/rendimiento"
+      preLoaderRoute: typeof PatronajeRendimientoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     "/personal/": {
       id: "/personal/"
       path: "/personal"
@@ -841,6 +901,9 @@ const rootRouteChildren: RootRouteChildren = {
   DireccionAlertasRoute: DireccionAlertasRoute,
   DireccionAutorizacionesRoute: DireccionAutorizacionesRoute,
   DireccionIndicadoresRoute: DireccionIndicadoresRoute,
+  PatronajeDesarrolloRoute: PatronajeDesarrolloRoute,
+  PatronajeRecetasRoute: PatronajeRecetasRoute,
+  PatronajeRendimientoRoute: PatronajeRendimientoRoute,
   ProduccionCorteRoute: ProduccionCorteRoute,
   ProduccionLotesRoute: ProduccionLotesRoute,
   ProduccionOperacionesRoute: ProduccionOperacionesRoute,

@@ -1,21 +1,10 @@
 /**
- * Pendientes de Patronaje: la primera pestaña. Hasta que su parte de la fase 19 la construya, muestra la página del
- * departamento sin pendientes.
- * Fase 19 · docs/interfaz/fabrica/ (el archivo de Patronaje)
+ * Pendientes de Patronaje, la primera pestaña: el filtro (`?grupo=`) y los cajones (`?cajon=…&id=`) van en la
+ * dirección.
+ * Fase 19 · docs/interfaz/fabrica/patronaje.md («Pendientes»)
  */
 
 import { createFileRoute } from "@tanstack/react-router";
-import { EstadoDePantalla } from "@uniformame/interfaz/estados/estado-de-pantalla";
-import { PaginaDeDepartamento } from "../../comun/pagina-de-departamento.tsx";
+import { PestanaPendientes } from "../../departamentos/patronaje/pestanas/pendientes.tsx";
 
-export const Route = createFileRoute("/patronaje/")({
-	component: () => (
-		<PaginaDeDepartamento
-			departamento="patronaje"
-			pestanas={[{ clave: "pendientes", texto: "Pendientes" }]}
-			activa="pendientes"
-		>
-			<EstadoDePantalla tipo="vacio" texto="Sin pendientes" bien />
-		</PaginaDeDepartamento>
-	),
-});
+export const Route = createFileRoute("/patronaje/")({ component: PestanaPendientes });

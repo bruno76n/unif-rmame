@@ -40,7 +40,8 @@
 		"./captura/buscador": "./src/captura/buscador.tsx",
 		"./contenedores/tarjeta": "./src/contenedores/tarjeta.tsx",
 		"./contenedores/grupo-plegable": "./src/contenedores/grupo-plegable.tsx",
-		"./pagina/panel": "./src/pagina/panel.tsx"
+		"./pagina/panel": "./src/pagina/panel.tsx",
+		"./tablas/dos-renglones": "./src/tablas/dos-renglones.tsx"
 	},
 	"dependencies": {
 		"@base-ui/react": "1.9.0",

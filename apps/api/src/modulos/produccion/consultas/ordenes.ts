@@ -8,7 +8,7 @@
  * El hilo de un pedido es el de `produccion.hilo_pedido`; el de un lote de reabasto o de temporada, `hiloDelLote`.
  */
 
-import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
+import { diasHasta, textoDeDiaCorto, textoEnDias } from "@uniformame/compartido/calculos/fechas";
 import { ordenesDeProduccion } from "@uniformame/compartido/contratos/produccion/ordenes-de-produccion";
 import { sql } from "drizzle-orm";
 import type { Temporal } from "temporal-polyfill";
@@ -16,7 +16,6 @@ import { z } from "zod";
 import { leerCursor, paginar } from "../../../nucleo/http/consultas.ts";
 import { type ContextoDeConsulta, implementarConsulta } from "../../../nucleo/modulos.ts";
 import {
-	diasHasta,
 	escribirParaQuien,
 	hiloDelLote,
 	type LoteLeido,
@@ -24,7 +23,6 @@ import {
 	parametroNumero,
 	type SaludEscrita,
 	saludDeLosLotes,
-	textoEnDias,
 } from "./comun.ts";
 import { consultaHiloPedido } from "./hilo-pedido.ts";
 

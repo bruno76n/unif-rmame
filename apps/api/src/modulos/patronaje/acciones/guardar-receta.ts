@@ -28,6 +28,7 @@ import {
 	materialesComparables,
 	type Prenda,
 } from "../dominio/recetas.ts";
+import { conversionDeCaptura, type UnidadesDelMaterial, unidadesQueAcepta } from "../dominio/unidades.ts";
 import { recetas, recetaVersiones } from "../tablas.ts";
 
 /** Lo que llega a la acción, ya validado por su contrato. */
@@ -41,6 +42,14 @@ type Material = Pick<
 
 /** Cómo se dice cada unidad en los mensajes. */
 const unidadEnPalabras = { m: "metros", cm: "centímetros", pza: "piezas" } as const;
+
+/**
+ * Las unidades de un material como las lee la regla de `dominio/unidades.ts`.
+ * @param material El material leído.
+ */
+function unidadesDe(material: Material): UnidadesDelMaterial {
+	return { unidad: material.unidad, unidadReceta: material.unidadReceta, factorReceta: material.factorReceta };
+}
 
 /** Los mensajes de los campos que no se pueden guardar, por campo; el primero de cada uno. */
 class Problemas {
@@ -75,27 +84,6 @@ async function revisarTallas(contexto: ContextoDeAccion, prenda: Prenda, pedido:
 		.from(tablaDeTallas)
 		.where(inArray(tablaDeTallas.id, ajenas));
 	throw errorDeRegla("talla_ajena", `La talla ${ajena?.nombre ?? "escogida"} no es de ${prenda.nombre}.`);
-}
-
-/**
- * La conversión que se congela en la línea: 1 si es la misma unidad, 100 de cm a m, o el factor de la receta del
- * material.
- * @returns La conversión, o nada si el material no acepta esa unidad.
- */
-function conversion(material: Material, unidad: string): string | undefined {
-	if (unidad === material.unidad && (unidad === "m" || unidad === "pza")) return "1.000";
-	if (unidad === "cm" && material.unidad === "m") return "100.000";
-	if (unidad === material.unidadReceta && material.factorReceta !== null) return material.factorReceta;
-	return undefined;
-}
-
-/**
- * Las unidades en que se puede capturar un material, para el mensaje de `unidad_sin_conversion`.
- * @param material El material.
- */
-function unidadesQueAcepta(material: Material): string {
-	const acepta = (["m", "cm", "pza"] as const).filter((unidad) => conversion(material, unidad) !== undefined);
-	return acepta.map((unidad) => unidadEnPalabras[unidad]).join(" o ");
 }
 
 /**
@@ -143,10 +131,12 @@ async function revisarMateriales(contexto: ContextoDeAccion, pedido: Pedido): Pr
 		if (esTela && (linea.modo !== "por_talla" || linea.unidad_receta !== "m")) {
 			throw errorDeRegla("tela_en_metros", `${material.nombre}: la tela va en metros por prenda, talla por talla.`);
 		}
-		if (conversion(material, linea.unidad_receta) === undefined) {
+		if (conversionDeCaptura(unidadesDe(material), linea.unidad_receta) === undefined) {
 			throw errorDeRegla(
 				"unidad_sin_conversion",
-				`${material.nombre} se guarda en ${material.unidad}: captúralo en ${unidadesQueAcepta(material)}.`,
+				`${material.nombre} se guarda en ${material.unidad}: captúralo en ${unidadesQueAcepta(unidadesDe(material))
+					.map((unidad) => unidadEnPalabras[unidad])
+					.join(" o ")}.`,
 			);
 		}
 	}
@@ -298,7 +288,7 @@ async function lineasRevisadas(
 			unidadReceta: linea.unidad_receta,
 			cantidad: linea.modo === "igual" && linea.cantidad !== undefined ? deMilesimos(aMilesimos(linea.cantidad)) : null,
 			recetaPorUnidadInventario:
-				material === undefined ? "1.000" : (conversion(material, linea.unidad_receta) ?? "1.000"),
+				material === undefined ? "1.000" : (conversionDeCaptura(unidadesDe(material), linea.unidad_receta) ?? "1.000"),
 			orden: linea.orden,
 			tallas: tallasDeLaLinea.map((talla) => ({
 				tallaId: talla.talla_id,

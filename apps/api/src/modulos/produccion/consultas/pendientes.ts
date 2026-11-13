@@ -7,7 +7,7 @@
  * Fase 19 · docs/interfaz/fabrica/produccion.md («Pendientes» y «Quién entra»: la pastilla)
  */
 
-import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
+import { diasHasta, textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
 import type { renglonDePendientesDeProduccion } from "@uniformame/compartido/contratos/produccion/pendientes";
 import { pendientesDeProduccion } from "@uniformame/compartido/contratos/produccion/pendientes";
 import { sql } from "drizzle-orm";
@@ -17,7 +17,6 @@ import { type ConteoDePastilla, type ContextoDeConsulta, implementarConsulta } f
 import { type LoteDelPedido, repartirPiezasDeMas } from "../dominio/reparto-de-cambio.ts";
 import {
 	datosDelEstado,
-	diasHasta,
 	escribirParaQuien,
 	estadoDelLote,
 	type LoteLeido,

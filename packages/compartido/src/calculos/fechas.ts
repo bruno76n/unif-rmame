@@ -119,3 +119,24 @@ export function textoDeDiaCorto(dia: DiaNegocio | string): string {
 export function textoDeMes(dia: DiaNegocio | string): string {
 	return Temporal.PlainDate.from(dia).toLocaleString("es-MX", { month: "long", year: "numeric" });
 }
+
+/**
+ * Los días entre hoy y una fecha.
+ * @param hoy El día de negocio.
+ * @param fecha La fecha, en ISO.
+ * @returns Positivo si la fecha viene después de hoy.
+ */
+export function diasHasta(hoy: Temporal.PlainDate, fecha: string): number {
+	return hoy.until(Temporal.PlainDate.from(fecha), { largestUnit: "days" }).days;
+}
+
+/**
+ * Cuántos días faltan o pasaron, como lo dice la pantalla: «hoy», «en 1 día», «en 4 días», «hace 2 días».
+ * @param dias Los días hasta la fecha (`diasHasta`).
+ */
+export function textoEnDias(dias: number): string {
+	if (dias === 0) return "hoy";
+	const cuantos = Math.abs(dias);
+	const unidad = cuantos === 1 ? "día" : "días";
+	return dias > 0 ? `en ${cuantos} ${unidad}` : `hace ${cuantos} ${unidad}`;
+}

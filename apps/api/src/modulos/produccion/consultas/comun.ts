@@ -7,11 +7,11 @@
  * (regla 7 de docs/modulos/produccion/lotes.md), y aquí solo se escribe como la dice la pantalla.
  */
 
-import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
+import { diasHasta, textoDeDiaCorto, textoEnDias } from "@uniformame/compartido/calculos/fechas";
 import type { paradaDeLote } from "@uniformame/compartido/contratos/produccion/hilo";
 import type { casillaDeLaTira, estadoEscrito, paraQuien } from "@uniformame/compartido/contratos/produccion/pantallas";
 import { type SQL, sql } from "drizzle-orm";
-import { Temporal } from "temporal-polyfill";
+import type { Temporal } from "temporal-polyfill";
 import { z } from "zod";
 import type { ContextoDeConsulta } from "../../../nucleo/modulos.ts";
 
@@ -81,27 +81,6 @@ export function escribirParaQuien(fila: {
  */
 export async function parametroNumero(contexto: ContextoDeConsulta, clave: string): Promise<number> {
 	return Number(await contexto.lectura("admin.parametro", { clave }));
-}
-
-/**
- * Los días entre hoy y una fecha.
- * @param hoy El día de negocio.
- * @param fecha La fecha, en ISO.
- * @returns Positivo si la fecha viene después de hoy.
- */
-export function diasHasta(hoy: Temporal.PlainDate, fecha: string): number {
-	return hoy.until(Temporal.PlainDate.from(fecha), { largestUnit: "days" }).days;
-}
-
-/**
- * Cuántos días faltan o pasaron, como lo dice la pantalla: «hoy», «en 1 día», «en 4 días», «hace 2 días».
- * @param dias Los días hasta la fecha (`diasHasta`).
- */
-export function textoEnDias(dias: number): string {
-	if (dias === 0) return "hoy";
-	const cuantos = Math.abs(dias);
-	const unidad = cuantos === 1 ? "día" : "días";
-	return dias > 0 ? `en ${cuantos} ${unidad}` : `hace ${cuantos} ${unidad}`;
 }
 
 /** La salud de un lote en proceso, como la dan las lecturas de Producción. */

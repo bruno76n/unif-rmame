@@ -7,7 +7,7 @@
  */
 
 import { aMilesimos, cantidadEnTexto } from "@uniformame/compartido/calculos/cuenta-material";
-import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
+import { diasHasta, textoDeDiaCorto, textoEnDias } from "@uniformame/compartido/calculos/fechas";
 import { loteDeProduccion } from "@uniformame/compartido/contratos/produccion/lotes";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
@@ -17,7 +17,6 @@ import { type ContextoDeConsulta, implementarConsulta } from "../../../nucleo/mo
 import {
 	datosDelEstado,
 	deCalcularMaterial,
-	diasHasta,
 	escribirParaQuien,
 	estadoDelLote,
 	hiloDelLote,
@@ -28,7 +27,6 @@ import {
 	parametroNumero,
 	piezasPorTallaDelLote,
 	saludDeLosLotes,
-	textoEnDias,
 	tieneDepartamento,
 	tiraDelLote,
 	ultimaSincronizacion,

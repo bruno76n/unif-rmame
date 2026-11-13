@@ -5,6 +5,7 @@
  *
  * Y los desarrollos de productos nuevos (docs/modulos/patronaje/desarrollos.md), con el efecto de
  * `aprobar_desarrollo`.
+ * Fase 19 · las consultas de sus pantallas y la pastilla de Patronaje (docs/interfaz/fabrica/patronaje.md)
  */
 
 import { definirModulo } from "../../nucleo/modulos.ts";
@@ -17,6 +18,11 @@ import {
 	accionRegistrarSolicitud,
 } from "./acciones/desarrollos.ts";
 import { accionGuardarReceta } from "./acciones/guardar-receta.ts";
+import { consultaDesarrollo, consultaDesarrollos } from "./consultas/desarrollos.ts";
+import { consultaPendientes, pastillaPatronaje } from "./consultas/pendientes.ts";
+import { consultaReceta } from "./consultas/receta.ts";
+import { consultaRecetas } from "./consultas/recetas.ts";
+import { consultaRendimiento, consultaRendimientoPrenda } from "./consultas/rendimiento.ts";
 import { aplicarDecisionDesarrollo, ligarProductoDesarrollo } from "./internas/desarrollos.ts";
 import { iniciarReceta, verificarReceta } from "./internas/recetas.ts";
 import { desarrollosEnProcesoDeEscuela } from "./lecturas/desarrollos.ts";
@@ -35,6 +41,16 @@ export default definirModulo({
 		accionRegistrarAprobacionCliente,
 		accionDescartarDesarrollo,
 	],
+	consultas: [
+		consultaPendientes,
+		consultaRecetas,
+		consultaReceta,
+		consultaRendimiento,
+		consultaRendimientoPrenda,
+		consultaDesarrollos,
+		consultaDesarrollo,
+	],
+	pastillas: { patronaje: pastillaPatronaje },
 	internas: {
 		iniciar_receta: iniciarReceta,
 		verificar_receta: verificarReceta,

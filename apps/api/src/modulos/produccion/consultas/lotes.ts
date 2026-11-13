@@ -5,13 +5,12 @@
  * Fase 19 · docs/interfaz/fabrica/produccion.md («Lotes»)
  */
 
-import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
+import { diasHasta, textoDeDiaCorto, textoEnDias } from "@uniformame/compartido/calculos/fechas";
 import { lotesDeProduccion } from "@uniformame/compartido/contratos/produccion/lotes";
 import { sql } from "drizzle-orm";
 import { implementarConsulta } from "../../../nucleo/modulos.ts";
 import {
 	datosDelEstado,
-	diasHasta,
 	escribirParaQuien,
 	estadoDelLote,
 	leerLotes,
@@ -19,7 +18,6 @@ import {
 	operacionAtorada,
 	parametroNumero,
 	saludDeLosLotes,
-	textoEnDias,
 	tiraDelLote,
 	ultimaSincronizacion,
 } from "./comun.ts";
