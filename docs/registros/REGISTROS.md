@@ -91,7 +91,7 @@ Lo que falta decidir o investigar, y en qué fase se resuelve. Lo del negocio ya
 - **Una fecha cuyo cuadre falló no se vuelve a cuadrar, y lo que terminó esa noche no pasa por el paso 3** (fase 14, con las DF-): el cuadre es único por fecha y el paso 3 revisa solo los traspasos que terminaron ese día. Falta decir si se reabre la fecha o si la noche siguiente toma lo que quedó pendiente.
 
 - **Los montos que no tienen la forma de `enPesos`** (fase 22): el recorte común tapa a soporte los «$1,250» de cualquier texto (decisión 805), pero no un monto escrito de otra forma («1250 pesos», «MXN 1,250»). Falta una prueba que revise que toda descripción, mensaje y aviso con monto use `enPesos` (auditoría de la fase 19).
-- **El antes y el después del historial de un documento** (fase 21): `admin.historial_entidad` los manda y ninguna pantalla los usa todavía. Su recorte de montos es general (Aduana y Bodega no los ven) y no el del módulo dueño, como pide `comunes.md`: una cuenta con Aduana y Mantenimiento sí ve los montos de un documento de inventario (auditoría de la fase 19).
+- **El antes y el después del historial de un documento** (fase 21): `admin.historial_entidad` los manda, ya con el recorte del módulo dueño (decisión 809), y ninguna pantalla los usa todavía. Decidir si se dejan de mandar o si el `Historial` los enseña.
 
 - **Lo que dejó la auditoría de la fase 19** (fase 21, al recorrer las pantallas):
   - `Tabla` sin celdas que ocupen varias columnas: la tabla «Tallas, códigos y precios» de la ficha de Catálogo sigue a mano;
@@ -611,3 +611,4 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 13 nov 2026 | 19 | Lo que quedó de la fase 19 en Pendientes pasa a la fase 21, que recorre todas las pantallas, y lo de seguridad a la 22 | Detener el cierre por los detalles de diseño · lo elegido | Lo elegido: lo que pide la fase ya está y lo que falta no bloquea | No |
 | 13 nov 2026 | 19 | El recorte común tapa a soporte los montos escritos en cualquier texto; `compras.ve_documento`; el historial solo con cambios (decisión 805) | `pesosPara` en cada consulta · lo elegido | Lo elegido: una sola regla en el núcleo, que no se olvida | No |
 | 14 nov 2026 | 19 | Lo que corrigió la auditoría en los catorce departamentos y la dirección común (decisiones 806, 807 y 808) | Dejarlo para la fase 21 · lo elegido | Lo elegido: la fase cierra con su auditoría al día | No |
+| 14 nov 2026 | 19 | Soporte no abre el PDF de una orden; el historial recorta como el módulo dueño; las rutas montan su pestaña (decisión 809) | Escribir la excepción de las rutas · lo elegido | Lo elegido: una sola forma, como dice la regla | No |

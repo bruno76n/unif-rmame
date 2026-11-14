@@ -2,7 +2,8 @@
  * Asistencia, la primera pestaña de Personal: la barra de indicadores (Asistencia de la semana, Personas y PIN del
  * taller, cada cifra lleva a su pestaña), el panel de Pendientes con sus filtros (Todos, Asistencia, PIN y, con el
  * permiso, Tarifas; solo los que tienen renglones), la cuadrícula «Asistencia del {semana}» con su selector si hay dos
- * semanas abiertas, y «Semanas cerradas», con «Reabrir semana» para la dueña.
+ * semanas abiertas, y «Semanas cerradas», con «Reabrir semana» para la dueña. Lee `personal.asistencia` con la semana
+ * de la dirección; mientras llega otra semana, sigue mostrando la anterior: el selector no pierde su valor.
  * Fase 19 · docs/interfaz/fabrica/personal.md («Asistencia») y docs/interfaz/comunes.md («La página de un
  * departamento»)
  */
@@ -10,7 +11,7 @@
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
 import { plural } from "@uniformame/compartido/calculos/textos";
 import {
-	type asistenciaDePersonal,
+	asistenciaDePersonal,
 	cerrarSemanaAsistencia,
 	gruposDePendientesDePersonal,
 	reabrirSemanaAsistencia,
@@ -28,7 +29,9 @@ import { Tabla } from "@uniformame/interfaz/tablas/tabla";
 import { Clock, Tablet, Users, Wallet } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
+import { useConsulta } from "../../../comun/api.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
+import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { VentanaConMotivo } from "../../../comun/ventana-con-motivo.tsx";
 import { type PestanaDePersonal, useDireccionDePersonal } from "../direccion.ts";
 import { useEnvio } from "../envio.ts";
@@ -290,11 +293,27 @@ function SemanasCerradas({ semanas }: { semanas: readonly SemanaCerrada[] }) {
 	);
 }
 
+/** La pestaña Asistencia: lee `personal.asistencia` con la semana de la dirección y pinta sus estados. */
+export function AsistenciaDePersonal() {
+	const { busqueda } = useDireccionDePersonal();
+	const consulta = useConsulta(
+		asistenciaDePersonal,
+		busqueda.semana === undefined ? {} : { asistencia_semana_id: busqueda.semana },
+		true,
+		true,
+	);
+	return (
+		<SegunConsulta consulta={consulta} renglones={8}>
+			{(datos) => <Contenido datos={datos} />}
+		</SegunConsulta>
+	);
+}
+
 /**
- * Asistencia de Personal.
+ * Lo que pinta Asistencia con los datos.
  * @param props Lo que regresa `personal.asistencia`.
  */
-export function AsistenciaDePersonal({ datos }: { datos: Asistencia }) {
+function Contenido({ datos }: { datos: Asistencia }) {
 	const { navegar } = useDireccionDePersonal();
 	const { semana, semanas_abiertas: abiertas } = datos;
 	return (

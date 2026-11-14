@@ -5,13 +5,15 @@
  */
 
 import { plural } from "@uniformame/compartido/calculos/textos";
-import type { conciliacionFacturas } from "@uniformame/compartido/contratos/compras/consultas-pestanas";
+import { conciliacionFacturas } from "@uniformame/compartido/contratos/compras/consultas-pestanas";
 
 import { Estado } from "@uniformame/interfaz/estados/estado";
 import { EstadoDePantalla } from "@uniformame/interfaz/estados/estado-de-pantalla";
 import { Tabla } from "@uniformame/interfaz/tablas/tabla";
 import { CircleCheck, CircleDashed, CircleX } from "lucide-react";
 import type { z } from "zod";
+import { useConsulta } from "../../../comun/api.tsx";
+import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { useDireccionDeCompras } from "../direccion.ts";
 
 /** Un renglón de la conciliación. */
@@ -41,11 +43,17 @@ function PuntoDeConciliacion({ nombre, punto }: { nombre: string; punto: Punto }
 	);
 }
 
+/** La pestaña Conciliación de facturas: lee `compras.conciliacion_facturas` y pinta sus estados. */
+export function ConciliacionDeCompras() {
+	const consulta = useConsulta(conciliacionFacturas, {});
+	return <SegunConsulta consulta={consulta}>{({ renglones }) => <Contenido renglones={renglones} />}</SegunConsulta>;
+}
+
 /**
- * La pestaña Conciliación de facturas.
+ * Lo que pinta la pestaña con los datos.
  * @param props Los renglones de `compras.conciliacion_facturas`.
  */
-export function ConciliacionDeCompras({ renglones }: { renglones: Renglon[] }) {
+function Contenido({ renglones }: { renglones: Renglon[] }) {
 	const { ir } = useDireccionDeCompras();
 	return (
 		<div className="flex flex-col gap-4">

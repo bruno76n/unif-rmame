@@ -9,7 +9,7 @@
 
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
 import { plural } from "@uniformame/compartido/calculos/textos";
-import type { materialesDeBodega } from "@uniformame/compartido/contratos/inventario/bodega";
+import { materialesDeBodega } from "@uniformame/compartido/contratos/inventario/bodega";
 import { recibirDelCorte } from "@uniformame/compartido/contratos/inventario/corte";
 import { Boton } from "@uniformame/interfaz/botones/boton";
 import { Estado } from "@uniformame/interfaz/estados/estado";
@@ -22,7 +22,9 @@ import { DosRenglones } from "@uniformame/interfaz/tablas/dos-renglones";
 import { Tabla } from "@uniformame/interfaz/tablas/tabla";
 import { useState } from "react";
 import type { z } from "zod";
+import { useConsulta } from "../../../comun/api.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
+import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { useDireccionDeBodega } from "../direccion.ts";
 import { useEnvio } from "../envio.ts";
 import { VentanaCargaMaterial } from "../ventanas/carga-material.tsx";
@@ -302,11 +304,17 @@ function EnBodega({ telas, avios, sin_carga }: Pick<Materiales, "telas" | "avios
 	);
 }
 
+/** La pestaña Materiales: lee `inventario.materiales` y pinta sus estados. */
+export function MaterialesDeBodega() {
+	const consulta = useConsulta(materialesDeBodega, {});
+	return <SegunConsulta consulta={consulta}>{(datos) => <Contenido datos={datos} />}</SegunConsulta>;
+}
+
 /**
- * Materiales de Bodega.
+ * Lo que pinta la pestaña con los datos.
  * @param props Lo que regresa `inventario.materiales`.
  */
-export function MaterialesDeBodega({ datos }: { datos: Materiales }) {
+function Contenido({ datos }: { datos: Materiales }) {
 	return (
 		<div className="flex flex-col gap-6">
 			<Entregas entregas={datos.entregas} entregados={datos.entregados} />

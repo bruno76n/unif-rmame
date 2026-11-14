@@ -10,7 +10,7 @@
 import { plural } from "@uniformame/compartido/calculos/textos";
 import {
 	gruposDePendientesDeBodega,
-	type pendientesDeBodega,
+	pendientesDeBodega,
 	type tiposDePendienteDeBodega,
 } from "@uniformame/compartido/contratos/inventario/bodega";
 import { recibirDelCorte } from "@uniformame/compartido/contratos/inventario/corte";
@@ -40,7 +40,9 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import type { z } from "zod";
+import { useConsulta } from "../../../comun/api.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
+import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { enteros, VarianteEnDosRenglones } from "../comun.tsx";
 import { type PestanaDeBodega, useDireccionDeBodega } from "../direccion.ts";
 import { useEnvio } from "../envio.ts";
@@ -60,7 +62,7 @@ type GrupoDePendientes = "todos" | (typeof gruposDePendientesDeBodega)[number];
  * El filtro de Pendientes que dice la dirección, o «Todos».
  * @param texto Lo que trae la dirección.
  */
-export function grupoDePendientes(texto: string): GrupoDePendientes {
+function grupoDePendientes(texto: string): GrupoDePendientes {
 	return gruposDePendientesDeBodega.find((grupo) => grupo === texto) ?? "todos";
 }
 
@@ -270,11 +272,21 @@ function VariantesEnCero({ en_cero }: { en_cero: Pendientes["en_cero"] }) {
 /** La ventana abierta desde Pendientes. */
 type VentanaDePendientes = { tipo: "no_la_encuentro" | "regresa"; renglon: Renglon } | null;
 
+/** La pestaña Pendientes: lee `inventario.bodega_pendientes` con el filtro de la dirección y pinta sus estados. */
+export function PendientesDeBodega() {
+	const { busqueda } = useDireccionDeBodega();
+	const consulta = useConsulta(
+		pendientesDeBodega,
+		busqueda.grupo === undefined ? {} : { grupo: grupoDePendientes(busqueda.grupo) },
+	);
+	return <SegunConsulta consulta={consulta}>{(datos) => <Contenido datos={datos} />}</SegunConsulta>;
+}
+
 /**
- * Pendientes de Bodega.
+ * Lo que pinta la pestaña con los datos.
  * @param props Lo que regresa `inventario.bodega_pendientes`.
  */
-export function PendientesDeBodega({ datos }: { datos: Pendientes }) {
+function Contenido({ datos }: { datos: Pendientes }) {
 	const { busqueda, navegar, abrir } = useDireccionDeBodega();
 	const conConexion = useConConexion();
 	const surtir = useEnvio(surtirAAduana);

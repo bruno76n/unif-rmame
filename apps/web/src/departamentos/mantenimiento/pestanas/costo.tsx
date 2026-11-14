@@ -6,12 +6,14 @@
  * Fase 19 · docs/interfaz/fabrica/mantenimiento.md («Costo por máquina»)
  *
  * La casilla solo acepta números y va en la dirección (`hora`, en pesos): con uno mayor que 0 la consulta vuelve a
- * calcular los pesos del paro de esta pestaña; vacía o en 0, regresa al de Configuración. No se guarda.
+ * calcular los pesos del paro de esta pestaña; vacía o en 0, regresa al de Configuración. No se guarda. Mientras
+ * llega el cálculo con otro costo, la pestaña sigue mostrando el anterior: así la casilla no pierde lo que se está
+ * escribiendo.
  */
 
-import { aPesoEntero, centavosACampo } from "@uniformame/compartido/calculos/dinero";
+import { aPesoEntero, centavosACampo, pesosACentavos } from "@uniformame/compartido/calculos/dinero";
 import { plural } from "@uniformame/compartido/calculos/textos";
-import type { costoPorMaquina } from "@uniformame/compartido/contratos/mantenimiento/consultas-pestanas";
+import { costoPorMaquina } from "@uniformame/compartido/contratos/mantenimiento/consultas-pestanas";
 import { centavos } from "@uniformame/compartido/tipos/base";
 import { BarraAvance } from "@uniformame/interfaz/avance/barra-avance";
 import { Campo } from "@uniformame/interfaz/captura/campo";
@@ -22,7 +24,9 @@ import { DosRenglones } from "@uniformame/interfaz/tablas/dos-renglones";
 import { Tabla } from "@uniformame/interfaz/tablas/tabla";
 import { type ReactNode, useState } from "react";
 import type { z } from "zod";
+import { useConsulta } from "../../../comun/api.tsx";
 import { montoEnPantalla } from "../../../comun/montos.ts";
+import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { useDireccionDeMantenimiento } from "../direccion.ts";
 
 /** Lo que regresa la consulta. */
@@ -124,10 +128,23 @@ function CasillaDeLaHora({ deConfiguracion }: { deConfiguracion: number | undefi
 }
 
 /**
- * Costo por máquina.
+ * La pestaña Costo por máquina: lee `mantenimiento.costo_por_maquina` con el costo de la hora de la dirección y pinta sus
+ * estados.
+ */
+export function CostoDeMantenimiento() {
+	const { busqueda } = useDireccionDeMantenimiento();
+	// La casilla va en pesos enteros; la consulta, en centavos. Vacía o en 0, el de Configuración.
+	const costo = busqueda.hora === undefined ? null : pesosACentavos(String(busqueda.hora));
+	const parametros = costo === null ? {} : { costo_hora_centavos: costo };
+	const consulta = useConsulta(costoPorMaquina, parametros, true, true);
+	return <SegunConsulta consulta={consulta}>{(datos) => <Contenido datos={datos} />}</SegunConsulta>;
+}
+
+/**
+ * Lo que pinta Costo por máquina con los datos.
  * @param props Lo que regresa `mantenimiento.costo_por_maquina`.
  */
-export function CostoDeMantenimiento({ datos }: { datos: Costo }) {
+function Contenido({ datos }: { datos: Costo }) {
 	const { abrir } = useDireccionDeMantenimiento();
 	const mayor = Math.max(
 		0,

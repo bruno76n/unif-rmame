@@ -7,13 +7,18 @@
  * Fase 19 · docs/interfaz/fabrica/aduana.md («Empaque en línea»)
  */
 
-import type { pedidosLinea } from "@uniformame/compartido/contratos/linea/consultas";
+import { pedidosLinea } from "@uniformame/compartido/contratos/linea/consultas";
 import { Tarjeta } from "@uniformame/interfaz/contenedores/tarjeta";
 import { Estado } from "@uniformame/interfaz/estados/estado";
 import { EstadoDePantalla } from "@uniformame/interfaz/estados/estado-de-pantalla";
 import { TextoConTono } from "@uniformame/interfaz/estados/textos-con-tono";
 import { Check, Clock } from "lucide-react";
 import type { z } from "zod";
+import { useConsulta } from "../../../comun/api.tsx";
+import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
+
+/** Las dos etapas que ve Aduana, en su orden: lo que espera prendas y lo listo para empacar. */
+const etapasDeEmpaque = "esperando_prendas,listo_para_empacar";
 
 /** Lo que regresa `linea.pedidos`. */
 type Pedidos = z.infer<typeof pedidosLinea.resultado>;
@@ -57,11 +62,17 @@ function TarjetaDeEmpaque({ pedido }: { pedido: PedidoEnLinea }) {
 	);
 }
 
+/** La pestaña Empaque en línea: lee `linea.pedidos` con las dos etapas de Aduana y pinta sus estados. */
+export function EmpaqueDeAduana() {
+	const consulta = useConsulta(pedidosLinea, { estados: etapasDeEmpaque });
+	return <SegunConsulta consulta={consulta}>{(datos) => <Contenido datos={datos} />}</SegunConsulta>;
+}
+
 /**
- * Empaque en línea.
+ * Lo que pinta Empaque en línea con los datos.
  * @param props Lo que regresa `linea.pedidos`.
  */
-export function EmpaqueDeAduana({ datos }: { datos: Pedidos }) {
+function Contenido({ datos }: { datos: Pedidos }) {
 	const columnas = datos.columnas;
 	const cuantos = columnas.reduce((suma, columna) => suma + columna.pedidos.length, 0);
 	return (

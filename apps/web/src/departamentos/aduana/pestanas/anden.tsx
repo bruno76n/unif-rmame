@@ -8,7 +8,7 @@
  */
 
 import { plural } from "@uniformame/compartido/calculos/textos";
-import type { andenDeAduana } from "@uniformame/compartido/contratos/inventario/aduana";
+import { andenDeAduana } from "@uniformame/compartido/contratos/inventario/aduana";
 import { Estado } from "@uniformame/interfaz/estados/estado";
 import { TextoConTono } from "@uniformame/interfaz/estados/textos-con-tono";
 import { BarraIndicadores } from "@uniformame/interfaz/pagina/barra-indicadores";
@@ -26,6 +26,8 @@ import {
 	Users,
 } from "lucide-react";
 import type { z } from "zod";
+import { useConsulta } from "../../../comun/api.tsx";
+import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { orillaDelCarril, useAbrir } from "../comun.tsx";
 import { useDireccionDeAduana } from "../direccion.ts";
 
@@ -121,11 +123,17 @@ function CarrilDelAnden({ carril }: { carril: Carril }) {
 	);
 }
 
+/** La pestaña Andén: lee `inventario.anden` y pinta sus estados. */
+export function AndenDeAduana() {
+	const consulta = useConsulta(andenDeAduana, {});
+	return <SegunConsulta consulta={consulta}>{(datos) => <Contenido datos={datos} />}</SegunConsulta>;
+}
+
 /**
- * El Andén.
+ * Lo que pinta el Andén con los datos.
  * @param props Lo que regresa `inventario.anden`.
  */
-export function AndenDeAduana({ datos }: { datos: Anden }) {
+function Contenido({ datos }: { datos: Anden }) {
 	const { navegar } = useDireccionDeAduana();
 	const { cifras } = datos;
 	return (

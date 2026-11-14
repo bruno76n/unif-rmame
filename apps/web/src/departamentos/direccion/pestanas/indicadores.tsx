@@ -4,17 +4,21 @@
  * año pasado, las prendas terminadas por día y la existencia por ubicación.
  * Fase 19 · docs/interfaz/fabrica/direccion.md («Indicadores»)
  *
- * Las cifras llegan calculadas de `direccion.indicadores`: la pestaña solo las escribe y las grafica.
+ * Las cifras llegan calculadas de `direccion.indicadores`, que la pestaña lee con la comparación de la dirección
+ * (`?comparar=hace_un_mes`; al abrir, la semana pasada): la pestaña solo las escribe y las grafica.
  */
 
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { enPesos } from "@uniformame/compartido/calculos/dinero";
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
-import type { comparaciones, indicadores } from "@uniformame/compartido/contratos/direccion/indicadores";
+import { type comparaciones, indicadores } from "@uniformame/compartido/contratos/direccion/indicadores";
 import { Filtros } from "@uniformame/interfaz/captura/filtros";
 import { Grafica } from "@uniformame/interfaz/graficas/grafica";
 import type { ReactNode } from "react";
 import type { z } from "zod";
+import { useConsulta } from "../../../comun/api.tsx";
 import { montoEnPantalla } from "../../../comun/montos.ts";
+import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 
 /** Lo que trae `direccion.indicadores`. */
 type Datos = z.infer<typeof indicadores.resultado>;
@@ -68,11 +72,29 @@ interface PropsDeIndicadores {
 	alComparar: (comparar: Comparacion) => void;
 }
 
+/** La pestaña Indicadores: lee `direccion.indicadores` con la comparación de la dirección y pinta sus estados. */
+export function PestanaIndicadores() {
+	const { comparar } = useSearch({ from: "/direccion/indicadores" });
+	const navegar = useNavigate({ from: "/direccion/indicadores" });
+	const leida = useConsulta(indicadores, comparar === undefined ? {} : { comparar });
+	return (
+		<SegunConsulta consulta={leida}>
+			{(datos) => (
+				<Indicadores
+					datos={datos}
+					comparar={comparar ?? "semana_pasada"}
+					alComparar={(otra) => navegar({ search: { comparar: otra === "semana_pasada" ? undefined : otra } })}
+				/>
+			)}
+		</SegunConsulta>
+	);
+}
+
 /**
- * La pestaña Indicadores.
+ * Lo que pinta Indicadores con los datos.
  * @param props Los datos, contra qué se compara y qué hacer al cambiarlo.
  */
-export function PestanaIndicadores({ datos, comparar, alComparar }: PropsDeIndicadores) {
+function Indicadores({ datos, comparar, alComparar }: PropsDeIndicadores) {
 	const { semana, por_semana, terminadas, existencias } = datos;
 	const sinVentas = semana.canales.filter((canal) => canal.vende_desde === null);
 	return (

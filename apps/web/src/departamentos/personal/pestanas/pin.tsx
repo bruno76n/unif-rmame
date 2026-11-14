@@ -6,7 +6,7 @@
  */
 
 import { textoDeMomentoCorto } from "@uniformame/compartido/calculos/fechas";
-import { desbloquearPin, type pinesDelTaller } from "@uniformame/compartido/contratos/personal/pines";
+import { desbloquearPin, pinesDelTaller } from "@uniformame/compartido/contratos/personal/pines";
 import { Boton } from "@uniformame/interfaz/botones/boton";
 import { Estado } from "@uniformame/interfaz/estados/estado";
 import { EstadoDePantalla } from "@uniformame/interfaz/estados/estado-de-pantalla";
@@ -14,7 +14,9 @@ import { LineaDeAviso } from "@uniformame/interfaz/estados/textos-con-tono";
 import { Panel } from "@uniformame/interfaz/pagina/panel";
 import { Tabla } from "@uniformame/interfaz/tablas/tabla";
 import type { z } from "zod";
+import { useConsulta } from "../../../comun/api.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
+import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { useEnvio } from "../envio.ts";
 import { useDarPin } from "../ventanas/pin.tsx";
 
@@ -39,11 +41,17 @@ function SuPin({ tablet }: { tablet: PersonaConPin["tablet"] }) {
 	);
 }
 
+/** La pestaña PIN del taller: lee `personal.pines` y pinta sus estados. */
+export function PinDePersonal() {
+	const consulta = useConsulta(pinesDelTaller, {});
+	return <SegunConsulta consulta={consulta}>{(datos) => <Contenido datos={datos} />}</SegunConsulta>;
+}
+
 /**
- * PIN del taller de Personal.
+ * Lo que pinta PIN del taller con los datos.
  * @param props Lo que regresa `personal.pines`.
  */
-export function PinDePersonal({ datos }: { datos: Pines }) {
+function Contenido({ datos }: { datos: Pines }) {
 	const conConexion = useConConexion();
 	const pin = useDarPin();
 	const desbloqueo = useEnvio(desbloquearPin);

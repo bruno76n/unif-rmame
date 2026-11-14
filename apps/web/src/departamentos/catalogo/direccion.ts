@@ -66,7 +66,7 @@ const delCajon = ["cajon", "id", "origen", "base", "seccion_alta", "cliente", "d
  * @param pestana La pestaña.
  * @param busqueda Lo que va en la búsqueda; lo vacío no viaja.
  */
-export function direccionDe(pestana: PestanaDeCatalogo, busqueda: BusquedaDeCatalogo): string {
+function direccionDe(pestana: PestanaDeCatalogo, busqueda: BusquedaDeCatalogo): string {
 	return direccionCon(rutaDePestana("catalogo", pestana), busqueda);
 }
 

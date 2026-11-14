@@ -4,7 +4,8 @@
  * tarifa») · «Desde {fecha}»; «Ver historial» suma sus tarifas anteriores con sus fechas.
  * Fase 19 · docs/interfaz/fabrica/personal.md («Tarifas») y docs/modulos/personal/tarifas.md
  *
- * Al salir de una casilla que cambió, manda `personal.poner_tarifa_operacion`; lo capturado se revisa con el esquema del
+ * Lee `personal.tarifas` (solo con «ven sueldos y tarifas»; sin el permiso la consulta no responde y la pantalla dice
+ * que no hay acceso). Al salir de una casilla que cambió, manda `personal.poner_tarifa_operacion`; lo capturado se revisa con el esquema del
  * contrato («Escribe la tarifa en pesos, por ejemplo 1.50»). «Poner tarifa» de Pendientes llega con la operación en la
  * dirección y le pone el foco.
  */
@@ -161,11 +162,21 @@ function TarjetaDeFlujo({ flujo, enfocada }: { flujo: Flujo; enfocada: string | 
 	);
 }
 
+/** La pestaña Tarifas: lee `personal.tarifas` y pinta sus estados. */
+export function TarifasDePersonal() {
+	const consulta = useConsulta(tarifasDelPersonal, {});
+	return (
+		<SegunConsulta consulta={consulta} renglones={8}>
+			{(datos) => <Contenido datos={datos} />}
+		</SegunConsulta>
+	);
+}
+
 /**
- * Tarifas de Personal.
+ * Lo que pinta Tarifas con los datos.
  * @param props Lo que regresa `personal.tarifas`.
  */
-export function TarifasDePersonal({ datos }: { datos: Tarifas }) {
+function Contenido({ datos }: { datos: Tarifas }) {
 	const { busqueda } = useDireccionDePersonal();
 	return (
 		<div className="flex flex-col gap-4">

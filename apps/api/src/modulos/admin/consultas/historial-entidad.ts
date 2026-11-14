@@ -9,7 +9,7 @@
 
 import { historialEntidad } from "@uniformame/compartido/contratos/admin/armazon";
 import { and, desc, eq, lt, or, type SQL, sql } from "drizzle-orm";
-import { veSueldosYTarifas } from "../../../nucleo/acceso/quien.ts";
+import { type CuentaQueLlama, veSueldosYTarifas } from "../../../nucleo/acceso/quien.ts";
 import { sinMontosEnTexto } from "../../../nucleo/acceso/recorte.ts";
 import { cursorDe, leerCursor } from "../../../nucleo/http/consultas.ts";
 import { ErrorDeApi, noExiste } from "../../../nucleo/http/errores.ts";
@@ -22,6 +22,21 @@ const porPagina = 20;
 
 /** Los departamentos que nunca ven montos (ver docs/cimientos/ACCESO-Y-PERMISOS.md). */
 const sinMontos = ["aduana", "bodega"];
+
+/**
+ * Si quien llama ve los montos del historial de un documento: el recorte del módulo dueño. Los ve por un departamento
+ * que lee esa tabla y ve montos (no Aduana ni Bodega); la dueña, siempre; la cuenta de soporte, nunca. Así una cuenta
+ * con Aduana y Mantenimiento no ve los montos de una orden de compra, que lee solo por Aduana.
+ * @param quien La cuenta que llama.
+ * @param lectores Los departamentos que leen la tabla del documento.
+ */
+export function veMontosDelDocumento(quien: CuentaQueLlama, lectores: readonly string[]): boolean {
+	if (quien.esSoporte) return false;
+	if (quien.esDuena) return true;
+	return quien.departamentos.some(
+		(departamento) => lectores.includes(departamento) && !sinMontos.includes(departamento),
+	);
+}
 
 /**
  * Quita a cualquier profundidad los campos de montos (`*_centavos`).
@@ -53,10 +68,7 @@ export const consultaHistorialEntidad = implementarConsulta(
 		if (!quien.esDuena && !lectores.some((departamento) => quien.departamentos.includes(departamento))) {
 			throw new ErrorDeApi("sin_permiso", "sin_departamento");
 		}
-		// La cuenta de soporte nunca recibe un monto; Aduana y Bodega no los ven.
-		const veMontos =
-			!quien.esSoporte &&
-			(quien.esDuena || quien.departamentos.some((departamento) => !sinMontos.includes(departamento)));
+		const veMontos = veMontosDelDocumento(quien, lectores);
 		const veSueldos = veSueldosYTarifas(quien);
 		const posicion = leerCursor(parametros.cursor);
 		const despues: SQL | undefined =

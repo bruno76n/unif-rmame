@@ -7,15 +7,21 @@
  * Todo llega armado de `direccion.pendientes`: la pestaña pone el ícono de cada cifra y de cada tipo, y lleva a donde
  * dice cada uno. «Revisar» abre Autorizaciones; «Ver» lleva al departamento de la alerta, y no sale si la cuenta no lo
  * tiene.
+ *
+ * El filtro del panel va en la dirección (`?grupo=autorizaciones`), así un enlace abre la pantalla tal como estaba.
  */
 
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
-import type { pendientes } from "@uniformame/compartido/contratos/direccion/pendientes";
+import { pendientes } from "@uniformame/compartido/contratos/direccion/pendientes";
 import { BarraIndicadores, type Cifra } from "@uniformame/interfaz/pagina/barra-indicadores";
 import type { ColorDeTipo } from "@uniformame/interfaz/pagina/colores-de-tipo";
 import { PanelPendientes, type Pendiente } from "@uniformame/interfaz/tablas/panel-pendientes";
 import { type LucideIcon, Package, ShieldCheck, ShoppingCart, TriangleAlert, Wallet, Workflow } from "lucide-react";
 import type { z } from "zod";
+import { useConsulta } from "../../../comun/api.tsx";
+import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
+import { busquedaDePendientes, useIrA } from "../direccion.ts";
 
 /** Lo que trae `direccion.pendientes`. */
 type Datos = z.infer<typeof pendientes.resultado>;
@@ -46,11 +52,33 @@ interface PropsDePendientes {
 	ir: (ruta: string) => void;
 }
 
+/** La pestaña Pendientes: lee `direccion.pendientes` y pinta sus estados, con el filtro del panel de la dirección. */
+export function PestanaPendientes() {
+	const { grupo } = useSearch({ from: "/direccion/" });
+	const navegar = useNavigate({ from: "/direccion/" });
+	const ir = useIrA();
+	const leida = useConsulta(pendientes, {});
+	return (
+		<SegunConsulta consulta={leida}>
+			{(datos) => (
+				<Pendientes
+					datos={datos}
+					filtro={grupo ?? "todos"}
+					alEscogerFiltro={(filtro) =>
+						navegar({ search: { grupo: busquedaDePendientes.shape.grupo.catch(undefined).parse(filtro) } })
+					}
+					ir={ir}
+				/>
+			)}
+		</SegunConsulta>
+	);
+}
+
 /**
- * La pestaña Pendientes.
+ * Lo que pinta Pendientes con los datos.
  * @param props Los datos, el filtro y cómo navegar.
  */
-export function PestanaPendientes({ datos, filtro, alEscogerFiltro, ir }: PropsDePendientes) {
+function Pendientes({ datos, filtro, alEscogerFiltro, ir }: PropsDePendientes) {
 	const cifras: Cifra[] = datos.cifras.map((cifra) => ({
 		...deCadaCifra[cifra.clave],
 		clave: cifra.clave,

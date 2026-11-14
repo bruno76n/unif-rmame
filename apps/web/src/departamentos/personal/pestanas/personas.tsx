@@ -4,7 +4,9 @@
  * pago, Tarifa («••••» oculta), Ingreso y Entra al sistema. El renglón abre el cajón de la persona.
  * Fase 19 · docs/interfaz/fabrica/personal.md («Personas»)
  *
- * El área y «Ver tarifas» van en la dirección. Ver las tarifas lo pide la consulta con el permiso y queda en la bitácora.
+ * El área y «Ver tarifas» van en la dirección, y con ellos la pestaña lee `personal.personas`. Ver las tarifas lo pide
+ * la consulta con el permiso y queda en la bitácora. Mientras llega la lista de otra área, la pestaña sigue mostrando
+ * la anterior: el selector no pierde su valor.
  */
 
 import { enPesos } from "@uniformame/compartido/calculos/dinero";
@@ -12,7 +14,7 @@ import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
 import {
 	nombresDeArea,
 	nombresDeFormaDePago,
-	type personasDeLaLista,
+	personasDeLaLista,
 } from "@uniformame/compartido/contratos/personal/personas";
 import { Boton } from "@uniformame/interfaz/botones/boton";
 import { Selector } from "@uniformame/interfaz/captura/selector";
@@ -25,7 +27,9 @@ import { Tabla } from "@uniformame/interfaz/tablas/tabla";
 import { Eye, EyeOff, Plus } from "lucide-react";
 import { useState } from "react";
 import type { z } from "zod";
+import { useConsulta } from "../../../comun/api.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
+import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { useDireccionDePersonal } from "../direccion.ts";
 
 /** Lo que regresa la consulta. */
@@ -39,10 +43,7 @@ type PersonaDeLaLista = Personas["personas"][number];
  * @param area El área de la dirección.
  * @param ver Si se piden las tarifas.
  */
-export function parametrosDePersonas(
-	area: string | undefined,
-	ver: boolean,
-): z.input<typeof personasDeLaLista.entrada> {
+function parametrosDePersonas(area: string | undefined, ver: boolean): z.input<typeof personasDeLaLista.entrada> {
 	const tarifas = ver ? { ver_tarifas: "si" as const } : {};
 	if (area === undefined) return tarifas;
 	if (area.startsWith("tienda:")) return { area: "tienda", ubicacion_id: area.slice("tienda:".length), ...tarifas };
@@ -141,11 +142,27 @@ function TablaDePersonas({
 	);
 }
 
+/** La pestaña Personas: lee `personal.personas` con el área y «Ver tarifas» de la dirección y pinta sus estados. */
+export function PersonasDePersonal() {
+	const { busqueda } = useDireccionDePersonal();
+	const consulta = useConsulta(
+		personasDeLaLista,
+		parametrosDePersonas(busqueda.area, busqueda.ver === "si"),
+		true,
+		true,
+	);
+	return (
+		<SegunConsulta consulta={consulta} renglones={8}>
+			{(datos) => <Contenido datos={datos} />}
+		</SegunConsulta>
+	);
+}
+
 /**
- * Personas de Personal.
+ * Lo que pinta Personas con los datos.
  * @param props Lo que regresa `personal.personas`.
  */
-export function PersonasDePersonal({ datos }: { datos: Personas }) {
+function Contenido({ datos }: { datos: Personas }) {
 	const { busqueda, navegar, abrir } = useDireccionDePersonal();
 	const conConexion = useConConexion();
 	const [plegados, setPlegados] = useState<ReadonlySet<string>>(new Set());

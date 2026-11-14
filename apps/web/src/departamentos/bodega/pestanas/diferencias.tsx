@@ -16,7 +16,7 @@ import { Panel } from "@uniformame/interfaz/pagina/panel";
 import { Seccion, TituloDeBloque } from "@uniformame/interfaz/pagina/seccion";
 import { Tabla } from "@uniformame/interfaz/tablas/tabla";
 import type { z } from "zod";
-import { usePaginas } from "../../../comun/api.tsx";
+import { useConsulta, usePaginas } from "../../../comun/api.tsx";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { useDireccionDeBodega } from "../direccion.ts";
 import { VentanaAclarar } from "../ventanas/aclarar.tsx";
@@ -96,11 +96,17 @@ function Resueltas() {
 	);
 }
 
+/** La pestaña Diferencias: lee `inventario.diferencias` y pinta sus estados; las resueltas van por páginas. */
+export function DiferenciasDeBodega() {
+	const consulta = useConsulta(diferenciasDeBodega, {});
+	return <SegunConsulta consulta={consulta}>{(datos) => <Contenido datos={datos} />}</SegunConsulta>;
+}
+
 /**
- * Diferencias de Bodega.
+ * Lo que pinta la pestaña con los datos.
  * @param props Lo que regresa `inventario.diferencias`.
  */
-export function DiferenciasDeBodega({ datos }: { datos: Diferencias }) {
+function Contenido({ datos }: { datos: Diferencias }) {
 	const { busqueda, navegar, abrir } = useDireccionDeBodega();
 	const recibio = [...new Set(datos.de_recepcion.map((diferencia) => diferencia.recibio))];
 	const porAclarar = [...datos.de_recepcion, ...datos.material].find(

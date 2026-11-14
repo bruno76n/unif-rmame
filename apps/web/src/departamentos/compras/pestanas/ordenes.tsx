@@ -7,7 +7,7 @@
 
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
 import { plural } from "@uniformame/compartido/calculos/textos";
-import type { gruposDeOrdenes, ordenesDeCompra } from "@uniformame/compartido/contratos/compras/consultas-pestanas";
+import { type gruposDeOrdenes, ordenesDeCompra } from "@uniformame/compartido/contratos/compras/consultas-pestanas";
 import { BarraAvance } from "@uniformame/interfaz/avance/barra-avance";
 import type { ColorDeGrupo } from "@uniformame/interfaz/contenedores/grupo-plegable";
 import { GrupoPlegable } from "@uniformame/interfaz/contenedores/grupo-plegable";
@@ -16,7 +16,9 @@ import { EstadoDePantalla } from "@uniformame/interfaz/estados/estado-de-pantall
 import { Tabla } from "@uniformame/interfaz/tablas/tabla";
 import { useState } from "react";
 import type { z } from "zod";
+import { useConsulta } from "../../../comun/api.tsx";
 import { montoEnPantalla } from "../../../comun/montos.ts";
+import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { Buscador } from "../comun.tsx";
 import { useDireccionDeCompras } from "../direccion.ts";
 
@@ -132,11 +134,18 @@ function TablaDeOrdenes({ ordenes, alAbrir }: { ordenes: OrdenDeLaLista[]; alAbr
 	);
 }
 
+/** La pestaña Órdenes de compra: lee `compras.ordenes` con la búsqueda de la dirección y pinta sus estados. */
+export function OrdenesDeCompras() {
+	const { busqueda } = useDireccionDeCompras();
+	const consulta = useConsulta(ordenesDeCompra, { buscar: busqueda.buscar });
+	return <SegunConsulta consulta={consulta}>{({ ordenes }) => <Contenido ordenes={ordenes} />}</SegunConsulta>;
+}
+
 /**
- * La pestaña Órdenes de compra.
+ * Lo que pinta la pestaña con los datos.
  * @param props Lo de `compras.ordenes`.
  */
-export function OrdenesDeCompras({ ordenes }: { ordenes: OrdenDeLaLista[] }) {
+function Contenido({ ordenes }: { ordenes: OrdenDeLaLista[] }) {
 	const { busqueda, ir } = useDireccionDeCompras();
 	// Terminadas empieza plegado; al volver de levantar una orden, Borradores va abierto.
 	const [plegados, setPlegados] = useState<readonly string[]>(["terminadas"]);

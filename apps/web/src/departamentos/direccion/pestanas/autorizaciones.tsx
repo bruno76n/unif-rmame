@@ -10,11 +10,15 @@
  * Decide con `direccion.decidir_autorizacion` desde Dirección, con `useEnvio` de lo común: «Autorizar» manda la
  * decisión tal cual (el cliente pide «Confirmar con Google» si hace falta y la repite con su misma clave); «Rechazar»
  * abre la ventana del motivo. Si la autorización cambió mientras se veía, se dice con su folio y se vuelve a leer.
+ *
+ * Lee `direccion.autorizaciones` con el filtro de la dirección (`?tipo=nota_credito`); un filtro que se quedó sin
+ * tarjetas regresa a «Todas».
  */
 
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
 import {
-	type autorizaciones,
+	autorizaciones,
 	decidirAutorizacion,
 	nombreDelTipoDeAutorizacion,
 } from "@uniformame/compartido/contratos/direccion/autorizaciones";
@@ -27,8 +31,11 @@ import { Tabla } from "@uniformame/interfaz/tablas/tabla";
 import { Check } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { z } from "zod";
+import { useConsulta } from "../../../comun/api.tsx";
 import { useEnvio } from "../../../comun/envio.ts";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
+import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
+import { busquedaDeAutorizaciones } from "../direccion.ts";
 import { VentanaRechazar } from "../ventanas/rechazar.tsx";
 
 /** Lo que trae `direccion.autorizaciones`. */
@@ -131,10 +138,40 @@ function Resultado({ resuelta }: { resuelta: Resuelta }) {
 }
 
 /**
- * La pestaña Autorizaciones.
+ * La pestaña Autorizaciones: lee `direccion.autorizaciones` con el filtro de la dirección y pinta sus estados. Un filtro
+ * que se quedó sin tarjetas regresa a «Todas».
+ */
+export function PestanaAutorizaciones() {
+	const { tipo } = useSearch({ from: "/direccion/autorizaciones" });
+	const navegar = useNavigate({ from: "/direccion/autorizaciones" });
+	const leida = useConsulta(autorizaciones, tipo === undefined ? {} : { tipo });
+	// Un filtro que se quedó sin tarjetas regresa a «Todas».
+	const filtros = leida.data?.filtros;
+	useEffect(() => {
+		if (tipo !== undefined && filtros !== undefined && !filtros.some((filtro) => filtro.tipo === tipo)) {
+			void navegar({ search: {}, replace: true });
+		}
+	}, [tipo, filtros, navegar]);
+	return (
+		<SegunConsulta consulta={leida}>
+			{(datos) => (
+				<Autorizaciones
+					datos={datos}
+					filtro={tipo ?? "todas"}
+					alEscogerFiltro={(filtro) =>
+						navegar({ search: { tipo: busquedaDeAutorizaciones.shape.tipo.catch(undefined).parse(filtro) } })
+					}
+				/>
+			)}
+		</SegunConsulta>
+	);
+}
+
+/**
+ * Lo que pinta Autorizaciones con los datos.
  * @param props Los datos, el filtro y qué hacer al escoger otro.
  */
-export function PestanaAutorizaciones({ datos, filtro, alEscogerFiltro }: PropsDeAutorizaciones) {
+function Autorizaciones({ datos, filtro, alEscogerFiltro }: PropsDeAutorizaciones) {
 	const decidir = useEnvio(decidirAutorizacion, cambianAlDecidir);
 	const conConexion = useConConexion();
 	const [aRechazar, setARechazar] = useState<PorAutorizar | null>(null);

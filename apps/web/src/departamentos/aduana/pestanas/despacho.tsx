@@ -1,28 +1,36 @@
 /**
  * Despacho de Aduana: un grupo por destino (las tiendas, «Clientes externos» y «Bodega»), solo los que tienen algo,
  * con «{n} por despachar · {m} piezas». Qué sale · Cuánto · Aquí desde · «Despachar» o «Sin nota», que abren el cajón
- * Despachar. Vacío: «Nada por despachar.»
+ * Despachar. Vacío: «Nada por despachar.» La pestaña lee `inventario.aduana_despacho`.
  * Fase 19 · docs/interfaz/fabrica/aduana.md («Despacho»)
  */
 
-import type { despachoDeAduana } from "@uniformame/compartido/contratos/inventario/aduana";
+import { despachoDeAduana } from "@uniformame/compartido/contratos/inventario/aduana";
 import { Estado } from "@uniformame/interfaz/estados/estado";
 import { EstadoDePantalla } from "@uniformame/interfaz/estados/estado-de-pantalla";
 import { Panel } from "@uniformame/interfaz/pagina/panel";
 import { Seccion } from "@uniformame/interfaz/pagina/seccion";
 import { Tabla } from "@uniformame/interfaz/tablas/tabla";
 import type { z } from "zod";
+import { useConsulta } from "../../../comun/api.tsx";
+import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { type PartidaEnAduana, useAbrir } from "../comun.tsx";
 import { BotonDePartida, QueEs } from "./partidas.tsx";
 
 /** Lo que regresa la consulta. */
 type Despacho = z.infer<typeof despachoDeAduana.resultado>;
 
+/** La pestaña Despacho: lee `inventario.aduana_despacho` y pinta sus estados. */
+export function DespachoDeAduana() {
+	const consulta = useConsulta(despachoDeAduana, {});
+	return <SegunConsulta consulta={consulta}>{(datos) => <Contenido datos={datos} />}</SegunConsulta>;
+}
+
 /**
- * Despacho.
+ * Lo que pinta Despacho con los datos.
  * @param props Lo que regresa `inventario.aduana_despacho`.
  */
-export function DespachoDeAduana({ datos }: { datos: Despacho }) {
+function Contenido({ datos }: { datos: Despacho }) {
 	const abrir = useAbrir();
 	if (datos.grupos.length === 0) return <EstadoDePantalla tipo="vacio" texto="Nada por despachar." />;
 	return (

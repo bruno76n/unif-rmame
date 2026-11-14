@@ -6,7 +6,7 @@
  */
 
 import { plural } from "@uniformame/compartido/calculos/textos";
-import type { proveedoresDeCompras } from "@uniformame/compartido/contratos/compras/consultas-pestanas";
+import { proveedoresDeCompras } from "@uniformame/compartido/contratos/compras/consultas-pestanas";
 import { reactivarProveedor } from "@uniformame/compartido/contratos/compras/proveedores";
 
 import { BarraAvance } from "@uniformame/interfaz/avance/barra-avance";
@@ -17,8 +17,9 @@ import { Tabla } from "@uniformame/interfaz/tablas/tabla";
 import { Plus } from "lucide-react";
 import { useState } from "react";
 import type { z } from "zod";
-import { useAccion } from "../../../comun/api.tsx";
+import { useAccion, useConsulta } from "../../../comun/api.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
+import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { Buscador } from "../comun.tsx";
 import { useDireccionDeCompras } from "../direccion.ts";
 import { VentanaNuevoProveedor } from "../ventanas/nuevo-proveedor.tsx";
@@ -52,11 +53,20 @@ function PlazoDiceYReal({ proveedor }: { proveedor: Pick<ProveedorDeLaLista, "di
 	);
 }
 
+/** La pestaña Proveedores: lee `compras.proveedores` con la búsqueda y «Dados de baja» de la dirección y pinta sus estados. */
+export function ProveedoresDeCompras() {
+	const { busqueda } = useDireccionDeCompras();
+	const consulta = useConsulta(proveedoresDeCompras, { buscar: busqueda.buscar, incluir_bajas: busqueda.bajas });
+	return (
+		<SegunConsulta consulta={consulta}>{({ proveedores }) => <Contenido proveedores={proveedores} />}</SegunConsulta>
+	);
+}
+
 /**
- * La pestaña Proveedores.
+ * Lo que pinta la pestaña con los datos.
  * @param props Lo de `compras.proveedores`.
  */
-export function ProveedoresDeCompras({ proveedores }: { proveedores: ProveedorDeLaLista[] }) {
+function Contenido({ proveedores }: { proveedores: ProveedorDeLaLista[] }) {
 	const { busqueda, ir } = useDireccionDeCompras();
 	const conConexion = useConConexion();
 	const [nuevo, setNuevo] = useState(false);

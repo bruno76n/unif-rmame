@@ -8,7 +8,7 @@
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
 import { plural } from "@uniformame/compartido/calculos/textos";
 
-import type { maquinasDeMantenimiento } from "@uniformame/compartido/contratos/mantenimiento/consultas-pestanas";
+import { maquinasDeMantenimiento } from "@uniformame/compartido/contratos/mantenimiento/consultas-pestanas";
 import { Boton } from "@uniformame/interfaz/botones/boton";
 import { GrupoPlegable } from "@uniformame/interfaz/contenedores/grupo-plegable";
 import { Estado } from "@uniformame/interfaz/estados/estado";
@@ -19,7 +19,9 @@ import { Tabla } from "@uniformame/interfaz/tablas/tabla";
 import { Plus } from "lucide-react";
 import { useState } from "react";
 import type { z } from "zod";
+import { useConsulta } from "../../../comun/api.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
+import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { useDireccionDeMantenimiento } from "../direccion.ts";
 import { VentanaMaquinaNueva } from "../ventanas/maquina-nueva.tsx";
 
@@ -76,11 +78,17 @@ function TablaDeMaquinas({ maquinas, alTocar }: { maquinas: readonly MaquinaDeAr
 	);
 }
 
+/** La pestaña Máquinas: lee `mantenimiento.maquinas` y pinta sus estados. */
+export function MaquinasDeMantenimiento() {
+	const consulta = useConsulta(maquinasDeMantenimiento, {});
+	return <SegunConsulta consulta={consulta}>{(datos) => <Contenido datos={datos} />}</SegunConsulta>;
+}
+
 /**
- * Máquinas de Mantenimiento.
+ * Lo que pinta Máquinas con los datos.
  * @param props Lo que regresa `mantenimiento.maquinas`.
  */
-export function MaquinasDeMantenimiento({ datos }: { datos: Maquinas }) {
+function Contenido({ datos }: { datos: Maquinas }) {
 	const { abrir } = useDireccionDeMantenimiento();
 	const conConexion = useConConexion();
 	const [plegadas, setPlegadas] = useState<ReadonlySet<string>>(new Set());

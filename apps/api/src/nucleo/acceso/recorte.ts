@@ -22,15 +22,15 @@ const sufijoDeMonto = "_centavos";
  * (`regexp_replace`, en la bitácora) y para JavaScript.
  */
 export const patronDeMonto = "\\$ ?[0-9][0-9,]*(\\.[0-9]+)?";
-/** Cómo queda un monto tapado. */
-export const montoTapado = "$••••";
+/** Cómo queda un monto escrito en un texto, tapado (el de un sueldo en la bitácora es `montoTapado`, «••••»). */
+export const montoEnTextoTapado = "$••••";
 
 /**
  * Un texto sin sus montos: «Pagó FP-1172 por $••••».
  * @param texto El texto.
  */
 export function sinMontosEnTexto(texto: string): string {
-	return texto.replace(new RegExp(patronDeMonto, "g"), montoTapado);
+	return texto.replace(new RegExp(patronDeMonto, "g"), montoEnTextoTapado);
 }
 
 /**

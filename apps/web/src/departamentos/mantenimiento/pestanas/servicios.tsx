@@ -67,15 +67,12 @@ function TablaDeServicios({ servicios }: { servicios: PaginaDeServicios["renglon
 	);
 }
 
-/**
- * Servicios de Mantenimiento.
- * @param props El año de la dirección; sin él, el actual.
- */
-export function ServiciosDeMantenimiento({ anio }: { anio: number | undefined }) {
-	const { navegar } = useDireccionDeMantenimiento();
+/** La pestaña Servicios: lee `mantenimiento.servicios` por páginas con el año de la dirección (sin él, el actual). */
+export function ServiciosDeMantenimiento() {
+	const { busqueda, navegar } = useDireccionDeMantenimiento();
 	const conConexion = useConConexion();
 	const [registrando, setRegistrando] = useState(false);
-	const paginas = usePaginas(serviciosDeMantenimiento, anio === undefined ? {} : { anio });
+	const paginas = usePaginas(serviciosDeMantenimiento, busqueda.anio === undefined ? {} : { anio: busqueda.anio });
 	return (
 		<SegunConsulta consulta={paginas}>
 			{({ pages }) => {

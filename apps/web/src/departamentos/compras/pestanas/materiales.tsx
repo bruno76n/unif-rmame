@@ -8,7 +8,7 @@
 import { cantidadConUnidad } from "@uniformame/compartido/calculos/compras";
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
 import { plural } from "@uniformame/compartido/calculos/textos";
-import type { materialesDeCompras } from "@uniformame/compartido/contratos/compras/consultas-pestanas";
+import { materialesDeCompras } from "@uniformame/compartido/contratos/compras/consultas-pestanas";
 import { reactivarMaterial } from "@uniformame/compartido/contratos/compras/materiales";
 import { BarraAvance } from "@uniformame/interfaz/avance/barra-avance";
 import { Boton } from "@uniformame/interfaz/botones/boton";
@@ -22,9 +22,10 @@ import { Tabla } from "@uniformame/interfaz/tablas/tabla";
 import { Plus } from "lucide-react";
 import { useState } from "react";
 import type { z } from "zod";
-import { useAccion } from "../../../comun/api.tsx";
+import { useAccion, useConsulta } from "../../../comun/api.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
 import { montoEnPantalla } from "../../../comun/montos.ts";
+import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { Buscador } from "../comun.tsx";
 import { useDireccionDeCompras } from "../direccion.ts";
 import { VentanaNuevoMaterial } from "../ventanas/nuevo-material.tsx";
@@ -178,11 +179,18 @@ function TablaDeMateriales({
 	);
 }
 
+/** La pestaña Materiales: lee `compras.materiales` con la búsqueda y «Dados de baja» de la dirección y pinta sus estados. */
+export function MaterialesDeCompras() {
+	const { busqueda } = useDireccionDeCompras();
+	const consulta = useConsulta(materialesDeCompras, { buscar: busqueda.buscar, incluir_bajas: busqueda.bajas });
+	return <SegunConsulta consulta={consulta}>{(datos) => <Contenido datos={datos} />}</SegunConsulta>;
+}
+
 /**
- * La pestaña Materiales.
+ * Lo que pinta la pestaña con los datos.
  * @param props Lo de `compras.materiales`.
  */
-export function MaterialesDeCompras({ datos }: { datos: Materiales }) {
+function Contenido({ datos }: { datos: Materiales }) {
 	const { busqueda, ir } = useDireccionDeCompras();
 	const conConexion = useConConexion();
 	const [nuevo, setNuevo] = useState(false);

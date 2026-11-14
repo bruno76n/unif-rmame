@@ -5,12 +5,14 @@
  */
 
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
-import type { pendientesDeCompras } from "@uniformame/compartido/contratos/compras/consultas-pestanas";
+import { pendientesDeCompras } from "@uniformame/compartido/contratos/compras/consultas-pestanas";
 import { BarraIndicadores } from "@uniformame/interfaz/pagina/barra-indicadores";
 import { PanelPendientes } from "@uniformame/interfaz/tablas/panel-pendientes";
 import { Package, ReceiptText, ShoppingCart, Truck, Users } from "lucide-react";
 import type { z } from "zod";
+import { useConsulta } from "../../../comun/api.tsx";
 import { rutaDePestana } from "../../../comun/pagina-de-departamento.tsx";
+import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { useDireccionDeCompras } from "../direccion.ts";
 
 /** Lo que regresa la consulta. */
@@ -101,11 +103,17 @@ function Indicadores({
 	);
 }
 
+/** La pestaña Pendientes: lee `compras.pendientes` y pinta sus estados. */
+export function PendientesDeCompras() {
+	const consulta = useConsulta(pendientesDeCompras, {});
+	return <SegunConsulta consulta={consulta}>{(datos) => <Contenido datos={datos} />}</SegunConsulta>;
+}
+
 /**
- * Pendientes de Compras.
+ * Lo que pinta la pestaña con los datos.
  * @param props Lo que regresa `compras.pendientes`.
  */
-export function PendientesDeCompras({ datos }: { datos: Pendientes }) {
+function Contenido({ datos }: { datos: Pendientes }) {
 	const { busqueda, ir } = useDireccionDeCompras();
 	const irAPestana = (pestana: string) => ir({}, rutaDePestana("compras", pestana));
 	const { indicadores, renglones, conteos } = datos;

@@ -20,7 +20,7 @@ import { type ColumnaDeTabla, Tabla } from "@uniformame/interfaz/tablas/tabla";
 import { ClipboardList, PackagePlus } from "lucide-react";
 import { useState } from "react";
 import type { z } from "zod";
-import { usePaginas } from "../../../comun/api.tsx";
+import { useConsulta, usePaginas } from "../../../comun/api.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { VentanaConMotivo } from "../../../comun/ventana-con-motivo.tsx";
@@ -253,11 +253,17 @@ function Resueltos() {
 	);
 }
 
+/** La pestaña Conteos y ajustes: lee `inventario.conteos_y_ajustes` y pinta sus estados; lo demás va por páginas. */
+export function ConteosDeBodega() {
+	const consulta = useConsulta(conteosYAjustesDeBodega, {});
+	return <SegunConsulta consulta={consulta}>{(datos) => <Contenido datos={datos} />}</SegunConsulta>;
+}
+
 /**
- * Conteos y ajustes de Bodega.
+ * Lo que pinta la pestaña con los datos.
  * @param props Lo que regresa `inventario.conteos_y_ajustes`.
  */
-export function ConteosDeBodega({ datos }: { datos: ConteosYAjustes }) {
+function Contenido({ datos }: { datos: ConteosYAjustes }) {
 	const { abrir } = useDireccionDeBodega();
 	return (
 		<div className="flex flex-col gap-6">

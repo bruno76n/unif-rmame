@@ -3,7 +3,7 @@
  * cuántas fallas trae; el que no tiene fallas no sale. Cada renglón abre el cajón Falla.
  * Fase 19 · docs/interfaz/fabrica/mantenimiento.md («Fallas»)
  *
- * Las resueltas se piden por páginas solo al desplegarlas.
+ * Las abiertas llegan de `mantenimiento.fallas`; las resueltas se piden por páginas solo al desplegarlas.
  */
 
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
@@ -18,7 +18,7 @@ import { DosRenglones } from "@uniformame/interfaz/tablas/dos-renglones";
 import { Tabla } from "@uniformame/interfaz/tablas/tabla";
 import { useState } from "react";
 import type { z } from "zod";
-import { usePaginas } from "../../../comun/api.tsx";
+import { useConsulta, usePaginas } from "../../../comun/api.tsx";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { useDireccionDeMantenimiento } from "../direccion.ts";
 
@@ -96,11 +96,17 @@ function Resueltas({ alTocar }: { alTocar: (id: string) => void }) {
 	);
 }
 
+/** La pestaña Fallas: lee las abiertas de `mantenimiento.fallas` y pinta sus estados. */
+export function FallasDeMantenimiento() {
+	const consulta = useConsulta(fallasDeMantenimiento, { grupo: "abiertas" });
+	return <SegunConsulta consulta={consulta}>{(abiertas) => <Contenido abiertas={abiertas} />}</SegunConsulta>;
+}
+
 /**
- * Fallas de Mantenimiento.
+ * Lo que pinta Fallas con los datos.
  * @param props Las abiertas, de `mantenimiento.fallas`, con los conteos de los dos grupos.
  */
-export function FallasDeMantenimiento({ abiertas }: { abiertas: Fallas }) {
+function Contenido({ abiertas }: { abiertas: Fallas }) {
 	const { abrir } = useDireccionDeMantenimiento();
 	const [abiertasDesplegadas, setAbiertasDesplegadas] = useState(true);
 	const [resueltasDesplegadas, setResueltasDesplegadas] = useState(false);

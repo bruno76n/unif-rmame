@@ -7,13 +7,15 @@
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
 import { plural } from "@uniformame/compartido/calculos/textos";
 
-import type { pendientesDeMantenimiento } from "@uniformame/compartido/contratos/mantenimiento/consultas-pestanas";
+import { pendientesDeMantenimiento } from "@uniformame/compartido/contratos/mantenimiento/consultas-pestanas";
 import type { Contexto } from "@uniformame/interfaz/pagina/barra-indicadores";
 import { BarraIndicadores } from "@uniformame/interfaz/pagina/barra-indicadores";
 import { PanelPendientes } from "@uniformame/interfaz/tablas/panel-pendientes";
 import { TriangleAlert, Wallet, Wrench } from "lucide-react";
 import type { z } from "zod";
+import { useConsulta } from "../../../comun/api.tsx";
 import { montoEnPantalla } from "../../../comun/montos.ts";
+import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { type PestanaDeMantenimiento, useDireccionDeMantenimiento } from "../direccion.ts";
 
 /** Lo que regresa la consulta. */
@@ -94,11 +96,17 @@ function Indicadores({
 	);
 }
 
+/** La pestaña Pendientes: lee `mantenimiento.pendientes` y pinta sus estados. */
+export function PendientesDeMantenimiento() {
+	const consulta = useConsulta(pendientesDeMantenimiento, {});
+	return <SegunConsulta consulta={consulta}>{(datos) => <Contenido datos={datos} />}</SegunConsulta>;
+}
+
 /**
- * Pendientes de Mantenimiento.
+ * Lo que pinta Pendientes con los datos.
  * @param props Lo que regresa `mantenimiento.pendientes`.
  */
-export function PendientesDeMantenimiento({ datos }: { datos: Pendientes }) {
+function Contenido({ datos }: { datos: Pendientes }) {
 	const { navegar, abrir } = useDireccionDeMantenimiento();
 	return (
 		<div className="flex flex-col gap-5">

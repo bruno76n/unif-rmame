@@ -8,7 +8,7 @@
  * La cuenta llega hecha de `inventario.reabasto`; la pantalla solo la muestra y manda lo que dice.
  */
 
-import type { gruposDeReabasto, reabastoDeBodega } from "@uniformame/compartido/contratos/inventario/bodega";
+import { type gruposDeReabasto, reabastoDeBodega } from "@uniformame/compartido/contratos/inventario/bodega";
 import { moverATienda, sugerirFabricar } from "@uniformame/compartido/contratos/inventario/reabasto";
 import { Boton } from "@uniformame/interfaz/botones/boton";
 import { GrupoPlegable } from "@uniformame/interfaz/contenedores/grupo-plegable";
@@ -18,7 +18,9 @@ import { Panel } from "@uniformame/interfaz/pagina/panel";
 import { Tabla } from "@uniformame/interfaz/tablas/tabla";
 import { useState } from "react";
 import type { z } from "zod";
+import { useConsulta } from "../../../comun/api.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
+import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { VarianteEnDosRenglones } from "../comun.tsx";
 import { useDireccionDeBodega } from "../direccion.ts";
 import { useEnvio } from "../envio.ts";
@@ -65,11 +67,17 @@ function Propuesta({ renglon }: { renglon: Renglon }) {
 	);
 }
 
+/** La pestaña Reabasto: lee `inventario.reabasto` y pinta sus estados. */
+export function ReabastoDeBodega() {
+	const consulta = useConsulta(reabastoDeBodega, {});
+	return <SegunConsulta consulta={consulta}>{(datos) => <Contenido datos={datos} />}</SegunConsulta>;
+}
+
 /**
- * Reabasto de Bodega.
+ * Lo que pinta la pestaña con los datos.
  * @param props Lo que regresa `inventario.reabasto`.
  */
-export function ReabastoDeBodega({ datos }: { datos: Reabasto }) {
+function Contenido({ datos }: { datos: Reabasto }) {
 	const { abrir } = useDireccionDeBodega();
 	const conConexion = useConConexion();
 	const mover = useEnvio(moverATienda);

@@ -12,7 +12,7 @@ import { useBusquedaDeDepartamento } from "../../comun/direccion.ts";
 import { rutaDePestana } from "../../comun/pagina-de-departamento.tsx";
 
 /** Los cajones de Ventas que se abren por la dirección. */
-export const cajonesDeVentas = ["pedido", "nuevo", "modificar", "mandar", "armar", "nota", "cliente"] as const;
+const cajonesDeVentas = ["pedido", "nuevo", "modificar", "mandar", "armar", "nota", "cliente"] as const;
 
 /** Un cajón de Ventas. */
 export type CajonDeVentas = (typeof cajonesDeVentas)[number];

@@ -114,7 +114,7 @@ Al centro, por unos 3 segundos: verde con palomita cuando algo se hizo y ámbar 
 | **Quién** | Quien puede ver ese documento: lo responde su módulo |
 | **Recibe** | `entidad` · `entidad_id` · `cursor` |
 | **Regresa** | Por cada cambio del documento en la [bitácora](../modulos/admin/bitacora.md) (no las consultas sensibles ni los accesos): cuándo, quién, departamento, qué pasó, y su antes y después |
-| **Recorte** | El del módulo dueño sobre el antes y el después (Aduana nunca ve precios ahí) y el de sueldos |
+| **Recorte** | El del módulo dueño sobre el antes, el después y los montos escritos en la descripción: los ve quien lee la tabla por un departamento que ve montos (Aduana y Bodega nunca ven precios ahí, y la cuenta de soporte nunca un monto); y el de sueldos (`veMontosDelDocumento`, decisión 809) |
 
 ## Los estados de una pantalla
 

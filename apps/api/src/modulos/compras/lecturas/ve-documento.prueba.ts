@@ -8,11 +8,13 @@
 import { v7 as uuidv7 } from "uuid";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { crearAlmacen, direccionDeR2 } from "../../../nucleo/almacen.ts";
+import { quienesDePrueba } from "../../../nucleo/pruebas/cuentas-de-prueba.ts";
 import {
 	crearServidorDePrueba,
 	encabezadosDeLaWeb,
 	type ServidorDePrueba,
 } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
+import { veDocumento } from "./ve-documento.ts";
 
 /** El almacén de las pruebas: abrir un archivo solo firma su dirección, no la visita. */
 const almacen = crearAlmacen({
@@ -72,5 +74,18 @@ describe("el PDF de una orden de compra lo abre quien ve sus precios", () => {
 	it("un archivo de otro documento de Compras no lo abre nadie (404)", async () => {
 		const otro = await archivoDe("proveedores", "pdf_documento");
 		expect(await abrir(otro, "compras")).toBe(404);
+	});
+});
+
+describe("la cuenta de soporte nunca abre el PDF de una orden, aunque tenga Compras", () => {
+	it("con Compras, soporte no lo ve: el PDF lleva precios e importes, y soporte nunca recibe un monto", async () => {
+		const soporte = quienesDePrueba.soporte;
+		if (soporte?.tipo !== "cuenta") throw new Error("falta la cuenta de soporte de prueba");
+		const conCompras = { ...soporte, departamentos: [...soporte.departamentos, "compras"] };
+		const ordenes = { entidad: "ordenes_compra", entidad_id: uuidv7() };
+		expect(await veDocumento({ quien: conCompras }, ordenes)).toBe(false);
+		const compras = quienesDePrueba.compras;
+		if (compras === undefined) throw new Error("falta la cuenta de Compras de prueba");
+		expect(await veDocumento({ quien: compras }, ordenes)).toBe(true);
 	});
 });

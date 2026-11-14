@@ -30,8 +30,8 @@ export interface TelaPorEntregar {
 }
 
 /**
- * Si cada tela alcanza con sus propios rollos: lo que sobra de una nunca tapa lo que falta de otra. Una tela sin rollos
- * marcados no alcanza.
+ * Si cada tela alcanza con sus propios rollos: lo que sobra de una nunca tapa lo que falta de otra. Una tela que pide algo
+ * y no tiene rollos marcados no alcanza; una que no pide nada, sí.
  * @param telas Las telas por entregar, con sus rollos marcados.
  * @returns Verdadero solo si todas alcanzan. Lo pinta el cajón Entrega al corte de Bodega (verde o rojo).
  */

@@ -10,7 +10,7 @@ import { textoDeDiaCorto, zonaDelNegocio } from "@uniformame/compartido/calculos
 import { and, asc, eq, not, type SQL, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { Temporal } from "temporal-polyfill";
-import { montoTapado, patronDeMonto } from "../../../nucleo/acceso/recorte.ts";
+import { montoEnTextoTapado, patronDeMonto } from "../../../nucleo/acceso/recorte.ts";
 import type { Base } from "../../../nucleo/base/conexion.ts";
 import { autorizaciones } from "../../direccion/tablas.ts";
 import { personas } from "../../personal/tablas.ts";
@@ -156,5 +156,5 @@ export async function altasPorConfirmar(base: Base) {
  * @param descripcion La expresión de la descripción.
  */
 export function sinMontosEnLaBase(descripcion: SQL<string>): SQL<string> {
-	return sql<string>`regexp_replace(${descripcion}, ${patronDeMonto}, ${montoTapado}, 'g')`;
+	return sql<string>`regexp_replace(${descripcion}, ${patronDeMonto}, ${montoEnTextoTapado}, 'g')`;
 }

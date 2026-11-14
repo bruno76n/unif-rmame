@@ -2,17 +2,19 @@
  * Recepción de Aduana: cuatro grupos que siempre salen (Del taller, De bodega, De proveedores y De las tiendas y de
  * clientes), cada uno con «{n} por recibir · {descripción}» o «Nada por recibir», y su tabla: Qué llega · Cuánto · Va a
  * · «Recibir», que abre su cajón. «Ver todas las órdenes por recibir», en De proveedores, agrega las que no entran en
- * la ventana de días.
+ * la ventana de días (va en la dirección). La pestaña lee `inventario.aduana_recepcion`.
  * Fase 19 · docs/interfaz/fabrica/aduana.md («Recepción»)
  */
 
-import type { recepcionDeAduana } from "@uniformame/compartido/contratos/inventario/aduana";
+import { recepcionDeAduana } from "@uniformame/compartido/contratos/inventario/aduana";
 import { Boton } from "@uniformame/interfaz/botones/boton";
 import { Panel } from "@uniformame/interfaz/pagina/panel";
 import { Seccion } from "@uniformame/interfaz/pagina/seccion";
 import { DosRenglones } from "@uniformame/interfaz/tablas/dos-renglones";
 import { Tabla } from "@uniformame/interfaz/tablas/tabla";
 import type { z } from "zod";
+import { useConsulta } from "../../../comun/api.tsx";
+import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { DestinoConPunto, useAbrir } from "../comun.tsx";
 import { useDireccionDeAduana } from "../direccion.ts";
 
@@ -23,10 +25,20 @@ type Recepcion = z.infer<typeof recepcionDeAduana.resultado>;
 type Renglon = Recepcion["grupos"][number]["renglones"][number];
 
 /**
- * Recepción.
+ * La pestaña Recepción: lee `inventario.aduana_recepcion`, con todas las órdenes si la dirección lo dice, y pinta sus
+ * estados.
+ */
+export function RecepcionDeAduana() {
+	const { busqueda } = useDireccionDeAduana();
+	const consulta = useConsulta(recepcionDeAduana, busqueda.todas === undefined ? {} : { todas_las_ordenes: true });
+	return <SegunConsulta consulta={consulta}>{(datos) => <Contenido datos={datos} />}</SegunConsulta>;
+}
+
+/**
+ * Lo que pinta Recepción con los datos.
  * @param props Lo que regresa `inventario.aduana_recepcion`.
  */
-export function RecepcionDeAduana({ datos }: { datos: Recepcion }) {
+function Contenido({ datos }: { datos: Recepcion }) {
 	const abrir = useAbrir();
 	const { busqueda, navegar } = useDireccionDeAduana();
 	return (

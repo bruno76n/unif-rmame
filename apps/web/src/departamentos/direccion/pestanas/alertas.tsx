@@ -1,25 +1,36 @@
 /**
  * La pestaña Alertas cruzadas de Dirección: una tarjeta por alerta, con su orilla roja o ámbar a la izquierda, el
  * título en negritas, el detalle, «Cruza: {departamentos}» y «Ver ›», que lleva al departamento de la alerta y no sale
- * si la cuenta no lo tiene.
+ * si la cuenta no lo tiene. La pestaña lee `direccion.alertas`, y «Ver» lleva a la dirección del otro departamento
+ * (su pestaña y, en la de un lote, su cajón), sin importar su componente.
  * Fase 19 · docs/interfaz/fabrica/direccion.md («Alertas cruzadas»)
  */
 
-import type { alertas } from "@uniformame/compartido/contratos/direccion/alertas";
+import { alertas } from "@uniformame/compartido/contratos/direccion/alertas";
 import { Boton } from "@uniformame/interfaz/botones/boton";
 import { Tarjeta } from "@uniformame/interfaz/contenedores/tarjeta";
 import { EstadoDePantalla } from "@uniformame/interfaz/estados/estado-de-pantalla";
 import { ChevronRight } from "lucide-react";
 import type { z } from "zod";
+import { useConsulta } from "../../../comun/api.tsx";
+import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
+import { useIrA } from "../direccion.ts";
 
 /** Lo que trae `direccion.alertas`. */
 type Datos = z.infer<typeof alertas.resultado>;
 
+/** La pestaña Alertas cruzadas: lee `direccion.alertas` y pinta sus estados. */
+export function PestanaAlertas() {
+	const ir = useIrA();
+	const leida = useConsulta(alertas, {});
+	return <SegunConsulta consulta={leida}>{(datos) => <Alertas datos={datos} ir={ir} />}</SegunConsulta>;
+}
+
 /**
- * La pestaña Alertas cruzadas.
+ * Lo que pinta Alertas cruzadas con los datos.
  * @param props Las alertas y cómo navegar.
  */
-export function PestanaAlertas({ datos, ir }: { datos: Datos; ir: (ruta: string) => void }) {
+function Alertas({ datos, ir }: { datos: Datos; ir: (ruta: string) => void }) {
 	if (datos.alertas.length === 0) return <EstadoDePantalla tipo="vacio" texto="Nada fuera de lo normal" bien />;
 	return (
 		<div className="flex flex-col gap-3">

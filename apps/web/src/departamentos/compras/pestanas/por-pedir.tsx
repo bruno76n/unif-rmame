@@ -12,7 +12,7 @@
 import { cantidadConUnidad } from "@uniformame/compartido/calculos/compras";
 import { diasHasta, sumarDias, textoDeDia, textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
 import { plural } from "@uniformame/compartido/calculos/textos";
-import type { porPedir } from "@uniformame/compartido/contratos/compras/consultas-pestanas";
+import { porPedir } from "@uniformame/compartido/contratos/compras/consultas-pestanas";
 import { Boton } from "@uniformame/interfaz/botones/boton";
 import { Casilla } from "@uniformame/interfaz/captura/casilla";
 import { Filtros } from "@uniformame/interfaz/captura/filtros";
@@ -25,6 +25,8 @@ import { MuestraDeColor } from "@uniformame/interfaz/estados/muestra-de-color";
 import { Flag, Plus, Triangle, X } from "lucide-react";
 import { useState } from "react";
 import type { z } from "zod";
+import { useConsulta } from "../../../comun/api.tsx";
+import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { Buscador } from "../comun.tsx";
 import { useDireccionDeCompras } from "../direccion.ts";
 
@@ -251,19 +253,36 @@ function Renglon({
 	);
 }
 
-/**
- * La pestaña Por pedir.
- * @param props Lo de `compras.por_pedir`, lo escogido y cómo cambiarlo.
- */
-export function PorPedirDeCompras({
-	datos,
-	escogidos,
-	alEscoger,
-}: {
-	datos: PorPedir;
+/** Lo escogido en Por pedir y cómo cambiarlo: vive en la ruta, porque «Levantar orden» de la página lo lleva. */
+interface Escogidos {
 	escogidos: readonly string[];
 	alEscoger: (escogidos: string[]) => void;
-}) {
+}
+
+/**
+ * La pestaña Por pedir: lee `compras.por_pedir` con la búsqueda, el proveedor y el horizonte de la dirección y pinta sus
+ * estados.
+ * @param props Lo escogido y cómo cambiarlo.
+ */
+export function PorPedirDeCompras({ escogidos, alEscoger }: Escogidos) {
+	const { busqueda } = useDireccionDeCompras();
+	const consulta = useConsulta(porPedir, {
+		buscar: busqueda.buscar,
+		proveedor_id: busqueda.proveedor,
+		horizonte: busqueda.horizonte,
+	});
+	return (
+		<SegunConsulta consulta={consulta}>
+			{(datos) => <Contenido datos={datos} escogidos={escogidos} alEscoger={alEscoger} />}
+		</SegunConsulta>
+	);
+}
+
+/**
+ * Lo que pinta la pestaña con los datos.
+ * @param props Lo de `compras.por_pedir`, lo escogido y cómo cambiarlo.
+ */
+function Contenido({ datos, escogidos, alEscoger }: Escogidos & { datos: PorPedir }) {
 	const { busqueda, ir } = useDireccionDeCompras();
 	// «Alcanza» empieza plegado.
 	const [plegados, setPlegados] = useState<readonly string[]>(["alcanza"]);
