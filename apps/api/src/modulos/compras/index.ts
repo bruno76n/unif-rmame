@@ -42,6 +42,7 @@ import { consultaPendientesDeCompras, pastillaCompras } from "./consultas/pendie
 import { consultaPorPedir } from "./consultas/por-pedir.ts";
 import { consultaProveedor } from "./consultas/proveedor.ts";
 import { consultaProveedores } from "./consultas/proveedores.ts";
+import { tipoOrdenCompra } from "./impresion.ts";
 import {
 	cerrarOrdenPagada,
 	reabrirOrdenPagada,
@@ -108,5 +109,6 @@ export default definirModulo({
 	semillas: [semillaDeUnidades, semillaDeParametrosDeCompras],
 	pastillas: { compras: pastillaCompras },
 	bajada: bajadaDeCompras,
+	tiposDeEtiqueta: [tipoOrdenCompra],
 	lectores: lectoresDeCompras,
 });

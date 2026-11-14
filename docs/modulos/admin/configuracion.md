@@ -218,6 +218,16 @@ Dentro de una acción, cada clave se lee una sola vez y se recuerda hasta que la
 
 Existe para que ningún módulo lea `lista_valores` por su cuenta (decisión 783). Vive en `modulos/admin/lecturas/valores-de-lista.ts`.
 
+### `admin.empresa`
+
+| | |
+|---|---|
+| **La usan** | Las hojas en PDF, para su encabezado (ver [hojas](../../impresos/hojas.md#reglas)); Compras, para «Entregar en Aduana: {domicilio}» |
+| **Recibe** | Nada |
+| **Regresa** | `nombre_comercial` · `razon_social` · `rfc` · `domicilio` |
+
+Existe para que ningún módulo lea `empresa` por su cuenta (decisión 811). Vive en `modulos/admin/lecturas/empresa.ts`.
+
 ## Parámetros
 
 | Parámetro | Valor inicial | Para qué |

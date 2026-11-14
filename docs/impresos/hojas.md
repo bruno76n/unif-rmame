@@ -67,9 +67,21 @@ Tipo `lote`, del módulo `produccion`. La saca Producción.
 ## Cómo se prueba
 
 - **Cada hoja,** con los datos de la muestra: trae el texto esperado, se parte bien en varias hojas y repite el encabezado de su tabla.
-- **El recorte:** la nota que pide Aduana no trae un solo peso; la del despacho y la del lote tampoco, las pida quien las pida; una cuenta sin el departamento recibe `404`.
+- **El recorte:** la nota que pide Aduana no trae un solo peso; la del despacho y la del lote tampoco, las pida quien las pida; una cuenta sin el departamento recibe `403`, como en las etiquetas (decisión 811).
 - **La orden de compra:** el PDF guardado al enviarla no cambia aunque después cambien el proveedor o la nota del proveedor.
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 20.*
+**Fase 20, parte 2.**
+
+- **Lo común** (`apps/api/src/impresos/hoja.ts`): `hojaPdf` arma la hoja carta con React-PDF (márgenes de 42.5 puntos, Helvetica de 10), su encabezado con la empresa y su nombre, folio y fecha, y el pie fijo con «Hoja {n} de {total}» y «Sacada el…». `datosPdf`, `subtituloPdf`, `tablaPdf` (su renglón de títulos es fijo, así se repite en cada hoja; cada renglón no se parte) y `firmasPdf` son sus piezas. Sin JSX: Node corre el archivo tal cual, con `createElement`.
+- **El marco** (`apps/api/src/nucleo/hojas.ts`): `marcoDeLaHoja` lee la empresa con la lectura `admin.empresa` (ver [configuración](../modulos/admin/configuracion.md#adminempresa)) y el nombre de quien la pide con `nombreDeCuenta`, y escribe la fecha y la hora de México (`textoDeDiaConAnio` y `textoDeHora` del paquete compartido).
+- **Los dibujos** (`impresos/hojas/orden-compra.ts`, `pedido.ts`, `nota-entrega.ts`, `despacho.ts` y `lote.ts`) reciben todo ya escrito. A la nota de quien no ve precios no le llega nada de dinero: su dibujo deja fuera Precio, Importe y las cuentas.
+- **Los tipos,** en el `impresion.ts` de su módulo:
+  - `orden_compra` (`compras`; Compras y Contaduría): la condición de la orden o, mientras se envía, la del proveedor; se entrega en el domicilio de la empresa. `compras.marcar_orden_enviada` la arma y la guarda como `pdf_documento`;
+  - `pedido` (`ventas`; Ventas): un renglón por prenda y precio, así las tallas especiales van en el suyo con «(especiales)»; «{n} de {m} piezas entregadas» del avance de Ventas, si ya hubo notas. Un borrador da `422 pedido_no_confirmado`;
+  - `nota_entrega` (`ventas`; Ventas, Contaduría y Aduana): ven precios Ventas, Contaduría y Dirección, como en su cajón. «Por cobrar» es el subtotal menos el anticipo aplicado y las notas de crédito autorizadas; a crédito, ya entregada, «Vence el {fecha}» a sus días. Los descuentos van con «-»: la Helvetica del PDF no trae «−»;
+  - `despacho` (`inventario`; Aduana): cada traspaso con su folio y de qué es, su tabla de prendas o de rollos y el total de piezas;
+  - `lote` (`produccion`; Producción): solo de un lote cortado (`422 lote_sin_cortar`); sus partidas son las de los rollos apartados de la tela principal.
+- **Los botones** abren la hoja en otra pestaña con `abrirHoja` (`apps/web/src/comun/hojas.ts`): «PDF» en los cajones del pedido y de la nota, «Hoja del lote» en el del lote y «Hoja» en cada despacho de En tránsito.
+- **Las pruebas,** en `apps/api/src/impresos/hojas/`: `orden-compra.prueba.ts`, `ventas.prueba.ts` (el pedido y la nota con la muestra, con y sin precios), `despacho.prueba.ts` y `lote.prueba.ts` (también que se parte en dos hojas con el encabezado de su tabla). Que el PDF de la orden no cambie después de enviarla, en `modulos/compras/acciones/marcar-orden-enviada.prueba.ts`. «Hoja» de En tránsito, en `apps/web/src/departamentos/aduana/aduana.prueba.ts`.

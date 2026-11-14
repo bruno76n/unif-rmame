@@ -26,6 +26,7 @@ import { useState } from "react";
 import type { z } from "zod";
 import { useConsulta } from "../../../comun/api.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
+import { abrirHoja } from "../../../comun/hojas.ts";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { useTieneDepartamento } from "../../../comun/tiene-departamento.ts";
 import { VentanaConMotivo } from "../../../comun/ventana-con-motivo.tsx";
@@ -33,7 +34,6 @@ import { useDireccionDeVentas } from "../direccion.ts";
 import { useEnvio } from "../envio.ts";
 import { VentanaConfirmarEntrega } from "../ventanas/confirmar-entrega.tsx";
 import { VentanaNotaCredito } from "../ventanas/nota-credito.tsx";
-import { abrirHoja } from "./pedido.tsx";
 
 /** Lo que da la consulta. */
 type Nota = z.infer<typeof notaEntregaVentas.resultado>;

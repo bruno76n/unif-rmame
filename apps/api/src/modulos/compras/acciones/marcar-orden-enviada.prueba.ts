@@ -7,7 +7,6 @@
 
 import { crearSimuladorDeR2 } from "@uniformame/pruebas/simuladores/r2";
 import { setupServer } from "msw/node";
-import { v7 as uuidv7 } from "uuid";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { crearAlmacen, direccionDeR2 } from "../../../nucleo/almacen.ts";
 import {
@@ -18,6 +17,7 @@ import {
 	levantarDePrueba,
 	versionDe,
 } from "../../../nucleo/pruebas/compras-de-prueba.ts";
+import { leerPdf } from "../../../nucleo/pruebas/leer-impresos.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 
@@ -130,20 +130,18 @@ describe("Enviar congela cantidades y precios, copia la condición, guarda el PD
 		);
 	});
 
-	it("si el PDF falla, la orden sigue en borrador y nada del historial cambia", async () => {
+	it("si el PDF no se guarda, la orden sigue en borrador y nada del historial cambia", async () => {
 		const proveedor = await altaDeProveedor(servidor);
 		const material = await altaDeMaterial(servidor, proveedor);
 		const orden = await levantarDePrueba(servidor, [
 			{ material_id: material, proveedor_id: proveedor, cantidad: 10, precio_centavos: 99 },
 		]);
-		await servidor.base.dueno.query(
-			"INSERT INTO prueba_notas (id, texto, monto_centavos) VALUES ($1, 'falla:hoja', 0)",
-			[uuidv7()],
-		);
+		// El almacén no responde: el PDF de la hoja no se puede guardar.
+		simulador.ponerAFallar("error_del_servidor");
 		try {
-			expect((await enviarDePrueba(servidor, orden.id)).estado).toBe(500);
+			expect((await enviarDePrueba(servidor, orden.id)).estado).toBeGreaterThanOrEqual(500);
 		} finally {
-			await servidor.base.dueno.query("UPDATE prueba_notas SET texto = 'ya no falla' WHERE texto = 'falla:hoja'");
+			simulador.ponerAFallar("ninguna");
 		}
 		const { rows } = await servidor.base.dueno.query(
 			"SELECT estado, pdf_archivo_id FROM ordenes_compra WHERE id = $1",
@@ -155,6 +153,48 @@ describe("Enviar congela cantidades y precios, copia la condición, guarda el PD
 			[material],
 		);
 		expect(historial[0]?.n).toBe(0);
+	});
+
+	it("el PDF de la orden de compra se guarda al enviarla y no cambia después, aunque cambien el proveedor o el precio de la nota", async () => {
+		const proveedor = await altaDeProveedor(servidor, { nombre: "Hilos de Peñuelas", dias_credito: 30 });
+		const material = await altaDeMaterial(servidor, proveedor, { nombre: "Hilo poliéster negro" });
+		const orden = await levantarDePrueba(servidor, [
+			{ material_id: material, proveedor_id: proveedor, cantidad: 12, precio_centavos: 4_550 },
+		]);
+		expect((await enviarDePrueba(servidor, orden.id)).estado).toBe(200);
+		const guardado = async () => {
+			const { rows } = await servidor.base.dueno.query(
+				"SELECT a.almacen_clave FROM archivos a JOIN ordenes_compra o ON o.pdf_archivo_id = a.id WHERE o.id = $1",
+				[orden.id],
+			);
+			const objeto = simulador.objetos.get(`uniformame-archivos/${rows[0]?.almacen_clave}`);
+			if (objeto === undefined) throw new Error("no se guardó el PDF");
+			return objeto.contenido;
+		};
+		const antes = await guardado();
+		const [pagina] = leerPdf(antes);
+		const texto = (pagina?.textos ?? []).join(" ");
+		for (const dice of [
+			orden.folio,
+			"Hilos de Peñuelas",
+			"Hilo poliéster negro",
+			"$45.50",
+			"Precios sin IVA",
+			"Crédito 30 días",
+		]) {
+			expect(texto).toContain(dice);
+		}
+		// Cambian el proveedor y el precio de la nota: el PDF guardado es el mismo.
+		await servidor.base.dueno.query(
+			"UPDATE terceros SET nombre = 'Hilos de Peñuelas SA' WHERE id = (SELECT tercero_id FROM proveedores WHERE id = $1)",
+			[proveedor],
+		);
+		await servidor.base.dueno.query(
+			`UPDATE orden_compra_lineas SET precio_nota_centavos = 5000, precio_nota_en = now(),
+				precio_nota_por = (SELECT creado_por FROM ordenes_compra WHERE id = $1) WHERE orden_compra_id = $1`,
+			[orden.id],
+		);
+		expect(Buffer.from(await guardado()).equals(Buffer.from(antes))).toBe(true);
 	});
 
 	it("guardar el borrador: la fecha entre hoy y el máximo, la versión vieja da 409, y no deja bitácora", async () => {

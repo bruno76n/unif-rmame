@@ -72,6 +72,7 @@ import { correoDeCuenta } from "./lecturas/correo-de-cuenta.ts";
 import { cuentasPorRegla } from "./lecturas/cuentas-por-regla.ts";
 import { datosDeAparato } from "./lecturas/datos-de-aparato.ts";
 import { datosDeArchivo } from "./lecturas/datos-de-archivo.ts";
+import { lecturaEmpresa } from "./lecturas/empresa.ts";
 import { parametro } from "./lecturas/parametro.ts";
 import { permisosDe } from "./lecturas/permisos-de.ts";
 import { siguienteFolio } from "./lecturas/siguiente-folio.ts";
@@ -162,6 +163,7 @@ export default definirModulo({
 		datos_de_aparato: datosDeAparato,
 		datos_de_archivo: datosDeArchivo,
 		valores_de_lista: valoresDeLista,
+		empresa: lecturaEmpresa,
 	},
 	semillas: [semillaDeDepartamentos, semillaDeContadores, semillaDeParametrosDeAdmin],
 	trabajos: [depurarEventos, enviarCorreos, respaldoSemanal, recordatorioRestauracion, aparatosSinSincronizar],

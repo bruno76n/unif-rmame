@@ -236,22 +236,33 @@ describe("Las pantallas de Aduana: pestañas, cajones, botones y estados", () =>
 		},
 	);
 
-	it("En tránsito: «Recordar» un despacho a Bodega llama a su acción", tiempo, async () => {
-		const aBodega = await traspasoEnAduana(pantalla.servidor, "BOD");
-		const pagina = await pantalla.abrir(`/aduana/despacho?cajon=despachar&id=${aBodega.id}`, { quien: "aduana" });
-		const cajon = pagina.getByRole("dialog");
-		await enPantalla(cajon.getByText("Juntar en el mismo despacho")).toBeVisible({ timeout: 30_000 });
-		for (const casilla of await cajon.getByRole("checkbox").all()) await casilla.uncheck();
-		const { resultado } = await avisaLoQueRegresa(pagina, "inventario.despachar", () =>
-			cajon.getByRole("button", { name: "Despachar a Bodega" }).click(),
-		);
-		const fila = pagina.getByRole("row").filter({ hasText: String(resultado.folio) });
-		const { mensaje } = await avisaLoQueRegresa(pagina, "inventario.recordar_despacho", () =>
-			fila.getByRole("button", { name: "Recordar" }).click(),
-		);
-		expect(mensaje).toBe("Recordatorio enviado a Bodega. Solo quien recibe puede confirmar");
-		await pagina.close();
-	});
+	it(
+		"En tránsito: «Hoja» abre el PDF del despacho y «Recordar» un despacho a Bodega llama a su acción",
+		tiempo,
+		async () => {
+			const aBodega = await traspasoEnAduana(pantalla.servidor, "BOD");
+			const pagina = await pantalla.abrir(`/aduana/despacho?cajon=despachar&id=${aBodega.id}`, { quien: "aduana" });
+			const cajon = pagina.getByRole("dialog");
+			await enPantalla(cajon.getByText("Juntar en el mismo despacho")).toBeVisible({ timeout: 30_000 });
+			for (const casilla of await cajon.getByRole("checkbox").all()) await casilla.uncheck();
+			const { resultado } = await avisaLoQueRegresa(pagina, "inventario.despachar", () =>
+				cajon.getByRole("button", { name: "Despachar a Bodega" }).click(),
+			);
+			const fila = pagina.getByRole("row").filter({ hasText: String(resultado.folio) });
+			const ventana = pagina.waitForEvent("popup");
+			await fila.getByRole("button", { name: "Hoja" }).click();
+			const hoja = await ventana;
+			await expect
+				.poll(() => hoja.url())
+				.toContain(`/v1/etiquetas/despacho/${String(resultado.despacho_id)}?formato=pdf`);
+			await hoja.close();
+			const { mensaje } = await avisaLoQueRegresa(pagina, "inventario.recordar_despacho", () =>
+				fila.getByRole("button", { name: "Recordar" }).click(),
+			);
+			expect(mensaje).toBe("Recordatorio enviado a Bodega. Solo quien recibe puede confirmar");
+			await pagina.close();
+		},
+	);
 
 	it("lo de un cliente sin nota no sale: el candado, la tabla por talla y sin botón de despachar", tiempo, async () => {
 		const { lote } = await pedidoListoEnAduana(pantalla.servidor, 4);

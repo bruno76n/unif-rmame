@@ -16,6 +16,7 @@ import {
 	sumarDiasHabiles,
 	textoDeDiaConAnio,
 	textoDeDiaCorto,
+	textoDeHora,
 	textoDeMomentoCorto,
 	zonaDelNegocio,
 } from "./fechas.ts";
@@ -140,6 +141,11 @@ describe("los días cortos de las líneas del hilo: «13 oct», sin punto", () =
 	it("en las etiquetas y las hojas, con su año: «7 nov 2026»", () => {
 		expect(textoDeDiaConAnio("2026-11-07")).toBe("7 nov 2026");
 		expect(textoDeDiaConAnio(Temporal.PlainDate.from("2027-01-15"))).toBe("15 ene 2027");
+	});
+
+	it("la hora de las hojas, en hora de México: «10:42»", () => {
+		expect(textoDeHora("2026-11-14T16:42:00Z")).toBe("10:42");
+		expect(textoDeHora(Temporal.Instant.from("2026-11-14T13:05:00Z"))).toBe("07:05");
 	});
 
 	it("un momento se escribe con su día en hora de México, no en UTC", () => {

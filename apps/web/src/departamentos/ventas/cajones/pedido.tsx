@@ -30,6 +30,7 @@ import type { z } from "zod";
 import { useConsulta } from "../../../comun/api.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
 import { Historial } from "../../../comun/historial.tsx";
+import { abrirHoja } from "../../../comun/hojas.ts";
 import { montoEnPantalla } from "../../../comun/montos.ts";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { useTieneDepartamento } from "../../../comun/tiene-departamento.ts";
@@ -40,15 +41,6 @@ import { VentanaPasarABodega } from "../ventanas/pasar-a-bodega.tsx";
 
 /** Lo que da la consulta. */
 type Pedido = z.infer<typeof pedidoVentas.resultado>;
-
-/**
- * Abre la hoja de un documento (el PDF): de ahí se imprime o se manda.
- * @param tipo El tipo de hoja.
- * @param id El documento.
- */
-export function abrirHoja(tipo: string, id: string): void {
-	window.open(`/v1/etiquetas/${tipo}/${id}?formato=pdf`, "_blank", "noopener");
-}
 
 /**
  * Una prenda del pedido: su precio, su importe, su hilo y su tabla por talla.

@@ -15,10 +15,12 @@ import { TextoConTono } from "@uniformame/interfaz/estados/textos-con-tono";
 import { Panel } from "@uniformame/interfaz/pagina/panel";
 import { DosRenglones } from "@uniformame/interfaz/tablas/dos-renglones";
 import { Tabla } from "@uniformame/interfaz/tablas/tabla";
+import { Printer } from "lucide-react";
 import { useState } from "react";
 import type { z } from "zod";
 import { usePaginas } from "../../../comun/api.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
+import { abrirHoja } from "../../../comun/hojas.ts";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { useDireccionDeAduana } from "../direccion.ts";
 import { useEnvio } from "../envio.ts";
@@ -29,7 +31,8 @@ import { VentanaConfirmarEntregaTienda } from "../ventanas/confirmar-entrega-tie
 type Despacho = z.infer<typeof enTransito.resultado>["renglones"][number];
 
 /**
- * El botón de un despacho: «Confirmar entrega» abre su ventana; «Recordar» llama a su acción.
+ * Los botones de un despacho: «Hoja» abre su PDF para que viaje con la mercancía; «Confirmar entrega» abre su ventana;
+ * «Recordar» llama a su acción.
  * @param props El despacho y qué hacer con «Confirmar entrega».
  */
 function BotonDelDespacho({
@@ -41,21 +44,25 @@ function BotonDelDespacho({
 }) {
 	const conConexion = useConConexion();
 	const { enviar, enviando } = useEnvio(recordarDespacho);
-	if (despacho.boton !== "recordar") {
-		return (
-			<Boton chico disabled={!conConexion} onClick={() => alConfirmar(despacho)}>
-				Confirmar entrega
-			</Boton>
-		);
-	}
 	return (
-		<Boton
-			chico
-			disabled={!conConexion || enviando}
-			onClick={() => void enviar({ datos: { despacho_id: despacho.despacho_id }, version: despacho.version })}
-		>
-			Recordar
-		</Boton>
+		<div className="flex justify-end gap-2">
+			<Boton chico icono={Printer} onClick={() => abrirHoja("despacho", despacho.despacho_id)}>
+				Hoja
+			</Boton>
+			{despacho.boton === "recordar" ? (
+				<Boton
+					chico
+					disabled={!conConexion || enviando}
+					onClick={() => void enviar({ datos: { despacho_id: despacho.despacho_id }, version: despacho.version })}
+				>
+					Recordar
+				</Boton>
+			) : (
+				<Boton chico disabled={!conConexion} onClick={() => alConfirmar(despacho)}>
+					Confirmar entrega
+				</Boton>
+			)}
+		</div>
 	);
 }
 

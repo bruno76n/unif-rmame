@@ -27,6 +27,7 @@ import { useState } from "react";
 import type { z } from "zod";
 import { consultar, leerFalla, useAccion, useConsulta } from "../../../comun/api.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
+import { abrirHoja } from "../../../comun/hojas.ts";
 import { montoEnPantalla } from "../../../comun/montos.ts";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { useTieneDepartamento } from "../../../comun/tiene-departamento.ts";
@@ -96,11 +97,7 @@ function BotonesDelLote({ lote }: { lote: Lote }) {
 			{tiene("patronaje") ? (
 				<Boton onClick={() => router.history.push(enOtroDepartamento.receta(lote.producto_id))}>Ver receta</Boton>
 			) : null}
-			<Boton
-				variante="principal"
-				icono={FileDown}
-				onClick={() => window.open(`/v1/etiquetas/lote/${lote.lote_id}?formato=pdf`, "_blank")}
-			>
+			<Boton variante="principal" icono={FileDown} onClick={() => abrirHoja("lote", lote.lote_id)}>
 				Hoja del lote
 			</Boton>
 		</div>

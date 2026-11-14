@@ -56,7 +56,7 @@ apps/api/
 ├── src/
 │   ├── servidor.ts            arranca Fastify y registra los módulos
 │   ├── trabajos.ts            arranca el worker (Graphile Worker)
-│   ├── impresos/              el dibujo de cada etiqueta y cada hoja (ZPL y PDF): zpl.ts y pdf.ts con lo común, etiquetas/ y hojas/; los datos los da su módulo
+│   ├── impresos/              el dibujo de cada etiqueta y cada hoja (ZPL y PDF): zpl.ts y pdf.ts con lo común de las etiquetas, hoja.ts con lo de las hojas, etiquetas/ y hojas/; los datos los da su módulo
 │   ├── nucleo/                lo que usan todos los módulos
 │   │   ├── entorno.ts         lee y valida las variables de entorno, una sola vez
 │   │   ├── base/              conexión, transacciones con reintento y candados
@@ -65,6 +65,7 @@ apps/api/
 │   │   ├── idempotencia/      la clave de cada acción y la respuesta guardada
 │   │   ├── sincronizacion/    subir, bajar, foto y avisos en vivo
 │   │   ├── trabajos/          el reloj y el proceso de la bandeja de eventos
+│   │   ├── hojas.ts           el marco de toda hoja en PDF: la empresa y quién la sacó y cuándo
 │   │   └── modulos.ts         encuentra y registra cada carpeta de modulos/
 │   └── modulos/
 │       └── <modulo>/          admin, personal, direccion, catalogo, patronaje, compras, ventas,
@@ -120,7 +121,7 @@ apps/web/src/
 │   ├── pestanas/              una pestaña por archivo
 │   ├── cajones/               un cajón por archivo
 │   └── ventanas/              una ventana por archivo
-└── comun/                     lo que comparten todos: armazón, cliente de la API, búsqueda, campana, cuenta, avisos y el arnés de pruebas
+└── comun/                     lo que comparten todos: armazón, cliente de la API, búsqueda, campana, cuenta, avisos, abrir una hoja en PDF y el arnés de pruebas
 ```
 
 - **Un cajón se abre por su dirección:** `/<departamento>/<pestaña>?cajon=<nombre>&id=<id>` (decisión 759), así otro departamento lo enlaza sin importar su componente.

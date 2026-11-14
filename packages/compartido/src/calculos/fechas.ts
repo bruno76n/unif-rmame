@@ -121,6 +121,15 @@ export function textoDeDiaConAnio(dia: DiaNegocio | string): string {
 }
 
 /**
+ * La hora de un momento en México, como se escribe en las hojas: «10:42», «07:05».
+ * @param momento El momento, o su texto ISO.
+ */
+export function textoDeHora(momento: Temporal.Instant | string): string {
+	const enMexico = Temporal.Instant.from(momento).toZonedDateTimeISO(zonaDelNegocio);
+	return `${String(enMexico.hour).padStart(2, "0")}:${String(enMexico.minute).padStart(2, "0")}`;
+}
+
+/**
  * Cómo se escribe en una línea corta el día en que pasó algo: «13 oct», del día de negocio.
  * @param momento El momento en texto ISO, como llega en las salidas (`ocurrido_en`).
  * @returns El día en hora de México: lo de las 23:30 de un día no sale con el siguiente.

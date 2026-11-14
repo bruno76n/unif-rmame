@@ -35,6 +35,7 @@ import { consultaPedidoVentas } from "./consultas/pedido.ts";
 import { consultaPedidosVentas } from "./consultas/pedidos.ts";
 import { consultaPendientesVentas, pastillaVentas } from "./consultas/pendientes.ts";
 import { consultaRevisionMandar } from "./consultas/revision-mandar.ts";
+import { tipoNotaEntrega, tipoPedido } from "./impresion.ts";
 import { clienteActivoDeEscuela, estadoCliente } from "./lecturas/clientes.ts";
 import { documentosAbiertos, foliosDeDocumentos } from "./lecturas/documentos.ts";
 import { avancePedido, pedidoParaCobro, pedidosAbiertosDeVariante } from "./lecturas/pedidos.ts";
@@ -89,6 +90,7 @@ export default definirModulo({
 		folios_de_documentos: foliosDeDocumentos,
 	},
 	semillas: [semillaDeParametrosDeVentas],
+	tiposDeEtiqueta: [tipoPedido, tipoNotaEntrega],
 	// Los clientes los leen Ventas y Contaduría (su crédito y su cobranza), Calidad (sus reclamos), Aduana (a quién
 	// despacha) y Dirección. Las notas llevan precios: Ventas, Contaduría y Dirección; Aduana las ve sin precios.
 	// Los pedidos llevan precios: Ventas, Contaduría y Dirección; Producción ve el pedido sin precios en sus consultas.

@@ -63,7 +63,7 @@ import { consultaMinimosVigentes } from "./consultas/minimos-vigentes.ts";
 import { consultaPastillasMenu, pastillaAduana, pastillaBodega } from "./consultas/pastillas-menu.ts";
 import { consultaReabasto } from "./consultas/reabasto.ts";
 import { consultaUltimoCuadre } from "./consultas/ultimo-cuadre.ts";
-import { tipoRollo, tipoTraspaso } from "./impresion.ts";
+import { tipoDespacho, tipoRollo, tipoTraspaso } from "./impresion.ts";
 import { aplicarDecisionAjuste } from "./internas/aplicar-decision-ajuste.ts";
 import { aplicarRevisionDevolucion, esperarDevolucion } from "./internas/devoluciones.ts";
 import { registrarEntradaDelTaller } from "./internas/entrada-del-taller.ts";
@@ -150,7 +150,7 @@ export default definirModulo({
 	],
 	pastillas: { aduana: pastillaAduana, bodega: pastillaBodega },
 	// Las ubicaciones salen en las pantallas de todos los departamentos.
-	tiposDeEtiqueta: [tipoRollo, tipoTraspaso],
+	tiposDeEtiqueta: [tipoRollo, tipoTraspaso, tipoDespacho],
 	lectores: {
 		ubicaciones: todosLosDepartamentos,
 		// El libro lo leen las consultas de Aduana, Bodega y Dirección; las existencias, además, Catálogo (la ficha)
