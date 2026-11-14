@@ -31,7 +31,10 @@ export function BarrasPorHora({ barras }: { barras: readonly { hora: string; pie
 		<div className="mt-5.5 flex min-h-35 flex-1 items-end gap-2.5" role="img" aria-label="Piezas por hora">
 			{barras.map((barra, i) => (
 				<div key={barra.hora} className="flex h-full flex-1 flex-col items-center justify-end gap-1.5">
-					<span className="font-bold text-[13px] text-tinta2 tabular-nums">{barra.piezas}</span>
+					{/* Una hora sin piezas no dice «0»: su barra baja basta. */}
+					<span className="min-h-4 font-bold text-[13px] text-tinta2 tabular-nums">
+						{barra.piezas === 0 ? "" : barra.piezas}
+					</span>
 					<i
 						className={unirClases(
 							"block min-h-1 w-full rounded-t-[6px] rounded-b-[2px]",

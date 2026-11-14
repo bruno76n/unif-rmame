@@ -7,7 +7,12 @@
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
-import { despacharDePrueba, traspasoEnAduana } from "../../nucleo/pruebas/aduana-de-prueba.ts";
+import {
+	despacharDePrueba,
+	ordenParaRecibir,
+	recibirDePrueba,
+	traspasoEnAduana,
+} from "../../nucleo/pruebas/aduana-de-prueba.ts";
 import { leerPdf } from "../../nucleo/pruebas/leer-impresos.ts";
 import {
 	crearServidorDePrueba,
@@ -64,5 +69,28 @@ describe("la hoja del despacho", () => {
 		}
 		expect(texto).not.toContain("$");
 		for (const quien of ["ventas", "bodega"]) expect((await pedir(quien)).statusCode, quien).toBe(403);
+	});
+
+	it("cada hoja lleva lo que dice su archivo: el material va con Material · Rollo · Cantidad y sin un total de piezas", async () => {
+		const orden = await ordenParaRecibir(servidor);
+		const recibida = await recibirDePrueba(servidor, orden, [{ metros: "100", partida: "A" }], 500);
+		const { traspaso_id: aDeLaOrden } = z.object({ traspaso_id: z.uuid() }).parse(recibida.cuerpo.resultado);
+		const despachado = await despacharDePrueba(servidor, [aDeLaOrden]);
+		expect(despachado.estado, JSON.stringify(despachado.cuerpo)).toBe(200);
+		const { despacho_id: despacho } = z.object({ despacho_id: z.uuid() }).parse(despachado.cuerpo.resultado);
+		const respuesta = await servidor.app.inject({
+			method: "GET",
+			url: `/v1/etiquetas/despacho/${despacho}?formato=pdf`,
+			headers: encabezadosDeLaWeb("aduana"),
+		});
+		expect(respuesta.statusCode, respuesta.body).toBe(200);
+		const texto = leerPdf(respuesta.rawPayload)
+			.flatMap((pagina) => pagina.textos)
+			.join(" ")
+			.replace(/\s+/g, " ");
+		for (const dice of ["Material", "Rollo", "Cantidad", "100 m", "500", "Recibió"]) expect(texto).toContain(dice);
+		expect(texto).not.toContain("Metros");
+		expect(texto).not.toMatch(/piezas en total/);
+		expect(texto).not.toContain("$");
 	});
 });

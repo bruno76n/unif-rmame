@@ -10,7 +10,7 @@
 
 import type { ReactElement } from "react";
 import { barrasPdf, paginaPdf, renglonPdf, trabajoPdf } from "../pdf.ts";
-import { recortado } from "../textos.ts";
+import { recortado, recortadoConSuFinal } from "../textos.ts";
 import { barrasZpl, textoZpl, trabajoZpl } from "../zpl.ts";
 
 /** Lo que lleva la etiqueta de un rollo, ya escrito. */
@@ -34,8 +34,10 @@ export interface EtiquetaDeRetazo {
 	folio: string;
 	/** «del R-0431». */
 	delRollo: string;
-	/** «Gabardina azul marino · Partida P-2224». */
-	telaYPartida: string;
+	/** «Gabardina azul marino»: si no cabe, se corta con «…». */
+	tela: string;
+	/** «Partida P-2224» o «Sin partida»: siempre completa. */
+	partida: string;
 	/** «14.5 m». */
 	metros: string;
 	/** «Corte L-2026-121 · 12 nov 2026». */
@@ -58,7 +60,12 @@ function camposDeMaterial(etiqueta: EtiquetaDeMaterial): string[] {
 			textoZpl({ x: 15, y: 8, alto: 22, texto: "Retazo" }),
 			textoZpl({ x: 15, y: 30, alto: 34, texto: etiqueta.folio }),
 			textoZpl({ x: 230, y: 38, alto: 22, texto: etiqueta.delRollo }),
-			textoZpl({ x: 15, y: 66, alto: 22, texto: recortado(etiqueta.telaYPartida, letrasDeLaTela + 20) }),
+			textoZpl({
+				x: 15,
+				y: 66,
+				alto: 22,
+				texto: recortadoConSuFinal(etiqueta.tela, etiqueta.partida, letrasDeLaTela + 20),
+			}),
 			textoZpl({ x: 15, y: 90, alto: 22, texto: `${etiqueta.metros} · ${etiqueta.corte}` }),
 			barrasZpl({ x: 40, y: 116, alto: 50, datos: etiqueta.folio }),
 		];
@@ -82,7 +89,7 @@ function paginaDeMaterial(etiqueta: EtiquetaDeMaterial, png: Buffer): ReactEleme
 	if (etiqueta.tipo === "retazo") {
 		return paginaPdf(
 			renglonPdf(`Retazo ${etiqueta.folio} · ${etiqueta.delRollo}`, "negritas"),
-			renglonPdf(recortado(etiqueta.telaYPartida, letrasDeLaTela + 20)),
+			renglonPdf(recortadoConSuFinal(etiqueta.tela, etiqueta.partida, letrasDeLaTela + 20)),
 			renglonPdf(`${etiqueta.metros} · ${etiqueta.corte}`),
 			barrasPdf(png, etiqueta.folio),
 		);

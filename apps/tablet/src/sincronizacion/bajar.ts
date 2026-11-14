@@ -44,7 +44,8 @@ export async function bajarFoto(
 	} while (parte !== null);
 	await reemplazarConFoto(base, foto);
 	await guardarDato(base, "cursor", cursor);
-	await guardarDato(base, "estado", "lista");
+	// Un aviso que llegó a media foto (revocada, versión vieja) no se pisa.
+	if ((await leerDato(base, "estado")) === "preparando") await guardarDato(base, "estado", "lista");
 	await guardarDato(base, "ultima_bajada", new Date().toISOString());
 }
 

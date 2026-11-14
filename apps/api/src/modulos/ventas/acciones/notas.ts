@@ -22,7 +22,7 @@ import { tomarVersion, versionActual } from "../../../nucleo/acciones/pisadas.ts
 import { errorDeCampo, errorDeRegla } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeAccion, implementarAccion } from "../../../nucleo/modulos.ts";
 import { avanceDeLasTallas } from "../dominio/avance-de-pedido.ts";
-import { leerNota, type NotaEntrega } from "../dominio/notas.ts";
+import { leerNota, type NotaEntrega, vePreciosDeNotas } from "../dominio/notas.ts";
 import {
 	eventoDePedido,
 	leerPedido,
@@ -103,13 +103,12 @@ function eventoDeNota(
 	});
 }
 
-/** Si quien hace la acción ve precios: Ventas, Contaduría y la dueña; a Aduana nunca le viajan importes (regla 8). */
+/**
+ * Si quien hace la acción ve precios (regla 8).
+ * @param contexto El contexto de la acción.
+ */
 function vePrecios(contexto: ContextoDeAccion): boolean {
-	const { quien } = contexto;
-	return (
-		quien.tipo === "cuenta" &&
-		(quien.esDuena || quien.departamentos.some((departamento) => ["ventas", "contaduria"].includes(departamento)))
-	);
+	return vePreciosDeNotas(contexto.quien);
 }
 
 export const accionArmarNotaEntrega = implementarAccion(armarNotaEntrega, async (contexto, datos, version) => {

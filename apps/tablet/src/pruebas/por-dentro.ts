@@ -7,8 +7,10 @@
  * emula una tablet Android, contra la API real»)
  */
 
+import { Temporal } from "temporal-polyfill";
 import { type Encolado, encolar } from "../cola/cola.ts";
 import { base, esTablaQueBaja, type Renglon, tablasQueBajan } from "../copia/base.ts";
+import { bultosParaTi, tonosDeLosLotes } from "../copia/lecturas.ts";
 import { buscarBulto } from "../lector/lector.ts";
 import { revisarPin } from "../pin/pin.ts";
 import { registrarTablet } from "../registro/registro.ts";
@@ -66,6 +68,8 @@ export const porDentro = {
 		return busqueda.encontrado ? String(busqueda.bulto.folio) : busqueda.motivo;
 	},
 	estadoDelAparato: () => estadoDelAparato(base),
+	bultosParaTi: (personaId: string) => bultosParaTi(base, personaId, Temporal.Now.instant()),
+	tonosDeLosLotes: async () => Object.fromEntries(await tonosDeLosLotes(base, Temporal.Now.instant())),
 	/** Los renglones de una tabla de la copia, como texto. */
 	leer: async (tabla: string): Promise<unknown[]> => {
 		if (!esTablaQueBaja(tabla)) throw new Error(`no baja ${tabla}`);

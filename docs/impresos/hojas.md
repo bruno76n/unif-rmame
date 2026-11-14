@@ -24,7 +24,7 @@ Lo que sale de la fábrica en papel sale igual siempre, con los datos del sistem
 Tipo `orden_compra`, del módulo `compras`. La sacan Compras y Contaduría.
 
 - **Cuándo:** se arma y se guarda al «Marcar enviada»; «Ver PDF» del cajón de la orden abre la guardada.
-- **Lleva:** «Orden de compra {OC}» y «Creada el {fecha}»; el proveedor (nombre, RFC si lo tiene, contacto y teléfono); «Promete llegar el {fecha}» y la condición («Contado» o «Crédito {n} días»); la tabla Material · Cantidad (en su unidad) · Precio · Importe; el total y «Precios sin IVA»; «Entregar en Aduana: {domicilio}»; y quién la levantó.
+- **Lleva:** «Orden de compra {OC}» y «Creada el {fecha}»; el proveedor (nombre, RFC si lo tiene y teléfono); «Promete llegar el {fecha}» y la condición («Contado» o «Crédito {n} días»); la tabla Material · Cantidad (en su unidad) · Precio · Importe; el total y «Precios sin IVA»; «Entregar en Aduana: {domicilio}»; y quién la levantó.
 
 ## El pedido
 
@@ -47,7 +47,7 @@ Tipo `nota_entrega`, del módulo `ventas`. La sacan Ventas, Contaduría y Aduana
 Tipo `despacho`, del módulo `inventario`. La saca Aduana.
 
 - **Cuándo:** «Hoja» en cada despacho de En tránsito (ver [pantallas de Aduana](../interfaz/fabrica/aduana.md)); viaja con la mercancía.
-- **Lleva:** «Despacho {D}»; el destino (Bodega, la tienda, o el cliente con su NV-); «Salió el {fecha} a las {hora}» y quién despachó; por cada traspaso, su folio y de qué es («L-2026-124 · reabasto», «S-T1-088», «NV-0151», «OC-0225 · material») y su tabla Prenda · Talla · Piezas (en el material, Material · Rollo · Metros, o la cantidad); el total de piezas; y «Recibió», con renglones para nombre, firma, fecha y hora.
+- **Lleva:** «Despacho {D}»; el destino (Bodega, la tienda, o el cliente con su NV-); «Salió el {fecha} a las {hora}» y quién despachó; por cada traspaso, su folio y de qué es («L-2026-124 · reabasto», «S-T1-088», «NV-0151», «OC-0225 · material») y su tabla Prenda · Talla · Piezas (en el material, Material · Rollo · Cantidad: los metros del rollo o la cantidad en su unidad); el total de piezas si lleva prendas; y «Recibió», con renglones para nombre, firma, fecha y hora.
 - **Nunca lleva precios.**
 
 ## La hoja del lote
@@ -80,8 +80,8 @@ Tipo `lote`, del módulo `produccion`. La saca Producción.
 - **Los tipos,** en el `impresion.ts` de su módulo:
   - `orden_compra` (`compras`; Compras y Contaduría): la condición de la orden o, mientras se envía, la del proveedor; se entrega en el domicilio de la empresa. `compras.marcar_orden_enviada` la arma y la guarda como `pdf_documento`;
   - `pedido` (`ventas`; Ventas): un renglón por prenda y precio, así las tallas especiales van en el suyo con «(especiales)»; «{n} de {m} piezas entregadas» del avance de Ventas, si ya hubo notas. Un borrador da `422 pedido_no_confirmado`;
-  - `nota_entrega` (`ventas`; Ventas, Contaduría y Aduana): ven precios Ventas, Contaduría y Dirección, como en su cajón. «Por cobrar» es el subtotal menos el anticipo aplicado y las notas de crédito autorizadas; a crédito, ya entregada, «Vence el {fecha}» a sus días. Los descuentos van con «-»: la Helvetica del PDF no trae «−»;
-  - `despacho` (`inventario`; Aduana): cada traspaso con su folio y de qué es, su tabla de prendas o de rollos y el total de piezas;
+  - `nota_entrega` (`ventas`; Ventas, Contaduría y Aduana): ven precios Ventas, Contaduría y Dirección (`vePreciosDeNotas` de `ventas/dominio/notas.ts`, la misma regla del cajón y de lo que regresan sus acciones); el renglón «Total» lleva las piezas y el subtotal en Importe. «Por cobrar» es el subtotal menos el anticipo aplicado y las notas de crédito autorizadas; a crédito, ya entregada, «Vence el {fecha}» a sus días. Los descuentos van con «-»: la Helvetica del PDF no trae «−»;
+  - `despacho` (`inventario`; Aduana): cada traspaso con su folio y de qué es, su tabla de prendas o de material (Material · Rollo · Cantidad) y, si lleva prendas, el total de piezas;
   - `lote` (`produccion`; Producción): solo de un lote cortado (`422 lote_sin_cortar`); sus partidas son las de los rollos apartados de la tela principal.
 - **Los botones** abren la hoja en otra pestaña con `abrirHoja` (`apps/web/src/comun/hojas.ts`): «PDF» en los cajones del pedido y de la nota, «Hoja del lote» en el del lote y «Hoja» en cada despacho de En tránsito.
-- **Las pruebas,** en `apps/api/src/impresos/hojas/`: `orden-compra.prueba.ts`, `ventas.prueba.ts` (el pedido y la nota con la muestra, con y sin precios), `despacho.prueba.ts` y `lote.prueba.ts` (también que se parte en dos hojas con el encabezado de su tabla). Que el PDF de la orden no cambie después de enviarla, en `modulos/compras/acciones/marcar-orden-enviada.prueba.ts`. «Hoja» de En tránsito, en `apps/web/src/departamentos/aduana/aduana.prueba.ts`.
+- **Las pruebas,** en `apps/api/src/impresos/hojas/`: `orden-compra.prueba.ts`, `ventas.prueba.ts` (el pedido y la nota con la muestra, con y sin precios), `despacho.prueba.ts` (también uno solo de material, sin total de piezas) y `lote.prueba.ts` (también que se parte en dos hojas con el encabezado de su tabla). Que el PDF de la orden no cambie después de enviarla, en `modulos/compras/acciones/marcar-orden-enviada.prueba.ts`. «Hoja» de En tránsito, en `apps/web/src/departamentos/aduana/aduana.prueba.ts`.

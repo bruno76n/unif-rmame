@@ -5,16 +5,20 @@
  * Fase 20 · docs/apps/puente-de-impresion.md («Cómo trabaja» y «El diario»)
  *
  * Sin internet se detiene donde iba: lo que ya está en el diario lo termina en la siguiente vuelta, y confirmar otra vez
- * con la misma clave recibe la misma respuesta. Si se apaga entre imprimir y anotarlo, al arrancar lo vuelve a mandar:
+ * con la misma clave recibe la misma respuesta. Un trabajo que la API ya no deja bajar o confirmar no detiene a los demás. Si se apaga entre imprimir y anotarlo, al arrancar lo vuelve a mandar:
  * una etiqueta repetida se tira; una que falta detiene la mercancía.
  */
 
+import { ErrorDeLaApi } from "@uniformame/compartido/cliente/cliente";
 import { v7 as uuidv7 } from "uuid";
 import type { ApiDelPuente } from "./api.ts";
 import type { DireccionDeZebra } from "./configuracion.ts";
-import type { Diario, Terminado, TrabajoDelDiario } from "./diario.ts";
+import type { Diario, Pendiente, Terminado, TrabajoDelDiario } from "./diario.ts";
 import type { Registro } from "./registro.ts";
 import { mandarZpl, preguntarEstado, textosDeLaZebra } from "./zebra.ts";
+
+/** Lo que dice el trabajo que la API ya no deja bajar: lo ve quien lo pidió, si todavía se puede confirmar. */
+const textoNoSePuede = "La etiqueta ya no se puede imprimir aquí";
 
 /** Lo que usa el puente para atender sus trabajos. */
 export interface PiezasDelPuente {
@@ -64,27 +68,64 @@ async function confirmar(piezas: PiezasDelPuente, trabajo: TrabajoDelDiario, ter
 }
 
 /**
+ * Un error de la API que no es de red, ni de llave revocada, ni de versión vieja: el trabajo ya no se puede bajar o
+ * confirmar (su impresora es de otro puente o se dio de baja, o su etiqueta ya no existe).
+ * @param error Lo que pasó.
+ */
+function yaNoSePuede(error: unknown): boolean {
+	return error instanceof ErrorDeLaApi && error.estado >= 400 && error.estado < 500;
+}
+
+/**
+ * Termina un trabajo del diario: lo imprime si falta y lo confirma. Si la API ya no deja bajarlo, se confirma como
+ * fallo; si tampoco deja confirmarlo, sale del diario y se anota: así no detiene a los demás.
+ * @param piezas Lo del puente.
+ * @param pendiente Lo que le falta.
+ */
+async function terminar(piezas: PiezasDelPuente, pendiente: Pendiente): Promise<void> {
+	let terminado: Terminado;
+	if (pendiente.estado === "por_confirmar") terminado = pendiente;
+	else {
+		try {
+			terminado = await imprimir(piezas, pendiente.trabajo);
+		} catch (error) {
+			if (!yaNoSePuede(error)) throw error;
+			terminado = { resultado: "fallo", error: textoNoSePuede, clave: uuidv7() };
+		}
+		await piezas.diario.impreso(pendiente.trabajo.id, terminado);
+	}
+	try {
+		await confirmar(piezas, pendiente.trabajo, terminado);
+	} catch (error) {
+		if (!yaNoSePuede(error)) throw error;
+		await piezas.diario.confirmado(pendiente.trabajo.id);
+		await piezas.registro.anotar(
+			`Trabajo ${pendiente.trabajo.id}: la API ya no deja confirmarlo (${error instanceof Error ? error.message : ""}); sale del diario`,
+		);
+	}
+}
+
+/**
  * Termina lo que está en el diario, en el orden en que llegó: imprime lo recibido y confirma lo impreso.
  * @param piezas Lo del puente.
  * @throws Lo que corte la vuelta (sin red, revocado, versión vieja): lo que falte sigue en el diario.
  */
 export async function terminarPendientes(piezas: PiezasDelPuente): Promise<void> {
-	for (const pendiente of await piezas.diario.pendientes()) {
-		const terminado = pendiente.estado === "por_confirmar" ? pendiente : await imprimir(piezas, pendiente.trabajo);
-		if (pendiente.estado === "por_imprimir") await piezas.diario.impreso(pendiente.trabajo.id, terminado);
-		await confirmar(piezas, pendiente.trabajo, terminado);
-	}
+	for (const pendiente of await piezas.diario.pendientes()) await terminar(piezas, pendiente);
 }
 
 /**
- * Una vuelta: termina lo del diario, pide los trabajos nuevos, los anota, los imprime y, si ya le toca, cambia su llave.
+ * Una vuelta: termina lo del diario, pide los trabajos nuevos con la clave de su pedido (la misma mientras no llegue la
+ * respuesta), los anota, los imprime y, si ya le toca, cambia su llave.
  * @param piezas Lo del puente.
  * @throws Lo que corte la vuelta: lo recibido queda en el diario para la siguiente.
  */
 export async function atenderTrabajos(piezas: PiezasDelPuente): Promise<void> {
 	await terminarPendientes(piezas);
-	const { trabajos, rotar_llave: rotar } = await piezas.api.trabajos();
+	const clave = await piezas.diario.claveDelPedido();
+	const { trabajos, rotar_llave: rotar } = await piezas.api.trabajos(clave);
 	for (const trabajo of trabajos) await piezas.diario.recibido(trabajo);
+	await piezas.diario.pedidoRecibido(clave);
 	await terminarPendientes(piezas);
 	if (rotar === true) {
 		await piezas.api.rotarLlave();

@@ -131,7 +131,8 @@ const orillaDeBulto: Readonly<Record<TonoDeBulto, string>> = {
 };
 
 /**
- * Un bulto de «Bultos para ti»: el folio, «{prenda} · talla {t}», la operación y cuántas piezas esperan.
+ * Un bulto de «Bultos para ti», como la muestra: el folio en gris, la operación en grande, «{prenda} · talla {t}» en
+ * hasta dos renglones y cuántas piezas esperan.
  * @param props Lo del bulto, el tono de su lote y lo de un botón.
  */
 export function TarjetaDeBulto({
@@ -161,9 +162,10 @@ export function TarjetaDeBulto({
 			{...resto}
 		>
 			<span className="flex min-w-0 flex-1 flex-col gap-0.5">
-				<b className="text-[19px] font-extrabold">{folio}</b>
-				<span className="truncate font-semibold text-tinta2 text-[15px]">{prenda}</span>
-				<span className="truncate font-semibold text-tinta2 text-[15px]">{operacion}</span>
+				<span className="font-semibold text-tinta3 text-[15px] tabular-nums">{folio}</span>
+				<b className="truncate font-extrabold text-[19px]">{operacion}</b>
+				{/* La prenda y su talla en hasta dos renglones: un nombre largo nunca esconde la talla. */}
+				<span className="line-clamp-2 font-semibold text-tinta2 text-[15px]">{prenda}</span>
 			</span>
 			<span className="flex min-w-22 flex-col items-center">
 				<b className="font-extrabold text-tablet-bulto leading-none tabular-nums">{listas}</b>

@@ -7,7 +7,7 @@
 
 import { Mosaico, TarjetaDeBulto } from "@uniformame/interfaz/tablet/botones";
 import { BarrasPorHora, CifraGrande } from "@uniformame/interfaz/tablet/produccion";
-import { Package, ScanLine, Wrench } from "lucide-react";
+import { Droplet, ScanLine, Wrench } from "lucide-react";
 import type { BultoParaTi, ProduccionDeLaPersona, RegistroReciente } from "../copia/lecturas.ts";
 
 /** Cómo se lee la marca de un registro reciente, con su tono. */
@@ -69,7 +69,7 @@ export function Inicio({
 				<div className="grid grid-cols-[1.3fr_1fr_1fr] gap-3.5">
 					<Mosaico icono={ScanLine} titulo="Escanear bulto" principal onClick={alEscanear} />
 					<Mosaico icono={Wrench} titulo="Falla de máquina" onClick={alFalla} />
-					<Mosaico icono={Package} titulo="Tomar consumible" onClick={alConsumible} />
+					<Mosaico icono={Droplet} titulo="Tomar consumible" onClick={alConsumible} />
 				</div>
 				<h2 className="mt-6 mb-3 font-bold text-[20px]">Bultos para ti</h2>
 				{bultos.length === 0 ? (

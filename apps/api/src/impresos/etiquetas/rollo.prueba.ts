@@ -33,7 +33,8 @@ const retazo: EtiquetaDeMaterial = {
 	tipo: "retazo",
 	folio: "RZ-012",
 	delRollo: "del R-0431",
-	telaYPartida: "Piqué peinado de algodón ~extra suave~ niño^ñ · Partida P-2224",
+	tela: "Piqué peinado de algodón ~extra suave~ niño^ñ con hilo de doble torsión",
+	partida: "Partida P-2224",
 	metros: "14.5 m",
 	corte: "Corte L-2026-121 · 12 nov 2026",
 };
@@ -44,6 +45,11 @@ describe("la etiqueta de rollo y la de retazo", () => {
 		await expect(zpl).toMatchFileSnapshot("./fotos/rollo.zpl");
 		const datos = [...String(zpl).matchAll(/\^FD(.*?)\^FS/g)].map((campo) => campo[1] ?? "").join("");
 		expect(datos).not.toMatch(/[\^~]/);
+	});
+
+	it("la tela de un retazo que no cabe se corta con «…» y su partida siempre queda completa", async () => {
+		const zpl = String(await dibujarRollos([retazo], "zpl", 1));
+		expect(zpl).toMatch(/… · Partida P-2224\^FS/);
 	});
 
 	it("una «Carga inicial» sin partida dice lo suyo; el PDF trae una página de 2 × 1 pulgadas por etiqueta", async () => {

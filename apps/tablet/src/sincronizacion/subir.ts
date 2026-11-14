@@ -80,6 +80,8 @@ export async function subirCola(base: BaseDeLaTablet, conexion: Conexion): Promi
 			}),
 		);
 		await aplicarRespuestas(base, tanda, cuerpo.respuestas);
+		// La última subida de la tablet del taller: con ella calcula la salud de los lotes, como la API.
+		await guardarDato(base, "ultima_subida", new Date().toISOString());
 		subida.contestados += cuerpo.respuestas.length;
 		subida.hayCambios ||= cuerpo.hay_cambios;
 		if (cuerpo.revocado) await guardarDato(base, "estado", "revocada");

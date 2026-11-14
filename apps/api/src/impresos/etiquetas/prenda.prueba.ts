@@ -22,17 +22,19 @@ import { dibujarPrendas, type EtiquetaDePrenda } from "./prenda.ts";
 const playera: EtiquetaDePrenda = {
 	varianteId: "01936f2e-0000-7000-8000-00000000a001",
 	prenda: "Playera polo blanca con escudo",
-	escuelaYTalla: "Instituto Juan Pablo II · Talla 8",
+	escuela: "Instituto Juan Pablo II",
+	talla: "Talla 8",
 	codigo: "100269",
 	precio: null,
 	pedidoEspecial: false,
 };
 
-/** Un nombre que no cabe, con acentos, ñ, un `^`, un `~` y un `_`. */
+/** Un nombre y una escuela que no caben, con acentos, ñ, un `^`, un `~` y un `_`. */
 const rara: EtiquetaDePrenda = {
 	varianteId: "01936f2e-0000-7000-8000-00000000a002",
 	prenda: "Suéter de piqué con cuello ^alto^ y puños ~tejidos~ para niña pequeña_bordado",
-	escuelaYTalla: "Colegio Montaña Ñuñoa · Talla 10",
+	escuela: "Colegio Bilingüe Montaña de Peñuelas Ñuñoa",
+	talla: "Talla 10",
 	codigo: "100270",
 	precio: "$1,250",
 	pedidoEspecial: true,
@@ -44,6 +46,11 @@ describe("la etiqueta de prenda en ZPL", () => {
 		await expect(zpl).toMatchFileSnapshot("./fotos/prenda.zpl");
 	});
 
+	it("la escuela que no cabe se corta con «…» y la talla siempre queda completa", async () => {
+		const zpl = String(await dibujarPrendas([rara], "zpl", 1));
+		expect(zpl).toMatch(/… · Talla 10\^FS/);
+	});
+
 	it("con UTF-8 y la medida de 2 × 1 pulgadas; los datos van por `^FH` y nunca rompen la etiqueta", async () => {
 		const zpl = String(await dibujarPrendas([rara], "zpl", 1));
 		expect(zpl.startsWith("^XA^CI28^PW406^LL203")).toBe(true);
@@ -52,7 +59,7 @@ describe("la etiqueta de prenda en ZPL", () => {
 		const datos = [...zpl.matchAll(/\^FD(.*?)\^FS/g)].map((campo) => campo[1] ?? "");
 		expect(datos.join("")).not.toMatch(/[\^~]/);
 		expect(datos.some((dato) => dato.includes("_5Ealto_5E") && dato.includes("_7Etejidos_7E"))).toBe(true);
-		expect(datos).toContain("Colegio Montaña Ñuñoa · Talla 10");
+		expect(datos).toContain("Colegio Bilingüe Monta… · Talla 10");
 		// El nombre largo se corta con «…» para caber en sus dos renglones.
 		expect(datos.some((dato) => dato.endsWith("…"))).toBe(true);
 	});
@@ -74,7 +81,7 @@ describe("la etiqueta de prenda en PDF", () => {
 		expect(primera?.textos).toEqual(["Playera polo blanca con escudo", "Instituto Juan Pablo II · Talla 8", "100269"]);
 		// Un renglón que no cabe sigue en el de abajo: el texto se lee junto.
 		const textos = (tercera?.textos ?? []).join("");
-		expect(textos).toContain("Colegio Montaña Ñuñoa · Talla 10");
+		expect(textos).toContain("Colegio Bilingüe Monta… · Talla 10");
 		expect(textos).toContain("$1,250 · Pedido especial");
 		expect(textos).toContain("^alto^");
 		expect(textos).toContain("100270");

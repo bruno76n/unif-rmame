@@ -18,6 +18,7 @@ import { z } from "zod";
 import { tieneDepartamento } from "../../../nucleo/acceso/quien.ts";
 import { noExiste } from "../../../nucleo/http/errores.ts";
 import { implementarConsulta } from "../../../nucleo/modulos.ts";
+import { vePreciosDeNotas } from "../dominio/notas.ts";
 import { avanceDe, diasHasta, estadosDeNota, etapas, porPrenda, textoDeFormaDePago, textosDePago } from "./comun.ts";
 import { leerLineas, leerNotas } from "./notas.ts";
 
@@ -44,9 +45,7 @@ export const consultaNotaEntrega = implementarConsulta(notaEntregaVentas, async 
 	const { base, diaDeNegocio: hoy } = contexto;
 	const [nota] = await leerNotas(base, parametros.nota_id);
 	if (nota === undefined) throw noExiste();
-	const vePrecios = ["ventas", "contaduria", "direccion"].some((departamento) =>
-		tieneDepartamento(contexto.quien, departamento),
-	);
+	const vePrecios = vePreciosDeNotas(contexto.quien);
 	const veSaldo = tieneDepartamento(contexto.quien, "contaduria");
 	const esVentas = tieneDepartamento(contexto.quien, "ventas");
 	const lineas = await leerLineas(base, [nota.id]);

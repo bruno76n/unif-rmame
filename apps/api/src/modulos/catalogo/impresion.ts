@@ -86,7 +86,8 @@ export async function etiquetasDePrenda(
 		return {
 			varianteId: variante.id,
 			prenda: variante.prenda,
-			escuelaYTalla: `${variante.escuela ?? "Básico"} · Talla ${variante.talla}`,
+			escuela: variante.escuela ?? "Básico",
+			talla: `Talla ${variante.talla}`,
 			codigo: variante.codigo,
 			precio: precios.get(variante.id) ?? null,
 			pedidoEspecial: variante.es_pedido_especial,

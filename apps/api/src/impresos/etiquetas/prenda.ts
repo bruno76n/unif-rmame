@@ -10,7 +10,7 @@
 
 import type { ReactElement } from "react";
 import { barrasPdf, paginaPdf, renglonPdf, trabajoPdf } from "../pdf.ts";
-import { recortado } from "../textos.ts";
+import { recortado, recortadoConSuFinal } from "../textos.ts";
 import { barrasZpl, textoZpl, trabajoZpl } from "../zpl.ts";
 
 /** Lo que lleva una etiqueta de prenda, ya escrito. */
@@ -19,8 +19,10 @@ export interface EtiquetaDePrenda {
 	varianteId: string;
 	/** El nombre de la prenda. */
 	prenda: string;
-	/** «Instituto Juan Pablo II · Talla 8» o «Básico · Talla 10». */
-	escuelaYTalla: string;
+	/** «Instituto Juan Pablo II» o «Básico»: si no cabe, se corta con «…». */
+	escuela: string;
+	/** «Talla 8»: siempre completa. */
+	talla: string;
 	/** El código de 6 dígitos. */
 	codigo: string;
 	/** El precio de mostrador escrito («$450»), o nada si la etiqueta no lleva precio. */
@@ -30,6 +32,8 @@ export interface EtiquetaDePrenda {
 
 /** Cuántas letras del nombre caben en dos renglones. */
 const letrasDelNombre = 52;
+/** Cuántas letras de «{escuela} · Talla {t}» caben en su renglón. */
+const letrasDeEscuelaYTalla = 34;
 
 /**
  * El tercer renglón: el precio y «Pedido especial», si llevan.
@@ -56,7 +60,12 @@ function camposDePrenda(etiqueta: EtiquetaDePrenda): string[] {
 			texto: recortado(etiqueta.prenda, letrasDelNombre),
 			bloque: { ancho: 376, renglones: 2 },
 		}),
-		textoZpl({ x: 15, y: 66, alto: 22, texto: etiqueta.escuelaYTalla }),
+		textoZpl({
+			x: 15,
+			y: 66,
+			alto: 22,
+			texto: recortadoConSuFinal(etiqueta.escuela, etiqueta.talla, letrasDeEscuelaYTalla),
+		}),
 		...(precio === null ? [] : [textoZpl({ x: 15, y: 90, alto: 22, texto: precio })]),
 		barrasZpl({ x: 60, y: 116, alto: 50, datos: etiqueta.codigo }),
 	];
@@ -71,7 +80,7 @@ function paginaDePrenda(etiqueta: EtiquetaDePrenda, png: Buffer): ReactElement {
 	const precio = renglonDelPrecio(etiqueta);
 	return paginaPdf(
 		renglonPdf(recortado(etiqueta.prenda, letrasDelNombre), "negritas"),
-		renglonPdf(etiqueta.escuelaYTalla),
+		renglonPdf(recortadoConSuFinal(etiqueta.escuela, etiqueta.talla, letrasDeEscuelaYTalla)),
 		...(precio === null ? [] : [renglonPdf(precio)]),
 		barrasPdf(png, etiqueta.codigo),
 	);

@@ -73,6 +73,8 @@ interface MaterialDeLaMuestra {
 	color: string;
 	/** La unidad en que lo captura Patronaje y cuántas trae una de inventario. */
 	receta?: ["cm" | "m", string];
+	/** Un consumible: cómo lo nombra la tablet y cuántas hacen una de inventario. */
+	tablet?: [string, string];
 }
 
 /** Arma un material en el orden en que lo escribe la muestra. */
@@ -87,9 +89,10 @@ function m(
 	consumo: string,
 	color: string,
 	receta?: MaterialDeLaMuestra["receta"],
+	tablet?: MaterialDeLaMuestra["tablet"],
 ): MaterialDeLaMuestra {
 	const material = { nombre, tipo, unidad, presentacion, proveedor, costo, minimo, multiplo, dias, consumo, color };
-	return receta === undefined ? material : { ...material, receta };
+	return { ...material, ...(receta === undefined ? {} : { receta }), ...(tablet === undefined ? {} : { tablet }) };
 }
 
 // biome-ignore format: una tabla se lee mejor con un material por renglón
@@ -109,9 +112,9 @@ const materialesDeLaMuestra: Record<string, MaterialDeLaMuestra> = {
 	m13: m("Hilo poliéster blanco", "avio", "conos", "Cono de 5,000 m", "p6", 118, [30, 12, 60], "1.1", "#F9FAFB", ["m", "5000"]),
 	m14: m("Hilo poliéster marino", "avio", "conos", "Cono de 5,000 m", "p6", 118, [10, 12, 60], "0.7", "#27315F", ["m", "5000"]),
 	m15: m("Etiqueta tejida de talla", "avio", "pza", "Rollo de 1,000", "p4", 0.85, [2000, 1000, 60], "160", "#9CA3AF"),
-	m16: m("Agujas 14/90", "consumible", "cajas", "Caja de 100", "p7", 260, [4, 2, 45], "0.35", "#9CA3AF"),
-	m17: m("Aceite para máquina", "consumible", "l", "Garrafa de 5 L", "p7", 185, [3, 5, 45], "0.5", "#D4A73B"),
-	m18: m("Banda de transmisión", "consumible", "pza", "Por pieza", "p7", 95, [2, 2, 90], "0.05", "#6B7280"),
+	m16: m("Agujas 14/90", "consumible", "cajas", "Caja de 100", "p7", 260, [4, 2, 45], "0.35", "#9CA3AF", undefined, ["agujas", "100"]),
+	m17: m("Aceite para máquina", "consumible", "l", "Garrafa de 5 L", "p7", 185, [3, 5, 45], "0.5", "#D4A73B", undefined, ["cuartos de litro", "4"]),
+	m18: m("Banda de transmisión", "consumible", "pza", "Por pieza", "p7", 95, [2, 2, 90], "0.05", "#6B7280", undefined, ["bandas", "1"]),
 	m19: m("Tejido de punto vino", "tela", "m", "Ancho 1.60 m", "p3", 92, [80, 50, 60], "6", "#7A1F33"),
 	m20: m("Tejido de punto verde", "tela", "m", "Ancho 1.60 m · exclusiva", "p3", 95, [60, 50, 60], "3", "#1F6B45"),
 	m21: m("Tejido de punto azul", "tela", "m", "Ancho 1.60 m", "p3", 90, [60, 50, 60], "3", "#2D4E9B"),
@@ -349,6 +352,9 @@ export async function cargarComprasYPatronajeDeLaMuestra(base: Base): Promise<vo
 				...(material.receta === undefined
 					? {}
 					: { unidad_receta: material.receta[0], factor_receta: material.receta[1] }),
+				...(material.tablet === undefined
+					? {}
+					: { unidad_tablet: material.tablet[0], factor_tablet: material.tablet[1] }),
 				proveedor_id: proveedorIds.get(material.proveedor),
 				costo_centavos: aCentavos(material.costo),
 				minimo: material.minimo,

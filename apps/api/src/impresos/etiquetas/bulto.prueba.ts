@@ -21,7 +21,8 @@ import { dibujarBultos, type EtiquetaDeBulto } from "./bulto.ts";
 /** El bulto 3 de 9 del L-2026-121. */
 const bulto: EtiquetaDeBulto = {
 	folio: "B-2026-121-03",
-	prendaYTalla: "Pantalón azul marino · Talla 12",
+	prenda: "Pantalón azul marino",
+	talla: "Talla 12",
 	piezas: "24 piezas",
 	lote: "L-2026-121 · bulto 3 de 9",
 	paraQuien: "Distribuidora Escolar Zamora · entrega 20 nov 2026",
@@ -30,7 +31,8 @@ const bulto: EtiquetaDeBulto = {
 /** Uno con nombres largos, acentos, ñ, un `^` y un `~`. */
 const largo: EtiquetaDeBulto = {
 	folio: "B-2026-122-10",
-	prendaYTalla: "Suéter cuello V de niña con escudo bordado ^dorado~ · Talla 14",
+	prenda: "Suéter cuello V de niña con escudo bordado ^dorado~",
+	talla: "Talla 14",
 	piezas: "1 pieza",
 	lote: "L-2026-122 · bulto 10 de 10",
 	paraQuien: "Colegio Montaña de Peñuelas Ñuñoa · entrega 3 dic 2026",
@@ -43,6 +45,11 @@ describe("la etiqueta de bulto", () => {
 		const datos = [...String(zpl).matchAll(/\^FD(.*?)\^FS/g)].map((campo) => campo[1] ?? "").join("");
 		expect(datos).not.toMatch(/[\^~]/);
 		expect(datos).toContain("…");
+	});
+
+	it("la prenda que no cabe se corta con «…» y la talla siempre queda completa", async () => {
+		const zpl = String(await dibujarBultos([largo], "zpl", 1));
+		expect(zpl).toMatch(/…_C2_B7 Talla 14\^FS|… · Talla 14\^FS/);
 	});
 
 	it("el PDF trae una página de 2 × 1 pulgadas por bulto y por copia, con su texto", async () => {

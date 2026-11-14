@@ -193,9 +193,11 @@ async function diasDeTrabajo(base: BaseDeLaTablet): Promise<DiaDeLaSemana[]> {
 }
 
 /**
- * La salud de cada lote en proceso, con la función del paquete compartido: su último avance es su último registro, y
- * su última sincronización, la última bajada de esta tablet. Un lote está atorado por máquina si una falla abierta que
- * la detiene es de la máquina de quien hace una operación con piezas esperando.
+ * La salud de cada lote en proceso, con la función del paquete compartido y los mismos datos que usa la API: su último
+ * avance es su último registro vigente de la tablet (o el día de su corte); la última sincronización, la última subida de
+ * esta tablet, la del taller; los días sin subir, los días después del avance más viejo sin ningún registro de la tablet;
+ * y está atorado por máquina si una falla abierta que la detiene es de la máquina de quien hace una operación con piezas
+ * esperando.
  * @param base La base local.
  * @param taller Lo del taller.
  * @param hoy El día de hoy.
@@ -208,8 +210,8 @@ async function saludDeLosLotes(
 	const dias = await diasDeTrabajo(base);
 	const loteAtoradoDias = await parametroEntero(base, "produccion.lote_atorado_dias");
 	const riesgoAtrasoDias = await parametroEntero(base, "produccion.riesgo_atraso_dias");
-	const bajada = await leerDato(base, "ultima_bajada");
-	const ultimaSincronizacion = typeof bajada === "string" ? diaDeNegocio(Temporal.Instant.from(bajada)) : null;
+	const subida = await leerDato(base, "ultima_subida");
+	const ultimaSincronizacion = typeof subida === "string" ? diaDeNegocio(Temporal.Instant.from(subida)) : null;
 	const fallas = (await leer(base, "fallas", esquemas.fallas)).filter((falla) => falla.estado !== "resuelta");
 	const motivos = await leer(base, "motivos_falla", esquemas.motivos_falla);
 	const maquinas = await leer(base, "maquinas", esquemas.maquinas);
@@ -219,20 +221,36 @@ async function saludDeLosLotes(
 			.map((falla) => maquinas.find((maquina) => maquina.id === falla.maquina_id)?.persona_id)
 			.filter((persona): persona is string => typeof persona === "string"),
 	);
+	const diaDe = (registro: RenglonDe<"registros_operacion">) => diaDeNegocio(Temporal.Instant.from(registro.hecho_en));
+	const enProceso = taller.lotes.filter((suyo) => suyo.estado === "en_proceso");
+	const avances = new Map(
+		enProceso.map((lote) => {
+			const delLote = taller.registros.filter((registro) => registro.lote_id === lote.id);
+			const suyos = delLote.filter((registro) => registro.origen !== "corte").map(diaDe);
+			const corte = delLote.filter((registro) => registro.origen === "corte").map(diaDe);
+			const avance = (suyos.length > 0 ? suyos : corte).sort(Temporal.PlainDate.compare).at(-1) ?? hoy;
+			return [lote.id, avance] as const;
+		}),
+	);
+	// Los días después del avance más viejo y antes de hoy en que la tablet no subió nada de ningún lote.
+	const conRegistros = new Set(
+		taller.registros.filter((registro) => registro.origen !== "corte").map((registro) => diaDe(registro).toString()),
+	);
+	const diasSinSubir: Temporal.PlainDate[] = [];
+	const desde = [...avances.values()].sort(Temporal.PlainDate.compare)[0] ?? hoy;
+	for (let dia = desde.add({ days: 1 }); Temporal.PlainDate.compare(dia, hoy) < 0; dia = dia.add({ days: 1 })) {
+		if (!conRegistros.has(dia.toString())) diasSinSubir.push(dia);
+	}
 	const salud = new Map<string, SaludDeLote["tipo"]>();
-	for (const lote of taller.lotes.filter((suyo) => suyo.estado === "en_proceso")) {
+	for (const lote of enProceso) {
 		const tallas = taller.loteTallas.filter((talla) => talla.lote_id === lote.id);
 		const faltan = tallas.reduce(
 			(total, talla) =>
 				total + (talla.piezas_cortadas ?? 0) - (talla.piezas_merma ?? 0) - (talla.piezas_terminadas ?? 0),
 			0,
 		);
-		const delLote = taller.bultos.filter((bulto) => bulto.lote_id === lote.id);
-		const avances = taller.registros
-			.filter((registro) => delLote.some((bulto) => bulto.id === registro.bulto_id))
-			.map((registro) => diaDeNegocio(Temporal.Instant.from(registro.hecho_en)));
-		const ultimoAvance = avances.sort(Temporal.PlainDate.compare).at(-1) ?? hoy;
-		const esperando = delLote
+		const esperando = taller.bultos
+			.filter((bulto) => bulto.lote_id === lote.id)
 			.flatMap((bulto) => pasosDelBulto(taller, bulto))
 			.find((paso) => paso.tope > 0 && paso.personaBaseId !== null && paradas.has(paso.personaBaseId));
 		salud.set(
@@ -241,9 +259,9 @@ async function saludDeLosLotes(
 				hoy,
 				fechaEntrega: Temporal.PlainDate.from(lote.fecha_entrega),
 				faltan,
-				ultimoAvance,
+				ultimoAvance: avances.get(lote.id) ?? hoy,
 				ultimaSincronizacion,
-				diasSinSubir: [],
+				diasSinSubir,
 				cuelloDeBotella: null,
 				atoradoPorMaquina: esperando === undefined ? null : { operacion: esperando.operacion, falla: "" },
 				diasDeTrabajo: dias,
@@ -255,6 +273,31 @@ async function saludDeLosLotes(
 	return salud;
 }
 
+/** El color de la salud de un lote: rojo atorado o atrasado, ámbar en riesgo; lo demás, normal (como en la API). */
+export type TonoDeSalud = "rojo" | "ambar" | "normal";
+
+/**
+ * El color de una salud.
+ * @param tipo La salud del lote.
+ */
+function tonoDe(tipo: SaludDeLote["tipo"]): TonoDeSalud {
+	if (tipo === "atorado" || tipo === "atorado_maquina" || tipo === "atrasado") return "rojo";
+	return tipo === "en_riesgo" ? "ambar" : "normal";
+}
+
+/**
+ * El color de la salud de cada lote en proceso.
+ * @param base La base local.
+ * @param ahora Cuándo.
+ */
+export async function tonosDeLosLotes(
+	base: BaseDeLaTablet,
+	ahora: Temporal.Instant,
+): Promise<Map<string, TonoDeSalud>> {
+	const salud = await saludDeLosLotes(base, await leerTaller(base), diaDeNegocio(ahora));
+	return new Map([...salud].map(([lote, tipo]) => [lote, tonoDe(tipo)]));
+}
+
 /** Un bulto de «Bultos para ti». */
 export interface BultoParaTi {
 	bultoId: string;
@@ -263,8 +306,8 @@ export interface BultoParaTi {
 	flujoOperacionId: string;
 	operacion: string;
 	listas: number;
-	/** El color de la salud de su lote: rojo atorado o atrasado, ámbar en riesgo. */
-	tono: "rojo" | "ambar" | "normal";
+	/** El color de la salud de su lote. */
+	tono: TonoDeSalud;
 }
 
 /**
@@ -299,7 +342,6 @@ export async function bultosParaTi(
 	const maximo = await parametroEntero(base, "produccion.bultos_para_ti_max");
 	return ordenarBultos(candidatos, maximo).map((elegido) => {
 		const candidato = candidatos.find((suyo) => suyo.bultoId === elegido.bultoId);
-		const tipo = elegido.salud;
 		return {
 			bultoId: candidato?.bulto.id ?? "",
 			folio: candidato?.bulto.folio ?? "",
@@ -307,12 +349,7 @@ export async function bultosParaTi(
 			flujoOperacionId: candidato?.paso.flujoOperacionId ?? "",
 			operacion: candidato?.paso.operacion ?? "",
 			listas: elegido.tope,
-			tono:
-				tipo === "atorado" || tipo === "atorado_maquina" || tipo === "atrasado"
-					? "rojo"
-					: tipo === "en_riesgo"
-						? "ambar"
-						: "normal",
+			tono: tonoDe(elegido.salud),
 		};
 	});
 }

@@ -65,6 +65,7 @@ export const esquemas = {
 		piezas_danadas: numero,
 		hecho_en: z.string(),
 		estado: z.string(),
+		origen: z.string().optional(),
 		_local: marcaLocal,
 	}),
 	tarifas_operacion: z.object({

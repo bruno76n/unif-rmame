@@ -10,7 +10,7 @@ import type { BaseDeLaTablet } from "../copia/base.ts";
 export type EstadoDelAparato = "sin_registro" | "preparando" | "lista" | "revocada" | "actualizar";
 
 /** Las claves de lo que guarda. */
-type ClaveDeSincronizacion = "estado" | "cursor" | "intervalo_segundos" | "ultima_bajada";
+type ClaveDeSincronizacion = "estado" | "cursor" | "intervalo_segundos" | "ultima_bajada" | "ultima_subida";
 
 /**
  * Lee un dato de la sincronización.

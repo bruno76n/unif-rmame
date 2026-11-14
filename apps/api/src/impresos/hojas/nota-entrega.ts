@@ -15,6 +15,8 @@ import { datosPdf, firmasPdf, hojaPdf, type MarcoDeLaHoja, subtituloPdf, tablaPd
 export interface DineroDeLaNota {
 	/** El precio y el importe de cada renglón, en el orden de los renglones. */
 	precios: { precio: string; importe: string }[];
+	/** «$4,560»: va en el Importe del renglón «Total». */
+	subtotal: string;
 	/** «Subtotal $4,560», «Anticipo aplicado -$1,000», «Nota de crédito NC-0012 -$480», «Por cobrar $3,080». */
 	cuentas: string[];
 	/** «Crédito 30 días · Vence el 14 dic 2026», o la forma de pago sola. */
@@ -60,7 +62,7 @@ function tablaDeLaNota(hoja: HojaDeNota) {
 			dinero.precios[i]?.precio ?? "",
 			dinero.precios[i]?.importe ?? "",
 		]),
-		["Total", "", hoja.piezas, "", ""],
+		["Total", "", hoja.piezas, "", dinero.subtotal],
 	);
 }
 

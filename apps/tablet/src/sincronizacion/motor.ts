@@ -14,6 +14,7 @@ import { type EventoEnVivo, escucharEventos } from "@uniformame/compartido/clien
 import { compararVersiones } from "@uniformame/compartido/contratos/versiones";
 import { z } from "zod";
 import type { BaseDeLaTablet } from "../copia/base.ts";
+import { parametroEntero } from "../copia/parametros.ts";
 import { versionDeLaTablet } from "../version.ts";
 import { type Conexion, encabezadosDeLaLlave, HayQueActualizar, SinInternet, TabletRevocada } from "./api.ts";
 import { bajarCambios, bajarFoto } from "./bajar.ts";
@@ -85,20 +86,32 @@ export function crearMotor(base: BaseDeLaTablet, conexion: Conexion): MotorDeLaT
 		cambiar({ aparato: await estadoDelAparato(base), pendientes: await base.cola.count() });
 	}
 
-	/** Lo que hace con lo que corta una vuelta. */
-	async function alFallar(error: unknown): Promise<void> {
+	/**
+	 * Lo que hace con lo que corta una vuelta. Un error que no espera (una respuesta que no cumple su forma, un `4xx` de una
+	 * tanda) se anota y no detiene al motor: la cola sigue en la base y la siguiente vuelta lo intenta otra vez.
+	 * @param error Lo que pasó.
+	 * @returns Si la vuelta puede seguir y bajar.
+	 */
+	async function alFallar(error: unknown): Promise<boolean> {
 		if (error instanceof SinInternet) {
 			estuvoSinInternet = true;
 			cambiar({ conectada: false });
-		} else if (error instanceof HayQueActualizar) await guardarDato(base, "estado", "actualizar");
+			return false;
+		}
+		if (error instanceof HayQueActualizar) await guardarDato(base, "estado", "actualizar");
 		else if (error instanceof TabletRevocada) await guardarDato(base, "estado", "revocada");
-		else throw error;
+		else {
+			console.error("La tablet no pudo sincronizar:", error);
+			return true;
+		}
+		return false;
 	}
 
 	/** Una vuelta: sube, y si puede, baja. */
 	async function unaVuelta(): Promise<void> {
 		const aparato = await estadoDelAparato(base);
 		if (aparato === "sin_registro" || aparato === "actualizar") return refrescar();
+		let puedeBajar = true;
 		try {
 			if (aparato === "preparando")
 				await bajarFoto(base, conexion, (renglones) => cambiar({ avanceDeLaFoto: renglones }));
@@ -108,7 +121,12 @@ export function crearMotor(base: BaseDeLaTablet, conexion: Conexion): MotorDeLaT
 			const quedan = await base.cola.count();
 			if (estuvoSinInternet && antes > 0 && quedan === 0) cambiar({ enviadasAlVolver: subida.contestados });
 			estuvoSinInternet = false;
-			if ((await estadoDelAparato(base)) === "lista") await bajarCambios(base, conexion);
+		} catch (error) {
+			puedeBajar = await alFallar(error);
+		}
+		// Aunque la subida falle por algo que no es la red, baja: lo nuevo (un parámetro, por ejemplo) puede arreglarla.
+		try {
+			if (puedeBajar && (await estadoDelAparato(base)) === "lista") await bajarCambios(base, conexion);
 		} catch (error) {
 			await alFallar(error);
 		}
@@ -122,19 +140,27 @@ export function crearMotor(base: BaseDeLaTablet, conexion: Conexion): MotorDeLaT
 			return vuelta;
 		}
 		vuelta = (async () => {
-			do {
-				otraVuelta = false;
-				await unaVuelta();
-			} while (otraVuelta);
-			vuelta = null;
+			try {
+				do {
+					otraVuelta = false;
+					await unaVuelta();
+				} while (otraVuelta);
+			} catch (error) {
+				console.error("La tablet no pudo sincronizar:", error);
+			} finally {
+				vuelta = null;
+			}
 		})();
 		return vuelta;
 	}
 
 	/** La pregunta de cada intervalo, aunque no lleguen avisos. */
 	async function programar(): Promise<void> {
+		// El del parámetro, que baja a la tablet; antes de la primera foto, el que dio el canje.
 		const guardado = await leerDato(base, "intervalo_segundos");
-		const segundos = typeof guardado === "number" ? guardado : 60;
+		const segundos = await parametroEntero(base, "sync.intervalo_segundos").catch(() =>
+			typeof guardado === "number" ? guardado : 60,
+		);
 		reloj = setTimeout(() => {
 			void sincronizar().then(programar);
 		}, segundos * 1000);

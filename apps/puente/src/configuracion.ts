@@ -7,10 +7,11 @@
  * `secreto_nuevo`: si no supo si el cambio se aplicó, la siguiente llamada prueba primero la nueva y luego la vieja.
  */
 
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { mkdir, readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { z } from "zod";
+import { escribirDeUnJalon } from "./archivos.ts";
 
 /** El puerto de la Zebra si no se escribe otro. */
 const puertoDeLaZebra = 9100;
@@ -80,16 +81,15 @@ export async function leerConfiguracion(carpeta: string): Promise<Configuracion 
 }
 
 /**
- * Guarda `puente.json` de un jalón (un archivo nuevo que reemplaza al anterior), legible solo por su usuario.
+ * Guarda `puente.json` de un jalón y hasta el disco (un archivo nuevo que reemplaza al anterior), legible solo por su
+ * usuario.
  * @param carpeta La carpeta de datos.
  * @param configuracion Lo que se guarda.
  */
 export async function guardarConfiguracion(carpeta: string, configuracion: Configuracion): Promise<void> {
 	await mkdir(carpeta, { recursive: true, mode: 0o700 });
-	const archivo = join(carpeta, "puente.json");
-	const temporal = `${archivo}.nuevo`;
-	await writeFile(temporal, `${JSON.stringify(esquemaDeConfiguracion.parse(configuracion), null, "\t")}\n`, {
-		mode: 0o600,
-	});
-	await rename(temporal, archivo);
+	await escribirDeUnJalon(
+		join(carpeta, "puente.json"),
+		`${JSON.stringify(esquemaDeConfiguracion.parse(configuracion), null, "\t")}\n`,
+	);
 }

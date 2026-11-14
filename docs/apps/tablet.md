@@ -95,11 +95,11 @@ Lo que nace en la tablet (un registro, una falla, un consumible tomado, un bloqu
 
 ## Cómo está hecho
 
-**Fase 20, parte 4: por dentro.** La tablet vive en `apps/tablet/`: Vite con React y Tailwind, y el proxy de `/v1` a la API.
+**Fase 20, parte 4: por dentro.** La tablet vive en `apps/tablet/`: Vite con React y Tailwind, y el proxy de `/v1` a la API. En las pruebas, el proxy manda el `Origin` del taller (`UNIFORMAME_ORIGEN_TALLER`), como lo haría la tablet servida desde su dominio.
 
 - **La base** (`copia/base.ts`, Dexie): una tabla por cada tabla que baja, con el nombre que manda el servidor (su propio renglón llega en `dispositivos`), y además:
   - `cola` (`++orden`, la clave única);
-  - `sincronizacion` (el estado del aparato, el cursor, el intervalo y la última bajada);
+  - `sincronizacion` (el estado del aparato, el cursor, la última bajada y la última subida);
   - `aparato` (su llave, con el secreto cifrado);
   - `llaves` (la de cifrado);
   - `intentos_pin`.
@@ -114,10 +114,11 @@ Lo que nace en la tablet (un registro, una falla, un consumible tomado, un bloqu
   - los parámetros se leen de la copia (`copia/parametros.ts`), sin valores escritos en la tablet: nadie entra antes de la foto.
 - **La cola** (`cola/cola.ts`): el comando y sus renglones locales en la misma transacción.
 - **La API** (`sincronizacion/api.ts`): la llave descifrada solo para cada llamada, con `X-App-Version` y `X-Pendientes`. Sin red, un `503` o una respuesta que no es de la API cuentan como sin internet; el `426` pide actualizar y `llave_revocada`, revocada. El cambio de llave usa `conLaLlaveQueVale` del paquete compartido, la misma del puente.
-- **Subir** (`sincronizacion/subir.ts`): tandas de `sync.tanda_max_comandos`; cada respuesta saca su comando de la cola y marca sus renglones; con `detenido` se para y la siguiente vez manda desde el primero sin respuesta.
-- **Bajar** (`sincronizacion/bajar.ts`): páginas desde el cursor; `requiere_foto` baja la foto; `rotar_llave` cambia la llave al quedar al día. No revisa llaves foráneas: guarda lo que baja y las pantallas no muestran lo que no encuentran.
+- **Subir** (`sincronizacion/subir.ts`): tandas de `sync.tanda_max_comandos`; cada respuesta saca su comando de la cola y marca sus renglones, y cada tanda anota su hora como la última subida; con `detenido` se para y la siguiente vez manda desde el primero sin respuesta.
+- **Bajar** (`sincronizacion/bajar.ts`): páginas desde el cursor; `requiere_foto` baja la foto; `rotar_llave` cambia la llave al quedar al día. Al terminar la foto, la tablet queda lista solo si estaba preparándola: una revocada que baja no vuelve a lista. No revisa llaves foráneas: guarda lo que baja y las pantallas no muestran lo que no encuentran.
 - **El motor** (`sincronizacion/motor.ts`):
-  - una vuelta a la vez; sube y baja al arrancar, con cada aviso en vivo (leídos con `escucharEventos` del paquete compartido, como el puente), al volver la red y cada `intervalo_segundos`;
+  - una vuelta a la vez; sube y baja al arrancar, con cada aviso en vivo (leídos con `escucharEventos` del paquete compartido, como el puente), al volver la red y cada `sync.intervalo_segundos` leído de la copia (antes de la foto, el que dio el canje);
+  - un error al subir que no es de red no le quita la bajada; un error que no espera se anota en la consola y el motor sigue en la siguiente vuelta;
   - lleva el estado de las pantallas;
   - revocada, solo sube;
   - con versión vieja no hace nada y, al arrancar otra vez, vuelve a intentar.
@@ -130,5 +131,6 @@ Lo que nace en la tablet (un registro, una falla, un consumible tomado, un bloqu
   - `sincronizacion/subir.prueba.ts`: sin red, la respuesta perdida y `detenido`;
   - `sincronizacion/bajar.prueba.ts`: las páginas, el cambio, el quitar, la foto con cola y el registro cancelado;
   - `pin/pin.prueba.ts`;
-  - `sincronizacion/aparato.prueba.ts`: la revocada y el `426`;
+  - `sincronizacion/aparato.prueba.ts`: la revocada, el `426` y un error que no espera, que no detiene al motor;
+  - `sincronizacion/llave.prueba.ts`: el cambio de llave aplicado y el que no se supo si se aplicó;
   - `service-worker/plugin.prueba.ts`.

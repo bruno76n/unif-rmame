@@ -87,7 +87,8 @@ export function QueLePasa({
 				</div>
 			) : (
 				<MensajeDeTablet tono="ambar">
-					Ya está reportada: {maquina.falla.motivo}, {desdeCuando(maquina.falla).toLowerCase()}
+					Ya está reportada: {maquina.falla.motivo.toLocaleLowerCase("es-MX")},{" "}
+					{desdeCuando(maquina.falla).toLowerCase()}
 				</MensajeDeTablet>
 			)}
 		</section>

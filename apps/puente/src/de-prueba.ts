@@ -44,9 +44,13 @@ export interface PuenteDePrueba {
 	llamadas: string[];
 	/** El `fetch` del puente: anota cada llamada y corta la red cuando se pide. */
 	fetch: typeof fetch;
-	/** Las piezas del puente; `cortarLaRed` hace que la siguiente llamada que cumpla la condición no llegue. */
+	/** Las piezas del puente. */
 	piezas: PiezasDelPuente;
-	cortarLaRed: (condicion: (url: string) => boolean) => void;
+	/**
+	 * Corta la red en la siguiente llamada que cumpla la condición: antes de llegar o, con `despues`, cuando el servidor
+	 * ya la procesó pero su respuesta se pierde.
+	 */
+	cortarLaRed: (condicion: (url: string) => boolean, despues?: boolean) => void;
 	/** Ventas pide un trabajo de prueba para la Zebra de Aduana. */
 	pedirTrabajo: (ids: string[], copias: number) => Promise<string>;
 	/** El estado y el error de un trabajo. */
@@ -88,15 +92,19 @@ export async function levantarPuenteDePrueba(opciones: { avisosEnVivo?: boolean 
 		},
 	};
 	const llamadas: string[] = [];
-	let corte: ((url: string) => boolean) | null = null;
+	let corte: { condicion: (url: string) => boolean; despues: boolean } | null = null;
 	const fetchDelPuente: typeof fetch = async (entrada, init) => {
 		const url = entrada instanceof Request ? entrada.url : String(entrada);
-		if (corte?.(url) === true) {
-			corte = null;
+		const cortada = corte?.condicion(url) === true ? corte : null;
+		if (cortada !== null) corte = null;
+		if (cortada?.despues === false) throw new TypeError("fetch failed");
+		llamadas.push(`${init?.method ?? "GET"} ${new URL(url).pathname}`);
+		const respuesta = await fetch(entrada, init);
+		if (cortada?.despues === true) {
+			await respuesta.arrayBuffer();
 			throw new TypeError("fetch failed");
 		}
-		llamadas.push(`${init?.method ?? "GET"} ${new URL(url).pathname}`);
-		return fetch(entrada, init);
+		return respuesta;
 	};
 	const piezas: PiezasDelPuente = {
 		api: crearApiDelPuente({
@@ -121,8 +129,8 @@ export async function levantarPuenteDePrueba(opciones: { avisosEnVivo?: boolean 
 		llamadas,
 		fetch: fetchDelPuente,
 		piezas,
-		cortarLaRed: (condicion) => {
-			corte = condicion;
+		cortarLaRed: (condicion, despues = false) => {
+			corte = { condicion, despues };
 		},
 		pedirTrabajo: async (ids, copias) => {
 			const respuesta = await mandarAccion(servidor, "prueba.imprimir", {

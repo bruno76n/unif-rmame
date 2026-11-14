@@ -38,8 +38,8 @@ export class HayQueActualizar extends Error {
 
 /** Lo que el puente le pide a la API. */
 export interface ApiDelPuente {
-	/** Pide sus trabajos por imprimir: es también su señal de vida. */
-	trabajos: () => Promise<RespuestaDeTrabajos>;
+	/** Pide sus trabajos por imprimir con la clave del pedido: es también su señal de vida. */
+	trabajos: (clave: string) => Promise<RespuestaDeTrabajos>;
 	/** Baja el ZPL de un trabajo por su ruta. */
 	bajarZpl: (ruta: string) => Promise<string>;
 	/** Confirma un trabajo con su clave: el reintento recibe la misma respuesta. */
@@ -129,7 +129,7 @@ export function crearApiDelPuente(dependencias: DependenciasDeLaApi): ApiDelPuen
 	}
 
 	return {
-		trabajos: () => conLaLlave((cliente) => cliente.accion("admin.trabajos_impresion", { datos: {} })),
+		trabajos: (clave) => conLaLlave((cliente) => cliente.accion("admin.trabajos_impresion", { datos: {} }, clave)),
 		bajarZpl: (ruta) =>
 			conLaLlave(async (_cliente, secreto) => {
 				const configuracion = await dependencias.leer();

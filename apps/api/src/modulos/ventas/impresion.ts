@@ -17,7 +17,6 @@ import { Temporal } from "temporal-polyfill";
 import { z } from "zod";
 import { dibujarHojaDeNota } from "../../impresos/hojas/nota-entrega.ts";
 import { dibujarHojaDePedido } from "../../impresos/hojas/pedido.ts";
-import { tieneDepartamento } from "../../nucleo/acceso/quien.ts";
 import { marcoDeLaHoja } from "../../nucleo/hojas.ts";
 import { errorDeRegla, noExiste } from "../../nucleo/http/errores.ts";
 import type { ContextoDeConsulta, TipoDeEtiqueta } from "../../nucleo/modulos.ts";
@@ -31,6 +30,7 @@ import {
 	textoDeFormaDePago,
 } from "./consultas/comun.ts";
 import { leerLineas, leerNotas } from "./consultas/notas.ts";
+import { vePreciosDeNotas } from "./dominio/notas.ts";
 
 /** Lo del cliente que llevan las dos hojas. */
 const delCliente = z.object({
@@ -156,6 +156,7 @@ async function dineroDeLaNota(
 			precio: enPesos(linea.precio_unitario_centavos),
 			importe: enPesos(linea.cantidad * linea.precio_unitario_centavos),
 		})),
+		subtotal: enPesos(nota.subtotal_centavos),
 		cuentas: [
 			`Subtotal ${enPesos(nota.subtotal_centavos)}`,
 			...(nota.anticipo_aplicado_centavos > 0
@@ -179,7 +180,7 @@ async function hojaDeLaNota(contexto: ContextoDeConsulta, notaId: string): Promi
 	if (nota === undefined || nota.estado === "cancelada") throw noExiste();
 	const lineas = await leerLineas(contexto.base, [nota.id]);
 	const cliente = await leerCliente(contexto, nota.cliente_id);
-	const vePrecios = tieneDepartamento(contexto.quien, "ventas", "contaduria", "direccion");
+	const vePrecios = vePreciosDeNotas(contexto.quien);
 	const marco = await marcoDeLaHoja(contexto, {
 		nombre: "Nota de entrega",
 		folio: nota.folio,

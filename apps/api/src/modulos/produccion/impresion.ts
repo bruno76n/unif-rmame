@@ -64,7 +64,8 @@ export async function etiquetasDeBulto(
 		if (bulto === undefined) throw noExiste();
 		return {
 			folio: bulto.folio,
-			prendaYTalla: `${bulto.prenda} · Talla ${bulto.talla}`,
+			prenda: bulto.prenda,
+			talla: `Talla ${bulto.talla}`,
 			piezas: plural(bulto.piezas, "pieza", "piezas"),
 			lote: `${bulto.lote} · bulto ${bulto.numero} de ${bulto.total}`,
 			paraQuien: `${escribirParaQuien(bulto).nombre} · entrega ${textoDeDiaConAnio(bulto.fecha_entrega)}`,

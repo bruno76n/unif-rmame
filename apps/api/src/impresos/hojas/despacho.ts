@@ -1,7 +1,8 @@
 /**
  * La hoja del despacho (tipo `despacho`): «Despacho {D}»; el destino; «Salió el {fecha} a las {hora}» y quién despachó;
  * por cada traspaso, su folio y de qué es, con su tabla Prenda · Talla · Piezas (en el material, Material · Rollo ·
- * Metros); el total de piezas; y «Recibió», con renglones para nombre, firma, fecha y hora. Viaja con la mercancía.
+ * Cantidad: los metros del rollo o la cantidad en su unidad); el total de piezas si lleva prendas; y «Recibió», con
+ * renglones para nombre, firma, fecha y hora. Viaja con la mercancía.
  * Fase 20 · docs/impresos/hojas.md («La hoja del despacho»)
  *
  * Recibe todo ya escrito de Inventario: nunca lleva precios.
@@ -22,8 +23,8 @@ export interface HojaDeDespacho {
 	/** «Salió el 14 nov 2026 a las 10:42 · lo despachó Marta Ruiz». */
 	salio: string;
 	traspasos: TraspasoDelDespacho[];
-	/** «58 piezas en total». */
-	total: string;
+	/** «58 piezas en total»; nada si el despacho es solo material. */
+	total: string | null;
 }
 
 /**
@@ -36,7 +37,7 @@ function tablaDelTraspaso(traspaso: TraspasoDelDespacho): ReactElement {
 			[
 				{ titulo: "Material", ancho: 4 },
 				{ titulo: "Rollo", ancho: 2 },
-				{ titulo: "Metros", ancho: 2, derecha: true },
+				{ titulo: "Cantidad", ancho: 2, derecha: true },
 			],
 			traspaso.renglones.map((renglon) => [renglon.material, renglon.rollo, renglon.cantidad]),
 		);
@@ -61,7 +62,7 @@ export function dibujarHojaDeDespacho(marco: MarcoDeLaHoja, hoja: HojaDeDespacho
 		marco,
 		datosPdf(hoja.destino, hoja.salio),
 		...hoja.traspasos.flatMap((traspaso) => [subtituloPdf(traspaso.titulo), tablaDelTraspaso(traspaso)]),
-		datosPdf("", hoja.total),
+		...(hoja.total === null ? [] : [datosPdf("", hoja.total)]),
 		firmasPdf("Recibió", ["Nombre", "Firma", "Fecha", "Hora"]),
 	);
 }

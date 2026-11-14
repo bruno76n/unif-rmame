@@ -6,7 +6,7 @@
 
 import { BotonGrande, BotonVolver } from "@uniformame/interfaz/tablet/botones";
 import { Contador } from "@uniformame/interfaz/tablet/captura";
-import { PackageCheck } from "lucide-react";
+import { Check } from "lucide-react";
 import { useState } from "react";
 
 /** Un consumible de «¿Qué tomas?». */
@@ -59,7 +59,7 @@ export function QueTomas({
 					))}
 				</div>
 			)}
-			<BotonGrande icono={PackageCheck} disabled={tomados.length === 0} onClick={() => alTomar(tomados)}>
+			<BotonGrande icono={Check} disabled={tomados.length === 0} onClick={() => alTomar(tomados)}>
 				Tomar
 			</BotonGrande>
 		</section>

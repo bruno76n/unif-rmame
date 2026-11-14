@@ -85,6 +85,10 @@ export function Tablet({ base, conexion, motor, alActualizar }: PropsDeLaTablet)
 		setPaso({ pantalla: "inicio" });
 	}, []);
 	useInactividad(persona !== null, inactividad, salir);
+	// Si el aparato deja de estar listo (revocado o por actualizar), nadie se queda adentro: al volver, «¿Quién eres?».
+	useEffect(() => {
+		if (!lista) salir();
+	}, [lista, salir]);
 
 	// Lo que mandó al volver el internet se dice una vez.
 	useEffect(() => {

@@ -8,6 +8,7 @@
 import { mkdtemp, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { v7 as uuidv7 } from "uuid";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { conGoogle, mandarAccion } from "../../api/src/nucleo/pruebas/llamadas.ts";
@@ -70,7 +71,7 @@ describe("registrar el puente con su código", () => {
 			leer: async () => (await leerConfiguracion(suya)) ?? Promise.reject(new Error("sin configuración")),
 			guardar: (nueva) => guardarConfiguracion(suya, nueva),
 		});
-		expect(await puente.trabajos()).toMatchObject({ trabajos: [] });
+		expect(await puente.trabajos(uuidv7())).toMatchObject({ trabajos: [] });
 	});
 
 	it("un código que no sirve regresa el mensaje de la API y no guarda nada", async () => {

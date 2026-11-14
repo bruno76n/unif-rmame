@@ -4,9 +4,8 @@
  * Fase 20 · docs/interfaz/tablet.md («Escanear bulto») y docs/apps/tablet.md («El lector de etiquetas»)
  */
 
-import { Campo } from "@uniformame/interfaz/captura/campo";
 import { BotonVolver } from "@uniformame/interfaz/tablet/botones";
-import { MensajeDeTablet } from "@uniformame/interfaz/tablet/captura";
+import { CampoDeTablet } from "@uniformame/interfaz/tablet/captura";
 import { ScanLine } from "lucide-react";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { crearLector } from "../lector/lector.ts";
@@ -90,9 +89,10 @@ export function Escanear({
 				) : (
 					<video ref={video} muted playsInline className="aspect-video w-full max-w-115 rounded-grande bg-tinta" />
 				)}
-				<form className="w-full max-w-115" onSubmit={alEnviar}>
-					<Campo
+				<form className="flex w-full justify-center" onSubmit={alEnviar}>
+					<CampoDeTablet
 						etiqueta="Código del bulto"
+						error={error}
 						value={codigo}
 						autoFocus
 						autoComplete="off"
@@ -101,7 +101,6 @@ export function Escanear({
 					/>
 				</form>
 			</div>
-			{error === undefined ? null : <MensajeDeTablet tono="rojo">{error}</MensajeDeTablet>}
 		</section>
 	);
 }

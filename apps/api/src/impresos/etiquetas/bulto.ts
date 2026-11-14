@@ -9,15 +9,17 @@
 
 import type { ReactElement } from "react";
 import { barrasPdf, paginaPdf, renglonPdf, trabajoPdf } from "../pdf.ts";
-import { recortado } from "../textos.ts";
+import { recortado, recortadoConSuFinal } from "../textos.ts";
 import { barrasZpl, textoZpl, trabajoZpl } from "../zpl.ts";
 
 /** Lo que lleva la etiqueta de un bulto, ya escrito. */
 export interface EtiquetaDeBulto {
 	/** B-2026-121-03: lo dicen sus barras. */
 	folio: string;
-	/** «Pantalón azul marino · Talla 12». */
-	prendaYTalla: string;
+	/** «Pantalón azul marino»: si no cabe, se corta con «…». */
+	prenda: string;
+	/** «Talla 12»: siempre completa. */
+	talla: string;
 	/** «24 piezas». */
 	piezas: string;
 	/** «L-2026-121 · bulto 3 de 9». */
@@ -26,7 +28,7 @@ export interface EtiquetaDeBulto {
 	paraQuien: string;
 }
 
-/** Cuántas letras de la prenda caben en su renglón. */
+/** Cuántas letras de «{prenda} · Talla {t}» caben en su renglón. */
 const letrasDelRenglon = 38;
 /** Cuántas letras de «para quién · entrega» caben en sus dos renglones. */
 const letrasDeParaQuien = 80;
@@ -38,7 +40,7 @@ const letrasDeParaQuien = 80;
 function camposDeBulto(etiqueta: EtiquetaDeBulto): string[] {
 	return [
 		textoZpl({ x: 15, y: 6, alto: 30, texto: etiqueta.folio }),
-		textoZpl({ x: 15, y: 40, alto: 20, texto: recortado(etiqueta.prendaYTalla, letrasDelRenglon) }),
+		textoZpl({ x: 15, y: 40, alto: 20, texto: recortadoConSuFinal(etiqueta.prenda, etiqueta.talla, letrasDelRenglon) }),
 		textoZpl({ x: 15, y: 62, alto: 18, texto: `${etiqueta.piezas} · ${etiqueta.lote}` }),
 		textoZpl({
 			x: 15,
@@ -59,7 +61,7 @@ function camposDeBulto(etiqueta: EtiquetaDeBulto): string[] {
 function paginaDeBulto(etiqueta: EtiquetaDeBulto, png: Buffer): ReactElement {
 	return paginaPdf(
 		renglonPdf(etiqueta.folio, "grande"),
-		renglonPdf(recortado(etiqueta.prendaYTalla, letrasDelRenglon)),
+		renglonPdf(recortadoConSuFinal(etiqueta.prenda, etiqueta.talla, letrasDelRenglon)),
 		renglonPdf(`${etiqueta.piezas} · ${etiqueta.lote}`),
 		renglonPdf(recortado(etiqueta.paraQuien, letrasDeParaQuien)),
 		barrasPdf(png, etiqueta.folio),

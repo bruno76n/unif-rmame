@@ -16,7 +16,11 @@ import { createServer, type ViteDevServer } from "vite";
 import { z } from "zod";
 import { opcionesDeChromium } from "../../../../pruebas/navegador/chromium.ts";
 import { conGoogle, mandarAccion } from "../../../api/src/nucleo/pruebas/llamadas.ts";
-import { crearServidorDePrueba, type ServidorDePrueba } from "../../../api/src/nucleo/pruebas/servidor-de-prueba.ts";
+import {
+	crearServidorDePrueba,
+	dominios,
+	type ServidorDePrueba,
+} from "../../../api/src/nucleo/pruebas/servidor-de-prueba.ts";
 
 /** La carpeta de la tablet. */
 const tablet = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -42,6 +46,8 @@ export async function levantarTablet(opciones: { avisosEnVivo?: boolean } = {}):
 		opciones.avisosEnVivo === true ? { avisosEnVivo: { latidoMs: 60_000, alcanceReal: true } } : {},
 	);
 	process.env.UNIFORMAME_API = await servidor.app.listen({ host: "127.0.0.1", port: 0 });
+	// La API espera el origen de la tablet en lo que escribe: el proxy de Vite lo pone.
+	process.env.UNIFORMAME_ORIGEN_TALLER = dominios.DOMINIO_TALLER;
 	const vite: ViteDevServer = await createServer({
 		root: tablet,
 		configFile: join(tablet, "vite.config.ts"),

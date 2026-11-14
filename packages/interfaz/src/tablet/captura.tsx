@@ -1,14 +1,17 @@
 /**
  * La captura en la tablet del taller: los puntos del PIN y su teclado de 1 a 9, 0 y borrar; el contador con «−» y «+»
- * de 84 px; y el mensaje de color de un paso (el tope, un error, una advertencia).
- * Fase 20 · docs/interfaz/tablet.md («Entrada con nombre y PIN», «Registrar una operación», «Tomar consumible»)
+ * de 84 px; la casilla grande de un código, con su error dentro; y el mensaje de color de un paso (el tope, un error,
+ * una advertencia).
+ * Fase 20 · docs/interfaz/tablet.md («Entrada con nombre y PIN», «Registrar una operación», «Escanear bulto», «Tomar
+ * consumible»)
  *
  * Uso: `<PuntosDePin llenos={2} error={false} />`, `<TecladoDePin alTeclear={...} alBorrar={...} />`,
- * `<Contador etiqueta="Buenas" valor={24} alCambiar={...} minimo={0} />`, `<MensajeDeTablet tono="rojo">…</MensajeDeTablet>`.
+ * `<Contador etiqueta="Buenas" valor={24} alCambiar={...} minimo={0} />`, `<CampoDeTablet etiqueta="Código del bulto" … />`,
+ * `<MensajeDeTablet tono="rojo">…</MensajeDeTablet>`.
  */
 
 import { Delete, Minus, Plus } from "lucide-react";
-import type { ReactNode } from "react";
+import { type InputHTMLAttributes, type ReactNode, useId } from "react";
 import { unirClases } from "../clases.ts";
 
 /**
@@ -160,6 +163,43 @@ export function MensajeDeTablet({ tono, children }: { tono: TonoDeMensaje; child
 			className={unirClases("rounded-grande px-4.5 py-3.5 font-bold text-[17px]", colores[tono])}
 		>
 			{children}
+		</div>
+	);
+}
+
+/**
+ * La casilla grande de un código, para el dedo y para un lector de mano: 72 px de alto, la letra de 28 px en negritas y
+ * centrada; si hubo error, va en rojo debajo, dentro de la misma tarjeta.
+ * @param props Su etiqueta, su error y lo de una casilla.
+ */
+export function CampoDeTablet({
+	etiqueta,
+	error,
+	...resto
+}: InputHTMLAttributes<HTMLInputElement> & { etiqueta: string; error?: string | undefined }) {
+	const campoId = useId();
+	const errorId = `${campoId}-error`;
+	return (
+		<div className="flex w-full max-w-115 flex-col gap-2">
+			<label htmlFor={campoId} className="text-center font-semibold text-[15px] text-tinta2">
+				{etiqueta}
+			</label>
+			<input
+				id={campoId}
+				aria-invalid={error === undefined ? undefined : true}
+				aria-describedby={error === undefined ? undefined : errorId}
+				className={unirClases(
+					"h-campo-tablet w-full rounded-tablet border-2 bg-panel px-4 text-center font-bold text-[28px] tracking-wide",
+					"focus:border-marca focus:outline-none focus:ring-4 focus:ring-marca/20",
+					error === undefined ? "border-linea2" : "border-estado-rojo",
+				)}
+				{...resto}
+			/>
+			{error === undefined ? null : (
+				<p id={errorId} role="alert" className="m-0 text-center font-bold text-[17px] text-tablet-error-texto">
+					{error}
+				</p>
+			)}
 		</div>
 	);
 }

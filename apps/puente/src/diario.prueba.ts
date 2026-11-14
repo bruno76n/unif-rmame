@@ -34,7 +34,7 @@ describe("lo que quedó a medias al apagarse lo termina al arrancar", () => {
 		const impresoId = await prueba.pedirTrabajo(["01936f2e-0000-7000-8000-0000000000d2"], 1);
 		const zpl = await prueba.zplDe(recibidoId);
 		// El puente los recibió y se apagó: el primero sin imprimir, el segundo impreso pero sin confirmar.
-		const { trabajos } = await prueba.piezas.api.trabajos();
+		const { trabajos } = await prueba.piezas.api.trabajos(uuidv7());
 		for (const trabajo of trabajos) await prueba.piezas.diario.recibido(trabajo);
 		await prueba.piezas.diario.impreso(impresoId, { resultado: "impreso", clave: uuidv7() });
 		const antes = prueba.zebra.recibido.length;

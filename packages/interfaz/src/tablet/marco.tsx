@@ -44,7 +44,7 @@ export function MarcoDeTablet({ conectada, textoDeLaRed, hora, persona, alSalir,
 					role="status"
 					className={unirClases(
 						"inline-flex h-7.5 items-center gap-2 rounded-chico px-3 font-semibold text-sm",
-						conectada ? "bg-white/10 text-aviso-bien" : "bg-estado-ambar font-bold text-tinta",
+						conectada ? "bg-white/10 text-tablet-conectada" : "bg-estado-ambar font-bold text-tinta",
 					)}
 				>
 					<IconoDeRed aria-hidden="true" size={16} />

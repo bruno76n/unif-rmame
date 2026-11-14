@@ -54,7 +54,8 @@ function etiquetaDe(rollo: z.infer<typeof delRollo>): EtiquetaDeMaterial {
 			tipo: "retazo",
 			folio: rollo.retazo,
 			delRollo: `del ${rollo.folio}`,
-			telaYPartida: `${rollo.tela} · ${rollo.partida === null ? "Sin partida" : `Partida ${rollo.partida}`}`,
+			tela: rollo.tela,
+			partida: rollo.partida === null ? "Sin partida" : `Partida ${rollo.partida}`,
 			metros: `${metrosEscritos(rollo.metros_retazo ?? "0")} m`,
 			corte: `Corte ${rollo.lote ?? ""} · ${rollo.corte === null ? "" : textoDeDiaConAnio(rollo.corte)}`,
 		};
@@ -311,7 +312,7 @@ async function hojaDelDespacho(contexto: ContextoDeConsulta, despachoId: string)
 		destino: `A ${destino}`,
 		salio: `Salió el ${textoDeDiaConAnio(dia)} a las ${textoDeHora(salio)} · lo despachó ${quien}`,
 		traspasos: deTraspasos,
-		total: `${piezasEscritas(piezas)} en total`,
+		total: piezas === 0 ? null : `${piezasEscritas(piezas)} en total`,
 	});
 }
 

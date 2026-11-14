@@ -95,4 +95,31 @@ describe("el aparato revocado y la versión vieja", () => {
 		await pagina.evaluate(() => window.porDentro.motor.detener());
 		await contexto.close();
 	});
+
+	it("un error que no espera no detiene al motor: la cola espera y la siguiente vuelta la sube", async () => {
+		const { personaId } = await personaConPin(prueba);
+		const { pagina, contexto } = await tabletLista(prueba);
+		const capturas = await capturasDePrueba(prueba, personaId, 7);
+		for (const encolado of capturas.encolados)
+			await pagina.evaluate((dato) => window.porDentro.encolar(dato), encolado);
+		// Una tanda que el servidor no acepta (un 400 que la tablet no espera): el motor la anota, baja y sigue.
+		const llamadas: string[] = [];
+		pagina.on("request", (pedido) => llamadas.push(new URL(pedido.url()).pathname));
+		await pagina.route("**/v1/sync/subir", (ruta) =>
+			ruta.fulfill({
+				status: 400,
+				contentType: "application/json",
+				body: JSON.stringify({ ok: false, error: "validacion", codigo: null, mensaje: "Revisa los datos marcados." }),
+			}),
+		);
+		await pagina.evaluate(() => window.porDentro.motor.sincronizar());
+		expect(await pagina.evaluate(() => window.porDentro.cola())).toHaveLength(3);
+		expect(llamadas).toContain("/v1/sync/bajar");
+		await pagina.unroute("**/v1/sync/subir");
+		await pagina.evaluate(() => window.porDentro.motor.sincronizar());
+		expect(await pagina.evaluate(() => window.porDentro.cola())).toEqual([]);
+		expect(await pagina.evaluate(() => window.porDentro.estadoDelAparato())).toBe("lista");
+		await pagina.evaluate(() => window.porDentro.motor.detener());
+		await contexto.close();
+	});
 });

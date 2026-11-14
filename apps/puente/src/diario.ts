@@ -5,11 +5,14 @@
  * Fase 20 · docs/apps/puente-de-impresion.md (regla 5 y «El diario»)
  *
  * No guarda el ZPL: guarda la ruta de su etiqueta y, si hace falta, lo vuelve a bajar. Cada renglón se escribe hasta el
- * disco antes de seguir; un renglón cortado por un apagón se ignora.
+ * disco antes de seguir, y al reescribirlo también; un renglón cortado por un apagón se ignora. Guarda además la clave del
+ * pedido de trabajos hasta que llega su respuesta, para que un pedido perdido no deje trabajos entregados sin imprimir.
  */
 
-import { open, readFile, rename, writeFile } from "node:fs/promises";
+import { open, readFile } from "node:fs/promises";
+import { v7 as uuidv7 } from "uuid";
 import { z } from "zod";
+import { escribirDeUnJalon } from "./archivos.ts";
 
 /** Un trabajo como lo recibe el puente. */
 const trabajoDelDiario = z.object({
@@ -35,6 +38,8 @@ const paso = z.discriminatedUnion("paso", [
 		clave: z.uuid(),
 	}),
 	z.object({ paso: z.literal("confirmado"), en: z.string(), trabajo_id: z.uuid() }),
+	z.object({ paso: z.literal("pidiendo"), en: z.string(), clave: z.uuid() }),
+	z.object({ paso: z.literal("pedido"), en: z.string(), clave: z.uuid() }),
 ]);
 
 /** Un renglón del diario. */
@@ -62,6 +67,26 @@ export interface Diario {
 	confirmado: (trabajoId: string) => Promise<void>;
 	/** Lo que quedó a medias, en el orden en que llegó. */
 	pendientes: () => Promise<Pendiente[]>;
+	/**
+	 * La clave del pedido de trabajos: la del que no tuvo respuesta, o una nueva que se anota antes de pedir. Con la misma
+	 * clave la API contesta lo mismo, así que los trabajos que entregó y nunca llegaron vuelven a llegar.
+	 */
+	claveDelPedido: () => Promise<string>;
+	/** El pedido tuvo respuesta y sus trabajos ya están en el diario: la siguiente vez, clave nueva. */
+	pedidoRecibido: (clave: string) => Promise<void>;
+}
+
+/**
+ * La clave del pedido de trabajos que no tuvo respuesta, si hay.
+ * @param renglones Los renglones del diario, en orden.
+ */
+function pedidoAbierto(renglones: readonly Paso[]): string | undefined {
+	let abierta: string | undefined;
+	for (const renglon of renglones) {
+		if (renglon.paso === "pidiendo") abierta = renglon.clave;
+		else if (renglon.paso === "pedido" && renglon.clave === abierta) abierta = undefined;
+	}
+	return abierta;
 }
 
 /**
@@ -99,6 +124,7 @@ export function crearDiario(archivo: string, ahora: () => Date = () => new Date(
 	async function porTrabajo(): Promise<Map<string, { trabajo: TrabajoDelDiario; terminado?: Terminado }>> {
 		const trabajos = new Map<string, { trabajo: TrabajoDelDiario; terminado?: Terminado }>();
 		for (const renglon of await leer()) {
+			if (renglon.paso === "pidiendo" || renglon.paso === "pedido") continue;
 			if (renglon.paso === "recibido") trabajos.set(renglon.trabajo.id, { trabajo: renglon.trabajo });
 			else if (renglon.paso === "confirmado") trabajos.delete(renglon.trabajo_id);
 			else {
@@ -123,14 +149,26 @@ export function crearDiario(archivo: string, ahora: () => Date = () => new Date(
 			escribir({ paso: "impreso", en: ahora().toISOString(), trabajo_id: trabajoId, ...terminado }),
 		confirmado: async (trabajoId) => {
 			await escribir({ paso: "confirmado", en: ahora().toISOString(), trabajo_id: trabajoId });
-			// Confirmado, sale del diario: se reescribe con lo que sigue pendiente, de un jalón.
-			const quedan = (await leer()).filter((renglon) =>
-				renglon.paso === "recibido" ? renglon.trabajo.id !== trabajoId : renglon.trabajo_id !== trabajoId,
-			);
-			const temporal = `${archivo}.nuevo`;
-			await writeFile(temporal, quedan.map((renglon) => `${JSON.stringify(renglon)}\n`).join(""));
-			await rename(temporal, archivo);
+			// Confirmado, sale del diario: se reescribe con lo que sigue pendiente (y el pedido sin respuesta, si hay), de un
+			// jalón y hasta el disco.
+			const renglones = await leer();
+			const abierta = pedidoAbierto(renglones);
+			const quedan = renglones.filter((renglon) => {
+				if (renglon.paso === "recibido") return renglon.trabajo.id !== trabajoId;
+				if (renglon.paso === "pidiendo") return renglon.clave === abierta;
+				if (renglon.paso === "pedido") return false;
+				return renglon.trabajo_id !== trabajoId;
+			});
+			await escribirDeUnJalon(archivo, quedan.map((renglon) => `${JSON.stringify(renglon)}\n`).join(""));
 		},
+		claveDelPedido: async () => {
+			const abierta = pedidoAbierto(await leer());
+			if (abierta !== undefined) return abierta;
+			const clave = uuidv7();
+			await escribir({ paso: "pidiendo", en: ahora().toISOString(), clave });
+			return clave;
+		},
+		pedidoRecibido: (clave) => escribir({ paso: "pedido", en: ahora().toISOString(), clave }),
 		pendientes: async () =>
 			[...(await porTrabajo()).values()].map(({ trabajo, terminado }) =>
 				terminado === undefined

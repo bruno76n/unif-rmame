@@ -98,6 +98,7 @@
 	--color-tablet-advertencia: #fdf0dc;
 	--color-tablet-advertencia-texto: #9a5b00;
 	--color-tablet-detenida: #fdf1ef;
+	--color-tablet-conectada: #c9f2d8;
 	--text-tablet: 17px;
 	--text-tablet-chico: 14px;
 	--text-tablet-titulo: 28px;
@@ -116,6 +117,7 @@
 	--spacing-mosaico: 118px;
 	--spacing-opcion: 104px;
 	--spacing-punto-pin: 30px;
+	--spacing-campo-tablet: 72px;
 
 	/* Hasta 980 px el menú se esconde; hasta 700 px es teléfono */
 	--breakpoint-menu: 980px;

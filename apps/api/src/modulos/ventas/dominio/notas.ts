@@ -4,6 +4,7 @@
  */
 
 import { and, eq, ne, sql } from "drizzle-orm";
+import { type QuienLlama, tieneDepartamento } from "../../../nucleo/acceso/quien.ts";
 import type { Transaccion } from "../../../nucleo/base/transacciones.ts";
 import { noExiste } from "../../../nucleo/http/errores.ts";
 import { notaEntregaLineas, notasEntrega } from "../tablas.ts";
@@ -68,4 +69,13 @@ export async function notasDelPedido(transaccion: Transaccion, pedidoId: string)
 		.from(notasEntrega)
 		.where(and(eq(notasEntrega.pedidoId, pedidoId), ne(notasEntrega.estado, "cancelada")));
 	return { cuantas: suma?.cuantas ?? 0, subtotalCentavos: suma?.subtotalCentavos ?? 0 };
+}
+
+/**
+ * Si quien llama ve los precios de las notas de entrega: Ventas, Contaduría y Dirección (y la dueña); a Aduana nunca le
+ * viajan importes. Es la regla de su cajón, de su hoja en PDF y de lo que regresan sus acciones.
+ * @param quien Quién llama.
+ */
+export function vePreciosDeNotas(quien: QuienLlama | { readonly tipo: "sistema" }): boolean {
+	return tieneDepartamento(quien, "ventas", "contaduria", "direccion");
 }

@@ -112,4 +112,91 @@ describe("el puente imprime lo que le toca, en orden, y confirma cada trabajo un
 		expect(await prueba.trabajo(trabajo)).toEqual({ estado: "impreso", error: null });
 		expect(prueba.configuracion.actual.secreto).toBe(nueva);
 	});
+
+	it("se pierde la respuesta de sus trabajos: con la misma clave le vuelven a llegar y cada uno se imprime una vez", async () => {
+		const trabajo = await prueba.pedirTrabajo([notas[2] ?? ""], 3);
+		const impresos = prueba.zebra.recibido.length;
+		prueba.cortarLaRed((url) => url.endsWith("/v1/acciones/admin.trabajos_impresion"), true);
+		await expect(atenderTrabajos(prueba.piezas)).rejects.toBeInstanceOf(ErrorSinRed);
+		// La API ya lo entregó: queda en «mandado», y el puente no lo recibió.
+		expect(await prueba.trabajo(trabajo)).toMatchObject({ estado: "mandado" });
+		expect(prueba.zebra.recibido).toHaveLength(impresos);
+		await atenderTrabajos(prueba.piezas);
+		expect(await prueba.trabajo(trabajo)).toEqual({ estado: "impreso", error: null });
+		expect(prueba.zebra.recibido).toHaveLength(impresos + 1);
+		// La siguiente vuelta pide con clave nueva y no repite nada.
+		await atenderTrabajos(prueba.piezas);
+		expect(prueba.zebra.recibido).toHaveLength(impresos + 1);
+	});
+
+	it("el cambio de llave sin saber si se aplicó: si se aplicó, entra con la nueva; si no, sigue con la vieja", async () => {
+		const tocaRotar = () =>
+			prueba.servidor.base.dueno.query(
+				"UPDATE dispositivos SET llave_rotada_en = now() - interval '200 days' WHERE id = $1",
+				[puenteDeAduana()],
+			);
+		// Se aplicó, pero la respuesta se perdió: guarda la nueva sin confirmar y la siguiente llamada entra con ella.
+		await tocaRotar();
+		const vieja = prueba.configuracion.actual.secreto;
+		prueba.cortarLaRed((url) => url.endsWith("/v1/acciones/admin.rotar_llave"), true);
+		await expect(atenderTrabajos(prueba.piezas)).rejects.toBeInstanceOf(ErrorSinRed);
+		const nueva = prueba.configuracion.actual.secreto_nuevo;
+		expect(nueva).toBeDefined();
+		await atenderTrabajos(prueba.piezas);
+		expect(prueba.configuracion.actual).toMatchObject({ secreto: nueva });
+		expect(prueba.configuracion.actual.secreto_nuevo).toBeUndefined();
+		expect(prueba.configuracion.actual.secreto).not.toBe(vieja);
+		// No llegó: guarda la nueva, la API no la conoce, y sigue con la vieja y olvida la nueva.
+		await tocaRotar();
+		const vigente = prueba.configuracion.actual.secreto;
+		prueba.cortarLaRed((url) => url.endsWith("/v1/acciones/admin.rotar_llave"));
+		await expect(atenderTrabajos(prueba.piezas)).rejects.toBeInstanceOf(ErrorSinRed);
+		expect(prueba.configuracion.actual.secreto_nuevo).toBeDefined();
+		await prueba.servidor.base.dueno.query("UPDATE dispositivos SET llave_rotada_en = now() WHERE id = $1", [
+			puenteDeAduana(),
+		]);
+		await atenderTrabajos(prueba.piezas);
+		expect(prueba.configuracion.actual.secreto).toBe(vigente);
+		expect(prueba.configuracion.actual.secreto_nuevo).toBeUndefined();
+	});
+
+	it("un trabajo que la API ya no deja bajar se confirma como fallo, sale del diario y no detiene la señal de vida", async () => {
+		const trabajo = await prueba.pedirTrabajo([notas[1] ?? ""], 1);
+		// Lo recibió y se apagó; mientras, la dueña da de baja la Zebra de Aduana.
+		const clave = await prueba.piezas.diario.claveDelPedido();
+		for (const recibido of (await prueba.piezas.api.trabajos(clave)).trabajos)
+			await prueba.piezas.diario.recibido(recibido);
+		await prueba.piezas.diario.pedidoRecibido(clave);
+		const [impresora] = (
+			await prueba.servidor.base.dueno.query(
+				"SELECT id, version, ubicacion_id FROM impresoras WHERE nombre = 'Zebra Aduana'",
+			)
+		).rows;
+		const cambiada = await mandarAccion(
+			prueba.servidor,
+			"admin.guardar_impresora",
+			{
+				datos: {
+					impresora_id: impresora?.id,
+					nombre: "Zebra Aduana",
+					modelo: "ZD421",
+					ubicacion_id: impresora?.ubicacion_id,
+					dispositivo_id: puenteDeAduana(),
+					baja: true,
+					motivo_baja: "Se descompuso",
+					version: Number(impresora?.version),
+				},
+			},
+			"duena",
+		);
+		expect(cambiada.estado, JSON.stringify(cambiada.cuerpo)).toBe(200);
+		const antes = prueba.llamadas.length;
+		await atenderTrabajos(prueba.piezas);
+		expect(await prueba.piezas.diario.pendientes()).toEqual([]);
+		expect(prueba.llamadas.slice(antes)).toContain("POST /v1/acciones/admin.trabajos_impresion");
+		expect(await prueba.trabajo(trabajo)).toEqual({
+			estado: "fallo",
+			error: "La etiqueta ya no se puede imprimir aquí",
+		});
+	});
 });
