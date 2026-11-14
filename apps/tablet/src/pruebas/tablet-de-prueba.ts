@@ -39,13 +39,19 @@ export interface TabletDePrueba {
 
 /**
  * Levanta la API, la tablet y el navegador.
- * @param opciones Los avisos en vivo, para las pruebas que los usan.
+ * @param opciones Los avisos en vivo, para las pruebas que los usan; o, para los flujos de punta a punta, la API que ya
+ * escucha (`servidor` y su dirección `api`), que entonces no se cierra con la tablet.
  */
-export async function levantarTablet(opciones: { avisosEnVivo?: boolean } = {}): Promise<TabletDePrueba> {
-	const servidor = await crearServidorDePrueba(
-		opciones.avisosEnVivo === true ? { avisosEnVivo: { latidoMs: 60_000, alcanceReal: true } } : {},
-	);
-	process.env.UNIFORMAME_API = await servidor.app.listen({ host: "127.0.0.1", port: 0 });
+export async function levantarTablet(
+	opciones: { avisosEnVivo?: boolean; servidor?: { servidor: ServidorDePrueba; api: string } } = {},
+): Promise<TabletDePrueba> {
+	const deFuera = opciones.servidor;
+	const servidor =
+		deFuera?.servidor ??
+		(await crearServidorDePrueba(
+			opciones.avisosEnVivo === true ? { avisosEnVivo: { latidoMs: 60_000, alcanceReal: true } } : {},
+		));
+	process.env.UNIFORMAME_API = deFuera?.api ?? (await servidor.app.listen({ host: "127.0.0.1", port: 0 }));
 	// La API espera el origen de la tablet en lo que escribe: el proxy de Vite lo pone.
 	process.env.UNIFORMAME_ORIGEN_TALLER = dominios.DOMINIO_TALLER;
 	const vite: ViteDevServer = await createServer({
@@ -88,7 +94,7 @@ export async function levantarTablet(opciones: { avisosEnVivo?: boolean } = {}):
 		cerrar: async () => {
 			await navegador.close();
 			await vite.close();
-			await servidor.cerrar();
+			if (deFuera === undefined) await servidor.cerrar();
 		},
 	};
 }

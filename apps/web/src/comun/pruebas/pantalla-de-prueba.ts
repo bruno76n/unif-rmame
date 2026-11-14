@@ -58,23 +58,29 @@ const cuentaDelAlmacen = "cuentaprueba";
 /**
  * Levanta la API de prueba, la web y el navegador.
  * @param opciones `conArchivos` para las pantallas que suben archivos: la API tiene almacén (el simulador de R2) y el
- * navegador sube a él con la dirección firmada.
+ * navegador sube a él con la dirección firmada. Para los flujos de punta a punta, `servidor`: la API que ya escucha y su
+ * dirección, que entonces no se cierra con la web.
  */
-export async function levantarPantalla(opciones: { conArchivos?: true } = {}): Promise<PantallaDePrueba> {
+export async function levantarPantalla(
+	opciones: { conArchivos?: true; servidor?: { servidor: ServidorDePrueba; api: string } } = {},
+): Promise<PantallaDePrueba> {
+	const deFuera = opciones.servidor;
 	const almacen = opciones.conArchivos === true ? levantarAlmacenDePrueba(cuentaDelAlmacen) : undefined;
-	const servidor = await crearServidorDePrueba(
-		almacen === undefined
-			? {}
-			: {
-					almacen: crearAlmacen({
-						direccion: direccionDeR2(cuentaDelAlmacen),
-						cubo: "uniformame-archivos",
-						llaveId: "llave-de-prueba",
-						secreto: "secreto-de-prueba",
-					}),
-				},
-	);
-	const direccionApi = await servidor.app.listen({ host: "127.0.0.1", port: 0 });
+	const servidor =
+		deFuera?.servidor ??
+		(await crearServidorDePrueba(
+			almacen === undefined
+				? {}
+				: {
+						almacen: crearAlmacen({
+							direccion: direccionDeR2(cuentaDelAlmacen),
+							cubo: "uniformame-archivos",
+							llaveId: "llave-de-prueba",
+							secreto: "secreto-de-prueba",
+						}),
+					},
+		));
+	const direccionApi = deFuera?.api ?? (await servidor.app.listen({ host: "127.0.0.1", port: 0 }));
 	// La configuración de la web lee estas dos al cargarse: el proxy apunta a esta API con el origen que espera.
 	process.env.UNIFORMAME_API = direccionApi;
 	process.env.UNIFORMAME_ORIGEN_WEB = dominios.DOMINIO_WEB;
@@ -128,7 +134,7 @@ export async function levantarPantalla(opciones: { conArchivos?: true } = {}): P
 		cerrar: async () => {
 			await navegador.close();
 			await vite.close();
-			await servidor.cerrar();
+			if (deFuera === undefined) await servidor.cerrar();
 			almacen?.cerrar();
 		},
 	};

@@ -3,9 +3,10 @@
  * Fase 1 y fase 2 · docs/cimientos/PRUEBAS.md y .claude/rules/pruebas.md
  *
  * Las pruebas van junto a su código con el nombre `*.prueba.ts` (ver docs/cimientos/ESTRUCTURA.md).
- * Tres proyectos: «calculos», sin base; «base» (el núcleo de la base y la base de las pruebas) y «api»
- * (el protocolo, el corredor y los módulos), que levantan cada uno un Postgres 18 con Testcontainers una
- * vez por corrida y le dan a cada archivo su copia de la plantilla. Una prueba con base tiene hasta 2 minutos: las
+ * Cuatro proyectos: «calculos», sin base; «base» (el núcleo de la base y la base de las pruebas), «api» (el protocolo,
+ * el corredor y los módulos) y «flujos» (los flujos de punta a punta y la temporada simulada), que levantan cada uno un
+ * Postgres 18 con Testcontainers una vez por corrida y le dan a cada archivo su copia de la plantilla. Los flujos corren
+ * en orden al azar (`sequence.shuffle`): pasan en cualquier orden, y cada uno tiene hasta 15 minutos. Una prueba con base tiene hasta 2 minutos: las
  * de datos al azar corren miles de transacciones, y con varios trabajadores probando a la vez 30 s no alcanzan.
  */
 import { defineConfig } from "vitest/config";
@@ -27,7 +28,7 @@ export default defineConfig({
 				test: {
 					name: "base",
 					include: ["apps/api/src/nucleo/base/**/*.prueba.{ts,tsx}", "pruebas/**/*.prueba.{ts,tsx}"],
-					exclude: fuera,
+					exclude: [...fuera, "pruebas/flujos/**", "pruebas/temporada/**"],
 					globalSetup: ["apps/api/src/nucleo/base/plantilla-de-pruebas.ts"],
 					testTimeout: 120_000,
 					hookTimeout: 180_000,
@@ -41,6 +42,17 @@ export default defineConfig({
 					globalSetup: ["apps/api/src/nucleo/base/plantilla-de-pruebas.ts"],
 					testTimeout: 120_000,
 					hookTimeout: 180_000,
+				},
+			},
+			{
+				test: {
+					name: "flujos",
+					include: ["pruebas/flujos/**/*.prueba.ts", "pruebas/temporada/**/*.prueba.ts"],
+					exclude: fuera,
+					globalSetup: ["apps/api/src/nucleo/base/plantilla-de-pruebas.ts"],
+					sequence: { shuffle: true },
+					testTimeout: 900_000,
+					hookTimeout: 300_000,
 				},
 			},
 		],

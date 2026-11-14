@@ -3,8 +3,8 @@
  * plantilla trae para ellos.
  * Fase 5 · docs/modulos/admin/cuentas.md («Las primeras cuentas»)
  *
- * La dueña y soporte son las de la muestra; Ventas, Aduana y Administración del sistema son cuentas de un
- * solo departamento, para probar lo que una cuenta no puede. Cada cuenta trae su sesión abierta.
+ * La dueña, soporte, Rosa (la oficina), Javier (Aduana y Bodega) y Tomás (el taller) son las de la muestra; Ventas, Aduana
+ * y Administración del sistema son cuentas de un solo departamento, para probar lo que una cuenta no puede. Cada cuenta trae su sesión abierta.
  * Fase 6: los aparatos de prueba (la tablet del Taller, el puente de Aduana y el del Taller) son aparatos
  * registrados, con su llave conocida (`llavesDePrueba`) y su contacto de ahora con la versión 1.0.0.
  */
@@ -198,6 +198,38 @@ export const quienesDePrueba: Record<string, QuienLlama> = {
 		esDuena: false,
 		esSoporte: true,
 		departamentos: ["admin"],
+		permisosFinos: [],
+		confirmadoConGoogleEn: undefined,
+	},
+	// Las cuentas de la muestra con sus departamentos: la oficina, Aduana y Bodega, y el encargado del taller. Las usan
+	// los flujos de punta a punta, como la gente de la fábrica.
+	rosa: {
+		tipo: "cuenta",
+		usuarioId: "01936f2e-0000-7000-8000-000000000006",
+		sesionId: "01936f2e-0000-7000-8000-000000000016",
+		esDuena: false,
+		esSoporte: false,
+		departamentos: ["compras", "catalogo", "patronaje", "ventas", "linea", "contaduria", "personal", "admin"],
+		permisosFinos: ["ven_sueldos_y_tarifas"],
+		confirmadoConGoogleEn: undefined,
+	},
+	javier: {
+		tipo: "cuenta",
+		usuarioId: "01936f2e-0000-7000-8000-000000000007",
+		sesionId: "01936f2e-0000-7000-8000-000000000017",
+		esDuena: false,
+		esSoporte: false,
+		departamentos: ["aduana", "bodega"],
+		permisosFinos: ["imprime_guias"],
+		confirmadoConGoogleEn: undefined,
+	},
+	tomas: {
+		tipo: "cuenta",
+		usuarioId: "01936f2e-0000-7000-8000-000000000008",
+		sesionId: "01936f2e-0000-7000-8000-000000000018",
+		esDuena: false,
+		esSoporte: false,
+		departamentos: ["produccion", "calidad", "mantenimiento"],
 		permisosFinos: [],
 		confirmadoConGoogleEn: undefined,
 	},

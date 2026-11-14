@@ -62,32 +62,33 @@ export interface PuenteDePrueba {
 	cerrar: () => Promise<void>;
 }
 
+/** Lo que arma `armarPuente`: un puente de prueba con su configuración en memoria y su red que se puede cortar. */
+export interface PuenteArmado {
+	configuracion: { actual: Configuracion };
+	llamadas: string[];
+	fetch: typeof fetch;
+	piezas: PiezasDelPuente;
+	cortarLaRed: (condicion: (url: string) => boolean, despues?: boolean) => void;
+}
+
 /**
- * Levanta el arnés.
- * @param opciones Los avisos en vivo del servidor, si la prueba los usa.
+ * Arma las piezas de un puente de prueba registrado: su configuración en memoria con la llave conocida del aparato, su
+ * `fetch` que anota cada llamada y corta la red cuando se pide, y su diario y su registro en una carpeta. Lo usan este
+ * arnés y el de los flujos de punta a punta, que arma el puente de Aduana y el del Taller.
+ * @param opciones La API, el aparato de prueba, la dirección de su Zebra y su carpeta.
  */
-export async function levantarPuenteDePrueba(opciones: { avisosEnVivo?: boolean } = {}): Promise<PuenteDePrueba> {
-	const servidor = await crearServidorDePrueba(
-		opciones.avisosEnVivo === true ? { avisosEnVivo: { latidoMs: 60_000, alcanceReal: true } } : {},
-	);
-	const api = await servidor.app.listen({ host: "127.0.0.1", port: 0 });
-	const zebra = await levantarZebraDeMentira();
-	const carpeta = await mkdtemp(join(tmpdir(), "puente-"));
-	const aduana = String(
-		(await servidor.base.dueno.query("SELECT id FROM ubicaciones WHERE codigo = 'ADU'")).rows[0]?.id,
-	);
-	await mandarAccion(
-		servidor,
-		"admin.guardar_impresora",
-		{ datos: { nombre: "Zebra Aduana", modelo: "ZD421", ubicacion_id: aduana, dispositivo_id: puenteDeAduana() } },
-		"duena",
-	);
+export async function armarPuente(opciones: {
+	api: string;
+	aparato: "puente" | "otro_puente";
+	zebra: Configuracion["zebra"];
+	carpeta: string;
+}): Promise<PuenteArmado> {
 	const configuracion: { actual: Configuracion } = {
 		actual: {
-			api,
-			llave_id: aparatosRegistradosDePrueba.puente.llaveId,
-			secreto: secretoDePrueba("puente"),
-			zebra: zebra.direccion,
+			api: opciones.api,
+			llave_id: aparatosRegistradosDePrueba[opciones.aparato].llaveId,
+			secreto: secretoDePrueba(opciones.aparato),
+			zebra: opciones.zebra,
 			intervalo_segundos: 60,
 		},
 	};
@@ -115,16 +116,12 @@ export async function levantarPuenteDePrueba(opciones: { avisosEnVivo?: boolean 
 			fetch: fetchDelPuente,
 			reintentos: 0,
 		}),
-		diario: crearDiario(join(carpeta, "diario.jsonl")),
-		registro: crearRegistro(join(carpeta, "registro.txt")),
+		diario: crearDiario(join(opciones.carpeta, "diario.jsonl")),
+		registro: crearRegistro(join(opciones.carpeta, "registro.txt")),
 		zebra: async () => configuracion.actual.zebra,
 		esperaDeLaZebra: 500,
 	};
 	return {
-		servidor,
-		api,
-		zebra,
-		carpeta,
 		configuracion,
 		llamadas,
 		fetch: fetchDelPuente,
@@ -132,6 +129,41 @@ export async function levantarPuenteDePrueba(opciones: { avisosEnVivo?: boolean 
 		cortarLaRed: (condicion, despues = false) => {
 			corte = { condicion, despues };
 		},
+	};
+}
+
+/**
+ * Levanta el arnés.
+ * @param opciones Los avisos en vivo del servidor, si la prueba los usa.
+ */
+export async function levantarPuenteDePrueba(opciones: { avisosEnVivo?: boolean } = {}): Promise<PuenteDePrueba> {
+	const servidor = await crearServidorDePrueba(
+		opciones.avisosEnVivo === true ? { avisosEnVivo: { latidoMs: 60_000, alcanceReal: true } } : {},
+	);
+	const api = await servidor.app.listen({ host: "127.0.0.1", port: 0 });
+	const zebra = await levantarZebraDeMentira();
+	const carpeta = await mkdtemp(join(tmpdir(), "puente-"));
+	const aduana = String(
+		(await servidor.base.dueno.query("SELECT id FROM ubicaciones WHERE codigo = 'ADU'")).rows[0]?.id,
+	);
+	await mandarAccion(
+		servidor,
+		"admin.guardar_impresora",
+		{ datos: { nombre: "Zebra Aduana", modelo: "ZD421", ubicacion_id: aduana, dispositivo_id: puenteDeAduana() } },
+		"duena",
+	);
+	const armado = await armarPuente({ api, aparato: "puente", zebra: zebra.direccion, carpeta });
+	const { configuracion, llamadas, piezas } = armado;
+	return {
+		servidor,
+		api,
+		zebra,
+		carpeta,
+		configuracion,
+		llamadas,
+		fetch: armado.fetch,
+		piezas,
+		cortarLaRed: armado.cortarLaRed,
 		pedirTrabajo: async (ids, copias) => {
 			const respuesta = await mandarAccion(servidor, "prueba.imprimir", {
 				datos: { ubicacion_id: aduana, ids, copias },

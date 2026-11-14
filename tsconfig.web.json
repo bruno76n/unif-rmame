@@ -13,6 +13,8 @@
 		"apps/web/src/**/*.tsx",
 		"apps/tablet/*.ts",
 		"apps/tablet/src/**/*.ts",
-		"apps/tablet/src/**/*.tsx"
+		"apps/tablet/src/**/*.tsx",
+		"pruebas/flujos/**/*.ts",
+		"pruebas/temporada/**/*.ts"
 	]
 }
