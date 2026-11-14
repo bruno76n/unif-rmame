@@ -142,3 +142,4 @@ La línea de la bitácora se escribe al final, con el resultado ya conocido. Esc
 | 14 nov 2026 | 19 | Lo común que corrigió la auditoría: el recorte tapa los montos en texto a soporte, el PDF de la orden de compra y el historial solo con cambios | [2026-11-12-fase-19](sesiones/2026-11-12-fase-19.md) |
 | 14 nov 2026 | 19 | Lo que corrigió la auditoría en los catorce departamentos y la dirección común | [2026-11-12-fase-19](sesiones/2026-11-12-fase-19.md) |
 | 14 nov 2026 | 19 | Lo que encontró el revisor distinto: soporte sin el PDF de una orden, el historial con el recorte del módulo dueño y las rutas que montan su pestaña | [2026-11-12-fase-19](sesiones/2026-11-12-fase-19.md) |
+| 14 nov 2026 | 19 | Cierre: reporte de auditoría y fase terminada | [2026-11-12-fase-19](sesiones/2026-11-12-fase-19.md) |

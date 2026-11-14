@@ -1,7 +1,7 @@
 # Fase 19: Web principal
 
 > **Etapa:** Interfaz.
-> **Estado:** Pendiente.
+> **Estado:** Terminada.
 > **Antes de empezar:** lee la [forma de trabajo](../trabajo/FORMA-DE-TRABAJO.md) y la [revisión de fase](../trabajo/REVISION-DE-FASE.md).
 > **Se conecta con:** [fases](FASES.md) · [fase 18](18-tienda-en-linea-direccion-y-contador.md) · [fase 20](20-tablet-puente-de-impresion-e-impresos.md) · [diseño](../interfaz/DISENO.md) · [textos](../interfaz/TEXTOS.md) · [lo común de las pantallas](../interfaz/comunes.md) · [revisor de diseño](../../.claude/agents/revisor-diseno.md) · [trabajador](../../.claude/agents/trabajador.md)
 

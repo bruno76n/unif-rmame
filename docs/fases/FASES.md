@@ -43,7 +43,7 @@ Una fase es una parte del sistema y se construye de abajo hacia arriba: primero 
 
 | # | Fase | Qué construye | Estado |
 |---|---|---|---|
-| 19 | [Web principal](19-web-principal.md) | El sistema de diseño, el armazón y las pantallas de los 14 departamentos de la web, igual que la muestra | Pendiente |
+| 19 | [Web principal](19-web-principal.md) | El sistema de diseño, el armazón y las pantallas de los 14 departamentos de la web, igual que la muestra | Terminada |
 | 20 | [Tablet, puente de impresión e impresos](20-tablet-puente-de-impresion-e-impresos.md) | La Puerta del taller sin internet, el programa puente de las Zebra, las etiquetas y las hojas | Pendiente |
 
 ## Lanzamiento

@@ -104,6 +104,11 @@ Lo que falta decidir o investigar, y en qué fase se resuelve. Lo del negocio ya
   - Calidad recorta con una expresión regular el «para quién» que arma Producción;
   - el tono de Lotes en Pendientes de Producción todavía lo decide la pantalla;
   - los cajones de conteo y de carga inicial de Bodega proponen la hora con el reloj de la computadora.
+  - los «Ver más» que siguen hechos a mano en trece pestañas (Aduana, Bodega, Mantenimiento, Catálogo, Producción…), que `SegunPaginas` ya junta;
+  - la copia de «monto o —» en `personal/pestanas/tarifas.tsx` y los `=== null` de más antes de `montoEnPantalla` en Catálogo;
+  - `'America/Mexico_City'` escrita a mano en consultas de otras fases (`direccion/consultas/cifras.ts`, `alertas.ts`, `contaduria/dominio/paquete-mes.ts`);
+  - el esquema de lo que regresa `produccion.terminadas_por_dia`, escrito dos veces (Dirección y Producción);
+  - con la cuenta de soporte, un campo de texto libre que traiga un monto llega tapado («$••••»): si soporte lo edita y guarda, el monto se pierde.
 
 ## Para después
 
