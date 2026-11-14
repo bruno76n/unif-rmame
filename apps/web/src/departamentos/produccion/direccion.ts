@@ -5,8 +5,7 @@
  * Fase 19 · .claude/rules/react.md (regla 5) y docs/interfaz/comunes.md («La página de un departamento», regla 2)
  */
 
-import { useRouter, useRouterState } from "@tanstack/react-router";
-import { useCallback } from "react";
+import { useDireccionDeDepartamento } from "../../comun/direccion.ts";
 
 /** Los parámetros que usan las pantallas de Producción. */
 export type ParametroDeProduccion = "grupo" | "filtro" | "cajon" | "id" | "cortar" | "marcado" | "pedido";
@@ -22,30 +21,10 @@ export const rutasDeProduccion = {
 } as const;
 
 /**
- * Lee y cambia la dirección.
- * @returns `leer(parametro)`, y `ir(cambios, ruta?)`, que cambia esos parámetros (vacío quita uno) y, si se dice,
- * cambia de pestaña sin llevarse los parámetros de la anterior.
+ * Lee y cambia la dirección de Producción, con lo común de todos los departamentos.
+ * @returns `leer(parametro)`, e `ir(cambios, ruta?, reemplazar?)`, que cambia esos parámetros (vacío quita uno) y, si
+ * se dice, cambia de pestaña sin llevarse los parámetros de la anterior; con `reemplazar`, no deja paso en el historial.
  */
 export function useDireccion() {
-	const router = useRouter();
-	const ruta = useRouterState({ select: (estado) => estado.location.pathname });
-	const busqueda = useRouterState({ select: (estado) => estado.location.searchStr });
-	const leer = useCallback(
-		(parametro: ParametroDeProduccion): string | undefined => new URLSearchParams(busqueda).get(parametro) ?? undefined,
-		[busqueda],
-	);
-	const ir = useCallback(
-		(cambios: Partial<Record<ParametroDeProduccion, string | undefined>>, otraRuta?: string) => {
-			const destino = otraRuta ?? ruta;
-			const parametros = new URLSearchParams(destino === ruta ? busqueda : "");
-			for (const [clave, valor] of Object.entries(cambios)) {
-				if (valor === undefined || valor === "") parametros.delete(clave);
-				else parametros.set(clave, valor);
-			}
-			const texto = parametros.toString();
-			router.history.push(texto === "" ? destino : `${destino}?${texto}`);
-		},
-		[router, ruta, busqueda],
-	);
-	return { leer, ir };
+	return useDireccionDeDepartamento<ParametroDeProduccion>();
 }

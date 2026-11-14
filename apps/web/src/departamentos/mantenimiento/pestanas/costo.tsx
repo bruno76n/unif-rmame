@@ -9,8 +9,10 @@
  * calcular los pesos del paro de esta pestaña; vacía o en 0, regresa al de Configuración. No se guarda.
  */
 
+import { aPesoEntero, centavosACampo } from "@uniformame/compartido/calculos/dinero";
 import { plural } from "@uniformame/compartido/calculos/textos";
 import type { costoPorMaquina } from "@uniformame/compartido/contratos/mantenimiento/consultas-pestanas";
+import { centavos } from "@uniformame/compartido/tipos/base";
 import { BarraAvance } from "@uniformame/interfaz/avance/barra-avance";
 import { Campo } from "@uniformame/interfaz/captura/campo";
 import { Tarjeta } from "@uniformame/interfaz/contenedores/tarjeta";
@@ -91,8 +93,12 @@ function GastadoContraParado({ maquina, mayor }: { maquina: MaquinaConCosto; may
  */
 function CasillaDeLaHora({ deConfiguracion }: { deConfiguracion: number | undefined }) {
 	const { busqueda, navegar } = useDireccionDeMantenimiento();
-	const inicial = busqueda.hora ?? (deConfiguracion === undefined ? undefined : Math.round(deConfiguracion / 100));
-	const [texto, setTexto] = useState(inicial === undefined ? "" : String(inicial));
+	// La casilla va en pesos enteros: lo de Configuración, redondeado al peso con la regla del dinero.
+	const [texto, setTexto] = useState(
+		busqueda.hora === undefined
+			? centavosACampo(deConfiguracion === undefined ? undefined : aPesoEntero(centavos(deConfiguracion)))
+			: String(busqueda.hora),
+	);
 	return (
 		<span className="flex items-end gap-2">
 			<span aria-hidden="true" className="grid h-campo place-items-center font-semibold text-tinta3">

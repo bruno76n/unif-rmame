@@ -6,6 +6,7 @@
  */
 
 import { useInfiniteQuery } from "@tanstack/react-query";
+import { plural } from "@uniformame/compartido/calculos/textos";
 import { bitacoraDeCatalogo, tiposDeCambio } from "@uniformame/compartido/contratos/catalogo/pantallas";
 import { Boton } from "@uniformame/interfaz/botones/boton";
 import { Campo } from "@uniformame/interfaz/captura/campo";
@@ -15,7 +16,7 @@ import { Panel } from "@uniformame/interfaz/pagina/panel";
 import { Tabla } from "@uniformame/interfaz/tablas/tabla";
 import { consultar } from "../../../comun/api.tsx";
 import { conFicha, useBusqueda, useIr } from "../direccion.ts";
-import { cuantos, diaYHora } from "../textos.ts";
+import { diaYHora } from "../textos.ts";
 
 /** Cómo se dice cada tipo de cambio. */
 const nombreDelTipo: Readonly<Record<(typeof tiposDeCambio)[number], string>> = {
@@ -82,7 +83,7 @@ export function PestanaBitacora() {
 					onChange={(evento) => ir({ lista: evento.target.value || undefined })}
 				/>
 				<span className="pb-3 text-tinta2 tabular-nums">
-					{primera === undefined ? "" : cuantos(primera.total, "cambio", "cambios")}
+					{primera === undefined ? "" : plural(primera.total, "cambio", "cambios")}
 				</span>
 			</div>
 			{paginas.isError ? (

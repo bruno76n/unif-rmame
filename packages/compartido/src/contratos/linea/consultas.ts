@@ -115,6 +115,10 @@ const tarjeta = z.object({
 	estado_desde: z.iso.datetime({ offset: true }).describe("Desde cuándo está en esa etapa"),
 	promesa: conColor.nullable().describe("Por surtir o esperando prendas: «Sale hoy» (verde) o «Sale mañana» (ámbar)"),
 	prendas: z.array(prendaEnTarjeta),
+	falta: z
+		.string()
+		.nullable()
+		.describe("Esperando prendas: «Falta {n} de {m}», las piezas que no están en aduana de todas las del W-"),
 	total_centavos: monto("El total con envío; Aduana y Bodega no lo reciben"),
 	version: z.number().int().describe("La versión del W-, para cancelarlo"),
 });
@@ -136,7 +140,12 @@ export const pedidosLinea = definirConsulta({
 	descripcion:
 		"Los W- por etapa (esperando pago, por surtir, esperando prendas y listos para empacar), con sus prendas y dónde está cada una, y los cerrados del más reciente al más viejo; sin totales para Aduana y Bodega",
 	entrada: z.object({
-		estado: z.enum(estadosDeW).optional().describe("Solo los de esa etapa"),
+		estados: z
+			.string()
+			.transform((texto) => texto.split(","))
+			.pipe(z.array(z.enum(estadosDeW)).min(1))
+			.optional()
+			.describe("Solo los de esas etapas, separadas por coma («esperando_prendas,listo_para_empacar»); sin él, todas"),
 		buscar: z.string().trim().max(80).optional().describe("Folio o cliente"),
 		...parametrosDePagina(100),
 	}),

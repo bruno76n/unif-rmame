@@ -9,6 +9,7 @@
  * tramo en tránsito. El espejo es otra DF- por aclarar de la misma prenda y talla, con las mismas piezas al revés.
  */
 
+import { zonaDelNegocio } from "@uniformame/compartido/calculos/fechas";
 import { diferenciasDeBodega } from "@uniformame/compartido/contratos/inventario/bodega";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
@@ -160,7 +161,7 @@ const valoresDeLaLista = z.object({ valores: z.array(z.object({ id: z.uuid(), no
 export const consultaDiferencias = implementarConsulta(diferenciasDeBodega, async (contexto, parametros) => ({
 	resultado: await contexto.comoAccion(async (accion) => {
 		const { rows: filasPorContar } = await accion.transaccion.execute(sql`
-			SELECT f.id AS diferencia_id, f.folio, (f.creado_en AT TIME ZONE 'America/Mexico_City')::date::text AS fecha,
+			SELECT f.id AS diferencia_id, f.folio, (f.creado_en AT TIME ZONE ${zonaDelNegocio}::text)::date::text AS fecha,
 				abs(f.piezas) AS piezas, p.nombre AS prenda, t.nombre AS talla, f.descripcion, u.nombre AS ubicacion,
 				f.estado = 'esperando_autorizacion' AS contada
 			FROM diferencias f JOIN ubicaciones u ON u.id = f.ubicacion_id JOIN variantes v ON v.id = f.variante_id

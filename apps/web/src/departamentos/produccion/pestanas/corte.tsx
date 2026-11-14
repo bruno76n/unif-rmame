@@ -44,17 +44,11 @@ import {
 	tela0,
 	telaEnPantalla,
 } from "../corte-en-pantalla.ts";
-import { enOtroDepartamento } from "../cuenta.ts";
 import { rutasDeProduccion, useDireccion } from "../direccion.ts";
+import { enOtroDepartamento } from "../enlaces.ts";
 import { loQueCambiaEnProduccion } from "../invalidar.ts";
 import { PaginaDeProduccion } from "../pagina.tsx";
-
-/** La etiqueta de la receta en el encabezado de la captura. */
-const etiquetaDeReceta = {
-	verificada: { texto: "Receta verificada", color: "verde" },
-	sin_verificar: { texto: "Sin verificar", color: "ambar" },
-	sin_receta: { texto: "Sin receta", color: "rojo" },
-} as const;
+import { estadosDeReceta } from "../receta.ts";
 
 /**
  * El último lote que escogió esta cuenta en Corte, guardado en este navegador.
@@ -115,7 +109,7 @@ export function PestanaCorte() {
 												<span className="text-etiqueta text-tinta2">{lote.detalle}</span>
 												<span className="flex flex-wrap gap-1.5">
 													{lote.tela === null ? null : <Estado texto={lote.tela.texto} color={lote.tela.color} />}
-													{lote.receta === "verificada" ? null : <Estado {...etiquetaDeReceta[lote.receta]} />}
+													{lote.receta === "verificada" ? null : <Estado {...estadosDeReceta[lote.receta]} />}
 												</span>
 											</button>
 										</li>
@@ -149,7 +143,7 @@ function Captura({ captura }: { captura: CapturaDelCorte }) {
 			</span>
 			<span className="flex flex-wrap gap-1.5">
 				<Estado texto={captura.tela.texto} color={captura.tela.color} />
-				<Estado {...etiquetaDeReceta[captura.receta]} />
+				<Estado texto={estadosDeReceta[captura.receta].enLaCaptura} color={estadosDeReceta[captura.receta].color} />
 			</span>
 		</header>
 	);

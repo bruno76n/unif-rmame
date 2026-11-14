@@ -21,6 +21,7 @@ import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { rutasDeProduccion, useDireccion } from "../direccion.ts";
 import { PaginaDeProduccion } from "../pagina.tsx";
 import { ParaQuien } from "../piezas.tsx";
+import { estadosDeReceta } from "../receta.ts";
 
 /** Lo que regresa `produccion.lotes`. */
 type Lotes = z.infer<typeof lotesDeProduccion.resultado>;
@@ -29,13 +30,6 @@ type Tarjeta = Lotes["atorados"][number];
 
 /** Cuánto dura marcado el lote recién cortado. */
 const marcadoPorMs = 4000;
-
-/** El color de cada receta en las tablas. */
-const recetas = {
-	verificada: { texto: "Verificada", color: "verde" },
-	sin_verificar: { texto: "Sin verificar", color: "ambar" },
-	sin_receta: { texto: "Sin receta", color: "rojo" },
-} as const;
 
 /** La pestaña Lotes. */
 export function PestanaLotes() {
@@ -126,7 +120,7 @@ function TableroDeLotes({ lotes }: { lotes: Lotes }) {
 							),
 						},
 						{ clave: "para", encabezado: "Para", celda: (lote) => <ParaQuien para={lote.para} /> },
-						{ clave: "receta", encabezado: "Receta", celda: (lote) => <Estado {...recetas[lote.receta]} /> },
+						{ clave: "receta", encabezado: "Receta", celda: (lote) => <Estado {...estadosDeReceta[lote.receta]} /> },
 						{
 							clave: "capturar",
 							encabezado: "",
@@ -292,7 +286,7 @@ function Tarjetas({
  * atorada, «Atorado».
  * @param props Las casillas.
  */
-export function TiraDeOperaciones({ tira }: { tira: Tarjeta["tira"] }) {
+function TiraDeOperaciones({ tira }: { tira: Tarjeta["tira"] }) {
 	return (
 		<span className="grid min-w-0 auto-cols-[minmax(64px,1fr)] grid-flow-col gap-1.5 overflow-x-auto">
 			{tira.map((casilla) => (

@@ -9,7 +9,7 @@ import { VentanaConMotivo } from "../../../comun/ventana-con-motivo.tsx";
 import { errorDeCampo, esperar, useAccionDeCatalogo } from "../acciones.ts";
 
 /** Un producto que se descontinúa, con la versión que se leyó. */
-export interface ProductoQueSeDescontinua {
+interface ProductoQueSeDescontinua {
 	id: string;
 	version: number;
 	nombre: string;

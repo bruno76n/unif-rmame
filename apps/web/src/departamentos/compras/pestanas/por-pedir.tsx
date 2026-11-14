@@ -9,10 +9,10 @@
  * hoy y lo que ya viene. Ninguna cuenta corre aquí.
  */
 
-import { textoDeDia, textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
+import { cantidadConUnidad } from "@uniformame/compartido/calculos/compras";
+import { diasHasta, sumarDias, textoDeDia, textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
 import { plural } from "@uniformame/compartido/calculos/textos";
 import type { porPedir } from "@uniformame/compartido/contratos/compras/consultas-pestanas";
-import { cantidadConUnidad } from "@uniformame/compartido/contratos/compras/textos";
 import { Boton } from "@uniformame/interfaz/botones/boton";
 import { Casilla } from "@uniformame/interfaz/captura/casilla";
 import { Filtros } from "@uniformame/interfaz/captura/filtros";
@@ -25,7 +25,7 @@ import { MuestraDeColor } from "@uniformame/interfaz/estados/muestra-de-color";
 import { Flag, Plus, Triangle, X } from "lucide-react";
 import { useState } from "react";
 import type { z } from "zod";
-import { Buscador, diasEntre, sumarDias } from "../comun.tsx";
+import { Buscador } from "../comun.tsx";
 import { useDireccionDeCompras } from "../direccion.ts";
 
 /** Lo que regresa la consulta. */
@@ -47,15 +47,22 @@ const aTodoLoAncho = "max-telefono:col-span-3";
 /** Lo del eje que en el teléfono no sale: ahí el eje solo lleva sus fechas, sobre la línea de tiempo apilada. */
 const soloEnEscritorio = "max-telefono:hidden";
 
-/** Los grupos, de lo más urgente a lo menos. */
+/** Los grupos, de lo más urgente a lo menos, con el color de su grupo y del estado de cada material. */
 const grupos = [
 	{ estado: "sin_tiempo_de_entrega", titulo: "Sin tiempo de entrega", color: "rojo" },
 	{ estado: "pedir_esta_semana", titulo: "Pedir esta semana", color: "ambar" },
 	{ estado: "alcanza", titulo: "Alcanza", color: "verde" },
 ] as const satisfies readonly { estado: MaterialPorPedir["estado"]; titulo: string; color: ColorDeGrupo }[];
 
-/** El color del estado de un material, en su cuadro. */
-const colorDelEstado = { sin_tiempo_de_entrega: "rojo", pedir_esta_semana: "ambar", alcanza: "verde" } as const;
+/**
+ * El color del estado de un material, en su cuadro: el de su grupo.
+ * @param estado El estado que manda la consulta.
+ */
+function colorDelGrupo(estado: MaterialPorPedir["estado"]): (typeof grupos)[number]["color"] {
+	const suyo = grupos.find((grupo) => grupo.estado === estado);
+	// Cada estado tiene su grupo (`satisfies` de arriba); sin él, el más urgente, para que no pase sin verse.
+	return suyo === undefined ? "rojo" : suyo.color;
+}
 
 /**
  * Dónde cae un día en la línea de tiempo, en por ciento, sin salirse.
@@ -63,8 +70,8 @@ const colorDelEstado = { sin_tiempo_de_entrega: "rojo", pedir_esta_semana: "amba
  * @param horizonte Hoy y el último día.
  */
 function lugar(dia: string, horizonte: { hoy: string; hasta: string }): number {
-	const total = Math.max(1, diasEntre(horizonte.hoy, horizonte.hasta));
-	return Math.min(100, Math.max(0, (diasEntre(horizonte.hoy, dia) / total) * 100));
+	const total = Math.max(1, diasHasta(horizonte.hoy, horizonte.hasta));
+	return Math.min(100, Math.max(0, (diasHasta(horizonte.hoy, dia) / total) * 100));
 }
 
 /**
@@ -76,7 +83,7 @@ function marcasDelEje(datos: PorPedir): { dia: string; texto: string }[] {
 		return datos.meses.map((mes, numero) => ({ dia: mes.inicio, texto: numero === 0 ? "Hoy" : mes.nombre }));
 	}
 	const marcas = [];
-	for (let dias = 0; dias < diasEntre(datos.hoy, datos.horizonte.hasta); dias += 14) {
+	for (let dias = 0; dias < diasHasta(datos.hoy, datos.horizonte.hasta); dias += 14) {
 		const dia = sumarDias(datos.hoy, dias);
 		marcas.push({ dia, texto: dias === 0 ? "Hoy" : textoDeDiaCorto(dia) });
 	}
@@ -92,7 +99,7 @@ function LineaDeTiempo({ material, datos }: { material: MaterialPorPedir; datos:
 	const horizonte = { hoy: datos.hoy, hasta: datos.horizonte.hasta };
 	const acaba = material.se_acaba === null ? 100 : lugar(material.se_acaba, horizonte);
 	const llega = lugar(material.llegaria_hoy, horizonte);
-	const diasQueAlcanza = material.se_acaba === null ? null : diasEntre(datos.hoy, material.se_acaba);
+	const diasQueAlcanza = material.se_acaba === null ? null : diasHasta(datos.hoy, material.se_acaba);
 	return (
 		<div className="relative h-8">
 			{marcasDelEje(datos).map((marca) => (
@@ -228,7 +235,7 @@ function Renglon({
 				<LineaDeTiempo material={material} datos={datos} />
 			</div>
 			<div className={`flex flex-col items-start gap-1 ${aTodoLoAncho}`}>
-				<Estado texto={material.linea} color={colorDelEstado[material.estado]} />
+				<Estado texto={material.linea} color={colorDelGrupo(material.estado)} />
 				{material.en_borrador === null ? null : (
 					<span title={`Ya está en el borrador ${material.en_borrador.folio}`} className="text-etiqueta text-tinta3">
 						En borrador

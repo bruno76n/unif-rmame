@@ -4,10 +4,11 @@
  * Fase 19 · docs/interfaz/fabrica/compras.md («Conciliación de facturas») y docs/interfaz/fabrica/contaduria.md
  */
 
+import { cantidadConUnidad } from "@uniformame/compartido/calculos/compras";
+import { enPesos } from "@uniformame/compartido/calculos/dinero";
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
 import { plural } from "@uniformame/compartido/calculos/textos";
 import type { conciliacionFacturas, estadoArmado } from "@uniformame/compartido/contratos/compras/consultas-pestanas";
-import { cantidadConUnidad, pesos } from "@uniformame/compartido/contratos/compras/textos";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
@@ -47,9 +48,9 @@ const recibidas = ["recibida_en_parte", "recibida", "cerrada_con_faltante"];
 function puntoDeOrden(orden: OrdenResumida): string {
 	const [unica] = orden.lineas;
 	if (orden.lineas.length === 1 && unica !== undefined) {
-		return `${cantidadConUnidad(unica.pedido, unica.unidad)} a ${pesos(unica.precioCentavos)}`;
+		return `${cantidadConUnidad(unica.pedido, unica.unidad)} a ${enPesos(unica.precioCentavos)}`;
 	}
-	return `${plural(orden.lineas.length, "material", "materiales")} · ${pesos(orden.totalCentavos)}`;
+	return `${plural(orden.lineas.length, "material", "materiales")} · ${enPesos(orden.totalCentavos)}`;
 }
 
 /**
@@ -120,7 +121,7 @@ export async function renglonesDeConciliacion(accion: ContextoDeAccion): Promise
 							? { texto: "Sin recibir", como: "falta" as const }
 							: { texto: `${loRecibido(orden)} · ${textoDeDiaCorto(ultima)}`, como: "coincide" as const },
 					factura: {
-						texto: `${pesos(factura.subtotal)} · ${textoDeDiaCorto(factura.fecha)}`,
+						texto: `${enPesos(factura.subtotal)} · ${textoDeDiaCorto(factura.fecha)}`,
 						como: factura.responsable === "aduana" ? ("coincide" as const) : ("no_coincide" as const),
 					},
 				},

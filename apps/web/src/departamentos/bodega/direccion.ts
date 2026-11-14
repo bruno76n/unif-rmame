@@ -6,10 +6,11 @@
  * Fase 19 · docs/interfaz/comunes.md («La página de un departamento», regla 2) y .claude/rules/react.md (regla 5)
  */
 
-import { useNavigate, useSearch } from "@tanstack/react-router";
 import { filtrosDeExistencias } from "@uniformame/compartido/contratos/inventario/bodega";
 import { useCallback } from "react";
 import { z } from "zod";
+import { useBusquedaDeDepartamento } from "../../comun/direccion.ts";
+import { rutaDePestana } from "../../comun/pagina-de-departamento.tsx";
 
 /** Los cajones de Bodega que se abren por la dirección. */
 export const cajonesDeBodega = ["variante", "entrega", "llegada", "conteo", "carga"] as const;
@@ -51,24 +52,12 @@ export type BusquedaDeBodega = z.infer<typeof busquedaDeBodega>;
 /**
  * Lee la búsqueda de Bodega y da cómo cambiarla: los cambios se juntan con lo que ya hay y lo que se pone sin valor se
  * quita; con otra pestaña, la búsqueda empieza de cero.
+ * Lo común está en `useBusquedaDeDepartamento`; aquí van sus cajones.
  * @returns La búsqueda, `navegar(cambios, pestana?)`, `abrir(cajon, id?)` y `cerrar()`.
  */
 export function useDireccionDeBodega() {
-	const busqueda = busquedaDeBodega.parse(useSearch({ strict: false }));
-	const navigate = useNavigate();
-	const navegar = useCallback(
-		(cambios: Partial<BusquedaDeBodega>, pestana?: PestanaDeBodega) => {
-			const nueva = Object.fromEntries(
-				Object.entries({ ...(pestana === undefined ? busqueda : {}), ...cambios }).filter(
-					([, valor]) => valor !== undefined && valor !== "",
-				),
-			);
-			void navigate({
-				to: pestana === undefined ? "." : pestana === "pendientes" ? "/bodega" : `/bodega/${pestana}`,
-				search: busquedaDeBodega.parse(nueva),
-			});
-		},
-		[busqueda, navigate],
+	const { busqueda, navegar } = useBusquedaDeDepartamento(busquedaDeBodega, (pestana: PestanaDeBodega) =>
+		rutaDePestana("bodega", pestana),
 	);
 	/** Abre un cajón, sin tocar la pestaña ni lo demás. */
 	const abrir = useCallback((cajon: CajonDeBodega, id?: string) => navegar({ cajon, id }), [navegar]);

@@ -20,7 +20,6 @@ import {
 	primerasVentas,
 	saludDeLosLotes,
 	terminadasPorDia,
-	ultimosDiasDeTrabajo,
 	vendidoEntre,
 	ventasPorDia,
 } from "./cifras.ts";
@@ -67,8 +66,7 @@ export const consultaIndicadores = implementarConsulta(indicadores, async (conte
 			const total = semanaQueTermina(hoy);
 			const comparado = semanaQueTermina(finComparado);
 			// Las prendas terminadas y los lotes.
-			const dias = await ultimosDiasDeTrabajo(deLectura, diasDeLaGrafica);
-			const terminadas = await terminadasPorDia(deLectura, dias);
+			const terminadas = await terminadasPorDia(deLectura, diasDeLaGrafica);
 			const { atorados } = await saludDeLosLotes(deLectura);
 			const { enProceso, porCortar } = await lotesPorEtapa(deLectura);
 			const ubicaciones = await existenciaPorUbicacion(deLectura);
@@ -97,8 +95,8 @@ export const consultaIndicadores = implementarConsulta(indicadores, async (conte
 					};
 				}),
 				terminadas: {
-					dias: dias.map((dia, i) => ({ fecha: dia.toString(), piezas: terminadas[i] ?? 0 })),
-					esta_semana: terminadas.slice(-diasDeEstaSemana).reduce((suma, piezas) => suma + piezas, 0),
+					dias: terminadas,
+					esta_semana: terminadas.slice(-diasDeEstaSemana).reduce((suma, dia) => suma + dia.piezas, 0),
 					lotes: `${plural(atorados, "lote atorado", "lotes atorados")}, ${enProceso} en proceso, ${porCortar} por cortar`,
 				},
 				existencias: {

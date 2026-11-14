@@ -7,8 +7,8 @@
  * El plazo real y las entregas a tiempo salen de `plazosReales`, la misma regla de Por pedir.
  */
 
+import { condicionDePago, telefonoEnTexto } from "@uniformame/compartido/calculos/compras";
 import { proveedoresDeCompras } from "@uniformame/compartido/contratos/compras/consultas-pestanas";
-import { condicionDePago, telefonoEnTexto } from "@uniformame/compartido/contratos/compras/textos";
 import { asc, eq, isNotNull, isNull } from "drizzle-orm";
 import { type ContextoDeAccion, implementarConsulta } from "../../../nucleo/modulos.ts";
 import { terceros } from "../../contaduria/tablas.ts";

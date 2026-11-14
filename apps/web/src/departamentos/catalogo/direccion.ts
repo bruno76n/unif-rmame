@@ -9,6 +9,7 @@
 
 import { getRouteApi, useRouter, useRouterState } from "@tanstack/react-router";
 import { z } from "zod";
+import { direccionCon } from "../../comun/direccion.ts";
 import { rutaDePestana } from "../../comun/pagina-de-departamento.tsx";
 
 /** Un texto de la dirección, si viene. */
@@ -66,12 +67,7 @@ const delCajon = ["cajon", "id", "origen", "base", "seccion_alta", "cliente", "d
  * @param busqueda Lo que va en la búsqueda; lo vacío no viaja.
  */
 export function direccionDe(pestana: PestanaDeCatalogo, busqueda: BusquedaDeCatalogo): string {
-	const parametros = new URLSearchParams();
-	for (const [clave, valor] of Object.entries(busqueda)) {
-		if (typeof valor === "string" && valor !== "") parametros.set(clave, valor);
-	}
-	const sufijo = parametros.size === 0 ? "" : `?${parametros.toString()}`;
-	return `${rutaDePestana("catalogo", pestana)}${sufijo}`;
+	return direccionCon(rutaDePestana("catalogo", pestana), busqueda);
 }
 
 /** La ruta de Catálogo, para leer su búsqueda desde cualquier pestaña. */

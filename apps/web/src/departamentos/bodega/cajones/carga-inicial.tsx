@@ -17,7 +17,7 @@ import { useConsulta } from "../../../comun/api.tsx";
 import { useCierreDelCajon } from "../../../comun/cambios-sin-guardar.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
-import { useEnvio } from "../comun.tsx";
+import { useEnvio } from "../envio.ts";
 import { paraElCampo, TablaDeConteo } from "./conteo.tsx";
 
 /** Qué se carga. */

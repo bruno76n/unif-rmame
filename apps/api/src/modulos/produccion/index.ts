@@ -45,6 +45,7 @@ import {
 } from "./lecturas/lotes.ts";
 import { lotesAtorados, saludDeLotes } from "./lecturas/lotes-atorados.ts";
 import { personaQueLaHizo } from "./lecturas/persona-que-la-hizo.ts";
+import { terminadasPorDia } from "./lecturas/terminadas-por-dia.ts";
 import { semillaDeParametrosDeProduccion } from "./parametros.ts";
 import { lectoresDeProduccion } from "./permisos.ts";
 import { semillaDeCorte } from "./siembra.ts";
@@ -100,6 +101,7 @@ export default definirModulo({
 		lote_para_aduana: loteParaAduana,
 		registros_para_nomina: registrosParaNomina,
 		persona_que_la_hizo: personaQueLaHizo,
+		terminadas_por_dia: terminadasPorDia,
 	},
 	trabajos: [vigilarLotesAtorados],
 	semillas: [semillaDeCorte, semillaDeParametrosDeProduccion],

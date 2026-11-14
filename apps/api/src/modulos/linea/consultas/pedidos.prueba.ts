@@ -1,7 +1,7 @@
 /**
  * Prueba de `linea.pedidos`: el tablero por etapa con sus tarjetas (la fecha de pago o de vencimiento, cada prenda con
  * dónde está, la promesa y el total), el buscador por folio o cliente, los cerrados del más reciente al más viejo con
- * su cursor, y el recorte: Bodega y Aduana ven los W- sin el total (regla 8 de pedidos en línea); los demás, 403.
+ * su cursor, solo las etapas que se piden con `estados`, y el recorte: Bodega y Aduana ven los W- sin el total (regla 8 de pedidos en línea); los demás, 403.
  * Fase 19 · docs/fases/19-web-principal.md (criterio «Cada consulta revisa el departamento y el permiso fino en el
  * servidor y no manda lo que la cuenta no debe ver: precios a Aduana y Bodega…»)
  */
@@ -26,6 +26,7 @@ interface Tarjeta {
 	estado: string;
 	promesa: { texto: string; color: string } | null;
 	prendas: { prenda: string; talla: string; piezas: number; en_aduana: boolean; donde: string | null }[];
+	falta: string | null;
 	total_centavos?: number;
 	version: number;
 }
@@ -102,11 +103,17 @@ describe("Pedidos de Tienda en línea: el tablero, el buscador, los cerrados y e
 		tablero = await pedidos();
 		expect(tarjetaDe(tablero, pedido.id)?.columna).toBe("esperando_prendas");
 		expect(tarjetaDe(tablero, pedido.id)?.tarjeta.prendas[0]?.donde).toMatch(/^En camino a aduana · A-/);
+		// Esperando prendas, la tarjeta ya dice cuántas faltan (Empaque en línea de Aduana no cuenta nada).
+		expect(tarjetaDe(tablero, pedido.id)?.tarjeta.falta).toBe("Falta 2 de 2");
 		await recibirCompletoEnAduana(servidor, traspasoId ?? "");
 		tablero = await pedidos();
 		const listo = tarjetaDe(tablero, pedido.id);
 		expect(listo?.columna).toBe("listo_para_empacar");
-		expect(listo?.tarjeta).toMatchObject({ promesa: null, prendas: [expect.objectContaining({ en_aduana: true })] });
+		expect(listo?.tarjeta).toMatchObject({
+			promesa: null,
+			falta: null,
+			prendas: [expect.objectContaining({ en_aduana: true })],
+		});
 	});
 
 	it("«Esperando pago» sale solo si hay alguno, con su vencimiento", async () => {
@@ -168,5 +175,18 @@ describe("Pedidos de Tienda en línea: el tablero, el buscador, los cerrados y e
 		}
 		expect((await pedidos()).recortado ?? []).not.toContain("total_centavos");
 		expect((await pedirConsulta(servidor, "linea.pedidos", {}, "ventas")).estado).toBe(403);
+	});
+
+	it("con `estados`, solo viajan esas etapas: Empaque en línea pide lo que espera prendas y lo listo, sin cerrados", async () => {
+		await pedidoLineaEnBodega(servidor);
+		const deAduana = await pedidos({ estados: "esperando_prendas,listo_para_empacar" }, "aduana");
+		for (const columna of deAduana.columnas) {
+			expect(["esperando_prendas", "listo_para_empacar"]).toContain(columna.estado);
+		}
+		expect(deAduana.cerrados).toEqual([]);
+		const todas = await pedidos({}, "aduana");
+		expect(todas.columnas.some((columna) => columna.estado === "por_surtir")).toBe(true);
+		const mal = await pedirConsulta(servidor, "linea.pedidos", { estados: "esperando_prendas,otro" }, "aduana");
+		expect(mal.estado).toBe(400);
 	});
 });

@@ -6,7 +6,7 @@
  *
  * Los indicadores no se guardan: se calculan al leer (regla 5). Lo vendido son las notas de entrega entregadas menos
  * sus notas de crédito autorizadas (Clientes externos) y los W- pagados que no se cancelaron (En línea); las tiendas
- * venden con el POS, que todavía no llega. Las terminadas son las piezas buenas de la última operación de su flujo.
+ * venden con el POS, que todavía no llega. Las terminadas las cuenta Producción (`produccion.terminadas_por_dia`).
  * Nunca se leen sueldos, tarifas ni costos.
  */
 
@@ -14,8 +14,6 @@ import { sql } from "drizzle-orm";
 import { Temporal } from "temporal-polyfill";
 import { z } from "zod";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";
-import { leerParametro } from "../../../nucleo/parametros.ts";
-import { leerDiasDeTrabajo } from "../../personal/dominio/asistencia.ts";
 
 /** El formato de las cantidades de material, con sus decimales si los lleva: «20», «0.75». */
 export const formatoDeCantidad = new Intl.NumberFormat("es-MX", { maximumFractionDigits: 2 });
@@ -104,47 +102,19 @@ export async function primerasVentas(contexto: ContextoDeAccion): Promise<Record
 }
 
 /**
- * Los últimos días de trabajo hasta hoy (hoy cuenta si es día de trabajo), del más viejo al más nuevo.
+ * Las prendas terminadas de cada uno de los últimos días de trabajo, de la lectura de Producción: la misma cuenta que
+ * ve Producción en su Pendientes.
  * @param contexto El contexto de la lectura.
- * @param cuantos Cuántos días.
- */
-export async function ultimosDiasDeTrabajo(contexto: ContextoDeAccion, cuantos: number): Promise<Temporal.PlainDate[]> {
-	const deTrabajo = new Set<number>(
-		leerDiasDeTrabajo(await leerParametro(contexto.transaccion, { clave: "general.dias_de_trabajo" })),
-	);
-	const dias: Temporal.PlainDate[] = [];
-	for (let dia = contexto.diaDeNegocio; dias.length < cuantos; dia = dia.subtract({ days: 1 })) {
-		if (deTrabajo.has(dia.dayOfWeek)) dias.unshift(dia);
-	}
-	return dias;
-}
-
-/**
- * Las prendas terminadas de cada día: las piezas buenas de los registros vigentes de la última operación de su flujo.
- * @param contexto El contexto de la lectura.
- * @param dias Los días.
- * @returns Las piezas de cada día, en el mismo orden.
+ * @param dias Cuántos días de trabajo, hasta hoy.
+ * @returns Cada día (ISO) con sus piezas, del más viejo al más nuevo.
  */
 export async function terminadasPorDia(
 	contexto: ContextoDeAccion,
-	dias: readonly Temporal.PlainDate[],
-): Promise<number[]> {
-	const primero = dias[0];
-	const ultimo = dias.at(-1);
-	if (primero === undefined || ultimo === undefined) return [];
-	const { rows } = await contexto.transaccion.execute(sql`
-		SELECT r.fecha::text AS fecha, sum(r.piezas_buenas) AS piezas
-		FROM registros_operacion r JOIN flujo_operaciones o ON o.id = r.flujo_operacion_id
-		WHERE r.estado = 'vigente' AND r.fecha BETWEEN ${primero.toString()}::date AND ${ultimo.toString()}::date
-			AND o.orden = (SELECT max(u.orden) FROM flujo_operaciones u WHERE u.flujo_id = o.flujo_id AND u.baja_en IS NULL)
-		GROUP BY r.fecha`);
-	const porDia = new Map(
-		z
-			.array(z.object({ fecha: z.string(), piezas: z.coerce.number() }))
-			.parse(rows)
-			.map((fila) => [fila.fecha, fila.piezas]),
-	);
-	return dias.map((dia) => porDia.get(dia.toString()) ?? 0);
+	dias: number,
+): Promise<{ fecha: string; piezas: number }[]> {
+	return z
+		.object({ dias: z.array(z.object({ fecha: z.string(), piezas: z.number() })) })
+		.parse(await contexto.lectura("produccion.terminadas_por_dia", { dias })).dias;
 }
 
 /**

@@ -19,8 +19,8 @@ import type { z } from "zod";
 import { usePaginas } from "../../../comun/api.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
-import { useEnvio } from "../comun.tsx";
 import { useDireccionDeBodega } from "../direccion.ts";
+import { useEnvio } from "../envio.ts";
 import { VentanaResolverExcepcion } from "../ventanas/resolver-excepcion.tsx";
 
 /** Una excepción. */

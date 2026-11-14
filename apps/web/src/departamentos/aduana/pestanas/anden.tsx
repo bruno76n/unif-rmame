@@ -105,7 +105,7 @@ function CarrilDelAnden({ carril }: { carril: Carril }) {
 	return (
 		<section
 			aria-label={carril.nombre}
-			className={`flex min-w-0 flex-col gap-2 rounded-grande border-t-4 bg-suave p-2.5 max-telefono:min-w-[82%] ${orillaDelCarril(carril.clave)}`}
+			className={`flex min-w-0 flex-col gap-2 rounded-grande border-t-4 bg-suave p-2.5 max-telefono:min-w-[82%] ${orillaDelCarril(carril.color)}`}
 		>
 			<header className="flex items-center gap-2 px-1 text-tinta">
 				<Icono size={17} strokeWidth={1.9} aria-hidden />

@@ -16,7 +16,7 @@ import { useConConexion } from "../../../comun/estado-de-la-app.ts";
 import { loQueCambiaEnProduccion } from "../invalidar.ts";
 
 /** La excepción que se resuelve, como la trae Pendientes. */
-export interface ExcepcionPorResolver {
+interface ExcepcionPorResolver {
 	excepcion_id: string;
 	version: number;
 	titulo: string;

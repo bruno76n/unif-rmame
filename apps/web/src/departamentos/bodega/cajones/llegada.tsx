@@ -21,7 +21,7 @@ import { useConsulta } from "../../../comun/api.tsx";
 import { useCierreDelCajon } from "../../../comun/cambios-sin-guardar.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
-import { useEnvio } from "../comun.tsx";
+import { useEnvio } from "../envio.ts";
 
 /** Lo que regresa la consulta. */
 type Llegada = z.infer<typeof detalleDeLlegadaAduana.resultado>;

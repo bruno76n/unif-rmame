@@ -112,7 +112,7 @@ export function InventarioDeAduana() {
 										{
 											clave: "va_a",
 											encabezado: "Va a",
-											celda: (partida) => <DestinoConPunto carril={partida.carril} nombre={partida.destino} />,
+											celda: (partida) => <DestinoConPunto color={partida.color_destino} nombre={partida.destino} />,
 										},
 										{
 											clave: "boton",

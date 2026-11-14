@@ -6,6 +6,7 @@
  * («`compras.crear_material`»)
  */
 
+import { zodResolver } from "@hookform/resolvers/zod";
 import { pesosACentavos } from "@uniformame/compartido/calculos/dinero";
 import type { materialesDeCompras } from "@uniformame/compartido/contratos/compras/consultas-pestanas";
 import { crearMaterial, tiposDeMaterial, unidadesDeReceta } from "@uniformame/compartido/contratos/compras/materiales";
@@ -13,12 +14,12 @@ import { Boton } from "@uniformame/interfaz/botones/boton";
 import { Campo } from "@uniformame/interfaz/captura/campo";
 import { Selector } from "@uniformame/interfaz/captura/selector";
 import { Ventana } from "@uniformame/interfaz/contenedores/ventana";
-import { useForm } from "react-hook-form";
-import type { z } from "zod";
-import { useAccion } from "../../../comun/api.tsx";
+import { type Path, useForm } from "react-hook-form";
+import { z } from "zod";
+import { erroresEnSusCampos, useEnvioConCampos } from "../../../comun/envio.ts";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
 import { rutaDePestana } from "../../../comun/pagina-de-departamento.tsx";
-import { erroresDeLaAccion, numeroEscrito, validadorDelContrato } from "../comun.tsx";
+import { numeroEscrito } from "../comun.tsx";
 import { useDireccionDeCompras } from "../direccion.ts";
 
 /** Lo que pide la ventana, de `compras.materiales`. */
@@ -49,6 +50,20 @@ const nombresDeTipo: Readonly<Record<(typeof tiposDeMaterial)[number], string>> 
 	avio: "Avío",
 	consumible: "Consumible del taller",
 };
+
+/** Los errores de regla de `compras.crear_material` que van junto a un campo, por su código. */
+const campoDelCodigo: Readonly<Record<string, Path<Capturado>>> = {
+	nombre_repetido: "nombre",
+	unidad_no_existe: "unidad",
+	tela_en_metros: "unidad",
+	proveedor_dado_de_baja: "proveedor_id",
+};
+
+/** Lo capturado se revisa con la entrada de `compras.crear_material`, como la revisa la API. */
+const formularioDeMaterial = z
+	.custom<Capturado>()
+	.transform((valores): unknown => aDatos(valores))
+	.pipe(crearMaterial.entrada);
 
 /**
  * Lo capturado como los datos de `compras.crear_material`: lo vacío no va; el costo se escribe en pesos.
@@ -90,9 +105,9 @@ export function VentanaNuevoMaterial({
 }) {
 	const { ir } = useDireccionDeCompras();
 	const conConexion = useConConexion();
-	const crear = useAccion(crearMaterial, ["compras.materiales", "compras.pendientes", "compras.por_pedir"]);
-	const formulario = useForm<Capturado>({
-		resolver: validadorDelContrato(crearMaterial.entrada, aDatos),
+	const crear = useEnvioConCampos(crearMaterial, ["compras.materiales", "compras.pendientes", "compras.por_pedir"]);
+	const formulario = useForm<Capturado, unknown, z.output<typeof formularioDeMaterial>>({
+		resolver: zodResolver(formularioDeMaterial),
 		defaultValues: {
 			nombre: "",
 			tipo: "",
@@ -119,24 +134,19 @@ export function VentanaNuevoMaterial({
 		reset();
 		alCerrar();
 	};
-	const agregar = handleSubmit((valores) =>
-		crear.mutate(
-			{ datos: crearMaterial.entrada.parse(aDatos(valores)) },
-			{
-				onSuccess: ({ material_id: id }) => {
-					cerrar();
-					ir({ resaltar: id }, rutaDePestana("compras", "materiales"));
-				},
-				onError: (falla) =>
-					erroresDeLaAccion(falla, valores, setError, {
-						nombre_repetido: "nombre",
-						unidad_no_existe: "unidad",
-						tela_en_metros: "unidad",
-						proveedor_dado_de_baja: "proveedor_id",
-					}),
+	const agregar = handleSubmit(async (datos) => {
+		const salio = await crear.enviar(
+			{ datos },
+			(campos) => erroresEnSusCampos(campos, formulario),
+			(falla) => {
+				const campo = falla.codigo === null ? undefined : campoDelCodigo[falla.codigo];
+				if (campo !== undefined) setError(campo, { message: falla.mensaje });
 			},
-		),
-	);
+		);
+		if (salio === undefined) return;
+		cerrar();
+		ir({ resaltar: salio.material_id }, rutaDePestana("compras", "materiales"));
+	});
 	return (
 		<Ventana
 			abierta={abierta}
@@ -144,7 +154,7 @@ export function VentanaNuevoMaterial({
 			titulo="Nuevo material"
 			ancha
 			accion={
-				<Boton variante="principal" disabled={!conConexion || crear.isPending} onClick={agregar}>
+				<Boton variante="principal" disabled={!conConexion || crear.enviando} onClick={agregar}>
 					Agregar material
 				</Boton>
 			}

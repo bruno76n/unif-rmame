@@ -14,12 +14,13 @@ import { Filtros } from "@uniformame/interfaz/captura/filtros";
 import { Grafica } from "@uniformame/interfaz/graficas/grafica";
 import type { ReactNode } from "react";
 import type { z } from "zod";
+import { montoEnPantalla } from "../../../comun/montos.ts";
 
 /** Lo que trae `direccion.indicadores`. */
 type Datos = z.infer<typeof indicadores.resultado>;
 
 /** Contra qué se compara la semana. */
-export type Comparacion = (typeof comparaciones)[number];
+type Comparacion = (typeof comparaciones)[number];
 
 /** Los botones de la comparación. */
 const botonesDeComparacion: readonly { clave: Comparacion; texto: string }[] = [
@@ -61,7 +62,7 @@ function Panel({
 }
 
 /** Lo que recibe la pestaña. */
-export interface PropsDeIndicadores {
+interface PropsDeIndicadores {
 	datos: Datos;
 	comparar: Comparacion;
 	alComparar: (comparar: Comparacion) => void;
@@ -84,7 +85,7 @@ export function PestanaIndicadores({ datos, comparar, alComparar }: PropsDeIndic
 			/>
 			<Panel
 				nombre={`Ventas de la semana del ${textoDeDiaCorto(semana.desde)}`}
-				cifra={semana.total_centavos === undefined ? "—" : enPesos(semana.total_centavos)}
+				cifra={montoEnPantalla(semana.total_centavos)}
 				junto={
 					// Sin nada contra qué comparar no hay flecha ni porcentaje, y «contra…» solo no dice nada.
 					semana.variacion === null ? null : (

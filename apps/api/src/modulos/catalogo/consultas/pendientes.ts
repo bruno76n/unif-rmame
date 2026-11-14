@@ -15,7 +15,7 @@ import { sql } from "drizzle-orm";
 import { z } from "zod";
 import type { Base } from "../../../nucleo/base/conexion.ts";
 import { type ConteoDePastilla, type ContextoDeConsulta, implementarConsulta } from "../../../nucleo/modulos.ts";
-import { filas, modelosSinPrecio, parametroSiNo, siguienteCodigo } from "./comunes.ts";
+import { filas, modelosSinPrecio, parametroSiNo, siguienteCodigo } from "./comun.ts";
 
 /** Cuántas semanas lleva la gráfica de cambios de precio. */
 const semanas = 6;

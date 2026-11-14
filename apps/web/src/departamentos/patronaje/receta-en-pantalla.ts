@@ -139,7 +139,7 @@ function lineaDeLaCuenta(linea: LineaCapturada, material: MaterialDeLaReceta | u
  * @param cuanto La cantidad.
  * @param unidad La unidad de inventario («m», «pza», «conos»).
  */
-export function enSuUnidad(cuanto: number, unidad: string): string {
+function enSuUnidad(cuanto: number, unidad: string): string {
 	const unidadDicha = cuanto === 1 && unidad.endsWith("s") ? unidad.slice(0, -1) : unidad;
 	return `${new Intl.NumberFormat("es-MX").format(cuanto)} ${unidadDicha}`;
 }

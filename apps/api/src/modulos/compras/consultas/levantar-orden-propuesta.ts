@@ -7,8 +7,8 @@
  * y 4)
  */
 
+import { condicionDePago } from "@uniformame/compartido/calculos/compras";
 import { levantarOrdenPropuesta } from "@uniformame/compartido/contratos/compras/consultas-cajones";
-import { condicionDePago } from "@uniformame/compartido/contratos/compras/textos";
 import { and, eq } from "drizzle-orm";
 import { implementarConsulta } from "../../../nucleo/modulos.ts";
 import { parametroNumero } from "../../../nucleo/parametros.ts";

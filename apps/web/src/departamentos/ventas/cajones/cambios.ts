@@ -10,7 +10,7 @@
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
 
 /** Una talla como la compara el editor. */
-export interface TallaComparada {
+interface TallaComparada {
 	prenda: string;
 	talla: string;
 	antes: number;

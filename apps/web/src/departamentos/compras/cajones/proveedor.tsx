@@ -5,26 +5,29 @@
  * Fase 19 · docs/interfaz/fabrica/compras.md («Proveedor») y docs/modulos/compras/proveedores-y-precios.md
  */
 
+import { zodResolver } from "@hookform/resolvers/zod";
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
 import { plural } from "@uniformame/compartido/calculos/textos";
 import { proveedorDeCompras } from "@uniformame/compartido/contratos/compras/consultas-cajones";
 import { darBajaProveedor, guardarProveedor } from "@uniformame/compartido/contratos/compras/proveedores";
-import { pesos } from "@uniformame/compartido/contratos/compras/textos";
 import { Boton } from "@uniformame/interfaz/botones/boton";
 import { Campo } from "@uniformame/interfaz/captura/campo";
 import { Cajon } from "@uniformame/interfaz/contenedores/cajon";
 import { Estado } from "@uniformame/interfaz/estados/estado";
 import { EstadoDePantalla } from "@uniformame/interfaz/estados/estado-de-pantalla";
 import { Dato } from "@uniformame/interfaz/pagina/dato";
+import { TituloDeBloque } from "@uniformame/interfaz/pagina/seccion";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import type { z } from "zod";
-import { leerFalla, useAccion, useConsulta } from "../../../comun/api.tsx";
+import { z } from "zod";
+import { useAccion, useConsulta } from "../../../comun/api.tsx";
 import { useCierreDelCajon } from "../../../comun/cambios-sin-guardar.tsx";
+import { erroresEnSusCampos, useEnvioConCampos } from "../../../comun/envio.ts";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
+import { montoEnPantalla } from "../../../comun/montos.ts";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { VentanaConMotivo } from "../../../comun/ventana-con-motivo.tsx";
-import { erroresDeLaAccion, numeroEscrito, TituloDeSeccion, validadorDelContrato } from "../comun.tsx";
+import { numeroEscrito } from "../comun.tsx";
 import { useDireccionDeCompras } from "../direccion.ts";
 import { textoDelTono } from "../pestanas/proveedores.tsx";
 
@@ -96,15 +99,19 @@ export function CajonProveedor({ proveedorId, alCerrar }: { proveedorId: string;
 	const conConexion = useConConexion();
 	const consulta = useConsulta(proveedorDeCompras, { proveedor_id: proveedorId });
 	const [baja, setBaja] = useState(false);
-	const [choque, setChoque] = useState(false);
-	const guardar = useAccion(guardarProveedor, cambianConElProveedor);
+	const guardar = useEnvioConCampos(guardarProveedor, cambianConElProveedor);
 	const darDeBaja = useAccion(darBajaProveedor, cambianConElProveedor);
 	const datos = consulta.data;
-	const { register, handleSubmit, reset, setError, formState, watch } = useForm<Ficha>({
-		resolver: validadorDelContrato(guardarProveedor.entrada, (valores: Ficha) =>
-			datos === undefined ? {} : soloLoQueCambio(datos.proveedor, valores),
+	// La ficha se revisa con la entrada de `compras.guardar_proveedor`: lo capturado se vuelve sus datos.
+	const formulario = useForm<Ficha, unknown, z.output<typeof guardarProveedor.entrada>>({
+		resolver: zodResolver(
+			z
+				.custom<Ficha>()
+				.transform((valores) => (datos === undefined ? {} : soloLoQueCambio(datos.proveedor, valores)))
+				.pipe(guardarProveedor.entrada),
 		),
 	});
+	const { register, handleSubmit, reset, formState, watch, getValues, setError } = formulario;
 	// Lo guardado con que se compara lo capturado: lo que llegó de la consulta, o lo que se acaba de guardar.
 	const [guardado, setGuardado] = useState<Ficha | null>(null);
 	const capturado = watch();
@@ -120,25 +127,19 @@ export function CajonProveedor({ proveedorId, alCerrar }: { proveedorId: string;
 	const { alCerrar: cerrar, pregunta } = useCierreDelCajon(conCambios, alCerrar);
 	const proveedor = datos?.proveedor;
 	const version = proveedor?.version ?? 0;
-	const guardarFicha = handleSubmit((valores) => {
-		if (datos === undefined) return;
-		guardar.mutate(
-			{ datos: guardarProveedor.entrada.parse(soloLoQueCambio(datos.proveedor, valores)), version },
-			{
-				onSuccess: () => {
-					setChoque(false);
-					reset({ ...valores });
-					setGuardado({ ...valores });
-				},
-				onError: (falla) => {
-					// Con choque, se carga lo nuevo y lo capturado se queda.
-					const conChoque = leerFalla(falla).tipo === "choque";
-					setChoque(conChoque);
-					if (conChoque) consulta.refetch();
-					erroresDeLaAccion(falla, valores, setError, { proveedor_repetido: "nombre" });
-				},
+	// Con choque, `useEnvioConCampos` vuelve a leer el proveedor y lo capturado se queda.
+	const guardarFicha = handleSubmit(async (datosDeLaAccion) => {
+		const valores = getValues();
+		const salio = await guardar.enviar(
+			{ datos: datosDeLaAccion, version },
+			(campos) => erroresEnSusCampos(campos, formulario),
+			(falla) => {
+				if (falla.codigo === "proveedor_repetido") setError("nombre", { message: falla.mensaje });
 			},
 		);
+		if (salio === undefined) return;
+		reset({ ...valores });
+		setGuardado({ ...valores });
 	});
 	return (
 		<>
@@ -157,7 +158,7 @@ export function CajonProveedor({ proveedorId, alCerrar }: { proveedorId: string;
 						) : null}
 						<Boton
 							variante="principal"
-							disabled={!conConexion || !conCambios || guardar.isPending}
+							disabled={!conConexion || !conCambios || guardar.enviando}
 							onClick={guardarFicha}
 						>
 							Guardar
@@ -168,7 +169,7 @@ export function CajonProveedor({ proveedorId, alCerrar }: { proveedorId: string;
 				<SegunConsulta consulta={consulta}>
 					{(leidos) => (
 						<div className="flex flex-col gap-2">
-							{choque ? <EstadoDePantalla tipo="choque" documento={leidos.proveedor.nombre} /> : null}
+							{guardar.choco ? <EstadoDePantalla tipo="choque" documento={leidos.proveedor.nombre} /> : null}
 							<div className="grid grid-cols-3 gap-2">
 								<Dato etiqueta="dice que tarda">{plural(leidos.proveedor.dias_dice_tardar, "día", "días")}</Dato>
 								<Dato etiqueta="tarda en realidad">
@@ -180,7 +181,7 @@ export function CajonProveedor({ proveedorId, alCerrar }: { proveedorId: string;
 									{leidos.plazo.a_tiempo} de {leidos.plazo.entregas}
 								</Dato>
 							</div>
-							<TituloDeSeccion titulo="Últimas entregas · Días que tardó cada una" />
+							<TituloDeBloque titulo="Últimas entregas · Días que tardó cada una" />
 							{leidos.entregas.length === 0 ? (
 								<span className="text-tinta3">Sin entregas todavía</span>
 							) : (
@@ -201,7 +202,7 @@ export function CajonProveedor({ proveedorId, alCerrar }: { proveedorId: string;
 									<span className="ml-2 text-etiqueta text-tinta2">Dice {leidos.proveedor.dias_dice_tardar}</span>
 								</div>
 							)}
-							<TituloDeSeccion titulo="Ficha" />
+							<TituloDeBloque titulo="Ficha" />
 							<form className="grid grid-cols-2 gap-3 max-telefono:grid-cols-1" onSubmit={guardarFicha}>
 								<Campo etiqueta="Nombre" error={formState.errors.nombre?.message} {...register("nombre")} />
 								<Campo etiqueta="RFC" error={formState.errors.rfc?.message} {...register("rfc")} />
@@ -228,7 +229,7 @@ export function CajonProveedor({ proveedorId, alCerrar }: { proveedorId: string;
 									<Campo etiqueta="Qué surte" error={formState.errors.surte?.message} {...register("surte")} />
 								</div>
 							</form>
-							<TituloDeSeccion titulo={`Materiales que surte · ${leidos.materiales.length}`} />
+							<TituloDeBloque titulo={`Materiales que surte · ${leidos.materiales.length}`} />
 							{leidos.materiales.length === 0 ? (
 								<span className="text-tinta3">Todavía no surte ningún material.</span>
 							) : (
@@ -241,7 +242,7 @@ export function CajonProveedor({ proveedorId, alCerrar }: { proveedorId: string;
 										>
 											{material.nombre}
 											<span className="block font-normal text-etiqueta text-tinta2">
-												{pesos(material.ultimo_precio_centavos)}
+												{montoEnPantalla(material.ultimo_precio_centavos)}
 												{material.habitual ? "" : " · no es el habitual"}
 											</span>
 										</button>
@@ -249,7 +250,7 @@ export function CajonProveedor({ proveedorId, alCerrar }: { proveedorId: string;
 									</div>
 								))
 							)}
-							<TituloDeSeccion titulo={`Órdenes · Las últimas ${leidos.ordenes.length}`} />
+							<TituloDeBloque titulo={`Órdenes · Las últimas ${leidos.ordenes.length}`} />
 							{leidos.ordenes.length === 0 ? (
 								<span className="text-tinta3">Todavía no hay órdenes con este proveedor.</span>
 							) : (
@@ -265,7 +266,7 @@ export function CajonProveedor({ proveedorId, alCerrar }: { proveedorId: string;
 											<span className="block text-etiqueta text-tinta2">Creada el {textoDeDiaCorto(orden.creada)}</span>
 										</span>
 										<span className="flex items-center gap-3">
-											<b className="tabular-nums">{pesos(orden.total_centavos)}</b>
+											<b className="tabular-nums">{montoEnPantalla(orden.total_centavos)}</b>
 											<Estado
 												texto={orden.estado.texto}
 												color={orden.estado.color}

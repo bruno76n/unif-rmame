@@ -21,6 +21,7 @@ import { Tabla } from "@uniformame/interfaz/tablas/tabla";
 import { Lock } from "lucide-react";
 import { usePaginas } from "../../../comun/api.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
+import { SegunPaginas } from "../../../comun/segun-paginas.tsx";
 import { busquedaDeAdmin, useDireccionDeAdmin } from "../direccion.ts";
 import { useEnvio } from "../envio.ts";
 
@@ -38,7 +39,6 @@ export function PestanaBitacora() {
 	};
 	const paginas = usePaginas(bitacoraDeAdmin, parametros);
 	const [primera] = paginas.data?.pages ?? [];
-	const renglones = paginas.data?.pages.flatMap((pagina) => pagina.renglones) ?? [];
 	const conteos = primera?.conteos;
 	const filtro = busqueda.alertas === "si" ? "alertas" : (busqueda.tipo ?? "todo");
 	return (
@@ -94,69 +94,72 @@ export function PestanaBitacora() {
 				}
 			/>
 			<Panel>
-				{paginas.isPending ? (
-					<EstadoDePantalla tipo="cargando" renglones={8} />
-				) : paginas.isError ? (
-					<EstadoDePantalla tipo="error" alReintentar={() => void paginas.refetch()} />
-				) : renglones.length === 0 ? (
-					<EstadoDePantalla
-						tipo="vacio"
-						texto={busqueda.buscar === undefined ? "Sin movimientos" : `Nada con «${busqueda.buscar}»`}
-					/>
-				) : (
-					<div className="flex flex-col gap-3">
-						<Tabla
-							nombre="Bitácora"
-							filas={renglones}
-							claveDeFila={(renglon) => renglon.id}
-							columnas={[
-								{
-									clave: "cuando",
-									encabezado: "Cuándo",
-									celda: (renglon) => <DosRenglones arriba={renglon.fecha} abajo={renglon.hora} />,
-								},
-								{
-									clave: "tipo",
-									encabezado: "Tipo",
-									celda: (renglon) => (
-										<TextoConTono
-											tono={renglon.es_alerta ? "rojo" : renglon.tipo === "consulta_sensible" ? "ambar" : "normal"}
-										>
-											{renglon.es_alerta ? `${renglon.tipo_texto} · alerta` : renglon.tipo_texto}
-										</TextoConTono>
-									),
-								},
-								{ clave: "quien", encabezado: "Quién", celda: (renglon) => renglon.quien },
-								{ clave: "departamento", encabezado: "Departamento", celda: (renglon) => renglon.departamento ?? "—" },
-								{
-									clave: "que_paso",
-									encabezado: "Qué pasó",
-									celda: (renglon) => <DosRenglones arriba={renglon.descripcion} abajo={renglon.folio ?? undefined} />,
-								},
-								{
-									clave: "revisar",
-									encabezado: "",
-									alinear: "derecha",
-									celda: (renglon) =>
-										renglon.es_alerta && !renglon.revisada && primera?.es_duena === true ? (
-											<Boton
-												chico
-												disabled={!conConexion || revisar.enviando}
-												onClick={() => void revisar.enviar({ datos: { bitacora_id: renglon.id } })}
-											>
-												Marcar revisada
-											</Boton>
-										) : null,
-								},
-							]}
-						/>
-						{paginas.hasNextPage ? (
-							<Boton chico onClick={() => void paginas.fetchNextPage()}>
-								Ver más
-							</Boton>
-						) : null}
-					</div>
-				)}
+				<SegunPaginas paginas={paginas} renglones={8}>
+					{({ todas, verMas }) => {
+						const renglones = todas.flatMap((pagina) => pagina.renglones);
+						return renglones.length === 0 ? (
+							<EstadoDePantalla
+								tipo="vacio"
+								texto={busqueda.buscar === undefined ? "Sin movimientos" : `Nada con «${busqueda.buscar}»`}
+							/>
+						) : (
+							<div className="flex flex-col gap-3">
+								<Tabla
+									nombre="Bitácora"
+									filas={renglones}
+									claveDeFila={(renglon) => renglon.id}
+									columnas={[
+										{
+											clave: "cuando",
+											encabezado: "Cuándo",
+											celda: (renglon) => <DosRenglones arriba={renglon.fecha} abajo={renglon.hora} />,
+										},
+										{
+											clave: "tipo",
+											encabezado: "Tipo",
+											celda: (renglon) => (
+												<TextoConTono
+													tono={renglon.es_alerta ? "rojo" : renglon.tipo === "consulta_sensible" ? "ambar" : "normal"}
+												>
+													{renglon.es_alerta ? `${renglon.tipo_texto} · alerta` : renglon.tipo_texto}
+												</TextoConTono>
+											),
+										},
+										{ clave: "quien", encabezado: "Quién", celda: (renglon) => renglon.quien },
+										{
+											clave: "departamento",
+											encabezado: "Departamento",
+											celda: (renglon) => renglon.departamento ?? "—",
+										},
+										{
+											clave: "que_paso",
+											encabezado: "Qué pasó",
+											celda: (renglon) => (
+												<DosRenglones arriba={renglon.descripcion} abajo={renglon.folio ?? undefined} />
+											),
+										},
+										{
+											clave: "revisar",
+											encabezado: "",
+											alinear: "derecha",
+											celda: (renglon) =>
+												renglon.es_alerta && !renglon.revisada && primera?.es_duena === true ? (
+													<Boton
+														chico
+														disabled={!conConexion || revisar.enviando}
+														onClick={() => void revisar.enviar({ datos: { bitacora_id: renglon.id } })}
+													>
+														Marcar revisada
+													</Boton>
+												) : null,
+										},
+									]}
+								/>
+								{verMas}
+							</div>
+						);
+					}}
+				</SegunPaginas>
 			</Panel>
 			<span className="inline-flex items-center gap-2 text-etiqueta text-tinta3">
 				<Lock aria-hidden="true" size={13} />

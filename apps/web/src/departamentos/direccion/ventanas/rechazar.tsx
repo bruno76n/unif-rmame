@@ -19,7 +19,7 @@ import { z } from "zod";
 const formulario = z.object({ motivo: decidirAutorizacion.entrada.shape.motivo.unwrap() });
 
 /** Lo que recibe la ventana. */
-export interface PropsDeRechazar {
+interface PropsDeRechazar {
 	/** Lo que se pide, abajo del título; sin él, la ventana está cerrada. */
 	resumen: string | null;
 	/** Si se puede mandar (con conexión y sin otra decisión en camino). */

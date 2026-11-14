@@ -5,6 +5,7 @@
  * Fase 19 · docs/interfaz/fabrica/catalogo.md («Pendientes»)
  */
 
+import { plural } from "@uniformame/compartido/calculos/textos";
 import { pendientesDeCatalogo } from "@uniformame/compartido/contratos/catalogo/pantallas";
 import { BarraIndicadores } from "@uniformame/interfaz/pagina/barra-indicadores";
 import { PanelPendientes, type Pendiente } from "@uniformame/interfaz/tablas/panel-pendientes";
@@ -12,7 +13,7 @@ import { Barcode, Clock, Table, Tag } from "lucide-react";
 import { useConsulta } from "../../../comun/api.tsx";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { conFicha, useBusqueda, useIr } from "../direccion.ts";
-import { cuantos, enumerar } from "../textos.ts";
+import { enumerar } from "../textos.ts";
 
 /** Pendientes de Catálogo. */
 export function PestanaPendientes() {
@@ -48,7 +49,7 @@ export function PestanaPendientes() {
 									titulo: renglon.escuela === null ? renglon.producto : `${renglon.producto} · ${renglon.escuela}`,
 									detalle: `Tallas ${enumerar(renglon.tallas)}`,
 								},
-								cifra: cuantos(renglon.tallas.length, "variante", "variantes"),
+								cifra: plural(renglon.tallas.length, "variante", "variantes"),
 								estado: { texto: "Por imprimir", color: "ambar" },
 								accion: {
 									texto: "Imprimir",
@@ -72,7 +73,7 @@ export function PestanaPendientes() {
 										: {
 												contexto: [
 													{
-														texto: cuantos(cifras.modelos_sin_precio, "modelo sin precio", "modelos sin precio"),
+														texto: plural(cifras.modelos_sin_precio, "modelo sin precio", "modelos sin precio"),
 														tono: "rojo" as const,
 													},
 												],
@@ -102,7 +103,7 @@ export function PestanaPendientes() {
 											? [{ texto: "Todas impresas" }]
 											: [
 													{
-														texto: `De ${cuantos(cifras.productos_con_etiquetas_nuevas, "producto nuevo", "productos nuevos")}`,
+														texto: `De ${plural(cifras.productos_con_etiquetas_nuevas, "producto nuevo", "productos nuevos")}`,
 														tono: "ambar",
 													},
 												],

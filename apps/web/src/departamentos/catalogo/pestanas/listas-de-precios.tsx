@@ -5,6 +5,7 @@
  * Fase 19 · docs/interfaz/fabrica/catalogo.md («Listas de precios»)
  */
 
+import { plural } from "@uniformame/compartido/calculos/textos";
 import { cambiarPorcentajesCliente } from "@uniformame/compartido/contratos/catalogo/listas";
 import { listasDePrecios } from "@uniformame/compartido/contratos/catalogo/pantallas";
 import { Boton } from "@uniformame/interfaz/botones/boton";
@@ -17,10 +18,11 @@ import { useState } from "react";
 import type { z } from "zod";
 import { useConsulta } from "../../../comun/api.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
+import { montoEnPantalla } from "../../../comun/montos.ts";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { errorDeCampo, esperar, type Salida, useAccionDeCatalogo } from "../acciones.ts";
 import { conFicha, useBusqueda, useIr } from "../direccion.ts";
-import { cuantos, diaCorto, pesos } from "../textos.ts";
+import { diaCorto } from "../textos.ts";
 import { BarraDeSeleccion } from "./seleccion.tsx";
 
 /** Lo que regresa la consulta. */
@@ -45,7 +47,7 @@ function descripcionDe(lista: DatosDeLaLista["lista"]): string {
 function textoDeDiferencia(diferencia: number | null | undefined): string {
 	if (diferencia === null || diferencia === undefined) return "—";
 	if (diferencia === 0) return "Igual";
-	return `${diferencia > 0 ? "+" : "−"}${pesos(Math.abs(diferencia))}`;
+	return `${diferencia > 0 ? "+" : "−"}${montoEnPantalla(Math.abs(diferencia))}`;
 }
 
 /** Listas de precios. */
@@ -90,14 +92,14 @@ export function PestanaListasDePrecios() {
 									onChange={(evento) => ir({ buscar: evento.target.value.trim() || undefined })}
 								/>
 							</div>
-							<span className="pb-3 text-tinta2 tabular-nums">{cuantos(datos.total, "producto", "productos")}</span>
+							<span className="pb-3 text-tinta2 tabular-nums">{plural(datos.total, "producto", "productos")}</span>
 						</div>
 						<Panel
 							titulo={datos.lista.nombre}
 							derecha={
 								datos.lista.modelos_sin_precio > 0 ? (
 									<b className="text-texto-error">
-										{cuantos(datos.lista.modelos_sin_precio, "modelo sin precio", "modelos sin precio")}
+										{plural(datos.lista.modelos_sin_precio, "modelo sin precio", "modelos sin precio")}
 									</b>
 								) : (
 									<b className="text-texto-bien">Todo con precio</b>
@@ -156,7 +158,7 @@ export function PestanaListasDePrecios() {
 													producto.precio_centavos === null ? (
 														<b className="text-texto-error">Sin precio</b>
 													) : (
-														<b>{pesos(producto.precio_centavos)}</b>
+														<b>{montoEnPantalla(producto.precio_centavos)}</b>
 													),
 											},
 											{
@@ -164,7 +166,7 @@ export function PestanaListasDePrecios() {
 												encabezado: datos.lista.referencia,
 												alinear: "derecha",
 												celda: (producto) =>
-													producto.referencia_centavos === null ? "—" : pesos(producto.referencia_centavos),
+													producto.referencia_centavos === null ? "—" : montoEnPantalla(producto.referencia_centavos),
 											},
 											{
 												clave: "diferencia",
@@ -184,7 +186,7 @@ export function PestanaListasDePrecios() {
 															<span className="text-etiqueta text-tinta2">
 																{producto.antes_centavos === null
 																	? "Sin cambios"
-																	: `${pesos(producto.antes_centavos)} antes`}
+																	: `${montoEnPantalla(producto.antes_centavos)} antes`}
 															</span>
 														</span>
 													),

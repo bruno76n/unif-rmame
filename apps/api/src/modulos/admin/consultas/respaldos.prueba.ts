@@ -24,7 +24,7 @@ describe("admin.respaldos: los respaldos y sus pruebas de restauración", () => 
 		const respuesta = await pedirConsulta(servidor, "admin.respaldos", {}, "admin");
 		expect(respuesta.estado, JSON.stringify(respuesta.cuerpo)).toBe(200);
 		expect(respuesta.cuerpo.resultado).toMatchObject({
-			es_duena: false,
+			puede_registrar_restauracion: false,
 			recuperacion_dias: null,
 			semanal: null,
 			ultima_prueba: null,
@@ -39,14 +39,14 @@ describe("admin.respaldos: los respaldos y sus pruebas de restauración", () => 
 		await registrarRestauracionDePrueba(servidor, respaldo, 1, false);
 		const respuesta = await pedirConsulta(servidor, "admin.respaldos", {}, "duena");
 		const leido = respuesta.cuerpo.resultado as {
-			es_duena: boolean;
+			puede_registrar_restauracion: boolean;
 			semanal: { correcto: boolean; tamano: string };
 			ultima_prueba: { texto: string; tono: string; siguiente: string };
 			cada_dias: number;
 			pruebas: { restauracion_id: string; cuadro: boolean; evidencia: string; que: string }[];
 			respaldos_correctos: { respaldo_id: string }[];
 		};
-		expect(leido.es_duena).toBe(true);
+		expect(leido.puede_registrar_restauracion).toBe(true);
 		expect(leido.semanal).toMatchObject({ correcto: true, tamano: "1.8 GB" });
 		// La que no cuadró no cuenta como última prueba buena.
 		expect(leido.ultima_prueba.texto).toMatch(/ · hace 85 días$/);

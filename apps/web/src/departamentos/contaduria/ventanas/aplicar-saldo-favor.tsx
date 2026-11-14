@@ -7,7 +7,7 @@
  * Los documentos son los mismos de Registrar pago (`contaduria.registrar_pago_opciones`).
  */
 
-import { centavosACampo, pesosACentavos } from "@uniformame/compartido/calculos/dinero";
+import { centavosACampo, hastaElMenor, pesosACentavos } from "@uniformame/compartido/calculos/dinero";
 import type { clienteDeContaduria } from "@uniformame/compartido/contratos/contaduria/consultas-cobrar";
 import { registrarPagoOpciones } from "@uniformame/compartido/contratos/contaduria/consultas-cobrar";
 import { aplicarSaldoAFavor } from "@uniformame/compartido/contratos/contaduria/saldo-favor";
@@ -40,14 +40,17 @@ export function VentanaAplicarSaldoAFavor({ cliente, alCerrar }: { cliente: Clie
 	const documentos = opciones.data?.documentos ?? [];
 	const escogido = documentos.find((uno) => uno.id === documento) ?? documentos[0];
 	// Se llena con lo menor entre el saldo a favor y lo del documento.
-	const propuesto = Math.min(cliente.saldo_favor_centavos ?? 0, escogido?.saldo_centavos ?? 0);
+	const propuesto = hastaElMenor([cliente.saldo_favor_centavos ?? 0, escogido?.saldo_centavos ?? 0]);
 	const escrito = monto ?? centavosACampo(propuesto);
 	const aplicar = async () => {
-		const centavos = pesosACentavos(escrito);
-		if (escogido === undefined || centavos === null || centavos <= 0) {
-			setError("Escribe el monto.");
+		if (escogido === undefined) return;
+		// El monto se revisa con el mismo campo del contrato que revisa la API.
+		const leido = aplicarSaldoAFavor.entrada.shape.monto_centavos.safeParse(pesosACentavos(escrito));
+		if (!leido.success) {
+			setError(leido.error.issues[0]?.message);
 			return;
 		}
+		const centavos = leido.data;
 		const salio = await enviar(
 			{
 				datos: {

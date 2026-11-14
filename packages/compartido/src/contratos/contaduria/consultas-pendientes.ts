@@ -126,6 +126,11 @@ export const pendientesDeContaduria = definirConsulta({
 			excepciones: z.number().int(),
 		}),
 		cuentas_fabrica: cuentasFabrica,
+		ve_sueldos: z
+			.boolean()
+			.describe(
+				"Si la cuenta tiene «ven sueldos y tarifas» (la dueña siempre): sin él, la pestaña Nómina es el candado",
+			),
 	}),
 	permiso: { departamento: "contaduria" },
 	recortables: ["total_nomina_centavos"],

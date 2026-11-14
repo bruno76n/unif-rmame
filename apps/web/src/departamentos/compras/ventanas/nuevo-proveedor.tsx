@@ -6,15 +6,17 @@
  * docs/modulos/compras/proveedores-y-precios.md («`compras.crear_proveedor`»)
  */
 
+import { zodResolver } from "@hookform/resolvers/zod";
 import { crearProveedor } from "@uniformame/compartido/contratos/compras/proveedores";
 import { Boton } from "@uniformame/interfaz/botones/boton";
 import { Campo } from "@uniformame/interfaz/captura/campo";
 import { Ventana } from "@uniformame/interfaz/contenedores/ventana";
 import { useForm } from "react-hook-form";
-import { useAccion } from "../../../comun/api.tsx";
+import { z } from "zod";
+import { erroresEnSusCampos, useEnvioConCampos } from "../../../comun/envio.ts";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
 import { rutaDePestana } from "../../../comun/pagina-de-departamento.tsx";
-import { erroresDeLaAccion, numeroEscrito, validadorDelContrato } from "../comun.tsx";
+import { numeroEscrito } from "../comun.tsx";
 import { useDireccionDeCompras } from "../direccion.ts";
 
 /** Lo capturado, como texto. */
@@ -44,6 +46,12 @@ function aDatos(valores: Capturado) {
 	};
 }
 
+/** Lo capturado se revisa con la entrada de `compras.crear_proveedor`, como la revisa la API. */
+const formularioDeProveedor = z
+	.custom<Capturado>()
+	.transform((valores): unknown => aDatos(valores))
+	.pipe(crearProveedor.entrada);
+
 /**
  * La ventana «Nuevo proveedor».
  * @param props Si está abierta y cómo cerrarla.
@@ -51,9 +59,9 @@ function aDatos(valores: Capturado) {
 export function VentanaNuevoProveedor({ abierta, alCerrar }: { abierta: boolean; alCerrar: () => void }) {
 	const { ir } = useDireccionDeCompras();
 	const conConexion = useConConexion();
-	const crear = useAccion(crearProveedor, ["compras.proveedores", "compras.pendientes", "compras.materiales"]);
-	const { register, handleSubmit, setError, reset, formState } = useForm<Capturado>({
-		resolver: validadorDelContrato(crearProveedor.entrada, aDatos),
+	const crear = useEnvioConCampos(crearProveedor, ["compras.proveedores", "compras.pendientes", "compras.materiales"]);
+	const formulario = useForm<Capturado, unknown, z.output<typeof formularioDeProveedor>>({
+		resolver: zodResolver(formularioDeProveedor),
 		defaultValues: {
 			nombre: "",
 			rfc: "",
@@ -64,30 +72,31 @@ export function VentanaNuevoProveedor({ abierta, alCerrar }: { abierta: boolean;
 			surte: "",
 		},
 	});
+	const { register, handleSubmit, setError, reset, formState } = formulario;
 	const error = (campo: keyof Capturado) => formState.errors[campo]?.message;
 	const cerrar = () => {
 		reset();
 		alCerrar();
 	};
-	const agregar = handleSubmit((valores) =>
-		crear.mutate(
-			{ datos: crearProveedor.entrada.parse(aDatos(valores)) },
-			{
-				onSuccess: ({ proveedor_id: id }) => {
-					cerrar();
-					ir({ resaltar: id }, rutaDePestana("compras", "proveedores"));
-				},
-				onError: (falla) => erroresDeLaAccion(falla, valores, setError, { proveedor_repetido: "nombre" }),
+	const agregar = handleSubmit(async (datos) => {
+		const salio = await crear.enviar(
+			{ datos },
+			(campos) => erroresEnSusCampos(campos, formulario),
+			(falla) => {
+				if (falla.codigo === "proveedor_repetido") setError("nombre", { message: falla.mensaje });
 			},
-		),
-	);
+		);
+		if (salio === undefined) return;
+		cerrar();
+		ir({ resaltar: salio.proveedor_id }, rutaDePestana("compras", "proveedores"));
+	});
 	return (
 		<Ventana
 			abierta={abierta}
 			alCerrar={cerrar}
 			titulo="Nuevo proveedor"
 			accion={
-				<Boton variante="principal" disabled={!conConexion || crear.isPending} onClick={agregar}>
+				<Boton variante="principal" disabled={!conConexion || crear.enviando} onClick={agregar}>
 					Agregar proveedor
 				</Boton>
 			}

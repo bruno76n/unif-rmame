@@ -17,7 +17,7 @@ import { Plus } from "lucide-react";
 import { useState } from "react";
 import type { z } from "zod";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
-import { useEnvio } from "../comun.tsx";
+import { useEnvio } from "../envio.ts";
 
 /** Un material sin carga inicial. */
 type SinCarga = z.infer<typeof materialesDeBodega.resultado>["sin_carga"][number];

@@ -50,9 +50,9 @@ export function PestanaDispositivos() {
 				<>
 					<Seccion
 						titulo="Registrados"
-						{...(datos.es_duena ? {} : { nota: "Solo la dueña registra y revoca" })}
+						{...(datos.puede.registrar ? {} : { nota: "Solo la dueña registra y revoca" })}
 						derecha={
-							datos.es_duena ? (
+							datos.puede.registrar ? (
 								<Boton
 									chico
 									variante="principal"
@@ -114,7 +114,7 @@ export function PestanaDispositivos() {
 													{plural(aparato.apartados, "apartado", "apartados")}
 												</Boton>
 											)}
-											{datos.es_duena ? (
+											{datos.puede.revocar ? (
 												<Boton chico variante="peligro" disabled={!conConexion} onClick={() => setRevocar(aparato)}>
 													Revocar
 												</Boton>

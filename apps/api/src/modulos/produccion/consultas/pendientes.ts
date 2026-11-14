@@ -11,7 +11,6 @@ import { diasHasta, textoDeDiaCorto } from "@uniformame/compartido/calculos/fech
 import type { renglonDePendientesDeProduccion } from "@uniformame/compartido/contratos/produccion/pendientes";
 import { pendientesDeProduccion } from "@uniformame/compartido/contratos/produccion/pendientes";
 import { sql } from "drizzle-orm";
-import type { Temporal } from "temporal-polyfill";
 import { z } from "zod";
 import { type ConteoDePastilla, type ContextoDeConsulta, implementarConsulta } from "../../../nucleo/modulos.ts";
 import { parametroNumero } from "../../../nucleo/parametros.ts";
@@ -363,21 +362,6 @@ async function renglonesDeExcepciones(contexto: ContextoDeConsulta): Promise<Ren
 }
 
 /**
- * Los últimos días de trabajo hasta hoy, del más viejo al más nuevo.
- * @param hoy El día de negocio.
- * @param diasDeTrabajo `general.dias_de_trabajo`, como texto («1,2,3,4,5,6»).
- * @param cuantos Cuántos.
- */
-function ultimosDiasDeTrabajo(hoy: Temporal.PlainDate, diasDeTrabajo: string, cuantos: number): Temporal.PlainDate[] {
-	const deTrabajo = new Set(diasDeTrabajo.split(",").map((dia) => Number(dia.trim())));
-	const dias: Temporal.PlainDate[] = [];
-	for (let dia = hoy; dias.length < cuantos && deTrabajo.size > 0; dia = dia.subtract({ days: 1 })) {
-		if (deTrabajo.has(dia.dayOfWeek)) dias.unshift(dia);
-	}
-	return dias;
-}
-
-/**
  * Las cuatro cifras de arriba.
  * @param contexto El contexto de la consulta.
  * @param lotes Los lotes en proceso y por cortar.
@@ -398,25 +382,10 @@ async function indicadores(contexto: ContextoDeConsulta, lotes: readonly LoteLei
 		GROUP BY o.motivo`);
 	const porMotivo = z.array(z.object({ motivo: z.string(), cuantas: z.number() })).parse(ordenes);
 	const deMotivo = (motivo: string) => porMotivo.find((uno) => uno.motivo === motivo)?.cuantas ?? 0;
-	// Las terminadas: las buenas vigentes de la última operación del flujo de cada lote, por día.
-	const dias = ultimosDiasDeTrabajo(
-		hoy,
-		String(await contexto.lectura("admin.parametro", { clave: "general.dias_de_trabajo" })),
-		diasDeLaGrafica,
-	);
-	const { rows: terminadas } = await contexto.base.execute(sql`
-		SELECT r.fecha::text AS fecha, sum(r.piezas_buenas)::int AS piezas
-		FROM registros_operacion r JOIN lotes l ON l.id = r.lote_id
-		JOIN flujo_operaciones f ON f.id = r.flujo_operacion_id
-		WHERE r.estado = 'vigente' AND r.fecha >= ${(dias[0] ?? hoy).toString()}::date
-			AND f.orden = (SELECT max(u.orden) FROM flujo_operaciones u WHERE u.flujo_id = l.flujo_id AND u.baja_en IS NULL)
-		GROUP BY r.fecha`);
-	const porDia = new Map(
-		z
-			.array(z.object({ fecha: z.string(), piezas: z.number() }))
-			.parse(terminadas)
-			.map((dia) => [dia.fecha, dia.piezas]),
-	);
+	// Las terminadas por día, con la misma lectura que usa Dirección.
+	const { dias: terminadas } = z
+		.object({ dias: z.array(z.object({ fecha: z.string(), piezas: z.number() })) })
+		.parse(await contexto.lectura("produccion.terminadas_por_dia", { dias: diasDeLaGrafica }));
 	return {
 		lotes: {
 			en_proceso: enProceso.length,
@@ -436,8 +405,8 @@ async function indicadores(contexto: ContextoDeConsulta, lotes: readonly LoteLei
 			de_reabasto: deMotivo("reabasto"),
 		},
 		produccion: {
-			terminadas_hoy: porDia.get(hoy.toString()) ?? 0,
-			por_dia: dias.map((dia) => porDia.get(dia.toString()) ?? 0),
+			terminadas_hoy: terminadas.find((dia) => dia.fecha === hoy.toString())?.piezas ?? 0,
+			por_dia: terminadas.map((dia) => dia.piezas),
 		},
 	};
 }

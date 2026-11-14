@@ -25,6 +25,7 @@ import { Pasos } from "../avance/pasos.tsx";
 import { Boton } from "../botones/boton.tsx";
 import { BotonConCifra } from "../botones/boton-con-cifra.tsx";
 import { BotonDeArchivo } from "../botones/boton-de-archivo.tsx";
+import { Enlace } from "../botones/enlace.tsx";
 import { Campo } from "../captura/campo.tsx";
 import { CampoDeArchivo } from "../captura/campo-de-archivo.tsx";
 import { Casilla } from "../captura/casilla.tsx";
@@ -206,6 +207,10 @@ export function Catalogo() {
 					</Boton>
 					<BotonConCifra cifra={3} texto="lotes en producción" icono={Factory} alTocar={() => undefined} />
 					<BotonConCifra cifra={2} texto="solicitudes que la piden" />
+					<Enlace onClick={() => undefined}>Llenar desde una talla</Enlace>
+					<Enlace fuerte onClick={() => undefined}>
+						PE-0150
+					</Enlace>
 				</section>
 				<section data-prueba="estados" className="flex flex-wrap gap-3">
 					{estadosDeMuestra.map((texto) => (

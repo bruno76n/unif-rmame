@@ -14,7 +14,7 @@ import { type SQL, sql } from "drizzle-orm";
 import { z } from "zod";
 import { cursorDe, leerCursor } from "../../../nucleo/http/consultas.ts";
 import { implementarConsulta } from "../../../nucleo/modulos.ts";
-import { filas } from "./comunes.ts";
+import { filas } from "./comun.ts";
 
 /** Cuántos renglones por página si no se pide otro número. */
 const porPagina = 50;

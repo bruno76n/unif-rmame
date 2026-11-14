@@ -12,7 +12,7 @@ import { Ventana } from "@uniformame/interfaz/contenedores/ventana";
 import { useState } from "react";
 import type { z } from "zod";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
-import { useEnvio } from "../comun.tsx";
+import { useEnvio } from "../envio.ts";
 
 /** Un renglón de Pendientes con su devolución. */
 type Renglon = z.infer<typeof pendientesDeBodega.resultado>["renglones"][number];

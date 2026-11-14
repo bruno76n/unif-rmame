@@ -12,7 +12,12 @@
  * una nómina está pagada de `contaduria.estado_nomina_semana`. Se lee en una transacción que solo lee.
  */
 
-import { inicioDeSemana, textoDeDiaCorto, textoDeMomentoCorto } from "@uniformame/compartido/calculos/fechas";
+import {
+	inicioDeSemana,
+	textoDeDiaCorto,
+	textoDeMomentoCorto,
+	zonaDelNegocio,
+} from "@uniformame/compartido/calculos/fechas";
 import { plural } from "@uniformame/compartido/calculos/textos";
 import {
 	asistenciaDePersonal,
@@ -457,7 +462,7 @@ export const consultaAsistencia = implementarConsulta(asistenciaDePersonal, asyn
 				cerrada.cerradaEn === null
 					? null
 					: Temporal.Instant.from(new Date(cerrada.cerradaEn).toISOString())
-							.toZonedDateTimeISO("America/Mexico_City")
+							.toZonedDateTimeISO(zonaDelNegocio)
 							.toPlainDate()
 							.toString(),
 			faltas: cerrada.faltas,

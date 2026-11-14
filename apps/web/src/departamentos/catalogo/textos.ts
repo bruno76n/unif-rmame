@@ -1,30 +1,10 @@
 /**
- * Cómo se escriben los datos en las pantallas de Catálogo: los pesos, los plurales, las fechas cortas y lo que detiene a
- * un producto. Solo forma: ninguna regla del negocio.
+ * Cómo se escriben los datos en las pantallas de Catálogo: las fechas cortas, las listas cortas y lo que detiene a un
+ * producto. Solo forma: ninguna regla del negocio.
  * Fase 19 · docs/interfaz/TEXTOS.md (reglas 5 y 6) y docs/interfaz/fabrica/catalogo.md
  */
 
-import { centavosATexto } from "@uniformame/compartido/calculos/dinero";
 import { zonaDelNegocio } from "@uniformame/compartido/calculos/fechas";
-import { centavos } from "@uniformame/compartido/tipos/base";
-
-/**
- * Un precio en pesos enteros: «$410»; «—» si no viajó (la cuenta de soporte no recibe montos).
- * @param monto En centavos, o nada.
- */
-export function pesos(monto: number | null | undefined): string {
-	return monto === null || monto === undefined ? "—" : centavosATexto(centavos(monto));
-}
-
-/**
- * Un número con su palabra en singular o plural: «1 variante», «9 variantes».
- * @param n El número.
- * @param uno La palabra para uno.
- * @param varios La palabra para varios.
- */
-export function cuantos(n: number, uno: string, varios: string): string {
-	return `${n.toLocaleString("es-MX")} ${n === 1 ? uno : varios}`;
-}
 
 /** El día y la hora de un momento, en hora de México. */
 const formatoDeMomento = new Intl.DateTimeFormat("es-MX", {
@@ -73,7 +53,7 @@ export function enumerar(partes: readonly string[], maximo = 6): string {
 }
 
 /** Lo que detiene a un producto, como lo manda la consulta. */
-export interface LoQueDetiene {
+interface LoQueDetiene {
 	tipo: "descontinuado" | "sin_precio" | "sin_foto" | "sin_etiqueta";
 	cuantas?: number | undefined;
 	lista?: string | undefined;

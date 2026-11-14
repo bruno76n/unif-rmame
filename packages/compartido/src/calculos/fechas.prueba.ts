@@ -10,7 +10,9 @@ import {
 	type DiaDeLaSemana,
 	diaDeNegocio,
 	diasHabilesEntre,
+	diasHasta,
 	inicioDeSemana,
+	sumarDias,
 	sumarDiasHabiles,
 	textoDeDiaCorto,
 	textoDeMomentoCorto,
@@ -138,5 +140,22 @@ describe("los días cortos de las líneas del hilo: «13 oct», sin punto", () =
 		// 13 oct a las 23:30 en México es 14 oct en UTC.
 		expect(textoDeMomentoCorto("2026-10-14T05:30:00Z")).toBe("13 oct");
 		expect(textoDeMomentoCorto("2026-10-14T06:00:00Z")).toBe("14 oct");
+	});
+});
+
+describe("los días naturales entre dos días y un día más unos días, sobre el calendario y no sobre horas", () => {
+	it("cuenta y suma igual de un día en texto que de un día de negocio, también al cruzar un cambio de mes", () => {
+		expect(diasHasta("2026-11-12", "2026-11-15")).toBe(3);
+		expect(diasHasta(Temporal.PlainDate.from("2026-11-12"), "2026-11-02")).toBe(-10);
+		expect(sumarDias("2026-10-30", 3)).toBe("2026-11-02");
+		expect(sumarDias(Temporal.PlainDate.from("2027-01-01"), -1)).toBe("2026-12-31");
+	});
+
+	it("sumar los días que hay hasta una fecha da esa fecha", () => {
+		fc.assert(
+			fc.property(dias, dias, (desde, hasta) => {
+				expect(sumarDias(desde, diasHasta(desde, hasta.toString()))).toBe(hasta.toString());
+			}),
+		);
 	});
 });

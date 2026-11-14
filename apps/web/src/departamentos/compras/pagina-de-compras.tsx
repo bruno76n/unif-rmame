@@ -16,7 +16,7 @@ import { CajonesDeCompras } from "./cajones/cajones.tsx";
 import { useDireccionDeCompras } from "./direccion.ts";
 
 /** Las pestañas de Compras; su clave es su ruta. */
-export const pestanasDeCompras = [
+const pestanasDeCompras = [
 	{ clave: "pendientes", texto: "Pendientes" },
 	{ clave: "por-pedir", texto: "Por pedir" },
 	{ clave: "ordenes", texto: "Órdenes de compra" },
@@ -26,7 +26,7 @@ export const pestanasDeCompras = [
 ] as const satisfies readonly Pestana[];
 
 /** La clave de una pestaña de Compras. */
-export type PestanaDeCompras = (typeof pestanasDeCompras)[number]["clave"];
+type PestanaDeCompras = (typeof pestanasDeCompras)[number]["clave"];
 
 /** Lo que recibe la página. */
 interface PropsDePaginaDeCompras {

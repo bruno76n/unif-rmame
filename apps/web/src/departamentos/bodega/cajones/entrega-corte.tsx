@@ -1,6 +1,6 @@
 /**
  * El cajón Entrega al corte (ancho): «{L} · Corte {fecha}» y la prenda; las cifras (lo que pide la tela principal, los
- * metros marcados en verde o rojo y las piezas); una sección por cada tela por entregar con sus rollos de Bodega (los
+ * metros marcados, en rojo si alguna tela no alcanza con sus propios rollos (`cadaTelaAlcanza`), y las piezas); una sección por cada tela por entregar con sus rollos de Bodega (los
  * sugeridos ya marcados); los avíos con si alcanzan; «Quién recibe»; y «Entregar al corte», que llama
  * `inventario.entregar_al_corte` con la versión de receta con que se calculó.
  * Fase 19 · docs/interfaz/fabrica/bodega.md («Cajones»: Entrega al corte) y docs/modulos/inventario/entregas-a-corte.md
@@ -8,6 +8,8 @@
  * Los avisos que no detienen (la mezcla de partidas y lo que falta de una tela) los dice la acción al entregar.
  */
 
+import { cadaTelaAlcanza } from "@uniformame/compartido/calculos/corte";
+import { cantidadEnTexto } from "@uniformame/compartido/calculos/cuenta-material";
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
 import { detalleDeEntregaCorte } from "@uniformame/compartido/contratos/inventario/bodega-cajones";
 import { entregarAlCorte } from "@uniformame/compartido/contratos/inventario/corte";
@@ -26,7 +28,7 @@ import { useConsulta } from "../../../comun/api.tsx";
 import { useCierreDelCajon } from "../../../comun/cambios-sin-guardar.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
-import { useEnvio } from "../comun.tsx";
+import { useEnvio } from "../envio.ts";
 
 /** Lo que regresa la consulta. */
 type Detalle = z.infer<typeof detalleDeEntregaCorte.resultado>;
@@ -48,19 +50,24 @@ function CuerpoDeEntrega({
 	recibe: string;
 	alRecibir: (personaId: string) => void;
 }) {
-	const rollos = detalle.telas.flatMap((tela) => tela.rollos);
-	const elegidos = rollos.filter((rollo) => marcados.has(rollo.rollo_id));
-	const milesimos = elegidos.reduce((suma, rollo) => suma + rollo.milesimos, 0);
-	const pide = detalle.telas.reduce((suma, tela) => suma + tela.metros_milesimos, 0);
+	// Por tela, sus rollos marcados: cada tela alcanza (o no) con los suyos.
+	const porTela = detalle.telas.map((tela) => ({
+		pide: BigInt(tela.metros_milesimos),
+		rollos: tela.rollos
+			.filter((rollo) => marcados.has(rollo.rollo_id))
+			.map((rollo) => ({ rolloId: rollo.rollo_id, milesimos: BigInt(rollo.milesimos) })),
+	}));
+	const elegidos = porTela.flatMap((tela) => tela.rollos);
+	const milesimos = elegidos.reduce((suma, rollo) => suma + rollo.milesimos, 0n);
 	type Avio = Detalle["avios"][number];
 	return (
 		<div className="flex flex-col gap-5">
 			<div className="grid grid-cols-3 gap-3 max-telefono:grid-cols-1">
 				<CifraDeCajon numero={`${detalle.metros_principal} m`} nombre="necesita el corte" />
 				<CifraDeCajon
-					numero={`${Number((milesimos / 1000).toFixed(3))} m`}
+					numero={`${cantidadEnTexto(milesimos)} m`}
 					nombre={`en ${elegidos.length} ${elegidos.length === 1 ? "rollo marcado" : "rollos marcados"}`}
-					rojo={milesimos < pide}
+					rojo={!cadaTelaAlcanza(porTela)}
 				/>
 				<CifraDeCajon numero={String(detalle.piezas)} nombre="piezas" />
 			</div>

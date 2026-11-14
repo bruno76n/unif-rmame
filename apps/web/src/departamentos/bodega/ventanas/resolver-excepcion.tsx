@@ -8,7 +8,7 @@ import type { excepcionDeBodega } from "@uniformame/compartido/contratos/inventa
 import { resolverExcepcion } from "@uniformame/compartido/contratos/inventario/excepciones";
 import type { z } from "zod";
 import { VentanaConMotivo } from "../../../comun/ventana-con-motivo.tsx";
-import { useEnvio } from "../comun.tsx";
+import { useEnvio } from "../envio.ts";
 
 /**
  * La ventana «Resolver excepción».

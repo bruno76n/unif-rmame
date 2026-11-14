@@ -7,6 +7,7 @@
 import { reactivarCliente } from "@uniformame/compartido/contratos/ventas/clientes";
 import { clientesVentas } from "@uniformame/compartido/contratos/ventas/consultas-clientes";
 import { Boton } from "@uniformame/interfaz/botones/boton";
+import { Enlace } from "@uniformame/interfaz/botones/enlace";
 import { Estado } from "@uniformame/interfaz/estados/estado";
 import { Tabla } from "@uniformame/interfaz/tablas/tabla";
 import { Plus } from "lucide-react";
@@ -68,13 +69,7 @@ export function PestanaClientes() {
 										<p className="m-0 text-tinta2">{ficha.descripcion}</p>
 										<p className="m-0 text-tinta2">
 											{ficha.contacto} ·{" "}
-											<button
-												type="button"
-												className="font-semibold text-marca underline"
-												onClick={() => abrir("cliente", ficha.cliente_id)}
-											>
-												Editar datos
-											</button>
+											<Enlace onClick={() => abrir("cliente", ficha.cliente_id)}>Editar datos</Enlace>
 										</p>
 									</div>
 									<span>

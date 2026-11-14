@@ -9,7 +9,7 @@
  * factura.
  */
 
-import { cantidadConUnidad } from "@uniformame/compartido/contratos/compras/textos";
+import { cantidadConUnidad } from "@uniformame/compartido/calculos/compras";
 import { capturarFacturaOpciones } from "@uniformame/compartido/contratos/contaduria/consultas-pagar";
 import { sql } from "drizzle-orm";
 import { z } from "zod";

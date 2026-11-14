@@ -9,7 +9,6 @@
  * `linea.cancelar_pedido` con la versión que se leyó; si el W- cambió mientras se veía, el cajón lo avisa con lo nuevo.
  */
 
-import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import { pedidoLinea } from "@uniformame/compartido/contratos/linea/consultas";
 import { cancelarPedidoLinea } from "@uniformame/compartido/contratos/linea/pedidos";
@@ -27,27 +26,18 @@ import { Tabla } from "@uniformame/interfaz/tablas/tabla";
 import { Box, Truck } from "lucide-react";
 import { useState } from "react";
 import type { z } from "zod";
-import { leerFalla, useAccion, useConsulta, volverALeer } from "../../../comun/api.tsx";
+import { useConsulta } from "../../../comun/api.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
 import { Historial } from "../../../comun/historial.tsx";
 import { montoEnPantalla } from "../../../comun/montos.ts";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { useTieneDepartamento } from "../../../comun/tiene-departamento.ts";
-import { enOtroDepartamento } from "../cuenta.ts";
+import { enOtroDepartamento } from "../enlaces.ts";
+import { useEnvio } from "../envio.ts";
 import { VentanaCancelarPedido } from "../ventanas/cancelar.tsx";
 
 /** Lo que da la consulta. */
 type Pedido = z.infer<typeof pedidoLinea.resultado>;
-
-/** Las consultas que cambian al cancelar un W-. */
-const consultasDeLinea = [
-	"linea.pendientes",
-	"linea.pedidos",
-	"linea.pedido",
-	"inventario.disponibilidad_linea",
-	"admin.historial_entidad",
-	"admin.armazon",
-] as const;
 
 /**
  * Una cifra del cajón: el valor grande y su línea abajo.
@@ -230,40 +220,36 @@ export function CajonPedidoLinea({ pedidoLineaId, alCerrar }: { pedidoLineaId: s
 	const tiene = useTieneDepartamento();
 	const router = useRouter();
 	const conConexion = useConConexion();
-	const consultas = useQueryClient();
-	const cancelar = useAccion(cancelarPedidoLinea, consultasDeLinea);
+	const { enviar, enviando, choco } = useEnvio(cancelarPedidoLinea);
 	const [cancelando, setCancelando] = useState(false);
-	const [choco, setChoco] = useState(false);
+	// Un choque de versión cierra la ventana: el cajón lo avisa con lo nuevo. Se hace al pintar, como en la ventana
+	// con motivo, y no en un efecto.
+	const [chocoAntes, setChocoAntes] = useState(choco);
+	if (choco !== chocoAntes) {
+		setChocoAntes(choco);
+		if (choco) setCancelando(false);
+	}
 	const pedido = consulta.data;
 	const ir = (ruta: string) => router.history.push(ruta);
 
 	/**
-	 * Manda la cancelación con su motivo y la versión que se leyó.
+	 * Manda la cancelación con su motivo y la versión que se leyó. Sin red, la ventana sigue abierta con lo escrito
+	 * para volver a intentar; si la regla no habla del motivo, el aviso de abajo ya lo dijo y la ventana se cierra.
 	 * @param motivo El motivo.
 	 * @returns El error que la API le dio al motivo, si hubo.
 	 */
 	const confirmar = async (motivo: string): Promise<string | undefined> => {
 		if (pedido === undefined) return undefined;
-		setChoco(false);
-		try {
-			await cancelar.mutateAsync({
-				datos: { pedido_linea_id: pedido.pedido_linea_id, motivo },
-				version: pedido.version,
-			});
-			setCancelando(false);
-			return undefined;
-		} catch (error) {
-			const falla = leerFalla(error);
-			if (falla.tipo === "regla" && falla.campos.motivo !== undefined) return falla.campos.motivo;
-			// Sin red, la ventana sigue abierta con lo escrito para volver a intentar; lo demás ya lo dijo el aviso.
-			if (falla.tipo === "sin_red") return undefined;
-			setCancelando(false);
-			if (falla.tipo === "choque") {
-				setChoco(true);
-				await volverALeer(consultas, consultasDeLinea);
-			}
-			return undefined;
-		}
+		let errorDelMotivo: string | undefined;
+		const salio = await enviar(
+			{ datos: { pedido_linea_id: pedido.pedido_linea_id, motivo }, version: pedido.version },
+			(falla) => {
+				errorDelMotivo = falla.campos.motivo;
+				if (errorDelMotivo === undefined) setCancelando(false);
+			},
+		);
+		if (salio !== undefined) setCancelando(false);
+		return errorDelMotivo;
 	};
 
 	const relacionados =
@@ -325,7 +311,7 @@ export function CajonPedidoLinea({ pedidoLineaId, alCerrar }: { pedidoLineaId: s
 			{cancelando && pedido !== undefined ? (
 				<VentanaCancelarPedido
 					folio={pedido.folio}
-					enviando={cancelar.isPending}
+					enviando={enviando}
 					alConfirmar={confirmar}
 					alCerrar={() => setCancelando(false)}
 				/>

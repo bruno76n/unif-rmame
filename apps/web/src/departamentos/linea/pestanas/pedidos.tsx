@@ -8,9 +8,7 @@
  * traen cerrados. El buscador va en la dirección.
  */
 
-import { useInfiniteQuery } from "@tanstack/react-query";
 import { pedidosLinea } from "@uniformame/compartido/contratos/linea/consultas";
-import { Boton } from "@uniformame/interfaz/botones/boton";
 import { Buscador } from "@uniformame/interfaz/captura/buscador";
 import { unirClases } from "@uniformame/interfaz/clases";
 import { puntoDelEstado } from "@uniformame/interfaz/estados/colores";
@@ -18,9 +16,11 @@ import { Estado } from "@uniformame/interfaz/estados/estado";
 import { EstadoDePantalla } from "@uniformame/interfaz/estados/estado-de-pantalla";
 import { Panel } from "@uniformame/interfaz/pagina/panel";
 import { Check, Clock } from "lucide-react";
+import type { ReactNode } from "react";
 import type { z } from "zod";
-import { consultar } from "../../../comun/api.tsx";
+import { usePaginas } from "../../../comun/api.tsx";
 import { montoEnPantalla } from "../../../comun/montos.ts";
+import { SegunPaginas } from "../../../comun/segun-paginas.tsx";
 import { useDireccionDeLinea } from "../direccion.ts";
 
 /** Lo que da una página de la consulta. */
@@ -115,20 +115,16 @@ function ColumnaDelTablero({ columna, alAbrir }: { columna: Columna; alAbrir: (i
 
 /**
  * Los cerrados: cancelados y vencidos, el más reciente arriba, con «Ver más».
- * @param props Los cerrados de las páginas leídas, si hay más, y qué hacer al tocar uno o «Ver más».
+ * @param props Los cerrados de las páginas leídas, su «Ver más» (si hay otra página) y qué hacer al tocar uno.
  */
 function Cerrados({
 	cerrados,
-	hayMas,
-	trayendo,
+	verMas,
 	alAbrir,
-	alVerMas,
 }: {
 	cerrados: Pedidos["cerrados"];
-	hayMas: boolean;
-	trayendo: boolean;
+	verMas: ReactNode;
 	alAbrir: (id: string) => void;
-	alVerMas: () => void;
 }) {
 	if (cerrados.length === 0) return null;
 	return (
@@ -150,13 +146,7 @@ function Cerrados({
 						</li>
 					))}
 				</ul>
-				{hayMas ? (
-					<div className="flex justify-center pt-3">
-						<Boton disabled={trayendo} onClick={alVerMas}>
-							Ver más
-						</Boton>
-					</div>
-				) : null}
+				{verMas === null ? null : <div className="flex justify-center pt-3">{verMas}</div>}
 			</Panel>
 		</section>
 	);
@@ -166,21 +156,7 @@ function Cerrados({
 export function PestanaPedidos() {
 	const { busqueda, navegar, abrir } = useDireccionDeLinea();
 	const parametros = busqueda.buscar === undefined ? {} : { buscar: busqueda.buscar };
-	const paginas = useInfiniteQuery({
-		queryKey: [pedidosLinea.nombre, parametros],
-		queryFn: ({ pageParam }) =>
-			consultar(pedidosLinea, pageParam === null ? parametros : { ...parametros, cursor: pageParam }),
-		initialPageParam: null as string | null,
-		getNextPageParam: (ultima) => ultima.cursor,
-		retry: false,
-	});
-	const primera = paginas.data?.pages[0];
-	const cerrados = paginas.data?.pages.flatMap((pagina) => pagina.cerrados) ?? [];
-	const sinResultados =
-		primera !== undefined &&
-		busqueda.buscar !== undefined &&
-		cerrados.length === 0 &&
-		primera.columnas.every((columna) => columna.pedidos.length === 0);
+	const paginas = usePaginas(pedidosLinea, parametros);
 	return (
 		<div className="flex flex-col gap-5">
 			<div className="max-w-md">
@@ -191,28 +167,27 @@ export function PestanaPedidos() {
 					alBuscar={(texto) => navegar({ buscar: texto.trim() || undefined })}
 				/>
 			</div>
-			{paginas.isError ? (
-				<EstadoDePantalla tipo="error" alReintentar={() => void paginas.refetch()} />
-			) : primera === undefined ? (
-				<EstadoDePantalla tipo="cargando" />
-			) : sinResultados ? (
-				<EstadoDePantalla tipo="vacio" texto="Ningún pedido con ese folio o cliente" />
-			) : (
-				<>
-					<div className="grid auto-cols-[minmax(250px,1fr)] grid-flow-col items-start gap-4 overflow-x-auto pb-1">
-						{primera.columnas.map((columna) => (
-							<ColumnaDelTablero key={columna.estado} columna={columna} alAbrir={abrir} />
-						))}
-					</div>
-					<Cerrados
-						cerrados={cerrados}
-						hayMas={paginas.hasNextPage}
-						trayendo={paginas.isFetchingNextPage}
-						alAbrir={abrir}
-						alVerMas={() => void paginas.fetchNextPage()}
-					/>
-				</>
-			)}
+			<SegunPaginas paginas={paginas}>
+				{({ primera, todas, verMas }) => {
+					const cerrados = todas.flatMap((pagina) => pagina.cerrados);
+					const sinResultados =
+						busqueda.buscar !== undefined &&
+						cerrados.length === 0 &&
+						primera.columnas.every((columna) => columna.pedidos.length === 0);
+					return sinResultados ? (
+						<EstadoDePantalla tipo="vacio" texto="Ningún pedido con ese folio o cliente" />
+					) : (
+						<>
+							<div className="grid auto-cols-[minmax(250px,1fr)] grid-flow-col items-start gap-4 overflow-x-auto pb-1">
+								{primera.columnas.map((columna) => (
+									<ColumnaDelTablero key={columna.estado} columna={columna} alAbrir={abrir} />
+								))}
+							</div>
+							<Cerrados cerrados={cerrados} verMas={verMas} alAbrir={abrir} />
+						</>
+					);
+				}}
+			</SegunPaginas>
 		</div>
 	);
 }

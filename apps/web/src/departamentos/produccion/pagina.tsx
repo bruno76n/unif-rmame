@@ -15,7 +15,7 @@ import { CajonLote } from "./cajones/lote.tsx";
 import { rutasDeProduccion, useDireccion } from "./direccion.ts";
 
 /** Las pestañas de Producción, en su orden; su clave es su ruta. */
-export const pestanasDeProduccion = [
+const pestanasDeProduccion = [
 	{ clave: "pendientes", texto: "Pendientes" },
 	{ clave: "lotes", texto: "Lotes" },
 	{ clave: "ordenes", texto: "Órdenes de producción" },
@@ -25,7 +25,7 @@ export const pestanasDeProduccion = [
 ] as const;
 
 /** La clave de una pestaña de Producción. */
-export type PestanaDeProduccion = (typeof pestanasDeProduccion)[number]["clave"];
+type PestanaDeProduccion = (typeof pestanasDeProduccion)[number]["clave"];
 
 /**
  * La página de Producción con una pestaña.

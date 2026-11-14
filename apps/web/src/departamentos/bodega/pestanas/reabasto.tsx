@@ -19,8 +19,9 @@ import { Tabla } from "@uniformame/interfaz/tablas/tabla";
 import { useState } from "react";
 import type { z } from "zod";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
-import { useEnvio, VarianteEnDosRenglones } from "../comun.tsx";
+import { VarianteEnDosRenglones } from "../comun.tsx";
 import { useDireccionDeBodega } from "../direccion.ts";
+import { useEnvio } from "../envio.ts";
 
 /** Lo que regresa la consulta. */
 type Reabasto = z.infer<typeof reabastoDeBodega.resultado>;

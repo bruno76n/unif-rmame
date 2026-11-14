@@ -6,9 +6,10 @@
  * Fase 19 · docs/interfaz/comunes.md («La página de un departamento», regla 2) y .claude/rules/react.md (regla 5)
  */
 
-import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useCallback } from "react";
 import { z } from "zod";
+import { useBusquedaDeDepartamento } from "../../comun/direccion.ts";
+import { rutaDePestana } from "../../comun/pagina-de-departamento.tsx";
 
 /** Los cajones de Mantenimiento que se abren por la dirección. */
 export const cajonesDeMantenimiento = ["falla", "maquina"] as const;
@@ -38,24 +39,12 @@ export type BusquedaDeMantenimiento = z.infer<typeof busquedaDeMantenimiento>;
 /**
  * Lee la búsqueda de Mantenimiento y da cómo cambiarla: los cambios se juntan con lo que ya hay, y lo que se pone sin
  * valor se quita; con otra pestaña, la búsqueda empieza de cero.
+ * Lo común está en `useBusquedaDeDepartamento`; aquí van sus cajones.
  * @returns La búsqueda, `navegar(cambios, pestana?)`, `abrir(cajon, id)` y `cerrar()`.
  */
 export function useDireccionDeMantenimiento() {
-	const busqueda = busquedaDeMantenimiento.parse(useSearch({ strict: false }));
-	const navigate = useNavigate();
-	const navegar = useCallback(
-		(cambios: Partial<BusquedaDeMantenimiento>, pestana?: PestanaDeMantenimiento) => {
-			const nueva = Object.fromEntries(
-				Object.entries({ ...(pestana === undefined ? busqueda : {}), ...cambios }).filter(
-					([, valor]) => valor !== undefined && valor !== "",
-				),
-			);
-			void navigate({
-				to: pestana === undefined ? "." : pestana === "pendientes" ? "/mantenimiento" : `/mantenimiento/${pestana}`,
-				search: busquedaDeMantenimiento.parse(nueva),
-			});
-		},
-		[busqueda, navigate],
+	const { busqueda, navegar } = useBusquedaDeDepartamento(busquedaDeMantenimiento, (pestana: PestanaDeMantenimiento) =>
+		rutaDePestana("mantenimiento", pestana),
 	);
 	/** Abre un cajón, sin tocar la pestaña ni lo demás. */
 	const abrir = useCallback((cajon: CajonDeMantenimiento, id: string) => navegar({ cajon, id }), [navegar]);

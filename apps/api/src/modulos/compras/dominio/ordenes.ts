@@ -7,9 +7,9 @@
  * (un servidor sin el módulo de inventario), nada está recibido.
  */
 
+import { fallaDeCantidad } from "@uniformame/compartido/calculos/compras";
 import { aMilesimosConSigno } from "@uniformame/compartido/calculos/cuenta-material";
 import { diaDeNegocio } from "@uniformame/compartido/calculos/fechas";
-import { fallaDeCantidad } from "@uniformame/compartido/contratos/compras/textos";
 import { and, asc, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import { Temporal } from "temporal-polyfill";
 import { z } from "zod";

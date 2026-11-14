@@ -8,9 +8,9 @@
  * `compras.horizonte_corto_semanas`; el largo llega al fin del mes de `compras.fecha_regreso_clases`.
  */
 
+import { cantidadConUnidad } from "@uniformame/compartido/calculos/compras";
 import { plural } from "@uniformame/compartido/calculos/textos";
 import { porPedir } from "@uniformame/compartido/contratos/compras/consultas-pestanas";
-import { cantidadConUnidad } from "@uniformame/compartido/contratos/compras/textos";
 import { Temporal } from "temporal-polyfill";
 import type { z } from "zod";
 import { type ContextoDeAccion, implementarConsulta } from "../../../nucleo/modulos.ts";

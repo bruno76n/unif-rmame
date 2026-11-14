@@ -14,7 +14,8 @@ import { Ventana } from "@uniformame/interfaz/contenedores/ventana";
 import { EstadoDePantalla } from "@uniformame/interfaz/estados/estado-de-pantalla";
 import { useState } from "react";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
-import { type PartidaEnAduana, useEnvio } from "../comun.tsx";
+import type { PartidaEnAduana } from "../comun.tsx";
+import { useEnvio } from "../envio.ts";
 
 /**
  * La ventana «Devolver a {proveedor}».

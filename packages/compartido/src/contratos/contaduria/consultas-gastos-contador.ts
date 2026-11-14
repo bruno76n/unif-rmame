@@ -28,6 +28,7 @@ export const gastosDeContaduria = definirConsulta({
 		mes_texto: z.string().describe("«noviembre»"),
 		mes_anterior_texto: z.string().describe("«octubre»"),
 		al_dia: z.number().int().nullable().describe("El día al que va el mes que corre; nulo en un mes pasado"),
+		hoy: z.iso.date().describe("El día de negocio, en hora de México: la fecha con que abre «Registrar gasto»"),
 		por_categoria: z.array(
 			z.object({
 				categoria: z.string(),

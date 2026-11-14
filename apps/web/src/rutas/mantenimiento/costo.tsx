@@ -8,6 +8,7 @@
  */
 
 import { createFileRoute } from "@tanstack/react-router";
+import { pesosACentavos } from "@uniformame/compartido/calculos/dinero";
 import { costoPorMaquina } from "@uniformame/compartido/contratos/mantenimiento/consultas-pestanas";
 import { useConsulta } from "../../comun/api.tsx";
 import { SegunConsulta } from "../../comun/segun-consulta.tsx";
@@ -19,7 +20,8 @@ import { CostoDeMantenimiento } from "../../departamentos/mantenimiento/pestanas
 function Costo() {
 	const { busqueda } = useDireccionDeMantenimiento();
 	// La casilla va en pesos enteros; la consulta, en centavos. Vacía o en 0, el de Configuración.
-	const parametros = busqueda.hora === undefined ? {} : { costo_hora_centavos: busqueda.hora * 100 };
+	const costo = busqueda.hora === undefined ? null : pesosACentavos(String(busqueda.hora));
+	const parametros = costo === null ? {} : { costo_hora_centavos: costo };
 	const consulta = useConsulta(costoPorMaquina, parametros, true, true);
 	return (
 		<PaginaDeMantenimiento activa="costo">

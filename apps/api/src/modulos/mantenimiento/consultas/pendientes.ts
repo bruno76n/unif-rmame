@@ -8,6 +8,7 @@
  * cuenta las fallas abiertas y va en rojo si alguna detuvo su máquina.
  */
 
+import { zonaDelNegocio } from "@uniformame/compartido/calculos/fechas";
 import { pendientesDeMantenimiento } from "@uniformame/compartido/contratos/mantenimiento/consultas-pestanas";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
@@ -114,7 +115,7 @@ async function leerPendientes(contexto: ContextoDeAccion): Promise<Resultado> {
 	const servicios = await cifrasDeServicios(contexto);
 	const { rows } = await contexto.transaccion.execute(sql`
 		SELECT count(*)::int AS n FROM fallas WHERE estado = 'resuelta'
-			AND extract(year from (resuelta_en AT TIME ZONE 'America/Mexico_City')) = ${contexto.diaDeNegocio.year}`);
+			AND extract(year from (resuelta_en AT TIME ZONE ${zonaDelNegocio}::text)) = ${contexto.diaDeNegocio.year}`);
 	const resueltas = z.object({ n: z.number() }).parse(rows[0]).n;
 	// Las horas de paro del año: las de los servicios más las de las fallas abiertas que detuvieron su máquina.
 	const horasDelAnio = servicios.horas_del_anio + [...horas.values()].reduce((suma, una) => suma + una, 0);

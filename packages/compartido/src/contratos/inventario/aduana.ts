@@ -44,6 +44,7 @@ export const partidaEnAduana = z.object({
 	piezas: z.number().int().describe("Las piezas de prenda; el material no suma"),
 	carril: carrilDeAduana,
 	destino: z.string().describe("A dónde va: «Tienda 1», el cliente, «Calidad decide», el proveedor"),
+	color_destino: colorDeEstado.describe("El color de su destino, para su punto"),
 	llego: z.string().describe("El día que llegó a aduana: «13 oct»"),
 	antiguedad: textoConColor.describe("«Llegó hoy», «1 día en aduana», «{n} días en aduana», en verde, ámbar o rojo"),
 	sale: z.string().nullable().describe("«Sale hoy» o «Sale mañana» (rojo), si su salida es hoy, mañana o ya pasó"),
@@ -110,6 +111,7 @@ export const andenDeAduana = definirConsulta({
 				z.object({
 					clave: z.string().describe("`entra` o el destino"),
 					nombre: z.string(),
+					color: colorDeEstado.nullable().describe("El color de su destino, para su orilla; nada en «Entra»"),
 					tipo: z.enum(["entra", "tienda", "linea", "externos", "bodega", "calidad"]).describe("Para su ícono"),
 					tarjetas: z.array(tarjetaDelAnden),
 				}),
@@ -127,6 +129,7 @@ const porRecibir = z.object({
 	cantidad: z.string().describe("Lo del taller lleva lo aprobado: es lo único que lo dice"),
 	carril: carrilDeAduana,
 	destino: z.string().describe("A dónde va"),
+	color_destino: colorDeEstado.describe("El color de su destino, para su punto"),
 	abre: loQueAbre,
 });
 

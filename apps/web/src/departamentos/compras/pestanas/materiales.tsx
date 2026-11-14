@@ -5,11 +5,11 @@
  * Fase 19 · docs/interfaz/fabrica/compras.md («Materiales»)
  */
 
+import { cantidadConUnidad } from "@uniformame/compartido/calculos/compras";
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
 import { plural } from "@uniformame/compartido/calculos/textos";
 import type { materialesDeCompras } from "@uniformame/compartido/contratos/compras/consultas-pestanas";
 import { reactivarMaterial } from "@uniformame/compartido/contratos/compras/materiales";
-import { cantidadConUnidad, pesos } from "@uniformame/compartido/contratos/compras/textos";
 import { BarraAvance } from "@uniformame/interfaz/avance/barra-avance";
 import { Boton } from "@uniformame/interfaz/botones/boton";
 import { Filtros } from "@uniformame/interfaz/captura/filtros";
@@ -24,6 +24,7 @@ import { useState } from "react";
 import type { z } from "zod";
 import { useAccion } from "../../../comun/api.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
+import { montoEnPantalla } from "../../../comun/montos.ts";
 import { Buscador } from "../comun.tsx";
 import { useDireccionDeCompras } from "../direccion.ts";
 import { VentanaNuevoMaterial } from "../ventanas/nuevo-material.tsx";
@@ -116,7 +117,9 @@ function TablaDeMateriales({
 									) : null}
 								</span>
 								<span className="text-etiqueta text-tinta2">
-									{material.ultimo_precio_centavos === null ? "" : `${pesos(material.ultimo_precio_centavos)} · `}
+									{material.ultimo_precio_centavos === null
+										? ""
+										: `${montoEnPantalla(material.ultimo_precio_centavos)} · `}
 									tarda {plural(material.plazo, "día", "días")}
 								</span>
 							</span>

@@ -17,7 +17,7 @@ import { CajonRendimiento } from "./cajones/rendimiento.tsx";
 import { VentanaCapturarReceta } from "./ventanas/capturar-receta.tsx";
 
 /** Las pestañas de Patronaje, en su orden; su clave es su ruta. */
-export const pestanasDePatronaje = [
+const pestanasDePatronaje = [
 	{ clave: "pendientes", texto: "Pendientes" },
 	{ clave: "recetas", texto: "Recetas" },
 	{ clave: "rendimiento", texto: "Rendimiento" },
@@ -25,7 +25,7 @@ export const pestanasDePatronaje = [
 ] as const;
 
 /** La clave de una pestaña de Patronaje. */
-export type PestanaDePatronaje = (typeof pestanasDePatronaje)[number]["clave"];
+type PestanaDePatronaje = (typeof pestanasDePatronaje)[number]["clave"];
 
 /**
  * La página de Patronaje con una pestaña.

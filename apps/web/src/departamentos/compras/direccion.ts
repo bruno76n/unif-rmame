@@ -9,6 +9,7 @@
 import { useRouter, useRouterState } from "@tanstack/react-router";
 import { useCallback } from "react";
 import { z } from "zod";
+import { direccionCon, juntarBusqueda } from "../../comun/direccion.ts";
 
 /** Los cajones de Compras. */
 export const cajonesDeCompras = ["levantar", "por_que", "orden", "material", "proveedor"] as const;
@@ -55,13 +56,10 @@ export function useDireccionDeCompras() {
 	const actual = leerBusqueda(ubicacion.search);
 	const ir = useCallback(
 		(cambios: Partial<Record<keyof BusquedaDeCompras, string | undefined>>, ruta?: string) => {
-			const siguiente = new URLSearchParams();
+			// Con una ruta dada la búsqueda empieza de cero, aunque sea la misma pestaña: lo que se crea en un cajón
+			// lleva a su lista sin el cajón.
 			const base = ruta === undefined ? leerBusqueda(router.state.location.search) : {};
-			for (const [llave, valor] of Object.entries({ ...base, ...cambios })) {
-				if (valor !== undefined && valor !== "") siguiente.set(llave, valor);
-			}
-			const texto = siguiente.toString();
-			router.history.push(`${ruta ?? router.state.location.pathname}${texto === "" ? "" : `?${texto}`}`);
+			router.history.push(direccionCon(ruta ?? router.state.location.pathname, juntarBusqueda<string>(base, cambios)));
 		},
 		[router],
 	);

@@ -15,7 +15,7 @@ import { useConConexion } from "../../../comun/estado-de-la-app.ts";
 import { errorDeCampo, esperar, type Salida, useAccionDeCatalogo } from "../acciones.ts";
 
 /** Un grupo que se edita. */
-export interface GrupoQueSeEdita {
+interface GrupoQueSeEdita {
 	id: string;
 	version: number;
 	nombre: string;

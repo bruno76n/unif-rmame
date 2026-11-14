@@ -25188,9 +25188,34 @@
                     "resultado": {
                       "type": "object",
                       "properties": {
-                        "es_duena": {
-                          "type": "boolean",
-                          "description": "Si quien ve es la dueña: solo ella cambia accesos"
+                        "puede": {
+                          "type": "object",
+                          "properties": {
+                            "crear_cuenta": {
+                              "type": "boolean",
+                              "description": "«Cuenta nueva» (`admin.crear_cuenta`); si no, «Pedir cuenta nueva»"
+                            },
+                            "revisar_altas": {
+                              "type": "boolean",
+                              "description": "«Revisar» en una alta pendiente (el cajón Alta de usuario)"
+                            },
+                            "quitar_acceso": {
+                              "type": "boolean",
+                              "description": "«Quitar acceso» (`admin.quitar_acceso`)"
+                            },
+                            "cambiar_departamentos": {
+                              "type": "boolean",
+                              "description": "Las casillas de la matriz (`admin.cambiar_departamentos`)"
+                            }
+                          },
+                          "required": [
+                            "crear_cuenta",
+                            "revisar_altas",
+                            "quitar_acceso",
+                            "cambiar_departamentos"
+                          ],
+                          "additionalProperties": false,
+                          "description": "Lo que quien ve puede hacer aquí: solo la dueña cambia accesos"
                         },
                         "cuentas": {
                           "type": "array",
@@ -25368,7 +25393,7 @@
                         }
                       },
                       "required": [
-                        "es_duena",
+                        "puede",
                         "cuentas",
                         "soporte",
                         "altas_pendientes",
@@ -25420,9 +25445,9 @@
                     "resultado": {
                       "type": "object",
                       "properties": {
-                        "es_duena": {
+                        "puede_crear_cuenta": {
                           "type": "boolean",
-                          "description": "La dueña da la cuenta; las demás la piden"
+                          "description": "Si da la cuenta (`admin.crear_cuenta`, la dueña); si no, la pide (`admin.pedir_cuenta`)"
                         },
                         "personas": {
                           "type": "array",
@@ -25491,7 +25516,7 @@
                         }
                       },
                       "required": [
-                        "es_duena",
+                        "puede_crear_cuenta",
                         "personas",
                         "departamentos"
                       ],
@@ -25752,9 +25777,24 @@
                     "resultado": {
                       "type": "object",
                       "properties": {
-                        "es_duena": {
-                          "type": "boolean",
-                          "description": "Solo la dueña registra y revoca"
+                        "puede": {
+                          "type": "object",
+                          "properties": {
+                            "registrar": {
+                              "type": "boolean",
+                              "description": "«Registrar dispositivo» (`admin.generar_codigo_registro`)"
+                            },
+                            "revocar": {
+                              "type": "boolean",
+                              "description": "«Revocar» (`admin.revocar_dispositivo`)"
+                            }
+                          },
+                          "required": [
+                            "registrar",
+                            "revocar"
+                          ],
+                          "additionalProperties": false,
+                          "description": "Lo que quien ve puede hacer aquí: solo la dueña registra y revoca"
                         },
                         "registrados": {
                           "type": "array",
@@ -25944,7 +25984,7 @@
                         }
                       },
                       "required": [
-                        "es_duena",
+                        "puede",
                         "registrados",
                         "revocados",
                         "donde_se_usa",
@@ -26131,9 +26171,9 @@
                           "type": "string",
                           "description": "El nombre del aparato"
                         },
-                        "es_duena": {
+                        "puede_descartar": {
                           "type": "boolean",
-                          "description": "Solo la dueña descarta"
+                          "description": "«Descartar» (`admin.descartar_comando_apartado`): solo la dueña"
                         },
                         "renglones": {
                           "type": "array",
@@ -26198,7 +26238,7 @@
                       },
                       "required": [
                         "nombre",
-                        "es_duena",
+                        "puede_descartar",
                         "renglones",
                         "cursor",
                         "hay_mas"
@@ -27326,9 +27366,9 @@
                     "resultado": {
                       "type": "object",
                       "properties": {
-                        "es_duena": {
+                        "puede_registrar_restauracion": {
                           "type": "boolean",
-                          "description": "Solo la dueña registra una restauración"
+                          "description": "«Registrar restauración probada» (`admin.registrar_restauracion`): solo la dueña"
                         },
                         "recuperacion_dias": {
                           "nullable": true,
@@ -27462,7 +27502,7 @@
                         }
                       },
                       "required": [
-                        "es_duena",
+                        "puede_registrar_restauracion",
                         "recuperacion_dias",
                         "semanal",
                         "ultima_prueba",
@@ -32925,6 +32965,15 @@
                                   "minimum": -9007199254740991,
                                   "maximum": 9007199254740991
                                 },
+                                "tono": {
+                                  "nullable": true,
+                                  "description": "El color del número; nulo, el de lo más urgente de su contexto",
+                                  "type": "string",
+                                  "enum": [
+                                    "rojo",
+                                    "ambar"
+                                  ]
+                                },
                                 "contexto": {
                                   "type": "array",
                                   "items": {
@@ -32955,6 +33004,7 @@
                                 "sin_tiempo",
                                 "esta_semana",
                                 "suficiente",
+                                "tono",
                                 "contexto"
                               ],
                               "additionalProperties": false
@@ -33098,6 +33148,15 @@
                                   "minimum": -9007199254740991,
                                   "maximum": 9007199254740991
                                 },
+                                "tono": {
+                                  "nullable": true,
+                                  "description": "El color del número; nulo, el de lo más urgente de su contexto",
+                                  "type": "string",
+                                  "enum": [
+                                    "rojo",
+                                    "ambar"
+                                  ]
+                                },
                                 "contexto": {
                                   "type": "array",
                                   "items": {
@@ -33126,6 +33185,7 @@
                               },
                               "required": [
                                 "sin_conciliar",
+                                "tono",
                                 "contexto"
                               ],
                               "additionalProperties": false
@@ -36926,6 +36986,10 @@
                             "additionalProperties": false
                           },
                           "description": "Las cuentas de la fábrica, en su orden"
+                        },
+                        "ve_sueldos": {
+                          "type": "boolean",
+                          "description": "Si la cuenta tiene «ven sueldos y tarifas» (la dueña siempre): sin él, la pestaña Nómina es el candado"
                         }
                       },
                       "required": [
@@ -36933,7 +36997,8 @@
                         "cifras",
                         "renglones",
                         "conteos",
-                        "cuentas_fabrica"
+                        "cuentas_fabrica",
+                        "ve_sueldos"
                       ],
                       "additionalProperties": false
                     },
@@ -37480,6 +37545,12 @@
                             ],
                             "additionalProperties": false
                           }
+                        },
+                        "depositos_queda_centavos": {
+                          "description": "Lo que queda sin aplicar de todos los depósitos a terceros",
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
                         },
                         "saldos_a_favor": {
                           "type": "array",
@@ -40111,6 +40182,12 @@
                           "minimum": -9007199254740991,
                           "maximum": 9007199254740991
                         },
+                        "hoy": {
+                          "type": "string",
+                          "format": "date",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                          "description": "El día de negocio, en hora de México: la fecha con que abre «Registrar gasto»"
+                        },
                         "por_categoria": {
                           "type": "array",
                           "items": {
@@ -40309,6 +40386,7 @@
                         "mes_texto",
                         "mes_anterior_texto",
                         "al_dia",
+                        "hoy",
                         "por_categoria",
                         "renglones",
                         "cursor",
@@ -43144,6 +43222,34 @@
                           "additionalProperties": false,
                           "description": "De todo lo filtrado"
                         },
+                        "columnas": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "codigo": {
+                                "type": "string",
+                                "enum": [
+                                  "ADU",
+                                  "BOD",
+                                  "T1",
+                                  "T2",
+                                  "TAL"
+                                ]
+                              },
+                              "nombre": {
+                                "type": "string",
+                                "description": "«Tienda 1»"
+                              }
+                            },
+                            "required": [
+                              "codigo",
+                              "nombre"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "description": "Las columnas de ubicación, en su orden, con el nombre de cada ubicación"
+                        },
                         "renglones": {
                           "type": "array",
                           "items": {
@@ -43159,6 +43265,74 @@
                               },
                               "escuela": {
                                 "type": "string"
+                              },
+                              "suma": {
+                                "type": "object",
+                                "properties": {
+                                  "celdas": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "codigo": {
+                                          "type": "string",
+                                          "enum": [
+                                            "ADU",
+                                            "BOD",
+                                            "T1",
+                                            "T2",
+                                            "TAL"
+                                          ]
+                                        },
+                                        "piezas": {
+                                          "type": "integer",
+                                          "minimum": -9007199254740991,
+                                          "maximum": 9007199254740991
+                                        }
+                                      },
+                                      "required": [
+                                        "codigo",
+                                        "piezas"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "transito": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "en_camino": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "total": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "comprometido": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "libre": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  }
+                                },
+                                "required": [
+                                  "celdas",
+                                  "transito",
+                                  "en_camino",
+                                  "total",
+                                  "comprometido",
+                                  "libre"
+                                ],
+                                "additionalProperties": false,
+                                "description": "La suma de cada columna en sus variantes de lo filtrado: va en el renglón del producto"
                               },
                               "variantes": {
                                 "type": "array",
@@ -43291,6 +43465,7 @@
                               "producto_id",
                               "prenda",
                               "escuela",
+                              "suma",
                               "variantes"
                             ],
                             "additionalProperties": false
@@ -43311,6 +43486,7 @@
                         "secciones",
                         "escuelas",
                         "resumen",
+                        "columnas",
                         "renglones",
                         "cursor",
                         "hay_mas"
@@ -46188,6 +46364,21 @@
                               "nombre": {
                                 "type": "string"
                               },
+                              "color": {
+                                "nullable": true,
+                                "description": "El color de su destino, para su orilla; nada en «Entra»",
+                                "type": "string",
+                                "enum": [
+                                  "rojo",
+                                  "ambar",
+                                  "azul",
+                                  "verde",
+                                  "gris",
+                                  "morado",
+                                  "verde-azulado",
+                                  "naranja"
+                                ]
+                              },
                               "tipo": {
                                 "type": "string",
                                 "enum": [
@@ -46322,6 +46513,7 @@
                             "required": [
                               "clave",
                               "nombre",
+                              "color",
                               "tipo",
                               "tarjetas"
                             ],
@@ -46439,6 +46631,20 @@
                                       "type": "string",
                                       "description": "A dónde va"
                                     },
+                                    "color_destino": {
+                                      "type": "string",
+                                      "enum": [
+                                        "rojo",
+                                        "ambar",
+                                        "azul",
+                                        "verde",
+                                        "gris",
+                                        "morado",
+                                        "verde-azulado",
+                                        "naranja"
+                                      ],
+                                      "description": "El color de su destino, para su punto"
+                                    },
                                     "abre": {
                                       "type": "object",
                                       "properties": {
@@ -46476,6 +46682,7 @@
                                     "cantidad",
                                     "carril",
                                     "destino",
+                                    "color_destino",
                                     "abre"
                                   ],
                                   "additionalProperties": false
@@ -46769,6 +46976,20 @@
                                       "type": "string",
                                       "description": "A dónde va: «Tienda 1», el cliente, «Calidad decide», el proveedor"
                                     },
+                                    "color_destino": {
+                                      "type": "string",
+                                      "enum": [
+                                        "rojo",
+                                        "ambar",
+                                        "azul",
+                                        "verde",
+                                        "gris",
+                                        "morado",
+                                        "verde-azulado",
+                                        "naranja"
+                                      ],
+                                      "description": "El color de su destino, para su punto"
+                                    },
                                     "llego": {
                                       "type": "string",
                                       "description": "El día que llegó a aduana: «13 oct»"
@@ -46900,6 +47121,7 @@
                                     "piezas",
                                     "carril",
                                     "destino",
+                                    "color_destino",
                                     "llego",
                                     "antiguedad",
                                     "sale",
@@ -47070,6 +47292,20 @@
                                 "type": "string",
                                 "description": "A dónde va: «Tienda 1», el cliente, «Calidad decide», el proveedor"
                               },
+                              "color_destino": {
+                                "type": "string",
+                                "enum": [
+                                  "rojo",
+                                  "ambar",
+                                  "azul",
+                                  "verde",
+                                  "gris",
+                                  "morado",
+                                  "verde-azulado",
+                                  "naranja"
+                                ],
+                                "description": "El color de su destino, para su punto"
+                              },
                               "llego": {
                                 "type": "string",
                                 "description": "El día que llegó a aduana: «13 oct»"
@@ -47201,6 +47437,7 @@
                               "piezas",
                               "carril",
                               "destino",
+                              "color_destino",
                               "llego",
                               "antiguedad",
                               "sale",
@@ -48777,20 +49014,12 @@
         "parameters": [
           {
             "schema": {
-              "type": "string",
-              "enum": [
-                "esperando_pago",
-                "por_surtir",
-                "esperando_prendas",
-                "listo_para_empacar",
-                "cancelado",
-                "vencido"
-              ]
+              "type": "string"
             },
             "in": "query",
-            "name": "estado",
+            "name": "estados",
             "required": false,
-            "description": "Solo los de esa etapa"
+            "description": "Solo los de esas etapas, separadas por coma («esperando_prendas,listo_para_empacar»); sin él, todas"
           },
           {
             "schema": {
@@ -48975,6 +49204,11 @@
                                         "additionalProperties": false
                                       }
                                     },
+                                    "falta": {
+                                      "nullable": true,
+                                      "description": "Esperando prendas: «Falta {n} de {m}», las piezas que no están en aduana de todas las del W-",
+                                      "type": "string"
+                                    },
                                     "total_centavos": {
                                       "description": "El total con envío; Aduana y Bodega no lo reciben",
                                       "type": "integer",
@@ -48998,6 +49232,7 @@
                                     "estado_desde",
                                     "promesa",
                                     "prendas",
+                                    "falta",
                                     "version"
                                   ],
                                   "additionalProperties": false
@@ -51127,6 +51362,26 @@
                             "motivo"
                           ],
                           "additionalProperties": false
+                        },
+                        "puede": {
+                          "type": "object",
+                          "properties": {
+                            "dar_de_baja": {
+                              "type": "boolean",
+                              "description": "Si se puede dar de baja (`mantenimiento.baja_maquina`): sin falla abierta"
+                            },
+                            "razon": {
+                              "nullable": true,
+                              "description": "Por qué no, para leer junto al botón; nulo si se puede o ya está de baja",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "dar_de_baja",
+                            "razon"
+                          ],
+                          "additionalProperties": false,
+                          "description": "Lo que se puede hacer con la máquina"
                         }
                       },
                       "required": [
@@ -51144,7 +51399,8 @@
                         "fallas_en_el_anio",
                         "historial",
                         "falla_abierta",
-                        "dada_de_baja"
+                        "dada_de_baja",
+                        "puede"
                       ],
                       "additionalProperties": false
                     },

@@ -5,7 +5,6 @@
  * Fase 19 · docs/interfaz/fabrica/produccion.md («Operaciones»)
  */
 
-import { enPesos } from "@uniformame/compartido/calculos/dinero";
 import { quitarOperacionFlujo } from "@uniformame/compartido/contratos/produccion/flujos";
 import { operacionesDeProduccion } from "@uniformame/compartido/contratos/produccion/operaciones";
 import { Boton } from "@uniformame/interfaz/botones/boton";
@@ -18,6 +17,7 @@ import { useState } from "react";
 import type { z } from "zod";
 import { useAccion, useConsulta } from "../../../comun/api.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
+import { montoEnPantalla } from "../../../comun/montos.ts";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { loQueCambiaEnProduccion } from "../invalidar.ts";
 import { PaginaDeProduccion } from "../pagina.tsx";
@@ -122,8 +122,7 @@ function TarjetaDeFlujo({ flujo, alAgregar }: { flujo: Flujo; alAgregar: () => v
 									clave: "tarifa",
 									encabezado: "Tarifa",
 									alinear: "derecha" as const,
-									celda: (operacion: Operacion) =>
-										operacion.tarifa_centavos == null ? "—" : enPesos(operacion.tarifa_centavos),
+									celda: (operacion: Operacion) => montoEnPantalla(operacion.tarifa_centavos),
 								},
 							]
 						: []),

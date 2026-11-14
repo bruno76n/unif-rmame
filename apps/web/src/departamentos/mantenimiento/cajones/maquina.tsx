@@ -101,7 +101,6 @@ export function CajonMaquina({ maquinaId, alCerrar }: { maquinaId: string; alCer
 	const [ventana, setVentana] = useState<"quien" | "baja" | null>(null);
 	const baja = useEnvio(bajaMaquina);
 	const maquina = consulta.data;
-	const conFalla = maquina?.falla_abierta != null;
 	return (
 		<Cajon
 			abierto
@@ -111,14 +110,16 @@ export function CajonMaquina({ maquinaId, alCerrar }: { maquinaId: string; alCer
 			accion={
 				maquina === undefined || maquina.dada_de_baja !== null ? undefined : (
 					<span className="flex flex-col items-end gap-1">
-						<Boton variante="peligro" disabled={!conConexion || conFalla} onClick={() => setVentana("baja")}>
+						<Boton
+							variante="peligro"
+							disabled={!conConexion || !maquina.puede.dar_de_baja}
+							onClick={() => setVentana("baja")}
+						>
 							Dar de baja
 						</Boton>
-						{conFalla ? (
-							<LineaDeAviso tono="advertencia">
-								{`${maquina.nombre} tiene una falla abierta: resuélvela antes de darla de baja`}
-							</LineaDeAviso>
-						) : null}
+						{maquina.puede.razon === null ? null : (
+							<LineaDeAviso tono="advertencia">{maquina.puede.razon}</LineaDeAviso>
+						)}
 					</span>
 				)
 			}

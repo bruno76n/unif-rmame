@@ -14,7 +14,7 @@ import { Ventana } from "@uniformame/interfaz/contenedores/ventana";
 import { useState } from "react";
 import type { z } from "zod";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
-import { useEnvio } from "../comun.tsx";
+import { useEnvio } from "../envio.ts";
 
 /** Un renglón de Pendientes con lo apartado. */
 type Renglon = z.infer<typeof pendientesDeBodega.resultado>["renglones"][number];

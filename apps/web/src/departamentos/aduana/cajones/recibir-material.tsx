@@ -8,6 +8,7 @@
  * Fase 19 · docs/interfaz/fabrica/aduana.md («Cajones»: Recibir material)
  */
 
+import { cantidadEnTexto, sumaDeLoEscrito } from "@uniformame/compartido/calculos/cuenta-material";
 import { detalleRecibirMaterial } from "@uniformame/compartido/contratos/inventario/aduana-cajones";
 import { recibirDeProveedor } from "@uniformame/compartido/contratos/inventario/recepciones";
 import { Boton } from "@uniformame/interfaz/botones/boton";
@@ -25,7 +26,7 @@ import { useAvisar } from "../../../comun/avisos-de-abajo.tsx";
 import { useCierreDelCajon } from "../../../comun/cambios-sin-guardar.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
-import { useEnvio } from "../comun.tsx";
+import { useEnvio } from "../envio.ts";
 
 /** Lo que regresa la consulta. */
 type Detalle = z.infer<typeof detalleRecibirMaterial.resultado>;
@@ -186,7 +187,8 @@ function BloqueDeMaterial({
 		);
 	}
 	const { rollos } = suya;
-	const suma = rollos.reduce((total, rollo) => total + (Number(rollo.metros.replace(",", ".")) || 0), 0);
+	// Lo que llevan escrito los rollos, en milésimos: nunca pasa por un número con decimales.
+	const suma = cantidadEnTexto(sumaDeLoEscrito(rollos.map((rollo) => rollo.metros)));
 	const partidas = new Set(
 		rollos.map((rollo) => rollo.partida.trim().toUpperCase()).filter((partida) => partida !== ""),
 	);
@@ -242,7 +244,7 @@ function BloqueDeMaterial({
 		<div className="flex flex-col gap-3">
 			<TituloDeBloque
 				titulo={material.material}
-				detalle={`Faltaban ${material.faltaban} m · llegan ${Number(suma.toFixed(1))} m en ${rollos.length} ${
+				detalle={`Faltaban ${material.faltaban} m · llegan ${suma} m en ${rollos.length} ${
 					rollos.length === 1 ? "rollo" : "rollos"
 				}`}
 			/>

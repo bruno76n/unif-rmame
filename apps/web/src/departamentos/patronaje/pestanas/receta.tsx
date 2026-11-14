@@ -12,6 +12,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { recetaDeLaPrenda } from "@uniformame/compartido/contratos/patronaje/receta";
 import { guardarReceta } from "@uniformame/compartido/contratos/patronaje/recetas";
 import { Boton } from "@uniformame/interfaz/botones/boton";
+import { Enlace } from "@uniformame/interfaz/botones/enlace";
 import { Campo } from "@uniformame/interfaz/captura/campo";
 import { Filtros } from "@uniformame/interfaz/captura/filtros";
 import { Selector } from "@uniformame/interfaz/captura/selector";
@@ -349,13 +350,7 @@ function Encabezado({ receta, alRegresar }: { receta: RecetaLeida; alRegresar: (
 				<Dato nombre="Desperdicio en el tendido">{receta.desperdicio.texto}</Dato>
 				{desarrollo === null ? null : (
 					<Dato nombre="Desarrollo">
-						<button
-							type="button"
-							className="font-semibold text-marca underline-offset-2 hover:underline"
-							onClick={() => irA(direcciones.desarrollo(desarrollo.desarrollo_id))}
-						>
-							{desarrollo.texto}
-						</button>
+						<Enlace onClick={() => irA(direcciones.desarrollo(desarrollo.desarrollo_id))}>{desarrollo.texto}</Enlace>
 					</Dato>
 				)}
 			</dl>
@@ -515,11 +510,7 @@ function NombreDelRenglon({
  */
 function LlenarDesdeUnaTalla({ alTocar, soloLeer }: { alTocar: () => void; soloLeer: boolean }) {
 	if (soloLeer) return null;
-	return (
-		<button type="button" onClick={alTocar} className="font-semibold text-marca hover:underline">
-			Llenar desde una talla
-		</button>
-	);
+	return <Enlace onClick={alTocar}>Llenar desde una talla</Enlace>;
 }
 
 /**
@@ -1014,13 +1005,9 @@ function Versiones({ receta }: { receta: RecetaLeida }) {
 								{version.vigente ? (
 									<b>Versión {version.numero}</b>
 								) : (
-									<button
-										type="button"
-										className="font-bold text-marca hover:underline"
-										onClick={() => ir({ version: String(version.numero) })}
-									>
+									<Enlace fuerte onClick={() => ir({ version: String(version.numero) })}>
 										Versión {version.numero}
-									</button>
+									</Enlace>
 								)}
 								{version.vigente ? <Estado texto="Vigente" color="verde" /> : null}
 								<span className="text-etiqueta text-tinta2">

@@ -80,7 +80,8 @@ export const consultaRespaldos = implementarConsulta(respaldosDeAdmin, async (co
 				})();
 	return {
 		resultado: {
-			es_duena: esLaDuena(quien),
+			// `admin.registrar_restauracion` es solo de la dueña.
+			puede_registrar_restauracion: esLaDuena(quien),
 			recuperacion_dias: null,
 			semanal:
 				ultimo === undefined

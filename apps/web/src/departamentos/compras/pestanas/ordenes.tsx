@@ -8,7 +8,6 @@
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
 import { plural } from "@uniformame/compartido/calculos/textos";
 import type { gruposDeOrdenes, ordenesDeCompra } from "@uniformame/compartido/contratos/compras/consultas-pestanas";
-import { pesos } from "@uniformame/compartido/contratos/compras/textos";
 import { BarraAvance } from "@uniformame/interfaz/avance/barra-avance";
 import type { ColorDeGrupo } from "@uniformame/interfaz/contenedores/grupo-plegable";
 import { GrupoPlegable } from "@uniformame/interfaz/contenedores/grupo-plegable";
@@ -17,6 +16,7 @@ import { EstadoDePantalla } from "@uniformame/interfaz/estados/estado-de-pantall
 import { Tabla } from "@uniformame/interfaz/tablas/tabla";
 import { useState } from "react";
 import type { z } from "zod";
+import { montoEnPantalla } from "../../../comun/montos.ts";
 import { Buscador } from "../comun.tsx";
 import { useDireccionDeCompras } from "../direccion.ts";
 
@@ -124,7 +124,7 @@ function TablaDeOrdenes({ ordenes, alAbrir }: { ordenes: OrdenDeLaLista[]; alAbr
 						clave: "total",
 						encabezado: "Total",
 						alinear: "derecha",
-						celda: (orden) => <b className="font-bold">{pesos(orden.total_centavos)}</b>,
+						celda: (orden) => <b className="font-bold">{montoEnPantalla(orden.total_centavos)}</b>,
 					},
 				]}
 			/>

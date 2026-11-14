@@ -25,6 +25,7 @@ import {
 	guardarVersionPedido,
 } from "@uniformame/compartido/contratos/ventas/pedidos";
 import { Boton } from "@uniformame/interfaz/botones/boton";
+import { Enlace } from "@uniformame/interfaz/botones/enlace";
 import { Buscador } from "@uniformame/interfaz/captura/buscador";
 import { Campo } from "@uniformame/interfaz/captura/campo";
 import { Selector } from "@uniformame/interfaz/captura/selector";
@@ -487,13 +488,7 @@ function Editor({
 								</div>
 							</div>
 							{modo === "nuevo" && captura.prendas.length === 0 ? (
-								<button
-									type="button"
-									className="self-start font-semibold text-marca underline"
-									onClick={() => setClienteNuevo(true)}
-								>
-									Cliente nuevo
-								</button>
+								<Enlace onClick={() => setClienteNuevo(true)}>Cliente nuevo</Enlace>
 							) : null}
 						</div>
 						<Campo

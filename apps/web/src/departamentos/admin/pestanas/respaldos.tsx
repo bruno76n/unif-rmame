@@ -72,7 +72,7 @@ export function PestanaRespaldos() {
 									<span className="text-etiqueta text-tinta3">{datos.ultima_prueba.siguiente}</span>
 								</>
 							)}
-							{datos.es_duena ? (
+							{datos.puede_registrar_restauracion ? (
 								<Boton chico icono={Check} disabled={!conConexion} onClick={() => setRegistrar(true)}>
 									Registrar restauración probada
 								</Boton>

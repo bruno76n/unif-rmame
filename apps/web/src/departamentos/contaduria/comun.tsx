@@ -1,7 +1,7 @@
 /**
  * Lo que comparten las pantallas de Contaduría: de dónde sale o dónde entra el dinero (Efectivo o una cuenta de la
- * fábrica) como opción de un selector, un renglón con su texto y su monto, y una lista larga con «Ver más».
- * Fase 19 · docs/interfaz/fabrica/contaduria.md («Ventanas»: «Sale de»; «Las listas largas se paginan»)
+ * fábrica) como opción de un selector, y un renglón con su texto y su monto.
+ * Fase 19 · docs/interfaz/fabrica/contaduria.md («Ventanas»: «Sale de»)
  */
 
 import type { Opcion } from "@uniformame/interfaz/captura/selector";

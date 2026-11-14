@@ -105,6 +105,15 @@ export const maquinaDeMantenimiento = definirConsulta({
 		),
 		falla_abierta: z.string().nullable().describe("El folio de su falla abierta, si tiene"),
 		dada_de_baja: z.object({ desde: z.string(), motivo: z.string() }).nullable(),
+		puede: z
+			.object({
+				dar_de_baja: z.boolean().describe("Si se puede dar de baja (`mantenimiento.baja_maquina`): sin falla abierta"),
+				razon: z
+					.string()
+					.nullable()
+					.describe("Por qué no, para leer junto al botón; nulo si se puede o ya está de baja"),
+			})
+			.describe("Lo que se puede hacer con la máquina"),
 	}),
 	permiso: { departamento: "mantenimiento" },
 });

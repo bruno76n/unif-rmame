@@ -37,7 +37,7 @@ describe("Las consultas de las cuentas en Administración del sistema", () => {
 		const respuesta = await pedirConsulta(servidor, "admin.usuarios", {}, quien);
 		expect(respuesta.estado, JSON.stringify(respuesta.cuerpo)).toBe(200);
 		return respuesta.cuerpo.resultado as {
-			es_duena: boolean;
+			puede: Record<string, boolean>;
 			cuentas: CuentaLeida[];
 			soporte: { nombre: string } | null;
 			altas_pendientes: { autorizacion_id: string; texto: string }[];
@@ -74,12 +74,18 @@ describe("Las consultas de las cuentas en Administración del sistema", () => {
 		});
 	});
 
-	it("Usuarios y accesos: la dueña primero, «Todas»; soporte aparte; las sesiones de la dueña solo las cierra ella", async () => {
+	it("Usuarios y accesos: la dueña primero, «Todas»; soporte aparte; las sesiones de la dueña solo las cierra ella; solo ella cambia accesos", async () => {
 		await servidor.base.dueno.query(
 			`UPDATE sesiones SET cerrada_en = now(), motivo_cierre = 'salio' WHERE token_hash = 'sesion-de-prueba-calidad'`,
 		);
 		const deLaOficina = await usuarios("admin");
-		expect(deLaOficina.es_duena).toBe(false);
+		// Solo la dueña cambia accesos: la consulta dice qué botones lleva cada quien.
+		expect(deLaOficina.puede).toEqual({
+			crear_cuenta: false,
+			revisar_altas: false,
+			quitar_acceso: false,
+			cambiar_departamentos: false,
+		});
 		const [primera] = deLaOficina.cuentas;
 		expect(primera).toMatchObject({ es_duena: true, ubicacion: "Todas", puede_cerrar_sesiones: false });
 		expect(deLaOficina.cuentas.some((cuenta) => cuenta.nombre === "Soporte técnico")).toBe(false);
@@ -97,19 +103,26 @@ describe("Las consultas de las cuentas en Administración del sistema", () => {
 		expect(deLaOficina.departamentos[0]).toEqual({ clave: "direccion", nombre: "Dirección", grupo: null });
 		// La dueña sí cierra las suyas.
 		const deLaDuena = await usuarios("duena");
-		expect(deLaDuena.es_duena).toBe(true);
+		expect(deLaDuena.puede).toEqual({
+			crear_cuenta: true,
+			revisar_altas: true,
+			quitar_acceso: true,
+			cambiar_departamentos: true,
+		});
 		expect(deLaDuena.cuentas[0]?.puede_cerrar_sesiones).toBe(true);
 	});
 
 	it("Cuenta nueva: solo personas activas sin cuenta que no son de tienda, y sin la Puerta del taller", async () => {
 		const respuesta = await pedirConsulta(servidor, "admin.cuenta_nueva", {}, "admin");
 		expect(respuesta.estado, JSON.stringify(respuesta.cuerpo)).toBe(200);
-		const { personas, departamentos, es_duena } = respuesta.cuerpo.resultado as {
-			es_duena: boolean;
+		const { personas, departamentos, puede_crear_cuenta } = respuesta.cuerpo.resultado as {
+			puede_crear_cuenta: boolean;
 			personas: { persona_id: string; texto: string }[];
 			departamentos: { clave: string }[];
 		};
-		expect(es_duena).toBe(false);
+		expect(puede_crear_cuenta).toBe(false);
+		const deLaDuena = await pedirConsulta(servidor, "admin.cuenta_nueva", {}, "duena");
+		expect((deLaDuena.cuerpo.resultado as { puede_crear_cuenta: boolean }).puede_crear_cuenta).toBe(true);
 		expect(departamentos.map((departamento) => departamento.clave)).not.toContain("puerta_taller");
 		expect(departamentos).toHaveLength(14);
 		const { rows } = await servidor.base.dueno.query(

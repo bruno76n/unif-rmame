@@ -7,10 +7,11 @@
  * Fase 19 · docs/interfaz/comunes.md («La página de un departamento», regla 2) y .claude/rules/react.md (regla 5)
  */
 
-import { useNavigate, useSearch } from "@tanstack/react-router";
 import { gruposDePendientesDePersonal } from "@uniformame/compartido/contratos/personal/asistencia";
 import { useCallback } from "react";
 import { z } from "zod";
+import { useBusquedaDeDepartamento } from "../../comun/direccion.ts";
+import { rutaDePestana } from "../../comun/pagina-de-departamento.tsx";
 
 /** Los cajones de Personal que se abren por la dirección. */
 export const cajonesDePersonal = ["persona", "nueva"] as const;
@@ -49,31 +50,17 @@ export type BusquedaDePersonal = z.infer<typeof busquedaDePersonal>;
  * @param pestana La pestaña.
  */
 export function rutaDePersonal(pestana: PestanaDePersonal): string {
-	return pestana === "pendientes" ? "/personal" : `/personal/${pestana}`;
+	return rutaDePestana("personal", pestana);
 }
 
 /**
  * Lee la búsqueda de Personal y da cómo cambiarla: los cambios se juntan con lo que ya hay, y lo que se pone sin valor
  * se quita; con otra pestaña, la búsqueda empieza de cero.
+ * Lo común está en `useBusquedaDeDepartamento`; aquí van sus cajones.
  * @returns La búsqueda, `navegar(cambios, pestana?)`, `abrir(cajon, id?)` y `cerrar()`.
  */
 export function useDireccionDePersonal() {
-	const busqueda = busquedaDePersonal.parse(useSearch({ strict: false }));
-	const navigate = useNavigate();
-	const navegar = useCallback(
-		(cambios: Partial<BusquedaDePersonal>, pestana?: PestanaDePersonal) => {
-			const nueva = Object.fromEntries(
-				Object.entries({ ...(pestana === undefined ? busqueda : {}), ...cambios }).filter(
-					([, valor]) => valor !== undefined && valor !== "",
-				),
-			);
-			void navigate({
-				to: pestana === undefined ? "." : rutaDePersonal(pestana),
-				search: busquedaDePersonal.parse(nueva),
-			});
-		},
-		[busqueda, navigate],
-	);
+	const { busqueda, navegar } = useBusquedaDeDepartamento(busquedaDePersonal, rutaDePersonal);
 	/** Abre un cajón, sin tocar la pestaña ni lo demás. */
 	const abrir = useCallback(
 		(cajon: CajonDePersonal, id?: string) => navegar({ cajon, id, resaltar: undefined }),

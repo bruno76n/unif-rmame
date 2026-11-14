@@ -77,7 +77,7 @@ function UsuariosYAccesos({ datos }: { datos: Usuarios }) {
 				titulo={plural(datos.cuentas.length, "cuenta", "cuentas")}
 				derecha={
 					<Boton chico icono={Plus} disabled={!conConexion} onClick={() => setNueva(true)}>
-						{datos.es_duena ? "Cuenta nueva" : "Pedir cuenta nueva"}
+						{datos.puede.crear_cuenta ? "Cuenta nueva" : "Pedir cuenta nueva"}
 					</Boton>
 				}
 			>
@@ -86,7 +86,7 @@ function UsuariosYAccesos({ datos }: { datos: Usuarios }) {
 						key={alta.autorizacion_id}
 						color="ambar"
 						boton={
-							datos.es_duena ? (
+							datos.puede.revisar_altas ? (
 								<Boton chico onClick={() => abrirAlta(alta.autorizacion_id)}>
 									Revisar
 								</Boton>
@@ -151,7 +151,7 @@ function UsuariosYAccesos({ datos }: { datos: Usuarios }) {
 							celda: (fila) => {
 								if (fila.tipo === "soporte") return "Todo lo que hace queda registrado";
 								if (fila.cuenta.es_duena) return "Administradora principal";
-								return datos.es_duena ? (
+								return datos.puede.quitar_acceso ? (
 									<Boton chico variante="peligro" disabled={!conConexion} onClick={() => setQuitar(fila.cuenta)}>
 										Quitar acceso
 									</Boton>
@@ -199,7 +199,7 @@ function DepartamentosDeCadaQuien({ datos }: { datos: Usuarios }) {
 	return (
 		<Seccion
 			titulo="Departamentos de cada quien"
-			{...(datos.es_duena ? {} : { nota: "Solo la dueña los cambia" })}
+			{...(datos.puede.cambiar_departamentos ? {} : { nota: "Solo la dueña los cambia" })}
 			derecha={
 				cuantos === 0 ? undefined : (
 					<span className="inline-flex flex-wrap items-center gap-2">
@@ -242,7 +242,7 @@ function DepartamentosDeCadaQuien({ datos }: { datos: Usuarios }) {
 												etiqueta={`${departamento.nombre} para ${cuenta.nombre}`}
 												sinTexto
 												marcada={tiene(cuenta, departamento.clave)}
-												deshabilitada={!datos.es_duena}
+												deshabilitada={!datos.puede.cambiar_departamentos}
 												alCambiar={() => tocar(cuenta, departamento.clave)}
 											/>
 										),

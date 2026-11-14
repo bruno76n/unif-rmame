@@ -6,8 +6,8 @@
  * Fase 19 · .claude/rules/react.md (regla 5) y docs/interfaz/comunes.md («La página de un departamento», regla 2)
  */
 
-import { useRouter, useRouterState } from "@tanstack/react-router";
-import { useCallback } from "react";
+import { useRouter } from "@tanstack/react-router";
+import { useDireccionDeDepartamento } from "../../comun/direccion.ts";
 
 /** Los parámetros que usan las pantallas de Patronaje. */
 export type ParametroDePatronaje = "grupo" | "buscar" | "seccion" | "cajon" | "id" | "version" | "marcado";
@@ -35,37 +35,19 @@ export const direcciones = {
 };
 
 /**
- * Lee y cambia la dirección.
- * @returns `leer(parametro)`, el cajón abierto con su id, y `ir(cambios, ruta?)`, que cambia esos parámetros (vacío
- * quita uno) y, si se dice, cambia de pestaña sin llevarse los parámetros de la anterior.
+ * Lee y cambia la dirección de Patronaje, con lo común de todos los departamentos.
+ * @returns `leer(parametro)`, el cajón abierto con su id, `ir(cambios, ruta?)`, que cambia esos parámetros (vacío
+ * quita uno) y, si se dice, cambia de pestaña sin llevarse los parámetros de la anterior, `cerrar()` e `irA(direccion)`.
  */
 export function useDireccion() {
 	const router = useRouter();
-	const ruta = useRouterState({ select: (estado) => estado.location.pathname });
-	const busqueda = useRouterState({ select: (estado) => estado.location.searchStr });
-	const leer = useCallback(
-		(parametro: ParametroDePatronaje): string | undefined => new URLSearchParams(busqueda).get(parametro) ?? undefined,
-		[busqueda],
-	);
-	const ir = useCallback(
-		(cambios: Partial<Record<ParametroDePatronaje, string | undefined>>, otraRuta?: string) => {
-			const destino = otraRuta ?? ruta;
-			const parametros = new URLSearchParams(destino === ruta ? busqueda : "");
-			for (const [clave, valor] of Object.entries(cambios)) {
-				if (valor === undefined || valor === "") parametros.delete(clave);
-				else parametros.set(clave, valor);
-			}
-			const texto = parametros.toString();
-			router.history.push(texto === "" ? destino : `${destino}?${texto}`);
-		},
-		[router, ruta, busqueda],
-	);
+	const { leer, ir } = useDireccionDeDepartamento<ParametroDePatronaje>();
 	/**
 	 * El id del cajón abierto, si es ese.
 	 * @param cajon El cajón.
 	 */
 	const abierto = (cajon: CajonDePatronaje): string | undefined => (leer("cajon") === cajon ? leer("id") : undefined);
-	/** Cierra el cajón abierto. */
+	/** Cierra el cajón abierto, con la versión que se veía en él. */
 	const cerrar = () => ir({ cajon: undefined, id: undefined, version: undefined });
 	return { leer, ir, abierto, cerrar, irA: (direccion: string) => router.history.push(direccion) };
 }

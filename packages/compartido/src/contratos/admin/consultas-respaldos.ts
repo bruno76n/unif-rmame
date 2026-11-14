@@ -14,7 +14,9 @@ export const respaldosDeAdmin = definirConsulta({
 		"Respaldos: la recuperación a un punto en el tiempo, el último respaldo semanal, la última restauración probada, cuándo toca la siguiente y las pruebas",
 	entrada: z.object({}),
 	salida: z.object({
-		es_duena: z.boolean().describe("Solo la dueña registra una restauración"),
+		puede_registrar_restauracion: z
+			.boolean()
+			.describe("«Registrar restauración probada» (`admin.registrar_restauracion`): solo la dueña"),
 		recuperacion_dias: z
 			.number()
 			.int()

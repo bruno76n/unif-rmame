@@ -7,6 +7,8 @@
  * proveedores-y-precios.md («Acciones»)
  */
 
+import { zodResolver } from "@hookform/resolvers/zod";
+import { cantidadConUnidad } from "@uniformame/compartido/calculos/compras";
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
 import { plural } from "@uniformame/compartido/calculos/textos";
 import { materialDeCompras } from "@uniformame/compartido/contratos/compras/consultas-cajones";
@@ -16,7 +18,6 @@ import {
 	hacerHabitual,
 	quitarProveedorMaterial,
 } from "@uniformame/compartido/contratos/compras/materiales";
-import { cantidadConUnidad, pesos } from "@uniformame/compartido/contratos/compras/textos";
 import { BarraAvance } from "@uniformame/interfaz/avance/barra-avance";
 import { Boton } from "@uniformame/interfaz/botones/boton";
 import { Campo } from "@uniformame/interfaz/captura/campo";
@@ -24,17 +25,20 @@ import { Cajon } from "@uniformame/interfaz/contenedores/cajon";
 import { Estado } from "@uniformame/interfaz/estados/estado";
 import { EstadoDePantalla } from "@uniformame/interfaz/estados/estado-de-pantalla";
 import { Dato } from "@uniformame/interfaz/pagina/dato";
+import { Seccion, TituloDeBloque } from "@uniformame/interfaz/pagina/seccion";
 import { Tabla } from "@uniformame/interfaz/tablas/tabla";
 import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import type { z } from "zod";
-import { leerFalla, useAccion, useConsulta } from "../../../comun/api.tsx";
+import { z } from "zod";
+import { useAccion, useConsulta } from "../../../comun/api.tsx";
 import { useCierreDelCajon } from "../../../comun/cambios-sin-guardar.tsx";
+import { erroresEnSusCampos, useEnvioConCampos } from "../../../comun/envio.ts";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
+import { montoEnPantalla } from "../../../comun/montos.ts";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { VentanaConMotivo } from "../../../comun/ventana-con-motivo.tsx";
-import { erroresDeLaAccion, numeroEscrito, TituloDeSeccion, validadorDelContrato } from "../comun.tsx";
+import { numeroEscrito } from "../comun.tsx";
 import { useDireccionDeCompras } from "../direccion.ts";
 import { VentanaOtroProveedor } from "../ventanas/otro-proveedor.tsx";
 
@@ -125,18 +129,21 @@ export function CajonMaterial({ materialId, alCerrar }: { materialId: string; al
 	const conConexion = useConConexion();
 	const consulta = useConsulta(materialDeCompras, { material_id: materialId });
 	const [ventana, setVentana] = useState<"otro" | "baja" | { quitar: string; nombre: string } | null>(null);
-	const [choque, setChoque] = useState(false);
-	const guardar = useAccion(guardarMaterial, cambianConElMaterial);
+	const guardar = useEnvioConCampos(guardarMaterial, cambianConElMaterial);
 	const habitual = useAccion(hacerHabitual, cambianConElMaterial);
 	const quitar = useAccion(quitarProveedorMaterial, cambianConElMaterial);
 	const baja = useAccion(darBajaMaterial, cambianConElMaterial);
 	const datos = consulta.data;
-	const formulario = useForm<ComoSePide>({
-		resolver: validadorDelContrato(guardarMaterial.entrada, (valores: ComoSePide) =>
-			datos === undefined ? {} : soloLoQueCambio(datos.material, valores),
+	// «Cómo se pide» se revisa con la entrada de `compras.guardar_material`: lo capturado se vuelve sus datos.
+	const formulario = useForm<ComoSePide, unknown, z.output<typeof guardarMaterial.entrada>>({
+		resolver: zodResolver(
+			z
+				.custom<ComoSePide>()
+				.transform((valores) => (datos === undefined ? {} : soloLoQueCambio(datos.material, valores)))
+				.pipe(guardarMaterial.entrada),
 		),
 	});
-	const { register, handleSubmit, reset, setError, formState, watch } = formulario;
+	const { register, handleSubmit, reset, setError, formState, watch, getValues } = formulario;
 	// Lo guardado con que se compara lo capturado: lo que llegó de la consulta, o lo que se acaba de guardar.
 	const [guardado, setGuardado] = useState<ComoSePide | null>(null);
 	const capturado = watch();
@@ -152,28 +159,21 @@ export function CajonMaterial({ materialId, alCerrar }: { materialId: string; al
 	const { alCerrar: cerrar, pregunta } = useCierreDelCajon(conCambios, alCerrar);
 	const material = datos?.material;
 	const version = material?.version ?? 0;
-	const guardarCambios = handleSubmit((valores) => {
-		if (datos === undefined) return;
-		guardar.mutate(
-			{ datos: guardarMaterial.entrada.parse(soloLoQueCambio(datos.material, valores)), version },
-			{
-				onSuccess: () => {
-					setChoque(false);
-					reset({ ...valores });
-					setGuardado({ ...valores });
-				},
-				onError: (falla) => {
-					// Con choque, se carga lo nuevo y lo capturado se queda.
-					const conChoque = leerFalla(falla).tipo === "choque";
-					setChoque(conChoque);
-					if (conChoque) consulta.refetch();
-					erroresDeLaAccion(falla, valores, setError, {
-						falta_conversion: "factor_tablet",
-						solo_consumible_en_tablet: "unidad_tablet",
-					});
-				},
+	// Con choque, `useEnvioConCampos` vuelve a leer el material y lo capturado se queda.
+	const guardarCambios = handleSubmit(async (datosDeLaAccion) => {
+		const valores = getValues();
+		const salio = await guardar.enviar(
+			{ datos: datosDeLaAccion, version },
+			(campos) => erroresEnSusCampos(campos, formulario),
+			(falla) => {
+				// Los errores de regla que son de un campo van junto a él.
+				if (falla.codigo === "falta_conversion") setError("factor_tablet", { message: falla.mensaje });
+				if (falla.codigo === "solo_consumible_en_tablet") setError("unidad_tablet", { message: falla.mensaje });
 			},
 		);
+		if (salio === undefined) return;
+		reset({ ...valores });
+		setGuardado({ ...valores });
 	});
 	return (
 		<>
@@ -195,7 +195,7 @@ export function CajonMaterial({ materialId, alCerrar }: { materialId: string; al
 						) : null}
 						<Boton
 							variante="principal"
-							disabled={!conConexion || !conCambios || guardar.isPending}
+							disabled={!conConexion || !conCambios || guardar.enviando}
 							onClick={guardarCambios}
 						>
 							Guardar cambios
@@ -209,7 +209,7 @@ export function CajonMaterial({ materialId, alCerrar }: { materialId: string; al
 						const unidad = suyo.unidad;
 						return (
 							<div className="flex flex-col gap-2">
-								{choque ? <EstadoDePantalla tipo="choque" documento={suyo.nombre} /> : null}
+								{guardar.choco ? <EstadoDePantalla tipo="choque" documento={suyo.nombre} /> : null}
 								<div>
 									<Estado {...suyo.estado_armado} abajo={suyo.linea} />
 								</div>
@@ -225,7 +225,7 @@ export function CajonMaterial({ materialId, alCerrar }: { materialId: string; al
 									]}
 								/>
 								<span className="text-etiqueta text-tinta2">{cantidadConUnidad(suyo.hay, unidad)} en bodega</span>
-								<TituloDeSeccion titulo="Comprometido con lotes" />
+								<TituloDeBloque titulo="Comprometido con lotes" />
 								{leidos.comprometido.length === 0 ? (
 									<span className="text-tinta3">Nada comprometido</span>
 								) : (
@@ -238,7 +238,7 @@ export function CajonMaterial({ materialId, alCerrar }: { materialId: string; al
 										</div>
 									))
 								)}
-								<TituloDeSeccion titulo="En camino" />
+								<TituloDeBloque titulo="En camino" />
 								{leidos.en_camino.length === 0 ? (
 									<span className="text-tinta3">Nada en camino</span>
 								) : (
@@ -256,82 +256,83 @@ export function CajonMaterial({ materialId, alCerrar }: { materialId: string; al
 										</button>
 									))
 								)}
-								<TituloDeSeccion
+								<Seccion
 									titulo="Proveedores"
 									derecha={
 										<Boton chico icono={Plus} disabled={!conConexion} onClick={() => setVentana("otro")}>
 											Agregar proveedor
 										</Boton>
 									}
-								/>
-								<Tabla
-									nombre="Proveedores del material"
-									filas={leidos.proveedores}
-									claveDeFila={(proveedor) => proveedor.proveedor_id}
-									columnas={[
-										{
-											clave: "proveedor",
-											encabezado: "Proveedor",
-											celda: (proveedor) => (
-												<span className="flex flex-col">
-													<b className="font-semibold">{proveedor.nombre}</b>
-													<span className="text-etiqueta text-tinta2">
-														Tarda {plural(proveedor.plazo, "día", "días")} ·{" "}
-														{proveedor.ultima_compra === null
-															? "sin compras registradas"
-															: `última compra ${textoDeDiaCorto(proveedor.ultima_compra)}`}
-													</span>
-												</span>
-											),
-										},
-										{
-											clave: "precio",
-											encabezado: "Último precio",
-											alinear: "derecha",
-											celda: (proveedor) => pesos(proveedor.ultimo_precio_centavos),
-										},
-										{
-											clave: "habitual",
-											encabezado: "",
-											alinear: "derecha",
-											celda: (proveedor) =>
-												proveedor.habitual ? (
-													<span className="font-semibold text-tinta2">Habitual</span>
-												) : (
-													<span className="flex justify-end gap-2">
-														<Boton
-															chico
-															disabled={!conConexion || habitual.isPending}
-															onClick={() =>
-																habitual.mutate({
-																	datos: { material_id: materialId, proveedor_id: proveedor.proveedor_id },
-																	version,
-																})
-															}
-														>
-															Hacer habitual
-														</Boton>
-														<Boton
-															chico
-															variante="peligro"
-															disabled={!conConexion}
-															onClick={() => setVentana({ quitar: proveedor.proveedor_id, nombre: proveedor.nombre })}
-														>
-															Ya no lo surte
-														</Boton>
+								>
+									<Tabla
+										nombre="Proveedores del material"
+										filas={leidos.proveedores}
+										claveDeFila={(proveedor) => proveedor.proveedor_id}
+										columnas={[
+											{
+												clave: "proveedor",
+												encabezado: "Proveedor",
+												celda: (proveedor) => (
+													<span className="flex flex-col">
+														<b className="font-semibold">{proveedor.nombre}</b>
+														<span className="text-etiqueta text-tinta2">
+															Tarda {plural(proveedor.plazo, "día", "días")} ·{" "}
+															{proveedor.ultima_compra === null
+																? "sin compras registradas"
+																: `última compra ${textoDeDiaCorto(proveedor.ultima_compra)}`}
+														</span>
 													</span>
 												),
-										},
-									]}
-								/>
-								<TituloDeSeccion titulo={tituloDePrecios(leidos.precios.length)} />
+											},
+											{
+												clave: "precio",
+												encabezado: "Último precio",
+												alinear: "derecha",
+												celda: (proveedor) => montoEnPantalla(proveedor.ultimo_precio_centavos),
+											},
+											{
+												clave: "habitual",
+												encabezado: "",
+												alinear: "derecha",
+												celda: (proveedor) =>
+													proveedor.habitual ? (
+														<span className="font-semibold text-tinta2">Habitual</span>
+													) : (
+														<span className="flex justify-end gap-2">
+															<Boton
+																chico
+																disabled={!conConexion || habitual.isPending}
+																onClick={() =>
+																	habitual.mutate({
+																		datos: { material_id: materialId, proveedor_id: proveedor.proveedor_id },
+																		version,
+																	})
+																}
+															>
+																Hacer habitual
+															</Boton>
+															<Boton
+																chico
+																variante="peligro"
+																disabled={!conConexion}
+																onClick={() => setVentana({ quitar: proveedor.proveedor_id, nombre: proveedor.nombre })}
+															>
+																Ya no lo surte
+															</Boton>
+														</span>
+													),
+											},
+										]}
+									/>
+								</Seccion>
+								<TituloDeBloque titulo={tituloDePrecios(leidos.precios.length)} />
 								{leidos.precios.map((precio) => (
 									<div
 										key={`${precio.fecha}-${precio.proveedor}-${precio.precio_centavos}-${precio.origen}`}
 										className="flex justify-between gap-3 text-etiqueta"
 									>
 										<span>
-											<b className="font-bold">{pesos(precio.precio_centavos)}</b> · {precio.proveedor}
+											<b className="font-bold">{montoEnPantalla(precio.precio_centavos)}</b> · {precio.proveedor}
 											{precio.folio === null ? "" : ` · ${precio.folio}`} · {precio.origen}
 											{precio.cambio === null ? null : (
 												<span className={precio.cambio.ambar ? "font-semibold text-texto-advertencia" : "text-tinta2"}>
@@ -343,7 +344,7 @@ export function CajonMaterial({ materialId, alCerrar }: { materialId: string; al
 										<span className="text-tinta3">{textoDeDiaCorto(precio.fecha)}</span>
 									</div>
 								))}
-								<TituloDeSeccion titulo="Cómo se pide" />
+								<TituloDeBloque titulo="Cómo se pide" />
 								<form className="grid grid-cols-2 gap-3 max-telefono:grid-cols-1" onSubmit={guardarCambios}>
 									<Campo
 										etiqueta={`Mínimo que debe quedar (${unidad})`}

@@ -18,7 +18,7 @@ import { esperar, useAccionDeCatalogo } from "../acciones.ts";
 type DatosDeEscuela = z.input<typeof agregarEscuela.entrada>;
 
 /** Una escuela que se edita. */
-export interface EscuelaQueSeEdita {
+interface EscuelaQueSeEdita {
 	id: string;
 	version: number;
 	nombre: string;

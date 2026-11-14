@@ -9,7 +9,7 @@ import type { ContratoDeAccion } from "@uniformame/compartido/contratos/definir"
 import { type FallaDeAccion, leerFalla, useAccion } from "../../comun/api.tsx";
 
 /** Las consultas que cambian con cualquier acción de Catálogo, y el armazón por la pastilla. */
-export const consultasDeCatalogo = [
+const consultasDeCatalogo = [
 	"admin.armazon",
 	"catalogo.pendientes",
 	"catalogo.productos",

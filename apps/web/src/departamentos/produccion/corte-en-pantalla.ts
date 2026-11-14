@@ -56,7 +56,7 @@ export interface CorteCapturado {
 }
 
 /** Lo que se muestra de una tela. */
-export interface TelaEnPantalla {
+interface TelaEnPantalla {
 	tela: TelaDeLaCaptura;
 	/** Sus rollos puestos, en orden, con lo que se usa de cada uno. */
 	rollos: {

@@ -11,7 +11,6 @@
 
 import { plural } from "@uniformame/compartido/calculos/textos";
 import {
-	columnasDeExistencias,
 	existenciasDeBodega,
 	filtrosDeExistencias,
 	type varianteDeExistencias,
@@ -29,7 +28,7 @@ import { useState } from "react";
 import type { z } from "zod";
 import { usePaginas } from "../../../comun/api.tsx";
 import { useAvisar } from "../../../comun/avisos-de-abajo.tsx";
-import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
+import { SegunPaginas } from "../../../comun/segun-paginas.tsx";
 import { enteros } from "../comun.tsx";
 import { useDireccionDeBodega } from "../direccion.ts";
 
@@ -45,14 +44,8 @@ type Variante = z.infer<typeof varianteDeExistencias>;
 /** Cuántos productos pide cada página. */
 const porPagina = 40;
 
-/** El nombre de cada columna de ubicación. */
-const nombresDeColumnas: Readonly<Record<(typeof columnasDeExistencias)[number], string>> = {
-	ADU: "Aduana",
-	BOD: "Bodega",
-	T1: "Tienda 1",
-	T2: "Tienda 2",
-	TAL: "Taller",
-};
+/** Una columna de ubicación, con el nombre que da la consulta. */
+type ColumnaDeUbicacion = Existencias["columnas"][number];
 
 /** El nombre de cada filtro. */
 const nombresDeFiltros: Readonly<Record<(typeof filtrosDeExistencias)[number], string>> = {
@@ -104,24 +97,6 @@ function Celda({ celda }: { celda: Variante["celdas"][number] }) {
 }
 
 /**
- * Lo que tiene una variante en una ubicación.
- * @param variante La variante.
- * @param codigo La ubicación.
- */
-function piezasEn(variante: Variante, codigo: (typeof columnasDeExistencias)[number]): number {
-	return variante.celdas.find((suya) => suya.codigo === codigo)?.piezas ?? 0;
-}
-
-/**
- * La suma de una columna en las variantes de un producto: va en su renglón.
- * @param producto El producto.
- * @param valor Lo de cada variante.
- */
-function sumaDe(producto: Producto, valor: (variante: Variante) => number): number {
-	return producto.variantes.reduce((total, variante) => total + valor(variante), 0);
-}
-
-/**
  * El nombre del producto en su renglón: la flecha que lo pliega, el nombre y su escuela.
  * @param props El producto, si está abierto y qué hacer al plegarlo.
  */
@@ -157,23 +132,27 @@ function NombreDelProducto({
 }
 
 /**
- * Las columnas de la matriz: en el renglón del producto, la suma de cada una; en el de la variante, lo suyo.
+ * Las columnas de la matriz: en el renglón del producto, la suma de cada una (como la da la consulta); en el de la
+ * variante, lo suyo.
+ * @param ubicaciones Las columnas de ubicación, con su nombre.
  * @param alPlegar Pliega o abre un producto.
  */
-function columnas(alPlegar: (productoId: string) => void): ColumnaDeTabla<Renglon>[] {
+function columnas(
+	ubicaciones: readonly ColumnaDeUbicacion[],
+	alPlegar: (productoId: string) => void,
+): ColumnaDeTabla<Renglon>[] {
 	const numero = (
-		clave: string,
+		clave: "transito" | "en_camino" | "total" | "comprometido" | "libre",
 		encabezado: string,
-		valor: (variante: Variante) => number,
 	): ColumnaDeTabla<Renglon> => ({
 		clave,
 		encabezado,
 		alinear: "derecha",
 		celda: (renglon) =>
 			renglon.tipo === "producto" ? (
-				<Cifra valor={sumaDe(renglon.producto, valor)} negritas />
+				<Cifra valor={renglon.producto.suma[clave]} negritas />
 			) : (
-				<Cifra valor={valor(renglon.variante)} />
+				<Cifra valor={renglon.variante[clave]} />
 			),
 	});
 	return [
@@ -194,38 +173,41 @@ function columnas(alPlegar: (productoId: string) => void): ColumnaDeTabla<Renglo
 					</span>
 				),
 		},
-		...columnasDeExistencias.map(
-			(codigo): ColumnaDeTabla<Renglon> => ({
+		...ubicaciones.map(
+			({ codigo, nombre }): ColumnaDeTabla<Renglon> => ({
 				clave: codigo,
-				encabezado: nombresDeColumnas[codigo],
+				encabezado: nombre,
 				alinear: "derecha",
 				celda: (renglon) => {
 					if (renglon.tipo === "producto") {
-						return <Cifra valor={sumaDe(renglon.producto, (variante) => piezasEn(variante, codigo))} negritas />;
+						const suya = renglon.producto.suma.celdas.find((celda) => celda.codigo === codigo);
+						return <Cifra valor={suya?.piezas ?? 0} negritas />;
 					}
 					const celda = renglon.variante.celdas.find((suya) => suya.codigo === codigo);
 					return celda === undefined ? null : <Celda celda={celda} />;
 				},
 			}),
 		),
-		numero("transito", "Tránsito", (variante) => variante.transito),
-		numero("en_camino", "En camino a aduana", (variante) => variante.en_camino),
-		numero("total", "Total", (variante) => variante.total),
-		numero("comprometido", "Comprometido", (variante) => variante.comprometido),
-		numero("libre", "Libre", (variante) => variante.libre),
+		numero("transito", "Tránsito"),
+		numero("en_camino", "En camino a aduana"),
+		numero("total", "Total"),
+		numero("comprometido", "Comprometido"),
+		numero("libre", "Libre"),
 	];
 }
 
 /**
  * La matriz de existencias: una sola tabla, con el renglón de cada producto (que se pliega y lleva la suma de cada
  * columna) y abajo sus variantes. Tocar el producto lo pliega; tocar una variante abre su cajón.
- * @param props Los productos y qué hacer al tocar una variante.
+ * @param props Los productos, las columnas de ubicación y qué hacer al tocar una variante.
  */
 function MatrizDeExistencias({
 	productos,
+	ubicaciones,
 	alTocar,
 }: {
 	productos: readonly Producto[];
+	ubicaciones: readonly ColumnaDeUbicacion[];
 	alTocar: (varianteId: string) => void;
 }) {
 	const [plegados, setPlegados] = useState<ReadonlySet<string>>(new Set());
@@ -254,7 +236,7 @@ function MatrizDeExistencias({
 				alTocarFila={(renglon) =>
 					renglon.tipo === "producto" ? alPlegar(renglon.producto.producto_id) : alTocar(renglon.variante.variante_id)
 				}
-				columnas={columnas(alPlegar)}
+				columnas={columnas(ubicaciones, alPlegar)}
 			/>
 		</Panel>
 	);
@@ -264,14 +246,18 @@ function MatrizDeExistencias({
  * Lo filtrado, separado por tabuladores, para pegarlo en Excel: Código, Prenda, Escuela, Talla, las cinco ubicaciones,
  * Tránsito, En camino a aduana, Total, Comprometido y Libre.
  * @param productos Todos los productos de lo filtrado.
+ * @param ubicaciones Las columnas de ubicación, con su nombre.
  */
-function paraExcel(productos: readonly Producto[]): { texto: string; filas: number } {
+function paraExcel(
+	productos: readonly Producto[],
+	ubicaciones: readonly ColumnaDeUbicacion[],
+): { texto: string; filas: number } {
 	const encabezado = [
 		"Código",
 		"Prenda",
 		"Escuela",
 		"Talla",
-		...columnasDeExistencias.map((codigo) => nombresDeColumnas[codigo]),
+		...ubicaciones.map((ubicacion) => ubicacion.nombre),
 		"Tránsito",
 		"En camino a aduana",
 		"Total",
@@ -285,7 +271,7 @@ function paraExcel(productos: readonly Producto[]): { texto: string; filas: numb
 				variante.prenda,
 				variante.escuela,
 				variante.talla,
-				...columnasDeExistencias.map((codigo) => variante.celdas.find((celda) => celda.codigo === codigo)?.piezas ?? 0),
+				...ubicaciones.map(({ codigo }) => variante.celdas.find((celda) => celda.codigo === codigo)?.piezas ?? 0),
 				variante.transito,
 				variante.en_camino,
 				variante.total,
@@ -319,7 +305,10 @@ export function ExistenciasDeBodega() {
 			if (siguiente.isError || siguiente.data === undefined) break;
 			todas = siguiente.data.pages;
 		}
-		const { texto, filas } = paraExcel(todas.flatMap((pagina) => pagina.renglones));
+		const { texto, filas } = paraExcel(
+			todas.flatMap((pagina) => pagina.renglones),
+			todas[0]?.columnas ?? [],
+		);
 		try {
 			await navigator.clipboard.writeText(texto);
 			avisar(`${filas} filas copiadas: pégalas en Excel`, "bien");
@@ -378,9 +367,9 @@ export function ExistenciasDeBodega() {
 					</span>
 				)}
 			</div>
-			<SegunConsulta consulta={paginas} renglones={8}>
-				{({ pages }) => {
-					const productos = pages.flatMap((pagina) => pagina.renglones);
+			<SegunPaginas paginas={paginas} renglones={8}>
+				{({ primera: datos, todas, verMas }) => {
+					const productos = todas.flatMap((pagina) => pagina.renglones);
 					if (productos.length === 0) {
 						return (
 							<EstadoDePantalla
@@ -395,16 +384,16 @@ export function ExistenciasDeBodega() {
 					}
 					return (
 						<div className="flex flex-col gap-3">
-							<MatrizDeExistencias productos={productos} alTocar={(varianteId) => abrir("variante", varianteId)} />
-							{paginas.hasNextPage ? (
-								<Boton chico disabled={paginas.isFetchingNextPage} onClick={() => void paginas.fetchNextPage()}>
-									Ver más
-								</Boton>
-							) : null}
+							<MatrizDeExistencias
+								productos={productos}
+								ubicaciones={datos.columnas}
+								alTocar={(varianteId) => abrir("variante", varianteId)}
+							/>
+							{verMas}
 						</div>
 					);
 				}}
-			</SegunConsulta>
+			</SegunPaginas>
 		</div>
 	);
 }

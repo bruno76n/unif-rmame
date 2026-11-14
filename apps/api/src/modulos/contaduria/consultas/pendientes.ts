@@ -9,7 +9,7 @@
  * aplicar y los pagos vencidos sin detener, y va en rojo si uno lleva `contaduria.pago_atrasado_rojo_dias` vencido.
  */
 
-import { textoDeDiaCorto, textoDeMes } from "@uniformame/compartido/calculos/fechas";
+import { textoDeDiaCorto, textoDeMes, zonaDelNegocio } from "@uniformame/compartido/calculos/fechas";
 import { pendientesDeContaduria } from "@uniformame/compartido/contratos/contaduria/consultas-pendientes";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
@@ -364,7 +364,7 @@ const excepcionLeida = z.object({
  */
 async function renglonesDeExcepciones(contexto: ContextoDeConsulta): Promise<Renglon[]> {
 	const { rows } = await contexto.base.execute(sql`SELECT id, version, tipo, descripcion,
-			documento_folio AS documento, (detectada_en AT TIME ZONE 'America/Mexico_City')::date::text AS detectada
+			documento_folio AS documento, (detectada_en AT TIME ZONE ${zonaDelNegocio}::text)::date::text AS detectada
 		FROM excepciones WHERE area = 'contaduria' AND estado = 'por_revisar' ORDER BY detectada_en`);
 	return z
 		.array(excepcionLeida)
@@ -476,8 +476,9 @@ export const consultaPendientesContaduria = implementarConsulta(
 		];
 		const cuantos = (grupo: Renglon["grupo"]) => renglones.filter((renglon) => renglon.grupo === grupo).length;
 		const grupo = parametros.grupo ?? "todos";
-		// Sin «ven sueldos y tarifas», el total de la nómina no se calcula ni viaja.
-		const nominaSinTotal = renglones.some((renglon) => renglon.tipo === "nomina") && !veSueldosYTarifas(contexto.quien);
+		// Sin «ven sueldos y tarifas», el total de la nómina no se calcula ni viaja, y la pestaña Nómina es el candado.
+		const veSueldos = veSueldosYTarifas(contexto.quien);
+		const nominaSinTotal = renglones.some((renglon) => renglon.tipo === "nomina") && !veSueldos;
 		return {
 			resultado: {
 				ventana_dias: ventana,
@@ -492,6 +493,7 @@ export const consultaPendientesContaduria = implementarConsulta(
 					excepciones: cuantos("excepciones"),
 				},
 				cuentas_fabrica: await cuentasDeLaFabrica(contexto),
+				ve_sueldos: veSueldos,
 			},
 			...(nominaSinTotal ? { recortado: ["total_nomina_centavos"] } : {}),
 		};

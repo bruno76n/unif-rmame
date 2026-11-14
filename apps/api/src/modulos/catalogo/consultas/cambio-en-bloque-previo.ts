@@ -16,7 +16,7 @@ import { centavos } from "@uniformame/compartido/tipos/base";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { implementarConsulta } from "../../../nucleo/modulos.ts";
-import { enLista, filas, parametroNumero } from "./comunes.ts";
+import { enLista, filas, parametroNumero } from "./comun.ts";
 
 /** Cuántos renglones enseña la vista previa. */
 const renglonesDeLaVista = 5;

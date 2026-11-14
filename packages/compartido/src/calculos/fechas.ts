@@ -132,12 +132,22 @@ export function textoDeMes(dia: DiaNegocio | string): string {
 
 /**
  * Los días entre hoy y una fecha.
- * @param hoy El día de negocio.
+ * @param hoy El día de negocio, o su texto ISO (como lo manda una consulta a la pantalla).
  * @param fecha La fecha, en ISO.
  * @returns Positivo si la fecha viene después de hoy.
  */
-export function diasHasta(hoy: Temporal.PlainDate, fecha: string): number {
-	return hoy.until(Temporal.PlainDate.from(fecha), { largestUnit: "days" }).days;
+export function diasHasta(hoy: DiaNegocio | string, fecha: string): number {
+	return Temporal.PlainDate.from(hoy).until(Temporal.PlainDate.from(fecha), { largestUnit: "days" }).days;
+}
+
+/**
+ * Un día más unos días naturales, en ISO: «2026-11-12» más 3 es «2026-11-15».
+ * @param dia El día de negocio, o su texto ISO.
+ * @param dias Cuántos días después; negativo, antes.
+ * Existe para las pantallas que reciben días en texto y dibujan sobre ellos (el eje de una línea de tiempo).
+ */
+export function sumarDias(dia: DiaNegocio | string, dias: number): string {
+	return Temporal.PlainDate.from(dia).add({ days: dias }).toString();
 }
 
 /**

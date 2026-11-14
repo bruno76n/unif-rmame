@@ -3,14 +3,19 @@
  * «Rechazar» y «Autorizar») y la tabla de las resueltas, que solo se lee.
  * Fase 19 · docs/interfaz/fabrica/direccion.md («Autorizaciones»)
  *
- * La tarjeta muestra lo que la consulta trae armado: su folio AU- (el que nombra el choque de versión), qué se pide, su detalle, «Lo pidió {persona}», «Pedida por ti» y
- * «{n} días esperando». Si la cuenta no la puede decidir (un alta de usuario sin ser la dueña), los botones van
- * apagados con el porqué.
+ * La tarjeta muestra lo que la consulta trae armado: su folio AU- (el que nombra el choque de versión), qué se pide, su
+ * detalle, «Lo pidió {persona}», «Pedida por ti» y «{n} días esperando». Si la cuenta no la puede decidir (un alta de
+ * usuario sin ser la dueña), los botones van apagados con el porqué.
+ *
+ * Decide con `direccion.decidir_autorizacion` desde Dirección, con `useEnvio` de lo común: «Autorizar» manda la
+ * decisión tal cual (el cliente pide «Confirmar con Google» si hace falta y la repite con su misma clave); «Rechazar»
+ * abre la ventana del motivo. Si la autorización cambió mientras se veía, se dice con su folio y se vuelve a leer.
  */
 
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
 import {
 	type autorizaciones,
+	decidirAutorizacion,
 	nombreDelTipoDeAutorizacion,
 } from "@uniformame/compartido/contratos/direccion/autorizaciones";
 import { Boton } from "@uniformame/interfaz/botones/boton";
@@ -20,12 +25,16 @@ import { Estado } from "@uniformame/interfaz/estados/estado";
 import { EstadoDePantalla } from "@uniformame/interfaz/estados/estado-de-pantalla";
 import { Tabla } from "@uniformame/interfaz/tablas/tabla";
 import { Check } from "lucide-react";
+import { useEffect, useState } from "react";
 import type { z } from "zod";
+import { useEnvio } from "../../../comun/envio.ts";
+import { useConConexion } from "../../../comun/estado-de-la-app.ts";
+import { VentanaRechazar } from "../ventanas/rechazar.tsx";
 
 /** Lo que trae `direccion.autorizaciones`. */
 type Datos = z.infer<typeof autorizaciones.resultado>;
 /** Una autorización que espera. */
-export type PorAutorizar = Datos["por_autorizar"][number];
+type PorAutorizar = Datos["por_autorizar"][number];
 /** Una resuelta. */
 type Resuelta = Datos["resueltas"][number];
 
@@ -36,12 +45,20 @@ const resultado = {
 	cancelada: { texto: "Cancelada", color: "rojo" },
 } as const;
 
+/** Las consultas que cambian al decidir: esta, Pendientes y la pastilla del menú. */
+const cambianAlDecidir = ["direccion.autorizaciones", "direccion.pendientes", "admin.armazon"] as const;
+
 /** Lo que recibe la pestaña. */
-export interface PropsDeAutorizaciones {
+interface PropsDeAutorizaciones {
 	datos: Datos;
 	/** El tipo del filtro, de la dirección; «todas» sin filtro. */
 	filtro: string;
 	alEscogerFiltro: (filtro: string) => void;
+}
+
+/** Lo que recibe la tarjeta de una autorización. */
+interface PropsDeTarjeta {
+	autorizacion: PorAutorizar;
 	/** Si se puede decidir ahora (con conexión y sin otra decisión en camino). */
 	puede: boolean;
 	alAutorizar: (autorizacion: PorAutorizar) => void;
@@ -52,12 +69,7 @@ export interface PropsDeAutorizaciones {
  * La tarjeta de una autorización que espera.
  * @param props La autorización, si se puede decidir ahora y qué hacer con cada botón.
  */
-function TarjetaDeAutorizacion({
-	autorizacion,
-	puede,
-	alAutorizar,
-	alRechazar,
-}: { autorizacion: PorAutorizar } & Pick<PropsDeAutorizaciones, "puede" | "alAutorizar" | "alRechazar">) {
+function TarjetaDeAutorizacion({ autorizacion, puede, alAutorizar, alRechazar }: PropsDeTarjeta) {
 	const apagada = !puede || !autorizacion.puede_decidir;
 	return (
 		<Tarjeta nombre={autorizacion.resumen}>
@@ -120,18 +132,44 @@ function Resultado({ resuelta }: { resuelta: Resuelta }) {
 
 /**
  * La pestaña Autorizaciones.
- * @param props Los datos, el filtro y qué hacer con cada botón.
+ * @param props Los datos, el filtro y qué hacer al escoger otro.
  */
-export function PestanaAutorizaciones({
-	datos,
-	filtro,
-	alEscogerFiltro,
-	puede,
-	alAutorizar,
-	alRechazar,
-}: PropsDeAutorizaciones) {
+export function PestanaAutorizaciones({ datos, filtro, alEscogerFiltro }: PropsDeAutorizaciones) {
+	const decidir = useEnvio(decidirAutorizacion, cambianAlDecidir);
+	const conConexion = useConConexion();
+	const [aRechazar, setARechazar] = useState<PorAutorizar | null>(null);
+	// La última que se mandó: su folio nombra el choque de versión.
+	const [mandada, setMandada] = useState<PorAutorizar | null>(null);
+	const [errorDelMotivo, setErrorDelMotivo] = useState<string | undefined>(undefined);
+
+	/**
+	 * Manda la decisión desde Dirección; si chocó la versión, `useEnvio` vuelve a leer y la ventana se cierra.
+	 * @param autorizacion La autorización.
+	 * @param decision Autorizar o rechazar, con su motivo.
+	 */
+	async function mandar(
+		autorizacion: PorAutorizar,
+		decision: { decision: "autorizar" } | { decision: "rechazar"; motivo: string },
+	) {
+		setMandada(autorizacion);
+		setErrorDelMotivo(undefined);
+		const salio = await decidir.enviar(
+			{ datos: { autorizacion_id: autorizacion.id, desde: "direccion", ...decision }, version: autorizacion.version },
+			(falla) => {
+				if (falla.campos.motivo !== undefined) setErrorDelMotivo(falla.campos.motivo);
+			},
+		);
+		if (salio !== undefined) setARechazar(null);
+	}
+	// Con choque, la ventana se cierra: lo nuevo ya se está leyendo.
+	useEffect(() => {
+		if (decidir.choco) setARechazar(null);
+	}, [decidir.choco]);
+
+	const puede = conConexion && !decidir.enviando;
 	return (
 		<>
+			{decidir.choco && mandada !== null ? <EstadoDePantalla tipo="choque" documento={mandada.folio} /> : null}
 			<Filtros
 				nombre="Filtrar autorizaciones"
 				activo={filtro}
@@ -147,8 +185,8 @@ export function PestanaAutorizaciones({
 							key={autorizacion.id}
 							autorizacion={autorizacion}
 							puede={puede}
-							alAutorizar={alAutorizar}
-							alRechazar={alRechazar}
+							alAutorizar={(una) => void mandar(una, { decision: "autorizar" })}
+							alRechazar={setARechazar}
 						/>
 					))}
 				</div>
@@ -169,6 +207,15 @@ export function PestanaAutorizaciones({
 					]}
 				/>
 			</section>
+			<VentanaRechazar
+				resumen={aRechazar?.resumen ?? null}
+				puede={puede}
+				errorDeLaApi={errorDelMotivo}
+				alCerrar={() => setARechazar(null)}
+				alRechazar={(motivo) => {
+					if (aRechazar !== null) void mandar(aRechazar, { decision: "rechazar", motivo });
+				}}
+			/>
 		</>
 	);
 }

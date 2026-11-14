@@ -7,11 +7,11 @@
  * («La proyección en el paquete compartido»)
  */
 
+import { cantidadConUnidad, condicionDePago, cuandoLlega } from "@uniformame/compartido/calculos/compras";
 import { aMilesimos, aMilesimosConSigno, deMilesimos } from "@uniformame/compartido/calculos/cuenta-material";
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
 import { plural } from "@uniformame/compartido/calculos/textos";
 import { materialPorQue } from "@uniformame/compartido/contratos/compras/consultas-cajones";
-import { cantidadConUnidad, condicionDePago, cuandoLlega } from "@uniformame/compartido/contratos/compras/textos";
 import { Temporal } from "temporal-polyfill";
 import { z } from "zod";
 import { noExiste } from "../../../nucleo/http/errores.ts";

@@ -7,21 +7,21 @@
  * docs/modulos/compras/proyeccion-de-material.md («La proyección en el paquete compartido»)
  */
 
-import { textoDeDia, textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
+import { cantidadConUnidad, errorDeCantidad } from "@uniformame/compartido/calculos/compras";
+import { sumarDias, textoDeDia, textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
 import { type InsumosDeProyeccion, proyectarMaterial } from "@uniformame/compartido/calculos/proyeccion-material";
 import { materialPorQue } from "@uniformame/compartido/contratos/compras/consultas-cajones";
-import { cantidadConUnidad, errorDeCantidad } from "@uniformame/compartido/contratos/compras/textos";
 import { Boton } from "@uniformame/interfaz/botones/boton";
 import { Campo } from "@uniformame/interfaz/captura/campo";
 import { Cajon } from "@uniformame/interfaz/contenedores/cajon";
 import { Estado } from "@uniformame/interfaz/estados/estado";
 import { Grafica } from "@uniformame/interfaz/graficas/grafica";
+import { TituloDeBloque } from "@uniformame/interfaz/pagina/seccion";
 import { ShoppingCart } from "lucide-react";
 import { useState } from "react";
 import type { z } from "zod";
 import { useConsulta } from "../../../comun/api.tsx";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
-import { sumarDias, TituloDeSeccion } from "../comun.tsx";
 import { useDireccionDeCompras } from "../direccion.ts";
 
 /** Lo que regresa la consulta. */
@@ -125,7 +125,7 @@ function ContenidoPorQue({
 			>
 				{datos.resumen}
 			</p>
-			<TituloDeSeccion titulo="La cuenta" />
+			<TituloDeBloque titulo="La cuenta" />
 			<div className="rounded-mediano bg-suave px-4">
 				<RenglonDeLaCuenta texto="Hay en bodega" cantidad={cantidadConUnidad(cuenta.hay_bodega, unidad)} />
 				{Number(cuenta.hay_aduana) === 0 ? null : (
@@ -160,7 +160,7 @@ function ContenidoPorQue({
 				))}
 				<RenglonDeLaCuenta texto="Libre" cantidad={cantidadConUnidad(cuenta.libre, unidad)} fuerte />
 			</div>
-			<TituloDeSeccion titulo="Existencia libre día por día" derecha={<span className="text-tinta3">{unidad}</span>} />
+			<TituloDeBloque titulo="Existencia libre día por día" detalle={unidad} />
 			<Grafica
 				tipo="lineas"
 				periodos={dias.map((dia) => (dia === 0 ? "Hoy" : textoDeDiaCorto(sumarDias(insumos.hoy, dia))))}
@@ -188,7 +188,7 @@ function ContenidoPorQue({
 				{sinPedir.seAcaba === null ? "" : ` · Se acaba · ${textoDeDiaCorto(sinPedir.seAcaba)}`}
 				{` · Llega el pedido · ${textoDeDiaCorto(sinPedir.paraCuando)}`}
 			</span>
-			<TituloDeSeccion titulo="Cuánto se gasta · Por día, según el mes" />
+			<TituloDeBloque titulo="Cuánto se gasta · Por día, según el mes" />
 			<div className="grid grid-cols-4 gap-2 max-telefono:grid-cols-2">
 				{consumo.meses.map((mes) => (
 					<div key={mes.nombre} className="rounded-mediano bg-suave px-3 py-2">
@@ -212,7 +212,7 @@ function ContenidoPorQue({
 				<dt className="font-semibold text-tinta3">Se usa en</dt>
 				<dd className="m-0">{consumo.se_usa_en.length === 0 ? "—" : consumo.se_usa_en.join(", ")}</dd>
 			</dl>
-			<TituloDeSeccion titulo={`Pedido sugerido · ${material.proveedor} · ${material.condicion}`} />
+			<TituloDeBloque titulo={`Pedido sugerido · ${material.proveedor} · ${material.condicion}`} />
 			<Campo
 				etiqueta={`Cantidad por pedir (${unidad})`}
 				inputMode="numeric"

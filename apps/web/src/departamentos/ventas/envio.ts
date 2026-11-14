@@ -8,7 +8,7 @@ import type { ContratoDeAccion } from "@uniformame/compartido/contratos/definir"
 import { useEnvioConCampos } from "../../comun/envio.ts";
 
 /** Todas las consultas de Ventas: una acción de Ventas puede cambiar cualquiera. */
-export const consultasDeVentas = [
+const consultasDeVentas = [
 	"ventas.pendientes",
 	"ventas.pedidos",
 	"ventas.pedido",

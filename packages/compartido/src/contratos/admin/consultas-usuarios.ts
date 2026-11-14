@@ -26,7 +26,14 @@ export const usuariosDeAdmin = definirConsulta({
 		"Usuarios y accesos: las cuentas activas con su ubicación, su última entrada, sus sesiones y sus departamentos, la cuenta de soporte y las altas pendientes",
 	entrada: z.object({}),
 	salida: z.object({
-		es_duena: z.boolean().describe("Si quien ve es la dueña: solo ella cambia accesos"),
+		puede: z
+			.object({
+				crear_cuenta: z.boolean().describe("«Cuenta nueva» (`admin.crear_cuenta`); si no, «Pedir cuenta nueva»"),
+				revisar_altas: z.boolean().describe("«Revisar» en una alta pendiente (el cajón Alta de usuario)"),
+				quitar_acceso: z.boolean().describe("«Quitar acceso» (`admin.quitar_acceso`)"),
+				cambiar_departamentos: z.boolean().describe("Las casillas de la matriz (`admin.cambiar_departamentos`)"),
+			})
+			.describe("Lo que quien ve puede hacer aquí: solo la dueña cambia accesos"),
 		cuentas: z.array(
 			cuentaParaVer.extend({
 				version: z.number().int().describe("La versión de la cuenta, para cambiarla"),
@@ -59,7 +66,9 @@ export const cuentaNuevaDeAdmin = definirConsulta({
 		"Las opciones de «Cuenta nueva»: las personas activas de Personal sin cuenta que no son de tienda, y los departamentos que se dan en un alta",
 	entrada: z.object({}),
 	salida: z.object({
-		es_duena: z.boolean().describe("La dueña da la cuenta; las demás la piden"),
+		puede_crear_cuenta: z
+			.boolean()
+			.describe("Si da la cuenta (`admin.crear_cuenta`, la dueña); si no, la pide (`admin.pedir_cuenta`)"),
 		personas: z.array(
 			z.object({
 				persona_id: z.uuid(),

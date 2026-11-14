@@ -108,6 +108,7 @@ Todos viven en `packages/interfaz`, cada familia en su carpeta (`botones/`, `cap
 | `BotonConCifra` | Arriba del cuerpo del cajón, lleva a lo relacionado en otro departamento |
 | `Aviso` | El mensaje de abajo: oscuro, con texto blanco y un ícono redondo que dice cómo salió, verde con palomita (#3FCB7E) o ámbar con «!» (`estado-ambar`) |
 | `Boton` | Principal (negro), secundario (blanco con borde), fantasma (solo texto) y de peligro (texto rojo) |
+| `Enlace` | Un botón con forma de enlace, en el color de la marca y en negritas, subrayado al pasar: abre algo sin salir de la pantalla (un folio, «Editar datos») o hace una acción chica dentro de un texto («Llenar desde una talla») |
 | `Campo` · `Selector` · `Interruptor` · `Casilla` · `Filtros` | La captura, con su etiqueta, su mensaje de error abajo y su foco |
 | `Hilo` | Las seis paradas del pedido con sus piezas y su línea corta |
 | `BarraAvance` | La barra de avance por etapa, en los colores de cada etapa |

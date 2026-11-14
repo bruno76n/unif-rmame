@@ -6,11 +6,11 @@
  * 4 a 12)
  */
 
+import { cantidadConUnidad } from "@uniformame/compartido/calculos/compras";
 import { deMilesimos } from "@uniformame/compartido/calculos/cuenta-material";
 import { diaDeNegocio, textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
 import { plural } from "@uniformame/compartido/calculos/textos";
 import { ordenDeCompra } from "@uniformame/compartido/contratos/compras/consultas-cajones";
-import { cantidadConUnidad } from "@uniformame/compartido/contratos/compras/textos";
 import { Temporal } from "temporal-polyfill";
 import { tieneDepartamento } from "../../../nucleo/acceso/quien.ts";
 import { nombreDeCuenta } from "../../../nucleo/acciones/comunes.ts";

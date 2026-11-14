@@ -4,15 +4,15 @@
  * Fase 19 · docs/interfaz/fabrica/catalogo.md («Ventanas») y docs/modulos/catalogo/variantes-codigos-y-etiquetas.md
  */
 
+import { plural } from "@uniformame/compartido/calculos/textos";
 import { imprimirEtiquetas } from "@uniformame/compartido/contratos/catalogo/etiquetas";
 import { Boton } from "@uniformame/interfaz/botones/boton";
 import { Ventana } from "@uniformame/interfaz/contenedores/ventana";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
 import { esperar, useAccionDeCatalogo } from "../acciones.ts";
-import { cuantos } from "../textos.ts";
 
 /** Un producto escogido, con cuántas etiquetas lleva. */
-export interface ProductoConEtiquetas {
+interface ProductoConEtiquetas {
 	id: string;
 	nombre: string;
 	etiquetables: number;
@@ -48,10 +48,10 @@ export function VentanaEtiquetasDeProductos({
 		<Ventana
 			abierta={abierta}
 			alCerrar={alCerrar}
-			titulo={`Etiquetas de ${cuantos(productos.length, "producto", "productos")}`}
+			titulo={`Etiquetas de ${plural(productos.length, "producto", "productos")}`}
 			accion={
 				<Boton disabled={etiquetas === 0 || accion.isPending || !conConexion} onClick={() => void generar()}>
-					{`Generar PDF · ${cuantos(etiquetas, "etiqueta", "etiquetas")}`}
+					{`Generar PDF · ${plural(etiquetas, "etiqueta", "etiquetas")}`}
 				</Boton>
 			}
 		>

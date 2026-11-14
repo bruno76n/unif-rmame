@@ -6,7 +6,7 @@
  * Fase 19 · docs/interfaz/fabrica/bodega.md («Excepciones») y docs/modulos/inventario/excepciones.md
  */
 
-import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
+import { textoDeDiaCorto, zonaDelNegocio } from "@uniformame/compartido/calculos/fechas";
 import { excepcionesDeBodega } from "@uniformame/compartido/contratos/inventario/bodega";
 import { sql } from "drizzle-orm";
 import { Temporal } from "temporal-polyfill";
@@ -40,7 +40,7 @@ const deLaExcepcion = z.object({
  * @param momento El momento en ISO.
  */
 function horaYFecha(momento: string): string {
-	const enMexico = Temporal.Instant.from(momento).toZonedDateTimeISO("America/Mexico_City");
+	const enMexico = Temporal.Instant.from(momento).toZonedDateTimeISO(zonaDelNegocio);
 	return `${enMexico.toPlainTime().toString().slice(0, 5)} · ${textoDeDiaCorto(enMexico.toPlainDate())}`;
 }
 

@@ -6,10 +6,9 @@
  * Las cantidades llegan como texto decimal (como las guarda la base) o en milésimos; el dinero, en centavos.
  */
 
-import { aMilesimosConSigno } from "../../calculos/cuenta-material.ts";
-import { centavosATexto } from "../../calculos/dinero.ts";
-import { plural } from "../../calculos/textos.ts";
-import { centavos } from "../../tipos/base.ts";
+import { aMilesimosConSigno } from "./cuenta-material.ts";
+import { enPesos } from "./dinero.ts";
+import { plural } from "./textos.ts";
 
 /** El separador de miles de México. */
 const miles = new Intl.NumberFormat("es-MX", { maximumFractionDigits: 0 });
@@ -38,15 +37,6 @@ export function cantidadConUnidad(cantidad: bigint | string, unidad: string): st
 	const texto = cifraEnTexto(cantidad);
 	const enSingular = texto === "1" && unidad.length > 3 && unidad.endsWith("s") ? unidad.slice(0, -1) : unidad;
 	return `${texto} ${enSingular}`;
-}
-
-/**
- * Un precio o un importe de compra: «$78», «$0.38», «$46,200»; «—» si no llegó (el servidor lo recortó).
- * @param monto Los centavos.
- */
-export function pesos(monto: number | null | undefined): string {
-	if (monto === null || monto === undefined) return "—";
-	return centavosATexto(centavos(monto), { conCentavos: monto % 100 !== 0 });
 }
 
 /**
@@ -95,7 +85,7 @@ export function cambioDePrecio(
 	if (anterior === null || anterior === undefined || anterior <= 0 || anterior === nuevo) return null;
 	const cambio = (Math.abs(nuevo - anterior) * 100) / anterior;
 	return {
-		texto: `${nuevo > anterior ? "Sube" : "Baja"} ${Math.round(cambio)} % · antes ${pesos(anterior)}`,
+		texto: `${nuevo > anterior ? "Sube" : "Baja"} ${Math.round(cambio)} % · antes ${enPesos(anterior)}`,
 		ambar: cambio >= umbral,
 	};
 }

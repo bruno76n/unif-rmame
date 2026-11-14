@@ -10,7 +10,7 @@
  * `produccion.lote_para_aduana` y `calidad.aprobadas_del_lote`.
  */
 
-import { diasHasta, textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
+import { diasHasta, textoDeDiaCorto, zonaDelNegocio } from "@uniformame/compartido/calculos/fechas";
 import { plural } from "@uniformame/compartido/calculos/textos";
 import type { coloresDeEstado } from "@uniformame/compartido/contratos/estados";
 import type { loQueAbre, partidaEnAduana } from "@uniformame/compartido/contratos/inventario/aduana";
@@ -142,7 +142,7 @@ export async function leerEnAduana(contexto: ContextoDeAccion, soloTraspaso?: st
 	SELECT t.id, t.folio, t.version, t.tipo, t.estado, t.traspaso_padre_id IS NOT NULL AS es_hijo, t.destino_externo,
 		ud.codigo AS destino_codigo, ud.nombre AS destino_nombre, uo.nombre AS origen_nombre,
 		coalesce(pa.llego_aduana_en, t.llego_aduana_en, t.creado_en)::text AS llego,
-		(coalesce(pa.llego_aduana_en, t.llego_aduana_en, t.creado_en) AT TIME ZONE 'America/Mexico_City')::date::text AS llego_dia,
+		(coalesce(pa.llego_aduana_en, t.llego_aduana_en, t.creado_en) AT TIME ZONE ${zonaDelNegocio}::text)::date::text AS llego_dia,
 		t.fecha_salida_esperada::text AS salida, pa.color,
 		CASE WHEN t.estado = 'en_aduana' THEN pa.sale END AS sale,
 		t.etiquetas_impresas_en IS NOT NULL AS impresas, t.orden_compra_id, t.pedido_id,
@@ -190,6 +190,25 @@ export async function leerEnAduana(contexto: ContextoDeAccion, soloTraspaso?: st
 		${solo}
 	ORDER BY llego, t.folio`);
 	return z.array(filaEnAduana).parse(rows);
+}
+
+/** El color de cada destino, como en la muestra: el punto de «Va a» y la orilla de su carril. */
+const coloresDeDestino: Readonly<Record<string, Color>> = {
+	T1: "azul",
+	T2: "morado",
+	linea: "verde-azulado",
+	externos: "naranja",
+	calidad: "rojo",
+	BOD: "gris",
+};
+
+/**
+ * El color de un destino; uno que no tiene el suyo, en gris.
+ * @param carril El destino: el código de su ubicación o uno de fuera.
+ * Vive aquí para que las pantallas de Aduana no escriban códigos de ubicación: pintan el color que les llega.
+ */
+export function colorDelDestino(carril: string): Color {
+	return coloresDeDestino[carril] ?? "gris";
 }
 
 /** El destino de lo que está en aduana: su carril y cómo se llama. */
@@ -340,6 +359,7 @@ export async function partidaDe(contexto: ContextoDeAccion, fila: FilaEnAduana):
 		piezas: fila.piezas,
 		carril,
 		destino,
+		color_destino: colorDelDestino(carril),
 		llego: textoDeDiaCorto(fila.llego_dia),
 		antiguedad: { texto: antiguedadEscrita(dias), color: fila.color ?? "verde" },
 		sale: fila.sale === "hoy" ? "Sale hoy" : fila.sale === "manana" ? "Sale mañana" : null,
@@ -525,7 +545,7 @@ export async function leerEnCamino(
 	const { rows } = await contexto.transaccion.execute(sql`
 	SELECT t.id, t.folio, t.tipo, t.estado, uo.tipo AS origen_tipo, uo.nombre AS origen_nombre, t.destino_externo,
 		ud.codigo AS destino_codigo, ud.nombre AS destino_nombre,
-		(t.enviado_en AT TIME ZONE 'America/Mexico_City')::date::text AS enviado_dia,
+		(t.enviado_en AT TIME ZONE ${zonaDelNegocio}::text)::date::text AS enviado_dia,
 		coalesce(tnc.nombre, tpe.nombre) AS cliente, nc.folio AS nota_credito, pe.folio AS pedido,
 		x.prendas, coalesce(x.piezas, 0) AS piezas, x.materiales, x.pedidos_linea
 	FROM traspasos t

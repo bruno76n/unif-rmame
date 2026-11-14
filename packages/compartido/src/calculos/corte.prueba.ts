@@ -8,6 +8,7 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import {
+	cadaTelaAlcanza,
 	destinoDeLoQueQuedo,
 	laTelaAlcanza,
 	porcentajeSobreElPatron,
@@ -106,5 +107,35 @@ describe("Lo que quedó va a rollo, retazo o merma con la frontera, y el % contr
 		expect(porcentajeSobreElPatron(m(214), m(200))).toBe(7);
 		expect(porcentajeSobreElPatron(m(190), m(200))).toBe(-5);
 		expect(porcentajeSobreElPatron(m(214), 0n)).toBe(0);
+	});
+});
+
+describe("Entrega al corte: cada tela alcanza con sus propios rollos (docs/interfaz/fabrica/bodega.md, «Entrega al corte»)", () => {
+	it("con dos telas, lo que sobra de la principal no tapa lo que falta de la combinación", () => {
+		const principal = { pide: m(100), rollos: [{ rolloId: "R-1", milesimos: m(150) }] };
+		const combinacion = { pide: m(30), rollos: [{ rolloId: "R-2", milesimos: m(10) }] };
+		// Juntas suman 160 m contra 130 m: la suma diría que alcanza, pero a la combinación le faltan 20 m.
+		expect(cadaTelaAlcanza([principal, combinacion])).toBe(false);
+		expect(cadaTelaAlcanza([principal, { ...combinacion, rollos: [{ rolloId: "R-3", milesimos: m(30) }] }])).toBe(true);
+	});
+
+	it("una tela sin rollos marcados no alcanza", () => {
+		expect(cadaTelaAlcanza([{ pide: m(30), rollos: [] }])).toBe(false);
+	});
+
+	it("con telas al azar, si alcanza, lo marcado de cada tela cubre lo suyo y la suma cubre lo que piden todas", () => {
+		fc.assert(
+			fc.property(fc.array(fc.tuple(rollosAlAzar, pideAlAzar), { minLength: 1, maxLength: 4 }), (pares) => {
+				const telas = pares.map(([rollos, pide]) => ({ pide, rollos }));
+				const deLaTela = (rollos: readonly RolloDelCorte[]) =>
+					rollos.reduce((suma, rollo) => suma + rollo.milesimos, 0n);
+				const cadaUna = telas.every((tela) => deLaTela(tela.rollos) >= tela.pide);
+				expect(cadaTelaAlcanza(telas)).toBe(cadaUna);
+				if (cadaUna) {
+					const marcados = telas.reduce((suma, tela) => suma + deLaTela(tela.rollos), 0n);
+					expect(marcados >= telas.reduce((suma, tela) => suma + tela.pide, 0n)).toBe(true);
+				}
+			}),
+		);
 	});
 });

@@ -13,6 +13,7 @@ import {
 	cuentaDeMaterial,
 	deMilesimos,
 	type LineaDeLaCuenta,
+	sumaDeLoEscrito,
 } from "./cuenta-material.ts";
 
 /** Una línea por talla de tela principal. */
@@ -128,5 +129,12 @@ describe("los milésimos con signo van y vuelven como los guarda la base", () =>
 		expect(deMilesimos(-5_250n)).toBe("-5.250");
 		expect(deMilesimos(1_700_000n)).toBe("1700.000");
 		expect([100_000n, 12_500n, -250n, 0n].map(cantidadEnTexto)).toEqual(["100", "12.5", "-0.25", "0"]);
+	});
+});
+
+describe("lo que se va escribiendo se suma en milésimos, sin decimales de punto flotante (docs/interfaz/fabrica/aduana.md, «Recibir material»)", () => {
+	it("suma los metros escritos, con punto o coma, y lo que todavía no es número no suma", () => {
+		expect(sumaDeLoEscrito(["92.5", "88,5", "", "abc", "0.1", "0.2"])).toBe(181_300n);
+		expect(cantidadEnTexto(sumaDeLoEscrito(["0.1", "0.2"]))).toBe("0.3");
 	});
 });

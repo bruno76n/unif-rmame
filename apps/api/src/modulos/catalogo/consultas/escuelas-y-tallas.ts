@@ -12,7 +12,7 @@ import { escuelasYTallas } from "@uniformame/compartido/contratos/catalogo/panta
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { implementarConsulta } from "../../../nucleo/modulos.ts";
-import { filas } from "./comunes.ts";
+import { filas } from "./comun.ts";
 
 /** Una medida de un tipo, por talla, como la lee la base. */
 const medidaLeida = z.object({

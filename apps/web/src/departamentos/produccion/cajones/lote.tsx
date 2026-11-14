@@ -27,10 +27,11 @@ import { useState } from "react";
 import type { z } from "zod";
 import { consultar, leerFalla, useAccion, useConsulta } from "../../../comun/api.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
+import { montoEnPantalla } from "../../../comun/montos.ts";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { useTieneDepartamento } from "../../../comun/tiene-departamento.ts";
-import { enOtroDepartamento } from "../cuenta.ts";
 import { rutasDeProduccion, useDireccion } from "../direccion.ts";
+import { enOtroDepartamento } from "../enlaces.ts";
 import { loQueCambiaEnProduccion } from "../invalidar.ts";
 import { ParaQuien } from "../piezas.tsx";
 import { VentanaCancelarRegistro } from "../ventanas/cancelar-registro.tsx";
@@ -314,8 +315,7 @@ function RegistrosDeLaTablet({ lote }: { lote: Lote }) {
 									clave: "tarifa",
 									encabezado: "Tarifa",
 									alinear: "derecha" as const,
-									celda: (registro: Registro) =>
-										registro.tarifa_centavos == null ? "—" : enPesos(registro.tarifa_centavos),
+									celda: (registro: Registro) => montoEnPantalla(registro.tarifa_centavos),
 								},
 							]
 						: []),
@@ -417,8 +417,7 @@ function RollosUsados({ rollos }: { rollos: NonNullable<Lote["rollos"]> }) {
 									clave: "precio",
 									encabezado: "Precio por metro",
 									alinear: "derecha" as const,
-									celda: (rollo: Rollo) =>
-										rollo.costo_metro_centavos === undefined ? "—" : enPesos(rollo.costo_metro_centavos),
+									celda: (rollo: Rollo) => montoEnPantalla(rollo.costo_metro_centavos),
 								},
 							]
 						: []),
@@ -456,7 +455,7 @@ function CostoDelLote({ lote }: { lote: Lote }) {
 						: [
 								{
 									concepto: "Mano de obra",
-									deDonde: `${costo.mano_de_obra.operaciones} operaciones · ${costo.mano_de_obra.por_pieza_centavos === undefined ? "—" : enPesos(costo.mano_de_obra.por_pieza_centavos)} por pieza${costo.mano_de_obra.estimada ? " · estimada" : ""}`,
+									deDonde: `${costo.mano_de_obra.operaciones} operaciones · ${montoEnPantalla(costo.mano_de_obra.por_pieza_centavos)} por pieza${costo.mano_de_obra.estimada ? " · estimada" : ""}`,
 									importe: costo.mano_de_obra.importe_centavos,
 								},
 							]),
@@ -479,7 +478,7 @@ function CostoDelLote({ lote }: { lote: Lote }) {
 									clave: "importe",
 									encabezado: "Importe",
 									alinear: "derecha",
-									celda: (renglon) => (renglon.importe === undefined ? "—" : enPesos(renglon.importe)),
+									celda: (renglon) => montoEnPantalla(renglon.importe),
 									...(costo.total_centavos === undefined ? {} : { suma: enPesos(costo.total_centavos) }),
 								},
 							]}

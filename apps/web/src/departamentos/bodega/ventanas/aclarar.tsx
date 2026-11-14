@@ -19,7 +19,7 @@ import { useState } from "react";
 import type { z } from "zod";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
 import { useLargoMinimoDelMotivo } from "../../../comun/ventana-con-motivo.tsx";
-import { useEnvio } from "../comun.tsx";
+import { useEnvio } from "../envio.ts";
 
 /** Una diferencia por aclarar. */
 type PorAclarar = z.infer<typeof diferenciaPorAclarar>;

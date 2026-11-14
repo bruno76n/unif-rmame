@@ -19,6 +19,7 @@ import type { z } from "zod";
 import { usePaginas } from "../../../comun/api.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
 import { montoEnPantalla } from "../../../comun/montos.ts";
+import { SegunPaginas } from "../../../comun/segun-paginas.tsx";
 import { RenglonDeLista } from "../comun.tsx";
 import { busquedaDeContaduria, useDireccionDeContaduria } from "../direccion.ts";
 import { type ACancelar, VentanaCancelar } from "../ventanas/cancelar.tsx";
@@ -99,7 +100,6 @@ export function PestanaTerceros() {
 	};
 	const paginas = usePaginas(tercerosDeContaduria, parametros);
 	const [primera] = paginas.data?.pages ?? [];
-	const terceros = paginas.data?.pages.flatMap((pagina) => pagina.renglones) ?? [];
 	return (
 		<>
 			<div className="flex flex-wrap items-end gap-3">
@@ -129,51 +129,48 @@ export function PestanaTerceros() {
 				</Boton>
 			</div>
 			<Panel>
-				{paginas.isPending ? (
-					<EstadoDePantalla tipo="cargando" renglones={6} />
-				) : paginas.isError ? (
-					<EstadoDePantalla tipo="error" alReintentar={() => void paginas.refetch()} />
-				) : terceros.length === 0 ? (
-					<EstadoDePantalla tipo="vacio" texto="Sin terceros con esos filtros" />
-				) : (
-					<div className="flex flex-col gap-3">
-						<Tabla
-							nombre="Terceros"
-							filas={terceros}
-							claveDeFila={(tercero) => tercero.tercero_id}
-							alTocarFila={(tercero) => abrir("tercero", tercero.tercero_id)}
-							columnas={[
-								{ clave: "tercero", encabezado: "Tercero", celda: (tercero) => <b>{tercero.nombre}</b> },
-								{ clave: "relacion", encabezado: "Relación", celda: (tercero) => tercero.relacion.join(" · ") },
-								{
-									clave: "por_cobrar",
-									encabezado: "Por cobrar",
-									alinear: "derecha",
-									celda: (tercero) =>
-										tercero.por_cobrar_centavos === 0 ? "—" : montoEnPantalla(tercero.por_cobrar_centavos),
-								},
-								{
-									clave: "por_pagar",
-									encabezado: "Por pagar",
-									alinear: "derecha",
-									celda: (tercero) =>
-										tercero.por_pagar_centavos === 0 ? "—" : montoEnPantalla(tercero.por_pagar_centavos),
-								},
-								{
-									clave: "neto",
-									encabezado: "Saldo neto",
-									alinear: "derecha",
-									celda: (tercero) => <SaldoNeto neto={tercero.neto} />,
-								},
-							]}
-						/>
-						{paginas.hasNextPage ? (
-							<Boton chico variante="secundario" onClick={() => void paginas.fetchNextPage()}>
-								Ver más
-							</Boton>
-						) : null}
-					</div>
-				)}
+				<SegunPaginas paginas={paginas} renglones={6}>
+					{({ todas, verMas }) => {
+						const terceros = todas.flatMap((pagina) => pagina.renglones);
+						return terceros.length === 0 ? (
+							<EstadoDePantalla tipo="vacio" texto="Sin terceros con esos filtros" />
+						) : (
+							<div className="flex flex-col gap-3">
+								<Tabla
+									nombre="Terceros"
+									filas={terceros}
+									claveDeFila={(tercero) => tercero.tercero_id}
+									alTocarFila={(tercero) => abrir("tercero", tercero.tercero_id)}
+									columnas={[
+										{ clave: "tercero", encabezado: "Tercero", celda: (tercero) => <b>{tercero.nombre}</b> },
+										{ clave: "relacion", encabezado: "Relación", celda: (tercero) => tercero.relacion.join(" · ") },
+										{
+											clave: "por_cobrar",
+											encabezado: "Por cobrar",
+											alinear: "derecha",
+											celda: (tercero) =>
+												tercero.por_cobrar_centavos === 0 ? "—" : montoEnPantalla(tercero.por_cobrar_centavos),
+										},
+										{
+											clave: "por_pagar",
+											encabezado: "Por pagar",
+											alinear: "derecha",
+											celda: (tercero) =>
+												tercero.por_pagar_centavos === 0 ? "—" : montoEnPantalla(tercero.por_pagar_centavos),
+										},
+										{
+											clave: "neto",
+											encabezado: "Saldo neto",
+											alinear: "derecha",
+											celda: (tercero) => <SaldoNeto neto={tercero.neto} />,
+										},
+									]}
+								/>
+								{verMas}
+							</div>
+						);
+					}}
+				</SegunPaginas>
 			</Panel>
 			{primera === undefined || primera.compensaciones.length === 0 ? null : (
 				<Panel titulo="Compensaciones">

@@ -6,7 +6,7 @@
  * y 9)
  */
 
-import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
+import { textoDeDiaCorto, zonaDelNegocio } from "@uniformame/compartido/calculos/fechas";
 import { plural } from "@uniformame/compartido/calculos/textos";
 import { enTransito } from "@uniformame/compartido/contratos/inventario/aduana";
 import { sql } from "drizzle-orm";
@@ -54,7 +54,7 @@ export const consultaEnTransito = implementarConsulta(enTransito, async (context
 		const limite = parametros.limite ?? limitePorOmision;
 		const { rows } = await accion.transaccion.execute(sql`
 			SELECT d.id, d.folio, d.version, d.recordatorios,
-				(d.despachado_en AT TIME ZONE 'America/Mexico_City')::date::text AS salio_dia,
+				(d.despachado_en AT TIME ZONE ${zonaDelNegocio}::text)::date::text AS salio_dia,
 				u.nombre AS destino, u.tipo AS destino_tipo, (u.tipo = 'tienda' AND u.existencia_desde IS NULL) AS sin_caja,
 				tc.nombre AS cliente, nv.id AS nota_id, nv.folio AS nota, nv.version AS nota_version
 			FROM despachos d LEFT JOIN ubicaciones u ON u.id = d.destino_ubicacion_id

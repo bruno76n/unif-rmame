@@ -8,6 +8,7 @@
  * cuenta de la pestaña.
  */
 
+import { zonaDelNegocio } from "@uniformame/compartido/calculos/fechas";
 import { plural, variacion } from "@uniformame/compartido/calculos/textos";
 import { pendientesLinea } from "@uniformame/compartido/contratos/linea/consultas";
 import { sql } from "drizzle-orm";
@@ -85,11 +86,11 @@ async function reglaDeRojo(contexto: ContextoDeConsulta): Promise<(pedido: Pedid
 async function ventasPorDia(contexto: ContextoDeConsulta): Promise<number[]> {
 	const desde = contexto.diaDeNegocio.subtract({ days: diasDeLaSerie - 1 });
 	const { rows } =
-		await contexto.base.execute(sql`SELECT (pagado_en AT TIME ZONE 'America/Mexico_City')::date::text AS dia,
+		await contexto.base.execute(sql`SELECT (pagado_en AT TIME ZONE ${zonaDelNegocio}::text)::date::text AS dia,
 			sum(total_centavos) AS total
 		FROM pedidos_linea
 		WHERE pagado_en IS NOT NULL AND estado <> 'cancelado'
-			AND (pagado_en AT TIME ZONE 'America/Mexico_City')::date >= ${desde.toString()}::date
+			AND (pagado_en AT TIME ZONE ${zonaDelNegocio}::text)::date >= ${desde.toString()}::date
 		GROUP BY 1`);
 	const porDia = new Map(
 		z

@@ -29,6 +29,7 @@ import type { z } from "zod";
 import { usePaginas } from "../../../comun/api.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
 import { montoEnPantalla } from "../../../comun/montos.ts";
+import { SegunPaginas } from "../../../comun/segun-paginas.tsx";
 import type { CuentaDeLaFabrica } from "../comun.tsx";
 import { useDireccionDeContaduria } from "../direccion.ts";
 import { useEnvio } from "../envio.ts";
@@ -219,7 +220,6 @@ function FacturasDeProveedor({ alCancelar }: { alCancelar: (cancelar: ACancelar)
 	const conConexion = useConConexion();
 	const [notaCredito, setNotaCredito] = useState<Factura | undefined>(undefined);
 	const paginas = usePaginas(conciliacionFacturasDeContaduria, {});
-	const facturas = paginas.data?.pages.flatMap((pagina) => pagina.renglones) ?? [];
 	return (
 		<Panel
 			titulo="Facturas de proveedor"
@@ -229,122 +229,121 @@ function FacturasDeProveedor({ alCancelar }: { alCancelar: (cancelar: ACancelar)
 				</Boton>
 			}
 		>
-			{paginas.isPending ? (
-				<EstadoDePantalla tipo="cargando" renglones={4} />
-			) : paginas.isError ? (
-				<EstadoDePantalla tipo="error" alReintentar={() => void paginas.refetch()} />
-			) : facturas.length === 0 ? (
-				<EstadoDePantalla tipo="vacio" texto="Sin facturas de proveedor" />
-			) : (
-				<div className="flex flex-col gap-3">
-					<Tabla
-						nombre="Facturas de proveedor"
-						filas={facturas}
-						claveDeFila={(factura) => factura.clave}
-						columnas={[
-							{
-								clave: "factura",
-								encabezado: "Factura",
-								celda: (factura) => (
-									<DosRenglones
-										arriba={
-											<b>{factura.folio === null ? "—" : `${factura.folio} · ${factura.folio_proveedor ?? ""}`}</b>
-										}
-										abajo={factura.ordenes}
-									/>
-								),
-							},
-							{
-								clave: "proveedor",
-								encabezado: "Proveedor",
-								celda: (factura) => (
-									<DosRenglones
-										arriba={factura.proveedor}
-										abajo={
-											factura.motivo === null ? undefined : <TextoConTono tono="rojo">{factura.motivo}</TextoConTono>
-										}
-									/>
-								),
-							},
-							{
-								clave: "orden",
-								encabezado: "Orden",
-								celda: (factura) => <PuntoDePunta punta={factura.puntas.orden} />,
-							},
-							{
-								clave: "recepcion",
-								encabezado: "Recepción",
-								celda: (factura) => <PuntoDePunta punta={factura.puntas.recepcion} />,
-							},
-							{
-								clave: "punta_factura",
-								encabezado: "Factura",
-								celda: (factura) => <PuntoDePunta punta={factura.puntas.factura} />,
-							},
-							{
-								clave: "total",
-								encabezado: "Total",
-								alinear: "derecha",
-								celda: (factura) => montoEnPantalla(factura.total_centavos),
-							},
-							{
-								clave: "estado",
-								encabezado: "Estado",
-								celda: (factura) => (
-									<span className="flex flex-col gap-1">
-										<Estado texto={factura.estado.texto} color={factura.estado.color} />
-										{factura.autorizada === null ? null : factura.autorizada.aclarada_con !== null ? (
-											<span className="text-etiqueta">Aclarada con {factura.autorizada.aclarada_con}</span>
-										) : (
-											<>
-												<span className="text-etiqueta">
-													Se paga {montoEnPantalla(factura.autorizada.monto_autorizado_centavos)} ·{" "}
-													{montoEnPantalla(factura.autorizada.diferencia_centavos)} por aclarar con el proveedor
-												</span>
+			<SegunPaginas paginas={paginas} renglones={4}>
+				{({ todas, verMas }) => {
+					const facturas = todas.flatMap((pagina) => pagina.renglones);
+					return facturas.length === 0 ? (
+						<EstadoDePantalla tipo="vacio" texto="Sin facturas de proveedor" />
+					) : (
+						<div className="flex flex-col gap-3">
+							<Tabla
+								nombre="Facturas de proveedor"
+								filas={facturas}
+								claveDeFila={(factura) => factura.clave}
+								columnas={[
+									{
+										clave: "factura",
+										encabezado: "Factura",
+										celda: (factura) => (
+											<DosRenglones
+												arriba={
+													<b>{factura.folio === null ? "—" : `${factura.folio} · ${factura.folio_proveedor ?? ""}`}</b>
+												}
+												abajo={factura.ordenes}
+											/>
+										),
+									},
+									{
+										clave: "proveedor",
+										encabezado: "Proveedor",
+										celda: (factura) => (
+											<DosRenglones
+												arriba={factura.proveedor}
+												abajo={
+													factura.motivo === null ? undefined : (
+														<TextoConTono tono="rojo">{factura.motivo}</TextoConTono>
+													)
+												}
+											/>
+										),
+									},
+									{
+										clave: "orden",
+										encabezado: "Orden",
+										celda: (factura) => <PuntoDePunta punta={factura.puntas.orden} />,
+									},
+									{
+										clave: "recepcion",
+										encabezado: "Recepción",
+										celda: (factura) => <PuntoDePunta punta={factura.puntas.recepcion} />,
+									},
+									{
+										clave: "punta_factura",
+										encabezado: "Factura",
+										celda: (factura) => <PuntoDePunta punta={factura.puntas.factura} />,
+									},
+									{
+										clave: "total",
+										encabezado: "Total",
+										alinear: "derecha",
+										celda: (factura) => montoEnPantalla(factura.total_centavos),
+									},
+									{
+										clave: "estado",
+										encabezado: "Estado",
+										celda: (factura) => (
+											<span className="flex flex-col gap-1">
+												<Estado texto={factura.estado.texto} color={factura.estado.color} />
+												{factura.autorizada === null ? null : factura.autorizada.aclarada_con !== null ? (
+													<span className="text-etiqueta">Aclarada con {factura.autorizada.aclarada_con}</span>
+												) : (
+													<>
+														<span className="text-etiqueta">
+															Se paga {montoEnPantalla(factura.autorizada.monto_autorizado_centavos)} ·{" "}
+															{montoEnPantalla(factura.autorizada.diferencia_centavos)} por aclarar con el proveedor
+														</span>
+														<Boton
+															chico
+															variante="secundario"
+															disabled={!conConexion}
+															onClick={() => setNotaCredito(factura)}
+														>
+															Llegó su nota de crédito
+														</Boton>
+													</>
+												)}
+											</span>
+										),
+									},
+									{
+										clave: "cancelar",
+										encabezado: "",
+										celda: (factura) =>
+											factura.cancelable && factura.factura_proveedor_id !== null ? (
 												<Boton
 													chico
-													variante="secundario"
+													variante="peligro"
 													disabled={!conConexion}
-													onClick={() => setNotaCredito(factura)}
+													onClick={() =>
+														alCancelar({
+															tipo: "factura",
+															id: factura.factura_proveedor_id ?? "",
+															version: factura.version ?? 0,
+															folio: factura.folio ?? "",
+														})
+													}
 												>
-													Llegó su nota de crédito
+													Cancelar factura
 												</Boton>
-											</>
-										)}
-									</span>
-								),
-							},
-							{
-								clave: "cancelar",
-								encabezado: "",
-								celda: (factura) =>
-									factura.cancelable && factura.factura_proveedor_id !== null ? (
-										<Boton
-											chico
-											variante="peligro"
-											disabled={!conConexion}
-											onClick={() =>
-												alCancelar({
-													tipo: "factura",
-													id: factura.factura_proveedor_id ?? "",
-													version: factura.version ?? 0,
-													folio: factura.folio ?? "",
-												})
-											}
-										>
-											Cancelar factura
-										</Boton>
-									) : null,
-							},
-						]}
-					/>
-					{paginas.hasNextPage ? (
-						<Boton chico variante="secundario" onClick={() => void paginas.fetchNextPage()}>
-							Ver más
-						</Boton>
-					) : null}
-				</div>
-			)}
+											) : null,
+									},
+								]}
+							/>
+							{verMas}
+						</div>
+					);
+				}}
+			</SegunPaginas>
 			{notaCredito === undefined ? null : (
 				<VentanaNotaCreditoProveedor factura={notaCredito} alCerrar={() => setNotaCredito(undefined)} />
 			)}
@@ -372,88 +371,79 @@ export function PestanaCuentasPorPagar() {
 	const [pagar, setPagar] = useState<CuentaAPagar | undefined>(undefined);
 	const [cancelar, setCancelar] = useState<ACancelar | undefined>(undefined);
 	const paginas = usePaginas(cuentasPorPagarDeContaduria, {}, { siguiente: (pagina) => pagina.posteriores.cursor });
-	const [datos] = paginas.data?.pages ?? [];
-	const posteriores = paginas.data?.pages.flatMap((pagina) => pagina.posteriores.renglones) ?? [];
-	const ultima = paginas.data?.pages.at(-1);
-	const cuentasFabrica: readonly CuentaDeLaFabrica[] = datos?.cuentas_fabrica ?? [];
+	const cuentasFabrica: readonly CuentaDeLaFabrica[] = paginas.data?.pages[0]?.cuentas_fabrica ?? [];
 	return (
 		<>
-			{paginas.isPending ? (
-				<EstadoDePantalla tipo="cargando" renglones={8} />
-			) : paginas.isError || datos === undefined ? (
-				<EstadoDePantalla tipo="error" alReintentar={() => void paginas.refetch()} />
-			) : (
-				<>
-					<Panel
-						titulo={`Pagos programados por semana ${montoEnPantalla(datos.total_centavos)}`}
-						derecha={
-							<span className="text-tinta3">
-								sin incluir {datos.detenidas} {datos.detenidas === 1 ? "detenido" : "detenidos"}
-							</span>
-						}
-					>
-						<Grafica
-							tipo="barras"
-							alto={200}
-							periodos={datos.por_semana.map((semana) => semana.etiqueta)}
-							series={[
-								{
-									clave: "proveedores",
-									nombre: "Proveedores",
-									color: "pizarra",
-									valores: datos.por_semana.map((semana) => semana.proveedores_centavos ?? 0),
-								},
-								{
-									clave: "acreedores",
-									nombre: "Acreedores",
-									color: "azul",
-									valores: datos.por_semana.map((semana) => semana.acreedores_centavos ?? 0),
-								},
-							]}
-							formato={(valor) => montoEnPantalla(valor)}
-						/>
-					</Panel>
-					{datos.pagos_detenidos.length === 0 ? null : (
-						<Seccion titulo="Pagos detenidos" nota="Orden, recepción y factura no coinciden">
-							<div className="grid grid-cols-2 gap-4 max-menu:grid-cols-1">
-								{datos.pagos_detenidos.map((detenida) => (
-									<TarjetaDetenida key={detenida.factura_proveedor_id} detenida={detenida} alCancelar={setCancelar} />
-								))}
+			<SegunPaginas paginas={paginas} renglones={8}>
+				{({ primera: datos, todas, verMas }) => (
+					<>
+						<Panel
+							titulo={`Pagos programados por semana ${montoEnPantalla(datos.total_centavos)}`}
+							derecha={
+								<span className="text-tinta3">
+									sin incluir {datos.detenidas} {datos.detenidas === 1 ? "detenido" : "detenidos"}
+								</span>
+							}
+						>
+							<Grafica
+								tipo="barras"
+								alto={200}
+								periodos={datos.por_semana.map((semana) => semana.etiqueta)}
+								series={[
+									{
+										clave: "proveedores",
+										nombre: "Proveedores",
+										color: "pizarra",
+										valores: datos.por_semana.map((semana) => semana.proveedores_centavos ?? 0),
+									},
+									{
+										clave: "acreedores",
+										nombre: "Acreedores",
+										color: "azul",
+										valores: datos.por_semana.map((semana) => semana.acreedores_centavos ?? 0),
+									},
+								]}
+								formato={(valor) => montoEnPantalla(valor)}
+							/>
+						</Panel>
+						{datos.pagos_detenidos.length === 0 ? null : (
+							<Seccion titulo="Pagos detenidos" nota="Orden, recepción y factura no coinciden">
+								<div className="grid grid-cols-2 gap-4 max-menu:grid-cols-1">
+									{datos.pagos_detenidos.map((detenida) => (
+										<TarjetaDetenida key={detenida.factura_proveedor_id} detenida={detenida} alCancelar={setCancelar} />
+									))}
+								</div>
+							</Seccion>
+						)}
+						<Panel titulo="Calendario de pagos">
+							<div className="flex flex-col gap-5">
+								<GrupoDelCalendario
+									titulo="Vencidos"
+									grupo={datos.vencidos}
+									renglones={datos.vencidos.renglones}
+									rojo
+									alPagar={(renglon) => setPagar(aPagar(renglon))}
+								/>
+								<GrupoDelCalendario
+									titulo={`Vencen en los próximos ${datos.ventana_dias} días`}
+									grupo={datos.proximos}
+									renglones={datos.proximos.renglones}
+									rojo={false}
+									alPagar={(renglon) => setPagar(aPagar(renglon))}
+								/>
+								<GrupoDelCalendario
+									titulo="Posteriores"
+									grupo={datos.posteriores}
+									renglones={todas.flatMap((pagina) => pagina.posteriores.renglones)}
+									rojo={false}
+									alPagar={(renglon) => setPagar(aPagar(renglon))}
+								/>
+								{verMas}
 							</div>
-						</Seccion>
-					)}
-					<Panel titulo="Calendario de pagos">
-						<div className="flex flex-col gap-5">
-							<GrupoDelCalendario
-								titulo="Vencidos"
-								grupo={datos.vencidos}
-								renglones={datos.vencidos.renglones}
-								rojo
-								alPagar={(renglon) => setPagar(aPagar(renglon))}
-							/>
-							<GrupoDelCalendario
-								titulo={`Vencen en los próximos ${datos.ventana_dias} días`}
-								grupo={datos.proximos}
-								renglones={datos.proximos.renglones}
-								rojo={false}
-								alPagar={(renglon) => setPagar(aPagar(renglon))}
-							/>
-							<GrupoDelCalendario
-								titulo="Posteriores"
-								grupo={datos.posteriores}
-								renglones={posteriores}
-								rojo={false}
-								alPagar={(renglon) => setPagar(aPagar(renglon))}
-							/>
-							{ultima?.posteriores.hay_mas === true ? (
-								<Boton chico variante="secundario" onClick={() => void paginas.fetchNextPage()}>
-									Ver más
-								</Boton>
-							) : null}
-						</div>
-					</Panel>
-				</>
-			)}
+						</Panel>
+					</>
+				)}
+			</SegunPaginas>
 			<FacturasDeProveedor alCancelar={setCancelar} />
 			{pagar === undefined ? null : (
 				<VentanaPagar cuenta={pagar} cuentasFabrica={cuentasFabrica} alCerrar={() => setPagar(undefined)} />

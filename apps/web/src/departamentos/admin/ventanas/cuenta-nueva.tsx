@@ -43,7 +43,7 @@ export function VentanaCuentaNueva({ alCerrar }: { alCerrar: () => void }) {
 		defaultValues: { persona_id: "", correo: "", departamentos: [], para_que: "" },
 	});
 	const errores = forma.formState.errors;
-	const esDuena = opciones.data?.es_duena === true;
+	const daLaCuenta = opciones.data?.puede_crear_cuenta === true;
 	const escogidos = forma.watch("departamentos");
 	/** Pone en sus campos lo que dijo la regla. */
 	const alCampos = (campos: Record<string, string>) => {
@@ -55,7 +55,7 @@ export function VentanaCuentaNueva({ alCerrar }: { alCerrar: () => void }) {
 	};
 	const mandar = forma.handleSubmit(async (valores) => {
 		const { para_que: paraQue, ...cuenta } = valores;
-		const salio = esDuena
+		const salio = daLaCuenta
 			? await crear.enviar({ datos: cuenta }, alCampos)
 			: await pedir.enviar(
 					{ datos: { ...cuenta, ...(paraQue === undefined || paraQue === "" ? {} : { para_que: paraQue }) } },
@@ -68,15 +68,15 @@ export function VentanaCuentaNueva({ alCerrar }: { alCerrar: () => void }) {
 			abierta
 			ancha
 			alCerrar={alCerrar}
-			titulo={esDuena ? "Cuenta nueva" : "Pedir cuenta nueva"}
-			{...(esDuena ? {} : { subtitulo: "La cuenta la da la dueña: la solicitud llega a Dirección" })}
+			titulo={daLaCuenta ? "Cuenta nueva" : "Pedir cuenta nueva"}
+			{...(daLaCuenta ? {} : { subtitulo: "La cuenta la da la dueña: la solicitud llega a Dirección" })}
 			accion={
 				<Boton
 					variante="principal"
 					disabled={!conConexion || opciones.data === undefined || crear.enviando || pedir.enviando}
 					onClick={() => void mandar()}
 				>
-					{esDuena ? "Dar de alta" : "Mandar solicitud"}
+					{daLaCuenta ? "Dar de alta" : "Mandar solicitud"}
 				</Boton>
 			}
 		>
@@ -123,7 +123,7 @@ export function VentanaCuentaNueva({ alCerrar }: { alCerrar: () => void }) {
 								<LineaDeAviso tono="error">{errores.departamentos.message}</LineaDeAviso>
 							)}
 						</fieldset>
-						{esDuena ? null : (
+						{daLaCuenta ? null : (
 							<Campo
 								enVentana
 								etiqueta="Para qué (opcional)"

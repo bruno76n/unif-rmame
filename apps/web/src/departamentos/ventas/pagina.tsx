@@ -14,7 +14,7 @@ import { CajonesDeVentas } from "./cajones/cajones.tsx";
 import { useDireccionDeVentas } from "./direccion.ts";
 
 /** Las pestañas de Ventas a externos; su clave es su ruta. */
-export const pestanasDeVentas = [
+const pestanasDeVentas = [
 	{ clave: "pendientes", texto: "Pendientes" },
 	{ clave: "pedidos", texto: "Pedidos" },
 	{ clave: "notas", texto: "Notas de entrega" },

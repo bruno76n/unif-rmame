@@ -9,7 +9,7 @@
  * dirección y le pone el foco.
  */
 
-import { enPesos, pesosACentavos } from "@uniformame/compartido/calculos/dinero";
+import { centavosACampo, enPesos, pesosACentavos } from "@uniformame/compartido/calculos/dinero";
 import { textoDeMomentoCorto } from "@uniformame/compartido/calculos/fechas";
 import { plural } from "@uniformame/compartido/calculos/textos";
 import { ponerTarifaOperacion, tarifasDelPersonal } from "@uniformame/compartido/contratos/personal/tarifas";
@@ -48,7 +48,7 @@ function CasillaDeTarifa({ operacion, enfocar }: { operacion: Operacion; enfocar
 	const conConexion = useConConexion();
 	const avisar = useAvisar();
 	const { enviar, enviando } = useEnvio(ponerTarifaOperacion);
-	const guardada = operacion.tarifa_centavos == null ? "" : (operacion.tarifa_centavos / 100).toFixed(2);
+	const guardada = centavosACampo(operacion.tarifa_centavos);
 	const [texto, setTexto] = useState(guardada);
 	// Lo que llega de la consulta (otra tarifa, o la misma ya guardada) reemplaza lo escrito.
 	useEffect(() => setTexto(guardada), [guardada]);
@@ -89,7 +89,7 @@ function CasillaDeTarifa({ operacion, enfocar }: { operacion: Operacion; enfocar
  * Las tarifas anteriores de un flujo, que se leen al pedir su historial.
  * @param props El flujo.
  */
-function Historial({ flujoId }: { flujoId: string }) {
+function TarifasAnteriores({ flujoId }: { flujoId: string }) {
 	const consulta = useConsulta(tarifasDelPersonal, { flujo_id: flujoId, historial: "si" });
 	return (
 		<SegunConsulta consulta={consulta} renglones={2}>
@@ -156,7 +156,7 @@ function TarjetaDeFlujo({ flujo, enfocada }: { flujo: Flujo; enfocada: string | 
 					]}
 				/>
 			</Panel>
-			{conHistorial ? <Historial flujoId={flujo.flujo_id} /> : null}
+			{conHistorial ? <TarifasAnteriores flujoId={flujo.flujo_id} /> : null}
 		</Tarjeta>
 	);
 }

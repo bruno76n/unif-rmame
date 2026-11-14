@@ -4,8 +4,8 @@
  * Fase 19 · docs/interfaz/fabrica/compras.md y docs/interfaz/fabrica/contaduria.md («Capturar nota o factura»)
  */
 
+import { condicionDePago } from "@uniformame/compartido/calculos/compras";
 import { aMilesimosConSigno } from "@uniformame/compartido/calculos/cuenta-material";
-import { condicionDePago } from "@uniformame/compartido/contratos/compras/textos";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { Temporal } from "temporal-polyfill";
 import type { ContextoDeAccion } from "../../../nucleo/modulos.ts";

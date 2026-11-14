@@ -17,7 +17,7 @@ import { useConsulta } from "../../comun/api.tsx";
 import { PaginaDeDepartamento } from "../../comun/pagina-de-departamento.tsx";
 
 /** Las pestañas de Dirección: su clave es su ruta. */
-export type PestanaDeDireccion = "pendientes" | "autorizaciones" | "indicadores" | "alertas";
+type PestanaDeDireccion = "pendientes" | "autorizaciones" | "indicadores" | "alertas";
 
 /**
  * La página de Dirección con la pestaña activa.

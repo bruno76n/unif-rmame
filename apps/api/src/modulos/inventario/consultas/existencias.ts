@@ -106,6 +106,26 @@ function cuentasDeVariante(
 	};
 }
 
+/**
+ * La suma de cada columna en las variantes de un producto: va en su renglón, plegado o abierto.
+ * @param variantes Sus variantes de lo filtrado.
+ */
+function sumaDelProducto(variantes: readonly VarianteDeExistencias[]) {
+	const suma = (valor: (variante: VarianteDeExistencias) => number) =>
+		variantes.reduce((total, variante) => total + valor(variante), 0);
+	return {
+		celdas: columnasDeExistencias.map((codigo) => ({
+			codigo,
+			piezas: suma((variante) => variante.celdas.find((celda) => celda.codigo === codigo)?.piezas ?? 0),
+		})),
+		transito: suma((variante) => variante.transito),
+		en_camino: suma((variante) => variante.en_camino),
+		total: suma((variante) => variante.total),
+		comprometido: suma((variante) => variante.comprometido),
+		libre: suma((variante) => variante.libre),
+	};
+}
+
 /** El producto, la sección y la escuela de cada variante. */
 const deLaPrenda = z.object({
 	variante_id: z.uuid(),
@@ -187,7 +207,10 @@ export const consultaExistencias = implementarConsulta(existenciasDeBodega, asyn
 			});
 			productos.set(productoId, producto);
 		}
-		const todos = [...productos.values()];
+		const todos = [...productos.values()].map((producto) => ({
+			...producto,
+			suma: sumaDelProducto(producto.variantes),
+		}));
 		const pagina = paginarLista(todos, parametros.cursor, parametros.limite ?? limitePorOmision);
 		const { rows: secciones } = await accion.transaccion.execute(sql`SELECT id, nombre FROM secciones ORDER BY orden`);
 		const { rows: escuelas } = await accion.transaccion.execute(sql`
@@ -200,6 +223,11 @@ export const consultaExistencias = implementarConsulta(existenciasDeBodega, asyn
 				variantes: variantes.length,
 				piezas: variantes.reduce((suma, { cuentas }) => suma + cuentas.total, 0),
 			},
+			// El nombre de cada columna es el de su ubicación: la pantalla no escribe nombres de ubicaciones.
+			columnas: columnasDeExistencias.map((codigo) => ({
+				codigo,
+				nombre: leido.ubicaciones.find((ubicacion) => ubicacion.codigo === codigo)?.nombre ?? codigo,
+			})),
 			...pagina,
 		};
 	}),

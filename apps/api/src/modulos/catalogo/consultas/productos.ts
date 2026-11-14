@@ -8,11 +8,12 @@
  * escuela, y con 4 cifras o más por el principio del código. Las píldoras cuentan sobre lo filtrado sin la píldora.
  */
 
+import { rangoDeTallas } from "@uniformame/compartido/calculos/textos";
 import { productosDeCatalogo } from "@uniformame/compartido/contratos/catalogo/pantallas";
 import { type SQL, sql } from "drizzle-orm";
 import { z } from "zod";
 import { implementarConsulta } from "../../../nucleo/modulos.ts";
-import { detieneDe, etiquetablesDe, filas, formaDeLoQueDetiene, loQueDetieneA, rangoDeTallas } from "./comunes.ts";
+import { detieneDe, etiquetablesDe, filas, formaDeLoQueDetiene, loQueDetieneA } from "./comun.ts";
 
 /** Un producto como lo lee la base. */
 const leido = z.object({

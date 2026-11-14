@@ -6,11 +6,12 @@
  * Fase 19 · docs/interfaz/comunes.md («La página de un departamento», regla 2) y .claude/rules/react.md (regla 5)
  */
 
-import { useNavigate, useSearch } from "@tanstack/react-router";
 import { gruposDePendientesDeContaduria } from "@uniformame/compartido/contratos/contaduria/consultas-pendientes";
 import { rolesDeTercero } from "@uniformame/compartido/contratos/contaduria/consultas-terceros";
 import { useCallback } from "react";
 import { z } from "zod";
+import { useBusquedaDeDepartamento } from "../../comun/direccion.ts";
+import { rutaDePestana } from "../../comun/pagina-de-departamento.tsx";
 
 /** Las pestañas de Contaduría; su clave es su ruta. */
 export const pestanasDeContaduria = [
@@ -59,31 +60,17 @@ export type BusquedaDeContaduria = z.infer<typeof busquedaDeContaduria>;
  * @param pestana La pestaña.
  */
 export function rutaDeContaduria(pestana: PestanaDeContaduria): string {
-	return pestana === "pendientes" ? "/contaduria" : `/contaduria/${pestana}`;
+	return rutaDePestana("contaduria", pestana);
 }
 
 /**
  * Lee la búsqueda de Contaduría de la dirección y da cómo cambiarla: los cambios se juntan con lo que ya hay (en la
  * misma pestaña), y lo que se pone sin valor se quita.
+ * Lo común está en `useBusquedaDeDepartamento`; aquí van sus cajones.
  * @returns La búsqueda, `navegar(cambios, pestana?)`, `abrir(cajon, id?)` y `cerrar()`.
  */
 export function useDireccionDeContaduria() {
-	const busqueda = busquedaDeContaduria.parse(useSearch({ strict: false }));
-	const navigate = useNavigate();
-	const navegar = useCallback(
-		(cambios: Partial<BusquedaDeContaduria>, pestana?: PestanaDeContaduria) => {
-			const nueva = Object.fromEntries(
-				Object.entries({ ...(pestana === undefined ? busqueda : {}), ...cambios }).filter(
-					([, valor]) => valor !== undefined && valor !== "",
-				),
-			);
-			void navigate({
-				to: pestana === undefined ? "." : rutaDeContaduria(pestana),
-				search: busquedaDeContaduria.parse(nueva),
-			});
-		},
-		[busqueda, navigate],
-	);
+	const { busqueda, navegar } = useBusquedaDeDepartamento(busquedaDeContaduria, rutaDeContaduria);
 	/** Abre un cajón, sin tocar la pestaña ni sus filtros. */
 	const abrir = useCallback((cajon: CajonDeContaduria, id?: string) => navegar({ cajon, id }), [navegar]);
 	/** Cierra el cajón abierto. */

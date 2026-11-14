@@ -16,7 +16,7 @@ import { z } from "zod";
 import { tieneDepartamento } from "../../../nucleo/acceso/quien.ts";
 import { ErrorDeApi, noExiste } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeConsulta, implementarConsulta } from "../../../nucleo/modulos.ts";
-import { enLista, filas, siguienteCodigo } from "./comunes.ts";
+import { enLista, filas, siguienteCodigo } from "./comun.ts";
 
 /** Los tipos de lista. */
 const tipoDeLista = z.enum(["mostrador", "mayoreo", "en_linea", "cliente"]);

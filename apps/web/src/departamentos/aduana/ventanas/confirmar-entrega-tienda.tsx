@@ -18,7 +18,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
-import { useEnvio } from "../comun.tsx";
+import { useEnvio } from "../envio.ts";
 
 /** Un despacho en tránsito. */
 type Despacho = z.infer<typeof enTransito.resultado>["renglones"][number];

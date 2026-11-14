@@ -97,6 +97,7 @@ export const antiguedadSaldos = definirConsulta({
 				),
 			}),
 		),
+		depositos_queda_centavos: monto.describe("Lo que queda sin aplicar de todos los depósitos a terceros"),
 		saldos_a_favor: z.array(z.object({ cliente_id: z.uuid(), nombre: z.string(), monto_centavos: monto })),
 		anticipos: z.array(
 			z.object({

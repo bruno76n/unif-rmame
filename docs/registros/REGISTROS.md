@@ -93,6 +93,18 @@ Lo que falta decidir o investigar, y en qué fase se resuelve. Lo del negocio ya
 - **Los montos que no tienen la forma de `enPesos`** (fase 22): el recorte común tapa a soporte los «$1,250» de cualquier texto (decisión 805), pero no un monto escrito de otra forma («1250 pesos», «MXN 1,250»). Falta una prueba que revise que toda descripción, mensaje y aviso con monto use `enPesos` (auditoría de la fase 19).
 - **El antes y el después del historial de un documento** (fase 21): `admin.historial_entidad` los manda y ninguna pantalla los usa todavía. Su recorte de montos es general (Aduana y Bodega no los ven) y no el del módulo dueño, como pide `comunes.md`: una cuenta con Aduana y Mantenimiento sí ve los montos de un documento de inventario (auditoría de la fase 19).
 
+- **Lo que dejó la auditoría de la fase 19** (fase 21, al recorrer las pantallas):
+  - `Tabla` sin celdas que ocupen varias columnas: la tabla «Tallas, códigos y precios» de la ficha de Catálogo sigue a mano;
+  - una lista común «texto y su fecha» para `ListaConDia` de Mantenimiento y `TarifasAnteriores` de Personal;
+  - una función común que arme la ida a Google con o sin propósito, para la pantalla de acceso y `rutas/acceso/index.tsx`;
+  - `inventario.entregar_al_corte` compara a mano por tela en su aviso «Faltan … m»: que use `cadaTelaAlcanza`;
+  - el mensaje de `mantenimiento.baja_maquina` está también en `puedeDarDeBaja` de su consulta: una función en `mantenimiento/dominio/`;
+  - `admin.configuracion` y `admin.bitacora` todavía mandan `es_duena` y no un `puede`;
+  - el tope de 100 notas de Ventas vive en una expresión regular del contrato de `contaduria.estado_pago_notas`;
+  - Calidad recorta con una expresión regular el «para quién» que arma Producción;
+  - el tono de Lotes en Pendientes de Producción todavía lo decide la pantalla;
+  - los cajones de conteo y de carga inicial de Bodega proponen la hora con el reloj de la computadora.
+
 ## Para después
 
 Ninguna idea nueva entra a escondidas.
@@ -598,3 +610,4 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 13 nov 2026 | 19 | Los avisos de una acción en la web, la ventana con motivo de Producción, «Rechazar» de Dirección con la suya y los montos tapados en la bitácora (decisión 804) | Quitar la descripción completa a soporte · lo elegido | Lo elegido: soporte sigue viendo qué pasó | No |
 | 13 nov 2026 | 19 | Lo que quedó de la fase 19 en Pendientes pasa a la fase 21, que recorre todas las pantallas, y lo de seguridad a la 22 | Detener el cierre por los detalles de diseño · lo elegido | Lo elegido: lo que pide la fase ya está y lo que falta no bloquea | No |
 | 13 nov 2026 | 19 | El recorte común tapa a soporte los montos escritos en cualquier texto; `compras.ve_documento`; el historial solo con cambios (decisión 805) | `pesosPara` en cada consulta · lo elegido | Lo elegido: una sola regla en el núcleo, que no se olvida | No |
+| 14 nov 2026 | 19 | Lo que corrigió la auditoría en los catorce departamentos y la dirección común (decisiones 806, 807 y 808) | Dejarlo para la fase 21 · lo elegido | Lo elegido: la fase cierra con su auditoría al día | No |

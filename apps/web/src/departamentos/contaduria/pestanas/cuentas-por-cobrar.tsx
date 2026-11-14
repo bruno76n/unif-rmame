@@ -30,6 +30,7 @@ import { useConsulta, usePaginas } from "../../../comun/api.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
 import { montoEnPantalla } from "../../../comun/montos.ts";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
+import { SegunPaginas } from "../../../comun/segun-paginas.tsx";
 import { useDireccionDeContaduria } from "../direccion.ts";
 import { useEnvio } from "../envio.ts";
 import { type ACancelar, VentanaCancelar } from "../ventanas/cancelar.tsx";
@@ -269,10 +270,9 @@ function AplicarDeposito({ deposito }: { deposito: Deposito }) {
 
 /**
  * «Depósitos a terceros por aplicar».
- * @param props Los depósitos.
+ * @param props Los depósitos y lo que queda sin aplicar de todos, como lo suma la consulta.
  */
-function DepositosPorAplicar({ depositos }: { depositos: readonly Deposito[] }) {
-	const suma = depositos.reduce((total, deposito) => total + (deposito.queda_centavos ?? 0), 0);
+function DepositosPorAplicar({ depositos, suma }: { depositos: readonly Deposito[]; suma: number | undefined }) {
 	return (
 		<Panel
 			titulo="Depósitos a terceros por aplicar"
@@ -323,7 +323,6 @@ function PagosRecibidos() {
 	const [cancelar, setCancelar] = useState<ACancelar | undefined>(undefined);
 	const parametros = busqueda.cancelados === "si" ? { incluir_cancelados: "si" as const } : {};
 	const paginas = usePaginas(pagosRecibidos, parametros);
-	const pagos = paginas.data?.pages.flatMap((pagina) => pagina.renglones) ?? [];
 	return (
 		<Panel
 			titulo="Pagos recibidos"
@@ -340,84 +339,81 @@ function PagosRecibidos() {
 				</>
 			}
 		>
-			{paginas.isPending ? (
-				<EstadoDePantalla tipo="cargando" renglones={4} />
-			) : paginas.isError ? (
-				<EstadoDePantalla tipo="error" alReintentar={() => void paginas.refetch()} />
-			) : pagos.length === 0 ? (
-				<EstadoDePantalla tipo="vacio" texto="Sin pagos registrados" />
-			) : (
-				<div className="flex flex-col gap-3">
-					<Tabla
-						nombre="Pagos recibidos"
-						filas={pagos}
-						claveDeFila={(pago) => pago.pago_id}
-						columnas={[
-							{
-								clave: "pago",
-								encabezado: "Pago",
-								celda: (pago) => <b className={pago.cancelado ? "line-through" : ""}>{pago.folio}</b>,
-							},
-							{ clave: "fecha", encabezado: "Fecha", celda: (pago) => pago.fecha_texto },
-							{ clave: "cliente", encabezado: "Cliente", celda: (pago) => pago.cliente },
-							{ clave: "documento", encabezado: "Documento", celda: (pago) => pago.documento },
-							{
-								clave: "donde",
-								encabezado: "Dónde se recibió",
-								celda: (pago) => (
-									<DosRenglones
-										arriba={pago.donde}
-										abajo={
-											<>
-												{pago.referencia ?? ""}
-												{pago.aplicado === null ? null : (
-													<TextoConTono tono={pago.aplicado.ambar ? "ambar" : "normal"}>
-														{" "}
-														· {pago.aplicado.texto}
-													</TextoConTono>
-												)}
-											</>
-										}
-									/>
-								),
-							},
-							{
-								clave: "monto",
-								encabezado: "Monto",
-								alinear: "derecha",
-								celda: (pago) => (
-									<b className={pago.cancelado ? "line-through" : ""}>{montoEnPantalla(pago.monto_centavos)}</b>
-								),
-							},
-							{ clave: "registro", encabezado: "Registró", celda: (pago) => pago.registro },
-							{
-								clave: "cancelar",
-								encabezado: "",
-								celda: (pago) =>
-									pago.cancelado ? (
-										<Estado texto="Cancelado" />
-									) : (
-										<Boton
-											chico
-											variante="peligro"
-											disabled={!conConexion}
-											onClick={() =>
-												setCancelar({ tipo: "pago", id: pago.pago_id, version: pago.version, folio: pago.folio })
-											}
-										>
-											Cancelar pago
-										</Boton>
-									),
-							},
-						]}
-					/>
-					{paginas.hasNextPage ? (
-						<Boton chico variante="secundario" onClick={() => void paginas.fetchNextPage()}>
-							Ver más
-						</Boton>
-					) : null}
-				</div>
-			)}
+			<SegunPaginas paginas={paginas} renglones={4}>
+				{({ todas, verMas }) => {
+					const pagos = todas.flatMap((pagina) => pagina.renglones);
+					return pagos.length === 0 ? (
+						<EstadoDePantalla tipo="vacio" texto="Sin pagos registrados" />
+					) : (
+						<div className="flex flex-col gap-3">
+							<Tabla
+								nombre="Pagos recibidos"
+								filas={pagos}
+								claveDeFila={(pago) => pago.pago_id}
+								columnas={[
+									{
+										clave: "pago",
+										encabezado: "Pago",
+										celda: (pago) => <b className={pago.cancelado ? "line-through" : ""}>{pago.folio}</b>,
+									},
+									{ clave: "fecha", encabezado: "Fecha", celda: (pago) => pago.fecha_texto },
+									{ clave: "cliente", encabezado: "Cliente", celda: (pago) => pago.cliente },
+									{ clave: "documento", encabezado: "Documento", celda: (pago) => pago.documento },
+									{
+										clave: "donde",
+										encabezado: "Dónde se recibió",
+										celda: (pago) => (
+											<DosRenglones
+												arriba={pago.donde}
+												abajo={
+													<>
+														{pago.referencia ?? ""}
+														{pago.aplicado === null ? null : (
+															<TextoConTono tono={pago.aplicado.ambar ? "ambar" : "normal"}>
+																{" "}
+																· {pago.aplicado.texto}
+															</TextoConTono>
+														)}
+													</>
+												}
+											/>
+										),
+									},
+									{
+										clave: "monto",
+										encabezado: "Monto",
+										alinear: "derecha",
+										celda: (pago) => (
+											<b className={pago.cancelado ? "line-through" : ""}>{montoEnPantalla(pago.monto_centavos)}</b>
+										),
+									},
+									{ clave: "registro", encabezado: "Registró", celda: (pago) => pago.registro },
+									{
+										clave: "cancelar",
+										encabezado: "",
+										celda: (pago) =>
+											pago.cancelado ? (
+												<Estado texto="Cancelado" />
+											) : (
+												<Boton
+													chico
+													variante="peligro"
+													disabled={!conConexion}
+													onClick={() =>
+														setCancelar({ tipo: "pago", id: pago.pago_id, version: pago.version, folio: pago.folio })
+													}
+												>
+													Cancelar pago
+												</Boton>
+											),
+									},
+								]}
+							/>
+							{verMas}
+						</div>
+					);
+				}}
+			</SegunPaginas>
 			{cancelar === undefined ? null : <VentanaCancelar cancelar={cancelar} alCerrar={() => setCancelar(undefined)} />}
 		</Panel>
 	);
@@ -435,7 +431,9 @@ export function PestanaCuentasPorCobrar() {
 					<>
 						<Tarjetas datos={datos} />
 						<AntiguedadPorCliente datos={datos} alAbrir={(clienteId) => abrir("cliente", clienteId)} />
-						{datos.depositos.length === 0 ? null : <DepositosPorAplicar depositos={datos.depositos} />}
+						{datos.depositos.length === 0 ? null : (
+							<DepositosPorAplicar depositos={datos.depositos} suma={datos.depositos_queda_centavos} />
+						)}
 						{datos.saldos_a_favor.length === 0 ? null : (
 							<Panel titulo="Saldos a favor">
 								<Tabla

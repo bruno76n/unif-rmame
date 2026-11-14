@@ -15,7 +15,11 @@ import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pr
 interface Pendientes {
 	renglones: { grupo: string; tipo: string; estado: { texto: string; color: string }; abre: { cajon: string } }[];
 	conteos: { todos: number; materiales: number; ordenes: number; facturas: number };
-	indicadores: { por_pedir: { sin_tiempo: number; esta_semana: number }; ordenes: { por_semana: number[] } };
+	indicadores: {
+		por_pedir: { sin_tiempo: number; esta_semana: number; tono: string | null };
+		ordenes: { por_semana: number[] };
+		facturas: { sin_conciliar: number; tono: string | null };
+	};
 	pastilla: { conteo: number; rojo: boolean };
 }
 
@@ -37,6 +41,9 @@ describe("Pendientes de Compras: materiales por pedir, órdenes que llegan y fac
 		// Los materiales que salen son los sin tiempo de entrega y los de esta semana.
 		expect(conteos.materiales).toBe(indicadores.por_pedir.sin_tiempo + indicadores.por_pedir.esta_semana);
 		expect(indicadores.ordenes.por_semana).toHaveLength(4);
+		// El color de las cifras lo decide la consulta: rojo con algo sin tiempo, ámbar con facturas que no cuadran.
+		expect(indicadores.por_pedir.tono).toBe(indicadores.por_pedir.sin_tiempo > 0 ? "rojo" : null);
+		expect(indicadores.facturas.tono).toBe(indicadores.facturas.sin_conciliar > 0 ? "ambar" : null);
 		for (const renglon of renglones) {
 			if (renglon.tipo === "material") {
 				expect(renglon.estado.texto).toMatch(/^(Faltará material \d+ días?|Pedir esta semana)$/);

@@ -5,17 +5,17 @@
  * Fase 19 · docs/interfaz/fabrica/catalogo.md («Productos», «Listas de precios»)
  */
 
+import { plural } from "@uniformame/compartido/calculos/textos";
 import { Boton } from "@uniformame/interfaz/botones/boton";
 import { X } from "lucide-react";
 import { useState } from "react";
 import { useAvisar } from "../../../comun/avisos-de-abajo.tsx";
-import { cuantos } from "../textos.ts";
 import { VentanaCambiarPrecios } from "../ventanas/cambiar-precios.tsx";
 import { VentanaDescontinuar } from "../ventanas/descontinuar.tsx";
 import { VentanaEtiquetasDeProductos } from "../ventanas/etiquetas-de-productos.tsx";
 
 /** Un producto escogido. */
-export interface ProductoEscogido {
+interface ProductoEscogido {
 	id: string;
 	version: number;
 	nombre: string;
@@ -54,7 +54,7 @@ export function BarraDeSeleccion({
 			aria-label="Selección"
 			className="sticky top-0 z-20 flex flex-wrap items-center gap-2 rounded-grande bg-tinta px-4 py-2.5 text-white shadow-flotante"
 		>
-			<b className="mr-auto">{cuantos(productos.length, "producto seleccionado", "productos seleccionados")}</b>
+			<b className="mr-auto">{plural(productos.length, "producto seleccionado", "productos seleccionados")}</b>
 			<Boton chico variante="secundario" onClick={() => setAbierta("etiquetas")}>
 				Imprimir etiquetas
 			</Boton>

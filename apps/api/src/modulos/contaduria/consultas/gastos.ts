@@ -127,6 +127,7 @@ export const consultaGastos = implementarConsulta(gastosDeContaduria, async (con
 			mes: mes.toString(),
 			mes_texto: nombreDelMes(mes),
 			mes_anterior_texto: nombreDelMes(mes.subtract({ months: 1 })),
+			hoy: hoy.toString(),
 			al_dia: esteMes ? hoy.day : null,
 			por_categoria: await porCategoria(contexto, mes),
 			renglones: pagina.renglones.map((gasto) => {

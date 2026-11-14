@@ -129,7 +129,8 @@ export const consultaDispositivos = implementarConsulta(dispositivosDeAdmin, asy
 		.orderBy(asc(ubicaciones.orden));
 	return {
 		resultado: {
-			es_duena: esLaDuena(quien),
+			// Registrar (`admin.generar_codigo_registro`) y revocar (`admin.revocar_dispositivo`) son solo de la dueña.
+			puede: { registrar: esLaDuena(quien), revocar: esLaDuena(quien) },
 			registrados: aparatos
 				.filter((aparato) => aparato.bajaEn === null)
 				.map((aparato) => {
@@ -259,7 +260,8 @@ export const consultaComandosApartados = implementarConsulta(
 		return {
 			resultado: {
 				nombre: aparato.nombre,
-				es_duena: esLaDuena(quien),
+				// `admin.descartar_comando_apartado` es solo de la dueña.
+				puede_descartar: esLaDuena(quien),
 				...pagina,
 				renglones: pagina.renglones.map((renglon) => ({
 					comando_id: renglon.id,

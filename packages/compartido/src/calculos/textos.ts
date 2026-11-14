@@ -28,3 +28,24 @@ export function variacion(actual: number, anterior: number): string | null {
 	const porciento = Math.round((actual / anterior - 1) * 100);
 	return `${porciento >= 0 ? "▲" : "▼"} ${Math.abs(porciento)}%`;
 }
+
+/** Una talla con el nombre de su grupo, como la piden los rangos de tallas. */
+export interface TallaConGrupo {
+	grupo: string;
+	talla: string;
+}
+
+/**
+ * El rango de tallas de una prenda, por grupo: «6 a 14», «4 a 16 y CH a XG»; un grupo de una sola talla la dice sola.
+ * @param tallas Sus tallas, ya en el orden de su grupo y de su lugar en él (`ordenDeTallas`).
+ * @returns El rango, o vacío sin tallas.
+ * Es el único rango de tallas: lo escriben las consultas de Catálogo, Patronaje y Ventas a externos.
+ */
+export function rangoDeTallas(tallas: readonly TallaConGrupo[]): string {
+	const grupos = new Map<string, string[]>();
+	for (const { grupo, talla } of tallas) grupos.set(grupo, [...(grupos.get(grupo) ?? []), talla]);
+	const partes = [...grupos.values()].map((delGrupo) =>
+		delGrupo.length === 1 ? (delGrupo[0] ?? "") : `${delGrupo[0]} a ${delGrupo.at(-1)}`,
+	);
+	return partes.length <= 1 ? (partes[0] ?? "") : `${partes.slice(0, -1).join(", ")} y ${partes.at(-1)}`;
+}

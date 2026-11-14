@@ -37,7 +37,7 @@ const deCadaGrupo = {
 } as const;
 
 /** Lo que recibe la pestaña. */
-export interface PropsDePendientes {
+interface PropsDePendientes {
 	datos: Datos;
 	/** El filtro del panel, de la dirección: «todos», «autorizaciones» o «alertas». */
 	filtro: string;

@@ -8,18 +8,11 @@
  */
 
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
+import { rangoDeTallas } from "@uniformame/compartido/calculos/textos";
 import { notasEntregaVentas } from "@uniformame/compartido/contratos/ventas/consultas-notas";
 import { noExiste } from "../../../nucleo/http/errores.ts";
 import { implementarConsulta } from "../../../nucleo/modulos.ts";
-import {
-	estadosDeNota,
-	leerPedidos,
-	llevaTodas,
-	paraBuscar,
-	porPrenda,
-	rangoDeTallas,
-	textoDeFormaDePago,
-} from "./comun.ts";
+import { estadosDeNota, leerPedidos, llevaTodas, paraBuscar, porPrenda, textoDeFormaDePago } from "./comun.ts";
 import { leerLineas, leerNotas } from "./notas.ts";
 
 /** El orden de los estados en la lista. */
@@ -49,7 +42,7 @@ export const consultaNotasEntrega = implementarConsulta(notasEntregaVentas, asyn
 			nota_de: `nota ${nota.numero_en_pedido} de ${nota.de}`,
 			cliente: nota.cliente,
 			prendas: prendas.map((suyas) => suyas[0]?.prenda ?? "").join(", "),
-			tallas: prendas.map((suyas) => rangoDeTallas(suyas.map((linea) => linea.talla))).join(" · "),
+			tallas: prendas.map((suyas) => rangoDeTallas(suyas)).join(" · "),
 			piezas: prendas.flat().reduce((total, linea) => total + linea.cantidad, 0),
 			estado: nota.estado,
 			estado_armado: { ...(estadosDeNota[nota.estado] ?? { texto: nota.estado, color: "gris" as const }), abajo: null },

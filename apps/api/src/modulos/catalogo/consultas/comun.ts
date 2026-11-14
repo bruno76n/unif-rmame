@@ -101,25 +101,6 @@ export function detieneDe(fila: z.infer<typeof formaDeLoQueDetiene>) {
 	];
 }
 
-/** Una talla de un producto, en el orden de su grupo. */
-export interface TallaEnOrden {
-	grupo: string;
-	talla: string;
-}
-
-/**
- * El rango de tallas de un producto, por grupo: «4 a 16 y CH a XG»; un grupo de una sola talla la dice sola.
- * @param tallas Sus tallas, ya en el orden de su grupo y de la talla.
- */
-export function rangoDeTallas(tallas: readonly TallaEnOrden[]): string {
-	const grupos = new Map<string, string[]>();
-	for (const { grupo, talla } of tallas) grupos.set(grupo, [...(grupos.get(grupo) ?? []), talla]);
-	const partes = [...grupos.values()].map((delGrupo) =>
-		delGrupo.length === 1 ? (delGrupo[0] ?? "") : `${delGrupo[0]} a ${delGrupo.at(-1)}`,
-	);
-	return partes.length <= 1 ? (partes[0] ?? "") : `${partes.slice(0, -1).join(", ")} y ${partes.at(-1)}`;
-}
-
 /**
  * Las ids de una lista, para `IN (…)`.
  * @param ids Las ids.

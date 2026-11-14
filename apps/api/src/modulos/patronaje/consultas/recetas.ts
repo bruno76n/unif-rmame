@@ -6,7 +6,7 @@
  */
 
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
-import { plural } from "@uniformame/compartido/calculos/textos";
+import { plural, rangoDeTallas } from "@uniformame/compartido/calculos/textos";
 import { listaDeRecetas, type prendaDeLaLista } from "@uniformame/compartido/contratos/patronaje/lista-de-recetas";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
@@ -20,7 +20,6 @@ import {
 	type ParametrosDePatronaje,
 	type PrendaLeida,
 	piezasDelLote,
-	rangoDeTallas,
 	sinEscuela,
 	tallaDeEnMedio,
 	textoDePorciento,
@@ -67,7 +66,10 @@ export function prendaEnLaLista(
 		prenda: prenda.nombre,
 		para: prenda.escuela ?? sinEscuela,
 		color_escuela: prenda.color,
-		tallas: { rango: rangoDeTallas(prenda.tallas), cuantas: prenda.tallas.length },
+		tallas: {
+			rango: rangoDeTallas(prenda.tallas.map((talla) => ({ grupo: talla.grupo, talla: talla.nombre }))),
+			cuantas: prenda.tallas.length,
+		},
 		tela:
 			prenda.tela === null
 				? null

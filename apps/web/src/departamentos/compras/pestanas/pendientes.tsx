@@ -44,8 +44,7 @@ function Indicadores({
 					icono: ShoppingCart,
 					color: "azul",
 					numero: por_pedir.sin_tiempo,
-					// En rojo si hay alguno sin tiempo de entrega; si no, el de su línea (ámbar si hay de esta semana).
-					...(por_pedir.sin_tiempo > 0 ? { tono: "rojo" } : {}),
+					...(por_pedir.tono === null ? {} : { tono: por_pedir.tono }),
 					unidad: "sin tiempo de entrega",
 					contexto: por_pedir.contexto,
 					reparto: [
@@ -92,8 +91,7 @@ function Indicadores({
 					icono: ReceiptText,
 					color: "verde-azulado",
 					numero: facturas.sin_conciliar,
-					// Las que no cuadran van en ámbar: las resuelve Contaduría.
-					...(facturas.sin_conciliar > 0 ? { tono: "ambar" } : {}),
+					...(facturas.tono === null ? {} : { tono: facturas.tono }),
 					unidad: "sin conciliar",
 					contexto: facturas.contexto,
 					alTocar: () => alTocar("conciliacion"),

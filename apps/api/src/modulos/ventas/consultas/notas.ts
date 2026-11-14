@@ -71,6 +71,7 @@ const lineaLeida = z.object({
 	prenda: z.string(),
 	escuela: z.string().nullable(),
 	talla: z.string(),
+	grupo: z.string(),
 });
 
 /** Un renglón de una nota con su prenda y su talla. */
@@ -84,9 +85,10 @@ export type LineaLeida = z.infer<typeof lineaLeida>;
 export async function leerLineas(base: Base, notaIds: readonly string[]): Promise<LineaLeida[]> {
 	if (notaIds.length === 0) return [];
 	const { rows } = await base.execute(sql`SELECT l.id, l.nota_entrega_id AS nota_id, l.variante_id, l.cantidad,
-			l.precio_unitario_centavos, v.producto_id, p.nombre AS prenda, e.nombre AS escuela, t.nombre AS talla
+			l.precio_unitario_centavos, v.producto_id, p.nombre AS prenda, e.nombre AS escuela, t.nombre AS talla,
+			g.nombre AS grupo
 		FROM nota_entrega_lineas l JOIN variantes v ON v.id = l.variante_id JOIN productos p ON p.id = v.producto_id
-		JOIN tallas t ON t.id = v.talla_id LEFT JOIN escuelas e ON e.id = p.escuela_id
+		JOIN tallas t ON t.id = v.talla_id JOIN grupos_talla g ON g.id = t.grupo_talla_id LEFT JOIN escuelas e ON e.id = p.escuela_id
 		WHERE l.nota_entrega_id IN (${sql.join(
 			notaIds.map((id) => sql`${id}::uuid`),
 			sql`, `,

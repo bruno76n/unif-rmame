@@ -87,6 +87,9 @@ function tarjetaDe(
 	conTotal: boolean,
 ) {
 	const prometida = pedido.estado === "por_surtir" || pedido.estado === "esperando_prendas";
+	// Esperando prendas, cuántas piezas faltan en aduana de todas las del W-.
+	const piezas = suyos.reduce((suma, renglon) => suma + renglon.cantidad, 0);
+	const faltan = suyos.filter((renglon) => !enAduana(renglon)).reduce((suma, renglon) => suma + renglon.cantidad, 0);
 	return {
 		pedido_linea_id: pedido.id,
 		folio: pedido.folio,
@@ -106,6 +109,7 @@ function tarjetaDe(
 				donde: enAduana(renglon) ? "En aduana" : falta === undefined ? null : dondeEsta(falta).texto,
 			};
 		}),
+		falta: estado === "esperando_prendas" ? `Falta ${faltan} de ${piezas}` : null,
 		...(conTotal ? { total_centavos: pedido.total_centavos } : {}),
 		version: pedido.version,
 	};
@@ -197,7 +201,7 @@ async function leerCerrados(
 
 export const consultaPedidosLinea = implementarConsulta(pedidosLinea, async ({ base, quien }, parametros) => {
 	const conTotal = tieneDepartamento(quien, "linea");
-	const estados = parametros.estado === undefined ? estadosDeW : [parametros.estado];
+	const estados = parametros.estados ?? estadosDeW;
 	const buscar = filtroDelBuscador(parametros.buscar);
 	// Los abiertos llegan completos en la primera página; las que siguen solo traen cerrados.
 	const columnas = parametros.cursor === undefined ? await leerColumnas(base, { buscar, estados }, conTotal) : [];

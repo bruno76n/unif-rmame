@@ -6,10 +6,10 @@
  * docs/modulos/compras/proveedores-y-precios.md (reglas 7 a 9, «El costo de un material»)
  */
 
+import { cambioDePrecio } from "@uniformame/compartido/calculos/compras";
 import { aMilesimosConSigno, deMilesimos } from "@uniformame/compartido/calculos/cuenta-material";
 import { diaDeNegocio } from "@uniformame/compartido/calculos/fechas";
 import { materialDeCompras } from "@uniformame/compartido/contratos/compras/consultas-cajones";
-import { cambioDePrecio } from "@uniformame/compartido/contratos/compras/textos";
 import { and, desc, eq, isNull, max, ne } from "drizzle-orm";
 import { Temporal } from "temporal-polyfill";
 import { noExiste } from "../../../nucleo/http/errores.ts";

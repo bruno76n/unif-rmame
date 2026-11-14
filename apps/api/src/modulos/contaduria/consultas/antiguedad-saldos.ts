@@ -9,6 +9,7 @@
  * saldo y los de semáforo distinto de «Al corriente», del que más debe al que menos.
  */
 
+import { sumarCentavos } from "@uniformame/compartido/calculos/dinero";
 import { inicioDeSemana, textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
 import { antiguedadSaldos } from "@uniformame/compartido/contratos/contaduria/consultas-cobrar";
 import { sql } from "drizzle-orm";
@@ -268,6 +269,7 @@ export const consultaAntiguedadSaldos = implementarConsulta(antiguedadSaldos, as
 	const desde = parametros.desde ?? hoy.with({ day: 1 }).toString();
 	const hasta = parametros.hasta ?? hoy.toString();
 	const pagina = paginar(await clientesConSaldo(contexto, cuentas, cortes), parametros.cursor);
+	const depositos = await depositosPorAplicar(contexto);
 	return {
 		resultado: {
 			tramos: tramosDeAntiguedad(cortes),
@@ -280,7 +282,8 @@ export const consultaAntiguedadSaldos = implementarConsulta(antiguedadSaldos, as
 			clientes: pagina.renglones,
 			cursor: pagina.cursor,
 			hay_mas: pagina.hay_mas,
-			depositos: await depositosPorAplicar(contexto),
+			depositos,
+			depositos_queda_centavos: sumarCentavos(depositos.map((deposito) => deposito.queda_centavos)),
 			saldos_a_favor: (await saldosAFavor(contexto)).map((saldo) => ({
 				cliente_id: saldo.cliente_id,
 				nombre: saldo.nombre,

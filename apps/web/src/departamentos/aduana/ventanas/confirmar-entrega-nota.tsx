@@ -18,7 +18,7 @@ import { EstadoDePantalla } from "@uniformame/interfaz/estados/estado-de-pantall
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
-import { useEnvio } from "../comun.tsx";
+import { useEnvio } from "../envio.ts";
 
 /** La nota de un despacho en tránsito. */
 type Nota = NonNullable<z.infer<typeof enTransito.resultado>["renglones"][number]["nota"]>;

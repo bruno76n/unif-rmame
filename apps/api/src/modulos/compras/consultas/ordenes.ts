@@ -6,10 +6,10 @@
  * (reglas 7 a 10, 15)
  */
 
+import { cantidadConUnidad, cifraEnTexto, cuandoLlega } from "@uniformame/compartido/calculos/compras";
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
 import { plural } from "@uniformame/compartido/calculos/textos";
 import { ordenesDeCompra } from "@uniformame/compartido/contratos/compras/consultas-pestanas";
-import { cantidadConUnidad, cifraEnTexto, cuandoLlega } from "@uniformame/compartido/contratos/compras/textos";
 import { Temporal } from "temporal-polyfill";
 import type { z } from "zod";
 import { implementarConsulta } from "../../../nucleo/modulos.ts";

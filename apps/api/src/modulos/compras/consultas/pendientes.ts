@@ -8,9 +8,10 @@
  * material sin tiempo de entrega o una orden atrasada.
  */
 
+import { cantidadConUnidad } from "@uniformame/compartido/calculos/compras";
+import { enPesos } from "@uniformame/compartido/calculos/dinero";
 import { plural } from "@uniformame/compartido/calculos/textos";
 import { pendientesDeCompras } from "@uniformame/compartido/contratos/compras/consultas-pestanas";
-import { cantidadConUnidad, pesos } from "@uniformame/compartido/contratos/compras/textos";
 import { isNull } from "drizzle-orm";
 import { Temporal } from "temporal-polyfill";
 import type { z } from "zod";
@@ -113,7 +114,7 @@ function renglonesDeOrdenes(ordenes: readonly OrdenResumida[], hoy: Temporal.Pla
 				detalle: plural(orden.lineas.length, "material", "materiales"),
 				fecha: orden.fechaPrometida,
 				fecha_roja: orden.diasAtraso > 0,
-				cifra: pesos(orden.totalCentavos),
+				cifra: enPesos(orden.totalCentavos),
 				estado:
 					orden.diasAtraso > 0
 						? { texto: `Atrasada ${plural(orden.diasAtraso, "día", "días")}`, color: "rojo", abajo: null }
@@ -185,6 +186,8 @@ async function leerPendientes(accion: ContextoDeAccion): Promise<Omit<Resultado,
 				sin_tiempo: sinTiempo,
 				esta_semana: estaSemana,
 				suficiente: cuantos("alcanza"),
+				// En rojo con algo sin tiempo de entrega; si no, el de su contexto (ámbar si hay por pedir esta semana).
+				tono: sinTiempo > 0 ? ("rojo" as const) : null,
 				contexto: [
 					...(estaSemana > 0 ? [{ texto: `${estaSemana} por pedir esta semana`, tono: "ambar" as const }] : []),
 					...(sinTiempo === 0 && estaSemana === 0 ? [{ texto: "Existencia suficiente", tono: "normal" as const }] : []),
@@ -225,6 +228,8 @@ async function leerPendientes(accion: ContextoDeAccion): Promise<Omit<Resultado,
 			},
 			facturas: {
 				sin_conciliar: conciliacion.length,
+				// Las que no cuadran van en ámbar: las resuelve Contaduría.
+				tono: conciliacion.length > 0 ? ("ambar" as const) : null,
 				contexto: [
 					conciliacion.length > 0
 						? { texto: "Responsable: Contaduría", tono: "normal" }

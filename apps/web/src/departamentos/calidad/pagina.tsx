@@ -18,7 +18,7 @@ import { rutasDeCalidad, useDireccion } from "./direccion.ts";
 import { VentanaRevisarDevolucion } from "./ventanas/revisar-devolucion.tsx";
 
 /** Las pestañas de Calidad, en su orden; su clave es su ruta. */
-export const pestanasDeCalidad = [
+const pestanasDeCalidad = [
 	{ clave: "pendientes", texto: "Pendientes" },
 	{ clave: "por-revisar", texto: "Por revisar" },
 	{ clave: "defectos", texto: "Defectos" },
@@ -26,7 +26,7 @@ export const pestanasDeCalidad = [
 ] as const;
 
 /** La clave de una pestaña de Calidad. */
-export type PestanaDeCalidad = (typeof pestanasDeCalidad)[number]["clave"];
+type PestanaDeCalidad = (typeof pestanasDeCalidad)[number]["clave"];
 
 /**
  * La página de Calidad con una pestaña.

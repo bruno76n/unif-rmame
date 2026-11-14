@@ -1,6 +1,7 @@
 /**
- * El dinero en centavos: leerlo, mostrarlo, redondearlo, sacar porcentajes y repartirlo.
+ * El dinero en centavos: leerlo, mostrarlo, redondearlo, sumarlo, sacar porcentajes y repartirlo.
  * Fase 1 · docs/cimientos/PAQUETE-COMPARTIDO.md («Dinero»)
+ * Fase 19 · docs/interfaz/fabrica/contaduria.md (la suma de lo escogido, el tope de un monto y el monto corto del flujo)
  *
  * Todo se hace con enteros: los productos que pueden pasar de un entero seguro se hacen con `BigInt`,
  * y los porcentajes se convierten a milésimas enteras antes de multiplicar. El redondeo es al más
@@ -108,6 +109,42 @@ export function centavosATexto(monto: Centavos, opciones: { conCentavos?: boolea
  */
 export function enPesos(monto: number): string {
 	return centavosATexto(centavos(monto), { conCentavos: monto % 100 !== 0 });
+}
+
+/**
+ * Un monto corto, para las barras de una gráfica: «+$74k» de mil pesos en adelante (redondeado al millar más cercano,
+ * la mitad lejos del cero), «−$500» por debajo y «$0» en cero.
+ * @param monto Los centavos, con su signo.
+ * @returns El texto, con «+» o «−» (el signo menos tipográfico).
+ * Lo usa el flujo de los próximos días de Contaduría; todo en enteros.
+ */
+export function montoCorto(monto: number): string {
+	if (monto === 0) return "$0";
+	const absoluto = BigInt(Math.abs(monto));
+	const texto = absoluto >= 100_000n ? `$${dividirRedondeando(absoluto, 100_000n)}k` : enPesos(Math.abs(monto));
+	return `${monto > 0 ? "+" : "−"}${texto}`;
+}
+
+/**
+ * Suma montos en centavos.
+ * @param montos Los centavos de cada uno, enteros.
+ * @returns La suma exacta.
+ * @throws RangeError si un monto no es entero o la suma no cabe en un entero seguro.
+ * Existe para que las pantallas sumen lo que se escoge (las órdenes de una factura) en enteros, igual que la API.
+ */
+export function sumarCentavos(montos: readonly number[]): Centavos {
+	return deBigInt(montos.reduce((suma, monto) => suma + BigInt(monto), 0n));
+}
+
+/**
+ * El menor de varios topes: lo más que se puede tomar sin pasar ninguno («hasta el saldo a favor y el del documento»).
+ * @param topes Los centavos de cada tope; al menos uno.
+ * @throws RangeError sin topes o si uno no es entero.
+ */
+export function hastaElMenor(topes: readonly number[]): Centavos {
+	if (topes.length === 0) throw new RangeError("hace falta al menos un tope");
+	if (!topes.every(Number.isSafeInteger)) throw new RangeError("cada tope es un entero de centavos");
+	return centavos(Math.min(...topes));
 }
 
 /**

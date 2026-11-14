@@ -5,6 +5,7 @@
  * Fase 19 · docs/interfaz/fabrica/catalogo.md («Etiquetas»)
  */
 
+import { plural } from "@uniformame/compartido/calculos/textos";
 import { imprimirEtiquetas } from "@uniformame/compartido/contratos/catalogo/etiquetas";
 import { etiquetasDeCatalogo } from "@uniformame/compartido/contratos/catalogo/pantallas";
 import { Boton } from "@uniformame/interfaz/botones/boton";
@@ -18,10 +19,11 @@ import { useState } from "react";
 import type { z } from "zod";
 import { useConsulta } from "../../../comun/api.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
+import { montoEnPantalla } from "../../../comun/montos.ts";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { esperar, useAccionDeCatalogo } from "../acciones.ts";
 import { useBusqueda, useIr } from "../direccion.ts";
-import { cuantos, escuelaOBasico, pesos } from "../textos.ts";
+import { escuelaOBasico } from "../textos.ts";
 
 /** El producto de «Por variante». */
 type ProductoDeEtiquetas = NonNullable<z.infer<typeof etiquetasDeCatalogo.resultado>["producto"]>;
@@ -68,7 +70,7 @@ export function PestanaEtiquetas() {
 										<span className="flex flex-1 flex-col">
 											<b>{nueva.nombre}</b>
 											<span className="text-etiqueta text-tinta2">
-												{`${escuelaOBasico(nueva.escuela)} · ${cuantos(nueva.variantes, "variante", "variantes")}`}
+												{`${escuelaOBasico(nueva.escuela)} · ${plural(nueva.variantes, "variante", "variantes")}`}
 											</span>
 										</span>
 										<Boton
@@ -76,7 +78,7 @@ export function PestanaEtiquetas() {
 											disabled={accion.isPending || !conConexion}
 											onClick={() => void nuevas(nueva.producto_id)}
 										>
-											{`PDF de ${cuantos(nueva.variantes, "etiqueta", "etiquetas")}`}
+											{`PDF de ${plural(nueva.variantes, "etiqueta", "etiquetas")}`}
 										</Boton>
 									</li>
 								))}
@@ -153,7 +155,7 @@ function PorVariante({
 	return (
 		<div className="flex flex-col gap-4">
 			<p className="m-0 text-tinta2">
-				{`${producto.nombre} · ${escuelaOBasico(producto.escuela)} · ${cuantos(producto.variantes.length, "variante con código", "variantes con código")}`}
+				{`${producto.nombre} · ${escuelaOBasico(producto.escuela)} · ${plural(producto.variantes.length, "variante con código", "variantes con código")}`}
 			</p>
 			<div className="grid grid-cols-[2fr_1fr] gap-5 max-menu:grid-cols-1">
 				<div>
@@ -210,7 +212,7 @@ function PorVariante({
 						]}
 					/>
 					<div className="flex items-center justify-end gap-3 pt-3">
-						<span className="text-tinta2 tabular-nums">{cuantos(total, "etiqueta", "etiquetas")}</span>
+						<span className="text-tinta2 tabular-nums">{plural(total, "etiqueta", "etiquetas")}</span>
 						<Boton
 							disabled={total === 0 || fueraDeRango || accion.isPending || !conConexion}
 							onClick={() => void generar()}
@@ -226,7 +228,9 @@ function PorVariante({
 							<b>{producto.nombre}</b>
 							<span className="text-etiqueta">{`${escuelaOBasico(producto.escuela)} · Talla ${enVista.talla}`}</span>
 							<span className="font-mono text-subtitulo tracking-widest">{enVista.codigo}</span>
-							{llevaPrecio && enVista.precio_centavos !== null ? <b>{pesos(enVista.precio_centavos)}</b> : null}
+							{llevaPrecio && enVista.precio_centavos !== null ? (
+								<b>{montoEnPantalla(enVista.precio_centavos)}</b>
+							) : null}
 							{enVista.es_pedido_especial ? <span className="font-semibold">Pedido especial</span> : null}
 						</div>
 					</div>

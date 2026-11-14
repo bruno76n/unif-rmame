@@ -1,7 +1,7 @@
 /**
  * Prueba de `contaduria.pendientes` y de la pastilla de Contaduría con la muestra: las cuatro cifras cuadran con las
- * cuentas, cada pendiente sale con su estado y su botón, la nómina sin «ven sueldos y tarifas» no lleva su total, y
- * solo Contaduría la pide.
+ * cuentas, cada pendiente sale con su estado y su botón, la nómina sin «ven sueldos y tarifas» no lleva su total (y
+ * `ve_sueldos` lo dice para la pestaña Nómina), y solo Contaduría la pide.
  * Fase 19 · docs/fases/19-web-principal.md (criterio «Cada consulta revisa el departamento y el permiso fino en el
  * servidor y no manda lo que la cuenta no debe ver: … saldos sin Contaduría, sueldos y tarifas sin su permiso») y
  * docs/interfaz/fabrica/contaduria.md («Pendientes», «Pastilla del menú»)
@@ -33,6 +33,7 @@ const respuesta = z.object({
 		}),
 	),
 	conteos: z.record(z.string(), z.number()),
+	ve_sueldos: z.boolean(),
 });
 
 describe("Pendientes de Contaduría: cifras, renglones y pastilla", () => {
@@ -114,11 +115,14 @@ describe("Pendientes de Contaduría: cifras, renglones y pastilla", () => {
 		expect(nomina?.estado.texto).toBe("Por pagar");
 		expect(nomina?.accion.texto).toBe("Pagar nómina");
 		expect(nomina?.total_nomina_centavos).toBeTypeOf("number");
+		// La pestaña Nómina no decide quién ve sueldos: se lo dice la consulta.
+		expect(conPermiso.ve_sueldos).toBe(true);
 		const sinPermiso = await pedirConsulta(servidor, "contaduria.pendientes", {}, "contaduria");
 		const suya = respuesta.parse(sinPermiso.cuerpo.resultado).renglones.find((renglon) => renglon.tipo === "nomina");
 		expect(suya?.accion.texto).toBe("Ver nómina");
 		expect(suya?.total_nomina_centavos).toBeUndefined();
 		expect(sinPermiso.cuerpo.recortado).toContain("total_nomina_centavos");
+		expect(respuesta.parse(sinPermiso.cuerpo.resultado).ve_sueldos).toBe(false);
 	});
 
 	it("solo Contaduría pide sus pendientes: Ventas y Bodega reciben 403", async () => {

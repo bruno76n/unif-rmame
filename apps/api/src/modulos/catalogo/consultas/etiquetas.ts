@@ -14,7 +14,7 @@ import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { noExiste } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeConsulta, implementarConsulta } from "../../../nucleo/modulos.ts";
-import { filas, parametroNumero, parametroSiNo } from "./comunes.ts";
+import { filas, parametroNumero, parametroSiNo } from "./comun.ts";
 
 /** Una talla del producto como la lee la base. */
 const varianteLeida = z.object({

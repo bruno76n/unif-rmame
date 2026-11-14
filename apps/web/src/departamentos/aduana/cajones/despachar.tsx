@@ -29,8 +29,8 @@ import { useConsulta } from "../../../comun/api.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { useTieneDepartamento } from "../../../comun/tiene-departamento.ts";
-import { useEnvio } from "../comun.tsx";
 import { useDireccionDeAduana } from "../direccion.ts";
+import { useEnvio } from "../envio.ts";
 
 /** Lo que regresa la consulta. */
 type Detalle = z.infer<typeof detalleDespachar.resultado>;

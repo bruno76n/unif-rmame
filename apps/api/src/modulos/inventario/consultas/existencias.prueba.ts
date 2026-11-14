@@ -25,7 +25,13 @@ interface Variante {
 /** Lo que regresa la consulta, en lo que revisa la prueba. */
 interface Existencias {
 	resumen: { variantes: number; piezas: number };
-	renglones: { producto_id: string; prenda: string; variantes: Variante[] }[];
+	columnas: { codigo: string; nombre: string }[];
+	renglones: {
+		producto_id: string;
+		prenda: string;
+		suma: { celdas: { codigo: string; piezas: number }[]; total: number; comprometido: number; libre: number };
+		variantes: Variante[];
+	}[];
 	cursor: string | null;
 	hay_mas: boolean;
 }
@@ -60,6 +66,22 @@ describe("Existencias: por producto y variante, con sus filtros y sus páginas",
 		);
 		expect(sumaBodega).toBe(enBodega);
 		for (const variante of variantes) expect(variante.libre).toBe(variante.total - variante.comprometido);
+		// El renglón de cada producto llega con la suma de sus variantes: la pantalla no suma.
+		for (const producto of todas.renglones) {
+			const deSusVariantes = (valor: (variante: Variante) => number) =>
+				producto.variantes.reduce((suma, variante) => suma + valor(variante), 0);
+			expect(producto.suma.total).toBe(deSusVariantes((variante) => variante.total));
+			expect(producto.suma.libre).toBe(deSusVariantes((variante) => variante.libre));
+			expect(producto.suma.celdas.find((celda) => celda.codigo === "BOD")?.piezas).toBe(
+				deSusVariantes((variante) => variante.celdas.find((celda) => celda.codigo === "BOD")?.piezas ?? 0),
+			);
+		}
+		// Las columnas llegan con el nombre de su ubicación.
+		const nombres = await valorDe(
+			servidor,
+			"SELECT string_agg(nombre, ',' ORDER BY orden) FROM ubicaciones WHERE codigo IN ('ADU', 'BOD', 'T1', 'T2', 'TAL')",
+		);
+		expect(todas.columnas.map((columna) => columna.nombre).join(",")).toBe(nombres);
 	});
 
 	it("la celda de Bodega lleva su mínimo y su color: rojo en cero, ámbar bajo el mínimo, sin color arriba", async () => {

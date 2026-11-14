@@ -68,6 +68,21 @@ export function menor(uno: bigint, otro: bigint): bigint {
 }
 
 /**
+ * Suma lo que se va escribiendo en varios campos de cantidad («92.5», «88,5»): lo que todavía no es un decimal con
+ * hasta tres decimales no suma.
+ * @param textos Lo escrito en cada campo; la coma vale como punto.
+ * @returns La suma, en milésimos.
+ * Existe para que una pantalla diga cuánto lleva escrito (los metros de los rollos que llegan) sin pasar por un número
+ * con decimales.
+ */
+export function sumaDeLoEscrito(textos: readonly string[]): bigint {
+	return textos.reduce((suma, texto) => {
+		const limpio = texto.trim().replace(",", ".");
+		return formaDecimal.test(limpio) ? suma + aMilesimos(limpio) : suma;
+	}, 0n);
+}
+
+/**
  * Unos milésimos como se dicen en un mensaje, sin ceros de más: `100_000n` → «100», `12_500n` → «12.5».
  * @param milesimos Con o sin signo.
  */

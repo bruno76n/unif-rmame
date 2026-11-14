@@ -8,7 +8,7 @@
  * `cuentaDeLaNomina`, la misma que corre `contaduria.pagar_nomina`; pagada, son sus renglones congelados.
  */
 
-import { textoDeDia, textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
+import { textoDeDia, textoDeDiaCorto, zonaDelNegocio } from "@uniformame/compartido/calculos/fechas";
 import { nominaSemana } from "@uniformame/compartido/contratos/contaduria/consultas-nomina";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
@@ -64,7 +64,7 @@ async function semanas(contexto: ContextoDeConsulta): Promise<Semana[]> {
 	const { rows } =
 		await contexto.base.execute(sql`SELECT s.id, s.fecha_inicio::text AS inicio, s.fecha_fin::text AS fin,
 			n.id AS nomina_id, n.version, n.estado, n.fecha_pago::text,
-			(n.pagada_en AT TIME ZONE 'America/Mexico_City')::date::text AS pagada,
+			(n.pagada_en AT TIME ZONE ${zonaDelNegocio}::text)::date::text AS pagada,
 			n.total_tiempo_centavos AS total_tiempo, n.total_piezas_centavos AS total_piezas, n.total_centavos AS total,
 			n.regla_piezas_danadas AS regla_danadas, n.regla_descuento_mayor AS regla_mayor
 		FROM asistencia_semanas s LEFT JOIN nominas n ON n.asistencia_semana_id = s.id

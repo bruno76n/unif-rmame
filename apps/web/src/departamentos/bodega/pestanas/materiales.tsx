@@ -23,8 +23,8 @@ import { Tabla } from "@uniformame/interfaz/tablas/tabla";
 import { useState } from "react";
 import type { z } from "zod";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
-import { useEnvio } from "../comun.tsx";
 import { useDireccionDeBodega } from "../direccion.ts";
+import { useEnvio } from "../envio.ts";
 import { VentanaCargaMaterial } from "../ventanas/carga-material.tsx";
 
 /** Lo que regresa la consulta. */

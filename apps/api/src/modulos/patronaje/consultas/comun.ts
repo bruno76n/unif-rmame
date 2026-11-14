@@ -18,6 +18,8 @@ export const sinEscuela = "Básico";
 export interface TallaLeida {
 	talla_id: string;
 	nombre: string;
+	/** El nombre de su grupo de tallas, para el rango. */
+	grupo: string;
 	especial: boolean;
 }
 
@@ -131,8 +133,8 @@ const deDesperdicio = z.object({
  */
 async function tallasDe(contexto: ContextoDeConsulta, ids?: readonly string[]): Promise<Map<string, TallaLeida[]>> {
 	const { rows } = await contexto.base.execute(sql`
-		SELECT v.producto_id, t.id AS talla_id, t.nombre, v.es_pedido_especial AS especial
-		FROM variantes v JOIN tallas t ON t.id = v.talla_id
+		SELECT v.producto_id, t.id AS talla_id, t.nombre, g.nombre AS grupo, v.es_pedido_especial AS especial
+		FROM variantes v JOIN tallas t ON t.id = v.talla_id JOIN grupos_talla g ON g.id = t.grupo_talla_id
 		WHERE v.baja_en IS NULL ${
 			ids === undefined
 				? sql``
@@ -144,10 +146,18 @@ async function tallasDe(contexto: ContextoDeConsulta, ids?: readonly string[]): 
 		ORDER BY ${ordenDeTallas("t")}`);
 	const porPrenda = new Map<string, TallaLeida[]>();
 	for (const talla of z
-		.array(z.object({ producto_id: z.uuid(), talla_id: z.uuid(), nombre: z.string(), especial: z.boolean() }))
+		.array(
+			z.object({
+				producto_id: z.uuid(),
+				talla_id: z.uuid(),
+				nombre: z.string(),
+				grupo: z.string(),
+				especial: z.boolean(),
+			}),
+		)
 		.parse(rows)) {
 		const suyas = porPrenda.get(talla.producto_id) ?? [];
-		suyas.push({ talla_id: talla.talla_id, nombre: talla.nombre, especial: talla.especial });
+		suyas.push({ talla_id: talla.talla_id, nombre: talla.nombre, grupo: talla.grupo, especial: talla.especial });
 		porPrenda.set(talla.producto_id, suyas);
 	}
 	return porPrenda;
@@ -250,16 +260,6 @@ export function tallaDeEnMedio(tallas: readonly TallaLeida[]): TallaLeida | unde
 	const normales = tallas.filter((talla) => !talla.especial);
 	const entre = normales.length > 0 ? normales : tallas;
 	return entre[Math.floor((entre.length - 1) / 2)];
-}
-
-/**
- * Las tallas como se dicen: «6 a 14», o la única.
- * @param tallas Sus tallas, en orden.
- */
-export function rangoDeTallas(tallas: readonly TallaLeida[]): string {
-	const primera = tallas[0]?.nombre ?? "";
-	const ultima = tallas.at(-1)?.nombre ?? "";
-	return tallas.length > 1 ? `${primera} a ${ultima}` : primera;
 }
 
 /**

@@ -9,6 +9,7 @@
 
 import { useRouter } from "@tanstack/react-router";
 import { centavosACampo, pesosACentavos } from "@uniformame/compartido/calculos/dinero";
+import { plural } from "@uniformame/compartido/calculos/textos";
 import { altaDeProducto } from "@uniformame/compartido/contratos/catalogo/pantallas";
 import { crearProducto } from "@uniformame/compartido/contratos/catalogo/productos";
 import { Boton } from "@uniformame/interfaz/botones/boton";
@@ -28,7 +29,6 @@ import { useConConexion } from "../../../comun/estado-de-la-app.ts";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { esperar, useAccionDeCatalogo } from "../acciones.ts";
 import { conFicha, sinCajon, useBusqueda, useIr } from "../direccion.ts";
-import { cuantos } from "../textos.ts";
 
 /** Lo que regresa la consulta del alta. */
 type Alta = z.infer<typeof altaDeProducto.resultado>;
@@ -466,7 +466,7 @@ function FormularioDelAlta({
 					})}
 				{tallas.length === 0 ? null : (
 					<p className="m-0 text-etiqueta text-tinta2">
-						{`Se crean ${cuantos(tallas.length, "variante", "variantes")}, una por talla, con los códigos ${alta.siguiente_codigo ?? ""} a ${String(primero + tallas.length - 1).padStart(6, "0")}.`}
+						{`Se crean ${plural(tallas.length, "variante", "variantes")}, una por talla, con los códigos ${alta.siguiente_codigo ?? ""} a ${String(primero + tallas.length - 1).padStart(6, "0")}.`}
 					</p>
 				)}
 			</fieldset>

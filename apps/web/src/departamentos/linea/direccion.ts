@@ -5,9 +5,10 @@
  * Fase 19 · docs/interfaz/comunes.md («La página de un departamento», regla 2) y .claude/rules/react.md (regla 5)
  */
 
-import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useCallback } from "react";
 import { z } from "zod";
+import { useBusquedaDeDepartamento } from "../../comun/direccion.ts";
+import { rutaDePestana } from "../../comun/pagina-de-departamento.tsx";
 
 /** Las pestañas de Tienda en línea; su clave es su ruta. */
 export const pestanasDeLinea = [
@@ -34,24 +35,12 @@ export type BusquedaDeLinea = z.infer<typeof busquedaDeLinea>;
 /**
  * Lee la búsqueda de la dirección y da cómo cambiarla: los cambios se juntan con lo que ya hay, y lo que se pone sin
  * valor se quita.
+ * Lo común está en `useBusquedaDeDepartamento`; aquí van sus cajones.
  * @returns La búsqueda, `navegar(cambios, pestana?)`, `abrir(id)` el cajón del pedido y `cerrar()`.
  */
 export function useDireccionDeLinea() {
-	const busqueda = busquedaDeLinea.parse(useSearch({ strict: false }));
-	const navigate = useNavigate();
-	const navegar = useCallback(
-		(cambios: Partial<BusquedaDeLinea>, pestana?: PestanaDeLinea) => {
-			const nueva = Object.fromEntries(
-				Object.entries({ ...(pestana === undefined ? busqueda : {}), ...cambios }).filter(
-					([, valor]) => valor !== undefined && valor !== "",
-				),
-			);
-			void navigate({
-				to: pestana === undefined ? "." : pestana === "pendientes" ? "/linea" : `/linea/${pestana}`,
-				search: busquedaDeLinea.parse(nueva),
-			});
-		},
-		[busqueda, navigate],
+	const { busqueda, navegar } = useBusquedaDeDepartamento(busquedaDeLinea, (pestana: PestanaDeLinea) =>
+		rutaDePestana("linea", pestana),
 	);
 	/** Abre el cajón de un pedido en línea, sin tocar la pestaña ni su buscador. */
 	const abrir = useCallback((id: string) => navegar({ cajon: "pedido", id }), [navegar]);

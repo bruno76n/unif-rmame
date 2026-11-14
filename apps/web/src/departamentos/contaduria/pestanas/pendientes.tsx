@@ -7,7 +7,7 @@
  * pestaña de cada botón. El grupo escogido va en la dirección. Sin «ven sueldos y tarifas», la nómina sale en «••••».
  */
 
-import { enPesos } from "@uniformame/compartido/calculos/dinero";
+import { montoCorto } from "@uniformame/compartido/calculos/dinero";
 import {
 	flujoProximosDias,
 	pendientesDeContaduria,
@@ -135,16 +135,6 @@ function cifrasDe(datos: Pendientes, ir: (pestana: "cuentas-por-cobrar" | "cuent
 			alTocar: () => ir("cuentas-por-pagar"),
 		},
 	];
-}
-
-/**
- * Un monto corto para las barras del flujo: «+$74k», «−$15k».
- * @param valor En centavos.
- */
-function montoCorto(valor: number): string {
-	const pesos = Math.abs(valor) / 100;
-	const texto = pesos >= 1000 ? `$${Math.round(pesos / 1000)}k` : enPesos(Math.abs(valor));
-	return valor === 0 ? "$0" : `${valor > 0 ? "+" : "−"}${texto}`;
 }
 
 /** El flujo de los próximos días: lo que entra arriba de la línea y lo que sale abajo, por día. */

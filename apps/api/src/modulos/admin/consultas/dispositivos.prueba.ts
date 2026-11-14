@@ -53,7 +53,7 @@ describe("Las consultas de Dispositivos", () => {
 		const respuesta = await pedirConsulta(servidor, "admin.dispositivos", {}, quien);
 		expect(respuesta.estado, JSON.stringify(respuesta.cuerpo)).toBe(200);
 		return respuesta.cuerpo.resultado as {
-			es_duena: boolean;
+			puede: { registrar: boolean; revocar: boolean };
 			registrados: Registrado[];
 			revocados: { nombre: string; motivo: string; despues_de_revocar: number }[];
 			donde_se_usa: { nombre: string; tipo: string; con_impresora: boolean }[];
@@ -103,7 +103,8 @@ describe("Las consultas de Dispositivos", () => {
 		);
 		await apartar(tablet, "falta_documento");
 		const leidos = await dispositivos("admin");
-		expect(leidos.es_duena).toBe(false);
+		// Solo la dueña registra y revoca: lo dice la consulta.
+		expect(leidos.puede).toEqual({ registrar: false, revocar: false });
 		expect(leidos.registrados.map((uno) => uno.nombre)).not.toContain("uniformame.mx");
 		const deLaTablet = leidos.registrados.find((uno) => uno.dispositivo_id === tablet);
 		expect(deLaTablet).toMatchObject({
@@ -134,7 +135,7 @@ describe("Las consultas de Dispositivos", () => {
 		);
 		await apartar(puente, "dispositivo_revocado", true);
 		const leidos = await dispositivos("duena");
-		expect(leidos.es_duena).toBe(true);
+		expect(leidos.puede).toEqual({ registrar: true, revocar: true });
 		expect(leidos.registrados.some((uno) => uno.dispositivo_id === puente)).toBe(false);
 		expect(leidos.revocados).toContainEqual(
 			expect.objectContaining({ nombre: "Puente de Aduana", motivo: "Se perdió", despues_de_revocar: 1 }),
@@ -158,10 +159,10 @@ describe("Las consultas de Dispositivos", () => {
 		expect(sinDescartados.estado, JSON.stringify(sinDescartados.cuerpo)).toBe(200);
 		const leidos = sinDescartados.cuerpo.resultado as {
 			nombre: string;
-			es_duena: boolean;
+			puede_descartar: boolean;
 			renglones: { comando_id: string; accion: string; descartado: string | null }[];
 		};
-		expect(leidos).toMatchObject({ nombre: "Tablet del taller", es_duena: false });
+		expect(leidos).toMatchObject({ nombre: "Tablet del taller", puede_descartar: false });
 		expect(leidos.renglones.map((renglon) => renglon.comando_id)).toContain(primero);
 		expect(leidos.renglones.map((renglon) => renglon.comando_id)).not.toContain(descartado);
 		const conDescartados = await pedirConsulta(
@@ -174,5 +175,8 @@ describe("Las consultas de Dispositivos", () => {
 		expect(todos.find((renglon) => renglon.comando_id === descartado)?.descartado).toBe(
 			"Descartado: Ya se capturó a mano",
 		);
+		// Solo la dueña descarta.
+		const deLaDuena = await pedirConsulta(servidor, "admin.comandos_apartados", { dispositivo_id: tablet }, "duena");
+		expect((deLaDuena.cuerpo.resultado as typeof leidos).puede_descartar).toBe(true);
 	});
 });

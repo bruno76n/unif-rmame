@@ -13,7 +13,7 @@ import { VentanaConMotivo } from "../../../comun/ventana-con-motivo.tsx";
 import { loQueCambiaEnProduccion } from "../invalidar.ts";
 
 /** El registro que se cancela, como lo trae el cajón. */
-export interface RegistroPorCancelar {
+interface RegistroPorCancelar {
 	registro_id: string;
 	version: number;
 	persona: string;

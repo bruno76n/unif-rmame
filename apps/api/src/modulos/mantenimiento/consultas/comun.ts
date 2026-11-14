@@ -9,6 +9,7 @@
  * las da `fallasQueDetienen`, la misma lectura que usan Producción y Dirección (regla 6).
  */
 
+import { zonaDelNegocio } from "@uniformame/compartido/calculos/fechas";
 import type { estadoEscrito } from "@uniformame/compartido/contratos/mantenimiento/consultas-pestanas";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
@@ -90,7 +91,7 @@ export async function leerMaquinas(contexto: ContextoDeAccion, maquinaId?: strin
 	const { rows } = await contexto.transaccion.execute(sql`
 		SELECT m.id, m.folio, m.nombre, m.version, t.nombre AS tipo, m.marca, m.modelo, m.serie,
 			a.id AS area_id, a.nombre AS area, a.orden AS area_orden, p.id AS persona_id, p.nombre AS la_trae,
-			(m.baja_en AT TIME ZONE 'America/Mexico_City')::date::text AS baja_el_dia, m.motivo_baja,
+			(m.baja_en AT TIME ZONE ${zonaDelNegocio}::text)::date::text AS baja_el_dia, m.motivo_baja,
 			f.id AS falla_id, f.folio AS falla_folio, f.detuvo_maquina AS detuvo
 		FROM maquinas m JOIN tipos_maquina t ON t.id = m.tipo_maquina_id
 		JOIN lista_valores a ON a.id = m.area_id

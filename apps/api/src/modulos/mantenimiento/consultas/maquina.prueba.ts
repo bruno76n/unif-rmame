@@ -40,6 +40,7 @@ interface Maquina {
 	)[];
 	falla_abierta: string | null;
 	dada_de_baja: { desde: string; motivo: string } | null;
+	puede: { dar_de_baja: boolean; razon: string | null };
 }
 
 describe("El cajón Máquina: su estado, lo que ha costado, sus datos y su historial", () => {
@@ -77,6 +78,11 @@ describe("El cajón Máquina: su estado, lo que ha costado, sus datos y su histo
 		});
 		expect(maquina.la_trae).not.toBeNull();
 		expect(maquina.falla_abierta).toMatch(/^FM-/);
+		// Con falla abierta no se da de baja: la consulta lo dice, con el texto de la acción.
+		expect(maquina.puede).toEqual({
+			dar_de_baja: false,
+			razon: "Collareta 3 tiene una falla abierta: resuélvela antes de darla de baja",
+		});
 		const [primero, segundo] = maquina.historial;
 		expect(primero).toMatchObject({ tipo: "falla", fecha: "2026-10-08" });
 		expect(primero?.tipo === "falla" ? primero.texto : "").toMatch(/^Falla: no prende, reportó .+/);
@@ -99,6 +105,7 @@ describe("El cajón Máquina: su estado, lo que ha costado, sus datos y su histo
 			fallas_en_el_anio: 0,
 			historial: [],
 			falla_abierta: null,
+			puede: { dar_de_baja: true, razon: null },
 		});
 	});
 

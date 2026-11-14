@@ -14,7 +14,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "@tanstack/react-router";
-import { pesosACentavos } from "@uniformame/compartido/calculos/dinero";
+import { centavosACampo, pesosACentavos } from "@uniformame/compartido/calculos/dinero";
 import { textoDeMomentoCorto } from "@uniformame/compartido/calculos/fechas";
 import { plural } from "@uniformame/compartido/calculos/textos";
 import {
@@ -103,7 +103,7 @@ function capturaDe(ficha: Ficha): Capturado {
 		rol_tienda: ficha.rol_tienda ?? "",
 		puesto: ficha.puesto,
 		forma_pago: ficha.forma_pago,
-		pago_dia_centavos: ficha.pago_dia_centavos == null ? "" : String(ficha.pago_dia_centavos / 100),
+		pago_dia_centavos: centavosACampo(ficha.pago_dia_centavos),
 		fecha_ingreso: ficha.fecha_ingreso,
 	};
 }

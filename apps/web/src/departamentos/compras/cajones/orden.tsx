@@ -8,6 +8,7 @@
  */
 
 import { useRouter } from "@tanstack/react-router";
+import { cantidadConUnidad, errorDeCantidad } from "@uniformame/compartido/calculos/compras";
 import { centavosACampo, pesosACentavos } from "@uniformame/compartido/calculos/dinero";
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
 import { plural } from "@uniformame/compartido/calculos/textos";
@@ -18,13 +19,14 @@ import {
 	guardarBorradorOrden,
 	marcarOrdenEnviada,
 } from "@uniformame/compartido/contratos/compras/ordenes";
-import { cantidadConUnidad, errorDeCantidad, pesos } from "@uniformame/compartido/contratos/compras/textos";
 import { Boton } from "@uniformame/interfaz/botones/boton";
+import { Enlace } from "@uniformame/interfaz/botones/enlace";
 import { Campo } from "@uniformame/interfaz/captura/campo";
 import { Cajon } from "@uniformame/interfaz/contenedores/cajon";
 import { Estado } from "@uniformame/interfaz/estados/estado";
 import { EstadoDePantalla } from "@uniformame/interfaz/estados/estado-de-pantalla";
 import { Dato } from "@uniformame/interfaz/pagina/dato";
+import { TituloDeBloque } from "@uniformame/interfaz/pagina/seccion";
 import { Tabla } from "@uniformame/interfaz/tablas/tabla";
 import { FileText } from "lucide-react";
 import { useState } from "react";
@@ -33,9 +35,9 @@ import { leerFalla, useAccion, useConsulta } from "../../../comun/api.tsx";
 import { useCierreDelCajon } from "../../../comun/cambios-sin-guardar.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
 import { Historial } from "../../../comun/historial.tsx";
+import { montoEnPantalla } from "../../../comun/montos.ts";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { VentanaConMotivo } from "../../../comun/ventana-con-motivo.tsx";
-import { TituloDeSeccion } from "../comun.tsx";
 import { useDireccionDeCompras } from "../direccion.ts";
 
 /** Lo que regresa la consulta. */
@@ -59,7 +61,7 @@ const cambianConLaOrden = [
 ];
 
 /** La dirección de la ventana «Capturar nota o factura» de Contaduría, con la orden ya puesta. */
-export function direccionCapturarFactura(ordenId: string): string {
+function direccionCapturarFactura(ordenId: string): string {
 	return `/contaduria/cuentas-por-pagar?${new URLSearchParams({ ventana: "capturar_factura", orden_compra_id: ordenId }).toString()}`;
 }
 
@@ -137,13 +139,7 @@ function ContenidoDeOrden({
 			))}
 			<div className="mt-2 grid grid-cols-3 gap-2 max-telefono:grid-cols-2">
 				<Dato etiqueta="Proveedor">
-					<button
-						type="button"
-						className="text-left font-semibold text-marca hover:underline"
-						onClick={() => ir({ cajon: "proveedor", id: orden.proveedor_id })}
-					>
-						{orden.proveedor}
-					</button>
+					<Enlace onClick={() => ir({ cajon: "proveedor", id: orden.proveedor_id })}>{orden.proveedor}</Enlace>
 				</Dato>
 				<Dato etiqueta="Condición de pago">{orden.condicion}</Dato>
 				<Dato etiqueta="Levantó">{orden.levanto}</Dato>
@@ -172,7 +168,7 @@ function ContenidoDeOrden({
 					</span>
 				</div>
 			) : null}
-			<TituloDeSeccion titulo={`Lo que se pidió · ${plural(datos.lineas.length, "material", "materiales")}`} />
+			<TituloDeBloque titulo={`Lo que se pidió · ${plural(datos.lineas.length, "material", "materiales")}`} />
 			<Tabla
 				nombre="Lo que se pidió"
 				filas={datos.lineas}
@@ -234,10 +230,10 @@ function ContenidoDeOrden({
 								/>
 							) : (
 								<span className="flex flex-col items-end">
-									{pesos(linea.precio_centavos)}
+									{montoEnPantalla(linea.precio_centavos)}
 									{linea.precio_orden_centavos === null ? null : (
 										<span className="text-etiqueta text-tinta3">
-											La orden decía {pesos(linea.precio_orden_centavos)}
+											La orden decía {montoEnPantalla(linea.precio_orden_centavos)}
 										</span>
 									)}
 								</span>
@@ -247,8 +243,8 @@ function ContenidoDeOrden({
 						clave: "importe",
 						encabezado: "Importe",
 						alinear: "derecha",
-						celda: (linea) => pesos(linea.importe_centavos),
-						suma: <b>{pesos(datos.total_centavos)}</b>,
+						celda: (linea) => montoEnPantalla(linea.importe_centavos),
+						suma: <b>{montoEnPantalla(datos.total_centavos)}</b>,
 					},
 				]}
 			/>
@@ -408,7 +404,7 @@ export function CajonOrden({ ordenId, alCerrar }: { ordenId: string; alCerrar: (
 						abierta={ventana === "cancelar"}
 						alCerrar={() => setVentana(null)}
 						titulo={puede?.editar ? `Descartar ${orden.folio}` : `Cancelar ${orden.folio}`}
-						subtitulo={`${orden.proveedor}, ${plural(datos.lineas.length, "material", "materiales")}, ${pesos(datos.total_centavos)}.`}
+						subtitulo={`${orden.proveedor}, ${plural(datos.lineas.length, "material", "materiales")}, ${montoEnPantalla(datos.total_centavos)}.`}
 						textoAccion={puede?.editar ? "Descartar orden" : "Cancelar orden"}
 						enviando={cancelar.isPending}
 						alConfirmar={(motivo) =>

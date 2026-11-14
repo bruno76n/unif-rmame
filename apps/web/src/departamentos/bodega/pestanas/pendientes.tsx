@@ -41,8 +41,9 @@ import {
 import { useState } from "react";
 import type { z } from "zod";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
-import { enteros, useEnvio, VarianteEnDosRenglones } from "../comun.tsx";
+import { enteros, VarianteEnDosRenglones } from "../comun.tsx";
 import { type PestanaDeBodega, useDireccionDeBodega } from "../direccion.ts";
+import { useEnvio } from "../envio.ts";
 import { VentanaNoLaEncuentro } from "../ventanas/no-la-encuentro.tsx";
 import { VentanaRegresaAProveedor } from "../ventanas/regresa-a-proveedor.tsx";
 

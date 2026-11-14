@@ -7,7 +7,6 @@
  */
 
 import { useRouter } from "@tanstack/react-router";
-import { armazon } from "@uniformame/compartido/contratos/admin/armazon";
 import { clienteDeContaduria } from "@uniformame/compartido/contratos/contaduria/consultas-cobrar";
 import { Boton } from "@uniformame/interfaz/botones/boton";
 import { BotonConCifra } from "@uniformame/interfaz/botones/boton-con-cifra";
@@ -25,6 +24,7 @@ import { useConsulta } from "../../../comun/api.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
 import { montoEnPantalla } from "../../../comun/montos.ts";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
+import { useTieneDepartamento } from "../../../comun/tiene-departamento.ts";
 import { RenglonDeLista } from "../comun.tsx";
 import { useDireccionDeContaduria } from "../direccion.ts";
 import { VentanaAplicarSaldoAFavor } from "../ventanas/aplicar-saldo-favor.tsx";
@@ -168,15 +168,12 @@ function CuerpoDeCliente({ cliente, alAbrir }: { cliente: Cliente; alAbrir: (ven
  */
 export function CajonCliente({ clienteId, alCerrar }: { clienteId: string; alCerrar: () => void }) {
 	const consulta = useConsulta(clienteDeContaduria, { cliente_id: clienteId });
-	const delArmazon = useConsulta(armazon, {});
+	const tiene = useTieneDepartamento();
 	const { abrir } = useDireccionDeContaduria();
 	const router = useRouter();
 	const conConexion = useConConexion();
 	const [ventana, setVentana] = useState<VentanaAbierta | undefined>(undefined);
 	const cliente = consulta.data;
-	const tieneVentas =
-		delArmazon.data !== undefined &&
-		(delArmazon.data.cuenta.es_duena || delArmazon.data.departamentos.some((uno) => uno.clave === "ventas"));
 	const leDebemos = cliente?.le_debemos_centavos ?? 0;
 	return (
 		<>
@@ -193,7 +190,9 @@ export function CajonCliente({ clienteId, alCerrar }: { clienteId: string; alCer
 								cifra={cliente.pedidos_abiertos}
 								texto={cliente.pedidos_abiertos === 1 ? "pedido abierto" : "pedidos abiertos"}
 								icono={Table}
-								alTocar={tieneVentas ? () => router.history.push(`/ventas/pedidos?de_cliente=${clienteId}`) : undefined}
+								alTocar={
+									tiene("ventas") ? () => router.history.push(`/ventas/pedidos?de_cliente=${clienteId}`) : undefined
+								}
 							/>
 							<BotonConCifra
 								cifra={cliente.notas_con_saldo}

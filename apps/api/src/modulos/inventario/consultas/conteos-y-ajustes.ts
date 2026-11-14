@@ -8,7 +8,7 @@
  * DF-. El ajuste mueve solo la diferencia que se vio al contar (regla 6 de diferencias, ajustes y mermas).
  */
 
-import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
+import { textoDeDiaCorto, zonaDelNegocio } from "@uniformame/compartido/calculos/fechas";
 import { conteosYAjustesDeBodega } from "@uniformame/compartido/contratos/inventario/bodega";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
@@ -78,9 +78,9 @@ function conSigno(numero: number): string {
  */
 async function leerAjustes(contexto: ContextoDeAccion, donde: ReturnType<typeof sql>, limite?: number) {
 	const { rows } = await contexto.transaccion.execute(sql`
-		SELECT a.id, a.folio, a.autorizacion_id, au.version, (a.creado_en AT TIME ZONE 'America/Mexico_City')::date::text AS fecha,
+		SELECT a.id, a.folio, a.autorizacion_id, au.version, (a.creado_en AT TIME ZONE ${zonaDelNegocio}::text)::date::text AS fecha,
 			coalesce(us.nombre, us.correo, '') AS quien, u.nombre AS ubicacion, lv.nombre AS motivo, a.motivo_texto, a.estado,
-			(a.decidido_en AT TIME ZONE 'America/Mexico_City')::date::text AS decidido, a.motivo_rechazo,
+			(a.decidido_en AT TIME ZONE ${zonaDelNegocio}::text)::date::text AS decidido, a.motivo_rechazo,
 			coalesce(a.decidido_en, a.creado_en)::text AS orden
 		FROM ajustes a JOIN ubicaciones u ON u.id = a.ubicacion_id JOIN lista_valores lv ON lv.id = a.motivo_id
 		LEFT JOIN autorizaciones au ON au.id = a.autorizacion_id LEFT JOIN usuarios us ON us.id = a.creado_por
@@ -179,7 +179,7 @@ async function conteosHechos(contexto: ContextoDeAccion, cursor: string | undefi
 			: sql`AND (c.contado_en, c.folio) < (${String(posicion.en)}::timestamptz, ${String(posicion.folio)})`;
 	const { rows } = await contexto.transaccion.execute(sql`
 		SELECT c.id, c.folio, c.tipo, c.alcance, c.contado_en::text AS en,
-			(c.contado_en AT TIME ZONE 'America/Mexico_City')::date::text AS fecha, u.nombre AS ubicacion,
+			(c.contado_en AT TIME ZONE ${zonaDelNegocio}::text)::date::text AS fecha, u.nombre AS ubicacion,
 			coalesce(s.nombre, p.nombre) AS seccion, coalesce(us.nombre, us.correo, '') AS responsable,
 			(SELECT count(*) FROM conteo_lineas l WHERE l.conteo_id = c.id) AS variantes,
 			(SELECT count(*) FROM conteo_lineas l WHERE l.conteo_id = c.id AND l.diferencia <> 0) AS diferencias

@@ -7,7 +7,7 @@
  * misma que congela «Marcar como enviado»; mandado, son sus renglones congelados. La nómina viaja en `total_nomina_centavos`, un campo de sueldo.
  */
 
-import { textoDeDia, textoDeDiaCorto, textoDeMes } from "@uniformame/compartido/calculos/fechas";
+import { textoDeDia, textoDeDiaCorto, textoDeMes, zonaDelNegocio } from "@uniformame/compartido/calculos/fechas";
 import { contadorExterno, paqueteMes } from "@uniformame/compartido/contratos/contaduria/consultas-gastos-contador";
 import { sql } from "drizzle-orm";
 import { Temporal } from "temporal-polyfill";
@@ -71,7 +71,7 @@ const paqueteLeido = z.object({
  */
 async function paquetes(contexto: ContextoDeConsulta, id?: string) {
 	const { rows } = await contexto.base.execute(sql`SELECT id, version, mes::text, fecha_limite::text, estado,
-			(enviado_en AT TIME ZONE 'America/Mexico_City')::date::text AS enviado, archivo_id
+			(enviado_en AT TIME ZONE ${zonaDelNegocio}::text)::date::text AS enviado, archivo_id
 		FROM paquetes_contador WHERE (${id ?? null}::uuid IS NULL OR id = ${id ?? null}::uuid) ORDER BY mes DESC`);
 	return z.array(paqueteLeido).parse(rows);
 }

@@ -9,7 +9,7 @@
  */
 
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
-import { plural } from "@uniformame/compartido/calculos/textos";
+import { plural, rangoDeTallas } from "@uniformame/compartido/calculos/textos";
 import { recetaDeLaPrenda } from "@uniformame/compartido/contratos/patronaje/receta";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
@@ -27,7 +27,6 @@ import {
 	nombresDeEtapa,
 	type PrendaLeida,
 	piezasDelLote,
-	rangoDeTallas,
 	sinEscuela,
 	tallaDeEnMedio,
 	textoDePorciento,
@@ -284,7 +283,7 @@ export const consultaReceta = implementarConsulta(recetaDeLaPrenda, async (conte
 			producto_id: prenda.producto_id,
 			receta_id: prenda.receta_id,
 			prenda: prenda.nombre,
-			subtitulo: `${prenda.escuela ?? sinEscuela} · tallas ${rangoDeTallas(prenda.tallas)}`,
+			subtitulo: `${prenda.escuela ?? sinEscuela} · tallas ${rangoDeTallas(prenda.tallas.map((talla) => ({ grupo: talla.grupo, talla: talla.nombre })))}`,
 			estado: estadosDeReceta[prenda.estado],
 			version: prenda.version,
 			vigente: prenda.vigente,

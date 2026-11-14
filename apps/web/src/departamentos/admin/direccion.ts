@@ -6,11 +6,11 @@
  * Fase 19 · docs/interfaz/comunes.md («La página de un departamento», regla 2) y .claude/rules/react.md (regla 5)
  */
 
-import { useNavigate, useSearch } from "@tanstack/react-router";
 import { filtrosDeBitacora } from "@uniformame/compartido/contratos/admin/consultas-bitacora";
 import { gruposDePendientesDeAdmin } from "@uniformame/compartido/contratos/admin/consultas-pendientes";
 import { useCallback } from "react";
 import { z } from "zod";
+import { useBusquedaDeDepartamento } from "../../comun/direccion.ts";
 import { rutaDePestana } from "../../comun/pagina-de-departamento.tsx";
 
 /** Las pestañas de Administración del sistema; su clave es su ruta. */
@@ -51,24 +51,12 @@ export type BusquedaDeAdmin = z.infer<typeof busquedaDeAdmin>;
 /**
  * Lee la búsqueda de Administración del sistema de la dirección y da cómo cambiarla: los cambios se juntan con lo que
  * ya hay (en la misma pestaña), y lo que se pone sin valor se quita.
+ * Lo común está en `useBusquedaDeDepartamento`; aquí van sus cajones.
  * @returns La búsqueda, `navegar(cambios, pestana?)`, `abrirAlta(id)` y `cerrar()`.
  */
 export function useDireccionDeAdmin() {
-	const busqueda = busquedaDeAdmin.parse(useSearch({ strict: false }));
-	const navigate = useNavigate();
-	const navegar = useCallback(
-		(cambios: Partial<BusquedaDeAdmin>, pestana?: PestanaDeAdmin) => {
-			const nueva = Object.fromEntries(
-				Object.entries({ ...(pestana === undefined ? busqueda : {}), ...cambios }).filter(
-					([, valor]) => valor !== undefined && valor !== "",
-				),
-			);
-			void navigate({
-				to: pestana === undefined ? "." : rutaDePestana("admin", pestana),
-				search: busquedaDeAdmin.parse(nueva),
-			});
-		},
-		[busqueda, navigate],
+	const { busqueda, navegar } = useBusquedaDeDepartamento(busquedaDeAdmin, (pestana: PestanaDeAdmin) =>
+		rutaDePestana("admin", pestana),
 	);
 	/** Abre el cajón Alta de usuario de una autorización, sin tocar la pestaña. */
 	const abrirAlta = useCallback((id: string) => navegar({ cajon: "alta_usuario", id }), [navegar]);

@@ -16,6 +16,7 @@ import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pr
 const gastos = z.object({
 	mes: z.string(),
 	al_dia: z.number().nullable(),
+	hoy: z.string(),
 	por_categoria: z.array(z.object({ categoria: z.string(), este_mes_centavos: z.number() })),
 	renglones: z.array(
 		z.object({ folio: z.string(), categoria: z.string(), de_mantenimiento: z.boolean(), monto_centavos: z.number() }),
@@ -40,6 +41,9 @@ describe("Gastos", () => {
 		expect(pedida.estado, JSON.stringify(pedida.cuerpo)).toBe(200);
 		const datos = gastos.parse(pedida.cuerpo.resultado);
 		expect(datos.al_dia).not.toBeNull();
+		// «Registrar gasto» abre con el día de negocio que da la API, no con el reloj de la computadora.
+		expect(datos.hoy.endsWith(`-${String(datos.al_dia).padStart(2, "0")}`)).toBe(true);
+		expect(datos.hoy.startsWith(datos.mes.slice(0, 8))).toBe(true);
 		expect(datos.renglones).toHaveLength(2);
 		const deServicio = datos.renglones.find((renglon) => renglon.de_mantenimiento);
 		expect(deServicio?.folio).toMatch(/^SM-/);

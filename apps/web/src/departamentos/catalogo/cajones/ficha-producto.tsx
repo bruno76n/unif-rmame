@@ -10,12 +10,14 @@
 import { useRouter } from "@tanstack/react-router";
 import { pesosACentavos } from "@uniformame/compartido/calculos/dinero";
 import { avisosDeLaFicha } from "@uniformame/compartido/calculos/precios";
+import { plural } from "@uniformame/compartido/calculos/textos";
 import { fichaDeProducto } from "@uniformame/compartido/contratos/catalogo/pantallas";
 import { aplicarCambiosProducto } from "@uniformame/compartido/contratos/catalogo/precios";
 import {
 	agregarTalla,
 	darBajaTalla,
 	descontinuarTalla,
+	precioDeLista,
 	reactivarProducto,
 	reactivarTalla,
 	subirFotoProducto,
@@ -28,6 +30,7 @@ import { Interruptor } from "@uniformame/interfaz/captura/interruptor";
 import { Selector } from "@uniformame/interfaz/captura/selector";
 import { Cajon } from "@uniformame/interfaz/contenedores/cajon";
 import { EstadoDePantalla } from "@uniformame/interfaz/estados/estado-de-pantalla";
+import { Tabla } from "@uniformame/interfaz/tablas/tabla";
 import { Shirt } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import type { z } from "zod";
@@ -35,11 +38,12 @@ import { leerFalla, subirArchivo, useConsulta } from "../../../comun/api.tsx";
 import { useAvisar } from "../../../comun/avisos-de-abajo.tsx";
 import { usePreguntarAntesDeSalir } from "../../../comun/cambios-sin-guardar.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
+import { montoEnPantalla } from "../../../comun/montos.ts";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { VentanaConMotivo } from "../../../comun/ventana-con-motivo.tsx";
 import { errorDeCampo, esperar, type Salida, useAccionDeCatalogo } from "../acciones.ts";
 import { conAlta, sinCajon, useIr } from "../direccion.ts";
-import { cuantos, diaCorto, diaYHora, escuelaOBasico, pesos, textoDeLoQueDetiene } from "../textos.ts";
+import { diaCorto, diaYHora, escuelaOBasico, textoDeLoQueDetiene } from "../textos.ts";
 import { VentanaDescontinuar } from "../ventanas/descontinuar.tsx";
 
 /** Lo que regresa la ficha. */
@@ -164,13 +168,14 @@ function contextoDe(ficha: Ficha): string {
 }
 
 /**
- * El precio que se escribió en una cajita, en centavos: vacío es `null`; algo que no es pesos enteros, `undefined`.
+ * El precio que se escribió en una cajita, en centavos: vacío es `null`; lo que no pasa el precio de lista del
+ * contrato (`precioDeLista`: pesos enteros, de $1 en adelante), `undefined`. Así la ficha revisa igual que la acción.
  * @param texto Lo que se escribió.
  */
 function leerPrecio(texto: string): number | null | undefined {
 	if (texto.trim() === "") return null;
-	const centavos = pesosACentavos(texto);
-	return centavos === null || centavos <= 0 || centavos % 100 !== 0 ? undefined : centavos;
+	const leido = precioDeLista.safeParse(pesosACentavos(texto));
+	return leido.success ? leido.data : undefined;
 }
 
 /** Un cambio por aplicar, con su texto y lo que manda a la acción. */
@@ -211,11 +216,13 @@ function cambiosPorAplicar(ficha: Ficha, pendientes: Pendientes): CambioPorAplic
 		if (despues === undefined) {
 			cambios.push({ texto: donde, error: `El precio de ${lista} debe ser un número entero.` });
 		} else if (despues === null) {
-			cambios.push({ texto: antes === undefined ? donde : `${donde}: se quita (era ${pesos(antes)})` });
+			cambios.push({ texto: antes === undefined ? donde : `${donde}: se quita (era ${montoEnPantalla(antes)})` });
 		} else {
 			cambios.push({
 				texto:
-					antes === undefined ? `${donde}: ${pesos(despues)} (nuevo)` : `${donde}: ${pesos(antes)} a ${pesos(despues)}`,
+					antes === undefined
+						? `${donde}: ${montoEnPantalla(despues)} (nuevo)`
+						: `${donde}: ${montoEnPantalla(antes)} a ${montoEnPantalla(despues)}`,
 			});
 		}
 	}
@@ -446,7 +453,7 @@ function CuerpoDeLaFicha({
 								ficha.receta.tela === null
 									? null
 									: `${ficha.receta.tela}: ${ficha.receta.metros ?? "—"} m por prenda en talla ${ficha.receta.talla ?? "—"}`,
-								cuantos(ficha.receta.avios, "avío", "avíos"),
+								plural(ficha.receta.avios, "avío", "avíos"),
 								`versión ${ficha.receta.version}`,
 							]
 								.filter((parte) => parte !== null)
@@ -467,32 +474,20 @@ function CuerpoDeLaFicha({
 			) : null}
 			{conReceta && ficha.medidas.length > 0 ? (
 				<Bloque titulo="Medidas de la prenda" derecha="En centímetros">
-					<div className="overflow-x-auto">
-						<table className="w-full border-collapse text-etiqueta">
-							<thead>
-								<tr className="bg-suave">
-									<th className="px-2 py-1.5 text-left font-semibold">Medida</th>
-									{(ficha.medidas[0]?.valores ?? []).map((valor) => (
-										<th key={valor.talla} className="px-2 py-1.5 text-right font-semibold">
-											{valor.talla}
-										</th>
-									))}
-								</tr>
-							</thead>
-							<tbody>
-								{ficha.medidas.map((medida) => (
-									<tr key={medida.medida} className="border-linea border-b">
-										<td className="px-2 py-1.5">{medida.medida}</td>
-										{medida.valores.map((valor) => (
-											<td key={valor.talla} className="px-2 py-1.5 text-right tabular-nums">
-												{valor.valor_cm}
-											</td>
-										))}
-									</tr>
-								))}
-							</tbody>
-						</table>
-					</div>
+					<Tabla
+						nombre="Medidas de la prenda"
+						filas={ficha.medidas}
+						claveDeFila={(medida) => medida.medida}
+						columnas={[
+							{ clave: "medida", encabezado: "Medida", celda: (medida) => medida.medida },
+							...(ficha.medidas[0]?.valores ?? []).map((columna, indice) => ({
+								clave: columna.talla,
+								encabezado: columna.talla,
+								alinear: "derecha" as const,
+								celda: (medida: (typeof ficha.medidas)[number]) => medida.valores[indice]?.valor_cm ?? "",
+							})),
+						]}
+					/>
 				</Bloque>
 			) : null}
 			<Bloque titulo="Cambios recientes">
@@ -512,7 +507,7 @@ function CuerpoDeLaFicha({
 			<DescontinuarOReactivar ficha={ficha} />
 			{cambios.length === 0 ? null : (
 				<div className="sticky bottom-0 flex flex-col gap-1.5 rounded-grande bg-tinta px-4 py-3 text-white">
-					<b>{cuantos(cambios.length, "cambio por aplicar", "cambios por aplicar")}</b>
+					<b>{plural(cambios.length, "cambio por aplicar", "cambios por aplicar")}</b>
 					<ul className="m-0 flex list-none flex-col gap-0.5 p-0 text-etiqueta">
 						{cambios.map((cambio) => (
 							<li
@@ -637,7 +632,7 @@ function MatrizDeTallas({
 			<Campo
 				etiqueta={etiqueta}
 				inputMode="numeric"
-				placeholder={base === undefined ? "" : pesos(base)}
+				placeholder={base === undefined ? "" : montoEnPantalla(base)}
 				disabled={producto.descontinuado}
 				value={
 					pendientes.precios[llaveDePrecio(listaId, varianteId)] ?? (vigente === undefined ? "" : String(vigente / 100))
@@ -651,7 +646,7 @@ function MatrizDeTallas({
 	return (
 		<Bloque
 			titulo="Tallas, códigos y precios"
-			derecha={`${cuantos(vivas.length, "variante", "variantes")}, ${porPedido} por pedido`}
+			derecha={`${plural(vivas.length, "variante", "variantes")}, ${porPedido} por pedido`}
 		>
 			<div className="overflow-x-auto">
 				<table aria-label="Tallas, códigos y precios" className="w-full border-collapse">
@@ -673,7 +668,7 @@ function MatrizDeTallas({
 							<td className="px-2 py-2" colSpan={3}>
 								<b>Precio base</b>
 								<p className="m-0 text-etiqueta text-tinta2">
-									{`Lo toma cada talla que no tenga el suyo. Las de pedido especial suman ${pesos(producto.recargo_centavos)}.`}
+									{`Lo toma cada talla que no tenga el suyo. Las de pedido especial suman ${montoEnPantalla(producto.recargo_centavos)}.`}
 								</p>
 							</td>
 							{columnas.map((lista) => (
@@ -719,7 +714,7 @@ function MatrizDeTallas({
 												) : variante.es_pedido_especial && lista.tipo === "mayoreo" ? (
 													<span className="text-etiqueta text-tinta2">No aplica</span>
 												) : variante.es_pedido_especial ? (
-													<span className="text-etiqueta text-tinta2">{`Base + ${pesos(producto.recargo_centavos)}`}</span>
+													<span className="text-etiqueta text-tinta2">{`Base + ${montoEnPantalla(producto.recargo_centavos)}`}</span>
 												) : (
 													cajita(
 														lista.id,

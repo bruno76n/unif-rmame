@@ -15,7 +15,7 @@ import { z } from "zod";
 import { esLaDuena } from "../../../nucleo/acceso/quien.ts";
 import { noExiste } from "../../../nucleo/http/errores.ts";
 import { type ContextoDeConsulta, implementarConsulta } from "../../../nucleo/modulos.ts";
-import { detieneDe, filas, formaDeLoQueDetiene, loQueDetieneA, parametroNumero, siguienteCodigo } from "./comunes.ts";
+import { detieneDe, filas, formaDeLoQueDetiene, loQueDetieneA, parametroNumero, siguienteCodigo } from "./comun.ts";
 
 /** El producto como lo lee la base. */
 const productoLeido = z.object({

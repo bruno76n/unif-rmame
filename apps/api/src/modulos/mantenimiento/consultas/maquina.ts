@@ -66,6 +66,24 @@ async function historialDe(contexto: ContextoDeAccion, maquinaId: string): Promi
 	);
 }
 
+/**
+ * Si la máquina se puede dar de baja y, si no, por qué: la regla de `mantenimiento.baja_maquina`, que no da de baja una
+ * máquina con falla abierta, con el mismo texto que su error `maquina_con_falla_abierta`.
+ * @param maquina Su nombre, el folio de su falla abierta y el día de su baja, si ya tiene.
+ * @returns `dar_de_baja` y su `razon`; ya de baja, ni lo uno ni lo otro.
+ * Existe para que el cajón no decida el botón: pinta lo que dice aquí.
+ */
+function puedeDarDeBaja(maquina: { nombre: string; falla_folio: string | null; baja_el_dia: string | null }) {
+	if (maquina.baja_el_dia !== null) return { dar_de_baja: false, razon: null };
+	if (maquina.falla_folio !== null) {
+		return {
+			dar_de_baja: false,
+			razon: `${maquina.nombre} tiene una falla abierta: resuélvela antes de darla de baja`,
+		};
+	}
+	return { dar_de_baja: true, razon: null };
+}
+
 export const consultaMaquinaDeMantenimiento = implementarConsulta(
 	maquinaDeMantenimiento,
 	async (contexto, parametros) => ({
@@ -99,6 +117,7 @@ export const consultaMaquinaDeMantenimiento = implementarConsulta(
 				falla_abierta: maquina.falla_folio,
 				dada_de_baja:
 					maquina.baja_el_dia === null ? null : { desde: maquina.baja_el_dia, motivo: maquina.motivo_baja ?? "" },
+				puede: puedeDarDeBaja(maquina),
 			};
 		}),
 	}),

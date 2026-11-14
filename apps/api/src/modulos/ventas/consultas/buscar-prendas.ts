@@ -8,13 +8,14 @@
  * en la prenda, la escuela o la sección.
  */
 
+import { rangoDeTallas } from "@uniformame/compartido/calculos/textos";
 import { buscarPrendas } from "@uniformame/compartido/contratos/ventas/consultas-pedidos";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { noExiste } from "../../../nucleo/http/errores.ts";
 import { implementarConsulta } from "../../../nucleo/modulos.ts";
 import { ordenDeTallas } from "../../catalogo/dominio/tallas.ts";
-import { leerClientes, llevaTodas, paraBuscar, rangoDeTallas } from "./comun.ts";
+import { leerClientes, llevaTodas, paraBuscar } from "./comun.ts";
 import { sugeridoDe } from "./prendas.ts";
 
 /** Una prenda que se vende a externos, con sus tallas vigentes. */
@@ -24,7 +25,7 @@ const prendaLeida = z.object({
 	escuela_id: z.uuid().nullable(),
 	escuela: z.string().nullable(),
 	seccion: z.string(),
-	tallas: z.array(z.string()),
+	tallas: z.array(z.object({ grupo: z.string(), talla: z.string() })),
 	primera: z.uuid(),
 	en_lista: z.boolean(),
 });
@@ -40,12 +41,13 @@ export const consultaBuscarPrendas = implementarConsulta(buscarPrendas, async (c
 	);
 	const lista = z.object({ id: z.uuid(), nombre: z.string() }).optional().parse(deLista[0]);
 	const { rows } = await base.execute(sql`SELECT p.id, p.nombre, p.escuela_id, e.nombre AS escuela, s.nombre AS seccion,
-			array_agg(t.nombre ORDER BY ${ordenDeTallas("t")}) AS tallas,
+			json_agg(json_build_object('grupo', g.nombre, 'talla', t.nombre) ORDER BY ${ordenDeTallas("t")}) AS tallas,
 			(array_agg(v.id ORDER BY v.es_pedido_especial, ${ordenDeTallas("t")}))[1] AS primera,
 			EXISTS (SELECT 1 FROM precios pr WHERE pr.producto_id = p.id AND pr.vigente_hasta IS NULL
 				AND pr.lista_id = ${lista?.id ?? null}) AS en_lista
 		FROM productos p JOIN secciones s ON s.id = p.seccion_id LEFT JOIN escuelas e ON e.id = p.escuela_id
 		JOIN variantes v ON v.producto_id = p.id AND v.baja_en IS NULL JOIN tallas t ON t.id = v.talla_id
+		JOIN grupos_talla g ON g.id = t.grupo_talla_id
 		WHERE p.canal_externos AND p.baja_en IS NULL AND NOT p.es_servicio
 		GROUP BY p.id, e.nombre, s.nombre ORDER BY p.nombre`);
 	const prendas = z

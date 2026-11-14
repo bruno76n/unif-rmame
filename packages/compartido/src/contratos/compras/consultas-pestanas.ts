@@ -31,6 +31,12 @@ const cantidad = z.string().describe("Texto decimal con tres decimales, en la un
 /** El tono de una cifra de la barra de indicadores. */
 const tonoDeContexto = z.enum(["rojo", "ambar", "normal"]);
 
+/** El color del número de una cifra, cuando la consulta lo decide; sin él, el de lo más urgente de su contexto. */
+const tonoDeCifra = z
+	.enum(["rojo", "ambar"])
+	.nullable()
+	.describe("El color del número; nulo, el de lo más urgente de su contexto");
+
 /** Una parte de la línea de contexto de una cifra. */
 const contexto = z.array(z.object({ texto: z.string(), tono: tonoDeContexto })).describe("La línea de contexto");
 
@@ -53,6 +59,7 @@ export const pendientesDeCompras = definirConsulta({
 				sin_tiempo: z.number().int(),
 				esta_semana: z.number().int(),
 				suficiente: z.number().int(),
+				tono: tonoDeCifra,
 				contexto,
 			}),
 			ordenes: z.object({
@@ -62,7 +69,7 @@ export const pendientesDeCompras = definirConsulta({
 			}),
 			materiales: z.object({ activos: z.number().int(), contexto }),
 			proveedores: z.object({ activos: z.number().int(), contexto }),
-			facturas: z.object({ sin_conciliar: z.number().int(), contexto }),
+			facturas: z.object({ sin_conciliar: z.number().int(), tono: tonoDeCifra, contexto }),
 		}),
 		renglones: z.array(
 			z.object({

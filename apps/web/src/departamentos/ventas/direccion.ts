@@ -5,10 +5,11 @@
  * Fase 19 · docs/interfaz/comunes.md («La página de un departamento», regla 2) y .claude/rules/react.md (regla 5)
  */
 
-import { useNavigate, useSearch } from "@tanstack/react-router";
 import { etapasDePedido } from "@uniformame/compartido/contratos/ventas/vistas";
 import { useCallback } from "react";
 import { z } from "zod";
+import { useBusquedaDeDepartamento } from "../../comun/direccion.ts";
+import { rutaDePestana } from "../../comun/pagina-de-departamento.tsx";
 
 /** Los cajones de Ventas que se abren por la dirección. */
 export const cajonesDeVentas = ["pedido", "nuevo", "modificar", "mandar", "armar", "nota", "cliente"] as const;
@@ -39,24 +40,13 @@ export type BusquedaDeVentas = z.infer<typeof busquedaDeVentas>;
 /**
  * Lee la búsqueda de Ventas de la dirección y da cómo cambiarla: los cambios se juntan con lo que ya hay, y lo que se
  * pone sin valor se quita.
- * @returns La búsqueda y `navegar(cambios)`.
+ * Lo común está en `useBusquedaDeDepartamento`; aquí van sus cajones.
+ * @returns La búsqueda, `navegar(cambios, pestana?)`, `abrir(cajon, id?)` y `cerrar()`.
  */
 export function useDireccionDeVentas() {
-	const busqueda = busquedaDeVentas.parse(useSearch({ strict: false }));
-	const navigate = useNavigate();
-	const navegar = useCallback(
-		(cambios: Partial<BusquedaDeVentas>, pestana?: "pedidos" | "notas" | "clientes" | "pendientes") => {
-			const nueva = Object.fromEntries(
-				Object.entries({ ...(pestana === undefined ? busqueda : {}), ...cambios }).filter(
-					([, valor]) => valor !== undefined && valor !== "",
-				),
-			);
-			void navigate({
-				to: pestana === undefined ? "." : pestana === "pendientes" ? "/ventas" : `/ventas/${pestana}`,
-				search: busquedaDeVentas.parse(nueva),
-			});
-		},
-		[busqueda, navigate],
+	const { busqueda, navegar } = useBusquedaDeDepartamento(
+		busquedaDeVentas,
+		(pestana: "pedidos" | "notas" | "clientes" | "pendientes") => rutaDePestana("ventas", pestana),
 	);
 	/** Abre un cajón de Ventas, sin tocar la pestaña ni sus filtros. */
 	const abrir = useCallback((cajon: CajonDeVentas, id?: string) => navegar({ cajon, id }), [navegar]);

@@ -7,7 +7,7 @@
 
 import { recepcionDeAduana } from "@uniformame/compartido/contratos/inventario/aduana";
 import { implementarConsulta } from "../../../nucleo/modulos.ts";
-import { leerPorRecibir, type PorRecibir } from "./aduana-comun.ts";
+import { colorDelDestino, leerPorRecibir, type PorRecibir } from "./aduana-comun.ts";
 
 /** Los grupos de Recepción, en su orden, con su descripción. */
 const grupos = [
@@ -38,6 +38,7 @@ export const consultaRecepcionDeAduana = implementarConsulta(recepcionDeAduana, 
 						cantidad,
 						carril,
 						destino,
+						color_destino: colorDelDestino(carril),
 						abre,
 					})),
 				};

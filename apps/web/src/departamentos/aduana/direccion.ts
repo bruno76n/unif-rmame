@@ -6,9 +6,10 @@
  * Fase 19 · docs/interfaz/comunes.md («La página de un departamento», regla 2) y .claude/rules/react.md (regla 5)
  */
 
-import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useCallback } from "react";
 import { z } from "zod";
+import { useBusquedaDeDepartamento } from "../../comun/direccion.ts";
+import { rutaDePestana } from "../../comun/pagina-de-departamento.tsx";
 
 /** Los cajones de Aduana que se abren por la dirección. */
 export const cajonesDeAduana = ["taller", "material", "camino", "reproceso", "despachar"] as const;
@@ -46,31 +47,17 @@ export type BusquedaDeAduana = z.infer<typeof busquedaDeAduana>;
  * @param pestana La pestaña.
  */
 export function rutaDeAduana(pestana: PestanaDeAduana): string {
-	return pestana === "pendientes" ? "/aduana" : `/aduana/${pestana}`;
+	return rutaDePestana("aduana", pestana);
 }
 
 /**
  * Lee la búsqueda de Aduana y da cómo cambiarla: los cambios se juntan con lo que ya hay y lo que se pone sin valor se
  * quita; con otra pestaña, la búsqueda empieza de cero.
+ * Lo común está en `useBusquedaDeDepartamento`; aquí van sus cajones.
  * @returns La búsqueda, `navegar(cambios, pestana?)`, `abrir(cajon, id)` y `cerrar()`.
  */
 export function useDireccionDeAduana() {
-	const busqueda = busquedaDeAduana.parse(useSearch({ strict: false }));
-	const navigate = useNavigate();
-	const navegar = useCallback(
-		(cambios: Partial<BusquedaDeAduana>, pestana?: PestanaDeAduana) => {
-			const nueva = Object.fromEntries(
-				Object.entries({ ...(pestana === undefined ? busqueda : {}), ...cambios }).filter(
-					([, valor]) => valor !== undefined && valor !== "",
-				),
-			);
-			void navigate({
-				to: pestana === undefined ? "." : rutaDeAduana(pestana),
-				search: busquedaDeAduana.parse(nueva),
-			});
-		},
-		[busqueda, navigate],
-	);
+	const { busqueda, navegar } = useBusquedaDeDepartamento(busquedaDeAduana, rutaDeAduana);
 	/** Abre un cajón, sin tocar la pestaña ni lo demás. */
 	const abrir = useCallback((cajon: CajonDeAduana, id: string) => navegar({ cajon, id }), [navegar]);
 	/** Cierra el cajón abierto. */

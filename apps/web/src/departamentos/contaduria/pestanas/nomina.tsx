@@ -4,13 +4,13 @@
  * «Descuento semanal»; y un grupo por área y por tienda con la cuenta de cada persona y cómo se le paga.
  * Fase 19 · docs/interfaz/fabrica/contaduria.md («Nómina») y docs/modulos/contaduria/nomina.md
  *
- * Sin «ven sueldos y tarifas» la consulta ni se pide: solo el candado y su texto. Lo que se ve es lo que se paga: el
- * total que muestra la pantalla viaja tal cual como `total_visto_centavos`; si la cuenta cambió mientras se veía, la API
- * no paga y la pantalla vuelve a leer lo nuevo.
+ * Sin «ven sueldos y tarifas» (lo dice `ve_sueldos` de `contaduria.pendientes`) la consulta ni se pide: solo el candado
+ * y su texto. Lo que se ve es lo que se paga: el total que muestra la pantalla viaja tal cual como
+ * `total_visto_centavos`; si la cuenta cambió mientras se veía, la API no paga y la pantalla vuelve a leer lo nuevo.
  */
 
-import { armazon } from "@uniformame/compartido/contratos/admin/armazon";
 import { nominaSemana } from "@uniformame/compartido/contratos/contaduria/consultas-nomina";
+import { pendientesDeContaduria } from "@uniformame/compartido/contratos/contaduria/consultas-pendientes";
 import { pagarNomina } from "@uniformame/compartido/contratos/contaduria/nomina";
 import { Boton } from "@uniformame/interfaz/botones/boton";
 import { Campo } from "@uniformame/interfaz/captura/campo";
@@ -330,29 +330,30 @@ function NominaDeLaSemana({ datos, alVolverALeer }: { datos: Nomina; alVolverALe
 /** La pestaña Nómina. */
 export function PestanaNomina() {
 	const { busqueda } = useDireccionDeContaduria();
-	const delArmazon = useConsulta(armazon, {});
-	const cuenta = delArmazon.data;
-	const veSueldos =
-		cuenta !== undefined && (cuenta.cuenta.es_duena || cuenta.permisos_finos.includes("ven_sueldos_y_tarifas"));
+	// Quién ve sueldos lo dice la API (`ve_sueldos` de los pendientes, la misma consulta que ya pidió la página).
+	const pendientes = useConsulta(pendientesDeContaduria, {});
+	const veSueldos = pendientes.data?.ve_sueldos === true;
 	const consulta = useConsulta(
 		nominaSemana,
 		busqueda.semana === undefined ? {} : { asistencia_semana_id: busqueda.semana },
 		veSueldos,
 	);
-	if (cuenta === undefined) return <EstadoDePantalla tipo="cargando" renglones={6} />;
-	if (!veSueldos) {
-		return (
-			<Recuadro color="ambar">
-				<span className="flex items-center gap-2">
-					<Lock aria-hidden="true" size={17} />
-					Esta cuenta no tiene acceso a sueldos. Lo decide la dueña en Administración del sistema.
-				</span>
-			</Recuadro>
-		);
-	}
 	return (
-		<SegunConsulta consulta={consulta} renglones={8}>
-			{(datos) => <NominaDeLaSemana datos={datos} alVolverALeer={() => void consulta.refetch()} />}
+		<SegunConsulta consulta={pendientes} renglones={6}>
+			{(deLaCuenta) =>
+				deLaCuenta.ve_sueldos ? (
+					<SegunConsulta consulta={consulta} renglones={8}>
+						{(datos) => <NominaDeLaSemana datos={datos} alVolverALeer={() => void consulta.refetch()} />}
+					</SegunConsulta>
+				) : (
+					<Recuadro color="ambar">
+						<span className="flex items-center gap-2">
+							<Lock aria-hidden="true" size={17} />
+							Esta cuenta no tiene acceso a sueldos. Lo decide la dueña en Administración del sistema.
+						</span>
+					</Recuadro>
+				)
+			}
 		</SegunConsulta>
 	);
 }

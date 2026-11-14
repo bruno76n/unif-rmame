@@ -5,6 +5,7 @@
  * Fase 19 · docs/interfaz/fabrica/catalogo.md («Escuelas y tallas»)
  */
 
+import { plural } from "@uniformame/compartido/calculos/textos";
 import { darBajaEscuela, reactivarEscuela } from "@uniformame/compartido/contratos/catalogo/escuelas";
 import { escuelasYTallas } from "@uniformame/compartido/contratos/catalogo/pantallas";
 import { Boton } from "@uniformame/interfaz/botones/boton";
@@ -17,7 +18,6 @@ import { useConConexion } from "../../../comun/estado-de-la-app.ts";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { VentanaConMotivo } from "../../../comun/ventana-con-motivo.tsx";
 import { errorDeCampo, esperar, useAccionDeCatalogo } from "../acciones.ts";
-import { cuantos } from "../textos.ts";
 import { VentanaEscuela } from "../ventanas/escuela.tsx";
 import { VentanaGrupoTalla } from "../ventanas/grupo-talla.tsx";
 import { VentanaTipoPrenda } from "../ventanas/tipo-prenda.tsx";
@@ -73,7 +73,7 @@ export function PestanaEscuelasYTallas() {
 												{escuela.cliente_externo ? " · cliente externo" : ""}
 											</span>
 										</span>
-										<span className="text-tinta2 tabular-nums">{cuantos(escuela.modelos, "modelo", "modelos")}</span>
+										<span className="text-tinta2 tabular-nums">{plural(escuela.modelos, "modelo", "modelos")}</span>
 										<Boton chico variante="fantasma" onClick={() => setAbierta({ cual: "escuela", escuela })}>
 											Editar
 										</Boton>
@@ -129,7 +129,7 @@ export function PestanaEscuelasYTallas() {
 											</span>
 										</span>
 										<span className="text-tinta2 tabular-nums">
-											{`${cuantos(grupo.productos, "producto la usa", "productos la usan")}`}
+											{`${plural(grupo.productos, "producto la usa", "productos la usan")}`}
 										</span>
 										<Boton chico variante="fantasma" onClick={() => setAbierta({ cual: "grupo", grupo })}>
 											Agregar talla
@@ -175,7 +175,7 @@ export function PestanaEscuelasYTallas() {
 									<li key={seccion.id} className="flex items-center gap-3 border-linea border-b py-2.5 last:border-b-0">
 										<span className="flex-1">{seccion.nombre}</span>
 										<span className="text-tinta2 tabular-nums">
-											{cuantos(seccion.productos, "producto activo", "productos activos")}
+											{plural(seccion.productos, "producto activo", "productos activos")}
 										</span>
 									</li>
 								))}

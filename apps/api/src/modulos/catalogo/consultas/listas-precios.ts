@@ -15,7 +15,7 @@ import { type SQL, sql } from "drizzle-orm";
 import { z } from "zod";
 import { noExiste } from "../../../nucleo/http/errores.ts";
 import { implementarConsulta } from "../../../nucleo/modulos.ts";
-import { etiquetablesDe, filas } from "./comunes.ts";
+import { etiquetablesDe, filas } from "./comun.ts";
 
 /** Los tipos de lista. */
 const tipoDeLista = z.enum(["mostrador", "mayoreo", "en_linea", "cliente"]);

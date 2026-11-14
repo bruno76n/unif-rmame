@@ -11,16 +11,12 @@
  * paquete compartido: la pantalla dice lo mismo que la acción.
  */
 
+import { cambioDePrecio, cantidadConUnidad, errorDeCantidad } from "@uniformame/compartido/calculos/compras";
 import { pesosACentavos } from "@uniformame/compartido/calculos/dinero";
 import { plural } from "@uniformame/compartido/calculos/textos";
 import { levantarOrdenPropuesta } from "@uniformame/compartido/contratos/compras/consultas-cajones";
+import { precioDeCompra } from "@uniformame/compartido/contratos/compras/materiales";
 import { levantarOrden } from "@uniformame/compartido/contratos/compras/ordenes";
-import {
-	cambioDePrecio,
-	cantidadConUnidad,
-	errorDeCantidad,
-	pesos,
-} from "@uniformame/compartido/contratos/compras/textos";
 import { Boton } from "@uniformame/interfaz/botones/boton";
 import { Campo } from "@uniformame/interfaz/captura/campo";
 import { Selector } from "@uniformame/interfaz/captura/selector";
@@ -32,6 +28,7 @@ import type { z } from "zod";
 import { useAccion, useConsulta } from "../../../comun/api.tsx";
 import { useCierreDelCajon } from "../../../comun/cambios-sin-guardar.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
+import { montoEnPantalla } from "../../../comun/montos.ts";
 import { rutaDePestana } from "../../../comun/pagina-de-departamento.tsx";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { useDireccionDeCompras } from "../direccion.ts";
@@ -77,6 +74,9 @@ function renglonNuevo(propuesta: Propuesta, materialId: string, cantidad: number
 	};
 }
 
+/** El precio de una línea, con el mensaje de `compras.levantar_orden`. */
+const precioDeLaLinea = precioDeCompra("Escribe el precio.");
+
 /**
  * Los errores de un renglón: de su cantidad y de su precio.
  * @param propuesta La propuesta.
@@ -84,14 +84,15 @@ function renglonNuevo(propuesta: Propuesta, materialId: string, cantidad: number
  */
 function erroresDe(propuesta: Propuesta, renglon: Renglon): { cantidad: string | null; precio: string | null } {
 	const material = propuesta.materiales.find((uno) => uno.material_id === renglon.material_id);
-	const precio = pesosACentavos(renglon.precio);
+	const precio = pesosACentavos(renglon.precio) ?? undefined;
 	return {
 		cantidad: errorDeCantidad(renglon.cantidad, {
 			multiplo: material?.multiplo ?? 1,
 			maxima: propuesta.cantidad_maxima,
 			unidad: material?.unidad ?? "",
 		}),
-		precio: precio === null || precio <= 0 ? "Escribe el precio." : null,
+		// El precio se revisa con el de la línea de `compras.levantar_orden` (`precioDeCompra`), como en la API.
+		precio: precioDeLaLinea.safeParse(precio).error?.issues[0]?.message ?? null,
 	};
 }
 
@@ -166,7 +167,7 @@ function BloqueDeProveedor({
 								opciones={[
 									...material.surtidores.map((surtidor) => ({
 										valor: surtidor.proveedor_id,
-										texto: `${surtidor.nombre} · ${pesos(surtidor.ultimo_precio_centavos)}`,
+										texto: `${surtidor.nombre} · ${montoEnPantalla(surtidor.ultimo_precio_centavos)}`,
 									})),
 									...otros.map((otro) => ({ valor: otro.proveedor_id, texto: `Otro proveedor: ${otro.nombre}` })),
 								]}
@@ -195,7 +196,7 @@ function BloqueDeProveedor({
 								</span>
 							)}
 						</div>
-						<b className="pt-7 text-right tabular-nums">{pesos(importe(renglon))}</b>
+						<b className="pt-7 text-right tabular-nums">{montoEnPantalla(importe(renglon))}</b>
 						<span className="pt-6">
 							<Boton
 								variante="fantasma"
@@ -210,7 +211,9 @@ function BloqueDeProveedor({
 			})}
 			<div className="flex justify-between border-linea border-t pt-3 font-bold">
 				<span>Total</span>
-				<span className="tabular-nums">{pesos(renglones.reduce((suma, renglon) => suma + importe(renglon), 0))}</span>
+				<span className="tabular-nums">
+					{montoEnPantalla(renglones.reduce((suma, renglon) => suma + importe(renglon), 0))}
+				</span>
 			</div>
 		</section>
 	);

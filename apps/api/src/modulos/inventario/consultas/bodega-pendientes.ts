@@ -10,7 +10,7 @@
  * `produccion.tela_por_entregar_rojo_dias`. Las variantes en cero salen de la cuenta del reabasto.
  */
 
-import { diasHasta, textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
+import { diasHasta, textoDeDiaCorto, zonaDelNegocio } from "@uniformame/compartido/calculos/fechas";
 import { plural } from "@uniformame/compartido/calculos/textos";
 import { pendientesDeBodega } from "@uniformame/compartido/contratos/inventario/bodega";
 import { sql } from "drizzle-orm";
@@ -61,7 +61,7 @@ const enElPanel = 8;
  * @param momento El momento en ISO.
  */
 function diaDe(momento: string): string {
-	return Temporal.Instant.from(momento).toZonedDateTimeISO("America/Mexico_City").toPlainDate().toString();
+	return Temporal.Instant.from(momento).toZonedDateTimeISO(zonaDelNegocio).toPlainDate().toString();
 }
 
 /** Los pedidos externos y en línea con piezas apartadas en Bodega sin surtir. */
@@ -122,7 +122,7 @@ async function pedidosPorSurtir(contexto: ContextoDeAccion): Promise<Pendiente[]
 		const hora =
 			pagado === null
 				? null
-				: Temporal.Instant.from(pagado).toZonedDateTimeISO("America/Mexico_City").toPlainTime().toString().slice(0, 5);
+				: Temporal.Instant.from(pagado).toZonedDateTimeISO(zonaDelNegocio).toPlainTime().toString().slice(0, 5);
 		return {
 			clave: `w:${documentoId}`,
 			grupo: "surtido",

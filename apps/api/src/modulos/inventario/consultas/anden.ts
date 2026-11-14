@@ -10,6 +10,7 @@ import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { implementarConsulta } from "../../../nucleo/modulos.ts";
 import {
+	colorDelDestino,
 	leerPorRecibir,
 	type PartidaEnAduana,
 	type PorRecibir,
@@ -108,24 +109,38 @@ export const consultaAnden = implementarConsulta(andenDeAduana, async (contexto)
 			};
 		});
 		const carriles: Carril[] = [
-			{ clave: "entra", nombre: "Entra", tipo: "entra", tarjetas: entradas.map(tarjetaDeEntrada) },
+			{ clave: "entra", nombre: "Entra", color: null, tipo: "entra", tarjetas: entradas.map(tarjetaDeEntrada) },
 			...tiendas.map(
 				(tienda): Carril => ({
 					clave: tienda.codigo,
 					nombre: tienda.nombre,
+					color: colorDelDestino(tienda.codigo),
 					tipo: "tienda",
 					tarjetas: deCarril(tienda.codigo).map(tarjetaDePartida),
 				}),
 			),
-			{ clave: "linea", nombre: "En línea", tipo: "linea", tarjetas: tarjetasEnLinea },
+			{ clave: "linea", nombre: "En línea", color: colorDelDestino("linea"), tipo: "linea", tarjetas: tarjetasEnLinea },
 			{
 				clave: "externos",
 				nombre: "Clientes externos",
+				color: colorDelDestino("externos"),
 				tipo: "externos",
 				tarjetas: deCarril("externos").map(tarjetaDePartida),
 			},
-			{ clave: "BOD", nombre: "Bodega", tipo: "bodega", tarjetas: deCarril("BOD").map(tarjetaDePartida) },
-			{ clave: "calidad", nombre: "Calidad", tipo: "calidad", tarjetas: deCarril("calidad").map(tarjetaDePartida) },
+			{
+				clave: "BOD",
+				nombre: "Bodega",
+				color: colorDelDestino("BOD"),
+				tipo: "bodega",
+				tarjetas: deCarril("BOD").map(tarjetaDePartida),
+			},
+			{
+				clave: "calidad",
+				nombre: "Calidad",
+				color: colorDelDestino("calidad"),
+				tipo: "calidad",
+				tarjetas: deCarril("calidad").map(tarjetaDePartida),
+			},
 		];
 		return {
 			cifras: {

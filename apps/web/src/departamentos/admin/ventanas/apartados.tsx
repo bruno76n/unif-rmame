@@ -20,6 +20,7 @@ import { Tabla } from "@uniformame/interfaz/tablas/tabla";
 import { useState } from "react";
 import { usePaginas } from "../../../comun/api.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
+import { SegunPaginas } from "../../../comun/segun-paginas.tsx";
 import { VentanaConMotivo } from "../../../comun/ventana-con-motivo.tsx";
 import { useEnvio } from "../envio.ts";
 import type { Registrado } from "../pestanas/dispositivos.tsx";
@@ -38,8 +39,6 @@ export function VentanaApartados({ aparato, alCerrar }: { aparato: Registrado; a
 	const descartar = useEnvio(descartarComandoApartado);
 	const conConexion = useConConexion();
 	const [aDescartar, setADescartar] = useState<string | undefined>(undefined);
-	const [primera] = paginas.data?.pages ?? [];
-	const renglones = paginas.data?.pages.flatMap((pagina) => pagina.renglones) ?? [];
 	/** Descarta con el motivo; si la regla lo detiene, regresa su mensaje para el campo. */
 	const confirmarDescarte = async (motivo: string) => {
 		if (aDescartar === undefined) return undefined;
@@ -54,70 +53,71 @@ export function VentanaApartados({ aparato, alCerrar }: { aparato: Registrado; a
 		<Ventana abierta ancha alCerrar={alCerrar} titulo={`Apartados de ${aparato.nombre}`} volver="Cerrar">
 			<div className="flex flex-col gap-3">
 				<Interruptor etiqueta="Mostrar descartados" prendido={conDescartados} alCambiar={setConDescartados} />
-				{paginas.isPending ? (
-					<EstadoDePantalla tipo="cargando" renglones={3} />
-				) : paginas.isError ? (
-					<EstadoDePantalla tipo="error" alReintentar={() => void paginas.refetch()} />
-				) : renglones.length === 0 ? (
-					<EstadoDePantalla tipo="vacio" texto="Sin apartados" bien />
-				) : (
-					<Tabla
-						nombre="Apartados"
-						filas={renglones}
-						claveDeFila={(renglon) => renglon.comando_id}
-						columnas={[
-							{ clave: "cuando", encabezado: "Cuándo pasó", celda: (renglon) => renglon.cuando },
-							{
-								clave: "accion",
-								encabezado: "Acción",
-								celda: (renglon) => <DosRenglones arriba={renglon.accion} abajo={renglon.persona ?? "—"} />,
-							},
-							{
-								clave: "motivo",
-								encabezado: "Por qué se apartó",
-								celda: (renglon) => <DosRenglones arriba={renglon.motivo} abajo={renglon.descartado ?? undefined} />,
-							},
-							{
-								clave: "reintentos",
-								encabezado: "Reintentos",
-								alinear: "derecha",
-								celda: (renglon) => renglon.reintentos,
-							},
-							{
-								clave: "botones",
-								encabezado: "",
-								alinear: "derecha",
-								celda: (renglon) =>
-									renglon.descartado === null ? (
-										<span className="inline-flex gap-2">
-											<Boton
-												chico
-												disabled={!conConexion || reintentar.enviando}
-												onClick={() => void reintentar.enviar({ datos: { comando_id: renglon.comando_id } })}
-											>
-												Reintentar
-											</Boton>
-											{primera?.es_duena === true ? (
-												<Boton
-													chico
-													variante="peligro"
-													disabled={!conConexion}
-													onClick={() => setADescartar(renglon.comando_id)}
-												>
-													Descartar
-												</Boton>
-											) : null}
-										</span>
-									) : null,
-							},
-						]}
-					/>
-				)}
-				{paginas.hasNextPage ? (
-					<Boton chico onClick={() => void paginas.fetchNextPage()}>
-						Ver más
-					</Boton>
-				) : null}
+				<SegunPaginas paginas={paginas} renglones={3}>
+					{({ primera, todas, verMas }) => {
+						const renglones = todas.flatMap((pagina) => pagina.renglones);
+						return renglones.length === 0 ? (
+							<EstadoDePantalla tipo="vacio" texto="Sin apartados" bien />
+						) : (
+							<>
+								<Tabla
+									nombre="Apartados"
+									filas={renglones}
+									claveDeFila={(renglon) => renglon.comando_id}
+									columnas={[
+										{ clave: "cuando", encabezado: "Cuándo pasó", celda: (renglon) => renglon.cuando },
+										{
+											clave: "accion",
+											encabezado: "Acción",
+											celda: (renglon) => <DosRenglones arriba={renglon.accion} abajo={renglon.persona ?? "—"} />,
+										},
+										{
+											clave: "motivo",
+											encabezado: "Por qué se apartó",
+											celda: (renglon) => (
+												<DosRenglones arriba={renglon.motivo} abajo={renglon.descartado ?? undefined} />
+											),
+										},
+										{
+											clave: "reintentos",
+											encabezado: "Reintentos",
+											alinear: "derecha",
+											celda: (renglon) => renglon.reintentos,
+										},
+										{
+											clave: "botones",
+											encabezado: "",
+											alinear: "derecha",
+											celda: (renglon) =>
+												renglon.descartado === null ? (
+													<span className="inline-flex gap-2">
+														<Boton
+															chico
+															disabled={!conConexion || reintentar.enviando}
+															onClick={() => void reintentar.enviar({ datos: { comando_id: renglon.comando_id } })}
+														>
+															Reintentar
+														</Boton>
+														{primera.puede_descartar ? (
+															<Boton
+																chico
+																variante="peligro"
+																disabled={!conConexion}
+																onClick={() => setADescartar(renglon.comando_id)}
+															>
+																Descartar
+															</Boton>
+														) : null}
+													</span>
+												) : null,
+										},
+									]}
+								/>
+								{verMas}
+							</>
+						);
+					}}
+				</SegunPaginas>
 			</div>
 			<VentanaConMotivo
 				abierta={aDescartar !== undefined}

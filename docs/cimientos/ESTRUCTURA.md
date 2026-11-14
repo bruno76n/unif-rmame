@@ -111,6 +111,11 @@ apps/web/src/
 │       └── <pestana>.tsx      una por pestaña
 ├── departamentos/<depto>/
 │   ├── menu.ts                su ícono en el menú (el nombre, el grupo y el orden vienen de `admin.armazon`)
+│   ├── pagina.tsx             su página: el título, las pestañas, la acción principal y los cajones que abre la dirección
+│   ├── direccion.ts           sus rutas y sus parámetros, sobre `comun/direccion.ts`
+│   ├── envio.ts               qué consultas vuelve a leer cada acción, sobre `useEnvio` de lo común
+│   ├── enlaces.ts             las direcciones a otros departamentos, si las usa
+│   ├── comun.tsx              lo que comparten sus pestañas y no comparte nadie más, si lo hay
 │   ├── pestanas/              una pestaña por archivo
 │   ├── cajones/               un cajón por archivo
 │   └── ventanas/              una ventana por archivo
@@ -119,7 +124,7 @@ apps/web/src/
 
 - **Un cajón se abre por su dirección:** `/<departamento>/<pestaña>?cajon=<nombre>&id=<id>` (decisión 759), así otro departamento lo enlaza sin importar su componente.
 - **El encargo de un trabajador** va en `.trabajador.json`, en la raíz de su worktree (no entra a git): su departamento, el commit del que salió y lo que el capataz le dio de más. `scripts/carpetas.ts` revisa con él que solo tocó sus carpetas, y la revisión rápida lo corre (decisión 750).
-- **Una ruta solo arma la pantalla:** lee los filtros de la dirección, llama a la consulta del contrato con TanStack Query y entrega los datos a su pestaña. Ninguna regla del negocio vive aquí.
+- **Una ruta solo arma la pantalla:** monta su pestaña, que lee los filtros de la dirección y llama a la consulta del contrato con TanStack Query (`useConsulta`, o `usePaginas` con `SegunPaginas` si va por páginas). Ninguna regla del negocio vive en la ruta ni en la pestaña (decisión 808).
 - **El menú se arma solo** con los `menu.ts` de cada carpeta (`import.meta.glob` de Vite). La cuenta solo ve los departamentos que tiene.
 - **Los componentes** salen de `packages/interfaz`; la carpeta de un departamento no define botones, tablas ni colores propios. Las reglas están en la [regla de pantallas](../../.claude/rules/react.md).
 - La tablet (`apps/tablet/src/`) sigue la misma idea con `pantallas/`, `cola/` (lo guardado sin internet), `copia/` (lo que bajó), `sincronizacion/`, `registro/` y `pin/` (ver [la tablet](../apps/tablet.md)).
@@ -134,12 +139,12 @@ Cada familia de componentes en su carpeta, un componente por archivo (decisión 
 packages/interfaz/src/
 ├── tokens.css                 los colores y las medidas, una sola vez (ver diseño)
 ├── clases.ts                  une las clases de un componente
-├── botones/                   boton.tsx · boton-con-cifra.tsx
-├── captura/                   campo.tsx · selector.tsx · interruptor.tsx · casilla.tsx · filtros.tsx
-├── estados/                   estado.tsx · estado-de-pantalla.tsx · aviso.tsx · colores.ts (el color de cada estado)
-├── contenedores/              cajon.tsx · ventana.tsx · emergente.tsx · menu-de-opciones.tsx
-├── tablas/                    tabla.tsx · panel-pendientes.tsx
-├── pagina/                    armazon.tsx · pagina-departamento.tsx · barra-indicadores.tsx · colores-de-tipo.ts
+├── botones/                   boton.tsx · boton-con-cifra.tsx · boton-de-archivo.tsx · enlace.tsx
+├── captura/                   campo.tsx · selector.tsx · interruptor.tsx · casilla.tsx · filtros.tsx · buscador.tsx · campo-de-archivo.tsx
+├── estados/                   estado.tsx · estado-de-pantalla.tsx · aviso.tsx · recuadro.tsx · textos-con-tono.tsx · muestra-de-color.tsx · colores.ts (el color de cada estado)
+├── contenedores/              cajon.tsx · ventana.tsx · emergente.tsx · menu-de-opciones.tsx · tarjeta.tsx · grupo-plegable.tsx
+├── tablas/                    tabla.tsx · panel-pendientes.tsx · dos-renglones.tsx
+├── pagina/                    armazon.tsx · pagina-departamento.tsx · barra-indicadores.tsx · colores-de-tipo.ts · seccion.tsx · dato.tsx · panel.tsx · cifra-de-cajon.tsx
 ├── avance/                    hilo.tsx · barra-avance.tsx · pasos.tsx
 ├── graficas/                  grafica-chica.tsx · grafica.tsx
 └── muestra/                   catalogo.tsx (todos los componentes en todos sus estados), su página y componentes.prueba.ts

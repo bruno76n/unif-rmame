@@ -12,8 +12,8 @@
  */
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { centavosACampo, pesosACentavos } from "@uniformame/compartido/calculos/dinero";
-import { cambioDePrecio } from "@uniformame/compartido/contratos/compras/textos";
+import { cambioDePrecio } from "@uniformame/compartido/calculos/compras";
+import { centavosACampo, pesosACentavos, sumarCentavos } from "@uniformame/compartido/calculos/dinero";
 import { capturarFacturaOpciones } from "@uniformame/compartido/contratos/contaduria/consultas-pagar";
 import { capturarFacturaProveedor } from "@uniformame/compartido/contratos/contaduria/por-pagar";
 import { Boton } from "@uniformame/interfaz/botones/boton";
@@ -138,8 +138,9 @@ function CapturaDeFactura({
 		);
 		if (salio !== undefined) alCerrar();
 	});
-	const totalDeOrdenes = ordenes.reduce((suma, orden) => suma + (orden.total_centavos ?? 0), 0);
-	const recibido = ordenes.reduce((suma, orden) => suma + (orden.recibido_centavos ?? 0), 0);
+	// Lo de las órdenes escogidas, sumado en enteros.
+	const totalDeOrdenes = sumarCentavos(ordenes.map((orden) => orden.total_centavos ?? 0));
+	const recibido = sumarCentavos(ordenes.map((orden) => orden.recibido_centavos ?? 0));
 	return (
 		<form className="flex flex-col gap-4" onSubmit={(evento) => void guardar(evento)}>
 			<Selector

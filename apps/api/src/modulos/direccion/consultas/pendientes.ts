@@ -26,7 +26,6 @@ import {
 	formatoDePiezas,
 	saludDeLosLotes,
 	terminadasPorDia,
-	ultimosDiasDeTrabajo,
 	vendidoEntre,
 	ventasPorDia,
 } from "./cifras.ts";
@@ -82,7 +81,7 @@ async function cifraDeVentas(contexto: ContextoDeAccion, periodo: "semana" | "di
  * @param contexto El contexto de la lectura.
  */
 async function cifraDeProduccion(contexto: ContextoDeAccion): Promise<Cifra> {
-	const serie = await terminadasPorDia(contexto, await ultimosDiasDeTrabajo(contexto, diasDeProduccion));
+	const serie = (await terminadasPorDia(contexto, diasDeProduccion)).map((dia) => dia.piezas);
 	const suma = (piezas: number[]) => piezas.reduce((total, unas) => total + unas, 0);
 	const estas = suma(serie.slice(-diasDeEstaSemana));
 	const cambio = variacion(estas, suma(serie.slice(0, -diasDeEstaSemana)));

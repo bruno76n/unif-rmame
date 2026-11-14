@@ -173,6 +173,18 @@ export const varianteDeExistencias = varianteDeBodega.extend({
 	libre: z.number().int(),
 });
 
+/** Lo de un producto en el renglón que lo pliega: la suma de cada columna en sus variantes. */
+const sumaDeProducto = z
+	.object({
+		celdas: z.array(z.object({ codigo: z.enum(columnasDeExistencias), piezas: z.number().int() })),
+		transito: z.number().int(),
+		en_camino: z.number().int(),
+		total: z.number().int(),
+		comprometido: z.number().int(),
+		libre: z.number().int(),
+	})
+	.describe("La suma de cada columna en sus variantes de lo filtrado: va en el renglón del producto");
+
 export const existenciasDeBodega = definirConsulta({
 	nombre: "inventario.existencias",
 	descripcion: "Existencias por producto y variante en cada ubicación, con lo comprometido y lo libre, por páginas",
@@ -187,11 +199,15 @@ export const existenciasDeBodega = definirConsulta({
 		secciones: z.array(z.object({ id: z.uuid(), nombre: z.string() })),
 		escuelas: z.array(z.object({ id: z.uuid(), nombre: z.string() })),
 		resumen: z.object({ variantes: z.number().int(), piezas: z.number().int() }).describe("De todo lo filtrado"),
+		columnas: z
+			.array(z.object({ codigo: z.enum(columnasDeExistencias), nombre: z.string().describe("«Tienda 1»") }))
+			.describe("Las columnas de ubicación, en su orden, con el nombre de cada ubicación"),
 		...paginaDe(
 			z.object({
 				producto_id: z.uuid(),
 				prenda: z.string(),
 				escuela: z.string(),
+				suma: sumaDeProducto,
 				variantes: z.array(varianteDeExistencias),
 			}),
 		),

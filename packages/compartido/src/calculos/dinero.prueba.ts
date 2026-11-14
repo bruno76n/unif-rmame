@@ -6,7 +6,17 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { centavos as c, esCentavos } from "../tipos/base.ts";
-import { aPesoEntero, aplicarPorcentaje, centavosACampo, centavosATexto, pesosACentavos, repartir } from "./dinero.ts";
+import {
+	aPesoEntero,
+	aplicarPorcentaje,
+	centavosACampo,
+	centavosATexto,
+	hastaElMenor,
+	montoCorto,
+	pesosACentavos,
+	repartir,
+	sumarCentavos,
+} from "./dinero.ts";
 
 /** Montos en centavos de cualquier tamaño que alcance un número entero seguro. */
 const centavos = fc.maxSafeInteger().filter(esCentavos);
@@ -239,5 +249,33 @@ describe("un monto se escribe en su campo como se vuelve a leer", () => {
 				expect(pesosACentavos(centavosACampo(monto))).toBe(monto);
 			}),
 		);
+	});
+});
+
+describe("las pantallas suman, topan y acortan montos en enteros, como la API (docs/interfaz/fabrica/contaduria.md)", () => {
+	it("sumarCentavos da la suma exacta y rechaza lo que no es entero", () => {
+		fc.assert(
+			fc.property(fc.array(fc.integer({ min: -1_000_000_000, max: 1_000_000_000 })), (montos) => {
+				expect(sumarCentavos(montos)).toBe(montos.reduce((suma, monto) => suma + monto, 0));
+			}),
+		);
+		expect(sumarCentavos([])).toBe(0);
+		expect(() => sumarCentavos([10.5])).toThrow(RangeError);
+		expect(() => sumarCentavos([Number.MAX_SAFE_INTEGER, 1])).toThrow(RangeError);
+	});
+
+	it("hastaElMenor da el tope más chico", () => {
+		expect(hastaElMenor([800_000, 250_000])).toBe(250_000);
+		expect(hastaElMenor([0, 250_000])).toBe(0);
+		expect(() => hastaElMenor([])).toThrow(RangeError);
+	});
+
+	it("montoCorto: «+$74k», «−$15k», «+$500» y «$0», con el millar redondeado lejos del cero", () => {
+		expect(montoCorto(7_400_000)).toBe("+$74k");
+		expect(montoCorto(-1_500_000)).toBe("−$15k");
+		expect(montoCorto(7_450_000)).toBe("+$75k");
+		expect(montoCorto(-7_450_000)).toBe("−$75k");
+		expect(montoCorto(50_000)).toBe("+$500");
+		expect(montoCorto(0)).toBe("$0");
 	});
 });

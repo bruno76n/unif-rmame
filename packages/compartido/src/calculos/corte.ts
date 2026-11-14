@@ -2,6 +2,7 @@
  * Las cuentas del corte de una tela: si la tela alcanza, los rollos automáticos y lo que queda según la receta. Lo que
  * pide la receta y el piso del patrón son `pideLaReceta` de la cuenta de material.
  * Fase 12 · docs/modulos/produccion/corte-y-bultos.md (reglas 3 a 6 y 12)
+ * Fase 19 · docs/interfaz/fabrica/bodega.md («Cajones»: Entrega al corte, si cada tela alcanza)
  *
  * Puras y en milésimos: la pantalla las corre mientras se escribe y la API las repite al cerrar, con los mismos rollos.
  */
@@ -19,6 +20,23 @@ export interface RolloDelCorte {
  */
 export function laTelaAlcanza(rollos: readonly RolloDelCorte[], pide: bigint): boolean {
 	return rollos.reduce((suma, rollo) => suma + rollo.milesimos, 0n) >= pide;
+}
+
+/** Una tela que se entrega al corte: lo que pide y los rollos que se marcaron de ella. */
+export interface TelaPorEntregar {
+	/** Lo que pide la receta de esta tela, en milésimos. */
+	pide: bigint;
+	rollos: readonly RolloDelCorte[];
+}
+
+/**
+ * Si cada tela alcanza con sus propios rollos: lo que sobra de una nunca tapa lo que falta de otra. Una tela sin rollos
+ * marcados no alcanza.
+ * @param telas Las telas por entregar, con sus rollos marcados.
+ * @returns Verdadero solo si todas alcanzan. Lo pinta el cajón Entrega al corte de Bodega (verde o rojo).
+ */
+export function cadaTelaAlcanza(telas: readonly TelaPorEntregar[]): boolean {
+	return telas.every((tela) => laTelaAlcanza(tela.rollos, tela.pide));
 }
 
 /**

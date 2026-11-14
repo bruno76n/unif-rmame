@@ -1,8 +1,8 @@
 /**
  * El cajón Recibir del taller: «Del taller · {L}» y la prenda; las cifras «{n} contadas aquí» y «{n} de {m} tallas
  * contadas»; «Por talla · Va a {destino}» con una casilla por talla, vacía, hasta 4 cifras, y «Parte va a bodega» en
- * las que la llevan. «Recibir en aduana» llama `inventario.recibir_del_taller`; una talla sin contar se marca «Cuenta
- * esta talla, aunque sea 0». Lo que aprobó Calidad nunca llega a esta pantalla: el conteo es a ciegas.
+ * las que la llevan. «Recibir en aduana» llama `inventario.recibir_del_taller`; cada talla se revisa con el campo del
+ * contrato, y la que no se contó se marca con su error («Cuenta esta talla, aunque sea 0»). Lo que aprobó Calidad nunca llega a esta pantalla: el conteo es a ciegas.
  * Fase 19 · docs/interfaz/fabrica/aduana.md («Cajones»: Recibir del taller)
  */
 
@@ -20,10 +20,21 @@ import { useConsulta } from "../../../comun/api.tsx";
 import { useCierreDelCajon } from "../../../comun/cambios-sin-guardar.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
-import { useEnvio } from "../comun.tsx";
+import { useEnvio } from "../envio.ts";
 
-/** Lo que dice una talla sin contar. */
-const sinContar = "Cuenta esta talla, aunque sea 0";
+/** El campo de las piezas de una talla, del contrato: la pantalla revisa igual que la API. */
+const piezasDeTalla = recibirDelTaller.entrada.shape.tallas.element.shape.piezas;
+
+/**
+ * Lee lo escrito en una talla con el campo del contrato.
+ * @param texto Lo escrito; vacío es una talla sin contar.
+ * @returns Las piezas, o el error que daría la API («Cuenta esta talla, aunque sea 0»).
+ */
+function leerTalla(texto: string): { piezas: number } | { error: string } {
+	const limpio = texto.trim();
+	const leido = piezasDeTalla.safeParse(limpio === "" ? undefined : Number(limpio));
+	return leido.success ? { piezas: leido.data } : { error: leido.error.issues[0]?.message ?? "" };
+}
 
 /**
  * El cajón Recibir del taller.
@@ -39,8 +50,9 @@ export function CajonRecibirTaller({ loteId, alCerrar }: { loteId: string; alCer
 	const conCambios = Object.values(contadas).some((valor) => valor.trim() !== "");
 	const cierre = useCierreDelCajon(conCambios, alCerrar);
 	const tallas = detalle?.tallas ?? [];
-	const escritas = tallas.filter((talla) => /^\d{1,4}$/.test((contadas[talla.variante_id] ?? "").trim()));
-	const total = escritas.reduce((suma, talla) => suma + Number(contadas[talla.variante_id]), 0);
+	const leidas = tallas.map((talla) => ({ talla, leida: leerTalla(contadas[talla.variante_id] ?? "") }));
+	const escritas = leidas.flatMap(({ talla, leida }) => ("piezas" in leida ? [{ talla, piezas: leida.piezas }] : []));
+	const total = escritas.reduce((suma, escrita) => suma + escrita.piezas, 0);
 	/** Recibe lo contado; si falta una talla, la marca y no manda nada. */
 	const recibir = async () => {
 		if (detalle === undefined) return;
@@ -51,10 +63,7 @@ export function CajonRecibirTaller({ loteId, alCerrar }: { loteId: string; alCer
 		const salio = await enviar({
 			datos: {
 				lote_id: detalle.lote_id,
-				tallas: tallas.map((talla) => ({
-					variante_id: talla.variante_id,
-					piezas: Number(contadas[talla.variante_id]),
-				})),
+				tallas: escritas.map(({ talla, piezas }) => ({ variante_id: talla.variante_id, piezas })),
 			},
 		});
 		if (salio !== undefined) cierre.alCerrar();
@@ -89,6 +98,7 @@ export function CajonRecibirTaller({ loteId, alCerrar }: { loteId: string; alCer
 							<div className="grid grid-cols-4 gap-3 max-telefono:grid-cols-2">
 								{datos.tallas.map((talla) => {
 									const valor = contadas[talla.variante_id] ?? "";
+									const leida = leerTalla(valor);
 									return (
 										<div key={talla.variante_id} className="flex flex-col gap-1">
 											<Campo
@@ -96,7 +106,7 @@ export function CajonRecibirTaller({ loteId, alCerrar }: { loteId: string; alCer
 												inputMode="numeric"
 												maxLength={4}
 												value={valor}
-												error={revisar && !/^\d{1,4}$/.test(valor.trim()) ? sinContar : undefined}
+												error={revisar && "error" in leida ? leida.error : undefined}
 												onChange={(evento) =>
 													setContadas((antes) => ({ ...antes, [talla.variante_id]: evento.target.value }))
 												}

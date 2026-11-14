@@ -29,6 +29,7 @@ const antiguedad = z.object({
 	depositos: z.array(
 		z.object({ tercero: z.string(), queda_centavos: z.number(), deudas: z.array(z.object({ documento: z.string() })) }),
 	),
+	depositos_queda_centavos: z.number(),
 });
 
 describe("Antigüedad de saldos por cliente", () => {
@@ -75,6 +76,10 @@ describe("Antigüedad de saldos por cliente", () => {
 		expect(aVillasenor?.queda_centavos).toBe(1_200_000);
 		expect(aVillasenor?.deudas.length).toBeGreaterThan(0);
 		expect(aVillasenor?.deudas.every((deuda) => deuda.documento.includes("mensualidad"))).toBe(true);
+		// La suma de lo que queda llega armada: la pantalla no suma.
+		expect(datos.depositos_queda_centavos).toBe(
+			datos.depositos.reduce((suma, deposito) => suma + deposito.queda_centavos, 0),
+		);
 	});
 
 	it("solo Contaduría ve los saldos: Ventas y Dirección reciben 403", async () => {

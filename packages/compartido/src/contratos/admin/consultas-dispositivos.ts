@@ -27,7 +27,12 @@ export const dispositivosDeAdmin = definirConsulta({
 		"Dispositivos: los aparatos registrados con su última sincronización, su llave, su versión y sus apartados, y los revocados",
 	entrada: z.object({}),
 	salida: z.object({
-		es_duena: z.boolean().describe("Solo la dueña registra y revoca"),
+		puede: z
+			.object({
+				registrar: z.boolean().describe("«Registrar dispositivo» (`admin.generar_codigo_registro`)"),
+				revocar: z.boolean().describe("«Revocar» (`admin.revocar_dispositivo`)"),
+			})
+			.describe("Lo que quien ve puede hacer aquí: solo la dueña registra y revoca"),
 		registrados: z.array(
 			z.object({
 				dispositivo_id: z.uuid(),
@@ -88,7 +93,7 @@ export const comandosApartadosDeAdmin = definirConsulta({
 	}),
 	salida: z.object({
 		nombre: z.string().describe("El nombre del aparato"),
-		es_duena: z.boolean().describe("Solo la dueña descarta"),
+		puede_descartar: z.boolean().describe("«Descartar» (`admin.descartar_comando_apartado`): solo la dueña"),
 		...paginaDe(
 			z.object({
 				comando_id: z.uuid(),

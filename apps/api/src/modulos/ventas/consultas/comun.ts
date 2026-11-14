@@ -9,7 +9,7 @@
  */
 
 import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
-import { plural } from "@uniformame/compartido/calculos/textos";
+import { plural, rangoDeTallas } from "@uniformame/compartido/calculos/textos";
 import { sql } from "drizzle-orm";
 import type { Temporal } from "temporal-polyfill";
 import { z } from "zod";
@@ -272,6 +272,7 @@ const renglonLeido = z.object({
 	producto_id: z.uuid(),
 	prenda: z.string(),
 	talla: z.string(),
+	grupo: z.string(),
 	orden: z.coerce.number(),
 	escuela: z.string().nullable(),
 });
@@ -288,9 +289,10 @@ export async function leerRenglones(base: Base, pedidoIds: readonly string[]): P
 	if (pedidoIds.length === 0) return [];
 	const { rows } = await base.execute(sql`SELECT r.pedido_id, r.variante_id, r.cantidad, r.precio_unitario_centavos,
 			r.precio_dado_centavos, r.precio_sugerido_centavos, r.origen_sugerido, r.porcentaje_aplicado::text,
-			r.recargo_especial_centavos, v.producto_id, pr.nombre AS prenda, t.nombre AS talla, t.orden, e.nombre AS escuela
+			r.recargo_especial_centavos, v.producto_id, pr.nombre AS prenda, t.nombre AS talla, g.nombre AS grupo, t.orden,
+			e.nombre AS escuela
 		FROM pedido_renglones r JOIN variantes v ON v.id = r.variante_id JOIN productos pr ON pr.id = v.producto_id
-		JOIN tallas t ON t.id = v.talla_id LEFT JOIN escuelas e ON e.id = pr.escuela_id
+		JOIN tallas t ON t.id = v.talla_id JOIN grupos_talla g ON g.id = t.grupo_talla_id LEFT JOIN escuelas e ON e.id = pr.escuela_id
 		WHERE r.hasta_version IS NULL AND r.pedido_id IN (${sql.join(
 			pedidoIds.map((id) => sql`${id}::uuid`),
 			sql`, `,
@@ -311,22 +313,12 @@ export function porPrenda<Renglon extends { producto_id: string }>(renglones: re
 }
 
 /**
- * El rango de tallas de una prenda: «6 a 14», o la talla sola.
- * @param tallas Sus tallas, en orden.
- */
-export function rangoDeTallas(tallas: readonly string[]): string {
-	const primera = tallas[0] ?? "";
-	const ultima = tallas.at(-1) ?? "";
-	return tallas.length <= 1 ? primera : `${primera} a ${ultima}`;
-}
-
-/**
  * Los nombres de las prendas de un pedido y su detalle: «2 productos · tallas 6 a 14», o «2 rangos de tallas».
  * @param renglones Sus renglones con piezas.
  */
 export function prendasDelPedido(renglones: readonly RenglonLeido[]): { nombres: string; detalle: string } {
 	const prendas = [...porPrenda(renglones.filter((renglon) => renglon.cantidad > 0)).values()];
-	const rangos = [...new Set(prendas.map((suyos) => rangoDeTallas(suyos.map((renglon) => renglon.talla))))];
+	const rangos = [...new Set(prendas.map((suyos) => rangoDeTallas(suyos)))];
 	return {
 		nombres: prendas.map((suyos) => suyos[0]?.prenda ?? "").join(", "),
 		detalle: `${plural(prendas.length, "producto", "productos")} · ${

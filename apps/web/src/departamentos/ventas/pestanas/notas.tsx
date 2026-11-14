@@ -10,6 +10,7 @@
 import { estadoPagoNotas } from "@uniformame/compartido/contratos/contaduria/estado-pago-notas";
 import { notasEntregaVentas } from "@uniformame/compartido/contratos/ventas/consultas-notas";
 import { Boton } from "@uniformame/interfaz/botones/boton";
+import { Enlace } from "@uniformame/interfaz/botones/enlace";
 import { Buscador } from "@uniformame/interfaz/captura/buscador";
 import { Filtros } from "@uniformame/interfaz/captura/filtros";
 import { Estado } from "@uniformame/interfaz/estados/estado";
@@ -99,16 +100,15 @@ export function PestanaNotas() {
 											encabezado: "Pedido",
 											celda: (nota) => (
 												<span className="flex flex-col items-start">
-													<button
-														type="button"
-														className="font-bold text-marca underline"
+													<Enlace
+														fuerte
 														onClick={(evento) => {
 															evento.stopPropagation();
 															abrir("pedido", nota.pedido_id);
 														}}
 													>
 														{nota.pedido_folio}
-													</button>
+													</Enlace>
 													<span className="text-etiqueta text-tinta3">{nota.nota_de}</span>
 												</span>
 											),

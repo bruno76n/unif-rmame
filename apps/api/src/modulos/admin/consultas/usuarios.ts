@@ -88,7 +88,14 @@ export const consultaUsuarios = implementarConsulta(usuariosDeAdmin, async (cont
 	const altas = await altasPorConfirmar(base);
 	return {
 		resultado: {
-			es_duena: esDuena,
+			// Lo que puede hacer quien ve: `admin.crear_cuenta`, `admin.quitar_acceso`, `admin.cambiar_departamentos` y el
+			// cajón Alta de usuario son solo de la dueña (`soloDuena` en su contrato).
+			puede: {
+				crear_cuenta: esDuena,
+				revisar_altas: esDuena,
+				quitar_acceso: esDuena,
+				cambiar_departamentos: esDuena,
+			},
 			cuentas: cuentas
 				.filter((cuenta) => !cuenta.esSoporte)
 				.map((cuenta) => ({
@@ -147,7 +154,8 @@ export const consultaCuentaNueva = implementarConsulta(cuentaNuevaDeAdmin, async
 		.orderBy(asc(personas.folio));
 	return {
 		resultado: {
-			es_duena: esLaDuena(quien),
+			// `admin.crear_cuenta` es solo de la dueña; las demás cuentas la piden.
+			puede_crear_cuenta: esLaDuena(quien),
 			personas: libres.map((persona) => ({
 				persona_id: persona.id,
 				texto: `${persona.folio} · ${persona.nombre} · ${persona.puesto}`,

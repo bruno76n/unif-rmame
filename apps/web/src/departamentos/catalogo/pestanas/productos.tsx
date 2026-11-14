@@ -5,6 +5,7 @@
  * Fase 19 · docs/interfaz/fabrica/catalogo.md («Productos»)
  */
 
+import { plural } from "@uniformame/compartido/calculos/textos";
 import { productosDeCatalogo } from "@uniformame/compartido/contratos/catalogo/pantallas";
 import { Boton } from "@uniformame/interfaz/botones/boton";
 import { Campo } from "@uniformame/interfaz/captura/campo";
@@ -17,9 +18,10 @@ import { ChevronDown, ChevronRight, Plus, Shirt } from "lucide-react";
 import { useState } from "react";
 import type { z } from "zod";
 import { useConsulta } from "../../../comun/api.tsx";
+import { montoEnPantalla } from "../../../comun/montos.ts";
 import { SegunConsulta } from "../../../comun/segun-consulta.tsx";
 import { conAlta, conFicha, useBusqueda, useIr } from "../direccion.ts";
-import { cuantos, escuelaOBasico, nombreDeCanal, pesos, textoDeLoQueDetiene } from "../textos.ts";
+import { escuelaOBasico, nombreDeCanal, textoDeLoQueDetiene } from "../textos.ts";
 import { BarraDeSeleccion } from "./seleccion.tsx";
 
 /** Un producto de la pestaña. */
@@ -66,7 +68,7 @@ export function PestanaProductos() {
 					/>
 				</div>
 				<span className="pb-3 text-tinta2 tabular-nums">
-					{consulta.data === undefined ? "" : cuantos(consulta.data.total, "producto", "productos")}
+					{consulta.data === undefined ? "" : plural(consulta.data.total, "producto", "productos")}
 				</span>
 			</div>
 			<SegunConsulta consulta={consulta}>
@@ -217,7 +219,7 @@ export function PestanaProductos() {
 											derecha={
 												<>
 													<span className="text-etiqueta text-tinta2">
-														{`${cuantos(seccion.productos.length, "producto", "productos")}, ${cuantos(variantes, "variante", "variantes")}`}
+														{`${plural(seccion.productos.length, "producto", "productos")}, ${plural(variantes, "variante", "variantes")}`}
 													</span>
 													<Boton
 														chico
@@ -346,7 +348,7 @@ function TablaDeProductos({
 						<span className="flex flex-col">
 							<span>{producto.tallas}</span>
 							<span className="text-etiqueta text-tinta2">
-								{`${cuantos(producto.variantes, "variante", "variantes")}, ${producto.por_pedido} por pedido`}
+								{`${plural(producto.variantes, "variante", "variantes")}, ${producto.por_pedido} por pedido`}
 							</span>
 						</span>
 					),
@@ -356,7 +358,8 @@ function TablaDeProductos({
 					encabezado: "Mostrador",
 					alinear: "derecha",
 					ordenarPor: (producto) => producto.mostrador_centavos ?? -1,
-					celda: (producto) => (producto.mostrador_centavos === null ? "—" : pesos(producto.mostrador_centavos)),
+					celda: (producto) =>
+						producto.mostrador_centavos === null ? "—" : montoEnPantalla(producto.mostrador_centavos),
 				},
 				{
 					clave: "detiene",
@@ -390,7 +393,7 @@ function Galeria({ productos, alTocar }: { productos: readonly Producto[]; alToc
 							{`${escuelaOBasico(producto.escuela?.nombre)} · ${producto.tallas}`}
 						</span>
 						<span className="font-bold tabular-nums">
-							{producto.mostrador_centavos === null ? "Sin precio" : pesos(producto.mostrador_centavos)}
+							{producto.mostrador_centavos === null ? "Sin precio" : montoEnPantalla(producto.mostrador_centavos)}
 						</span>
 						<Canales producto={producto} />
 						<LoQueLoDetiene producto={producto} />

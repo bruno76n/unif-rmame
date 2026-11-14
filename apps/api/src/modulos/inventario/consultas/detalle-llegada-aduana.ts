@@ -6,7 +6,7 @@
  * docs/modulos/inventario/surtido-y-despachos.md («`inventario.recibir_despacho`»)
  */
 
-import { textoDeDiaCorto } from "@uniformame/compartido/calculos/fechas";
+import { textoDeDiaCorto, zonaDelNegocio } from "@uniformame/compartido/calculos/fechas";
 import { detalleDeLlegadaAduana } from "@uniformame/compartido/contratos/inventario/bodega-cajones";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
@@ -39,7 +39,7 @@ export const consultaDetalleDeLlegadaAduana = implementarConsulta(
 	async (contexto, parametros) => ({
 		resultado: await contexto.comoAccion(async (accion) => {
 			const { rows } = await accion.transaccion.execute(sql`
-			SELECT d.id, d.folio, d.version, d.estado, (d.despachado_en AT TIME ZONE 'America/Mexico_City')::date::text AS salio
+			SELECT d.id, d.folio, d.version, d.estado, (d.despachado_en AT TIME ZONE ${zonaDelNegocio}::text)::date::text AS salio
 			FROM despachos d JOIN ubicaciones u ON u.id = d.destino_ubicacion_id AND u.tipo = 'bodega'
 			WHERE d.id = ${parametros.despacho_id}::uuid`);
 			const despacho = z.array(delDespacho).parse(rows)[0];

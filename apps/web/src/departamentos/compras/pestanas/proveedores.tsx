@@ -42,11 +42,7 @@ const colorDeEntregas = { verde: "verde", ambar: "ambar", rojo: "rojo", gris: "g
  * «Sin entregas todavía».
  * @param props El proveedor.
  */
-export function PlazoDiceYReal({
-	proveedor,
-}: {
-	proveedor: Pick<ProveedorDeLaLista, "dice" | "tarda" | "tono_plazo">;
-}) {
+function PlazoDiceYReal({ proveedor }: { proveedor: Pick<ProveedorDeLaLista, "dice" | "tarda" | "tono_plazo"> }) {
 	if (proveedor.tarda === null) return <span className="text-tinta3">Sin entregas todavía</span>;
 	return (
 		<span>

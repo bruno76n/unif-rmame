@@ -1,8 +1,9 @@
 /**
- * Empaque en línea: los pedidos en línea con `linea.pedidos`, con el recorte de Aduana (sin precios, totales ni datos
- * del pago). Dos columnas con su conteo: «Esperando prendas» (ámbar), cada W- con su folio y fecha, el destinatario y
- * su municipio y cada prenda con palomita y «En aduana» o con reloj y dónde viene, y abajo «Falta {n} de {m}»; y
- * «Listos para empacar» (verde azulado). Abajo, la nota de lo que llega con uniformame.mx. Sin botones.
+ * Empaque en línea: los pedidos en línea con `linea.pedidos`, solo las dos etapas de Aduana (`estados`), con el recorte
+ * de Aduana (sin precios, totales ni datos del pago). Dos columnas con su conteo: «Esperando prendas» (ámbar), cada W-
+ * con su folio y fecha, el destinatario y su municipio y cada prenda con palomita y «En aduana» o con reloj y dónde
+ * viene, y abajo «Falta {n} de {m}» como lo arma la consulta; y «Listos para empacar» (verde azulado). Abajo, la nota de
+ * lo que llega con uniformame.mx. Sin botones.
  * Fase 19 · docs/interfaz/fabrica/aduana.md («Empaque en línea»)
  */
 
@@ -23,16 +24,12 @@ type Columna = Pedidos["columnas"][number];
 /** Un W- de una columna. */
 type PedidoEnLinea = Columna["pedidos"][number];
 
-/** Las dos columnas de Aduana, en su orden. */
-const columnasDeEmpaque = ["esperando_prendas", "listo_para_empacar"] as const;
-
 /**
- * Un pedido en línea: su folio y fecha, a quién va y cada prenda con dónde está; si espera prendas, cuántas faltan.
- * @param props El W- y si todavía espera prendas.
+ * Un pedido en línea: su folio y fecha, a quién va y cada prenda con dónde está; si espera prendas, cuántas faltan (como
+ * lo arma la consulta).
+ * @param props El W-.
  */
-function TarjetaDeEmpaque({ pedido, esperando }: { pedido: PedidoEnLinea; esperando: boolean }) {
-	const total = pedido.prendas.reduce((suma, prenda) => suma + prenda.piezas, 0);
-	const faltan = pedido.prendas.filter((prenda) => !prenda.en_aduana).reduce((suma, prenda) => suma + prenda.piezas, 0);
+function TarjetaDeEmpaque({ pedido }: { pedido: PedidoEnLinea }) {
 	return (
 		<Tarjeta nombre={`Pedido en línea ${pedido.folio}`}>
 			<span className="flex items-baseline justify-between gap-2">
@@ -55,7 +52,7 @@ function TarjetaDeEmpaque({ pedido, esperando }: { pedido: PedidoEnLinea; espera
 					</li>
 				))}
 			</ul>
-			{esperando ? <TextoConTono tono="ambar">{`Falta ${faltan} de ${total}`}</TextoConTono> : null}
+			{pedido.falta === null ? null : <TextoConTono tono="ambar">{pedido.falta}</TextoConTono>}
 		</Tarjeta>
 	);
 }
@@ -65,7 +62,7 @@ function TarjetaDeEmpaque({ pedido, esperando }: { pedido: PedidoEnLinea; espera
  * @param props Lo que regresa `linea.pedidos`.
  */
 export function EmpaqueDeAduana({ datos }: { datos: Pedidos }) {
-	const columnas = columnasDeEmpaque.flatMap((estado) => datos.columnas.filter((columna) => columna.estado === estado));
+	const columnas = datos.columnas;
 	const cuantos = columnas.reduce((suma, columna) => suma + columna.pedidos.length, 0);
 	return (
 		<div className="flex flex-col gap-5">
@@ -80,11 +77,7 @@ export function EmpaqueDeAduana({ datos }: { datos: Pedidos }) {
 								<span className="text-tinta3 tabular-nums">{columna.pedidos.length}</span>
 							</header>
 							{columna.pedidos.map((pedido) => (
-								<TarjetaDeEmpaque
-									key={pedido.pedido_linea_id}
-									pedido={pedido}
-									esperando={columna.estado === "esperando_prendas"}
-								/>
+								<TarjetaDeEmpaque key={pedido.pedido_linea_id} pedido={pedido} />
 							))}
 						</section>
 					))}

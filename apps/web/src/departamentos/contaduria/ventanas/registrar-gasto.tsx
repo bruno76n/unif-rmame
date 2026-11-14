@@ -26,7 +26,7 @@ import { useEnvio } from "../envio.ts";
 /** Las opciones de la ventana, de `contaduria.gastos`. */
 type Opciones = Pick<
 	z.infer<typeof gastosDeContaduria.resultado>,
-	"categorias" | "ubicaciones" | "tipos_comprobante" | "cuentas_fabrica"
+	"categorias" | "ubicaciones" | "tipos_comprobante" | "cuentas_fabrica" | "hoy"
 >;
 
 /** Lo que se escoge en «Dónde»: la fábrica, en línea o el id de una ubicación. */
@@ -49,13 +49,6 @@ const formularioDeGasto = z.object({
 });
 
 /**
- * Hoy en la computadora, `AAAA-MM-DD`: la fecha con que abre la ventana.
- */
-function hoy(): string {
-	return new Date().toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" });
-}
-
-/**
  * La ventana para registrar un gasto.
  * @param props Las opciones y qué hacer al cerrar.
  */
@@ -72,7 +65,8 @@ export function VentanaRegistrarGasto({ opciones, alCerrar }: { opciones: Opcion
 			categoria_id: "",
 			monto: "",
 			donde: fabrica,
-			fecha: hoy(),
+			// El día de negocio que da la API, no el reloj de la computadora.
+			fecha: opciones.hoy,
 			sale_de: saleDe[0]?.valor ?? "",
 			tipo_comprobante_id: "",
 		},
@@ -156,7 +150,7 @@ export function VentanaRegistrarGasto({ opciones, alCerrar }: { opciones: Opcion
 					enVentana
 					type="date"
 					etiqueta="Fecha"
-					max={hoy()}
+					max={opciones.hoy}
 					error={errores.fecha?.message}
 					{...formulario.register("fecha")}
 				/>

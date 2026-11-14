@@ -5,6 +5,7 @@
  * Fase 19 · docs/interfaz/fabrica/catalogo.md («Ventanas») y docs/modulos/catalogo/precios.md
  */
 
+import { plural } from "@uniformame/compartido/calculos/textos";
 import { cambioEnBloquePrevio } from "@uniformame/compartido/contratos/catalogo/pantallas";
 import { cambiarPreciosEnBloque } from "@uniformame/compartido/contratos/catalogo/precios";
 import { Boton } from "@uniformame/interfaz/botones/boton";
@@ -16,11 +17,11 @@ import { Ventana } from "@uniformame/interfaz/contenedores/ventana";
 import { useState } from "react";
 import { useConsulta } from "../../../comun/api.tsx";
 import { useConConexion } from "../../../comun/estado-de-la-app.ts";
+import { montoEnPantalla } from "../../../comun/montos.ts";
 import { errorDeCampo, esperar, type Salida, useAccionDeCatalogo } from "../acciones.ts";
-import { cuantos, pesos } from "../textos.ts";
 
 /** Un producto escogido, con la versión que se leyó. */
-export interface ProductoQueCambiaDePrecio {
+interface ProductoQueCambiaDePrecio {
 	id: string;
 	version: number;
 }
@@ -49,8 +50,12 @@ export function VentanaCambiarPrecios({
 	const [redondear, setRedondear] = useState(true);
 	const [salida, setSalida] = useState<Salida<unknown>>();
 	const conConexion = useConConexion();
-	const numero = Number(cantidad);
-	const valida = /^\d{1,3}$/.test(cantidad) && numero >= 1;
+	// La cantidad se revisa con el mismo campo del contrato de la acción: de 1 a 999, entera.
+	const leida = cambiarPreciosEnBloque.entrada.shape.cantidad.safeParse(
+		cantidad.trim() === "" ? undefined : Number(cantidad),
+	);
+	const valida = leida.success;
+	const numero = leida.success ? leida.data : 1;
 	const previo = useConsulta(
 		cambioEnBloquePrevio,
 		{
@@ -58,7 +63,7 @@ export function VentanaCambiarPrecios({
 			...(lista === undefined ? {} : { lista_id: lista }),
 			direccion,
 			modo,
-			cantidad: valida ? numero : 1,
+			cantidad: numero,
 			redondear: redondear ? "si" : "no",
 		},
 		abierta && productos.length > 0,
@@ -88,13 +93,13 @@ export function VentanaCambiarPrecios({
 			alCerrar={alCerrar}
 			ancha
 			titulo="Cambiar precios en bloque"
-			subtitulo={cuantos(productos.length, "producto escogido", "productos escogidos")}
+			subtitulo={plural(productos.length, "producto escogido", "productos escogidos")}
 			accion={
 				<Boton
 					disabled={!valida || datos === undefined || datos.error !== null || accion.isPending || !conConexion}
 					onClick={() => void aplicar()}
 				>
-					{`Confirmar con Google y aplicar a ${cuantos(datos?.precios ?? 0, "precio", "precios")}`}
+					{`Confirmar con Google y aplicar a ${plural(datos?.precios ?? 0, "precio", "precios")}`}
 				</Boton>
 			}
 		>
@@ -131,11 +136,11 @@ export function VentanaCambiarPrecios({
 					enVentana
 					inputMode="numeric"
 					value={cantidad}
-					error={cantidad !== "" && !valida ? "Solo números, hasta 3 cifras." : errorDeCampo(salida, "cantidad")}
+					error={cantidad !== "" && !leida.success ? leida.error.issues[0]?.message : errorDeCampo(salida, "cantidad")}
 					onChange={(evento) => setCantidad(evento.target.value.trim())}
 				/>
 				<Interruptor
-					etiqueta={`Redondear a ${pesos(datos?.redondeo_centavos ?? 0)}`}
+					etiqueta={`Redondear a ${montoEnPantalla(datos?.redondeo_centavos ?? 0)}`}
 					prendido={redondear}
 					alCambiar={setRedondear}
 				/>
@@ -162,12 +167,12 @@ function VistaPrevia({ datos }: { datos: DatosDelPrevio }) {
 						{renglon.producto} <span className="text-tinta2">{renglon.escuela ?? ""}</span>
 					</span>
 					<span className="tabular-nums">
-						{pesos(renglon.antes_centavos)} → <b>{pesos(renglon.despues_centavos)}</b>
+						{montoEnPantalla(renglon.antes_centavos)} → <b>{montoEnPantalla(renglon.despues_centavos)}</b>
 					</span>
 				</div>
 			))}
 			<p className="m-0 mt-1 text-tinta2">
-				{`${datos.cambian} de ${cuantos(datos.escogidos, "producto cambia", "productos cambian")} en ${datos.lista?.nombre ?? ""}.`}
+				{`${datos.cambian} de ${plural(datos.escogidos, "producto cambia", "productos cambian")} en ${datos.lista?.nombre ?? ""}.`}
 			</p>
 			{datos.sin_precio === 0 ? null : (
 				<p className="m-0 text-tinta2">

@@ -61,7 +61,7 @@ export function RecepcionDeAduana({ datos }: { datos: Recepcion }) {
 									{
 										clave: "va_a",
 										encabezado: "Va a",
-										celda: (renglon) => <DestinoConPunto carril={renglon.carril} nombre={renglon.destino} />,
+										celda: (renglon) => <DestinoConPunto color={renglon.color_destino} nombre={renglon.destino} />,
 									},
 									{
 										clave: "recibir",
