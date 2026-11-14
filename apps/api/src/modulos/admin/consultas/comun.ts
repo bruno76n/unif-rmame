@@ -10,6 +10,7 @@ import { textoDeDiaCorto, zonaDelNegocio } from "@uniformame/compartido/calculos
 import { and, asc, eq, not, type SQL, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { Temporal } from "temporal-polyfill";
+import { montoTapado, patronDeMonto } from "../../../nucleo/acceso/recorte.ts";
 import type { Base } from "../../../nucleo/base/conexion.ts";
 import { autorizaciones } from "../../direccion/tablas.ts";
 import { personas } from "../../personal/tablas.ts";
@@ -151,25 +152,7 @@ export async function altasPorConfirmar(base: Base) {
 }
 
 /**
- * Un monto escrito en un texto («$1,250», «$12,500.50»), como lo escribe `enPesos`: el mismo patrón para la base
- * (`regexp_replace`) y para JavaScript.
- */
-const patronDeMonto = "\\$ ?[0-9][0-9,]*(\\.[0-9]+)?";
-/** Cómo queda un monto tapado. */
-const montoTapado = "$••••";
-
-/**
- * La descripción de la bitácora sin sus montos, para quien no ve montos: «Pagó FP-1172 por $••••».
- * Existe porque las acciones escriben montos en su descripción (Contaduría, Compras, Catálogo) y la cuenta de soporte,
- * y quien no ve montos en el historial de un documento, nunca reciben uno (docs/cimientos/ACCESO-Y-PERMISOS.md).
- * @param texto La descripción.
- */
-export function sinMontosEnTexto(texto: string): string {
-	return texto.replace(new RegExp(patronDeMonto, "g"), montoTapado);
-}
-
-/**
- * Lo mismo que `sinMontosEnTexto`, en la base: así el buscador busca en lo que se ve y un monto tapado no se encuentra.
+ * Lo mismo que `sinMontosEnTexto` del recorte común, en la base: así el buscador busca en lo que se ve y un monto tapado no se encuentra.
  * @param descripcion La expresión de la descripción.
  */
 export function sinMontosEnLaBase(descripcion: SQL<string>): SQL<string> {

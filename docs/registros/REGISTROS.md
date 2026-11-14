@@ -90,6 +90,9 @@ Lo que falta decidir o investigar, y en qué fase se resuelve. Lo del negocio ya
 - **El paso 1 del cuadre suma toda la historia de cada ubicación** (fase 22, antes de lanzar): la tanda bloquea las existencias de su ubicación mientras suma todo `movimiento_lineas`, y con los años se alarga. Partir de la existencia que dejó el último cuadre que cuadró y sumar solo lo de después la mantendría corta.
 - **Una fecha cuyo cuadre falló no se vuelve a cuadrar, y lo que terminó esa noche no pasa por el paso 3** (fase 14, con las DF-): el cuadre es único por fecha y el paso 3 revisa solo los traspasos que terminaron ese día. Falta decir si se reabre la fecha o si la noche siguiente toma lo que quedó pendiente.
 
+- **Los montos que no tienen la forma de `enPesos`** (fase 22): el recorte común tapa a soporte los «$1,250» de cualquier texto (decisión 805), pero no un monto escrito de otra forma («1250 pesos», «MXN 1,250»). Falta una prueba que revise que toda descripción, mensaje y aviso con monto use `enPesos` (auditoría de la fase 19).
+- **El antes y el después del historial de un documento** (fase 21): `admin.historial_entidad` los manda y ninguna pantalla los usa todavía. Su recorte de montos es general (Aduana y Bodega no los ven) y no el del módulo dueño, como pide `comunes.md`: una cuenta con Aduana y Mantenimiento sí ve los montos de un documento de inventario (auditoría de la fase 19).
+
 ## Para después
 
 Ninguna idea nueva entra a escondidas.
@@ -594,3 +597,4 @@ Lo que Claude Code decidió sin preguntar, para que Bruno lo revise.
 | 13 nov 2026 | 19 | «Por cobrar · Por pagar» de la guía sobre «nos debe · le debemos» de `contaduria.md`; la pestaña Pendientes cuenta todo; detalles de Terceros y Administración (decisión 803) | Dejar lo de `contaduria.md` · lo elegido | Lo elegido: la guía de textos manda | No |
 | 13 nov 2026 | 19 | Los avisos de una acción en la web, la ventana con motivo de Producción, «Rechazar» de Dirección con la suya y los montos tapados en la bitácora (decisión 804) | Quitar la descripción completa a soporte · lo elegido | Lo elegido: soporte sigue viendo qué pasó | No |
 | 13 nov 2026 | 19 | Lo que quedó de la fase 19 en Pendientes pasa a la fase 21, que recorre todas las pantallas, y lo de seguridad a la 22 | Detener el cierre por los detalles de diseño · lo elegido | Lo elegido: lo que pide la fase ya está y lo que falta no bloquea | No |
+| 13 nov 2026 | 19 | El recorte común tapa a soporte los montos escritos en cualquier texto; `compras.ve_documento`; el historial solo con cambios (decisión 805) | `pesosPara` en cada consulta · lo elegido | Lo elegido: una sola regla en el núcleo, que no se olvida | No |

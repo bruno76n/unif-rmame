@@ -156,6 +156,12 @@ describe("El armazón: el menú de la cuenta, sus sesiones, su campana y el hist
 			);
 		await escribir("Surtió T-0001 con costo de $1,120.50", { piezas: 3, costo_centavos: 112_050 });
 		await escribir("Pagó a Ana $500", { pago_dia_centavos: 50_000 }, "Pagó a Ana ••••");
+		// Una consulta sensible del documento no es parte de su historial.
+		await consultar(
+			`INSERT INTO bitacora (id, tipo, modulo, origen, accion, descripcion, entidad, entidad_id, usuario_id)
+			 VALUES ($1, 'consulta_sensible', 'inventario', 'fabrica', 'inventario.prueba', 'Consultó T-0001', 'traspasos', $2, $3)`,
+			[uuidv7(), traspaso, usuarioDe("bodega")],
+		);
 		const deBodega = await pedirConsulta(
 			servidor,
 			"admin.historial_entidad",

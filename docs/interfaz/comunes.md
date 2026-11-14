@@ -113,7 +113,7 @@ Al centro, por unos 3 segundos: verde con palomita cuando algo se hizo y ámbar 
 | **Pantalla** | El historial de cualquier cajón que lo muestre |
 | **Quién** | Quien puede ver ese documento: lo responde su módulo |
 | **Recibe** | `entidad` · `entidad_id` · `cursor` |
-| **Regresa** | Por renglón de [bitácora](../modulos/admin/bitacora.md): cuándo, quién, departamento, qué pasó, y su antes y después |
+| **Regresa** | Por cada cambio del documento en la [bitácora](../modulos/admin/bitacora.md) (no las consultas sensibles ni los accesos): cuándo, quién, departamento, qué pasó, y su antes y después |
 | **Recorte** | El del módulo dueño sobre el antes y el después (Aduana nunca ve precios ahí) y el de sueldos |
 
 ## Los estados de una pantalla

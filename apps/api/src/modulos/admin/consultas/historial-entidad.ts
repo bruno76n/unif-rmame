@@ -10,12 +10,12 @@
 import { historialEntidad } from "@uniformame/compartido/contratos/admin/armazon";
 import { and, desc, eq, lt, or, type SQL, sql } from "drizzle-orm";
 import { veSueldosYTarifas } from "../../../nucleo/acceso/quien.ts";
+import { sinMontosEnTexto } from "../../../nucleo/acceso/recorte.ts";
 import { cursorDe, leerCursor } from "../../../nucleo/http/consultas.ts";
 import { ErrorDeApi, noExiste } from "../../../nucleo/http/errores.ts";
 import { implementarConsulta } from "../../../nucleo/modulos.ts";
 import { personas } from "../../personal/tablas.ts";
 import { bitacora, departamentos, dispositivos, usuarios } from "../tablas.ts";
-import { sinMontosEnTexto } from "./comun.ts";
 
 /** Cuántos renglones por página si no se pide otro número. */
 const porPagina = 20;
@@ -84,7 +84,15 @@ export const consultaHistorialEntidad = implementarConsulta(
 			.leftJoin(personas, eq(personas.id, sql`coalesce(${bitacora.personaId}, ${usuarios.personaId})`))
 			.leftJoin(dispositivos, eq(dispositivos.id, bitacora.dispositivoId))
 			.leftJoin(departamentos, eq(departamentos.id, bitacora.departamentoId))
-			.where(and(eq(bitacora.entidad, parametros.entidad), eq(bitacora.entidadId, parametros.entidad_id), despues))
+			// Solo los cambios: quién consultó un documento (una consulta sensible) no es parte de su historial.
+			.where(
+				and(
+					eq(bitacora.entidad, parametros.entidad),
+					eq(bitacora.entidadId, parametros.entidad_id),
+					eq(bitacora.tipo, "cambio"),
+					despues,
+				),
+			)
 			.orderBy(desc(bitacora.ocurridoEn), desc(bitacora.id))
 			.limit(limite + 1);
 		const pagina = leidos.slice(0, limite);

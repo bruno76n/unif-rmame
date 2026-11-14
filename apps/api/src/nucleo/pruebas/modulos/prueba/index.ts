@@ -217,7 +217,8 @@ export default definirModulo({
 			return { resultado: { mensaje: "Fechado", dia_siguiente: datos.dia.add({ days: 1 }).toString() } };
 		}),
 		implementarAccion(conMonto, async () => ({
-			resultado: { total_centavos: 125_000, mensaje: "Con monto" },
+			resultado: { total_centavos: 125_000, mensaje: "Con monto de $1,250" },
+			avisos: ["Ojo: $500.50 de más"],
 			sinBitacora: true,
 		})),
 		implementarAccion(provocar, async (contexto, datos) => {
@@ -227,6 +228,7 @@ export default definirModulo({
 				});
 			}
 			if (datos.error === "base") await contexto.transaccion.execute(sql`SELECT ${datos.valor ?? ""}::integer`);
+			if (datos.error === "regla_con_monto") throw new ErrorDeApi("regla", "de_mas", "No puede pasar de $1,250.");
 			if (datos.error === "conflicto_con_monto") {
 				throw conflictoDeVersion(3, { texto: "La nota", monto_centavos: 125_000 });
 			}

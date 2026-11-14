@@ -360,11 +360,23 @@ describe("cada acción y consulta revisa en el servidor su departamento, su perm
 		if (conMonto === undefined) throw new Error("falta prueba.con_monto");
 		const accionDeSoporte = await llamar(conMonto, soporte, {});
 		expect(accionDeSoporte.estado).toBe(200);
-		expect(accionDeSoporte.cuerpo.resultado).toEqual({ mensaje: "Con monto" });
-		expect((await llamar(conMonto, ventas, {})).cuerpo.resultado).toEqual({
-			mensaje: "Con monto",
-			total_centavos: 125_000,
+		// Tampoco escrito en un texto: ni en el mensaje ni en los avisos.
+		expect(accionDeSoporte.cuerpo).toMatchObject({
+			resultado: { mensaje: "Con monto de $••••" },
+			avisos: ["Ojo: $•••• de más"],
 		});
+		expect(accionDeSoporte.cuerpo.resultado).not.toHaveProperty("total_centavos");
+		expect((await llamar(conMonto, ventas, {})).cuerpo).toMatchObject({
+			resultado: { mensaje: "Con monto de $1,250", total_centavos: 125_000 },
+			avisos: ["Ojo: $500.50 de más"],
+		});
+		// Ni en el mensaje de una regla.
+		const regla = await llamar(provocar, soporte, { error: "regla_con_monto" });
+		expect(regla.estado).toBe(422);
+		expect(regla.cuerpo.mensaje).toBe("No puede pasar de $••••.");
+		expect((await llamar(provocar, ventas, { error: "regla_con_monto" })).cuerpo.mensaje).toBe(
+			"No puede pasar de $1,250.",
+		);
 		const conflicto = await llamar(provocar, soporte, { error: "conflicto_con_monto" });
 		expect(conflicto.estado).toBe(409);
 		expect(conflicto.cuerpo).toMatchObject({ version: 3, datos: { texto: "La nota" } });
@@ -375,18 +387,21 @@ describe("cada acción y consulta revisa en el servidor su departamento, su perm
 	});
 
 	it("el recorte común: soporte pierde todo monto; sin «ven sueldos y tarifas», los sueldos; la dueña y quien lo tiene, nada", () => {
-		const respuesta = { nota: { total_centavos: 5000, pago_dia_centavos: 45_000, nombre: "Ana" } };
+		const respuesta = {
+			nota: { total_centavos: 5000, pago_dia_centavos: 45_000, nombre: "Ana" },
+			texto: "Ana debe $1,250.50 de PE-0150",
+		};
 		const sueldos = new Set(["pago_dia_centavos"]);
 		const cuenta = quienesDePrueba.ventas;
 		const duena = quienesDePrueba.duena;
 		const soporte = quienesDePrueba.soporte;
 		if (cuenta?.tipo !== "cuenta" || duena?.tipo !== "cuenta" || soporte?.tipo !== "cuenta") throw new Error();
 		expect(recorteComun(soporte, respuesta, sueldos)).toEqual({
-			objeto: { nota: { nombre: "Ana" } },
+			objeto: { nota: { nombre: "Ana" }, texto: "Ana debe $•••• de PE-0150" },
 			recortado: ["total_centavos", "pago_dia_centavos"],
 		});
 		expect(recorteComun(cuenta, respuesta, sueldos)).toEqual({
-			objeto: { nota: { total_centavos: 5000, nombre: "Ana" } },
+			objeto: { nota: { total_centavos: 5000, nombre: "Ana" }, texto: "Ana debe $1,250.50 de PE-0150" },
 			recortado: ["pago_dia_centavos"],
 		});
 		const conPermiso = { ...cuenta, permisosFinos: ["ven_sueldos_y_tarifas"] };

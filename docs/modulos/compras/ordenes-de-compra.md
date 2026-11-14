@@ -217,6 +217,7 @@ Usa también `compras.umbral_cambio_precio_pct` y `compras.precio_max_centavos` 
 
 ## Permisos
 
+- **Abrir el PDF de la orden** (fase 19): `compras.ve_documento` (`lecturas/ve-documento.ts`) deja abrir el PDF por `/v1/archivos/{id}` a Compras y Contaduría; Aduana lee la orden para recibirla, pero sin precios, así que no abre su PDF (decisión 805). Lo prueba `lecturas/ve-documento.prueba.ts`.
 - Todo lo de este archivo: Compras.
 - Aduana ve las órdenes por recibir sin precios, con la lectura de arriba.
 - Contaduría captura la nota de una orden enviada (ver [facturas de proveedor](../contaduria/facturas-de-proveedor.md)).

@@ -3,7 +3,8 @@
  * cada consulta.
  * Fase 5 · docs/cimientos/ACCESO-Y-PERMISOS.md («El recorte común», paso 8) y docs/cimientos/API.md
  *
- * - **La cuenta de soporte** no recibe ningún monto: todo campo en centavos (`_centavos`) se quita.
+ * - **La cuenta de soporte** no recibe ningún monto: todo campo en centavos (`_centavos`) se quita, y todo monto
+ *   escrito en un texto (un mensaje, un aviso, una descripción: «$1,250») llega tapado, «$••••».
  * - **Sin «ven sueldos y tarifas»** (y sin ser la dueña) no viajan los campos de sueldo y de tarifa que
  *   declaran los módulos (`camposDeSueldo`).
  *
@@ -15,6 +16,41 @@ import { type QuienLlama, veSueldosYTarifas } from "./quien.ts";
 
 /** El sufijo de los campos de dinero, que siempre van en centavos. */
 const sufijoDeMonto = "_centavos";
+
+/**
+ * Un monto escrito en un texto («$1,250», «$12,500.50»), como lo escribe `enPesos`: el mismo patrón sirve para la base
+ * (`regexp_replace`, en la bitácora) y para JavaScript.
+ */
+export const patronDeMonto = "\\$ ?[0-9][0-9,]*(\\.[0-9]+)?";
+/** Cómo queda un monto tapado. */
+export const montoTapado = "$••••";
+
+/**
+ * Un texto sin sus montos: «Pagó FP-1172 por $••••».
+ * @param texto El texto.
+ */
+export function sinMontosEnTexto(texto: string): string {
+	return texto.replace(new RegExp(patronDeMonto, "g"), montoTapado);
+}
+
+/**
+ * Si quien llama es la cuenta de soporte, que nunca recibe un monto ni escrito en un texto.
+ * @param quien Quién llama.
+ */
+export function noVeMontos(quien: QuienLlama): boolean {
+	return quien.tipo === "cuenta" && quien.esSoporte;
+}
+
+/**
+ * Tapa, a cualquier profundidad, los montos escritos en los textos de un valor.
+ * @param valor Un valor de la respuesta.
+ */
+function taparMontos(valor: unknown): unknown {
+	if (typeof valor === "string") return sinMontosEnTexto(valor);
+	if (Array.isArray(valor)) return valor.map(taparMontos);
+	if (typeof valor !== "object" || valor === null) return valor;
+	return Object.fromEntries(Object.entries(valor).map(([campo, adentro]) => [campo, taparMontos(adentro)]));
+}
 
 /**
  * Qué campos no ve quien llama, además de lo que recorta cada consulta.
@@ -34,7 +70,7 @@ export function camposQueNoVe(quien: QuienLlama, camposDeSueldo: ReadonlySet<str
  * @param quien Quién llama.
  * @param objeto Lo que se va a mandar.
  * @param camposDeSueldo Los campos de sueldo o de tarifa de los módulos.
- * @returns La respuesta sin esos campos y cuáles se quitaron.
+ * @returns La respuesta sin esos campos (y, a soporte, con sus textos sin montos) y cuáles se quitaron.
  */
 export function recorteComun(
 	quien: QuienLlama,
@@ -58,6 +94,11 @@ export function recorteComun(
 		if (typeof actual !== "object" || actual === null) return actual;
 		return quitarDe(Object.fromEntries(Object.entries(actual)));
 	};
-	const sinLoQueNoVe = quitarDe(objeto);
+	const sinCampos = quitarDe(objeto);
+	// A soporte, además, los montos escritos en los textos: así la regla no depende de que cada consulta, acción o
+	// error escriba los suyos de otra forma.
+	const sinLoQueNoVe = noVeMontos(quien)
+		? Object.fromEntries(Object.entries(sinCampos).map(([campo, valor]) => [campo, taparMontos(valor)]))
+		: sinCampos;
 	return { objeto: sinLoQueNoVe, recortado: [...recortado] };
 }

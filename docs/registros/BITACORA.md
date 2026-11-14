@@ -139,3 +139,4 @@ La línea de la bitácora se escribe al final, con el resultado ya conocido. Esc
 | 13 nov 2026 | 19 | Lo común que corrigió la revisión de diseño y el `GET` de las rutas fijas | [2026-11-12-fase-19](sesiones/2026-11-12-fase-19.md) |
 | 13 nov 2026 | 19 | Correcciones de diseño de los catorce departamentos, subida de archivos en Contaduría y Administración, y lo común que pidieron | [2026-11-12-fase-19](sesiones/2026-11-12-fase-19.md) |
 | 13 nov 2026 | 19 | Los avisos de una acción en la web, la ventana con motivo de Producción, los montos tapados en la bitácora, y Pendientes de la fase 19 a las fases 21 y 22 | [2026-11-12-fase-19](sesiones/2026-11-12-fase-19.md) |
+| 14 nov 2026 | 19 | Lo común que corrigió la auditoría: el recorte tapa los montos en texto a soporte, el PDF de la orden de compra y el historial solo con cambios | [2026-11-12-fase-19](sesiones/2026-11-12-fase-19.md) |

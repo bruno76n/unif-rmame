@@ -109,7 +109,7 @@ export const provocar = definirAccion({
 	descripcion: "Lanza un error de la tabla",
 	entrada: z.object({
 		error: z
-			.enum(["demasiados_intentos", "no_disponible", "interno", "base", "conflicto_con_monto"])
+			.enum(["demasiados_intentos", "no_disponible", "interno", "base", "conflicto_con_monto", "regla_con_monto"])
 			.describe("El error que lanza"),
 		valor: z.string().optional().describe("Un valor que lleva la consulta que falla en la base"),
 	}),

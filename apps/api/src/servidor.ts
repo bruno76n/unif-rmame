@@ -27,7 +27,7 @@ import { cookies } from "./nucleo/acceso/cookies.ts";
 import { entradaConGoogle } from "./nucleo/acceso/entrada.ts";
 import type { AccesoConGoogle } from "./nucleo/acceso/google.ts";
 import { appDe, type QuienLlama } from "./nucleo/acceso/quien.ts";
-import { recorteComun } from "./nucleo/acceso/recorte.ts";
+import { noVeMontos, recorteComun, sinMontosEnTexto } from "./nucleo/acceso/recorte.ts";
 import {
 	type CuerpoDeAccion,
 	correrAccion,
@@ -174,7 +174,22 @@ export async function crearServidor(dependencias: DependenciasDelServidor) {
 							.objeto,
 					}
 				: cuerpo;
-		return respuesta.code(estado).header("cache-control", "no-store").send(conRecorte);
+		// A soporte, el mensaje y los campos de un error sin los montos que traigan escritos.
+		const paraQuien =
+			peticion.quien !== undefined && noVeMontos(peticion.quien)
+				? {
+						...conRecorte,
+						mensaje: sinMontosEnTexto(conRecorte.mensaje),
+						...(conRecorte.campos === undefined
+							? {}
+							: {
+									campos: Object.fromEntries(
+										Object.entries(conRecorte.campos).map(([campo, texto]) => [campo, sinMontosEnTexto(texto)]),
+									),
+								}),
+					}
+				: conRecorte;
+		return respuesta.code(estado).header("cache-control", "no-store").send(paraQuien);
 	});
 	app.setNotFoundHandler((_peticion, respuesta) => {
 		const error = new ErrorDeApi("no_existe");
@@ -251,9 +266,12 @@ export async function crearServidor(dependencias: DependenciasDelServidor) {
 				);
 				// La que cierra la sesión de quien llama también borra su cookie.
 				if (contrato.cierraLaSesion) respuesta.clearCookie(cookies.sesion, { path: "/" });
+				const quien = quienDe(peticion);
 				return {
 					...resultado,
-					resultado: recorteComun(quienDe(peticion), resultado.resultado, registro.camposDeSueldo).objeto,
+					resultado: recorteComun(quien, resultado.resultado, registro.camposDeSueldo).objeto,
+					// A soporte, los avisos sin los montos que traigan escritos.
+					avisos: noVeMontos(quien) ? resultado.avisos.map(sinMontosEnTexto) : resultado.avisos,
 				};
 			},
 		});
