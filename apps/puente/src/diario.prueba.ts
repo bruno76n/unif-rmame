@@ -69,4 +69,38 @@ describe("lo que quedó a medias al apagarse lo termina al arrancar", () => {
 			await rm(carpeta, { recursive: true, force: true });
 		}
 	});
+
+	it("se apaga antes de anotar la respuesta de su pedido: repite la clave y lo que ya confirmó no lo vuelve a imprimir", async () => {
+		const carpeta = await mkdtemp(join(tmpdir(), "diario-"));
+		try {
+			const archivo = join(carpeta, "diario.jsonl");
+			const diario = crearDiario(archivo);
+			const clave = await diario.claveDelPedido();
+			const uno = trabajoDePrueba();
+			await diario.recibido(uno);
+			// Se apagó aquí, sin anotar la respuesta. Al arrancar termina el trabajo y lo confirma.
+			await diario.impreso(uno.id, { resultado: "impreso", clave: uuidv7() });
+			await diario.confirmado(uno.id);
+			// El pedido sigue abierto: la misma clave, y la API le regresa lo mismo.
+			expect(await diario.claveDelPedido()).toBe(clave);
+			await diario.recibido(uno);
+			expect(await diario.pendientes()).toEqual([]);
+			await diario.pedidoRecibido(clave);
+			expect(await diario.claveDelPedido()).not.toBe(clave);
+		} finally {
+			await rm(carpeta, { recursive: true, force: true });
+		}
+	});
+
+	it("una vuelta sin trabajos no deja renglones: el diario no crece mientras no hay qué imprimir", async () => {
+		const carpeta = await mkdtemp(join(tmpdir(), "diario-"));
+		try {
+			const archivo = join(carpeta, "diario.jsonl");
+			const diario = crearDiario(archivo);
+			for (let vuelta = 0; vuelta < 3; vuelta++) await diario.pedidoRecibido(await diario.claveDelPedido());
+			expect(await readFile(archivo, "utf8")).toBe("");
+		} finally {
+			await rm(carpeta, { recursive: true, force: true });
+		}
+	});
 });

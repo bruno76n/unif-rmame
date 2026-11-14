@@ -288,6 +288,8 @@ export interface TipoDeEtiqueta {
 	departamentos: readonly string[];
 	/** Un permiso fino que pide además (las guías piden `imprime_guias`). */
 	permisoFino?: string;
+	/** Lleva montos en todo caso (la orden de compra, el pedido): la cuenta de soporte nunca la recibe. */
+	llevaMontos?: true;
 	/** Dibuja lo de esos ids: ZPL en texto o PDF en bytes. */
 	dibujar: (
 		contexto: ContextoDeConsulta,

@@ -9,6 +9,7 @@
 
 import { and, arrayContains, eq, inArray, isNull } from "drizzle-orm";
 import { z } from "zod";
+import { noVeMontos } from "../../../nucleo/acceso/recorte.ts";
 import { ErrorDeApi, noExiste } from "../../../nucleo/http/errores.ts";
 import { camposDeZod } from "../../../nucleo/http/validacion.ts";
 import type { ContextoDeRuta, RutaFija, TipoDeEtiqueta } from "../../../nucleo/modulos.ts";
@@ -31,12 +32,15 @@ const busquedaDeEtiqueta = z.object({
 
 /**
  * Revisa que quien llama pueda pedir esa etiqueta.
- * @throws `403` sin el departamento o el permiso fino; `403 fuera_de_alcance` a un puente sin ese trabajo.
+ * @throws `403` sin el departamento o el permiso fino, o a la cuenta de soporte si lleva montos; `403 fuera_de_alcance`
+ * a un puente sin ese trabajo.
  */
 async function revisarQuienPide(contexto: ContextoDeRuta, etiqueta: TipoDeEtiqueta, ids: readonly string[]) {
 	const { quien } = contexto;
 	if (quien.tipo === "cuenta") {
 		if (quien.esDuena) return;
+		// Soporte nunca recibe un monto, y un PDF no pasa por el recorte común.
+		if (etiqueta.llevaMontos === true && noVeMontos(quien)) throw new ErrorDeApi("sin_permiso", "sin_departamento");
 		if (!etiqueta.departamentos.some((departamento) => quien.departamentos.includes(departamento))) {
 			throw new ErrorDeApi("sin_permiso", "sin_departamento");
 		}

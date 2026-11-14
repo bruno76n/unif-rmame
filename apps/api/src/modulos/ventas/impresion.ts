@@ -209,10 +209,11 @@ function unoSolo(ids: readonly string[]): string {
 	return id;
 }
 
-/** La hoja del pedido: la saca Ventas. */
+/** La hoja del pedido: la saca Ventas; siempre lleva precios, así que soporte no. */
 export const tipoPedido: TipoDeEtiqueta = {
 	tipo: "pedido",
 	departamentos: ["ventas"],
+	llevaMontos: true,
 	dibujar: (contexto, pedido) => hojaDelPedido(contexto, unoSolo(pedido.ids)),
 };
 

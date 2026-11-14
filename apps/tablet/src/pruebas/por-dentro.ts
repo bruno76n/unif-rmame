@@ -16,7 +16,7 @@ import { revisarPin } from "../pin/pin.ts";
 import { registrarTablet } from "../registro/registro.ts";
 import { HayQueActualizar, SinInternet, TabletRevocada } from "../sincronizacion/api.ts";
 import { bajarCambios, bajarFoto } from "../sincronizacion/bajar.ts";
-import { estadoDelAparato } from "../sincronizacion/estado.ts";
+import { estadoDelAparato, guardarDato } from "../sincronizacion/estado.ts";
 import { crearMotor } from "../sincronizacion/motor.ts";
 import { subirCola } from "../sincronizacion/subir.ts";
 
@@ -68,6 +68,8 @@ export const porDentro = {
 		return busqueda.encontrado ? String(busqueda.bulto.folio) : busqueda.motivo;
 	},
 	estadoDelAparato: () => estadoDelAparato(base),
+	/** Pone el aparato en un estado, como lo deja un aviso en vivo a media foto. */
+	ponerEstado: (estado: string) => guardarDato(base, "estado", estado),
 	bultosParaTi: (personaId: string) => bultosParaTi(base, personaId, Temporal.Now.instant()),
 	tonosDeLosLotes: async () => Object.fromEntries(await tonosDeLosLotes(base, Temporal.Now.instant())),
 	/** Los renglones de una tabla de la copia, como texto. */

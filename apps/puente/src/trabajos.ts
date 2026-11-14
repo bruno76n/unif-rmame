@@ -67,13 +67,16 @@ async function confirmar(piezas: PiezasDelPuente, trabajo: TrabajoDelDiario, ter
 	);
 }
 
+/** Lo que dice la API cuando el trabajo ya no se puede: no es suyo (`403`), no existe (`404`) o no se dibuja (`422`). */
+const yaNoSeDeja = new Set([403, 404, 422]);
+
 /**
- * Un error de la API que no es de red, ni de llave revocada, ni de versión vieja: el trabajo ya no se puede bajar o
- * confirmar (su impresora es de otro puente o se dio de baja, o su etiqueta ya no existe).
+ * Si la API dice que ese trabajo ya no se puede bajar o confirmar: su impresora es de otro puente o se dio de baja, o su
+ * etiqueta ya no existe. Un `401` (la llave) no cuenta: lo del diario se queda para cuando el puente vuelva a entrar.
  * @param error Lo que pasó.
  */
 function yaNoSePuede(error: unknown): boolean {
-	return error instanceof ErrorDeLaApi && error.estado >= 400 && error.estado < 500;
+	return error instanceof ErrorDeLaApi && yaNoSeDeja.has(error.estado);
 }
 
 /**

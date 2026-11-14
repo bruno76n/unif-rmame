@@ -232,10 +232,12 @@ async function saludDeLosLotes(
 			return [lote.id, avance] as const;
 		}),
 	);
-	// Los días después del avance más viejo y antes de hoy en que la tablet no subió nada de ningún lote.
-	const conRegistros = new Set(
-		taller.registros.filter((registro) => registro.origen !== "corte").map((registro) => diaDe(registro).toString()),
+	// Los días después del avance más viejo y antes de hoy en que la tablet no subió nada de ningún lote. Como en la API,
+	// cuenta todo registro de la tablet que llegó al servidor, también uno que después se canceló.
+	const subidos = (await leer(base, "registros_operacion", esquemas.registros_operacion)).filter(
+		(registro) => registro.origen !== "corte" && registro._local !== "apartado",
 	);
+	const conRegistros = new Set(subidos.map((registro) => diaDe(registro).toString()));
 	const diasSinSubir: Temporal.PlainDate[] = [];
 	const desde = [...avances.values()].sort(Temporal.PlainDate.compare)[0] ?? hoy;
 	for (let dia = desde.add({ days: 1 }); Temporal.PlainDate.compare(dia, hoy) < 0; dia = dia.add({ days: 1 })) {

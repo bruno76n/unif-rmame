@@ -201,6 +201,17 @@ export const quienesDePrueba: Record<string, QuienLlama> = {
 		permisosFinos: [],
 		confirmadoConGoogleEn: undefined,
 	},
+	// La de soporte con Ventas y Compras: nunca recibe un monto, ni en un PDF.
+	soporte_con_ventas: {
+		tipo: "cuenta",
+		usuarioId: "01936f2e-0000-7000-8000-000000000005",
+		sesionId: "01936f2e-0000-7000-8000-000000000015",
+		esDuena: false,
+		esSoporte: true,
+		departamentos: ["admin", "ventas", "compras"],
+		permisosFinos: [],
+		confirmadoConGoogleEn: undefined,
+	},
 	puente: {
 		tipo: "aparato",
 		dispositivoId: "01936f2e-0000-7000-8000-000000000031",

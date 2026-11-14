@@ -90,6 +90,26 @@ function pedidoAbierto(renglones: readonly Paso[]): string | undefined {
 }
 
 /**
+ * El diario sin lo que ya no hace falta: los trabajos confirmados y los pedidos con respuesta. Mientras haya un pedido
+ * sin respuesta se recuerdan los trabajos confirmados, porque repetir su clave los vuelve a traer y no se deben imprimir
+ * otra vez.
+ * @param renglones Los renglones del diario, en orden.
+ */
+function compactado(renglones: readonly Paso[]): Paso[] {
+	const abierta = pedidoAbierto(renglones);
+	const confirmados = new Set(
+		renglones.flatMap((renglon) => (renglon.paso === "confirmado" ? [renglon.trabajo_id] : [])),
+	);
+	return renglones.filter((renglon) => {
+		if (renglon.paso === "pidiendo") return renglon.clave === abierta;
+		if (renglon.paso === "pedido") return false;
+		if (renglon.paso === "confirmado") return abierta !== undefined;
+		if (renglon.paso === "recibido") return !confirmados.has(renglon.trabajo.id);
+		return !confirmados.has(renglon.trabajo_id);
+	});
+}
+
+/**
  * Abre el diario.
  * @param archivo Su archivo.
  * @param ahora La hora de cada paso.
@@ -109,15 +129,28 @@ export function crearDiario(archivo: string, ahora: () => Date = () => new Date(
 		});
 	}
 
-	/** Agrega un renglón y espera a que llegue al disco. */
+	/**
+	 * Agrega un renglón y espera a que llegue al disco. Si un apagón dejó el último renglón cortado, empieza en uno nuevo:
+	 * así el cortado se ignora solo y este se lee.
+	 */
 	async function escribir(renglon: Paso): Promise<void> {
-		const descriptor = await open(archivo, "a");
+		const descriptor = await open(archivo, "a+");
 		try {
-			await descriptor.write(`${JSON.stringify(renglon)}\n`);
+			const { size } = await descriptor.stat();
+			const ultimo = Buffer.alloc(1);
+			if (size > 0) await descriptor.read(ultimo, 0, 1, size - 1);
+			const salto = size > 0 && ultimo.toString() !== "\n" ? "\n" : "";
+			await descriptor.write(`${salto}${JSON.stringify(renglon)}\n`);
 			await descriptor.datasync();
 		} finally {
 			await descriptor.close();
 		}
+	}
+
+	/** Reescribe el diario sin lo que ya no hace falta, de un jalón y hasta el disco. */
+	async function compactar(): Promise<void> {
+		const quedan = compactado(await leer());
+		await escribirDeUnJalon(archivo, quedan.map((renglon) => `${JSON.stringify(renglon)}\n`).join(""));
 	}
 
 	/** Lo de cada trabajo que sigue en el diario, en el orden en que llegó. */
@@ -142,24 +175,19 @@ export function crearDiario(archivo: string, ahora: () => Date = () => new Date(
 
 	return {
 		recibido: async (trabajo) => {
-			if ((await porTrabajo()).has(trabajo.id)) return;
+			// Uno que ya está, o que ya se confirmó (la respuesta repetida de un pedido sin anotar), no se anota otra vez.
+			const yaConfirmado = (await leer()).some(
+				(renglon) => renglon.paso === "confirmado" && renglon.trabajo_id === trabajo.id,
+			);
+			if (yaConfirmado || (await porTrabajo()).has(trabajo.id)) return;
 			await escribir({ paso: "recibido", en: ahora().toISOString(), trabajo: trabajoDelDiario.parse(trabajo) });
 		},
 		impreso: (trabajoId, terminado) =>
 			escribir({ paso: "impreso", en: ahora().toISOString(), trabajo_id: trabajoId, ...terminado }),
 		confirmado: async (trabajoId) => {
 			await escribir({ paso: "confirmado", en: ahora().toISOString(), trabajo_id: trabajoId });
-			// Confirmado, sale del diario: se reescribe con lo que sigue pendiente (y el pedido sin respuesta, si hay), de un
-			// jalón y hasta el disco.
-			const renglones = await leer();
-			const abierta = pedidoAbierto(renglones);
-			const quedan = renglones.filter((renglon) => {
-				if (renglon.paso === "recibido") return renglon.trabajo.id !== trabajoId;
-				if (renglon.paso === "pidiendo") return renglon.clave === abierta;
-				if (renglon.paso === "pedido") return false;
-				return renglon.trabajo_id !== trabajoId;
-			});
-			await escribirDeUnJalon(archivo, quedan.map((renglon) => `${JSON.stringify(renglon)}\n`).join(""));
+			// Confirmado, sale del diario.
+			await compactar();
 		},
 		claveDelPedido: async () => {
 			const abierta = pedidoAbierto(await leer());
@@ -168,7 +196,11 @@ export function crearDiario(archivo: string, ahora: () => Date = () => new Date(
 			await escribir({ paso: "pidiendo", en: ahora().toISOString(), clave });
 			return clave;
 		},
-		pedidoRecibido: (clave) => escribir({ paso: "pedido", en: ahora().toISOString(), clave }),
+		pedidoRecibido: async (clave) => {
+			await escribir({ paso: "pedido", en: ahora().toISOString(), clave });
+			// Con respuesta, el pedido ya no hace falta: así una vuelta sin trabajos no hace crecer el diario.
+			await compactar();
+		},
 		pendientes: async () =>
 			[...(await porTrabajo()).values()].map(({ trabajo, terminado }) =>
 				terminado === undefined

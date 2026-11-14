@@ -85,10 +85,11 @@ export function Tablet({ base, conexion, motor, alActualizar }: PropsDeLaTablet)
 		setPaso({ pantalla: "inicio" });
 	}, []);
 	useInactividad(persona !== null, inactividad, salir);
-	// Si el aparato deja de estar listo (revocado o por actualizar), nadie se queda adentro: al volver, «¿Quién eres?».
+	// Revocada o por actualizar, nadie se queda adentro: al volver, «¿Quién eres?». Preparar una foto nueva no saca a nadie.
+	const cerrada = estado.aparato === "revocada" || estado.aparato === "actualizar";
 	useEffect(() => {
-		if (!lista) salir();
-	}, [lista, salir]);
+		if (cerrada) salir();
+	}, [cerrada, salir]);
 
 	// Lo que mandó al volver el internet se dice una vez.
 	useEffect(() => {

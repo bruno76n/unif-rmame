@@ -11,6 +11,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { conGoogle, mandarAccion } from "../../../api/src/nucleo/pruebas/llamadas.ts";
 import {
+	bajarHasta,
 	capturasDePrueba,
 	levantarTablet,
 	personaConPin,
@@ -120,6 +121,39 @@ describe("el aparato revocado y la versión vieja", () => {
 		expect(await pagina.evaluate(() => window.porDentro.cola())).toEqual([]);
 		expect(await pagina.evaluate(() => window.porDentro.estadoDelAparato())).toBe("lista");
 		await pagina.evaluate(() => window.porDentro.motor.detener());
+		await contexto.close();
+	});
+
+	it("si la revocan a media foto, al terminar la foto sigue revocada", async () => {
+		const { pagina, contexto } = await tabletLista(prueba);
+		await pagina.evaluate(() => window.porDentro.ponerEstado("revocada"));
+		expect(await pagina.evaluate(() => window.porDentro.bajarFoto())).toMatchObject({ ok: true });
+		expect(await pagina.evaluate(() => window.porDentro.estadoDelAparato())).toBe("revocada");
+		await contexto.close();
+	});
+
+	it("pregunta cada `sync.intervalo_segundos` que baja a su copia, no con el intervalo que le dio el canje", async () => {
+		const { pagina, contexto } = await tabletLista(prueba);
+		await prueba.consultar("UPDATE parametros SET valor_entero = 5 WHERE clave = 'sync.intervalo_segundos'");
+		try {
+			await bajarHasta(pagina, async () => {
+				const parametros = z
+					.array(z.object({ clave: z.string(), valor_entero: z.number().nullable().optional() }).passthrough())
+					.parse(await pagina.evaluate(() => window.porDentro.leer("parametros")));
+				return parametros.find((uno) => uno.clave === "sync.intervalo_segundos")?.valor_entero === 5;
+			});
+			const bajadas: string[] = [];
+			pagina.on("request", (pedido) => {
+				if (new URL(pedido.url()).pathname === "/v1/sync/bajar") bajadas.push(pedido.url());
+			});
+			await pagina.evaluate(() => window.porDentro.motor.arrancar());
+			// Al arrancar baja una vez; a los 5 segundos, otra, sin aviso ni captura.
+			await pagina.waitForTimeout(7_000);
+			expect(bajadas.length).toBeGreaterThanOrEqual(2);
+			await pagina.evaluate(() => window.porDentro.motor.detener());
+		} finally {
+			await prueba.consultar("UPDATE parametros SET valor_entero = 60 WHERE clave = 'sync.intervalo_segundos'");
+		}
 		await contexto.close();
 	});
 });

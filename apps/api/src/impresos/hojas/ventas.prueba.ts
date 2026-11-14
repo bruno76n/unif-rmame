@@ -81,7 +81,7 @@ describe("las hojas del pedido y de la nota de entrega", () => {
 		]) {
 			expect(texto).toContain(dice);
 		}
-		for (const quien of ["contaduria", "aduana", "produccion"]) {
+		for (const quien of ["contaduria", "aduana", "produccion", "soporte_con_ventas"]) {
 			expect((await pedir("pedido", pedido, quien)).statusCode, quien).toBe(403);
 		}
 	});
@@ -94,7 +94,7 @@ describe("las hojas del pedido y de la nota de entrega", () => {
 		expect(respuesta.json()).toMatchObject({ codigo: "pedido_no_confirmado" });
 	});
 
-	it("la nota de entrega sale con precios para Ventas y Contaduría y sin un solo peso para Aduana", async () => {
+	it("la nota de entrega sale con precios para Ventas y Contaduría y sin un solo peso para Aduana ni para soporte", async () => {
 		const nota = await notaDeLaMuestra(servidor, "NV-0010");
 		await notaCreditoDePrueba(servidor, nota, { folio: "NC-0901", montoCentavos: 42_000 });
 		const comunes = [
@@ -118,6 +118,7 @@ describe("las hojas del pedido y de la nota de entrega", () => {
 				...comunes,
 				"Prenda Talla Piezas Precio Importe",
 				"Playera polo blanca con escudo 8 20 $210 $4,200",
+				"Total 70 $14,700",
 				"Subtotal $14,700",
 				"Nota de crédito NC-0901 -$420",
 				"Por cobrar $14,280",
@@ -126,10 +127,13 @@ describe("las hojas del pedido y de la nota de entrega", () => {
 				expect(texto, quien).toContain(dice);
 			}
 		}
-		const deAduana = await textoDe("nota_entrega", nota, "aduana");
-		for (const dice of [...comunes, "Prenda Talla Piezas"]) expect(deAduana).toContain(dice);
-		for (const nunca of ["$", "Precio", "Importe", "Subtotal", "Por cobrar", "NC-0901", "Vence"]) {
-			expect(deAduana).not.toContain(nunca);
+		// Aduana, y la cuenta de soporte aunque tenga Ventas: la nota sin un solo peso.
+		for (const quien of ["aduana", "soporte_con_ventas"]) {
+			const sinPrecios = await textoDe("nota_entrega", nota, quien);
+			for (const dice of [...comunes, "Prenda Talla Piezas"]) expect(sinPrecios, quien).toContain(dice);
+			for (const nunca of ["$", "Precio", "Importe", "Subtotal", "Por cobrar", "NC-0901", "Vence"]) {
+				expect(sinPrecios, quien).not.toContain(nunca);
+			}
 		}
 		for (const quien of ["bodega", "produccion"]) {
 			expect((await pedir("nota_entrega", nota, quien)).statusCode, quien).toBe(403);

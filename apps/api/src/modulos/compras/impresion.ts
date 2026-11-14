@@ -74,10 +74,11 @@ async function hojaDeLaOrden(contexto: ContextoDeConsulta, ordenId: string): Pro
 	});
 }
 
-/** La hoja de la orden de compra: la sacan Compras y Contaduría. */
+/** La hoja de la orden de compra: la sacan Compras y Contaduría; siempre lleva precios, así que soporte no. */
 export const tipoOrdenCompra: TipoDeEtiqueta = {
 	tipo: "orden_compra",
 	departamentos: ["compras", "contaduria"],
+	llevaMontos: true,
 	dibujar: async (contexto, pedido) => {
 		const [ordenId] = pedido.ids;
 		if (ordenId === undefined) throw noExiste();

@@ -11,6 +11,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { leerDePrueba } from "../../../api/src/nucleo/pruebas/por-pagar-de-prueba.ts";
 import {
+	bajarHasta,
 	levantarTablet,
 	personaDeBaseConPin,
 	registroDeOperacion,
@@ -67,6 +68,31 @@ describe("la tablet calcula como la API", () => {
 				.parse(recibido?.respuesta).datos;
 			expect(tope).toBe(bulto.listas);
 		}
+		// Ya con lo subido, la salud de un lote en cada color: la tablet da el mismo que la API.
+		const loteId = z.uuid().parse(Object.keys(tonos)[0]);
+		const tonoDeLaApi = async () =>
+			z
+				.object({ lotes: z.array(z.object({ lote_id: z.uuid(), tono: z.string() })) })
+				.parse(await leerDePrueba(prueba.servidor, "produccion.salud_de_lotes", {}))
+				.lotes.find((lote) => lote.lote_id === loteId)?.tono;
+		const tonoDeLaTablet = async () =>
+			z.record(z.string(), z.string()).parse(await pagina.evaluate(() => window.porDentro.tonosDeLosLotes()))[loteId];
+		const vistos: string[] = [];
+		for (const [dias, color] of [
+			[-2, "rojo"],
+			[1, "ambar"],
+			[365, "normal"],
+		] as const) {
+			await prueba.consultar(
+				`UPDATE lotes SET fecha_entrega = (now() AT TIME ZONE 'America/Mexico_City')::date + $1::int WHERE id = $2`,
+				[dias, loteId],
+			);
+			expect(await tonoDeLaApi(), `entrega en ${dias} días`).toBe(color);
+			// Baja hasta que la tablet tenga la fecha nueva, y entonces su color es el de la API.
+			await bajarHasta(pagina, async () => (await tonoDeLaTablet()) === color);
+			vistos.push(String(await tonoDeLaTablet()));
+		}
+		expect(vistos).toEqual(["rojo", "ambar", "normal"]);
 		await contexto.close();
 	});
 });

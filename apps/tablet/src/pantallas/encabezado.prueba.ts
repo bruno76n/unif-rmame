@@ -2,7 +2,7 @@
  * Prueba del encabezado de la tablet y de la sesión de la persona, en un Chrome de tablet Android contra la API real:
  * con alguien adentro dice su nombre de pila y «Salir»; la red dice «Conectada» o «Sin internet»; y a los segundos de
  * `personal.tablet_inactividad_seg` sin tocar la pantalla la sesión se cierra sola y regresa a «¿Quién eres?», pero no
- * mientras la persona la sigue tocando.
+ * mientras la persona la sigue tocando. Con la tablet por actualizar, nadie se queda adentro.
  * Fase 20 · docs/fases/20-tablet-puente-de-impresion-e-impresos.md (criterio «La sesión de la persona se cierra sola a
  * los segundos del parámetro») y docs/interfaz/tablet.md («El encabezado»)
  */
@@ -48,6 +48,38 @@ describe("el encabezado y la sesión de la persona", () => {
 		await enPantalla(encabezado.getByRole("button", { name: "Salir" })).toHaveCount(0);
 		await contexto.setOffline(true);
 		await enPantalla(encabezado.getByText("Sin internet")).toBeVisible(espera);
+		await contexto.close();
+	});
+});
+
+describe("la sesión de la persona según el aparato", () => {
+	let prueba: TabletDePrueba;
+	beforeAll(async () => {
+		prueba = await levantarTablet();
+	});
+	afterAll(async () => {
+		await prueba.cerrar();
+	});
+
+	it("con la tablet por actualizar, nadie se queda adentro", async () => {
+		const { nombre, pin } = await personaDeBaseConPin(prueba);
+		const { pagina, contexto } = await prueba.abrir("/");
+		await pagina.getByLabel("Escribe el código que te dio la dueña").fill(await prueba.codigo(), espera);
+		await pagina.getByRole("button", { name: "Registrar" }).click();
+		await pagina.getByRole("button", { name: nombre }).click(espera);
+		for (const cifra of pin) await pagina.getByRole("button", { name: cifra, exact: true }).click();
+		const encabezado = pagina.getByRole("banner");
+		await enPantalla(pagina.getByText("Hoy llevas")).toBeVisible();
+		// Con una versión mínima mayor, la tablet pide actualizarse y la persona sale.
+		prueba.servidor.parametros.versionMinima = "2.0.0";
+		try {
+			await contexto.setOffline(true);
+			await contexto.setOffline(false);
+			await enPantalla(pagina.getByRole("button", { name: "Actualizar" })).toBeVisible(espera);
+			await enPantalla(encabezado.getByRole("button", { name: "Salir" })).toHaveCount(0);
+		} finally {
+			prueba.servidor.parametros.versionMinima = "1.0.0";
+		}
 		await contexto.close();
 	});
 });

@@ -22,6 +22,15 @@ export function desdeCuando(falla: NonNullable<MaquinaDeLaTablet["falla"]>): str
 }
 
 /**
+ * Un texto que va a media frase: solo su primera letra en minúscula («No prende» → «no prende»), así un nombre propio
+ * del motivo se queda como viene.
+ * @param texto El texto.
+ */
+function aMediaFrase(texto: string): string {
+	return `${texto.slice(0, 1).toLocaleLowerCase("es-MX")}${texto.slice(1)}`;
+}
+
+/**
  * «¿Qué máquina?».
  * @param props Las máquinas y qué hacer al escoger una o al volver.
  */
@@ -87,8 +96,7 @@ export function QueLePasa({
 				</div>
 			) : (
 				<MensajeDeTablet tono="ambar">
-					Ya está reportada: {maquina.falla.motivo.toLocaleLowerCase("es-MX")},{" "}
-					{desdeCuando(maquina.falla).toLowerCase()}
+					Ya está reportada: {aMediaFrase(maquina.falla.motivo)}, {desdeCuando(maquina.falla).toLowerCase()}
 				</MensajeDeTablet>
 			)}
 		</section>

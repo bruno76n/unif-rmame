@@ -131,6 +131,6 @@ Lo que nace en la tablet (un registro, una falla, un consumible tomado, un bloqu
   - `sincronizacion/subir.prueba.ts`: sin red, la respuesta perdida y `detenido`;
   - `sincronizacion/bajar.prueba.ts`: las páginas, el cambio, el quitar, la foto con cola y el registro cancelado;
   - `pin/pin.prueba.ts`;
-  - `sincronizacion/aparato.prueba.ts`: la revocada, el `426` y un error que no espera, que no detiene al motor;
+  - `sincronizacion/aparato.prueba.ts`: la revocada (también a media foto), el `426`, un error que no espera, que no detiene al motor, y el intervalo del parámetro;
   - `sincronizacion/llave.prueba.ts`: el cambio de llave aplicado y el que no se supo si se aplicó;
   - `service-worker/plugin.prueba.ts`.

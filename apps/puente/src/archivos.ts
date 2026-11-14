@@ -1,10 +1,11 @@
 /**
  * Escribir un archivo de un jalón y hasta el disco: un temporal que se escribe, se baja al disco (`datasync`) y
- * reemplaza al anterior. Así un apagón deja el archivo viejo o el nuevo, nunca uno vacío o a medias.
+ * reemplaza al anterior, y la carpeta también se baja al disco. Así un apagón deja el archivo viejo o el nuevo, nunca uno vacío o a medias.
  * Fase 20 · docs/apps/puente-de-impresion.md (regla 5, «El diario» y «La configuración»)
  */
 
 import { open, rename } from "node:fs/promises";
+import { dirname } from "node:path";
 
 /**
  * Reemplaza un archivo con un texto, de un jalón y hasta el disco.
@@ -22,4 +23,13 @@ export async function escribirDeUnJalon(archivo: string, texto: string, modo = 0
 		await descriptor.close();
 	}
 	await rename(temporal, archivo);
+	// El renombre vive en la carpeta: también se baja al disco. Windows no deja abrir una carpeta, y NTFS ya guarda el
+	// renombre en su bitácora.
+	if (process.platform === "win32") return;
+	const carpeta = await open(dirname(archivo), "r");
+	try {
+		await carpeta.sync();
+	} finally {
+		await carpeta.close();
+	}
 }

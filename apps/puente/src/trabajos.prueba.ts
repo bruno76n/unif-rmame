@@ -160,6 +160,49 @@ describe("el puente imprime lo que le toca, en orden, y confirma cada trabajo un
 		expect(prueba.configuracion.actual.secreto_nuevo).toBeUndefined();
 	});
 
+	it("un trabajo que la API ya no deja confirmar (`403`) sale del diario y no detiene a los demás", async () => {
+		const trabajo = await prueba.pedirTrabajo([notas[2] ?? ""], 1);
+		prueba.cortarLaRed((url) => url.endsWith("/v1/acciones/admin.confirmar_impresion"));
+		await expect(atenderTrabajos(prueba.piezas)).rejects.toBeInstanceOf(ErrorSinRed);
+		expect(await prueba.piezas.diario.pendientes()).toEqual([
+			expect.objectContaining({ estado: "por_confirmar", resultado: "impreso" }),
+		]);
+		// Mientras, la Zebra deja de ser de este puente: confirmar da `403 fuera_de_alcance`.
+		const { dueno } = prueba.servidor.base;
+		const [antes] = (await dueno.query("SELECT impresora_id FROM trabajos_impresion WHERE id = $1", [trabajo])).rows;
+		await dueno.query("UPDATE impresoras SET dispositivo_id = NULL WHERE id = $1", [antes?.impresora_id]);
+		try {
+			await atenderTrabajos(prueba.piezas);
+			expect(await prueba.piezas.diario.pendientes()).toEqual([]);
+			expect(await prueba.trabajo(trabajo)).toMatchObject({ estado: "mandado" });
+		} finally {
+			await dueno.query("UPDATE impresoras SET dispositivo_id = $1 WHERE id = $2", [
+				puenteDeAduana(),
+				antes?.impresora_id,
+			]);
+		}
+	});
+
+	it("con una llave que la API ya no conoce (`401`), lo del diario se queda para cuando vuelva a entrar", async () => {
+		const trabajo = await prueba.pedirTrabajo([notas[0] ?? ""], 2);
+		const clave = await prueba.piezas.diario.claveDelPedido();
+		for (const recibido of (await prueba.piezas.api.trabajos(clave)).trabajos)
+			await prueba.piezas.diario.recibido(recibido);
+		await prueba.piezas.diario.pedidoRecibido(clave);
+		const { dueno } = prueba.servidor.base;
+		const [llave] = (await dueno.query("SELECT llave_hash FROM dispositivos WHERE id = $1", [puenteDeAduana()])).rows;
+		await dueno.query("UPDATE dispositivos SET llave_hash = 'otra' WHERE id = $1", [puenteDeAduana()]);
+		try {
+			await expect(atenderTrabajos(prueba.piezas)).rejects.toThrow();
+			expect(await prueba.piezas.diario.pendientes()).toEqual([expect.objectContaining({ estado: "por_imprimir" })]);
+		} finally {
+			await dueno.query("UPDATE dispositivos SET llave_hash = $1 WHERE id = $2", [llave?.llave_hash, puenteDeAduana()]);
+		}
+		await atenderTrabajos(prueba.piezas);
+		expect(await prueba.piezas.diario.pendientes()).toEqual([]);
+		expect(await prueba.trabajo(trabajo)).toEqual({ estado: "impreso", error: null });
+	});
+
 	it("un trabajo que la API ya no deja bajar se confirma como fallo, sale del diario y no detiene la señal de vida", async () => {
 		const trabajo = await prueba.pedirTrabajo([notas[1] ?? ""], 1);
 		// Lo recibió y se apagó; mientras, la dueña da de baja la Zebra de Aduana.

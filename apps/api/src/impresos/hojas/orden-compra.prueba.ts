@@ -66,6 +66,9 @@ describe("la hoja de la orden de compra", () => {
 				expect(texto, quien).toContain(dice);
 			}
 		}
-		for (const quien of ["ventas", "aduana", "bodega"]) expect((await pedir(quien)).statusCode, quien).toBe(403);
+		// Soporte nunca recibe un monto: aunque tenga Compras, la orden no.
+		for (const quien of ["ventas", "aduana", "bodega", "soporte_con_ventas"]) {
+			expect((await pedir(quien)).statusCode, quien).toBe(403);
+		}
 	});
 });

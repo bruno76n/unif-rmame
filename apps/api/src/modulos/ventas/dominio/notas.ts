@@ -73,9 +73,10 @@ export async function notasDelPedido(transaccion: Transaccion, pedidoId: string)
 
 /**
  * Si quien llama ve los precios de las notas de entrega: Ventas, Contaduría y Dirección (y la dueña); a Aduana nunca le
- * viajan importes. Es la regla de su cajón, de su hoja en PDF y de lo que regresan sus acciones.
+ * viajan importes, y a la cuenta de soporte nunca un monto. Es la regla de su cajón, de su hoja en PDF y de lo que
+ * regresan sus acciones.
  * @param quien Quién llama.
  */
 export function vePreciosDeNotas(quien: QuienLlama | { readonly tipo: "sistema" }): boolean {
-	return tieneDepartamento(quien, "ventas", "contaduria", "direccion");
+	return tieneDepartamento(quien, "ventas", "contaduria", "direccion") && !(quien.tipo === "cuenta" && quien.esSoporte);
 }
