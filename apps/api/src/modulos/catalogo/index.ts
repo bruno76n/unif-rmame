@@ -39,6 +39,7 @@ import { consultaFichaProducto } from "./consultas/ficha-producto.ts";
 import { consultaListasPrecios } from "./consultas/listas-precios.ts";
 import { consultaPendientes, pastillaCatalogo } from "./consultas/pendientes.ts";
 import { consultaProductos } from "./consultas/productos.ts";
+import { tipoPrenda } from "./impresion.ts";
 import { cambiarPrecioEnLinea } from "./internas/cambiar-precio-en-linea.ts";
 import { crearEscuelaParaCliente } from "./internas/crear-escuela-para-cliente.ts";
 import {
@@ -123,4 +124,5 @@ export default definirModulo({
 	trabajos: [revisarCodigosDeBarras],
 	bajada: bajadaDeCatalogo,
 	lectores: lectoresDeCatalogo,
+	tiposDeEtiqueta: [tipoPrenda],
 });

@@ -94,15 +94,9 @@ export default definirModulo({
 	// La etiqueta de prueba: la piden Ventas o un puente con su trabajo; dice las notas y las copias.
 	tiposDeEtiqueta: [
 		{ tipo: "prueba", departamentos: ["ventas"], dibujar: dibujoDePrueba },
-		// La etiqueta de prenda con el mismo dibujo, para `catalogo.imprimir_etiquetas`; la real llega en la fase 20.
-		{ tipo: "prenda", departamentos: ["catalogo"], dibujar: dibujoDePrueba },
 		// La hoja de la orden de compra, para `compras.marcar_orden_enviada`; la real llega en la fase 20. Con una
 		// nota `falla:hoja` falla, para probar que la orden no queda enviada si su PDF no se genera.
 		{ tipo: "orden_compra", departamentos: ["compras"], dibujar: hojaDePrueba },
-		// Las etiquetas de un traspaso, para `inventario.marcar_etiquetas_impresas`; las reales llegan en la fase 20.
-		{ tipo: "traspaso", departamentos: ["aduana"], dibujar: dibujoDePrueba },
-		// Las etiquetas de bulto, para `produccion.imprimir_etiquetas_bulto`; las reales llegan en la fase 20.
-		{ tipo: "bulto", departamentos: ["produccion"], dibujar: dibujoDePrueba },
 	],
 	trabajos: [
 		{

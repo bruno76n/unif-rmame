@@ -26,6 +26,7 @@ import { consultaOperaciones } from "./consultas/operaciones.ts";
 import { consultaOrdenes } from "./consultas/ordenes.ts";
 import { consultaPendientes, pastillaProduccion } from "./consultas/pendientes.ts";
 import { consultaProduccionPorPersona } from "./consultas/produccion-por-persona.ts";
+import { tipoBulto } from "./impresion.ts";
 import {
 	cambiarFechaEntregaPedido,
 	mandarAProduccion,
@@ -107,4 +108,5 @@ export default definirModulo({
 	semillas: [semillaDeCorte, semillaDeParametrosDeProduccion],
 	lectores: lectoresDeProduccion,
 	bajada: bajadaDeProduccion,
+	tiposDeEtiqueta: [tipoBulto],
 });

@@ -65,7 +65,7 @@ Lleva las columnas comunes. **Índice:** (`impresora_id`, `creado_en`) donde `es
 | `pedido` · `nota_entrega` | Las hojas del pedido y de la nota de entrega | ventas |
 | `guia` | La guía de la paquetería, desde su archivo | linea |
 
-Cada tipo lo registra su módulo en su `index.ts`: qué departamentos lo piden, la función que junta sus datos con el recorte de quien lo pide y su dibujo, que vive en `apps/api/src/impresos/`. Los tipos del negocio los arma la [fase 20](../../fases/20-tablet-puente-de-impresion-e-impresos.md); su contenido está en [etiquetas](../../impresos/etiquetas.md) y [hojas](../../impresos/hojas.md).
+Cada tipo lo registra su módulo en su `index.ts`: qué departamentos lo piden, la función que junta sus datos con el recorte de quien lo pide y su dibujo, que vive en `apps/api/src/impresos/`. Los tipos del negocio los arma la [fase 20](../../fases/20-tablet-puente-de-impresion-e-impresos.md), cada uno en el `impresion.ts` de su módulo; su contenido está en [etiquetas](../../impresos/etiquetas.md) y [hojas](../../impresos/hojas.md).
 
 ## Acciones
 

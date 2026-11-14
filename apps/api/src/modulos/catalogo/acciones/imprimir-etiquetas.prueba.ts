@@ -15,6 +15,7 @@ import {
 	siembraDelCatalogo,
 	versionDelProducto,
 } from "../../../nucleo/pruebas/catalogo-de-prueba.ts";
+import { leerPdf } from "../../../nucleo/pruebas/leer-impresos.ts";
 import { mandarAccion } from "../../../nucleo/pruebas/llamadas.ts";
 import { crearServidorDePrueba, type ServidorDePrueba } from "../../../nucleo/pruebas/servidor-de-prueba.ts";
 
@@ -81,7 +82,10 @@ describe("Imprimir etiquetas pasa a `impresa` las pendientes y no toca las ya im
 		);
 	}
 
-	/** Lo que se dibujó en el PDF guardado: los ids que trae el dibujo de prueba. */
+	/**
+	 * Las variantes del PDF guardado, en orden: el código que lleva cada página, de una etiqueta de prenda, llevado a su
+	 * variante.
+	 */
 	async function idsDelPdf(archivoId: string): Promise<string[]> {
 		const { rows } = await servidor.base.dueno.query(
 			"SELECT almacen_clave, proposito, modulo, tipo_mime FROM archivos WHERE id = $1",
@@ -90,7 +94,15 @@ describe("Imprimir etiquetas pasa a `impresa` las pendientes y no toca las ya im
 		expect(rows[0]).toMatchObject({ proposito: "etiqueta", modulo: "catalogo", tipo_mime: "application/pdf" });
 		const objeto = simulador.objetos.get(`uniformame-archivos/${rows[0]?.almacen_clave}`);
 		if (objeto === undefined) throw new Error("no llegó el PDF");
-		return new TextDecoder().decode(objeto.contenido).replace("%PDF-prueba ", "").split(",");
+		const paginas = leerPdf(objeto.contenido);
+		for (const pagina of paginas) expect([pagina.ancho, pagina.alto]).toEqual([144, 72]);
+		const codigos = paginas.map((pagina) => pagina.textos.at(-1) ?? "");
+		const { rows: variantes } = await servidor.base.dueno.query(
+			"SELECT id, codigo FROM variantes WHERE codigo = ANY($1::text[])",
+			[codigos],
+		);
+		const porCodigo = new Map(variantes.map((variante) => [variante.codigo, variante.id]));
+		return codigos.map((codigo) => porCodigo.get(codigo) ?? codigo);
 	}
 
 	it("las nuevas de un producto: una por talla normal activa, pasan a impresas, sube la versión, un renglón de bitácora y su evento", async () => {

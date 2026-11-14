@@ -143,3 +143,4 @@ La línea de la bitácora se escribe al final, con el resultado ya conocido. Esc
 | 14 nov 2026 | 19 | Lo que corrigió la auditoría en los catorce departamentos y la dirección común | [2026-11-12-fase-19](sesiones/2026-11-12-fase-19.md) |
 | 14 nov 2026 | 19 | Lo que encontró el revisor distinto: soporte sin el PDF de una orden, el historial con el recorte del módulo dueño y las rutas que montan su pestaña | [2026-11-12-fase-19](sesiones/2026-11-12-fase-19.md) |
 | 14 nov 2026 | 19 | Cierre: reporte de auditoría y fase terminada | [2026-11-12-fase-19](sesiones/2026-11-12-fase-19.md) |
+| 14 nov 2026 | 20 | 1 · Etiquetas en ZPL y PDF: prenda, rollo y retazo, bulto y las de un A- | [2026-11-14-fase-20](sesiones/2026-11-14-fase-20.md) |

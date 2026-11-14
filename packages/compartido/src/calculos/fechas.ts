@@ -113,6 +113,14 @@ export function textoDeDiaCorto(dia: DiaNegocio | string): string {
 }
 
 /**
+ * Cómo se escribe un día en las etiquetas y las hojas, que se quedan pegadas meses: «7 nov 2026».
+ * @param dia El día de negocio, o su texto ISO («2026-11-07»).
+ */
+export function textoDeDiaConAnio(dia: DiaNegocio | string): string {
+	return `${textoDeDiaCorto(dia)} ${Temporal.PlainDate.from(dia).year}`;
+}
+
+/**
  * Cómo se escribe en una línea corta el día en que pasó algo: «13 oct», del día de negocio.
  * @param momento El momento en texto ISO, como llega en las salidas (`ocurrido_en`).
  * @returns El día en hora de México: lo de las 23:30 de un día no sale con el siguiente.

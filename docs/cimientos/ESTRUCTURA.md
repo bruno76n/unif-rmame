@@ -56,7 +56,7 @@ apps/api/
 ├── src/
 │   ├── servidor.ts            arranca Fastify y registra los módulos
 │   ├── trabajos.ts            arranca el worker (Graphile Worker)
-│   ├── impresos/              el dibujo de cada etiqueta y cada hoja (ZPL y PDF); los datos los da su módulo
+│   ├── impresos/              el dibujo de cada etiqueta y cada hoja (ZPL y PDF): zpl.ts y pdf.ts con lo común, etiquetas/ y hojas/; los datos los da su módulo
 │   ├── nucleo/                lo que usan todos los módulos
 │   │   ├── entorno.ts         lee y valida las variables de entorno, una sola vez
 │   │   ├── base/              conexión, transacciones con reintento y candados
@@ -85,6 +85,7 @@ apps/api/src/modulos/inventario/
 ├── parametros.ts              las claves de sus parámetros con su valor inicial
 ├── permisos.ts                qué departamentos leen cada tabla (para los avisos en vivo) y qué campos se recortan
 ├── bajada.ts                  lo que baja a cada tipo de aparato: sus tablas, su filtro, sus columnas y su orden
+├── impresion.ts               sus tipos de etiqueta y de hoja: quién los pide, la función que junta sus datos y su dibujo
 ├── acciones/                  una acción pública por archivo: recibir-traspaso.ts
 ├── internas/                  lo que ofrece a otros módulos: reservar.ts
 ├── consultas/                 una consulta por pantalla, pestaña o cajón: existencias.ts

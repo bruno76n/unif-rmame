@@ -97,4 +97,19 @@ Pedir un tipo es de los departamentos de esa fila; el puente solo pide las de su
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 20.*
+**Fase 20, parte 1.**
+
+- **Lo común de los dibujos** (`apps/api/src/impresos/`): `zpl.ts` arma la etiqueta de `^XA` a `^XZ` con `^CI28`, `^PW406` y `^LL203`, el texto con `^A0N` (en bloque `^FB` si puede no caber) y las barras con `^BY2^BCN,{alto},Y,N,N,A`; todo dato pasa por `^FH` con `_` de indicador (`_5E` es `^`, `_7E` es `~`, `_5F` es `_`). Un trabajo es un solo ZPL, y las etiquetas iguales seguidas (las 58 playeras de una talla) van en una con sus copias en `^PQ`. `pdf.ts` arma la página de 144 × 72 con Helvetica, las barras PNG de bwip-js con su margen blanco y su texto en Courier, y repite la página por sus copias; las barras de un código se dibujan una vez. `textos.ts` corta con «…» igual en los dos formatos (decisión 810).
+- **Los dibujos** (`etiquetas/prenda.ts`, `rollo.ts` y `bulto.ts`) reciben los datos ya escritos y no consultan ni deciden nada. La de rollo dibuja la de retazo si el dato es de retazo. En la de bulto, «para quién · entrega» va en dos renglones; las letras del PDF son de 6 puntos para que todo quepa en 2 × 1.
+- **Los tipos,** en el `impresion.ts` de su módulo, registrados en su `index.ts`:
+  - `prenda` (`catalogo`, lo pide Catálogo): la prenda, «{escuela o Básico} · Talla {t}», el código y, solo con `catalogo.etiqueta_lleva_precio`, el precio de la lectura `catalogo.precio_talla` en Mostrador (con su recargo en pedido especial);
+  - `rollo` (`inventario`, lo pide Bodega): el rollo con su partida, sus metros y su proveedor con la fecha en que llegó (o «Carga inicial»), o su retazo con el lote y la fecha de su corte;
+  - `traspaso` (`inventario`, lo pide Aduana): las variantes de un A-, repetidas por pieza (lo recibido en aduana menos lo repartido a otros A-) y talla por talla (`ordenDeTallas`), que dibuja el tipo `prenda` del registro; o sus rollos. Otro tipo de A- da `422 sin_etiquetas`;
+  - `bulto` (`produccion`, lo pide Producción): con «para quién» de `dominio/para-quien.ts`.
+- **Las fechas** de las etiquetas son `textoDeDiaConAnio` del paquete compartido («7 nov 2026»).
+- **Las pruebas:**
+  - los dibujos, en `impresos/etiquetas/prenda.prueba.ts`, `rollo.prueba.ts` y `bulto.prueba.ts`: el ZPL contra su foto (`fotos/*.zpl`) con nombres largos, acentos, ñ, `^` y `~`; el PDF de una página de 2 × 1 por etiqueta y por copia, con su texto; y las barras, que se leen otra vez;
+  - con la base, en los mismos archivos: el precio solo con el parámetro y ningún costo, la pida quien la pida; las de rollo de una tela que pide Bodega; las de bulto de un lote cortado; y quién no las puede pedir (`403`);
+  - las de un A-, en `modulos/inventario/acciones/marcar-etiquetas-impresas.prueba.ts`.
+- **El lector de las pruebas** (`nucleo/pruebas/leer-impresos.ts`): `leerPdf` abre los objetos del PDF, descomprime el flujo de cada página y junta sus textos en WinAnsi; `leerBarras` lee un Code 128 con `barcode-detector` (zxing), con su wasm de `node_modules` y no de internet.
+- **La verificación real** con la Zebra (que el ZPL guardado se imprima bien y se lea con el lector y la cámara) sigue pendiente con Bruno.

@@ -1,0 +1,2 @@
+^XA^CI28^PW406^LL203^FO15,10^A0N,26,26^FB376,2,0,L,0^FH^FDPlayera polo blanca con escudo^FS^FO15,66^A0N,22,22^FH^FDInstituto Juan Pablo II · Talla 8^FS^FO60,116^BY2^BCN,50,Y,N,N,A^FH^FD100269^FS^PQ2^XZ
+^XA^CI28^PW406^LL203^FO15,10^A0N,26,26^FB376,2,0,L,0^FH^FDSuéter de piqué con cuello _5Ealto_5E y puños _7Etejidos_7E…^FS^FO15,66^A0N,22,22^FH^FDColegio Montaña Ñuñoa · Talla 10^FS^FO15,90^A0N,22,22^FH^FD$1,250 · Pedido especial^FS^FO60,116^BY2^BCN,50,Y,N,N,A^FH^FD100270^FS^PQ1^XZ
