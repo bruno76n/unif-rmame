@@ -50,6 +50,8 @@
 		"./contratos/personal/tarifas": "./src/contratos/personal/tarifas.ts",
 		"./contratos/sincronizacion": "./src/contratos/sincronizacion.ts",
 		"./cliente/cliente": "./src/cliente/cliente.ts",
+		"./cliente/en-vivo": "./src/cliente/en-vivo.ts",
+		"./cliente/llave": "./src/cliente/llave.ts",
 		"./contratos/compras/proveedores": "./src/contratos/compras/proveedores.ts",
 		"./contratos/calidad/reclamos": "./src/contratos/calidad/reclamos.ts",
 		"./contratos/calidad/revision": "./src/contratos/calidad/revision.ts",

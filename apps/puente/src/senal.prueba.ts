@@ -11,7 +11,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { esperarA, procesarComoElWorker } from "../../api/src/nucleo/pruebas/en-vivo.ts";
 import { conGoogle, mandarAccion } from "../../api/src/nucleo/pruebas/llamadas.ts";
 import { levantarPuenteDePrueba, type PuenteDePrueba, puenteDeAduana } from "./de-prueba.ts";
-import { arrancarPuente, leerEventos, type PuenteAndando } from "./senal.ts";
+import { arrancarPuente, type PuenteAndando } from "./senal.ts";
 
 /** Una nota de prueba: lo que imprime la etiqueta de prueba. */
 const nota = "01936f2e-0000-7000-8000-0000000000e1";
@@ -43,6 +43,18 @@ async function hastaImpreso(prueba: PuenteDePrueba, trabajo: string): Promise<vo
 	throw new Error(`el trabajo ${trabajo} no se imprimió`);
 }
 
+/**
+ * Si el puente de Aduana dio señales en el último minuto.
+ * @param prueba El arnés.
+ */
+async function contactoReciente(prueba: PuenteDePrueba): Promise<boolean> {
+	const { rows } = await prueba.servidor.base.dueno.query(
+		"SELECT ultimo_contacto_en > now() - interval '1 minute' AS reciente FROM dispositivos_sync WHERE dispositivo_id = $1",
+		[puenteDeAduana()],
+	);
+	return rows[0]?.reciente === true;
+}
+
 describe("sin avisos en vivo el puente igual imprime y su impresora sigue conectada; con versión vieja deja de contar", () => {
 	let prueba: PuenteDePrueba;
 	let puente: PuenteAndando | undefined;
@@ -65,14 +77,13 @@ describe("sin avisos en vivo el puente igual imprime y su impresora sigue conect
 		);
 		await expect(prueba.pedirTrabajo([nota], 1)).rejects.toThrow(/impresora_sin_puente/);
 		puente = arrancar(prueba, { intervaloSegundos: 1, avisosEnVivo: false });
-		await esperarA(() => prueba.llamadas.includes("POST /v1/acciones/admin.trabajos_impresion"));
+		// Su pregunta es su señal de vida: el servidor anota su contacto.
+		for (let vuelta = 0; vuelta < 100 && !(await contactoReciente(prueba)); vuelta++) {
+			await new Promise((listo) => setTimeout(listo, 100));
+		}
 		const trabajo = await prueba.pedirTrabajo([nota], 2);
 		await hastaImpreso(prueba, trabajo);
-		const { rows } = await prueba.servidor.base.dueno.query(
-			"SELECT ultimo_contacto_en > now() - interval '1 minute' AS reciente FROM dispositivos_sync WHERE dispositivo_id = $1",
-			[puenteDeAduana()],
-		);
-		expect(rows).toEqual([{ reciente: true }]);
+		expect(await contactoReciente(prueba)).toBe(true);
 		expect(prueba.llamadas).not.toContain("GET /v1/eventos");
 		expect(puente.estado()).toBe("trabajando");
 	});
@@ -135,13 +146,5 @@ describe("con avisos en vivo el puente imprime en cuanto le avisan; revocado, se
 		await procesarComoElWorker(prueba.servidor);
 		expect(await puente.terminado).toBe("revocado");
 		expect(await prueba.registro()).toContain("Este aparato fue revocado: ya no entra.");
-	});
-
-	it("lee los eventos del servidor que llegan en pedazos, con su latido y su retry", () => {
-		const { eventos, resto } = leerEventos(
-			'retry: 5000\n\nevent: hola\ndata: {"intervalo_segundos":60}\n\n: latido\n\nevent: impresion\ndata: {"trabajo_id"',
-		);
-		expect(eventos).toEqual([{ nombre: "hola", datos: { intervalo_segundos: 60 } }]);
-		expect(leerEventos(`${resto}:"t1"}\n\n`).eventos).toEqual([{ nombre: "impresion", datos: { trabajo_id: "t1" } }]);
 	});
 });

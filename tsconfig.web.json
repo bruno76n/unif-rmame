@@ -10,6 +10,9 @@
 		"packages/interfaz/src/**/*.tsx",
 		"apps/web/*.ts",
 		"apps/web/src/**/*.ts",
-		"apps/web/src/**/*.tsx"
+		"apps/web/src/**/*.tsx",
+		"apps/tablet/*.ts",
+		"apps/tablet/src/**/*.ts",
+		"apps/tablet/src/**/*.tsx"
 	]
 }

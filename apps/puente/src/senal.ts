@@ -12,6 +12,7 @@
 
 import { setTimeout as esperar } from "node:timers/promises";
 import { ErrorSinRed } from "@uniformame/compartido/cliente/cliente";
+import { type EventoEnVivo, escucharEventos } from "@uniformame/compartido/cliente/en-vivo";
 import { respuestaDeError } from "@uniformame/compartido/contratos/protocolo";
 import { compararVersiones } from "@uniformame/compartido/contratos/versiones";
 import { z } from "zod";
@@ -24,12 +25,6 @@ const esperaParaReconectar = 5_000;
 
 /** Por qué se detuvo el puente. */
 export type Detenido = "revocado" | "actualizar" | "detenido";
-
-/** Un evento en vivo. */
-interface EventoEnVivo {
-	nombre: string;
-	datos: unknown;
-}
 
 /** Lo que trae `hola`. */
 const datosDeHola = z.object({
@@ -57,30 +52,6 @@ export interface OpcionesDelPuente extends PiezasDelPuente {
 	avisosEnVivo?: boolean;
 	/** El `fetch` de los avisos. */
 	fetch?: typeof fetch;
-}
-
-/**
- * Lee eventos del servidor de un texto que va llegando: los completos y lo que sobra para el siguiente pedazo.
- * @param texto Lo que ha llegado.
- */
-export function leerEventos(texto: string): { eventos: EventoEnVivo[]; resto: string } {
-	const bloques = texto.replace(/\r\n/g, "\n").split("\n\n");
-	const resto = bloques.pop() ?? "";
-	const eventos = bloques.flatMap((bloque) => {
-		let nombre = "message";
-		const datos: string[] = [];
-		for (const renglon of bloque.split("\n")) {
-			if (renglon.startsWith("event:")) nombre = renglon.slice(6).trim();
-			else if (renglon.startsWith("data:")) datos.push(renglon.slice(5).trimStart());
-		}
-		if (datos.length === 0) return [];
-		try {
-			return [{ nombre, datos: JSON.parse(datos.join("\n")) }];
-		} catch {
-			return [];
-		}
-	});
-	return { eventos, resto };
 }
 
 /**
@@ -176,17 +147,7 @@ export function arrancarPuente(opciones: OpcionesDelPuente): PuenteAndando {
 				else if (respuesta.status === 401) {
 					const error = respuestaDeError.safeParse(await respuesta.json().catch(() => null));
 					if (error.success && error.data.codigo === "llave_revocada") await detenerse("revocado");
-				} else if (respuesta.ok && respuesta.body !== null) {
-					const lector = respuesta.body.pipeThrough(new TextDecoderStream()).getReader();
-					let resto = "";
-					for (;;) {
-						const { value, done } = await lector.read();
-						if (done) break;
-						const leidos = leerEventos(resto + value);
-						resto = leidos.resto;
-						for (const evento of leidos.eventos) await alEvento(evento);
-					}
-				}
+				} else if (respuesta.ok && respuesta.body !== null) await escucharEventos(respuesta.body, alEvento);
 			} catch {
 				// Sin red o cortada: los avisos son pistas; la pregunta de cada minuto sigue.
 			}

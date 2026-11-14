@@ -55,7 +55,7 @@ describe("El flujo de los próximos días", () => {
 		expect(ventana_dias).toBe(7);
 		expect(dias.map((dia) => dia.dia)).toEqual(Array.from({ length: 7 }, (_, i) => hoy.add({ days: i }).toString()));
 		expect(dias[0]?.hoy).toBe(true);
-		expect(dias[0]?.texto).toMatch(/^[a-zé]{3} \d{1,2}$/);
+		expect(dias[0]?.texto).toMatch(/^[a-záé]{3} \d{1,2}$/);
 		const { rows } = await servidor.base.dueno.query(
 			"SELECT sum(saldo_centavos) AS suma FROM cuentas_por_pagar WHERE vence = $1 AND estado IN ('por_pagar', 'pagada_en_parte')",
 			[manana],

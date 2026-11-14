@@ -13,5 +13,5 @@
 		"apps/*/semillas/**/*.ts",
 		"pruebas/**/*.ts"
 	],
-	"exclude": ["packages/interfaz/**", "apps/web/**"]
+	"exclude": ["packages/interfaz/**", "apps/web/**", "apps/tablet/**"]
 }

@@ -11,7 +11,7 @@ La gente del taller registra lo que hace aunque se caiga el internet, y nada se 
 
 ## Reglas
 
-1. **Una web instalable,** no una app de tienda: se instala desde Chrome en una tablet Android con servicios de Google (decisión 161), abre a pantalla completa y en horizontal, y trabaja sin red con su service worker (vite-plugin-pwa) y su copia local en IndexedDB (Dexie). Vive en `apps/tablet/`.
+1. **Una web instalable,** no una app de tienda: se instala desde Chrome en una tablet Android con servicios de Google (decisión 161), abre a pantalla completa y en horizontal, y trabaja sin red con su service worker (el suyo, decisión 813) y su copia local en IndexedDB (Dexie). Vive en `apps/tablet/`.
 2. **Una tablet registrada por taller.** Sin registro solo muestra su pantalla de registro.
 3. **Todo lo que hace la persona pasa primero por la cola local,** con su clave de idempotencia y su hora, y de ahí sube. La pantalla nunca espera al servidor para seguir.
 4. **La tablet calcula como el servidor:** el tope de cada bulto, la salud de cada lote, la semana y «Bultos para ti» salen de las mismas funciones del [paquete compartido](../cimientos/PAQUETE-COMPARTIDO.md) que usa la API, sobre su copia local.
@@ -95,4 +95,40 @@ Lo que nace en la tablet (un registro, una falla, un consumible tomado, un bloqu
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 20.*
+**Fase 20, parte 4: por dentro.** La tablet vive en `apps/tablet/`: Vite con React y Tailwind, y el proxy de `/v1` a la API.
+
+- **La base** (`copia/base.ts`, Dexie): una tabla por cada tabla que baja, con el nombre que manda el servidor (su propio renglón llega en `dispositivos`), y además:
+  - `cola` (`++orden`, la clave única);
+  - `sincronizacion` (el estado del aparato, el cursor, el intervalo y la última bajada);
+  - `aparato` (su llave, con el secreto cifrado);
+  - `llaves` (la de cifrado);
+  - `intentos_pin`.
+
+  Lo que nace en la tablet lleva `_local`, «guardada» o «apartado», hasta que baja su renglón del servidor.
+- **El cifrado** (`registro/cifrado.ts`): AES-GCM de 256 bits con una llave `extractable: false` guardada en IndexedDB. Van cifrados el secreto (también el nuevo mientras cambia la llave) y el `pin_hash` de cada PIN, que se cifra antes de abrir la transacción.
+- **El registro** (`registro/registro.ts`): canjea en `POST /v1/dispositivos/canjear` con un secreto de `crypto.getRandomValues`; si se corta, repite con la misma clave y el mismo secreto.
+- **La copia** (`copia/copia.ts`):
+  - cada página que baja se aplica en una transacción;
+  - la foto se junta completa y reemplaza todo en una sola transacción, dejando lo `_local` y sin tocar la cola;
+  - los bultos guardan `folio_mayusculas` para buscarlos sin importar mayúsculas;
+  - los parámetros se leen de la copia (`copia/parametros.ts`), sin valores escritos en la tablet: nadie entra antes de la foto.
+- **La cola** (`cola/cola.ts`): el comando y sus renglones locales en la misma transacción.
+- **La API** (`sincronizacion/api.ts`): la llave descifrada solo para cada llamada, con `X-App-Version` y `X-Pendientes`. Sin red, un `503` o una respuesta que no es de la API cuentan como sin internet; el `426` pide actualizar y `llave_revocada`, revocada. El cambio de llave usa `conLaLlaveQueVale` del paquete compartido, la misma del puente.
+- **Subir** (`sincronizacion/subir.ts`): tandas de `sync.tanda_max_comandos`; cada respuesta saca su comando de la cola y marca sus renglones; con `detenido` se para y la siguiente vez manda desde el primero sin respuesta.
+- **Bajar** (`sincronizacion/bajar.ts`): páginas desde el cursor; `requiere_foto` baja la foto; `rotar_llave` cambia la llave al quedar al día. No revisa llaves foráneas: guarda lo que baja y las pantallas no muestran lo que no encuentran.
+- **El motor** (`sincronizacion/motor.ts`):
+  - una vuelta a la vez; sube y baja al arrancar, con cada aviso en vivo (leídos con `escucharEventos` del paquete compartido, como el puente), al volver la red y cada `intervalo_segundos`;
+  - lleva el estado de las pantallas;
+  - revocada, solo sube;
+  - con versión vieja no hace nada y, al arrancar otra vez, vuelve a intentar.
+- **El PIN** (`pin/pin.ts`): `argon2Verify` de hash-wasm con el hash descifrado. Los intentos y el bloqueo van en `intentos_pin`, y el bloqueo sube por la cola con su hora. Solo un `desbloqueado_en` posterior al bloqueo deja entrar otra vez.
+- **El lector** (`lector/lector.ts`): `barcode-detector/polyfill`, que solo se instala si el navegador no trae `BarcodeDetector`, con el wasm de `zxing-wasm` servido por la tablet. `buscarBulto` revisa la forma del folio y lo busca en la copia.
+- **El service worker** (`service-worker/`): lo arma un plugin de Vite en la construcción, con la lista de todo lo armado y lo de `public/` (el manifiesto y el ícono). Se registra solo en la tablet construida, y la versión nueva espera hasta que la tablet la aplica (decisión 813).
+- **Las pruebas,** con Playwright en un Chrome que emula una Galaxy Tab S4 en horizontal, contra la API real con la muestra (`pruebas/tablet-de-prueba.ts`). Las pruebas por dentro abren `pruebas/vacia.html`, que deja los módulos en `window.porDentro`:
+  - `registro/registro.prueba.ts`: el secreto y los hashes cifrados, la llave que no se exporta y el código que no sirve;
+  - `copia/copia.prueba.ts`: nada de dinero, ni con las tarifas visibles;
+  - `sincronizacion/subir.prueba.ts`: sin red, la respuesta perdida y `detenido`;
+  - `sincronizacion/bajar.prueba.ts`: las páginas, el cambio, el quitar, la foto con cola y el registro cancelado;
+  - `pin/pin.prueba.ts`;
+  - `sincronizacion/aparato.prueba.ts`: la revocada y el `426`;
+  - `service-worker/plugin.prueba.ts`.

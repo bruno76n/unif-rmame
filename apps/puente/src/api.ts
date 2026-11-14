@@ -11,6 +11,7 @@
 
 import { randomBytes } from "node:crypto";
 import { crearCliente, ErrorDeLaApi, ErrorSinRed } from "@uniformame/compartido/cliente/cliente";
+import { conLaLlaveQueVale } from "@uniformame/compartido/cliente/llave";
 import { rotarLlave } from "@uniformame/compartido/contratos/admin/dispositivos";
 import { confirmarImpresion, trabajosImpresion } from "@uniformame/compartido/contratos/admin/impresion";
 import { respuestaDeError } from "@uniformame/compartido/contratos/protocolo";
@@ -75,14 +76,6 @@ export function errorDelPuente(error: unknown): unknown {
 }
 
 /**
- * Si la API no conoce la llave (no la revocada: la que no existe).
- * @param error Lo que pasó.
- */
-function llaveDesconocida(error: unknown): boolean {
-	return error instanceof ErrorDeLaApi && error.estado === 401 && error.respuesta.codigo === "llave_invalida";
-}
-
-/**
  * Arma lo que el puente le pide a la API.
  * @param dependencias Cómo se lee y se guarda su configuración.
  */
@@ -123,20 +116,13 @@ export function crearApiDelPuente(dependencias: DependenciasDeLaApi): ApiDelPuen
 		hacer: (cliente: ReturnType<typeof clienteCon>, secreto: string) => Promise<T>,
 	): Promise<T> {
 		const configuracion = await dependencias.leer();
-		const { secreto_nuevo: nuevo, ...sinNuevo } = configuracion;
+		const { secreto_nuevo: secretoNuevo, ...sinNuevo } = configuracion;
 		try {
-			if (nuevo !== undefined) {
-				try {
-					const hecho = await hacer(clienteCon(configuracion, nuevo), nuevo);
-					// La nueva entró: se aplicó el cambio y la vieja ya no sirve.
-					await dependencias.guardar({ ...sinNuevo, secreto: nuevo });
-					return hecho;
-				} catch (error) {
-					if (!llaveDesconocida(error)) throw error;
-					await dependencias.guardar(sinNuevo);
-				}
-			}
-			return await hacer(clienteCon(configuracion, configuracion.secreto), configuracion.secreto);
+			return await conLaLlaveQueVale(
+				{ secreto: configuracion.secreto, secretoNuevo },
+				(secreto) => hacer(clienteCon(configuracion, secreto), secreto),
+				(secreto) => dependencias.guardar({ ...sinNuevo, secreto }),
+			);
 		} catch (error) {
 			throw errorDelPuente(error);
 		}

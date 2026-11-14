@@ -102,8 +102,9 @@ TypeScript 7 es el compilador nativo. Se usa solo para revisar tipos (`tsc --noE
 | Para qué | Librería | Versión | Documentación oficial |
 |---|---|---|---|
 | Guardar sin internet | Dexie (IndexedDB) | 4.4.7 | https://dexie.org/docs/ |
-| Instalable y sin red | vite-plugin-pwa | 2.0.0 | https://vite-pwa-org.netlify.app/ |
+| Instalable y sin red | El manifiesto y un service worker propio, que arma un plugin chico de Vite (decisión 813) | La del navegador | https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API |
 | Leer códigos con la cámara | BarcodeDetector del navegador, con el polyfill `barcode-detector` | 3.2.3 | https://developer.mozilla.org/en-US/docs/Web/API/Barcode_Detection_API |
+| El wasm del polyfill, servido por la tablet y no por internet | zxing-wasm (el que usa `barcode-detector`) | 3.1.6 | https://github.com/Sec-ant/zxing-wasm |
 | Revisar el PIN sin internet (Argon2id) | hash-wasm | 4.13.0 | https://github.com/Daninet/hash-wasm |
 
 ### Puente de impresión

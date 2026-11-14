@@ -146,3 +146,4 @@ La línea de la bitácora se escribe al final, con el resultado ya conocido. Esc
 | 14 nov 2026 | 20 | 1 · Etiquetas en ZPL y PDF: prenda, rollo y retazo, bulto y las de un A- | [2026-11-14-fase-20](sesiones/2026-11-14-fase-20.md) |
 | 14 nov 2026 | 20 | 2 · Hojas en PDF: orden de compra, pedido, nota de entrega con y sin precios, despacho y lote | [2026-11-14-fase-20](sesiones/2026-11-14-fase-20.md) |
 | 14 nov 2026 | 20 | 3 · Puente de impresión: registro, trabajos con su diario, Zebra por ~HS y 9100, avisos y pregunta de cada minuto, llave, 426, instalar y ejecutable | [2026-11-14-fase-20](sesiones/2026-11-14-fase-20.md) |
+| 14 nov 2026 | 20 | 4 · La tablet por dentro: Dexie, cifrado, registro, cola, subir y bajar, foto, avisos, PIN sin red, lector y service worker | [2026-11-14-fase-20](sesiones/2026-11-14-fase-20.md) |

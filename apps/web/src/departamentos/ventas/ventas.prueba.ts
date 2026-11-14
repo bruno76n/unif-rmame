@@ -171,6 +171,11 @@ describe("Las pantallas de Ventas a externos: pestañas, cajones, botones y avis
 
 	it("un borrador se confirma desde su cajón y el aviso dice lo que regresa la acción", espera, async () => {
 		const pedido = await idDe("SELECT id FROM pedidos WHERE folio = $1", "PE-0017");
+		// La entrega de la muestra es fija: se mueve a dentro de un mes para que el borrador se pueda confirmar hoy.
+		await pantalla.servidor.base.dueno.query(
+			"UPDATE pedidos SET fecha_entrega = (now() AT TIME ZONE 'America/Mexico_City')::date + 30 WHERE id = $1",
+			[pedido],
+		);
 		const pagina = await pantalla.abrir(`/ventas/pedidos?cajon=pedido&id=${pedido}`, { quien: "ventas" });
 		const cajon = pagina.getByRole("dialog");
 		await enPantalla(cajon.getByRole("button", { name: "Confirmar pedido" })).toBeVisible();

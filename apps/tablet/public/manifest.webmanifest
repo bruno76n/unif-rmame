@@ -1,0 +1,12 @@
+{
+	"name": "Puerta del taller · Unifórmame",
+	"short_name": "Puerta del taller",
+	"lang": "es-MX",
+	"start_url": "/",
+	"scope": "/",
+	"display": "fullscreen",
+	"orientation": "landscape",
+	"background_color": "#15161B",
+	"theme_color": "#15161B",
+	"icons": [{ "src": "/icono.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}
