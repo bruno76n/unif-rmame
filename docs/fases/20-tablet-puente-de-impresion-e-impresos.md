@@ -1,7 +1,7 @@
 # Fase 20: Tablet, puente de impresión e impresos
 
 > **Etapa:** Interfaz.
-> **Estado:** Pendiente.
+> **Estado:** Terminada.
 > **Antes de empezar:** lee la [forma de trabajo](../trabajo/FORMA-DE-TRABAJO.md) y la [revisión de fase](../trabajo/REVISION-DE-FASE.md).
 > **Se conecta con:** [fases](FASES.md) · [fase 19](19-web-principal.md) · [fase 21](21-pruebas-de-punta-a-punta.md) · [la tablet](../apps/tablet.md) · [pantallas de la tablet](../interfaz/tablet.md) · [puente de impresión](../apps/puente-de-impresion.md) · [etiquetas](../impresos/etiquetas.md) · [hojas](../impresos/hojas.md) · [revisor de diseño](../../.claude/agents/revisor-diseno.md)
 
