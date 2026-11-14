@@ -145,3 +145,4 @@ La línea de la bitácora se escribe al final, con el resultado ya conocido. Esc
 | 14 nov 2026 | 19 | Cierre: reporte de auditoría y fase terminada | [2026-11-12-fase-19](sesiones/2026-11-12-fase-19.md) |
 | 14 nov 2026 | 20 | 1 · Etiquetas en ZPL y PDF: prenda, rollo y retazo, bulto y las de un A- | [2026-11-14-fase-20](sesiones/2026-11-14-fase-20.md) |
 | 14 nov 2026 | 20 | 2 · Hojas en PDF: orden de compra, pedido, nota de entrega con y sin precios, despacho y lote | [2026-11-14-fase-20](sesiones/2026-11-14-fase-20.md) |
+| 14 nov 2026 | 20 | 3 · Puente de impresión: registro, trabajos con su diario, Zebra por ~HS y 9100, avisos y pregunta de cada minuto, llave, 426, instalar y ejecutable | [2026-11-14-fase-20](sesiones/2026-11-14-fase-20.md) |

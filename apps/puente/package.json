@@ -1,0 +1,21 @@
+{
+	"name": "@uniformame/puente",
+	"private": true,
+	"version": "1.0.0",
+	"description": "El programa puente de impresión: pide sus trabajos a la API y manda el ZPL a su Zebra por la red local.",
+	"type": "module",
+	"scripts": {
+		"puente": "node src/principal.ts",
+		"empaquetar": "node scripts/empaquetar.ts"
+	},
+	"dependencies": {
+		"@uniformame/compartido": "workspace:*",
+		"temporal-polyfill": "1.0.8",
+		"uuid": "14.0.3",
+		"zod": "4.6.7"
+	},
+	"devDependencies": {
+		"@uniformame/pruebas": "workspace:*",
+		"vite": "8.3.6"
+	}
+}

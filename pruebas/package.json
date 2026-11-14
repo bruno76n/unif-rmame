@@ -10,6 +10,7 @@
 		"./simuladores/resend": "./simuladores/resend.ts",
 		"./simuladores/r2": "./simuladores/r2.ts",
 		"./simuladores/fallas": "./simuladores/fallas.ts",
+		"./simuladores/zebra": "./simuladores/zebra.ts",
 		"./navegador/chromium": "./navegador/chromium.ts"
 	},
 	"dependencies": {

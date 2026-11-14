@@ -130,7 +130,7 @@ apps/web/src/
 - **El menú se arma solo** con los `menu.ts` de cada carpeta (`import.meta.glob` de Vite). La cuenta solo ve los departamentos que tiene.
 - **Los componentes** salen de `packages/interfaz`; la carpeta de un departamento no define botones, tablas ni colores propios. Las reglas están en la [regla de pantallas](../../.claude/rules/react.md).
 - La tablet (`apps/tablet/src/`) sigue la misma idea con `pantallas/`, `cola/` (lo guardado sin internet), `copia/` (lo que bajó), `sincronizacion/`, `registro/` y `pin/` (ver [la tablet](../apps/tablet.md)).
-- El puente (`apps/puente/src/`) lleva `registro/`, `trabajos/`, `zebra/` y `diario/` (ver [puente de impresión](../apps/puente-de-impresion.md)).
+- El puente (`apps/puente/src/`) es chico: un archivo por pieza, sin carpetas (`registrar.ts`, `configuracion.ts`, `api.ts`, `trabajos.ts`, `zebra.ts`, `diario.ts`, `senal.ts`, `registro.ts`, `instalar.ts` y `principal.ts`), y `scripts/empaquetar.ts` arma su ejecutable (ver [puente de impresión](../apps/puente-de-impresion.md#cómo-está-hecho) y decisión 812).
 - Los dibujos de `apps/api/src/impresos/` van en `etiquetas/` y `hojas/`, uno por archivo, con lo común del ZPL y del PDF: reciben datos ya listos y no consultan nada, como una pantalla (ver [etiquetas](../impresos/etiquetas.md#cómo-se-arman)).
 
 ## El sistema de diseño por dentro

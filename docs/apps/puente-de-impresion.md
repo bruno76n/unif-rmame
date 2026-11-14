@@ -25,7 +25,7 @@ Las etiquetas salen solas en la Zebra que está junto a quien las pidió, sin ab
 3. **Registrar:** `uniformame-puente registrar` pide el código y la dirección de la Zebra en la red (por ejemplo, `192.168.1.50`; el puerto 9100 si no se escribe otro). Hace su secreto (32 bytes de `crypto.randomBytes`, en base64url) y llama a `admin.canjear_codigo` con el tipo `puente_impresion`. Si el código no sirve, escribe el mensaje que regresa la acción.
 4. **Probar:** manda a la Zebra una etiqueta de prueba hecha ahí mismo, sin pasar por la API: «Unifórmame · prueba de impresión · {fecha} {hora}». Si no sale, revisar la dirección antes de seguir.
 5. **Ligar:** la dueña escoge ese puente en la impresora (Configuración · Empresa · «Impresora de etiquetas»).
-6. **Que arranque solo:** `uniformame-puente instalar` lo deja como tarea programada «al iniciar» en Windows, o como servicio de systemd en Linux.
+6. **Que arranque solo:** `uniformame-puente instalar` lo deja como tarea programada al iniciar la sesión de su usuario en Windows (así lee su configuración, que solo ese usuario puede leer), o como servicio de systemd en Linux, que corre como ese usuario y se reinicia si se cae (decisión 812).
 
 ## La configuración
 
@@ -77,4 +77,23 @@ Las etiquetas salen solas en la Zebra que está junto a quien las pidió, sin ab
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 20.*
+**Fase 20, parte 3.** El puente vive en `apps/puente/`, un archivo por pieza (decisión 812):
+
+- **`principal.ts`,** la entrada: sin orden corre; `registrar` (con `--api`, `--codigo` y `--zebra`, o preguntándolos), `impresora {dirección}`, `instalar` y `version`.
+- **`registrar.ts`:** hace su secreto con `randomBytes(32)` en base64url y canjea en `POST /v1/dispositivos/canjear`; si se corta, repite con la misma clave y el mismo secreto. Después del registro, `principal.ts` manda la etiqueta de prueba de `zebra.ts` (`etiquetaDePrueba`).
+- **`configuracion.ts`:** `puente.json` en `UNIFORMAME_PUENTE_DATOS`, o en `%APPDATA%\Uniformame Puente` o `~/.config/uniformame-puente`. Se escribe de un jalón con permisos `0600` en una carpeta `0700`. La dirección de la Zebra lleva el 9100 si no dice otro puerto.
+- **`api.ts`:** usa el cliente con tipos del paquete compartido, con su llave en `Authorization` y su versión (`version.ts`). `426` y `401 llave_revocada` lo detienen. El cambio de llave guarda primero `secreto_nuevo`; si no supo si se aplicó, la siguiente llamada prueba la nueva y, si la API no la conoce, usa la vieja.
+- **`trabajos.ts`:** en cada vuelta termina el diario, pide sus trabajos, los anota y los imprime uno por uno. Confirma cada uno con la clave guardada en el diario, así que un reintento recibe la misma respuesta. Cuando le toca, cambia su llave.
+- **`zebra.ts`:** pregunta `~HS` y lee los tres textos (sin etiquetas, la cabeza levantada, la pausa). Manda el ZPL por `node:net` y cierra. A los 10 segundos sin respuesta, «La impresora no contesta…».
+- **`diario.ts`:** un renglón JSON por paso, escrito hasta el disco con `datasync`. Un renglón cortado por un apagón se ignora; confirmado, el trabajo sale del archivo.
+- **`senal.ts`:** una sola vuelta a la vez. Escucha `GET /v1/eventos` con la llave y lee sus eventos a mano, porque `EventSource` no manda encabezados. Pregunta cada `intervalo_segundos` y se vuelve a conectar a los 5 segundos. `hola` con una mínima mayor, `actualizar`, `dispositivo_revocado`, `426` y `401 llave_revocada` lo detienen y lo anotan.
+- **`registro.ts`:** un renglón con su hora por cada arranque, trabajo y error; al arrancar quita lo de más de 30 días.
+- **`instalar.ts`:** en Linux, la unidad `uniformame-puente.service` con `User=` y `Restart=on-failure`; en Windows, `schtasks` con `ONLOGON`.
+- **`pnpm puente:empaquetar`** (`scripts/empaquetar.ts`): Vite junta todo en `dist/puente.cjs` y `node --build-sea` arma `dist/uniformame-puente` con el Node que lo corre. Para Windows, arma `uniformame-puente.exe` con el `node.exe` que se le dé en `--node-windows`.
+- **Las pruebas,** contra la API real escuchando en un puerto y la Zebra de mentira (`pruebas/simuladores/zebra.ts`), con el arnés `src/de-prueba.ts`:
+  - `trabajos.prueba.ts`: el orden, el ZPL byte por byte, lo de otra impresora, una confirmación por trabajo, la red que se cae después de imprimir y el cambio de llave;
+  - `diario.prueba.ts`: el apagado a la mitad y el renglón cortado;
+  - `zebra.prueba.ts`: sin papel, la tapa, la pausa, callada y lo que ve quien lo pidió;
+  - `senal.prueba.ts`: sin avisos, con avisos, la versión vieja y el revocado;
+  - `registrar.prueba.ts`, `instalar.prueba.ts` y `scripts/empaquetar.prueba.ts`.
+- **Pendiente con Bruno:** la Zebra real, el ejecutable de Windows (necesita el `node.exe` de la misma versión) y la instalación en las dos computadoras, en la [verificación real](../registros/REGISTROS.md#verificación-real-pendiente).

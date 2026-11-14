@@ -112,6 +112,7 @@ TypeScript 7 es el compilador nativo. Se usa solo para revisar tipos (`tsc --noE
 |---|---|---|---|
 | Un solo ejecutable para Windows y Linux | Single executable applications de Node | La de Node | https://nodejs.org/api/single-executable-applications.html |
 | Hablar con la Zebra | `node:net` (TCP al puerto 9100) y `~HS` de ZPL | La de Node | https://nodejs.org/api/net.html · Guía de programación ZPL II de Zebra |
+| Juntar el puente en un solo archivo antes del ejecutable | Vite (el de la web), en modo `ssr` | 8.3.6 | https://vite.dev/guide/ssr |
 
 ### Documentos, correo y archivos
 

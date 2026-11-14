@@ -10,3 +10,5 @@ apps/api/.modulos-de-prueba-*/
 *.tsbuildinfo
 # El encargo de un trabajador de la fase 19 en su worktree (scripts/carpetas.ts).
 .trabajador.json
+# Lo que arma pnpm puente:empaquetar.
+apps/puente/dist/
