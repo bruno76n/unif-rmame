@@ -35,3 +35,12 @@ export async function parametroEntero(base: BaseDeLaTablet, clave: string): Prom
 export async function parametroBooleano(base: BaseDeLaTablet, clave: string): Promise<boolean> {
 	return (await renglonDe(base, clave)).valor_booleano === true;
 }
+
+/**
+ * Un parámetro de texto.
+ * @param base La base local.
+ * @param clave Su clave.
+ */
+export async function parametroTexto(base: BaseDeLaTablet, clave: string): Promise<string> {
+	return String((await renglonDe(base, clave)).valor_texto ?? "");
+}

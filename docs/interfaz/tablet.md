@@ -179,4 +179,22 @@ Antes de que alguien entre, según el estado de la tablet (ver [la tablet](../ap
 
 ## Cómo está hecho
 
-*Lo escribe Claude Code al terminar la fase 20.*
+**Fase 20, parte 5.** Las pantallas viven en `apps/tablet/src/pantallas/`, con los componentes de la tablet del sistema de diseño (`packages/interfaz/src/tablet/`):
+
+- **`tablet.tsx`:** la tablet entera. Escoge la pantalla por el estado del aparato (el motor de [la tablet](../apps/tablet.md#cómo-está-hecho)) y, ya lista, por la persona adentro y su paso. Los pasos van en el estado de React, sin rutas: nada de la tablet se enlaza desde fuera (decisión 814). Cada captura va por la cola (`cola/capturas.ts`), y el aviso dice el texto con internet o el de «guardada en la tablet» según la red.
+- **Por paso:**
+  - `aparato.tsx` (registrar, preparando, revocada y actualizar);
+  - `entrada.tsx` («¿Quién eres?» y el PIN);
+  - `inicio.tsx`;
+  - `registrar.tsx` (con «Cambiar»);
+  - `escanear.tsx` (la cámara con el lector, y sin cámara, la casilla);
+  - `falla.tsx`;
+  - `consumible.tsx`.
+- **Lo que leen** (`copia/lecturas.ts`, de la copia con los esquemas de `copia/esquemas.ts`, y que se vuelve a leer al cambiar con `liveQuery` de Dexie):
+  - las personas con PIN;
+  - la producción (hoy, la semana desde su lunes con `inicioDeSemana`, las barras por hora y los últimos tres);
+  - el tope de cada operación de un bulto (`topeDelBulto`; en la primera después del corte, las piezas del bulto);
+  - «Bultos para ti» (`bultosParaTi` del paquete compartido) con la salud de cada lote (`saludDeLote`). Para la salud, el último avance es su último registro y la última sincronización es la última bajada de la tablet; no cuenta días sin subir ni cuello de botella; sí lo atorado por una máquina parada de quien hace una operación con piezas esperando. `general.dias_de_trabajo` baja a la tablet para eso;
+  - las máquinas con su falla abierta, los motivos y los consumibles. Un consumible sin unidad de la tablet sale en su unidad de inventario, como dice [materiales](../modulos/compras/materiales.md).
+- **El encabezado** dice la red y lo guardado; la hora va al minuto. La sesión se cierra a los `personal.tablet_inactividad_seg` sin tocar la pantalla.
+- **La prueba** es `pantallas/tablet.prueba.ts`: con Playwright en el Chrome de tablet contra la API real, recorre cada pantalla y cada botón, y deja sus capturas en `.revision/capturas/tablet/` para el [revisor de diseño](../../.claude/agents/revisor-diseno.md).

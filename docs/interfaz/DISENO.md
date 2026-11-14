@@ -115,6 +115,7 @@ Todos viven en `packages/interfaz`, cada familia en su carpeta (`botones/`, `cap
 | `Pasos` | Los pasos de un documento, con el actual marcado |
 | `GraficaChica` · `Grafica` | Las gráficas de las cifras y de Indicadores, con Recharts |
 | `EstadoDePantalla` | Cargando, vacío, error, sin permiso, sin conexión y choque de versión (ver [lo común](comunes.md#los-estados-de-una-pantalla)) |
+| `MarcoDeTablet` · `BotonVolver` · `BotonGrande` · `Mosaico` · `Opcion` · `TarjetaDeBulto` · `PuntosDePin` · `TecladoDePin` · `Contador` · `MensajeDeTablet` · `CifraGrande` · `BarrasPorHora` | Lo grande de la [tablet del taller](tablet.md), para usar con el dedo: el encabezado oscuro con la red y la hora, los botones de 88 px, el teclado del PIN, los contadores con «−» y «+», y la producción de la persona |
 
 ## Lo que no se construye de la muestra
 
@@ -135,3 +136,5 @@ Todos viven en `packages/interfaz`, cada familia en su carpeta (`botones/`, `cap
 - **Lo interactivo:** el interruptor, la casilla, el cajón y la ventana son de Base UI; el selector es el `select` del navegador (decisión 746). La tabla usa TanStack Table 9 (orden, selección) y, desde 100 renglones, TanStack Virtual. Las gráficas, Recharts.
 - **El armazón** mide el alto de la pantalla (`h-dvh`) y solo su panel de contenido (`data-panel="contenido"`) se desplaza; el menú lleva su propia área (decisión 747).
 - **La prueba** es `muestra/componentes.prueba.ts`: abre el catálogo (`muestra/catalogo.tsx`, todos los componentes en todos sus estados) en Chromium, en escritorio y en teléfono, mide cada componente contra esta página y guarda las capturas en `.revision/capturas/componentes/` para el [revisor de diseño](../../.claude/agents/revisor-diseno.md).
+
+**Fase 20, parte 5 (la tablet).** Los componentes de la tablet viven en `packages/interfaz/src/tablet/` (`marco.tsx`, `botones.tsx`, `captura.tsx` y `produccion.tsx`), con sus tokens en `tokens.css`: las letras y las medidas grandes (`text-tablet-*`, `h-tecla`, `size-contador`, `h-boton-grande`…) y los colores suaves del tope, el error y la advertencia. Los toma de la Puerta del taller de la muestra (decisión 814).

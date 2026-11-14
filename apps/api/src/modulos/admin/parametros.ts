@@ -55,6 +55,8 @@ export const parametrosDeAdmin: readonly DefinicionDeParametro[] = [
 		explicacion: "Los días hábiles de la fábrica, del 1 (lunes) al 7 (domingo), separados por coma",
 		tipo: "texto",
 		inicial: "1,2,3,4,5,6",
+		// La tablet calcula la salud de cada lote con los mismos días hábiles que el servidor.
+		bajaA: ["tablet_taller"],
 		orden: 20,
 	},
 	{

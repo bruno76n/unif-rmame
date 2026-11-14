@@ -5,6 +5,10 @@
 	"type": "module",
 	"exports": {
 		"./tokens.css": "./src/tokens.css",
+		"./tablet/marco": "./src/tablet/marco.tsx",
+		"./tablet/botones": "./src/tablet/botones.tsx",
+		"./tablet/captura": "./src/tablet/captura.tsx",
+		"./tablet/produccion": "./src/tablet/produccion.tsx",
 		"./clases": "./src/clases.ts",
 		"./botones/boton-con-cifra": "./src/botones/boton-con-cifra.tsx",
 		"./botones/boton": "./src/botones/boton.tsx",

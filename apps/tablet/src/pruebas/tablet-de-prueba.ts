@@ -7,6 +7,7 @@
  * emula una tablet Android, contra la API real con los datos de la muestra, quitándole la red a media captura»)
  */
 
+import { mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { type Browser, type BrowserContext, chromium, devices, type Page } from "@playwright/test";
@@ -268,4 +269,46 @@ export async function bajarHasta(pagina: Page, llego: () => Promise<boolean>): P
 		await new Promise((listo) => setTimeout(listo, 250));
 	}
 	throw new Error("lo que se esperaba nunca bajó");
+}
+
+/**
+ * Una persona del Taller sin PIN que hace de base una operación del lote en proceso, con el PIN que le da Personal: la
+ * que ve «Bultos para ti».
+ * @param prueba El arnés.
+ */
+export async function personaDeBaseConPin(
+	prueba: TabletDePrueba,
+): Promise<{ personaId: string; pin: string; nombre: string }> {
+	const [persona] = await prueba.consultar(
+		`SELECT DISTINCT p.id, p.nombre FROM personas p
+		 JOIN flujo_operaciones fo ON fo.persona_base_id = p.id JOIN lotes l ON l.flujo_id = fo.flujo_id
+		 WHERE l.estado = 'en_proceso' AND p.area = 'taller' AND p.baja_en IS NULL
+		   AND NOT EXISTS (SELECT 1 FROM usuarios u WHERE u.persona_id = p.id)
+		   AND NOT EXISTS (SELECT 1 FROM pines x WHERE x.persona_id = p.id)
+		 ORDER BY p.nombre LIMIT 1`,
+	);
+	const personaId = z.uuid().parse(persona?.id);
+	const asignado = await mandarAccion(
+		prueba.servidor,
+		"personal.asignar_pin",
+		{ datos: { persona_id: personaId } },
+		"personal",
+	);
+	if (asignado.estado !== 200) throw new Error(JSON.stringify(asignado.cuerpo));
+	return {
+		personaId,
+		pin: z.object({ pin: z.string() }).parse(asignado.cuerpo.resultado).pin,
+		nombre: z.string().parse(persona?.nombre),
+	};
+}
+
+/**
+ * Guarda la captura de la tablet para el revisor de diseño, en `.revision/capturas/tablet/`.
+ * @param pagina La tablet.
+ * @param nombre El nombre de la captura.
+ */
+export async function capturar(pagina: Page, nombre: string): Promise<void> {
+	const archivo = join(tablet, "..", "..", ".revision", "capturas", "tablet", `${nombre}.png`);
+	mkdirSync(dirname(archivo), { recursive: true });
+	await pagina.screenshot({ path: archivo });
 }

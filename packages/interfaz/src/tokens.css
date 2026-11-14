@@ -90,6 +90,33 @@
 	/* El filo de una muestra de color: así se ve una escuela de color blanco. */
 	--shadow-muestra: inset 0 0 0 1px rgb(0 0 0 / 0.08);
 
+	/* La tablet del taller: letras y botones grandes para usar con el dedo (la Puerta del taller de la muestra) */
+	--color-tablet-tope: #e6eefc;
+	--color-tablet-tope-texto: #1e3f8a;
+	--color-tablet-error: #ffe1dd;
+	--color-tablet-error-texto: #a32018;
+	--color-tablet-advertencia: #fdf0dc;
+	--color-tablet-advertencia-texto: #9a5b00;
+	--color-tablet-detenida: #fdf1ef;
+	--text-tablet: 17px;
+	--text-tablet-chico: 14px;
+	--text-tablet-titulo: 28px;
+	--text-tablet-pin: 44px;
+	--text-tablet-cifra: 84px;
+	--text-tablet-contador: 56px;
+	--text-tablet-boton: 26px;
+	--text-tablet-tecla: 34px;
+	--text-tablet-bulto: 40px;
+	--radius-tablet: 16px;
+	--spacing-tablet-encabezado: 68px;
+	--spacing-tecla: 92px;
+	--spacing-contador: 84px;
+	--spacing-boton-grande: 88px;
+	--spacing-volver: 52px;
+	--spacing-mosaico: 118px;
+	--spacing-opcion: 104px;
+	--spacing-punto-pin: 30px;
+
 	/* Hasta 980 px el menú se esconde; hasta 700 px es teléfono */
 	--breakpoint-menu: 980px;
 	--breakpoint-telefono: 700px;

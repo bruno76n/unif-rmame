@@ -233,7 +233,7 @@ Existe para que ningún módulo lea `empresa` por su cuenta (decisión 811). Viv
 | Parámetro | Valor inicial | Para qué |
 |---|---|---|
 | `general.largo_minimo_motivo` | 5 letras | El largo mínimo de todo motivo que se escribe (cancelar, dar de baja, ajustar, rechazar) |
-| `general.dias_de_trabajo` | lunes a sábado | Los días de trabajo de la fábrica: los días hábiles de Producción (lote atorado, riesgo de atraso), las horas de paro de Mantenimiento y los días de la asistencia que se exigen para cerrar la semana |
+| `general.dias_de_trabajo` | lunes a sábado | Los días de trabajo de la fábrica: los días hábiles de Producción (lote atorado, riesgo de atraso), las horas de paro de Mantenimiento y los días de la asistencia que se exigen para cerrar la semana. Baja a la tablet del taller, que calcula la salud de cada lote con los mismos días (decisión 814) |
 
 ## Permisos
 

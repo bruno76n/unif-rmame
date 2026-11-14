@@ -1,0 +1,7 @@
+/*
+ * La hoja de la tablet: Tailwind con los tokens del sistema de diseño, y que lea las pantallas.
+ * Fase 20 · docs/interfaz/DISENO.md (regla 3) y docs/interfaz/tablet.md
+ */
+@import "tailwindcss";
+@import "@uniformame/interfaz/tokens.css";
+@source "./";

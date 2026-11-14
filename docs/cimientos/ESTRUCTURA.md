@@ -135,7 +135,7 @@ apps/web/src/
 
 ## El sistema de diseño por dentro
 
-Cada familia de componentes en su carpeta, un componente por archivo (decisión 743):
+Cada familia de componentes en su carpeta, un componente por archivo (decisión 743); la de la tablet junta los suyos en cuatro archivos chicos:
 
 ```text
 packages/interfaz/src/
@@ -149,6 +149,7 @@ packages/interfaz/src/
 ├── pagina/                    armazon.tsx · pagina-departamento.tsx · barra-indicadores.tsx · colores-de-tipo.ts · seccion.tsx · dato.tsx · panel.tsx · cifra-de-cajon.tsx
 ├── avance/                    hilo.tsx · barra-avance.tsx · pasos.tsx
 ├── graficas/                  grafica-chica.tsx · grafica.tsx
+├── tablet/                    marco.tsx · botones.tsx · captura.tsx · produccion.tsx: lo grande de la Puerta del taller (decisión 814)
 └── muestra/                   catalogo.tsx (todos los componentes en todos sus estados), su página y componentes.prueba.ts
 ```
 
