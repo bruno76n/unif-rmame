@@ -1,7 +1,9 @@
 /**
  * Prueba del script de las carpetas: un trabajador que solo tocó las suyas pasa; uno que tocó el sistema de diseño u
- * otro departamento no, y el script dice cuáles; sin encargo, no revisa nada.
- * Fase 19 · docs/fases/19-web-principal.md (criterio «Ningún trabajador tocó carpetas que no son suyas»)
+ * otro departamento no, y el script dice cuáles; sin encargo, no revisa nada. En la fase 21, el trabajador de un flujo es
+ * dueño de su archivo de prueba y de su archivo de flujo, y no del arnés.
+ * Fase 19 · docs/fases/19-web-principal.md (criterio «Ningún trabajador tocó carpetas que no son suyas») y fase 21 ·
+ * docs/fases/21-pruebas-de-punta-a-punta.md («Cada una es dueña de su archivo en `pruebas/flujos/`»)
  */
 
 import { writeFileSync } from "node:fs";
@@ -56,6 +58,19 @@ describe("Ningún trabajador tocó carpetas que no son suyas", () => {
 			}),
 		).toEqual([]);
 		expect(() => carpetasDe({ departamento: "tiendas", desde })).toThrow("no existe el departamento tiendas");
+	});
+
+	it("el flujo 04 es dueño de su archivo de prueba y de su archivo de flujo; tocar el arnés u otro flujo no pasa", () => {
+		escribir(raiz, "pruebas/flujos/04-compra-de-material.prueba.ts", "export {};\n");
+		escribir(raiz, "docs/flujos/fabrica/04-compra-de-material.md", "# Flujo 04\n");
+		expect(fueraDeSusCarpetas(raiz, { flujo: "04-compra-de-material", desde })).toEqual([]);
+		escribir(raiz, "pruebas/flujos/arnes/fabrica.ts", "export {};\n");
+		escribir(raiz, "pruebas/flujos/01-pedido-externo.prueba.ts", "export {};\n");
+		expect(fueraDeSusCarpetas(raiz, { flujo: "04-compra-de-material", desde })).toEqual([
+			"pruebas/flujos/01-pedido-externo.prueba.ts",
+			"pruebas/flujos/arnes/fabrica.ts",
+		]);
+		expect(() => carpetasDe({ flujo: "../arnes/fabrica", desde })).toThrow("no existe el flujo ../arnes/fabrica");
 	});
 
 	it("con su encargo en el worktree, la revisión de carpetas lo lee; sin encargo, no revisa", () => {
